@@ -8,6 +8,7 @@
 module API.Docs.Events where
 
 import API.TypeInfo
+import Data.List (find)
 import GHC.Generics
 import Simplex.Chat.Controller
 
@@ -18,7 +19,11 @@ data CECategory = CECategory
     otherEvents :: [CEDoc]
   }
 
-data CEDoc = CEDoc {consName :: ConsName, eventDescr :: String}
+data CEDoc = CEDoc
+  { consName :: ConsName,
+    eventType :: RecordTypeInfo,
+    eventDescr :: String
+  }
 
 instance ConstructorName CEDoc where consName' CEDoc {consName} = consName
 
@@ -27,7 +32,9 @@ chatEventsDocs = map toCategory chatEventsDocsData
   where
     toCategory (categoryName, categoryDescr, mainEvts, otherEvts) =
       CECategory {categoryName, categoryDescr, mainEvents = map toEvt mainEvts, otherEvents = map toEvt otherEvts}
-    toEvt (consName, eventDescr) = CEDoc {consName, eventDescr}
+    toEvt (consName, eventDescr) = case find ((consName ==) . consName') chatEventsTypeInfo of
+      Just eventType -> CEDoc {consName, eventType, eventDescr}
+      Nothing -> error $ "Missing event type info for " <> consName
 
 deriving instance Generic ChatEvent
 

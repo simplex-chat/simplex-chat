@@ -140,8 +140,10 @@ toTypeInfo tr =
       "PQSupport" -> ST TBool []
       "ACreatedConnLink" -> ST "CreatedConnLink" []
       "CChatItem" -> ST "ChatItem" []
+      "FormatColor" -> ST "Color" []
       "CustomData" -> ST "JSONObject" []
       "KeyMap" -> ST "JSONObject" []
+      "CIQDirection" -> ST "CIDirection" []
       t
         | t `elem` stringTypes -> ST TString []
         | t `elem` simplePrefTypes -> ST "SimplePreference" []
@@ -168,6 +170,7 @@ toTypeInfo tr =
         "MemberId",
         "Text",
         "MREmojiChar",
+        "ProtocolServer",
         "SbKey",
         "SharedMsgId",
         "UIColor",

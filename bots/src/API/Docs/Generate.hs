@@ -13,7 +13,7 @@ import API.Docs.Types
 import API.TypeInfo
 import Control.Monad
 import Data.Char (isSpace, isUpper, toLower, toUpper)
-import Data.List (find, intercalate, sortOn)
+import Data.List (intercalate, sortOn)
 import qualified Data.Set as S
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
@@ -41,28 +41,22 @@ generateCommandsDoc =
     hPutStrLn h "\n---"
     forM_ chatCommandsDocs $ \CCCategory {categoryName, categoryDescr, commands} -> do
       hPutStrLn h $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr
-      forM_ commands $ \CCDoc {consName, commandDescr, responses, syntax} -> do
+      forM_ commands $ \CCDoc {consName, commandType = cmd@RecordTypeInfo {fieldInfos = params}, commandDescr, responses, syntax} -> do
         T.hPutStrLn h $ "\n\n### " <> T.pack consName <> "\n\n" <> commandDescr
-        case find ((consName ==) . consName') chatCommandsTypeInfo of
-          Nothing -> error "Missing command type info"
-          Just cmd@RecordTypeInfo {fieldInfos = params} -> do
-            unless (null params) $ do
-              hPutStrLn h "\n**Parameters**:"
-              printFields h "./TYPES.md" docTypes Nothing params
-            unless (null syntax) $ do
-              hPutStrLn h $ "\n**Syntax**:\n"
-              hPutStrLn h $ "```\n" <> intercalate "\n" (map (renderDocSyntax cmd) syntax) <> "\n```\n"
-              unless (all isConst syntax) $ hPutStrLn h $ "```javascript\n" <> intercalate "\n" (map (renderJSSyntax cmd) syntax) <> (if length syntax == 1 then " // JavaScript" else "") <> "\n```"
-            hPutStrLn h $ if length responses > 1 then "\n**Responses**:" else "\n**Response**:"
-            forM_ responses $ \name ->
-              case (find ((name ==) . consName') chatResponsesTypeInfo, find ((name ==) . consName') chatResponsesDocs) of
-                (Just RecordTypeInfo {fieldInfos}, Just CRDoc {responseDescr}) -> do
-                  let respType = dropPrefix "CR" name
-                      respDescr = if null responseDescr then camelToSpace respType else responseDescr
-                  hPutStrLn h $ "\n" <> fstToUpper respType <> ": " <> respDescr <> "."
-                  printFields h "./TYPES.md" docTypes (Just respType) fieldInfos
-                _ -> error "Missing response type info or doc"
-            hPutStrLn h "\n---"
+        unless (null params) $ do
+          hPutStrLn h "\n**Parameters**:"
+          printFields h "./TYPES.md" docTypes Nothing params
+        unless (null syntax) $ do
+          hPutStrLn h $ "\n**Syntax**:\n"
+          hPutStrLn h $ "```\n" <> intercalate "\n" (map (renderDocSyntax cmd) syntax) <> "\n```\n"
+          unless (all isConst syntax) $ hPutStrLn h $ "```javascript\n" <> intercalate "\n" (map (renderJSSyntax cmd) syntax) <> (if length syntax == 1 then " // JavaScript" else "") <> "\n```"
+        hPutStrLn h $ if length responses > 1 then "\n**Responses**:" else "\n**Response**:"
+        forM_ responses $ \CRDoc {consName = name, responseType = RecordTypeInfo {fieldInfos}, responseDescr} -> do
+          let respType = dropPrefix "CR" name
+              respDescr = if null responseDescr then camelToSpace respType else responseDescr
+          hPutStrLn h $ "\n" <> fstToUpper respType <> ": " <> respDescr <> "."
+          printFields h "./TYPES.md" docTypes (Just respType) fieldInfos
+        hPutStrLn h "\n---"
 
 camelToSpace :: String -> String
 camelToSpace [] = []
@@ -90,16 +84,13 @@ generateEventsDoc =
     hPutStrLn h "\n---"
     forM_ chatEventsDocs $ \CECategory {categoryName, categoryDescr, mainEvents, otherEvents} -> do
       hPutStrLn h $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr
-      forM_ (mainEvents ++ otherEvents) $ \CEDoc {consName, eventDescr} -> do
+      forM_ (mainEvents ++ otherEvents) $ \CEDoc {consName, eventType = RecordTypeInfo {fieldInfos}, eventDescr} -> do
         let evtType = dropPrefix "CEvt" consName
             evtDescr = if null eventDescr then camelToSpace evtType <> "." else eventDescr
         hPutStrLn h $ "\n\n### " <> fstToUpper evtType <> "\n\n" <> evtDescr
-        case find ((consName ==) . consName') chatEventsTypeInfo of
-          Nothing -> error "Missing event type info"
-          Just RecordTypeInfo {fieldInfos} -> do
-            hPutStrLn h "\n**Record type**:"
-            printFields h "./TYPES.md" docTypes (Just evtType) fieldInfos
-            hPutStrLn h "\n---"
+        hPutStrLn h "\n**Record type**:"
+        printFields h "./TYPES.md" docTypes (Just evtType) fieldInfos
+        hPutStrLn h "\n---"
   where
     printList h indent = mapM_ $ \CEDoc {consName} -> hPutStrLn h $ indent <> "- " <> withLink "" (dropPrefix "CEvt" consName)
     plural evts = if length evts == 1 then "" else "s"
@@ -152,7 +143,7 @@ generateTypesDoc = do
               hPutStrLn h $ "- \"" <> normalizeConsName consPrefix consName <> "\""
           Just (STEnum' f) -> do
             hPutStrLn h $ "\n**Enum type**:"
-            forM_ constrs $ mapM_  (\tag -> hPutStrLn h $ "- \"" <> tag <> "\"") . f
+            forM_ constrs $ \r -> hPutStrLn h $ "- \"" <> f (consName' r) <> "\""
           Nothing -> pure ()
 
 normalizeConsName :: String -> ConsName -> ConsName

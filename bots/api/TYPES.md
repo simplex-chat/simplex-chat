@@ -27,7 +27,6 @@ This file is generated automatically.
 - [CIMention](#cimention)
 - [CIMentionMember](#cimentionmember)
 - [CIMeta](#cimeta)
-- [CIQDirection](#ciqdirection)
 - [CIQuote](#ciquote)
 - [CIReaction](#cireaction)
 - [CIReactionCount](#cireactioncount)
@@ -35,6 +34,7 @@ This file is generated automatically.
 - [CITimed](#citimed)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
+- [ChatErrorType](#chaterrortype)
 - [ChatFeature](#chatfeature)
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
@@ -45,12 +45,14 @@ This file is generated automatically.
 - [ChatType](#chattype)
 - [ChatWallpaper](#chatwallpaper)
 - [ChatWallpaperScale](#chatwallpaperscale)
+- [Color](#color)
 - [CommandError](#commanderror)
 - [CommandErrorType](#commanderrortype)
 - [ComposedMessage](#composedmessage)
 - [ConnStatus](#connstatus)
 - [ConnType](#conntype)
 - [Connection](#connection)
+- [ConnectionEntity](#connectionentity)
 - [ConnectionErrorType](#connectionerrortype)
 - [ConnectionMode](#connectionmode)
 - [ConnectionPlan](#connectionplan)
@@ -75,7 +77,6 @@ This file is generated automatically.
 - [FileStatus](#filestatus)
 - [FileTransferMeta](#filetransfermeta)
 - [Format](#format)
-- [FormatColor](#formatcolor)
 - [FormattedText](#formattedtext)
 - [FullGroupPreferences](#fullgrouppreferences)
 - [FullPreferences](#fullpreferences)
@@ -149,6 +150,7 @@ This file is generated automatically.
 - [SndFileTransfer](#sndfiletransfer)
 - [SndGroupEvent](#sndgroupevent)
 - [SrvError](#srverror)
+- [StoreError](#storeerror)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -160,6 +162,7 @@ This file is generated automatically.
 - [UTCTime](#utctime)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
+- [UserContact](#usercontact)
 - [UserContactLink](#usercontactlink)
 - [UserContactRequest](#usercontactrequest)
 - [UserInfo](#userinfo)
@@ -538,6 +541,9 @@ RcvGroupE2EEInfo:
 - type: "rcvGroupE2EEInfo"
 - e2eeInfo: [E2EInfo](#e2einfo)
 
+ChatBanner:
+- type: "chatBanner"
+
 InvalidJSON:
 - type: "invalidJSON"
 - direction: [MsgDirection](#msgdirection)
@@ -773,36 +779,10 @@ Group:
 
 ---
 
-## CIQDirection
-
-**Discriminated union type**:
-
-DirectSnd:
-- type: "directSnd"
-
-DirectRcv:
-- type: "directRcv"
-
-GroupSnd:
-- type: "groupSnd"
-
-GroupRcv:
-- type: "groupRcv"
-- groupMember: [GroupMember](#groupmember)
-
-LocalSnd:
-- type: "localSnd"
-
-LocalRcv:
-- type: "localRcv"
-
-
----
-
 ## CIQuote
 
 **Record type**:
-- chatDir: [CIQDirection](#ciqdirection)
+- chatDir: [CIDirection](#cidirection)?
 - itemId: int64?
 - sharedMsgId: string?
 - sentAt: [UTCTime](#utctime)
@@ -901,6 +881,313 @@ Messages:
 ---
 
 ## ChatError
+
+**Discriminated union type**:
+
+Error:
+- type: "error"
+- errorType: [ChatErrorType](#chaterrortype)
+
+ErrorAgent:
+- type: "errorAgent"
+- agentError: [AgentErrorType](#agenterrortype)
+- connectionEntity_: [ConnectionEntity](#connectionentity)?
+
+ErrorStore:
+- type: "errorStore"
+- storeError: [StoreError](#storeerror)
+
+
+---
+
+## ChatErrorType
+
+**Discriminated union type**:
+
+NoActiveUser:
+- type: "noActiveUser"
+
+NoConnectionUser:
+- type: "noConnectionUser"
+- agentConnId: string
+
+NoSndFileUser:
+- type: "noSndFileUser"
+- agentSndFileId: string
+
+NoRcvFileUser:
+- type: "noRcvFileUser"
+- agentRcvFileId: string
+
+UserUnknown:
+- type: "userUnknown"
+
+ActiveUserExists:
+- type: "activeUserExists"
+
+UserExists:
+- type: "userExists"
+- contactName: string
+
+DifferentActiveUser:
+- type: "differentActiveUser"
+- commandUserId: int64
+- activeUserId: int64
+
+CantDeleteActiveUser:
+- type: "cantDeleteActiveUser"
+- userId: int64
+
+CantDeleteLastUser:
+- type: "cantDeleteLastUser"
+- userId: int64
+
+CantHideLastUser:
+- type: "cantHideLastUser"
+- userId: int64
+
+HiddenUserAlwaysMuted:
+- type: "hiddenUserAlwaysMuted"
+- userId: int64
+
+EmptyUserPassword:
+- type: "emptyUserPassword"
+- userId: int64
+
+UserAlreadyHidden:
+- type: "userAlreadyHidden"
+- userId: int64
+
+UserNotHidden:
+- type: "userNotHidden"
+- userId: int64
+
+InvalidDisplayName:
+- type: "invalidDisplayName"
+- displayName: string
+- validName: string
+
+ChatNotStarted:
+- type: "chatNotStarted"
+
+ChatNotStopped:
+- type: "chatNotStopped"
+
+ChatStoreChanged:
+- type: "chatStoreChanged"
+
+InvalidConnReq:
+- type: "invalidConnReq"
+
+UnsupportedConnReq:
+- type: "unsupportedConnReq"
+
+ConnReqMessageProhibited:
+- type: "connReqMessageProhibited"
+
+ContactNotReady:
+- type: "contactNotReady"
+- contact: [Contact](#contact)
+
+ContactNotActive:
+- type: "contactNotActive"
+- contact: [Contact](#contact)
+
+ContactDisabled:
+- type: "contactDisabled"
+- contact: [Contact](#contact)
+
+ConnectionDisabled:
+- type: "connectionDisabled"
+- connection: [Connection](#connection)
+
+GroupUserRole:
+- type: "groupUserRole"
+- groupInfo: [GroupInfo](#groupinfo)
+- requiredRole: [GroupMemberRole](#groupmemberrole)
+
+GroupMemberInitialRole:
+- type: "groupMemberInitialRole"
+- groupInfo: [GroupInfo](#groupinfo)
+- initialRole: [GroupMemberRole](#groupmemberrole)
+
+ContactIncognitoCantInvite:
+- type: "contactIncognitoCantInvite"
+
+GroupIncognitoCantInvite:
+- type: "groupIncognitoCantInvite"
+
+GroupContactRole:
+- type: "groupContactRole"
+- contactName: string
+
+GroupDuplicateMember:
+- type: "groupDuplicateMember"
+- contactName: string
+
+GroupDuplicateMemberId:
+- type: "groupDuplicateMemberId"
+
+GroupNotJoined:
+- type: "groupNotJoined"
+- groupInfo: [GroupInfo](#groupinfo)
+
+GroupMemberNotActive:
+- type: "groupMemberNotActive"
+
+CantBlockMemberForSelf:
+- type: "cantBlockMemberForSelf"
+- groupInfo: [GroupInfo](#groupinfo)
+- member: [GroupMember](#groupmember)
+- setShowMessages: bool
+
+GroupMemberUserRemoved:
+- type: "groupMemberUserRemoved"
+
+GroupMemberNotFound:
+- type: "groupMemberNotFound"
+
+GroupCantResendInvitation:
+- type: "groupCantResendInvitation"
+- groupInfo: [GroupInfo](#groupinfo)
+- contactName: string
+
+GroupInternal:
+- type: "groupInternal"
+- message: string
+
+FileNotFound:
+- type: "fileNotFound"
+- message: string
+
+FileSize:
+- type: "fileSize"
+- filePath: string
+
+FileAlreadyReceiving:
+- type: "fileAlreadyReceiving"
+- message: string
+
+FileCancelled:
+- type: "fileCancelled"
+- message: string
+
+FileCancel:
+- type: "fileCancel"
+- fileId: int64
+- message: string
+
+FileAlreadyExists:
+- type: "fileAlreadyExists"
+- filePath: string
+
+FileRead:
+- type: "fileRead"
+- filePath: string
+- message: string
+
+FileWrite:
+- type: "fileWrite"
+- filePath: string
+- message: string
+
+FileSend:
+- type: "fileSend"
+- fileId: int64
+- agentError: [AgentErrorType](#agenterrortype)
+
+FileRcvChunk:
+- type: "fileRcvChunk"
+- message: string
+
+FileInternal:
+- type: "fileInternal"
+- message: string
+
+FileImageType:
+- type: "fileImageType"
+- filePath: string
+
+FileImageSize:
+- type: "fileImageSize"
+- filePath: string
+
+FileNotReceived:
+- type: "fileNotReceived"
+- fileId: int64
+
+FileNotApproved:
+- type: "fileNotApproved"
+- fileId: int64
+- unknownServers: [string]
+
+FallbackToSMPProhibited:
+- type: "fallbackToSMPProhibited"
+- fileId: int64
+
+InlineFileProhibited:
+- type: "inlineFileProhibited"
+- fileId: int64
+
+InvalidForward:
+- type: "invalidForward"
+
+InvalidChatItemUpdate:
+- type: "invalidChatItemUpdate"
+
+InvalidChatItemDelete:
+- type: "invalidChatItemDelete"
+
+HasCurrentCall:
+- type: "hasCurrentCall"
+
+NoCurrentCall:
+- type: "noCurrentCall"
+
+CallContact:
+- type: "callContact"
+- contactId: int64
+
+DirectMessagesProhibited:
+- type: "directMessagesProhibited"
+- direction: [MsgDirection](#msgdirection)
+- contact: [Contact](#contact)
+
+AgentVersion:
+- type: "agentVersion"
+
+AgentNoSubResult:
+- type: "agentNoSubResult"
+- agentConnId: string
+
+CommandError:
+- type: "commandError"
+- message: string
+
+AgentCommandError:
+- type: "agentCommandError"
+- message: string
+
+InvalidFileDescription:
+- type: "invalidFileDescription"
+- message: string
+
+ConnectionIncognitoChangeProhibited:
+- type: "connectionIncognitoChangeProhibited"
+
+ConnectionUserChangeProhibited:
+- type: "connectionUserChangeProhibited"
+
+PeerChatVRangeIncompatible:
+- type: "peerChatVRangeIncompatible"
+
+InternalError:
+- type: "internalError"
+- message: string
+
+Exception:
+- type: "exception"
+- message: string
 
 
 ---
@@ -1033,6 +1320,21 @@ Message deletion result.
 
 ---
 
+## Color
+
+**Enum type**:
+- "black"
+- "red"
+- "green"
+- "yellow"
+- "blue"
+- "magenta"
+- "cyan"
+- "white"
+
+
+---
+
 ## CommandError
 
 **Discriminated union type**:
@@ -1093,17 +1395,25 @@ LARGE:
 
 ## ConnStatus
 
+**Enum type**:
+- "new"
+- "prepared"
+- "joined"
+- "requested"
+- "accepted"
+- "snd-ready"
+- "ready"
+- "deleted"
+
 
 ---
 
 ## ConnType
 
 **Enum type**:
-- "connContact"
-- "connMember"
-- "connSndFile"
-- "connRcvFile"
-- "connUserContact"
+- "contact"
+- "member"
+- "user_contact"
 
 
 ---
@@ -1139,6 +1449,39 @@ LARGE:
 
 ---
 
+## ConnectionEntity
+
+**Discriminated union type**:
+
+RcvDirectMsgConnection:
+- type: "rcvDirectMsgConnection"
+- entityConnection: [Connection](#connection)
+- contact: [Contact](#contact)?
+
+RcvGroupMsgConnection:
+- type: "rcvGroupMsgConnection"
+- entityConnection: [Connection](#connection)
+- groupInfo: [GroupInfo](#groupinfo)
+- groupMember: [GroupMember](#groupmember)
+
+SndFileConnection:
+- type: "sndFileConnection"
+- entityConnection: [Connection](#connection)
+- sndFileTransfer: [SndFileTransfer](#sndfiletransfer)
+
+RcvFileConnection:
+- type: "rcvFileConnection"
+- entityConnection: [Connection](#connection)
+- rcvFileTransfer: [RcvFileTransfer](#rcvfiletransfer)
+
+UserContactConnection:
+- type: "userContactConnection"
+- entityConnection: [Connection](#connection)
+- userContact: [UserContact](#usercontact)
+
+
+---
+
 ## ConnectionErrorType
 
 **Discriminated union type**:
@@ -1164,8 +1507,8 @@ NOT_AVAILABLE:
 ## ConnectionMode
 
 **Enum type**:
-- "invitation"
-- "contact"
+- "inv"
+- "con"
 
 
 ---
@@ -1485,8 +1828,8 @@ NO_FILE:
 ## FileProtocol
 
 **Enum type**:
-- "SMP"
-- "XFTP"
+- "smp"
+- "xftp"
 - "local"
 
 
@@ -1541,7 +1884,7 @@ Secret:
 
 Colored:
 - type: "colored"
-- color: [FormatColor](#formatcolor)
+- color: [Color](#color)
 
 Uri:
 - type: "uri"
@@ -1561,11 +1904,6 @@ Email:
 
 Phone:
 - type: "phone"
-
-
----
-
-## FormatColor
 
 
 ---
@@ -1805,21 +2143,21 @@ Known:
 ## GroupMemberStatus
 
 **Enum type**:
-- "gSMemRejected"
-- "gSMemRemoved"
-- "gSMemLeft"
-- "gSMemGroupDeleted"
-- "gSMemUnknown"
-- "gSMemInvited"
-- "gSMemPendingApproval"
-- "gSMemPendingReview"
-- "gSMemIntroduced"
-- "gSMemIntroInvited"
-- "gSMemAccepted"
-- "gSMemAnnounced"
-- "gSMemConnected"
-- "gSMemComplete"
-- "gSMemCreator"
+- "rejected"
+- "removed"
+- "left"
+- "deleted"
+- "unknown"
+- "invited"
+- "pending_approval"
+- "pending_review"
+- "introduced"
+- "intro-inv"
+- "accepted"
+- "announced"
+- "connected"
+- "complete"
+- "creator"
 
 
 ---
@@ -2778,6 +3116,309 @@ Other:
 
 ---
 
+## StoreError
+
+**Discriminated union type**:
+
+DuplicateName:
+- type: "duplicateName"
+
+UserNotFound:
+- type: "userNotFound"
+- userId: int64
+
+UserNotFoundByName:
+- type: "userNotFoundByName"
+- contactName: string
+
+UserNotFoundByContactId:
+- type: "userNotFoundByContactId"
+- contactId: int64
+
+UserNotFoundByGroupId:
+- type: "userNotFoundByGroupId"
+- groupId: int64
+
+UserNotFoundByFileId:
+- type: "userNotFoundByFileId"
+- fileId: int64
+
+UserNotFoundByContactRequestId:
+- type: "userNotFoundByContactRequestId"
+- contactRequestId: int64
+
+ContactNotFound:
+- type: "contactNotFound"
+- contactId: int64
+
+ContactNotFoundByName:
+- type: "contactNotFoundByName"
+- contactName: string
+
+ContactNotFoundByMemberId:
+- type: "contactNotFoundByMemberId"
+- groupMemberId: int64
+
+ContactNotReady:
+- type: "contactNotReady"
+- contactName: string
+
+DuplicateContactLink:
+- type: "duplicateContactLink"
+
+UserContactLinkNotFound:
+- type: "userContactLinkNotFound"
+
+ContactRequestNotFound:
+- type: "contactRequestNotFound"
+- contactRequestId: int64
+
+ContactRequestNotFoundByName:
+- type: "contactRequestNotFoundByName"
+- contactName: string
+
+InvalidContactRequestEntity:
+- type: "invalidContactRequestEntity"
+- contactRequestId: int64
+
+InvalidBusinessChatContactRequest:
+- type: "invalidBusinessChatContactRequest"
+
+GroupNotFound:
+- type: "groupNotFound"
+- groupId: int64
+
+GroupNotFoundByName:
+- type: "groupNotFoundByName"
+- groupName: string
+
+GroupMemberNameNotFound:
+- type: "groupMemberNameNotFound"
+- groupId: int64
+- groupMemberName: string
+
+GroupMemberNotFound:
+- type: "groupMemberNotFound"
+- groupMemberId: int64
+
+GroupHostMemberNotFound:
+- type: "groupHostMemberNotFound"
+- groupId: int64
+
+GroupMemberNotFoundByMemberId:
+- type: "groupMemberNotFoundByMemberId"
+- memberId: string
+
+MemberContactGroupMemberNotFound:
+- type: "memberContactGroupMemberNotFound"
+- contactId: int64
+
+GroupWithoutUser:
+- type: "groupWithoutUser"
+
+DuplicateGroupMember:
+- type: "duplicateGroupMember"
+
+GroupAlreadyJoined:
+- type: "groupAlreadyJoined"
+
+GroupInvitationNotFound:
+- type: "groupInvitationNotFound"
+
+NoteFolderAlreadyExists:
+- type: "noteFolderAlreadyExists"
+- noteFolderId: int64
+
+NoteFolderNotFound:
+- type: "noteFolderNotFound"
+- noteFolderId: int64
+
+UserNoteFolderNotFound:
+- type: "userNoteFolderNotFound"
+
+SndFileNotFound:
+- type: "sndFileNotFound"
+- fileId: int64
+
+SndFileInvalid:
+- type: "sndFileInvalid"
+- fileId: int64
+
+RcvFileNotFound:
+- type: "rcvFileNotFound"
+- fileId: int64
+
+RcvFileDescrNotFound:
+- type: "rcvFileDescrNotFound"
+- fileId: int64
+
+FileNotFound:
+- type: "fileNotFound"
+- fileId: int64
+
+RcvFileInvalid:
+- type: "rcvFileInvalid"
+- fileId: int64
+
+RcvFileInvalidDescrPart:
+- type: "rcvFileInvalidDescrPart"
+
+LocalFileNoTransfer:
+- type: "localFileNoTransfer"
+- fileId: int64
+
+SharedMsgIdNotFoundByFileId:
+- type: "sharedMsgIdNotFoundByFileId"
+- fileId: int64
+
+FileIdNotFoundBySharedMsgId:
+- type: "fileIdNotFoundBySharedMsgId"
+- sharedMsgId: string
+
+SndFileNotFoundXFTP:
+- type: "sndFileNotFoundXFTP"
+- agentSndFileId: string
+
+RcvFileNotFoundXFTP:
+- type: "rcvFileNotFoundXFTP"
+- agentRcvFileId: string
+
+ConnectionNotFound:
+- type: "connectionNotFound"
+- agentConnId: string
+
+ConnectionNotFoundById:
+- type: "connectionNotFoundById"
+- connId: int64
+
+ConnectionNotFoundByMemberId:
+- type: "connectionNotFoundByMemberId"
+- groupMemberId: int64
+
+PendingConnectionNotFound:
+- type: "pendingConnectionNotFound"
+- connId: int64
+
+IntroNotFound:
+- type: "introNotFound"
+
+UniqueID:
+- type: "uniqueID"
+
+LargeMsg:
+- type: "largeMsg"
+
+InternalError:
+- type: "internalError"
+- message: string
+
+DBException:
+- type: "dBException"
+- message: string
+
+DBBusyError:
+- type: "dBBusyError"
+- message: string
+
+BadChatItem:
+- type: "badChatItem"
+- itemId: int64
+- itemTs: [UTCTime](#utctime)?
+
+ChatItemNotFound:
+- type: "chatItemNotFound"
+- itemId: int64
+
+ChatItemNotFoundByText:
+- type: "chatItemNotFoundByText"
+- text: string
+
+ChatItemSharedMsgIdNotFound:
+- type: "chatItemSharedMsgIdNotFound"
+- sharedMsgId: string
+
+ChatItemNotFoundByFileId:
+- type: "chatItemNotFoundByFileId"
+- fileId: int64
+
+ChatItemNotFoundByContactId:
+- type: "chatItemNotFoundByContactId"
+- contactId: int64
+
+ChatItemNotFoundByGroupId:
+- type: "chatItemNotFoundByGroupId"
+- groupId: int64
+
+ProfileNotFound:
+- type: "profileNotFound"
+- profileId: int64
+
+DuplicateGroupLink:
+- type: "duplicateGroupLink"
+- groupInfo: [GroupInfo](#groupinfo)
+
+GroupLinkNotFound:
+- type: "groupLinkNotFound"
+- groupInfo: [GroupInfo](#groupinfo)
+
+HostMemberIdNotFound:
+- type: "hostMemberIdNotFound"
+- groupId: int64
+
+ContactNotFoundByFileId:
+- type: "contactNotFoundByFileId"
+- fileId: int64
+
+NoGroupSndStatus:
+- type: "noGroupSndStatus"
+- itemId: int64
+- groupMemberId: int64
+
+DuplicateGroupMessage:
+- type: "duplicateGroupMessage"
+- groupId: int64
+- sharedMsgId: string
+- authorGroupMemberId: int64?
+- forwardedByGroupMemberId: int64?
+
+RemoteHostNotFound:
+- type: "remoteHostNotFound"
+- remoteHostId: int64
+
+RemoteHostUnknown:
+- type: "remoteHostUnknown"
+
+RemoteHostDuplicateCA:
+- type: "remoteHostDuplicateCA"
+
+RemoteCtrlNotFound:
+- type: "remoteCtrlNotFound"
+- remoteCtrlId: int64
+
+RemoteCtrlDuplicateCA:
+- type: "remoteCtrlDuplicateCA"
+
+ProhibitedDeleteUser:
+- type: "prohibitedDeleteUser"
+- userId: int64
+- contactId: int64
+
+OperatorNotFound:
+- type: "operatorNotFound"
+- serverOperatorId: int64
+
+UsageConditionsNotFound:
+- type: "usageConditionsNotFound"
+
+InvalidQuote:
+- type: "invalidQuote"
+
+InvalidMention:
+- type: "invalidMention"
+
+
+---
+
 ## SwitchPhase
 
 **Enum type**:
@@ -2913,6 +3554,16 @@ Timestampe in ISO8601 format as string.
 - sendRcptsSmallGroups: bool
 - userMemberProfileUpdatedAt: [UTCTime](#utctime)?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+
+
+---
+
+## UserContact
+
+**Record type**:
+- userContactLinkId: int64
+- connReqContact: string
+- groupId: int64?
 
 
 ---

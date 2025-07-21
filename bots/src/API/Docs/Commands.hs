@@ -10,9 +10,11 @@
 
 module API.Docs.Commands where
 
+import API.Docs.Responses
 import API.Docs.Syntax
 import API.TypeInfo
 import Data.String
+import Data.List (find)
 import Data.Text (Text)
 import GHC.Generics
 import Simplex.Chat.Controller
@@ -22,8 +24,14 @@ chatCommandsDocs = map toCategory chatCommandsDocsData
   where
     toCategory (categoryName, categoryDescr, commandsData) =
       CCCategory {categoryName, categoryDescr, commands = map toCmd commandsData}
-    toCmd (consName, commandDescr, responses, errors, network, syntax) =
-      CCDoc {consName, commandDescr, responses, errors, network, syntax}
+    toCmd (consName, commandDescr, respNames, errors, network, syntax) = case find ((consName ==) . consName') chatCommandsTypeInfo of
+      Just commandType ->
+        let findResp name = case find ((name ==) . consName') chatResponsesDocs of
+              Just resp -> resp
+              Nothing -> error $ "Missing response doc for " <> name
+            responses = map findResp respNames
+         in CCDoc {consName, commandType, commandDescr, responses, errors, network, syntax}
+      Nothing -> error $ "Missing command type info for " <> consName
 
 deriving instance Generic ChatCommand
 
@@ -38,8 +46,9 @@ data CCCategory = CCCategory
 
 data CCDoc = CCDoc
   { consName :: ConsName,
+    commandType :: RecordTypeInfo,
     commandDescr :: Text,
-    responses :: [String],
+    responses :: [CRDoc],
     errors :: [TypeDoc],
     network :: Maybe UsesNetwork,
     syntax :: [Expr]

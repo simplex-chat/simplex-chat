@@ -136,14 +136,11 @@ testCommandsHaveResponses :: IO ()
 testCommandsHaveResponses = do
   let analyzeCmd (cmdsNoResp, rs) CCDoc {consName, responses}
         | null responses = (consName : cmdsNoResp, rs)
-        | otherwise = (cmdsNoResp, rs `S.union` S.fromList responses)
+        | otherwise = (cmdsNoResp, rs `S.union` S.fromList (map consName' responses))
       (cmdsNoResponses, cmdResponses) = foldl' analyzeCmd ([], S.empty) $ concatMap commands chatCommandsDocs
-      typeResps = S.fromList $ map consName' chatResponsesTypeInfo
-      undefinedResps = S.toList $ cmdResponses `S.difference` typeResps
       undocResps = S.toList $ cmdResponses `S.difference` S.fromList documentedResps
       extraResps = S.toList $ S.fromList documentedResps `S.difference` cmdResponses
   unless (null cmdsNoResponses) $ expectationFailure $ "Commands without responses: " <> intercalate ", " (reverse cmdsNoResponses)
-  unless (null undefinedResps) $ expectationFailure $ "Undefined command reponses: " <> intercalate ", " undefinedResps
   unless (null undocResps) $ expectationFailure $ "Undocumented command responses: " <> intercalate ", " undocResps
   unless (null extraResps) $ expectationFailure $ "Unused documented command responses: " <> intercalate ", " extraResps
 
