@@ -918,7 +918,7 @@ struct ChatView: View {
                     case .inv:
                         "Tap Connect to chat"
                     case .con:
-                        "Send request to connect"
+                        "Tap Connect to send request"
                     }
                 } else if contact.nextAcceptContactRequest {
                     "Accept contact request"
@@ -939,7 +939,7 @@ struct ChatView: View {
                     }
                 case .business:
                     if groupInfo.nextConnectPrepared {
-                        "Connect via business address"
+                        "Tap Connect to chat"
                     } else {
                         "Business connection"
                     }

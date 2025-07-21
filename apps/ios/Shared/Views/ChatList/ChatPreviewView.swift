@@ -364,7 +364,11 @@ struct ChatPreviewView: View {
             }
         case let .group(groupInfo, _):
             if groupInfo.nextConnectPrepared {
-                Text("Open to join")
+                if groupInfo.businessChat?.chatType == .business {
+                    Text("Open to connect")
+                } else {
+                    Text("Open to join")
+                }
             } else {
                 switch (groupInfo.membership.memberStatus) {
                 case .memRejected: Text("rejected")

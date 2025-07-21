@@ -1793,7 +1793,7 @@ fun BoxScope.ChatItemsList(
 
             BusinessChatType.Business ->
               if (groupInfo.nextConnectPrepared) {
-                generalGetString(MR.strings.chat_banner_connect_via_business_address)
+                generalGetString(MR.strings.chat_banner_connect_to_chat)
               } else {
                 generalGetString(MR.strings.chat_banner_business_connection)
               }

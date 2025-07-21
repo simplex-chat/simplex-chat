@@ -1905,10 +1905,6 @@ This is your own one-time link!</source>
 Ez a saját egyszer használható meghívója!</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Connect via business address" xml:space="preserve">
-        <source>Connect via business address</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Connect via contact address" xml:space="preserve">
         <source>Connect via contact address</source>
         <target>Kapcsolódás a kapcsolattartási címen keresztül</target>
@@ -7093,10 +7089,6 @@ chat item action</note>
         <target>Kérés küldése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send request to connect" xml:space="preserve">
-        <source>Send request to connect</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Send request without message" xml:space="preserve">
         <source>Send request without message</source>
         <target>Kérés küldése üzenet nélkül</target>
@@ -7877,6 +7869,10 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
         <source>Tap Connect to chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Connect to send request" xml:space="preserve">
+        <source>Tap Connect to send request</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
