@@ -847,8 +847,8 @@ struct ChatView: View {
                         .padding(.horizontal)
                 }
 
-                if let chatContext = chatContext() {
-                    Label(chatContext, systemImage: "info.circle")
+                if let (chatContext, image) = chatContext() {
+                    Label(chatContext, systemImage: image)
                         .font(.callout)
                         .foregroundColor(theme.colors.secondary)
                         .padding(.top, 8)
@@ -864,33 +864,41 @@ struct ChatView: View {
             .padding(.horizontal)
         }
 
-        func chatContext() -> String? {
+        func chatContext() -> (String, String)? {
             switch chat.chatInfo {
             case let .direct(contact):
                 if contact.nextConnectPrepared, let linkType = contact.preparedContact?.uiConnLinkType {
                     switch linkType {
                     case .inv:
-                        NSLocalizedString("Connect to chat", comment: "chat context")
+                        (NSLocalizedString("Connect to chat", comment: "chat context"), "arrow.forward.circle")
                     case .con:
-                        NSLocalizedString("Send request to connect", comment: "chat context")
+                        (NSLocalizedString("Send request to connect", comment: "chat context"), "arrow.forward.circle")
                     }
                 } else if contact.nextAcceptContactRequest {
-                    NSLocalizedString("Accept contact request", comment: "chat context")
+                    (NSLocalizedString("Accept contact request", comment: "chat context"), "arrow.forward.circle")
                 } else {
-                    NSLocalizedString("Your contact", comment: "chat context")
+                    (NSLocalizedString("Your contact", comment: "chat context"), "info.circle")
                 }
             case let .group(groupInfo, _):
                 switch groupInfo.businessChat?.chatType {
                 case .none:
-                    if groupInfo.membership.memberStatus == .memCreator {
-                        NSLocalizedString("Your group", comment: "chat context")
+                    if groupInfo.nextConnectPrepared {
+                        (NSLocalizedString("Join group", comment: "chat context"), "arrow.forward.circle")
                     } else {
-                        NSLocalizedString("Join group", comment: "chat context")
+                        switch (groupInfo.membership.memberStatus) {
+                        case .memInvited: (NSLocalizedString("Join group", comment: "chat context"), "arrow.forward.circle")
+                        case .memCreator: (NSLocalizedString("Your group", comment: "chat context"), "info.circle")
+                        default: (NSLocalizedString("Group", comment: "chat context"), "info.circle")
+                        }
                     }
                 case .business:
-                    NSLocalizedString("Connect to business", comment: "chat context")
+                    if groupInfo.nextConnectPrepared {
+                        (NSLocalizedString("Connect to business", comment: "chat context"), "arrow.forward.circle")
+                    } else {
+                        (NSLocalizedString("Business connection", comment: "chat context"), "info.circle")
+                    }
                 case .customer:
-                    NSLocalizedString("Your customer", comment: "chat context")
+                    (NSLocalizedString("Your customer", comment: "chat context"), "info.circle")
                 }
             default: nil
             }
