@@ -49,6 +49,7 @@ deriving instance Generic ChatEvent
 chatEventsTypeInfo :: [RecordTypeInfo]
 chatEventsTypeInfo = recordTypesInfo @ChatEvent
 
+-- TODO add synthetic CEvtChatError event (Haskell code uses Either, with error in Left)
 chatEventsDocsData :: [(String, String, [(ConsName, String)], [(ConsName, String)])]
 chatEventsDocsData =
   [ ( "Contact connection events", -- which event should be processed by a bot that has business address. Maybe needs a separate category.

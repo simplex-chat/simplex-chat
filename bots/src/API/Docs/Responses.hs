@@ -33,6 +33,7 @@ deriving instance Generic ChatResponse
 chatResponsesTypeInfo :: [RecordTypeInfo]
 chatResponsesTypeInfo = recordTypesInfo @ChatResponse
 
+-- TODO add synthetic CRChatCmdError event (Haskell code uses Either, with error in Left)
 chatResponsesDocsData :: [(ConsName, String)]
 chatResponsesDocsData =
   [ ("CRAcceptingContactRequest", "Contact request accepted"),
