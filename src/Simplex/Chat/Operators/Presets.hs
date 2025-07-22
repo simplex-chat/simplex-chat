@@ -35,7 +35,7 @@ operatorFlux =
       legalName = Just "InFlux Technologies Limited",
       serverDomains = ["simplexonflux.com"],
       conditionsAcceptance = CARequired Nothing,
-      enabled = False,
+      enabled = True,
       smpRoles = ServerRoles {storage = False, proxy = True},
       xftpRoles = ServerRoles {storage = False, proxy = True}
     }
