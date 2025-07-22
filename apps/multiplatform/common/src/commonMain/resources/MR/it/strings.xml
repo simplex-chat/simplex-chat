@@ -2490,4 +2490,13 @@
     <string name="short_descr">La tua bio:</string>
     <string name="bio_too_large">Bio troppo lunga</string>
     <string name="group_descr_too_large">Descrizione troppo lunga</string>
+    <string name="chat_banner_accept_contact_request">Accetta la richiesta di contatto</string>
+    <string name="chat_banner_business_connection">Connessione lavorativa</string>
+    <string name="chat_banner_group">Gruppo</string>
+    <string name="chat_banner_connect_to_chat">Tocca Connetti per chattare</string>
+    <string name="chat_banner_send_request_to_connect">Tocca Connetti per inviare la richiesta</string>
+    <string name="chat_banner_join_group">Tocca Entra nel gruppo</string>
+    <string name="chat_banner_your_business_contact">Il tuo contatto lavorativo</string>
+    <string name="chat_banner_your_contact">Il tuo contatto</string>
+    <string name="chat_banner_your_group">Il tuo gruppo</string>
 </resources>
