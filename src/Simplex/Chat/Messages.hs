@@ -104,7 +104,7 @@ chatTypeStr = \case
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
-data ChatRef = ChatRef ChatType Int64 (Maybe GroupChatScope)
+data ChatRef = ChatRef {chatType :: ChatType, chatId :: Int64, chatScope :: Maybe GroupChatScope}
   deriving (Eq, Show, Ord)
 
 data ChatInfo (c :: ChatType) where

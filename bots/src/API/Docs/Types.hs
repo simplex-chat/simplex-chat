@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -11,7 +12,13 @@
 module API.Docs.Types where
 
 import API.TypeInfo
-import Data.Char (isUpper, toLower)
+import Data.Bifunctor (second)
+import Data.Char (isUpper, toLower, toUpper)
+import Data.List (find, mapAccumL, sortOn)
+import qualified Data.List.NonEmpty as L
+import qualified Data.Map.Strict as M
+import Data.Maybe (fromMaybe)
+import qualified Data.Set as S
 import Data.Text (Text)
 import GHC.Generics
 import Simplex.Chat.Controller
@@ -38,9 +45,90 @@ import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
 
+data CTDoc' = CTDoc'
+  { typeDefinition :: APITypeDef,
+    typeDescr :: Text
+  }
+
+docTypeName' :: CTDoc' -> String
+docTypeName' CTDoc' {typeDefinition = APITypeDef name _} = name
+
+chatTypesDocs' :: [CTDoc']
+chatTypesDocs' = sortOn docTypeName' $! snd $! mapAccumL toCTDoc (S.empty, M.empty) chatTypesDocsData
+  where
+    toCTDoc !tds sumTypeInfo@(STI typeName _, _, _, _, typeDescr) =
+      let (tds', td_) = toTypeDef tds sumTypeInfo
+       in case td_ of
+            Just td -> (tds', CTDoc' td typeDescr)
+            Nothing -> error $ "Recursive type: "  <> typeName
+    toTypeDef :: (S.Set String, M.Map String APITypeDef) -> (SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Text) -> ((S.Set String, M.Map String APITypeDef), Maybe APITypeDef)
+    toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, consPrefix, hideConstrs, _) =
+      let constrs = filter ((`notElem` hideConstrs) . consName') allConstrs
+       in case M.lookup typeName typeDefs of
+            Just td -> (acc, Just td)
+            Nothing
+              | S.member typeName visited -> (acc, Nothing)
+              | otherwise -> case jsonEncoding of
+                  STRecord -> case constrs of
+                    [RecordTypeInfo {fieldInfos}] ->
+                      let fields = fromMaybe (error $ "Record type without fields: " <> typeName) $ L.nonEmpty fieldInfos
+                          ((visited', typeDefs'), fields') = mapAccumL toAPIField (S.insert typeName visited, typeDefs) fields
+                          td = APITypeDef typeName $ ATDRecord fields'
+                       in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
+                    _ -> error $ "Record type with " <> show (length constrs) <> " constructors: " <> typeName
+                  STUnion -> if length constrs > 1 then toUnionType constrs else unionError constrs
+                  STUnion1 -> if length constrs == 1 then toUnionType constrs else unionError constrs
+                  STEnum -> if length constrs > 1 then toEnumType constrs else enumError constrs
+                  STEnum1 -> if length constrs == 1 then toEnumType constrs else enumError constrs
+                  STEnum' f
+                    | length constrs <= 1 -> enumError constrs
+                    | null consPrefix -> toEnumType_ f constrs
+                    | otherwise -> error $ "Enum type with custom encoding and prefix: " <> typeName
+      where
+        toUnionType constrs =
+          let ((visited', typeDefs'), members) = mapAccumL toUnionMember (S.insert typeName visited, typeDefs) $ fromMaybe (unionError constrs) $ L.nonEmpty constrs
+              td = APITypeDef typeName $ ATDUnion members
+           in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
+        toUnionMember tds RecordTypeInfo {consName, fieldInfos} =
+          let memberTag = normalizeConsName consPrefix consName
+           in second (ATUnionMember memberTag) $ mapAccumL toAPIField tds fieldInfos
+        unionError constrs = error $ "Union type with " <> show (length constrs) <> " constructor(s): " <> typeName
+        toEnumType = toEnumType_ $ normalizeConsName consPrefix
+        toEnumType_ f constrs =
+          let members = L.map toEnumMember $ fromMaybe (enumError constrs) $ L.nonEmpty constrs
+              td = APITypeDef typeName $ ATDEnum members
+           in ((S.insert typeName visited, M.insert typeName td typeDefs), Just td)
+          where
+            toEnumMember RecordTypeInfo {consName, fieldInfos} = case fieldInfos of
+              [] -> f consName
+              _ -> error $ "Enum type with fields in constructor: " <> typeName <> ", " <> consName
+        enumError constrs = error $ "Enum type with " <> show (length constrs) <> " constructor(s): " <> typeName
+        toAPIField :: (S.Set String, M.Map String APITypeDef) -> FieldInfo -> ((S.Set String, M.Map String APITypeDef), APIRecordField)
+        toAPIField tds (FieldInfo name typeInfo) = second (APIRecordField name) $ toAPIType tds typeInfo
+        toAPIType :: (S.Set String, M.Map String APITypeDef) -> TypeInfo -> ((S.Set String, M.Map String APITypeDef), APIType)
+        toAPIType tds = \case
+          TIType (ST name _) -> apiTypeForName tds name
+          TIOptional tInfo -> second ATOptional $ toAPIType tds tInfo
+          TIArray {elemType, nonEmpty} -> second (`ATArray`nonEmpty) $ toAPIType tds elemType
+          TIMap {keyType = ST name _, valueType}
+            | name `elem` primitiveTypes -> second (ATMap (PT name)) $ toAPIType tds valueType
+            | otherwise -> error $ "Non-primitive key type in " <> typeName
+        apiTypeForName :: (S.Set String, M.Map String APITypeDef) -> String -> ((S.Set String, M.Map String APITypeDef), APIType)
+        apiTypeForName tds name
+          | name `elem` primitiveTypes = (tds, ATPrim $ PT name)
+          | otherwise = case M.lookup name $ snd tds of
+              Just td -> (tds, ATDef td)
+              Nothing -> case find (\(STI name' _, _, _, _, _) -> name == name') chatTypesDocsData of
+                Just sumTypeInfo ->
+                  let (tds', td_) = toTypeDef tds sumTypeInfo -- recursion to outer function, loops are resolved via type defs map lookup
+                   in case td_ of
+                        Just td -> (tds', ATDef td)
+                        Nothing -> (tds', ATRef name)
+                Nothing -> error $ "Undefined type: " <> name
+
 data CTDoc = CTDoc
   { typeInfo :: SumTypeInfo,
-    jsonEncoding :: Maybe SumTypeJsonEncoding,
+    jsonEncoding :: SumTypeJsonEncoding,
     consPrefix :: String,
     typeDescr :: Text
   }
@@ -51,11 +139,11 @@ docTypeName CTDoc {typeInfo = STI name _} = name
 chatTypesDocs :: [CTDoc]
 chatTypesDocs = map toCTDoc chatTypesDocsData
   where
-    toCTDoc (STI consName records, jsonEncoding, consPrefix, hideConstrs, typeDescr) =
-      let records' = filter ((`notElem` hideConstrs) . consName') records
-       in CTDoc {typeInfo = STI consName records', jsonEncoding, consPrefix, typeDescr}
+    toCTDoc (STI typeName constrs, jsonEncoding, consPrefix, hideConstrs, typeDescr) =
+      let constrs' = filter ((`notElem` hideConstrs) . consName') constrs
+       in CTDoc {typeInfo = STI typeName constrs', jsonEncoding, consPrefix, typeDescr}
 
-data SumTypeJsonEncoding = STRecord | STUnion | STEnum | STEnum' (ConsName -> String)
+data SumTypeJsonEncoding = STRecord | STUnion | STUnion1 | STEnum | STEnum1 | STEnum' (ConsName -> String)
 
 dropPfxSfx :: String -> String -> ConsName -> String
 dropPfxSfx pfx sfx = dropSuffix sfx . dropPrefix pfx
@@ -71,6 +159,16 @@ dropSuffix sfx s =
   let (s', sfx') = splitAt (length s - length sfx) s
    in fstToLower $ if sfx' == sfx then s' else s
 
+normalizeConsName :: String -> ConsName -> ConsName
+normalizeConsName pfx consName
+  | null pfx && uppercase = consName
+  | null pfx = fstToLower consName
+  | uppercase = map toUpper noPfx
+  | otherwise = noPfx
+  where
+    uppercase = all (\c -> isUpper c || c == '_') consName
+    noPfx = dropPrefix pfx consName
+
 -- making chatDir optional because clients use CIDirection? instead of CIQDirection (the type is replaced in Types.hs)
 ciQuoteType :: SumTypeInfo
 ciQuoteType =
@@ -79,197 +177,197 @@ ciQuoteType =
       updateRecord (RecordTypeInfo name fields) = RecordTypeInfo name $ map optChatDir fields
    in st {recordTypes = map updateRecord records} -- need to map even though there is one constructor in this type
 
-chatTypesDocsData :: [(SumTypeInfo, Maybe SumTypeJsonEncoding, String, [ConsName], Text)]
+chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Text)]
 chatTypesDocsData =
-  [ ((sti @(Chat 'CTDirect)) {typeName = "AChat"} , Just STRecord, "", [], ""),
-    ((sti @JSONChatInfo) {typeName = "ChatInfo"}, Just STUnion, "JCInfo", [], ""),
-    ((sti @JSONCIContent) {typeName = "CIContent"}, Just STUnion, "JCI", [], ""),
-    ((sti @JSONCIDeleted) {typeName = "CIDeleted"}, Just STUnion, "JCID", [], ""),
-    ((sti @JSONCIDirection) {typeName = "CIDirection"}, Just STUnion, "JCI", [], ""),
-    ((sti @JSONCIFileStatus) {typeName = "CIFileStatus"}, Just STUnion, "JCIFS", [], ""),
-    ((sti @JSONCIStatus) {typeName = "CIStatus"}, Just STUnion, "JCIS", [], ""),
-    (ciQuoteType, Just STRecord, "", [], ""),
-    (STI "AChatItem" [RecordTypeInfo "AChatItem" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatItem" (ti "ChatItem")]], Just STRecord, "", [], ""),
-    (STI "ACIReaction" [RecordTypeInfo "ACIReaction" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatReaction" (ti "CIReaction")]], Just STRecord, "", [], ""),
-    (STI "JSONObject" [], Just STRecord, "", [], "Arbitrary JSON object."),
-    (STI "UTCTime" [], Just STRecord, "", [], "Timestampe in ISO8601 format as string."),
-    (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti TInt), FieldInfo "maxVersion" (ti TInt)]], Just STRecord, "", [], ""),
-    (sti @(ChatItem 'CTDirect 'MDSnd), Just STRecord, "", [], ""),
-    (sti @(CIFile 'MDSnd), Just STRecord, "", [], ""),
-    (sti @(CIMeta 'CTDirect 'MDSnd), Just STRecord, "", [], ""),
-    (sti @(CIReaction 'CTDirect 'MDSnd), Just STRecord, "", [], ""),
-    (sti @(ContactUserPref SimplePreference), Just STUnion, "CUP", [], ""),
-    (sti @(ContactUserPreference SimplePreference), Just STRecord, "", [], ""),
-    (sti @(CreatedConnLink 'CMContact), Just STRecord, "", [], ""),
-    (sti @AddressSettings, Just STRecord, "", [], ""),
-    (sti @AgentCryptoError, Just STUnion, "", [], ""),
-    (sti @AgentErrorType, Just STUnion, "", [], ""),
-    (sti @AutoAccept, Just STRecord, "", [], ""),
-    (sti @BlockingInfo, Just STRecord, "", [], ""),
-    (sti @BlockingReason, Just STEnum, "BR", [], ""),
-    (sti @BrokerErrorType, Just STUnion, "", [], ""),
-    (sti @BusinessChatInfo, Just STRecord, "", [], ""),
-    (sti @BusinessChatType, Just STEnum, "BC", [], ""),
-    (sti @ChatDeleteMode, Just STUnion, "CDM", [], ""),
-    (sti @ChatError, Just STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], ""),
-    (sti @ChatErrorType, Just STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], ""),
-    (sti @ChatFeature, Just STEnum, "CF", [], ""),
-    (sti @ChatItemDeletion, Just STRecord, "", [], "Message deletion result."),
-    (sti @ChatRef, Nothing, "", [], ""),
-    (sti @ChatSettings, Just STRecord, "", [], ""),
-    (sti @ChatStats, Just STRecord, "", [], ""),
-    (sti @ChatType, Just STEnum, "CT", [], ""),
-    (sti @ChatWallpaper, Just STRecord, "", [], ""),
-    (sti @ChatWallpaperScale, Just STEnum, "CWS", [], ""),
-    (sti @CICallStatus, Just STEnum, "CISCall", [], ""),
-    (sti @CIDeleteMode, Just STEnum, "CIDM", [], ""),
-    (sti @CIForwardedFrom, Just STUnion, "CIFF", [], ""),
-    (sti @CIGroupInvitation, Just STRecord, "", [], ""),
-    (sti @CIGroupInvitationStatus, Just STEnum, "CIGIS", [], ""),
-    (sti @CIMention, Just STRecord, "", [], ""),
-    (sti @CIMentionMember, Just STRecord, "", [], ""),
-    (sti @CIReactionCount, Just STRecord, "", [], ""),
-    (sti @CITimed, Just STRecord, "", [], ""),
-    (sti @Color, Just STEnum, "", [], ""),
-    (sti @CommandError, Just STUnion, "", [], ""),
-    (sti @CommandErrorType, Just STUnion, "", [], ""),
-    (sti @ComposedMessage, Just STRecord, "", [], ""),
-    (sti @Connection, Just STRecord, "", [], ""),
-    (sti @ConnectionEntity, Just STUnion, "", [], ""),
-    (sti @ConnectionErrorType, Just STUnion, "", [], ""),
-    (sti @ConnectionMode, Just (STEnum' $ take 3 . consLower "CM"), "", [], ""),
-    (sti @ConnectionPlan, Just STUnion, "CP", [], ""),
-    (sti @ConnStatus, Just (STEnum' $ consSep "Conn" '-'), "", [], ""),
-    (sti @ConnType, Just (STEnum' $ consSep "Conn" '_'), "", ["ConnSndFile", "ConnRcvFile"], ""),
-    (sti @Contact, Just STRecord, "", [], ""),
-    (sti @ContactAddressPlan, Just STUnion, "CAP", [], ""),
-    (sti @ContactShortLinkData, Just STRecord, "", [], ""),
-    (sti @ContactStatus, Just STEnum, "CS", [], ""),
-    (sti @ContactUserPreferences, Just STRecord, "", [], ""),
-    (sti @CryptoFile, Just STRecord, "", [], ""),
-    (sti @CryptoFileArgs, Just STRecord, "", [], ""),
-    (sti @E2EInfo, Just STRecord, "", [], ""),
-    (sti @ErrorType, Just STUnion, "", [], ""),
-    (sti @FeatureAllowed, Just STEnum, "FA", [], ""),
-    (sti @FileDescr, Just STRecord, "", [], ""),
-    (sti @FileError, Just STUnion, "FileErr", [], ""),
-    (sti @FileErrorType, Just STUnion, "", [], ""),
-    (sti @FileInvitation, Just STRecord, "", [], ""),
-    (sti @FileProtocol, Just (STEnum' $ consLower "FP"), "", [], ""),
-    (sti @FileStatus, Just STEnum, "FS", [], ""),
-    (sti @FileTransferMeta, Just STRecord, "", [], ""),
-    (sti @Format, Just STUnion, "", [], ""),
-    (sti @FormattedText, Just STRecord, "", [], ""),
-    (sti @FullGroupPreferences, Just STRecord, "", [], ""),
-    (sti @FullPreferences, Just STRecord, "", [], ""),
-    (sti @GroupChatScope, Just STUnion, "GCS", [], ""),
-    (sti @GroupChatScopeInfo, Just STUnion, "GCSI", [], ""),
-    (sti @GroupFeature, Just STEnum, "GF", [], ""),
-    (sti @GroupFeatureEnabled, Just STEnum, "FE", [], ""),
-    (sti @GroupInfo, Just STRecord, "", [], ""),
-    (sti @GroupInfoSummary, Just STRecord, "", [], ""),
-    (sti @GroupLink, Just STRecord, "", [], ""),
-    (sti @GroupLinkPlan, Just STUnion, "GLP", [], ""),
-    (sti @GroupMember, Just STRecord, "", [], ""),
-    (sti @GroupMemberAdmission, Just STRecord, "", [], ""),
-    (sti @GroupMemberCategory, Just (STEnum' $ dropPfxSfx "GC" "Member"), "", [], ""),
-    (sti @GroupMemberRef, Just STRecord, "", [], ""),
-    (sti @GroupMemberRole, Just STEnum, "GR", [], ""),
-    (sti @GroupMemberSettings, Just STRecord, "", [], ""),
-    (sti @GroupMemberStatus, Just (STEnum' $ (\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], ""),
-    (sti @GroupPreference, Just STRecord, "", [], ""),
-    (sti @GroupPreferences, Just STRecord, "", [], ""),
-    (sti @GroupProfile, Just STRecord, "", [], ""),
-    (sti @GroupShortLinkData, Just STRecord, "", [], ""),
-    (sti @GroupSummary, Just STRecord, "", [], ""),
-    (sti @GroupSupportChat, Just STRecord, "", [], ""),
-    (sti @HandshakeError, Just STEnum, "", [], ""),
-    (sti @InlineFileMode, Just STEnum, "IFM", [], ""),
-    (sti @InvitationLinkPlan, Just STUnion, "ILP", [], ""),
-    (sti @InvitedBy, Just STUnion, "IB", [], ""),
-    (sti @LinkContent, Just STUnion, "LC", [], ""),
-    (sti @LinkPreview, Just STRecord, "", [], ""),
-    (sti @LocalProfile, Just STRecord, "", [], ""),
-    (sti @MemberCriteria, Just STEnum, "MC", [], ""),
-    (sti @MsgChatLink, Just STUnion, "MCL", [], "Connection link sent in a message - only short links are allowed."),
-    (sti @MsgContent, Just STUnion, "MC", [], ""),
-    (sti @MsgDecryptError, Just STEnum, "MDE", [], ""),
-    (sti @MsgDirection, Just STEnum, "MD", [], ""),
-    (sti @MsgErrorType, Just STUnion, "", [], ""), -- check, may be correct?
-    (sti @MsgFilter, Just STEnum, "MF", [], ""),
-    (sti @MsgReaction, Just STUnion, "MR", [], ""),
-    (sti @MsgReceiptStatus, Just STEnum, "MR", [], ""),
-    (sti @NewUser, Just STRecord, "", [], ""),
-    (sti @NoteFolder, Just STRecord, "", [], ""),
-    (sti @PendingContactConnection, Just STRecord, "", [], ""),
-    (sti @PrefEnabled, Just STRecord, "", [], ""),
-    (sti @Preferences, Just STRecord, "", [], ""),
-    (sti @PreparedContact, Just STRecord, "", [], ""),
-    (sti @PreparedGroup, Just STRecord, "", [], ""),
-    (sti @Profile, Just STRecord, "", [], ""),
-    (sti @ProxyClientError, Just STUnion, "Proxy", [], ""),
-    (sti @ProxyError, Just STUnion, "", [], ""),
-    (sti @RatchetSyncState, Just STEnum, "RS", [], ""),
-    (sti @RCErrorType, Just STUnion, "RCE", [], ""),
-    (sti @RcvConnEvent, Just STUnion, "RCE", [], ""),
-    (sti @RcvDirectEvent, Just STUnion, "RDE", [], ""),
-    (sti @RcvFileDescr, Just STRecord, "", [], ""),
-    (sti @RcvFileInfo, Just STRecord, "", [], ""),
-    (sti @RcvFileStatus, Just STUnion, "RFS", [], ""),
-    (sti @RcvFileTransfer, Just STRecord, "", [], ""),
-    (sti @RcvGroupEvent, Just STUnion, "RGE", [], ""),
-    (sti @ReportReason, Just (STEnum' $ dropPfxSfx "RR" ""), "", ["RRUnknown"], ""),
-    (sti @RoleGroupPreference, Just STRecord, "", [], ""),
-    (sti @SecurityCode, Just STRecord, "", [], ""),
-    (sti @SendRef, Nothing, "", [], ""),
-    (sti @SimplePreference, Just STRecord, "", [], ""),
-    (sti @SimplexLinkType, Just STEnum, "XL", [], ""),
-    (sti @SMPAgentError, Just STUnion, "", [], ""),
-    (sti @SndCIStatusProgress, Just STEnum, "SSP", [], ""),
-    (sti @SndConnEvent, Just STUnion, "SCE", [], ""),
-    (sti @SndError, Just STUnion, "SndErr", [], ""),
-    (sti @SndFileTransfer, Just STRecord, "", [], ""),
-    (sti @SndGroupEvent, Just STUnion, "SGE", [], ""),
-    (sti @SrvError, Just STUnion, "SrvErr", [], ""),
-    (sti @StoreError, Just STUnion, "SE", [], ""),
-    (sti @SwitchPhase, Just STEnum, "SP", [], ""),
-    (sti @TimedMessagesGroupPreference, Just STRecord, "", [], ""),
-    (sti @TimedMessagesPreference, Just STRecord, "", [], ""),
-    (sti @TransportError, Just STUnion, "TE", [], ""),
-    (sti @UIColorMode, Just STEnum, "UCM", [], ""),
-    (sti @UIColors, Just STRecord, "", [], ""),
-    (sti @UIThemeEntityOverride, Just STRecord, "", [], ""),
-    (sti @UIThemeEntityOverrides, Just STRecord, "", [], ""),
-    (sti @UpdatedMessage, Just STRecord, "", [], ""),
-    (sti @User, Just STRecord, "", [], ""),
-    (sti @UserContact, Just STRecord, "", [], ""),
-    (sti @UserContactLink, Just STRecord, "", [], ""),
-    (sti @UserContactRequest, Just STRecord, "", [], ""),
-    (sti @UserInfo, Just STRecord, "", [], ""),
-    (sti @UserProfileUpdateSummary, Just STRecord, "", [], ""),
-    (sti @UserPwdHash, Just STRecord, "", [], ""),
-    (sti @XFTPErrorType, Just STUnion, "", [], ""),
-    (sti @XFTPRcvFile, Just STRecord, "", [], ""),
-    (sti @XFTPSndFile, Just STRecord, "", [], "")
+  [ ((sti @(Chat 'CTDirect)) {typeName = "AChat"}, STRecord, "", [], ""),
+    ((sti @JSONChatInfo) {typeName = "ChatInfo"}, STUnion, "JCInfo", [], ""),
+    ((sti @JSONCIContent) {typeName = "CIContent"}, STUnion, "JCI", [], ""),
+    ((sti @JSONCIDeleted) {typeName = "CIDeleted"}, STUnion, "JCID", [], ""),
+    ((sti @JSONCIDirection) {typeName = "CIDirection"}, STUnion, "JCI", [], ""),
+    ((sti @JSONCIFileStatus) {typeName = "CIFileStatus"}, STUnion, "JCIFS", [], ""),
+    ((sti @JSONCIStatus) {typeName = "CIStatus"}, STUnion, "JCIS", [], ""),
+    (ciQuoteType, STRecord, "", [], ""),
+    (STI "AChatItem" [RecordTypeInfo "AChatItem" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatItem" (ti "ChatItem")]], STRecord, "", [], ""),
+    (STI "ACIReaction" [RecordTypeInfo "ACIReaction" [FieldInfo "chatInfo" (ti "ChatInfo"), FieldInfo "chatReaction" (ti "CIReaction")]], STRecord, "", [], ""),
+    -- (STI "JSONObject" [], STRecord, "", [], "Arbitrary JSON object."),
+    -- (STI "UTCTime" [], STRecord, "", [], "Timestampe in ISO8601 format as string."),
+    (STI "VersionRange" [RecordTypeInfo "VersionRange" [FieldInfo "minVersion" (ti TInt), FieldInfo "maxVersion" (ti TInt)]], STRecord, "", [], ""),
+    (sti @(ChatItem 'CTDirect 'MDSnd), STRecord, "", [], ""),
+    (sti @(CIFile 'MDSnd), STRecord, "", [], ""),
+    (sti @(CIMeta 'CTDirect 'MDSnd), STRecord, "", [], ""),
+    (sti @(CIReaction 'CTDirect 'MDSnd), STRecord, "", [], ""),
+    (sti @(ContactUserPref SimplePreference), STUnion, "CUP", [], ""),
+    (sti @(ContactUserPreference SimplePreference), STRecord, "", [], ""),
+    (sti @(CreatedConnLink 'CMContact), STRecord, "", [], ""),
+    (sti @AddressSettings, STRecord, "", [], ""),
+    (sti @AgentCryptoError, STUnion, "", [], ""),
+    (sti @AgentErrorType, STUnion, "", [], ""),
+    (sti @AutoAccept, STRecord, "", [], ""),
+    (sti @BlockingInfo, STRecord, "", [], ""),
+    (sti @BlockingReason, STEnum, "BR", [], ""),
+    (sti @BrokerErrorType, STUnion, "", [], ""),
+    (sti @BusinessChatInfo, STRecord, "", [], ""),
+    (sti @BusinessChatType, STEnum, "BC", [], ""),
+    (sti @ChatDeleteMode, STUnion, "CDM", [], ""),
+    (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], ""),
+    (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], ""),
+    (sti @ChatFeature, STEnum, "CF", [], ""),
+    (sti @ChatItemDeletion, STRecord, "", [], "Message deletion result."),
+    (sti @ChatRef, STRecord, "", [], "Used in API commands. Chat scope can only be passed with groups."),
+    (sti @ChatSettings, STRecord, "", [], ""),
+    (sti @ChatStats, STRecord, "", [], ""),
+    (sti @ChatType, STEnum, "CT", [], ""),
+    (sti @ChatWallpaper, STRecord, "", [], ""),
+    (sti @ChatWallpaperScale, STEnum, "CWS", [], ""),
+    (sti @CICallStatus, STEnum, "CISCall", [], ""),
+    (sti @CIDeleteMode, STEnum, "CIDM", [], ""),
+    (sti @CIForwardedFrom, STUnion, "CIFF", [], ""),
+    (sti @CIGroupInvitation, STRecord, "", [], ""),
+    (sti @CIGroupInvitationStatus, STEnum, "CIGIS", [], ""),
+    (sti @CIMention, STRecord, "", [], ""),
+    (sti @CIMentionMember, STRecord, "", [], ""),
+    (sti @CIReactionCount, STRecord, "", [], ""),
+    (sti @CITimed, STRecord, "", [], ""),
+    (sti @Color, STEnum, "", [], ""),
+    (sti @CommandError, STUnion, "", [], ""),
+    (sti @CommandErrorType, STUnion, "", [], ""),
+    (sti @ComposedMessage, STRecord, "", [], ""),
+    (sti @Connection, STRecord, "", [], ""),
+    (sti @ConnectionEntity, STUnion, "", [], ""),
+    (sti @ConnectionErrorType, STUnion, "", [], ""),
+    (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], ""),
+    (sti @ConnectionPlan, STUnion, "CP", [], ""),
+    (sti @ConnStatus, (STEnum' $ consSep "Conn" '-'), "", [], ""),
+    (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", ["ConnSndFile", "ConnRcvFile"], ""),
+    (sti @Contact, STRecord, "", [], ""),
+    (sti @ContactAddressPlan, STUnion, "CAP", [], ""),
+    (sti @ContactShortLinkData, STRecord, "", [], ""),
+    (sti @ContactStatus, STEnum, "CS", [], ""),
+    (sti @ContactUserPreferences, STRecord, "", [], ""),
+    (sti @CryptoFile, STRecord, "", [], ""),
+    (sti @CryptoFileArgs, STRecord, "", [], ""),
+    (sti @E2EInfo, STRecord, "", [], ""),
+    (sti @ErrorType, STUnion, "", [], ""),
+    (sti @FeatureAllowed, STEnum, "FA", [], ""),
+    (sti @FileDescr, STRecord, "", [], ""),
+    (sti @FileError, STUnion, "FileErr", [], ""),
+    (sti @FileErrorType, STUnion, "", [], ""),
+    (sti @FileInvitation, STRecord, "", [], ""),
+    (sti @FileProtocol, (STEnum' $ consLower "FP"), "", [], ""),
+    (sti @FileStatus, STEnum, "FS", [], ""),
+    (sti @FileTransferMeta, STRecord, "", [], ""),
+    (sti @Format, STUnion, "", [], ""),
+    (sti @FormattedText, STRecord, "", [], ""),
+    (sti @FullGroupPreferences, STRecord, "", [], ""),
+    (sti @FullPreferences, STRecord, "", [], ""),
+    (sti @GroupChatScope, STUnion1, "GCS", [], ""),
+    (sti @GroupChatScopeInfo, STUnion1, "GCSI", [], ""),
+    (sti @GroupFeature, STEnum, "GF", [], ""),
+    (sti @GroupFeatureEnabled, STEnum, "FE", [], ""),
+    (sti @GroupInfo, STRecord, "", [], ""),
+    (sti @GroupInfoSummary, STRecord, "", [], ""),
+    (sti @GroupLink, STRecord, "", [], ""),
+    (sti @GroupLinkPlan, STUnion, "GLP", [], ""),
+    (sti @GroupMember, STRecord, "", [], ""),
+    (sti @GroupMemberAdmission, STRecord, "", [], ""),
+    (sti @GroupMemberCategory, (STEnum' $ dropPfxSfx "GC" "Member"), "", [], ""),
+    (sti @GroupMemberRef, STRecord, "", [], ""),
+    (sti @GroupMemberRole, STEnum, "GR", [], ""),
+    (sti @GroupMemberSettings, STRecord, "", [], ""),
+    (sti @GroupMemberStatus, (STEnum' $ (\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], ""),
+    (sti @GroupPreference, STRecord, "", [], ""),
+    (sti @GroupPreferences, STRecord, "", [], ""),
+    (sti @GroupProfile, STRecord, "", [], ""),
+    (sti @GroupShortLinkData, STRecord, "", [], ""),
+    (sti @GroupSummary, STRecord, "", [], ""),
+    (sti @GroupSupportChat, STRecord, "", [], ""),
+    (sti @HandshakeError, STEnum, "", [], ""),
+    (sti @InlineFileMode, STEnum, "IFM", [], ""),
+    (sti @InvitationLinkPlan, STUnion, "ILP", [], ""),
+    (sti @InvitedBy, STUnion, "IB", [], ""),
+    (sti @LinkContent, STUnion, "LC", [], ""),
+    (sti @LinkPreview, STRecord, "", [], ""),
+    (sti @LocalProfile, STRecord, "", [], ""),
+    (sti @MemberCriteria, STEnum1, "MC", [], ""),
+    (sti @MsgChatLink, STUnion, "MCL", [], "Connection link sent in a message - only short links are allowed."),
+    (sti @MsgContent, STUnion, "MC", [], ""),
+    (sti @MsgDecryptError, STEnum, "MDE", [], ""),
+    (sti @MsgDirection, STEnum, "MD", [], ""),
+    (sti @MsgErrorType, STUnion, "", [], ""), -- check, may be correct?
+    (sti @MsgFilter, STEnum, "MF", [], ""),
+    (sti @MsgReaction, STUnion, "MR", [], ""),
+    (sti @MsgReceiptStatus, STEnum, "MR", [], ""),
+    (sti @NewUser, STRecord, "", [], ""),
+    (sti @NoteFolder, STRecord, "", [], ""),
+    (sti @PendingContactConnection, STRecord, "", [], ""),
+    (sti @PrefEnabled, STRecord, "", [], ""),
+    (sti @Preferences, STRecord, "", [], ""),
+    (sti @PreparedContact, STRecord, "", [], ""),
+    (sti @PreparedGroup, STRecord, "", [], ""),
+    (sti @Profile, STRecord, "", [], ""),
+    (sti @ProxyClientError, STUnion, "Proxy", [], ""),
+    (sti @ProxyError, STUnion, "", [], ""),
+    (sti @RatchetSyncState, STEnum, "RS", [], ""),
+    (sti @RCErrorType, STUnion, "RCE", [], ""),
+    (sti @RcvConnEvent, STUnion, "RCE", [], ""),
+    (sti @RcvDirectEvent, STUnion, "RDE", [], ""),
+    (sti @RcvFileDescr, STRecord, "", [], ""),
+    (sti @RcvFileInfo, STRecord, "", [], ""),
+    (sti @RcvFileStatus, STUnion, "RFS", [], ""),
+    (sti @RcvFileTransfer, STRecord, "", [], ""),
+    (sti @RcvGroupEvent, STUnion, "RGE", [], ""),
+    (sti @ReportReason, (STEnum' $ dropPfxSfx "RR" ""), "", ["RRUnknown"], ""),
+    (sti @RoleGroupPreference, STRecord, "", [], ""),
+    (sti @SecurityCode, STRecord, "", [], ""),
+    (sti @SimplePreference, STRecord, "", [], ""),
+    (sti @SimplexLinkType, STEnum, "XL", [], ""),
+    (sti @SMPAgentError, STUnion, "", [], ""),
+    (sti @SndCIStatusProgress, STEnum, "SSP", [], ""),
+    (sti @SndConnEvent, STUnion, "SCE", [], ""),
+    (sti @SndError, STUnion, "SndErr", [], ""),
+    (sti @SndFileTransfer, STRecord, "", [], ""),
+    (sti @SndGroupEvent, STUnion, "SGE", [], ""),
+    (sti @SrvError, STUnion, "SrvErr", [], ""),
+    (sti @StoreError, STUnion, "SE", [], ""),
+    (sti @SwitchPhase, STEnum, "SP", [], ""),
+    (sti @TimedMessagesGroupPreference, STRecord, "", [], ""),
+    (sti @TimedMessagesPreference, STRecord, "", [], ""),
+    (sti @TransportError, STUnion, "TE", [], ""),
+    (sti @UIColorMode, STEnum, "UCM", [], ""),
+    (sti @UIColors, STRecord, "", [], ""),
+    (sti @UIThemeEntityOverride, STRecord, "", [], ""),
+    (sti @UIThemeEntityOverrides, STRecord, "", [], ""),
+    (sti @UpdatedMessage, STRecord, "", [], ""),
+    (sti @User, STRecord, "", [], ""),
+    (sti @UserContact, STRecord, "", [], ""),
+    (sti @UserContactLink, STRecord, "", [], ""),
+    (sti @UserContactRequest, STRecord, "", [], ""),
+    (sti @UserInfo, STRecord, "", [], ""),
+    (sti @UserProfileUpdateSummary, STRecord, "", [], ""),
+    (sti @UserPwdHash, STRecord, "", [], ""),
+    (sti @XFTPErrorType, STUnion, "", [], ""),
+    (sti @XFTPRcvFile, STRecord, "", [], ""),
+    (sti @XFTPSndFile, STRecord, "", [], "")
 
-    -- (sti @DatabaseError, Just STUnion, "DB", [], ""),
-    -- (sti @ChatItemInfo, Just STRecord, "", [], ""),
-    -- (sti @ChatItemVersion, Just STRecord, "", [], ""),
-    -- (sti @ChatListQuery, Just STUnion, "CLQ", [], ""),
-    -- (sti @ChatName, Just STRecord, "", [], ""),
-    -- (sti @ChatPagination, Nothing, "CP", [], ""),
-    -- (sti @ConnectionStats, Just STRecord, "", [], ""),
-    -- (sti @Group, Just STRecord, "", [], ""),
-    -- (sti @GroupSndStatus, Just STUnion, "GSS", [], ""),
-    -- (sti @MemberDeliveryStatus, Just STRecord, "", [], ""),
-    -- (sti @MemberReaction, Just STRecord, "", [], ""),
-    -- (sti @MsgContentTag, Just (STEnum' $ dropPfxSfx "MC" '_'), "", ["MCUnknown_"], ""),
-    -- (sti @NavigationInfo, Just STRecord, "", [], ""),
-    -- (sti @PaginationByTime, Nothing, "", [], ""),
-    -- (sti @RcvQueueInfo, Just STRecord, "", [], ""),
-    -- (sti @RcvSwitchStatus, Just STEnum, "", [], ""), -- incorrect
-    -- (sti @SndQueueInfo, Just STRecord, "", [], ""),
-    -- (sti @SndSwitchStatus, Just STEnum, "", [], ""), -- incorrect
+    -- (sti @DatabaseError, STUnion, "DB", [], ""),
+    -- (sti @ChatItemInfo, STRecord, "", [], ""),
+    -- (sti @ChatItemVersion, STRecord, "", [], ""),
+    -- (sti @ChatListQuery, STUnion, "CLQ", [], ""),
+    -- (sti @ChatName, STRecord, "", [], ""),
+    -- (sti @ChatPagination, STRecord, "CP", [], ""),
+    -- (sti @ConnectionStats, STRecord, "", [], ""),
+    -- (sti @Group, STRecord, "", [], ""),
+    -- (sti @GroupSndStatus, STUnion, "GSS", [], ""),
+    -- (sti @MemberDeliveryStatus, STRecord, "", [], ""),
+    -- (sti @MemberReaction, STRecord, "", [], ""),
+    -- (sti @MsgContentTag, (STEnum' $ dropPfxSfx "MC" '_'), "", ["MCUnknown_"], ""),
+    -- (sti @NavigationInfo, STRecord, "", [], ""),
+    -- (sti @PaginationByTime, STRecord, "", [], ""),
+    -- (sti @RcvQueueInfo, STRecord, "", [], ""),
+    -- (sti @RcvSwitchStatus, STEnum, "", [], ""), -- incorrect
+    -- (sti @SendRef, STRecord, "", [], ""),
+    -- (sti @SndQueueInfo, STRecord, "", [], ""),
+    -- (sti @SndSwitchStatus, STEnum, "", [], ""), -- incorrect
  ]
 
 data SimplePreference = SimplePreference {allow :: FeatureAllowed} deriving (Generic)
@@ -410,7 +508,6 @@ deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
-deriving instance Generic SendRef
 deriving instance Generic SimplexLinkType
 deriving instance Generic SMPAgentError
 deriving instance Generic SndCIStatusProgress
@@ -456,5 +553,6 @@ deriving instance Generic XFTPSndFile
 -- deriving instance Generic PaginationByTime
 -- deriving instance Generic RcvQueueInfo
 -- deriving instance Generic RcvSwitchStatus
+-- deriving instance Generic SendRef
 -- deriving instance Generic SndQueueInfo
 -- deriving instance Generic SndSwitchStatus

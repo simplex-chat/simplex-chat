@@ -17,9 +17,35 @@
 module API.TypeInfo where
 
 import Data.Kind (Type)
+import Data.List.NonEmpty (NonEmpty)
 import Data.Typeable
 import GHC.Generics
 import Simplex.Messaging.Parsers (fstToLower)
+
+data APIType
+  = ATPrim PrimitiveType
+  | ATDef APITypeDef
+  | ATRef String -- to support recursive types
+  | ATOptional APIType
+  | ATArray {elemType :: APIType, nonEmpty :: Bool}
+  | ATMap {keyType :: PrimitiveType, valueType :: APIType}
+
+data APITypeDef = APITypeDef {typeName' :: String, typeDef :: APITypeDefinition}
+
+data APITypeDefinition
+  = ATDRecord (NonEmpty APIRecordField)
+  | ATDUnion (NonEmpty ATUnionMember)
+  | ATDEnum (NonEmpty String)
+
+data APIRecordField = APIRecordField {fieldName' :: String, typeInfo :: APIType}
+
+data ATUnionMember = ATUnionMember {memberTag :: String, memberFields :: [APIRecordField]}
+
+newtype PrimitiveType = PT String
+
+-- data PrimitiveType = PTBool | PTString StringFormat | PTInt | PTInt64 | PTWord32 | PTDouble
+
+data StringFormat = SFTimestamp | SFBase64 | SFSimpleXLink | SFServerAddr | SFHexColor
 
 pattern TBool :: String
 pattern TBool = "bool"
@@ -34,7 +60,7 @@ pattern TInt64 :: String
 pattern TInt64 = "int64"
 
 primitiveTypes :: [ConsName]
-primitiveTypes = [TBool, TString, TInt, "int64", "word32", "double"]
+primitiveTypes = [TBool, TString, TInt, TInt64, "word32", "double", "JSONObject", "UTCTime"]
 
 data SumTypeInfo = STI {typeName :: String, recordTypes :: [RecordTypeInfo]}
   deriving (Show)
@@ -62,10 +88,8 @@ type ConsName = String
 data FieldInfo = FieldInfo {fieldName :: String, typeInfo :: TypeInfo}
   deriving (Show)
 
-data SimpleType = ST {consName :: ConsName, typeParams :: [String]}
+data SimpleType = ST {tcName :: ConsName, tcParams :: [String]}
   deriving (Show)
-
-instance ConstructorName SimpleType where consName' ST {consName} = consName
 
 data TypeInfo
   = TIType SimpleType -- for simple types
@@ -144,13 +168,14 @@ toTypeInfo tr =
       "CustomData" -> ST "JSONObject" []
       "KeyMap" -> ST "JSONObject" []
       "CIQDirection" -> ST "CIDirection" []
+      "SendRef" -> ST "ChatRef" []
       t
         | t `elem` stringTypes -> ST TString []
         | t `elem` simplePrefTypes -> ST "SimplePreference" []
         | t `elem` groupPrefTypes -> ST "GroupPreference" []
         | t `elem` roleGroupPrefTypes -> ST "RoleGroupPreference" []
         | otherwise -> case words $ show tr' of
-            (consName : typeParams) -> ST {consName, typeParams}
+            (tcName : tcParams) -> ST {tcName, tcParams}
             _ -> ST "" []
     primitiveToLower st@(ST t ps) = let t' = fstToLower t in if t' `elem` primitiveTypes then ST t' ps else st
     stringTypes =

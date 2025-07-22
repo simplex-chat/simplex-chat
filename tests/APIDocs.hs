@@ -127,10 +127,10 @@ testTypesHaveDocs = do
     getTypeDocs :: [ConsName] -> (S.Set ConsName, [CTDoc]) -- (not found types and their parents, found types)
     getTypeDocs = foldl' (\acc@(s, ds) t -> if t `elem` primitiveTypes then acc else maybe (S.insert t s, ds) (\d -> (s, d : ds)) $ find ((t ==) . docTypeName) chatTypesDocs) (S.empty, [])
     types = \case
-      TIType t -> [consName' t]
+      TIType t -> [tcName t]
       TIOptional t -> types t
       TIArray {elemType} -> types elemType
-      TIMap {keyType, valueType} -> consName' keyType : types valueType
+      TIMap {keyType, valueType} -> tcName keyType : types valueType
 
 testCommandsHaveResponses :: IO ()
 testCommandsHaveResponses = do
@@ -161,6 +161,6 @@ testGenerateEventsMD = do
 testGenerateTypesMD :: IO ()
 testGenerateTypesMD = do
   typesDoc <- ifM (doesFileExist typesDocFile) (T.readFile typesDocFile) (pure "")
-  generateTypesDoc
+  T.writeFile typesDocFile typesDocText
   newTypesDoc <- T.readFile typesDocFile
   newTypesDoc `shouldBe` typesDoc

@@ -56,14 +56,12 @@ renderDocSyntax cmd = go Nothing
       Concat exs -> concatMap (go param) exs -- TODO validate that subexpressions of type Param have types Int or String
       Param p ->
         withParamType cmd param p $ \case
-          (TIType _, Just CTDoc {typeInfo = STI _ constrs, jsonEncoding = Just STEnum, consPrefix})
+          (TIType _, Just CTDoc {typeInfo = STI _ constrs, jsonEncoding = STEnum, consPrefix})
             | all (\RecordTypeInfo {fieldInfos} -> null fieldInfos) constrs ->
                 intercalate "|" $ map (\RecordTypeInfo {consName} -> dropPrefix consPrefix consName) constrs
           _ -> "<" <> paramName param p <> ">"
       Json p ->
-        withParamType cmd param p $ \case
-          (_, Just CTDoc {jsonEncoding = Nothing}) -> error $ consName' cmd <> ": " <> p <> " has no JSON encoding"
-          _ -> "<json(" <> paramName param p <> ")>"
+        withParamType cmd param p $ \_ -> "<json(" <> paramName param p <> ")>"
       OnOff p -> withBoolParam cmd param p "on|off"
       OnOffParam name p def_
         | null name -> error $ consName' cmd <> ": on/off parameter " <> paramName param p <> " has empty name"

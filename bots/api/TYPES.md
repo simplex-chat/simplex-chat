@@ -105,7 +105,6 @@ This file is generated automatically.
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
 - [InvitedBy](#invitedby)
-- [JSONObject](#jsonobject)
 - [LinkContent](#linkcontent)
 - [LinkPreview](#linkpreview)
 - [LocalProfile](#localprofile)
@@ -141,7 +140,6 @@ This file is generated automatically.
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
 - [SecurityCode](#securitycode)
-- [SendRef](#sendref)
 - [SimplePreference](#simplepreference)
 - [SimplexLinkType](#simplexlinktype)
 - [SndCIStatusProgress](#sndcistatusprogress)
@@ -159,7 +157,6 @@ This file is generated automatically.
 - [UIColors](#uicolors)
 - [UIThemeEntityOverride](#uithemeentityoverride)
 - [UIThemeEntityOverrides](#uithemeentityoverrides)
-- [UTCTime](#utctime)
 - [UpdatedMessage](#updatedmessage)
 - [User](#user)
 - [UserContact](#usercontact)
@@ -568,20 +565,20 @@ InvalidJSON:
 
 Deleted:
 - type: "deleted"
-- deletedTs: [UTCTime](#utctime)?
+- deletedTs: UTCTime?
 - chatType: [ChatType](#chattype)
 
 Blocked:
 - type: "blocked"
-- deletedTs: [UTCTime](#utctime)?
+- deletedTs: UTCTime?
 
 BlockedByAdmin:
 - type: "blockedByAdmin"
-- deletedTs: [UTCTime](#utctime)?
+- deletedTs: UTCTime?
 
 Moderated:
 - type: "moderated"
-- deletedTs: [UTCTime](#utctime)?
+- deletedTs: UTCTime?
 - byGroupMember: [GroupMember](#groupmember)
 
 
@@ -758,7 +755,7 @@ Group:
 
 **Record type**:
 - itemId: int64
-- itemTs: [UTCTime](#utctime)
+- itemTs: UTCTime
 - itemText: string
 - itemStatus: [CIStatus](#cistatus)
 - sentViaProxy: bool?
@@ -773,8 +770,8 @@ Group:
 - editable: bool
 - forwardedByMember: int64?
 - showGroupAsSender: bool
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
+- createdAt: UTCTime
+- updatedAt: UTCTime
 
 
 ---
@@ -785,7 +782,7 @@ Group:
 - chatDir: [CIDirection](#cidirection)?
 - itemId: int64?
 - sharedMsgId: string?
-- sentAt: [UTCTime](#utctime)
+- sentAt: UTCTime
 - content: [MsgContent](#msgcontent)
 - formattedText: [[FormattedText](#formattedtext)]?
 
@@ -797,7 +794,7 @@ Group:
 **Record type**:
 - chatDir: [CIDirection](#cidirection)
 - chatItem: [ChatItem](#chatitem)
-- sentAt: [UTCTime](#utctime)
+- sentAt: UTCTime
 - reaction: [MsgReaction](#msgreaction)
 
 
@@ -857,7 +854,7 @@ Invalid:
 
 **Record type**:
 - ttl: int
-- deleteAt: [UTCTime](#utctime)?
+- deleteAt: UTCTime?
 
 
 ---
@@ -1260,6 +1257,13 @@ Message deletion result.
 
 ## ChatRef
 
+Used in API commands. Chat scope can only be passed with groups.
+
+**Record type**:
+- chatType: [ChatType](#chattype)
+- chatId: int64
+- chatScope: [GroupChatScope](#groupchatscope)?
+
 
 ---
 
@@ -1444,7 +1448,7 @@ LARGE:
 - pqRcvEnabled: bool?
 - authErrCounter: int
 - quotaErrCounter: int
-- createdAt: [UTCTime](#utctime)
+- createdAt: UTCTime
 
 
 ---
@@ -1549,9 +1553,9 @@ Error:
 - chatSettings: [ChatSettings](#chatsettings)
 - userPreferences: [Preferences](#preferences)
 - mergedPreferences: [ContactUserPreferences](#contactuserpreferences)
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
-- chatTs: [UTCTime](#utctime)?
+- createdAt: UTCTime
+- updatedAt: UTCTime
+- chatTs: UTCTime?
 - preparedContact: [PreparedContact](#preparedcontact)?
 - contactRequestId: int64?
 - contactGroupMemberId: int64?
@@ -1560,7 +1564,7 @@ Error:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatDeleted: bool
-- customData: [JSONObject](#jsonobject)?
+- customData: JSONObject?
 
 
 ---
@@ -2003,15 +2007,15 @@ MemberSupport:
 - fullGroupPreferences: [FullGroupPreferences](#fullgrouppreferences)
 - membership: [GroupMember](#groupmember)
 - chatSettings: [ChatSettings](#chatsettings)
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
-- chatTs: [UTCTime](#utctime)?
-- userMemberProfileSentAt: [UTCTime](#utctime)?
+- createdAt: UTCTime
+- updatedAt: UTCTime
+- chatTs: UTCTime?
+- userMemberProfileSentAt: UTCTime?
 - preparedGroup: [PreparedGroup](#preparedgroup)?
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
-- customData: [JSONObject](#jsonobject)?
+- customData: JSONObject?
 - membersRequireAttention: int
 
 
@@ -2083,8 +2087,8 @@ Known:
 - memberContactProfileId: int64
 - activeConn: [Connection](#connection)?
 - memberChatVRange: [VersionRange](#versionrange)
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
+- createdAt: UTCTime
+- updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 
 
@@ -2219,11 +2223,11 @@ Known:
 ## GroupSupportChat
 
 **Record type**:
-- chatTs: [UTCTime](#utctime)
+- chatTs: UTCTime
 - unread: int64
 - memberAttention: int64
 - mentions: int64
-- lastMsgFromMemberTs: [UTCTime](#utctime)?
+- lastMsgFromMemberTs: UTCTime?
 
 
 ---
@@ -2287,13 +2291,6 @@ Unknown:
 
 ---
 
-## JSONObject
-
-Arbitrary JSON object.
-
-
----
-
 ## LinkContent
 
 **Discriminated union type**:
@@ -2311,7 +2308,7 @@ Video:
 Unknown:
 - type: "unknown"
 - tag: string
-- json: [JSONObject](#jsonobject)
+- json: JSONObject
 
 
 ---
@@ -2423,7 +2420,7 @@ Unknown:
 - type: "unknown"
 - tag: string
 - text: string
-- json: [JSONObject](#jsonobject)
+- json: JSONObject
 
 
 ---
@@ -2492,7 +2489,7 @@ Emoji:
 Unknown:
 - type: "unknown"
 - tag: string
-- json: [JSONObject](#jsonobject)
+- json: JSONObject
 
 
 ---
@@ -2520,9 +2517,9 @@ Unknown:
 **Record type**:
 - noteFolderId: int64
 - userId: int64
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
-- chatTs: [UTCTime](#utctime)
+- createdAt: UTCTime
+- updatedAt: UTCTime
+- chatTs: UTCTime
 - favorite: bool
 - unread: bool
 
@@ -2541,8 +2538,8 @@ Unknown:
 - customUserProfileId: int64?
 - connLinkInv: [CreatedConnLink](#createdconnlink)?
 - localAlias: string
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
+- createdAt: UTCTime
+- updatedAt: UTCTime
 
 
 ---
@@ -2944,12 +2941,7 @@ A_QUEUE:
 
 **Record type**:
 - securityCode: string
-- verifiedAt: [UTCTime](#utctime)
-
-
----
-
-## SendRef
+- verifiedAt: UTCTime
 
 
 ---
@@ -3323,7 +3315,7 @@ DBBusyError:
 BadChatItem:
 - type: "badChatItem"
 - itemId: int64
-- itemTs: [UTCTime](#utctime)?
+- itemTs: UTCTime?
 
 ChatItemNotFound:
 - type: "chatItemNotFound"
@@ -3521,13 +3513,6 @@ Handshake:
 
 ---
 
-## UTCTime
-
-Timestampe in ISO8601 format as string.
-
-
----
-
 ## UpdatedMessage
 
 **Record type**:
@@ -3552,7 +3537,7 @@ Timestampe in ISO8601 format as string.
 - showNtfs: bool
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
-- userMemberProfileUpdatedAt: [UTCTime](#utctime)?
+- userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 
 
@@ -3591,8 +3576,8 @@ Timestampe in ISO8601 format as string.
 - localDisplayName: string
 - profileId: int64
 - profile: [Profile](#profile)
-- createdAt: [UTCTime](#utctime)
-- updatedAt: [UTCTime](#utctime)
+- createdAt: UTCTime
+- updatedAt: UTCTime
 - xContactId: string?
 - pqSupport: bool
 - welcomeSharedMsgId: string?

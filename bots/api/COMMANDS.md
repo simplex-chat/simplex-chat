@@ -211,7 +211,7 @@ Commands to send, update, delete, moderate messages and set message reactions
 Send messages.
 
 **Parameters**:
-- sendRef: [SendRef](./TYPES.md#sendref)
+- sendRef: [ChatRef](./TYPES.md#chatref)
 - liveMessage: bool
 - ttl: int?
 - composedMessages: [[ComposedMessage](./TYPES.md#composedmessage)]
