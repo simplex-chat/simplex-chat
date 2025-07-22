@@ -2474,4 +2474,13 @@
     <string name="short_descr">自我介绍：</string>
     <string name="bio_too_large">自我介绍过大</string>
     <string name="group_descr_too_large">描述过大</string>
+    <string name="chat_banner_accept_contact_request">接受联络请求</string>
+    <string name="chat_banner_business_connection">企业连接</string>
+    <string name="chat_banner_group">群</string>
+    <string name="chat_banner_connect_to_chat">轻按连接进行聊天</string>
+    <string name="chat_banner_send_request_to_connect">轻按连接来发送请求</string>
+    <string name="chat_banner_join_group">轻按加入群</string>
+    <string name="chat_banner_your_business_contact">你的企业联系人</string>
+    <string name="chat_banner_your_contact">你的联系人</string>
+    <string name="chat_banner_your_group">你的群</string>
 </resources>
