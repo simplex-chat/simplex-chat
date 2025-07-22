@@ -164,6 +164,55 @@ renderJSSyntax cmd = T.unpack . T.replace "' + '" "" . T.pack . go Nothing True
       | c `elem` s = concatMap (\c' -> if c' == c then ['\\', c] else [c]) s
       | otherwise = s
 
+renderPythonSyntax :: RecordTypeInfo -> Expr -> String
+renderPythonSyntax cmd = T.unpack . concatConstStrings . T.pack . go Nothing True
+  where
+    concatConstStrings txt = head secs_ <> go' (tail secs_)
+      where
+        secs_ = T.splitOn toRemove txt
+        toRemove = T.pack "\" + \""
+        specialCase = T.pack "\".join"
+        go' [] = T.empty
+        go' (sec:secs) =
+          if T.isPrefixOf specialCase (T.drop 1 sec)
+            then toRemove <> sec <> go' secs
+            else sec <> go' secs
+    go param top = \case
+      Assign p ex -> paramName param p <> " = " <> go param top ex
+      Func n p ex -> n <> " = lambda " <> p <> ": " <> go (Just p) top ex
+      Call n p -> n <> "(" <> paramName param p <> ")"
+      Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
+      Param p -> paramName param p
+      Json p -> "json.dumps(" <> paramName param p <> ")"
+      OnOff p -> open <> "\"on\" if " <> paramName param p <> " else \"off\"" <> close
+      OnOffParam name p def_ -> case def_ of
+        Nothing ->
+          withOptBoolParam cmd param p $ \optional ->
+            if optional
+              then "(" <> res <> " if " <> n <> " is not None else \"\")"
+              else res
+          where
+            n = paramName param p
+            res = "\" " <> name <> "=\" + (\"on\" if " <> n <> " else \"off\")"
+        Just def
+          | def ->       open <> "\" " <> name <> "=off\" if not " <> n <> "else \"\"" <> close
+          | otherwise -> open <> "\" " <> name <> "=on\" if " <> n <> " else \"\"" <> close
+          where
+            n = paramName param p
+      ChatRefExpr p -> let n = paramName param p in open <> "f\"@{" <> n <> ".contactId}\" if " <> n <> ".contactId else f\"#{" <> n <> ".groupId}\" + (\"(_support\" + (f\":{" <> n <> ".scope.groupMemberId}\" if " <> n <> ".scope.groupMemberId else \"\") + \")\" if " <> n <> ".scope else \"\")" <> close
+      Join c p -> let n = paramName param p in "\"" <> [c] <> "\".join(" <> n <> ")"
+      Optional exN exJ p -> open <> go (Just p) False exJ <> " if " <> n <> " else " <> nothing <> close
+        where
+          n = paramName param p
+          nothing = if exN == "" then "\"\"" else go param False exN
+      Const s -> "\"" <> escape '\'' s <> "\""
+      where
+        open = if top then "" else "("
+        close = if top then "" else ")"
+    escape c s
+      | c `elem` s = concatMap (\c' -> if c' == c then ['\\', c] else [c]) s
+      | otherwise = s
+
 paramName :: Maybe ExprParam -> ExprParam -> String
 paramName param_ p = case param_ of
   Just param | p == "$0" -> param

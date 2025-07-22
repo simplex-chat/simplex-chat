@@ -80,6 +80,10 @@ Create bot address.
 '/_address ' + userId // JavaScript
 ```
 
+```python
+"/_address " + userId  # Python
+```
+
 **Response**:
 
 UserContactLinkCreated: User contact address created.
@@ -107,6 +111,10 @@ Delete bot address.
 '/_delete_address ' + userId // JavaScript
 ```
 
+```python
+"/_delete_address " + userId  # Python
+```
+
 **Response**:
 
 UserContactLinkDeleted: User contact address deleted.
@@ -131,6 +139,10 @@ Get bot address and settings.
 
 ```javascript
 '/_show_address ' + userId // JavaScript
+```
+
+```python
+"/_show_address " + userId  # Python
 ```
 
 **Response**:
@@ -161,6 +173,10 @@ Add address to bot profile.
 '/_profile_address ' + userId + ' ' + (enable ? 'on' : 'off') // JavaScript
 ```
 
+```python
+"/_profile_address " + userId + " " + ("on" if enable else "off")  # Python
+```
+
 **Response**:
 
 UserProfileUpdated: User profile updated.
@@ -189,6 +205,10 @@ Set bot address settings.
 
 ```javascript
 '/_address_settings ' + userId + ' ' + JSON.stringify(settings) // JavaScript
+```
+
+```python
+"/_address_settings " + userId + " " + json.dumps(settings)  # Python
 ```
 
 **Response**:
@@ -228,6 +248,11 @@ let chat = (r) => r.contactId ? `@${r.contactId}` : `#${r.groupId}` + (r.scope ?
 '/_send ' + chat(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages)
 ```
 
+```python
+chat = lambda r: f"@{r.contactId}" if r.contactId else f"#{r.groupId}" + ("(_support" + (f":{r.scope.groupMemberId}" if r.scope.groupMemberId else "") + ")" if r.scope else "")
+"/_send " + chat(sendRef) + (" live=on" if liveMessage else "") + (" ttl=" + ttl if ttl else "") + " json " + json.dumps(composedMessages)
+```
+
 **Response**:
 
 NewChatItems: New messages.
@@ -256,6 +281,10 @@ Update message.
 
 ```javascript
 '/_update item ' + ref(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
+```
+
+```python
+"/_update item " + ref(chatRef) + " " + chatItemId + (" live=on" if liveMessage else "") + " json " + json.dumps(updatedMessage)  # Python
 ```
 
 **Responses**:
@@ -292,6 +321,10 @@ Delete message.
 '/_delete item ' + ref(chatRef) + ' ' + chatItemIds.join(',') + ' ' + deleteMode // JavaScript
 ```
 
+```python
+"/_delete item " + ref(chatRef) + " " + ",".join(chatItemIds) + " " + deleteMode  # Python
+```
+
 **Response**:
 
 ChatItemsDeleted: Messages deleted.
@@ -320,6 +353,10 @@ Moderate message. Requires Moderator role (and higher than message author's).
 
 ```javascript
 '/_delete member item #' + groupId + ' ' + chatItemIds.join(',') // JavaScript
+```
+
+```python
+"/_delete member item #" + groupId + " " + ",".join(chatItemIds)  # Python
 ```
 
 **Response**:
@@ -352,6 +389,10 @@ Add/remove message reaction.
 
 ```javascript
 '/_reaction ' + ref(chatRef) + ' ' + chatItemId + ' ' + (add ? 'on' : 'off') + ' ' + JSON.stringify(reaction) // JavaScript
+```
+
+```python
+"/_reaction " + ref(chatRef) + " " + chatItemId + " " + ("on" if add else "off") + " " + json.dumps(reaction)  # Python
 ```
 
 **Response**:
@@ -391,6 +432,10 @@ Receive file.
 '/freceive ' + fileId + (userApprovedRelays ? ' approved_relays=on' : '') + (typeof storeEncrypted == 'boolean' ? ' encrypt=' + (storeEncrypted ? 'on' : 'off') : '') + (typeof fileInline == 'boolean' ? ' inline=' + (fileInline ? 'on' : 'off') : '') + (filePath ? ' ' + filePath : '') // JavaScript
 ```
 
+```python
+"/freceive " + fileId + (" approved_relays=on" if userApprovedRelays else "") + (" encrypt=" + ("on" if storeEncrypted else "off") if storeEncrypted is not None else "") + (" inline=" + ("on" if fileInline else "off") if fileInline is not None else "") + (" " + filePath if filePath else "")  # Python
+```
+
 **Responses**:
 
 RcvFileAccepted: File accepted to be received.
@@ -421,6 +466,10 @@ Cancel file.
 
 ```javascript
 '/fcancel ' + fileId // JavaScript
+```
+
+```python
+"/fcancel " + fileId  # Python
 ```
 
 **Responses**:
@@ -465,6 +514,10 @@ Add contact to group. Requires bot to have Admin role.
 '/_add #' + groupId + ' ' + contactId + ' ' + memberRole // JavaScript
 ```
 
+```python
+"/_add #" + groupId + " " + contactId + " " + memberRole  # Python
+```
+
 **Response**:
 
 SentGroupInvitation: Group invitation sent.
@@ -493,6 +546,10 @@ Join group.
 
 ```javascript
 '/_join #' + groupId // JavaScript
+```
+
+```python
+"/_join #" + groupId  # Python
 ```
 
 **Response**:
@@ -525,6 +582,10 @@ Accept group member. Requires Admin role.
 '/_accept member #' + groupId + ' ' + groupMemberId + ' ' + memberRole // JavaScript
 ```
 
+```python
+"/_accept member #" + groupId + " " + groupMemberId + " " + memberRole  # Python
+```
+
 **Response**:
 
 MemberAccepted: Member accepted to group.
@@ -553,6 +614,10 @@ Set members role. Requires Admin role.
 
 ```javascript
 '/_member role #' + groupId + ' ' + groupMemberIds.join(',') + ' ' + memberRole // JavaScript
+```
+
+```python
+"/_member role #" + groupId + " " + ",".join(groupMemberIds) + " " + memberRole  # Python
 ```
 
 **Response**:
@@ -586,6 +651,10 @@ Block members. Requires Moderator role.
 '/_block #' + groupId + ' ' + groupMemberIds.join(',') + ' blocked=' + (blocked ? 'on' : 'off') // JavaScript
 ```
 
+```python
+"/_block #" + groupId + " " + ",".join(groupMemberIds) + " blocked=" + ("on" if blocked else "off")  # Python
+```
+
 **Response**:
 
 MembersBlockedForAllUser: Members blocked for all by admin.
@@ -617,6 +686,10 @@ Remove members. Requires Admin role.
 '/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') // JavaScript
 ```
 
+```python
+"/_remove #" + groupId + " " + ",".join(groupMemberIds) + (" messages=on" if withMessages else "")  # Python
+```
+
 **Response**:
 
 UserDeletedMembers: Members deleted.
@@ -644,6 +717,10 @@ Leave group.
 
 ```javascript
 '/_leave #' + groupId // JavaScript
+```
+
+```python
+"/_leave #" + groupId  # Python
 ```
 
 **Response**:
@@ -679,6 +756,10 @@ Create group link.
 '/_create link #' + groupId + ' ' + memberRole // JavaScript
 ```
 
+```python
+"/_create link #" + groupId + " " + memberRole  # Python
+```
+
 **Response**:
 
 GroupLinkCreated: Group link created.
@@ -706,6 +787,10 @@ Set member role for group link.
 
 ```javascript
 '/_set link role #' + groupId + ' ' + memberRole // JavaScript
+```
+
+```python
+"/_set link role #" + groupId + " " + memberRole  # Python
 ```
 
 **Response**:
@@ -736,6 +821,10 @@ Delete group link.
 '/_delete link #' + groupId // JavaScript
 ```
 
+```python
+"/_delete link #" + groupId  # Python
+```
+
 **Response**:
 
 GroupLinkDeleted: Group link deleted.
@@ -761,6 +850,10 @@ Get group link.
 
 ```javascript
 '/_get link #' + groupId // JavaScript
+```
+
+```python
+"/_get link #" + groupId  # Python
 ```
 
 **Response**:
@@ -797,6 +890,10 @@ Create 1-time invitation link.
 '/_connect ' + userId + (incognito ? ' incognito=on' : '') // JavaScript
 ```
 
+```python
+"/_connect " + userId + (" incognito=on" if incognito else "")  # Python
+```
+
 **Response**:
 
 Invitation: One-time invitation.
@@ -824,6 +921,10 @@ Determine SimpleX link type and if the bot is already connected via this link.
 
 ```javascript
 '/_connect plan ' + userId + ' ' + connectionLink // JavaScript
+```
+
+```python
+"/_connect plan " + userId + " " + connectionLink  # Python
 ```
 
 **Response**:
@@ -854,6 +955,10 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 
 ```javascript
 '/_connect ' + userId + ' ' + link(connLink_) // JavaScript
+```
+
+```python
+"/_connect " + userId + " " + link(connLink_)  # Python
 ```
 
 **Responses**:
@@ -896,6 +1001,10 @@ Accept contact request.
 '/_accept ' + contactReqId // JavaScript
 ```
 
+```python
+"/_accept " + contactReqId  # Python
+```
+
 **Response**:
 
 AcceptingContactRequest: Contact request accepted.
@@ -921,6 +1030,10 @@ Reject contact request. The user who sent the request is **not notified**.
 
 ```javascript
 '/_reject ' + contactReqId // JavaScript
+```
+
+```python
+"/_reject " + contactReqId  # Python
 ```
 
 **Response**:
@@ -956,6 +1069,10 @@ Get contacts.
 '/_contacts ' + userId // JavaScript
 ```
 
+```python
+"/_contacts " + userId  # Python
+```
+
 **Response**:
 
 ContactsList: Contacts.
@@ -985,6 +1102,10 @@ Get groups.
 '/_groups ' + userId + (contactId_ ? ' @' + contactId_ : '') + (search ? ' ' + search : '') // JavaScript
 ```
 
+```python
+"/_groups " + userId + (" @" + contactId_ if contactId_ else "") + (" " + search if search else "")  # Python
+```
+
 **Response**:
 
 GroupsList: Groups.
@@ -1011,6 +1132,10 @@ Delete chat.
 
 ```javascript
 '/_delete ' + ref(chatRef) + ' ' + chatDeleteMode // JavaScript
+```
+
+```python
+"/_delete " + ref(chatRef) + " " + chatDeleteMode  # Python
 ```
 
 **Responses**:
@@ -1075,6 +1200,10 @@ Create new user profile
 '/_create user ' + JSON.stringify(newUser) // JavaScript
 ```
 
+```python
+"/_create user " + json.dumps(newUser)  # Python
+```
+
 **Response**:
 
 ActiveUser: Active user profile.
@@ -1122,6 +1251,10 @@ Set active user profile
 '/_user ' + userId + (viewPwd ? ' ' + JSON.stringify(viewPwd) : '') // JavaScript
 ```
 
+```python
+"/_user " + userId + (" " + json.dumps(viewPwd) if viewPwd else "")  # Python
+```
+
 **Response**:
 
 ActiveUser: Active user profile.
@@ -1150,6 +1283,10 @@ Delete user profile.
 '/_delete user ' + userId + ' del_smp=' + (delSMPQueues ? 'on' : 'off') + (viewPwd ? ' ' + JSON.stringify(viewPwd) : '') // JavaScript
 ```
 
+```python
+"/_delete user " + userId + " del_smp=" + ("on" if delSMPQueues else "off") + (" " + json.dumps(viewPwd) if viewPwd else "")  # Python
+```
+
 **Response**:
 
 CmdOk: Ok.
@@ -1175,6 +1312,10 @@ Update user profile.
 
 ```javascript
 '/_profile ' + userId + ' ' + JSON.stringify(profile) // JavaScript
+```
+
+```python
+"/_profile " + userId + " " + json.dumps(profile)  # Python
 ```
 
 **Response**:

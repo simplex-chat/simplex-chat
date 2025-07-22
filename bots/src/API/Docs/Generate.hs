@@ -50,6 +50,7 @@ generateCommandsDoc =
           hPutStrLn h $ "\n**Syntax**:\n"
           hPutStrLn h $ "```\n" <> intercalate "\n" (map (renderDocSyntax cmd) syntax) <> "\n```\n"
           unless (all isConst syntax) $ hPutStrLn h $ "```javascript\n" <> intercalate "\n" (map (renderJSSyntax cmd) syntax) <> (if length syntax == 1 then " // JavaScript" else "") <> "\n```"
+                                               <> "\n\n```python\n" <> intercalate "\n" (map (renderPythonSyntax cmd) syntax) <> (if length syntax == 1 then "  # Python" else "") <> "\n```"
         hPutStrLn h $ if length responses > 1 then "\n**Responses**:" else "\n**Response**:"
         forM_ responses $ \CRDoc {consName = name, responseType = RecordTypeInfo {fieldInfos}, responseDescr} -> do
           let respType = dropPrefix "CR" name
