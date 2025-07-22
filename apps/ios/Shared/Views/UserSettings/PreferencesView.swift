@@ -19,7 +19,7 @@ struct PreferencesView: View {
     var body: some View {
         VStack {
             List {
-                timedMessagesFeatureSection($preferences.timedMessages.allow)
+                timedMessagesFeatureSection($preferences.timedMessages.allow, $preferences.timedMessages.ttl)
                 featureSection(.fullDelete, $preferences.fullDelete.allow)
                 featureSection(.reactions, $preferences.reactions.allow)
                 featureSection(.voice, $preferences.voice.allow)
@@ -60,7 +60,7 @@ struct PreferencesView: View {
 
     }
 
-    private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>) -> some View {
+    private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>, _ ttl: Binding<Int?>) -> some View {
         Section {
             let allow = Binding(
                 get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
@@ -68,6 +68,14 @@ struct PreferencesView: View {
             )
             settingsRow(ChatFeature.timedMessages.icon, color: theme.colors.secondary) {
                 Toggle(ChatFeature.timedMessages.text, isOn: allow)
+            }
+            if allow.wrappedValue {
+                Picker("Delete after", selection: ttl) {
+                    ForEach(TimedMessagesPreference.profileLevelTTLValues, id: \.self) { value in
+                        Text(timeText(value)).tag(value)
+                    }
+                }
+                .frame(height: 36)
             }
         }
         footer: { featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary) }
