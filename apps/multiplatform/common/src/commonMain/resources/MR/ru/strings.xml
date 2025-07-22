@@ -1079,7 +1079,7 @@
     <string name="downgrade_and_open_chat">Откатить версию и открыть чат</string>
     <string name="database_downgrade_warning">Предупреждение: Вы можете потерять какие то данные!</string>
     <string name="developer_options">ID базы данных и опция Отдельные транспортные сессии.</string>
-    <string name="show_developer_options">Показать опции для девелоперов</string>
+    <string name="show_developer_options">Показать опции для разработчиков</string>
     <string name="delete_chat_profile">Удалить профиль чата</string>
     <string name="delete_profile">Удалить профиль</string>
     <string name="profile_password">Пароль профиля</string>
@@ -1153,7 +1153,7 @@
     <string name="stop_snd_file__title">Остановить отправку файла\?</string>
     <string name="alert_title_msg_bad_id">Ошибка ID сообщения</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Это может произойти, когда Вы или Ваш контакт используете старую копию базы данных.</string>
-    <string name="alert_text_fragment_please_report_to_developers">Пожалуйста, сообщите об этой ошибке девелоперам.</string>
+    <string name="alert_text_fragment_please_report_to_developers">Пожалуйста, сообщите об этой ошибке разработчикам.</string>
     <string name="alert_text_msg_bad_id">Неправильный ID предыдущего сообщения (меньше или равен предыдущему).
 \nЭто может произойти из-за ошибки программы, или когда соединение компроментировано.</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d сообщений пропущено.</string>
@@ -1863,7 +1863,7 @@
     <string name="chat_list_always_visible">Показать список чатов в новом окне</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Приложение будет запрашивать подтверждение загрузки с неизвестных серверов (за исключением .onion адресов или когда SOCKS-прокси включен).</string>
     <string name="network_smp_proxy_mode_unprotected">Незащищённый</string>
-    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Тора или ВПН, Ваш IP адрес будет доступен серверам файлов.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor или VPN, Ваш IP адрес будет доступен серверам файлов.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP адрес защищен, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="theme_black">Черная</string>
     <string name="chat_theme_apply_to_dark_mode">Тёмный режим</string>
@@ -1896,8 +1896,7 @@
     <string name="chat_theme_reset_to_app_theme">Сбросить на тему приложения</string>
     <string name="chat_theme_reset_to_user_theme">Сбросить на тему пользователя</string>
     <string name="file_not_approved_title">Неизвестные серверы!</string>
-    <string name="file_not_approved_descr">Без Тора или ВПН, Ваш IP адрес будет доступен этим серверам файлов:
-\n%1$s.</string>
+    <string name="file_not_approved_descr">Без Tor или VPN, Ваш IP адрес будет доступен этим серверам файлов: \n%1$s.</string>
     <string name="network_smp_proxy_mode_never_description">Не использовать конфиденциальную маршрутизацию.</string>
     <string name="network_smp_proxy_mode_never">Никогда</string>
     <string name="network_smp_proxy_mode_unknown">Неизвестные серверы</string>
