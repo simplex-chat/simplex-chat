@@ -61,70 +61,73 @@ chatTypesDocs' = sortOn docTypeName' $! snd $! mapAccumL toCTDoc (S.empty, M.emp
        in case td_ of
             Just td -> (tds', CTDoc' td typeDescr)
             Nothing -> error $ "Recursive type: "  <> typeName
-    toTypeDef :: (S.Set String, M.Map String APITypeDef) -> (SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Text) -> ((S.Set String, M.Map String APITypeDef), Maybe APITypeDef)
-    toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, consPrefix, hideConstrs, _) =
-      let constrs = filter ((`notElem` hideConstrs) . consName') allConstrs
-       in case M.lookup typeName typeDefs of
-            Just td -> (acc, Just td)
-            Nothing
-              | S.member typeName visited -> (acc, Nothing)
-              | otherwise -> case jsonEncoding of
-                  STRecord -> case constrs of
-                    [RecordTypeInfo {fieldInfos}] ->
-                      let fields = fromMaybe (error $ "Record type without fields: " <> typeName) $ L.nonEmpty fieldInfos
-                          ((visited', typeDefs'), fields') = mapAccumL toAPIField (S.insert typeName visited, typeDefs) fields
-                          td = APITypeDef typeName $ ATDRecord fields'
-                       in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
-                    _ -> error $ "Record type with " <> show (length constrs) <> " constructors: " <> typeName
-                  STUnion -> if length constrs > 1 then toUnionType constrs else unionError constrs
-                  STUnion1 -> if length constrs == 1 then toUnionType constrs else unionError constrs
-                  STEnum -> if length constrs > 1 then toEnumType constrs else enumError constrs
-                  STEnum1 -> if length constrs == 1 then toEnumType constrs else enumError constrs
-                  STEnum' f
-                    | length constrs <= 1 -> enumError constrs
-                    | null consPrefix -> toEnumType_ f constrs
-                    | otherwise -> error $ "Enum type with custom encoding and prefix: " <> typeName
+
+toTypeDef :: (S.Set String, M.Map String APITypeDef) -> (SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Text) -> ((S.Set String, M.Map String APITypeDef), Maybe APITypeDef)
+toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, consPrefix, hideConstrs, _) =
+  let constrs = filter ((`notElem` hideConstrs) . consName') allConstrs
+    in case M.lookup typeName typeDefs of
+        Just td -> (acc, Just td)
+        Nothing
+          | S.member typeName visited -> (acc, Nothing)
+          | otherwise -> case jsonEncoding of
+              STRecord -> case constrs of
+                [RecordTypeInfo {fieldInfos}] ->
+                  let fields = fromMaybe (error $ "Record type without fields: " <> typeName) $ L.nonEmpty fieldInfos
+                      ((visited', typeDefs'), fields') = mapAccumL (toAPIField typeName) (S.insert typeName visited, typeDefs) fields
+                      td = APITypeDef typeName $ ATDRecord fields'
+                    in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
+                _ -> error $ "Record type with " <> show (length constrs) <> " constructors: " <> typeName
+              STUnion -> if length constrs > 1 then toUnionType constrs else unionError constrs
+              STUnion1 -> if length constrs == 1 then toUnionType constrs else unionError constrs
+              STEnum -> if length constrs > 1 then toEnumType constrs else enumError constrs
+              STEnum1 -> if length constrs == 1 then toEnumType constrs else enumError constrs
+              STEnum' f
+                | length constrs <= 1 -> enumError constrs
+                | null consPrefix -> toEnumType_ f constrs
+                | otherwise -> error $ "Enum type with custom encoding and prefix: " <> typeName
+  where
+    toUnionType constrs =
+      let ((visited', typeDefs'), members) = mapAccumL toUnionMember (S.insert typeName visited, typeDefs) $ fromMaybe (unionError constrs) $ L.nonEmpty constrs
+          td = APITypeDef typeName $ ATDUnion members
+        in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
+    toUnionMember tds RecordTypeInfo {consName, fieldInfos} =
+      let memberTag = normalizeConsName consPrefix consName
+        in second (ATUnionMember memberTag) $ mapAccumL (toAPIField typeName) tds fieldInfos
+    unionError constrs = error $ "Union type with " <> show (length constrs) <> " constructor(s): " <> typeName
+    toEnumType = toEnumType_ $ normalizeConsName consPrefix
+    toEnumType_ f constrs =
+      let members = L.map toEnumMember $ fromMaybe (enumError constrs) $ L.nonEmpty constrs
+          td = APITypeDef typeName $ ATDEnum members
+        in ((S.insert typeName visited, M.insert typeName td typeDefs), Just td)
       where
-        toUnionType constrs =
-          let ((visited', typeDefs'), members) = mapAccumL toUnionMember (S.insert typeName visited, typeDefs) $ fromMaybe (unionError constrs) $ L.nonEmpty constrs
-              td = APITypeDef typeName $ ATDUnion members
-           in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
-        toUnionMember tds RecordTypeInfo {consName, fieldInfos} =
-          let memberTag = normalizeConsName consPrefix consName
-           in second (ATUnionMember memberTag) $ mapAccumL toAPIField tds fieldInfos
-        unionError constrs = error $ "Union type with " <> show (length constrs) <> " constructor(s): " <> typeName
-        toEnumType = toEnumType_ $ normalizeConsName consPrefix
-        toEnumType_ f constrs =
-          let members = L.map toEnumMember $ fromMaybe (enumError constrs) $ L.nonEmpty constrs
-              td = APITypeDef typeName $ ATDEnum members
-           in ((S.insert typeName visited, M.insert typeName td typeDefs), Just td)
-          where
-            toEnumMember RecordTypeInfo {consName, fieldInfos} = case fieldInfos of
-              [] -> f consName
-              _ -> error $ "Enum type with fields in constructor: " <> typeName <> ", " <> consName
-        enumError constrs = error $ "Enum type with " <> show (length constrs) <> " constructor(s): " <> typeName
-        toAPIField :: (S.Set String, M.Map String APITypeDef) -> FieldInfo -> ((S.Set String, M.Map String APITypeDef), APIRecordField)
-        toAPIField tds (FieldInfo name typeInfo) = second (APIRecordField name) $ toAPIType tds typeInfo
-        toAPIType :: (S.Set String, M.Map String APITypeDef) -> TypeInfo -> ((S.Set String, M.Map String APITypeDef), APIType)
-        toAPIType tds = \case
-          TIType (ST name _) -> apiTypeForName tds name
-          TIOptional tInfo -> second ATOptional $ toAPIType tds tInfo
-          TIArray {elemType, nonEmpty} -> second (`ATArray`nonEmpty) $ toAPIType tds elemType
-          TIMap {keyType = ST name _, valueType}
-            | name `elem` primitiveTypes -> second (ATMap (PT name)) $ toAPIType tds valueType
-            | otherwise -> error $ "Non-primitive key type in " <> typeName
-        apiTypeForName :: (S.Set String, M.Map String APITypeDef) -> String -> ((S.Set String, M.Map String APITypeDef), APIType)
-        apiTypeForName tds name
-          | name `elem` primitiveTypes = (tds, ATPrim $ PT name)
-          | otherwise = case M.lookup name $ snd tds of
-              Just td -> (tds, ATDef td)
-              Nothing -> case find (\(STI name' _, _, _, _, _) -> name == name') chatTypesDocsData of
-                Just sumTypeInfo ->
-                  let (tds', td_) = toTypeDef tds sumTypeInfo -- recursion to outer function, loops are resolved via type defs map lookup
-                   in case td_ of
-                        Just td -> (tds', ATDef td)
-                        Nothing -> (tds', ATRef name)
-                Nothing -> error $ "Undefined type: " <> name
+        toEnumMember RecordTypeInfo {consName, fieldInfos} = case fieldInfos of
+          [] -> f consName
+          _ -> error $ "Enum type with fields in constructor: " <> typeName <> ", " <> consName
+    enumError constrs = error $ "Enum type with " <> show (length constrs) <> " constructor(s): " <> typeName
+
+toAPIField :: ConsName -> (S.Set String, M.Map String APITypeDef) -> FieldInfo -> ((S.Set String, M.Map String APITypeDef), APIRecordField)
+toAPIField typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField fieldName) $ toAPIType typeInfo
+  where
+    toAPIType :: TypeInfo -> ((S.Set String, M.Map String APITypeDef), APIType)
+    toAPIType = \case
+      TIType (ST name _) -> apiTypeForName name
+      TIOptional tInfo -> second ATOptional $ toAPIType tInfo
+      TIArray {elemType, nonEmpty} -> second (`ATArray`nonEmpty) $ toAPIType elemType
+      TIMap {keyType = ST name _, valueType}
+        | name `elem` primitiveTypes -> second (ATMap (PT name)) $ toAPIType valueType
+        | otherwise -> error $ "Non-primitive key type in " <> typeName <> ", " <> fieldName
+    apiTypeForName :: String -> ((S.Set String, M.Map String APITypeDef), APIType)
+    apiTypeForName name
+      | name `elem` primitiveTypes = (tds, ATPrim $ PT name)
+      | otherwise = case M.lookup name $ snd tds of
+          Just td -> (tds, ATDef td)
+          Nothing -> case find (\(STI name' _, _, _, _, _) -> name == name') chatTypesDocsData of
+            Just sumTypeInfo ->
+              let (tds', td_) = toTypeDef tds sumTypeInfo -- recursion to outer function, loops are resolved via type defs map lookup
+                in case td_ of
+                    Just td -> (tds', ATDef td)
+                    Nothing -> (tds', ATRef name)
+            Nothing -> error $ "Undefined type: " <> name
 
 data CTDoc = CTDoc
   { typeInfo :: SumTypeInfo,

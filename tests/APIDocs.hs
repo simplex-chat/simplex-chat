@@ -154,13 +154,11 @@ testGenerateCommandsMD = do
 testGenerateEventsMD :: IO ()
 testGenerateEventsMD = do
   evtsDoc <- ifM (doesFileExist eventsDocFile) (T.readFile eventsDocFile) (pure "")
-  generateEventsDoc
-  newEvtsDoc <- T.readFile eventsDocFile
-  newEvtsDoc `shouldBe` evtsDoc
+  T.writeFile eventsDocFile eventsDocText
+  eventsDocText `shouldBe` evtsDoc
 
 testGenerateTypesMD :: IO ()
 testGenerateTypesMD = do
   typesDoc <- ifM (doesFileExist typesDocFile) (T.readFile typesDocFile) (pure "")
   T.writeFile typesDocFile typesDocText
-  newTypesDoc <- T.readFile typesDocFile
-  newTypesDoc `shouldBe` typesDoc
+  typesDocText `shouldBe` typesDoc
