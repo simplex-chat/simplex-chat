@@ -60,12 +60,12 @@ struct PreferencesView: View {
 
     }
 
-    private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>, _ ttl: Binding<Int?>) -> some View {
+    @ViewBuilder private func timedMessagesFeatureSection(_ allowFeature: Binding<FeatureAllowed>, _ ttl: Binding<Int?>) -> some View {
+        let allow = Binding(
+            get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
+            set: { yes, _ in allowFeature.wrappedValue = yes ? .yes : .no }
+        )
         Section {
-            let allow = Binding(
-                get: { allowFeature.wrappedValue == .always || allowFeature.wrappedValue == .yes },
-                set: { yes, _ in allowFeature.wrappedValue = yes ? .yes : .no }
-            )
             settingsRow(ChatFeature.timedMessages.icon, color: theme.colors.secondary) {
                 Toggle(ChatFeature.timedMessages.text, isOn: allow)
             }
@@ -78,10 +78,17 @@ struct PreferencesView: View {
                 .frame(height: 36)
             }
         }
-        footer: { featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary) }
+        footer: {
+            let featureFooterText = featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary)
+            if allow.wrappedValue {
+                featureFooterText + Text(" ") + Text("Setting \"Delete after\" applies only to new contacts.")
+            } else {
+                featureFooterText
+            }
+        }
     }
 
-    private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> some View {
+    private func featureFooter(_ feature: ChatFeature, _ allowFeature: Binding<FeatureAllowed>) -> Text {
         Text(feature.allowDescription(allowFeature.wrappedValue))
     }
 

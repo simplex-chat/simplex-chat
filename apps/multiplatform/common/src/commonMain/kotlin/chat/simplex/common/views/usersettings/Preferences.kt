@@ -152,7 +152,13 @@ private fun TimedMessagesFeatureSection(
       )
     }
   }
-  SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))
+  SectionTextFooter(
+    if (allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) {
+      ChatFeature.TimedMessages.allowDescription(allowFeature.value) + " " + generalGetString(MR.strings.setting_delete_after_applies_only_to_new_contacts)
+    } else {
+      ChatFeature.TimedMessages.allowDescription(allowFeature.value)
+    }
+  )
 }
 
 @Composable
