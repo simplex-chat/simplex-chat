@@ -381,9 +381,9 @@ updatePreparedContactUser
       getContact db vr newUser contactId
 
 createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db vr user conn@Connection {connId, localAlias} p = do
+createDirectContact db vr user Connection {connId, localAlias} p = do
   currentTs <- liftIO getCurrentTime
-  let ctUserPreferences = if connIncognito conn then emptyChatPrefs else newContactUserPrefs user p
+  let ctUserPreferences = newContactUserPrefs user p
   contactId <- createContact_ db user p ctUserPreferences Nothing localAlias Nothing currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   getContact db vr user contactId

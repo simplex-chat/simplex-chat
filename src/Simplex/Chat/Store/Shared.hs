@@ -411,16 +411,16 @@ newContactUserPrefs User {fullPreferences = FullPreferences {timedMessages = use
     newContactUserTMPref userTMPref ctTMPref_ =
       case (userTMPref, ctTMPref_) of
         (TimedMessagesPreference {allow = FANo}, _) -> Nothing
+        (_, Nothing) -> Nothing
         (_, Just TimedMessagesPreference {allow = FANo}) -> Nothing
-        (TimedMessagesPreference {allow = userAllow, ttl = userTTL_}, Just TimedMessagesPreference {ttl = Just ctTTL}) ->
-          case userTTL_ of
-            Nothing -> Just override
-            Just userTTL
-              | ctTTL > userTTL -> Just override
-              | otherwise -> Nothing
+        (TimedMessagesPreference {allow = userAllow, ttl = userTTL_}, Just TimedMessagesPreference {ttl = ctTTL_}) ->
+          case (userTTL_, ctTTL_) of
+            (Just userTTL, Just ctTTL) -> Just $ override (max userTTL ctTTL)
+            (Just userTTL, Nothing) -> Just $ override userTTL
+            (Nothing, Just ctTTL) -> Just $ override ctTTL
+            (Nothing, Nothing) -> Nothing
           where
-            override = TimedMessagesPreference {allow = userAllow, ttl = Just ctTTL}
-        _ -> Nothing
+            override overrideTTL = TimedMessagesPreference {allow = userAllow, ttl = Just overrideTTL}
 
 type NewPreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId)
 
