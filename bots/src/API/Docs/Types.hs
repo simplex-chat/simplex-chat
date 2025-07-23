@@ -45,21 +45,27 @@ import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
 
-data CTDoc' = CTDoc'
+data CTDoc = CTDoc
   { typeDefinition :: APITypeDef,
     typeDescr :: Text
   }
 
-docTypeName' :: CTDoc' -> String
-docTypeName' CTDoc' {typeDefinition = APITypeDef name _} = name
+docTypeName :: CTDoc -> String
+docTypeName CTDoc {typeDefinition = APITypeDef name _} = name
 
-chatTypesDocs' :: [CTDoc']
-chatTypesDocs' = sortOn docTypeName' $! snd $! mapAccumL toCTDoc (S.empty, M.empty) chatTypesDocsData
+toAPIField :: ConsName -> FieldInfo -> APIRecordField
+toAPIField typeName = snd . toAPIField_ typeName (S.empty, chatTypeDefs)
+
+chatTypeDefs :: M.Map String APITypeDef
+chatTypeDefs = M.fromList $ map (\CTDoc {typeDefinition = td@(APITypeDef name _)} -> (name, td)) chatTypesDocs
+
+chatTypesDocs :: [CTDoc]
+chatTypesDocs = sortOn docTypeName $! snd $! mapAccumL toCTDoc (S.empty, M.empty) chatTypesDocsData
   where
     toCTDoc !tds sumTypeInfo@(STI typeName _, _, _, _, typeDescr) =
       let (tds', td_) = toTypeDef tds sumTypeInfo
        in case td_ of
-            Just td -> (tds', CTDoc' td typeDescr)
+            Just td -> (tds', CTDoc td typeDescr)
             Nothing -> error $ "Recursive type: "  <> typeName
 
 toTypeDef :: (S.Set String, M.Map String APITypeDef) -> (SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Text) -> ((S.Set String, M.Map String APITypeDef), Maybe APITypeDef)
@@ -73,7 +79,7 @@ toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, cons
               STRecord -> case constrs of
                 [RecordTypeInfo {fieldInfos}] ->
                   let fields = fromMaybe (error $ "Record type without fields: " <> typeName) $ L.nonEmpty fieldInfos
-                      ((visited', typeDefs'), fields') = mapAccumL (toAPIField typeName) (S.insert typeName visited, typeDefs) fields
+                      ((visited', typeDefs'), fields') = mapAccumL (toAPIField_ typeName) (S.insert typeName visited, typeDefs) fields
                       td = APITypeDef typeName $ ATDRecord fields'
                     in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
                 _ -> error $ "Record type with " <> show (length constrs) <> " constructors: " <> typeName
@@ -92,7 +98,7 @@ toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, cons
         in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
     toUnionMember tds RecordTypeInfo {consName, fieldInfos} =
       let memberTag = normalizeConsName consPrefix consName
-        in second (ATUnionMember memberTag) $ mapAccumL (toAPIField typeName) tds fieldInfos
+        in second (ATUnionMember memberTag) $ mapAccumL (toAPIField_ typeName) tds fieldInfos
     unionError constrs = error $ "Union type with " <> show (length constrs) <> " constructor(s): " <> typeName
     toEnumType = toEnumType_ $ normalizeConsName consPrefix
     toEnumType_ f constrs =
@@ -105,8 +111,8 @@ toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, cons
           _ -> error $ "Enum type with fields in constructor: " <> typeName <> ", " <> consName
     enumError constrs = error $ "Enum type with " <> show (length constrs) <> " constructor(s): " <> typeName
 
-toAPIField :: ConsName -> (S.Set String, M.Map String APITypeDef) -> FieldInfo -> ((S.Set String, M.Map String APITypeDef), APIRecordField)
-toAPIField typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField fieldName) $ toAPIType typeInfo
+toAPIField_ :: ConsName -> (S.Set String, M.Map String APITypeDef) -> FieldInfo -> ((S.Set String, M.Map String APITypeDef), APIRecordField)
+toAPIField_ typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField fieldName) $ toAPIType typeInfo
   where
     toAPIType :: TypeInfo -> ((S.Set String, M.Map String APITypeDef), APIType)
     toAPIType = \case
@@ -129,27 +135,14 @@ toAPIField typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField 
                     Nothing -> (tds', ATRef name)
             Nothing -> error $ "Undefined type: " <> name
 
-data CTDoc = CTDoc
-  { typeInfo :: SumTypeInfo,
-    jsonEncoding :: SumTypeJsonEncoding,
-    consPrefix :: String,
-    typeDescr :: Text
-  }
-
-docTypeName :: CTDoc -> String
-docTypeName CTDoc {typeInfo = STI name _} = name
-
-chatTypesDocs :: [CTDoc]
-chatTypesDocs = map toCTDoc chatTypesDocsData
-  where
-    toCTDoc (STI typeName constrs, jsonEncoding, consPrefix, hideConstrs, typeDescr) =
-      let constrs' = filter ((`notElem` hideConstrs) . consName') constrs
-       in CTDoc {typeInfo = STI typeName constrs', jsonEncoding, consPrefix, typeDescr}
-
 data SumTypeJsonEncoding = STRecord | STUnion | STUnion1 | STEnum | STEnum1 | STEnum' (ConsName -> String)
 
 dropPfxSfx :: String -> String -> ConsName -> String
 dropPfxSfx pfx sfx = dropSuffix sfx . dropPrefix pfx
+
+fstToUpper :: String -> String
+fstToUpper "" = ""
+fstToUpper (h : t) = toUpper h : t
 
 consLower :: String -> ConsName -> String
 consLower pfx = map toLower . dropPrefix pfx

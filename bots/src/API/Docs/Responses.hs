@@ -8,14 +8,16 @@
 
 module API.Docs.Responses where
 
+import API.Docs.Types
 import API.TypeInfo
 import Data.List (find)
 import GHC.Generics
 import Simplex.Chat.Controller
+import Simplex.Messaging.Parsers (dropPrefix)
 
 data CRDoc = CRDoc
   { consName :: ConsName,
-    responseType :: RecordTypeInfo,
+    responseType :: ATUnionMember,
     responseDescr :: String
   }
 
@@ -25,7 +27,10 @@ chatResponsesDocs :: [CRDoc]
 chatResponsesDocs = map toResp chatResponsesDocsData
   where
     toResp (consName, responseDescr) = case find ((consName ==) . consName') chatResponsesTypeInfo of
-      Just responseType -> CRDoc {consName, responseType, responseDescr}
+      Just RecordTypeInfo {fieldInfos} ->
+        let fields = map (toAPIField consName) fieldInfos
+            responseType = ATUnionMember (dropPrefix "CR" consName) fields
+         in CRDoc {consName, responseType, responseDescr}
       Nothing -> error $ "Missing response type info for " <> consName
 
 deriving instance Generic ChatResponse

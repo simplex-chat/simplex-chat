@@ -7,11 +7,9 @@
 
 module API.Docs.Events where
 
-import API.TypeInfo
 import API.Docs.Types
+import API.TypeInfo
 import Data.List (find)
-import qualified Data.Map.Strict as M
-import qualified Data.Set as S
 import GHC.Generics
 import Simplex.Chat.Controller
 import Simplex.Messaging.Parsers (dropPrefix)
@@ -34,12 +32,11 @@ instance ConstructorName CEDoc where consName' CEDoc {consName} = consName
 chatEventsDocs :: [CECategory]
 chatEventsDocs = map toCategory chatEventsDocsData
   where
-    tds = (S.empty, M.fromList $ map (\CTDoc' {typeDefinition = td@(APITypeDef name _)} -> (name, td)) chatTypesDocs')
     toCategory (categoryName, categoryDescr, mainEvts, otherEvts) =
       CECategory {categoryName, categoryDescr, mainEvents = map toEvt mainEvts, otherEvents = map toEvt otherEvts}
     toEvt (consName, eventDescr) = case find ((consName ==) . consName') chatEventsTypeInfo of
       Just RecordTypeInfo {fieldInfos} ->
-        let fields = map (snd . toAPIField consName tds) fieldInfos
+        let fields = map (toAPIField consName) fieldInfos
             eventType = ATUnionMember (dropPrefix "CEvt" consName) fields
          in CEDoc {consName, eventType, eventDescr}
       Nothing -> error $ "Missing event type info for " <> consName

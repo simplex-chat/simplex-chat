@@ -1048,7 +1048,6 @@ Get active user profile
 /user
 ```
 
-
 **Response**:
 
 ActiveUser: Active user profile.
@@ -1093,7 +1092,6 @@ Get all user profiles
 ```
 /users
 ```
-
 
 **Response**:
 

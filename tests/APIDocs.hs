@@ -13,8 +13,7 @@ import API.Docs.Types
 import API.TypeInfo
 import Control.Monad
 import Data.Containers.ListUtils (nubOrd)
-import Data.List (find, foldl', intercalate, sort, (\\))
-import qualified Data.Map.Strict as M
+import Data.List (foldl', intercalate, sort, (\\))
 import qualified Data.Set as S
 import qualified Data.Text.IO as T
 import Simplex.Messaging.Util (ifM)
@@ -40,11 +39,20 @@ apiDocsTest = do
 documentedCmds :: [String]
 documentedCmds = concatMap (map consName' . commands) chatCommandsDocs
 
+documentedCmdTypes :: [ATUnionMember]
+documentedCmdTypes = concatMap (map commandType . commands) chatCommandsDocs
+
 documentedResps :: [String]
 documentedResps = map consName' chatResponsesDocs
 
+documentedRespTypes :: [ATUnionMember]
+documentedRespTypes = map responseType chatResponsesDocs
+
 documentedEvts :: [String]
 documentedEvts = concatMap (\cat -> map consName' $ mainEvents cat ++ otherEvents cat) chatEventsDocs
+
+documentedEvtTypes :: [ATUnionMember]
+documentedEvtTypes = concatMap (\cat -> map eventType $ mainEvents cat ++ otherEvents cat) chatEventsDocs
 
 documentedTypes :: [String]
 documentedTypes = map docTypeName chatTypesDocs
@@ -53,8 +61,10 @@ testCommandsHaveDocs :: IO ()
 testCommandsHaveDocs = do
   let typeCmds = sort $ map consName' chatCommandsTypeInfo
       allCmds = sort $ documentedCmds ++ cliCommands ++ undocumentedCommands
-      missingCommands = typeCmds \\ allCmds
-  unless (null missingCommands) $ expectationFailure $ "Undocumented commands: " <> intercalate ", " missingCommands
+      missingCmds = typeCmds \\ allCmds
+      extraCmds = allCmds \\ typeCmds
+  unless (null missingCmds) $ expectationFailure $ "Undocumented commands: " <> intercalate ", " missingCmds
+  unless (null extraCmds) $ expectationFailure $ "Unused commands: " <> intercalate ", " extraCmds
   putStrLn $ "Documented commands: " <> show (length documentedCmds) <> "/" <> show (length allCmds)
   allCmds `shouldBe` typeCmds -- sanity check
 
@@ -88,49 +98,32 @@ testEventsHaveDocs = do
 
 testTypesHaveDocs :: IO ()
 testTypesHaveDocs = do
-  let docCmds = S.fromList documentedCmds
-      docResps = S.fromList documentedResps
-      docEvts = S.fromList documentedEvts
-      cmds = filter ((`S.member` docCmds) . consName') chatCommandsTypeInfo
-      resps = filter ((`S.member` docResps) . consName') chatResponsesTypeInfo
-      evts = filter ((`S.member` docEvts) . consName') chatEventsTypeInfo
-      allDocTypes = sort $ documentedTypes ++ primitiveTypes
-      mainApiTypes = M.unions $ map recTypes $ cmds ++ resps ++ evts
-      (mft1, fieldTypeNames) = getFieldTypes S.empty $ M.keys mainApiTypes
-      (mft2, fieldTypeDocs) = getTypeDocs $ sort fieldTypeNames
-      mft = S.union mft1 mft2
-      fieldTypes = concatMap docTypeConstructors fieldTypeDocs
-      apiTypes = M.unions $ mainApiTypes : map recTypes fieldTypes
-      allTypes = sort $ nubOrd $ M.keys apiTypes ++ fieldTypeNames
-      extraTypes = allDocTypes \\ allTypes
-      missingTypes = allTypes \\ allDocTypes
+  let allDocTypes = sort $ documentedTypes ++ primitiveTypes
+      apiTypes = sort $ nubOrd $ concatMap unionMemberTypes $ documentedCmdTypes ++ documentedRespTypes ++ documentedEvtTypes
+      extraTypes = allDocTypes \\ apiTypes
+      missingTypes = apiTypes \\ allDocTypes
   unless (null extraTypes) $ expectationFailure $ "Unused types: " <> intercalate ", " extraTypes
-  unless (null missingTypes) $ expectationFailure $ "Undocumented types: " <> intercalate ", " (map (\t -> maybe t (((t <> ": ") <>) . show . S.toList) $ M.lookup t apiTypes) missingTypes)
-  unless (null mft) $ expectationFailure $ "Missing field types: " <> intercalate ", " (S.toList mft) -- sanity check?
-  allTypes `shouldBe` allDocTypes -- sanity check
-  putStrLn $ "Documented types: " <> show (length allTypes)
+  unless (null missingTypes) $ expectationFailure $ "Undocumented types: " <> intercalate ", " missingTypes
+  allDocTypes `shouldBe` apiTypes
+  putStrLn $ "Documented types: " <> show (length allDocTypes)
   where
-    recTypes :: RecordTypeInfo -> M.Map ConsName (S.Set ConsName)
-    recTypes RecordTypeInfo {consName, fieldInfos} = foldl' (\m FieldInfo {typeInfo} -> foldl' (\m' t -> M.alter (Just . maybe (S.singleton consName) (S.insert consName)) t m') m $ types typeInfo) M.empty fieldInfos
-    getFieldTypes :: S.Set ConsName -> [ConsName] -> (S.Set ConsName, [ConsName])
-    getFieldTypes missing ts
-      | null (sort fts \\ sort ts) = (missing'', fts) -- all field types found
-      | otherwise =
-          let (missing3, fts') = getFieldTypes missing'' (ts ++ fts)
-           in (S.union missing missing3, nubOrd (fts ++ fts'))
-      where
-        (missing', ds) = getTypeDocs ts
-        missing'' = S.union missing missing'
-        fts = nubOrd $ concatMap childTypeNames ds
-        childTypeNames = concatMap (\RecordTypeInfo {fieldInfos} -> concatMap (\FieldInfo {typeInfo} -> types typeInfo) fieldInfos) . docTypeConstructors
-    docTypeConstructors CTDoc {typeInfo = STI {recordTypes}} = recordTypes
-    getTypeDocs :: [ConsName] -> (S.Set ConsName, [CTDoc]) -- (not found types and their parents, found types)
-    getTypeDocs = foldl' (\acc@(s, ds) t -> if t `elem` primitiveTypes then acc else maybe (S.insert t s, ds) (\d -> (s, d : ds)) $ find ((t ==) . docTypeName) chatTypesDocs) (S.empty, [])
-    types = \case
-      TIType t -> [tcName t]
-      TIOptional t -> types t
-      TIArray {elemType} -> types elemType
-      TIMap {keyType, valueType} -> tcName keyType : types valueType
+    unionMemberTypes :: ATUnionMember -> [ConsName]
+    unionMemberTypes (ATUnionMember _ fields) = concatMap recordFiledTypes fields
+    recordFiledTypes :: APIRecordField -> [ConsName]
+    recordFiledTypes (APIRecordField _ t) = apiTypeTypes t
+    apiTypeTypes :: APIType -> [ConsName]
+    apiTypeTypes = \case
+      ATPrim (PT t) -> [t]
+      ATDef td -> typeDefTypes td
+      ATRef t -> [t] -- ??
+      ATOptional t -> apiTypeTypes t
+      ATArray t _ -> apiTypeTypes t
+      ATMap (PT t) v -> t : apiTypeTypes v
+    typeDefTypes :: APITypeDef -> [ConsName]
+    typeDefTypes (APITypeDef t td) = t : case td of
+      ATDRecord fields -> concatMap recordFiledTypes fields
+      ATDUnion members -> concatMap unionMemberTypes members
+      ATDEnum _ -> []
 
 testCommandsHaveResponses :: IO ()
 testCommandsHaveResponses = do
@@ -147,9 +140,8 @@ testCommandsHaveResponses = do
 testGenerateCommandsMD :: IO ()
 testGenerateCommandsMD = do
   cmdsDoc <- ifM (doesFileExist commandsDocFile) (T.readFile commandsDocFile) (pure "")
-  generateCommandsDoc
-  newCmdsDoc <- T.readFile commandsDocFile
-  newCmdsDoc `shouldBe` cmdsDoc
+  T.writeFile commandsDocFile commandsDocText
+  commandsDocText `shouldBe` cmdsDoc
 
 testGenerateEventsMD :: IO ()
 testGenerateEventsMD = do

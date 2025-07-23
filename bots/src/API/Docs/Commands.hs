@@ -12,12 +12,14 @@ module API.Docs.Commands where
 
 import API.Docs.Responses
 import API.Docs.Syntax
+import API.Docs.Types
 import API.TypeInfo
 import Data.String
 import Data.List (find)
 import Data.Text (Text)
 import GHC.Generics
 import Simplex.Chat.Controller
+import Simplex.Messaging.Parsers (fstToLower)
 
 chatCommandsDocs :: [CCCategory]
 chatCommandsDocs = map toCategory chatCommandsDocsData
@@ -25,8 +27,10 @@ chatCommandsDocs = map toCategory chatCommandsDocsData
     toCategory (categoryName, categoryDescr, commandsData) =
       CCCategory {categoryName, categoryDescr, commands = map toCmd commandsData}
     toCmd (consName, commandDescr, respNames, errors, network, syntax) = case find ((consName ==) . consName') chatCommandsTypeInfo of
-      Just commandType ->
-        let findResp name = case find ((name ==) . consName') chatResponsesDocs of
+      Just RecordTypeInfo {fieldInfos} ->
+        let fields = map (toAPIField consName) fieldInfos
+            commandType = ATUnionMember (fstToLower consName) fields
+            findResp name = case find ((name ==) . consName') chatResponsesDocs of
               Just resp -> resp
               Nothing -> error $ "Missing response doc for " <> name
             responses = map findResp respNames
@@ -46,16 +50,17 @@ data CCCategory = CCCategory
 
 data CCDoc = CCDoc
   { consName :: ConsName,
-    commandType :: RecordTypeInfo,
+    commandType :: ATUnionMember,
     commandDescr :: Text,
     responses :: [CRDoc],
-    errors :: [TypeDoc],
-    network :: Maybe UsesNetwork,
+    errors :: [TypeDoc], -- TODO add to doc or remove
+    network :: Maybe UsesNetwork, -- TODO add to doc
     syntax :: [Expr]
   }
 
 instance ConstructorName CCDoc where consName' CCDoc {consName} = consName
 
+-- TODO remove?
 data TypeDoc = TD
   { consName :: ConsName,
     description :: Text
