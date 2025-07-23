@@ -877,7 +877,7 @@ Messages:
 **Syntax**:
 
 ```
-full|entity|messages|[ notify=off]
+full|entity|messages[ notify=off]
 ```
 
 ```javascript
@@ -885,7 +885,7 @@ type + (type == 'messages' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
 ```
 
 ```python
-str(type) + ('' if type == 'messages' else (' notify=off' if not notifyelse '')) # Python
+str(type) + ('' if str(type) == 'messages' else (' notify=off' if not notify else '')) # Python
 ```
 
 
@@ -1335,7 +1335,7 @@ self == 'contact' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // 
 ```
 
 ```python
-'@' if self == 'contact' else '#' if self == 'group' else '*' if self == 'local' else '' # Python
+'@' if str(self) == 'contact' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else '' # Python
 ```
 
 

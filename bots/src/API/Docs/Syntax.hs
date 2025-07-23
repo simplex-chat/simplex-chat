@@ -15,6 +15,7 @@ import API.Docs.Types
 import API.TypeInfo
 import Data.List (find, intercalate)
 import qualified Data.List.NonEmpty as L
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -52,7 +53,9 @@ docSyntaxText r@(tag, _) = T.pack . go Nothing
             APITypeDef _ (ATDUnion _) -> choices
             APITypeDef _ (ATDEnum _) -> choices
             _ -> paramError r param p "is not union or enum type"
-          choices = intercalate "|" (map (go param . snd) (L.toList opts)) <> "|" <> go param else'
+          choices = (if null optsSyntax then "" else optsSyntax <> "|") <> go param else'
+            where
+              optsSyntax = intercalate "|" (mapMaybe ((\s -> if null s then Nothing else Just s) . go param . snd) (L.toList opts))
       Join c p ->
         withParamType r param p $ \case
           ATArray {} -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
@@ -181,7 +184,12 @@ pySyntaxText r = T.pack . go Nothing True
             _ -> paramError r param p "is not union type"
           choices var = open <> optsSyntax <> " else " <> go param top else' <> close
             where
-              optsSyntax = intercalate " else " $ map (\(tag, ex) -> go param top ex <> " if " <> var <> " == '" <> tag <> "'") $ L.toList opts
+              optsSyntax = intercalate " else " $ map (\(tag, ex) -> go param top ex <> " if " <> var' <> " == '" <> tag <> "'") $ L.toList opts
+              var' =
+                withParamType r param var $ \case
+                  ATPrim (PT TString) -> var
+                  ATOptional (ATPrim (PT TString)) -> var
+                  _ -> "str(" <> var <> ")"
       Join c p ->
         withParamType r param p $ \case
           ATArray {elemType = ATPrim (PT TString)} -> "'" <> [c] <> "'.join(" <> paramName param p <> ")"
@@ -198,7 +206,7 @@ pySyntaxText r = T.pack . go Nothing True
             n = paramName param p
             res = "' " <> name <> "=' + ('on' if " <> n <> " else 'off')"
         Just def
-          | def -> open <> "' " <> name <> "=off' if not " <> n <> "else ''" <> close
+          | def -> open <> "' " <> name <> "=off' if not " <> n <> " else ''" <> close
           | otherwise -> open <> "' " <> name <> "=on' if " <> n <> " else ''" <> close
           where
             n = paramName param p
