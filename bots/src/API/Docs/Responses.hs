@@ -26,19 +26,23 @@ instance ConstructorName CRDoc where consName' CRDoc {consName} = consName
 chatResponsesDocs :: [CRDoc]
 chatResponsesDocs = map toResp chatResponsesDocsData
   where
-    toResp (consName, responseDescr) = case find ((consName ==) . consName') chatResponsesTypeInfo of
-      Just RecordTypeInfo {fieldInfos} ->
-        let fields = map (toAPIField consName) fieldInfos
-            responseType = ATUnionMember (dropPrefix "CR" consName) fields
-         in CRDoc {consName, responseType, responseDescr}
-      Nothing -> error $ "Missing response type info for " <> consName
+    toResp (consName, responseDescr)
+      | consName == "CRChatCmdError" =
+          let field = toAPIField consName $ FieldInfo "chatError" (ti "ChatError")
+              responseType = ATUnionMember (dropPrefix "CR" consName) [field]
+           in CRDoc {consName, responseType, responseDescr}
+      | otherwise = case find ((consName ==) . consName') chatResponsesTypeInfo of
+          Just RecordTypeInfo {fieldInfos} ->
+            let fields = map (toAPIField consName) fieldInfos
+                responseType = ATUnionMember (dropPrefix "CR" consName) fields
+            in CRDoc {consName, responseType, responseDescr}
+          Nothing -> error $ "Missing response type info for " <> consName
 
 deriving instance Generic ChatResponse
 
 chatResponsesTypeInfo :: [RecordTypeInfo]
 chatResponsesTypeInfo = recordTypesInfo @ChatResponse
 
--- TODO add synthetic CRChatCmdError event (Haskell code uses Either, with error in Left)
 chatResponsesDocsData :: [(ConsName, String)]
 chatResponsesDocsData =
   [ ("CRAcceptingContactRequest", "Contact request accepted"),
@@ -48,6 +52,7 @@ chatResponsesDocsData =
     ("CRChatItemUpdated", "Message updated"),
     ("CRChatItemsDeleted", "Messages deleted"),
     ("CRCmdOk", "Ok"),
+    ("CRChatCmdError", "Command error"), -- only used in WebSockets API, Haskell code uses Either, with error in Left
     ("CRConnectionPlan", "Connection link information"),
     ("CRContactAlreadyExists", ""),
     ("CRContactConnectionDeleted", "Connection deleted"),

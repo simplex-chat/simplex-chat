@@ -64,6 +64,7 @@ This file is generated automatically.
 
 [Error events](#error-events)
 - [MessageError](#messageerror)
+- [ChatError](#chaterror)
 - [ChatErrors](#chaterrors)
 
 ---
@@ -682,6 +683,17 @@ Message error.
 - user: [User](./TYPES.md#user)
 - severity: string
 - errorMessage: string
+
+---
+
+
+### ChatError
+
+Chat error.
+
+**Record type**:
+- type: "chatError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 

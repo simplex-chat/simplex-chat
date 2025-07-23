@@ -76,7 +76,7 @@ testCommandsHaveNamedFields = do
 
 testResponsesHaveDocs :: IO ()
 testResponsesHaveDocs = do
-  let typeResps = sort $ map consName' chatResponsesTypeInfo
+  let typeResps = sort $ "CRChatCmdError" : map consName' chatResponsesTypeInfo
       allResps = sort $ documentedResps ++ undocumentedResponses
       missingResps = typeResps \\ allResps
       extraResps = allResps \\ typeResps
@@ -87,7 +87,7 @@ testResponsesHaveDocs = do
 
 testEventsHaveDocs :: IO ()
 testEventsHaveDocs = do
-  let typeEvts = sort $ map consName' chatEventsTypeInfo
+  let typeEvts = sort $ "CEvtChatError" : map consName' chatEventsTypeInfo
       allEvts = sort $ documentedEvts ++ undocumentedEvents
       missingEvts = typeEvts \\ allEvts
       extraEvts = allEvts \\ typeEvts

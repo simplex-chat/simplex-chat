@@ -34,19 +34,23 @@ chatEventsDocs = map toCategory chatEventsDocsData
   where
     toCategory (categoryName, categoryDescr, mainEvts, otherEvts) =
       CECategory {categoryName, categoryDescr, mainEvents = map toEvt mainEvts, otherEvents = map toEvt otherEvts}
-    toEvt (consName, eventDescr) = case find ((consName ==) . consName') chatEventsTypeInfo of
-      Just RecordTypeInfo {fieldInfos} ->
-        let fields = map (toAPIField consName) fieldInfos
-            eventType = ATUnionMember (dropPrefix "CEvt" consName) fields
-         in CEDoc {consName, eventType, eventDescr}
-      Nothing -> error $ "Missing event type info for " <> consName
+    toEvt (consName, eventDescr)
+      | consName == "CEvtChatError" =
+          let field = toAPIField consName $ FieldInfo "chatError" (ti "ChatError")
+              eventType = ATUnionMember (dropPrefix "CEvt" consName) [field]
+           in CEDoc {consName, eventType, eventDescr}
+      | otherwise = case find ((consName ==) . consName') chatEventsTypeInfo of
+          Just RecordTypeInfo {fieldInfos} ->
+            let fields = map (toAPIField consName) fieldInfos
+                eventType = ATUnionMember (dropPrefix "CEvt" consName) fields
+            in CEDoc {consName, eventType, eventDescr}
+          Nothing -> error $ "Missing event type info for " <> consName
 
 deriving instance Generic ChatEvent
 
 chatEventsTypeInfo :: [RecordTypeInfo]
 chatEventsTypeInfo = recordTypesInfo @ChatEvent
 
--- TODO add synthetic CEvtChatError event (Haskell code uses Either, with error in Left)
 chatEventsDocsData :: [(String, String, [(ConsName, String)], [(ConsName, String)])]
 chatEventsDocsData =
   [ ( "Contact connection events", -- which event should be processed by a bot that has business address. Maybe needs a separate category.
@@ -135,6 +139,7 @@ chatEventsDocsData =
       \or because messages may be delivered to deleted chats for a short period of time \
       \(they will be ignored).",
       [ ("CEvtMessageError", ""),
+        ("CEvtChatError", ""), -- only used in WebSockets API, Haskell code uses Either, with error in Left
         ("CEvtChatErrors", "")
       ],
       []

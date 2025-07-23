@@ -268,6 +268,10 @@ ChatItemNotChanged: Message not changed.
 - user: [User](./TYPES.md#user)
 - chatItem: [AChatItem](./TYPES.md#achatitem)
 
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
 ---
 
 
@@ -436,6 +440,10 @@ RcvFileCancelled: Cancelled receiving file.
 - chatItem_: [AChatItem](./TYPES.md#achatitem)?
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
 
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
 ---
 
 
@@ -523,13 +531,17 @@ Accept group member. Requires Admin role.
 '/_accept member #' + groupId + ' ' + groupMemberId + ' ' + memberRole // JavaScript
 ```
 
-**Response**:
+**Responses**:
 
 MemberAccepted: Member accepted to group.
 - type: "memberAccepted"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -615,7 +627,7 @@ Remove members. Requires Admin role.
 '/_remove #' + groupId + ' ' + groupMemberIds.join(',') + (withMessages ? ' messages=on' : '') // JavaScript
 ```
 
-**Response**:
+**Responses**:
 
 UserDeletedMembers: Members deleted.
 - type: "userDeletedMembers"
@@ -623,6 +635,10 @@ UserDeletedMembers: Members deleted.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - withMessages: bool
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 

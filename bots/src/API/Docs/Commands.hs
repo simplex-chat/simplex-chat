@@ -88,7 +88,7 @@ chatCommandsDocsData =
       "Commands to send, update, delete, moderate messages and set message reactions", -- TODO chatRef command encoding
       -- [Func "chat" "r" (ChatRefExpr "$0"), "/_send " <> Call "chat" "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"]
       [ ("APISendMessages", "Send messages.", ["CRNewChatItems"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"), -- /_send \(ref(type, id, scope: scope))[ live=on|off][ ttl=<ttl>] json <json(composedMessages)>
-        ("APIUpdateChatItem", "Update message.", ["CRChatItemUpdated", "CRChatItemNotChanged"], ["CEInvalidChatItemUpdate"], Just UNBackground, "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"), -- /_update item <ref(chatRef)> <chatItemId>[ live=on|off] \(updatedMessage.cmdString)"
+        ("APIUpdateChatItem", "Update message.", ["CRChatItemUpdated", "CRChatItemNotChanged", "CRChatCmdError"], ["CEInvalidChatItemUpdate"], Just UNBackground, "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"), -- /_update item <ref(chatRef)> <chatItemId>[ live=on|off] \(updatedMessage.cmdString)"
         ("APIDeleteChatItem", "Delete message.", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"), -- /_delete item <ref(chatRef)> <chatItemIds> <mode>
         ("APIDeleteMemberChatItem", "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"), -- "/_delete member item #<groupId> <chatItemIds>
         ("APIChatItemReaction", "Add/remove message reaction.", ["CRChatItemReaction"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction") -- "/_reaction <ref(chatRef)> <itemId> on|off <json(reaction)>
@@ -99,7 +99,7 @@ chatCommandsDocsData =
     ( "File commands",
       "Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.",
       [ ("ReceiveFile", "Receive file.", ["CRRcvFileAccepted", "CRRcvFileAcceptedSndCancelled"], [], Nothing, "/freceive " <> Param "fileId" <> OnOffParam "approved_relays" "userApprovedRelays" (Just False) <> OnOffParam "encrypt" "storeEncrypted" Nothing <> OnOffParam "inline" "fileInline" Nothing <> Optional "" (" " <> Param "$0") "filePath"), -- "/freceive <fileId> <onOffParam("approved_relays", userApprovedRelays)><onOffParam("encrypt", encrypt)><onOffParam("inline", inline)>"
-        ("CancelFile", "Cancel file.", ["CRSndFileCancelled", "CRRcvFileCancelled"], ["CEFileCancel"], Just UNBackground, "/fcancel " <> Param "fileId") -- "/fcancel <fileId>"
+        ("CancelFile", "Cancel file.", ["CRSndFileCancelled", "CRRcvFileCancelled", "CRChatCmdError"], ["CEFileCancel"], Just UNBackground, "/fcancel " <> Param "fileId") -- "/fcancel <fileId>"
       ]
     ),
     ( "Group commands",
@@ -107,10 +107,10 @@ chatCommandsDocsData =
       [ ("APIAddMember", "Add contact to group. Requires bot to have Admin role.", ["CRSentGroupInvitation"], [], Just UNInteractive, "/_add #" <> Param "groupId" <> " " <> Param "contactId" <> " " <> Param "memberRole"), -- /_add #<groupId> <contactId> <memberRole>
         -- TODO note that enableNtfs is not supported
         ("APIJoinGroup", "Join group.", ["CRUserAcceptedGroupSent"], [], Just UNInteractive, "/_join #" <> Param "groupId"), -- /_join #<groupId>
-        ("APIAcceptMember", "Accept group member. Requires Admin role.", ["CRMemberAccepted"], ["CEGroupMemberNotActive"], Just UNBackground, "/_accept member #" <> Param "groupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"), -- /_accept member #<groupId> <groupMemberId> <memberRole>
+        ("APIAcceptMember", "Accept group member. Requires Admin role.", ["CRMemberAccepted", "CRChatCmdError"], ["CEGroupMemberNotActive"], Just UNBackground, "/_accept member #" <> Param "groupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"), -- /_accept member #<groupId> <groupMemberId> <memberRole>
         ("APIMembersRole", "Set members role. Requires Admin role.", ["CRMembersRoleUser"], [], Just UNBackground, "/_member role #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> " " <> Param "memberRole"), -- /_member role #<groupId> <memberIds> <memberRole>
         ("APIBlockMembersForAll", "Block members. Requires Moderator role.", ["CRMembersBlockedForAllUser"], [], Just UNBackground, "/_block #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "blocked" "blocked" Nothing), -- /_block #<groupId> <memberIds> blocked=on|off
-        ("APIRemoveMembers", "Remove members. Requires Admin role.", ["CRUserDeletedMembers"], ["CEGroupMemberNotFound"], Just UNBackground, "/_remove #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "messages" "withMessages" (Just False)), -- /_remove #<groupId> <memberIds> messages=on|off
+        ("APIRemoveMembers", "Remove members. Requires Admin role.", ["CRUserDeletedMembers", "CRChatCmdError"], ["CEGroupMemberNotFound"], Just UNBackground, "/_remove #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "messages" "withMessages" (Just False)), -- /_remove #<groupId> <memberIds> messages=on|off
         ("APILeaveGroup", "Leave group.", ["CRLeftMemberUser"], [], Just UNBackground, "/_leave #" <> Param "groupId") -- /_leave #<groupId>
         -- ("APIListMembers", "Get group members.", ["CRGroupMembers"], [], Nothing, ""),
         -- ("APINewGroup", "Create group.", ["CRGroupCreated"], [], Nothing, ""),
