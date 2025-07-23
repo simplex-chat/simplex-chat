@@ -22,17 +22,17 @@ import Test.Hspec
 
 apiDocsTest :: Spec
 apiDocsTest = do
-  fdescribe "API commands" $ do
+  describe "API commands" $ do
     it "should be documented" testCommandsHaveDocs
     it "should have field names" testCommandsHaveNamedFields
     it "should have defined responses" testCommandsHaveResponses
     it "generate markdown" testGenerateCommandsMD
-  fdescribe "API responses" $ do
+  describe "API responses" $ do
     it "should be documented" testResponsesHaveDocs
-  fdescribe "API events" $ do
+  describe "API events" $ do
     it "should be documented" testEventsHaveDocs
     it "generate markdown" testGenerateEventsMD
-  fdescribe "API types" $ do
+  describe "API types" $ do
     it "should be documented" testTypesHaveDocs
     it "generate markdown" testGenerateTypesMD
 

@@ -559,7 +559,6 @@ test-suite simplex-chat-test
     , composition ==1.0.*
     , containers ==0.6.*
     , crypton ==0.34.*
-    , data-default-class ==0.1.*
     , deepseq ==1.4.*
     , directory ==1.3.*
     , filepath ==1.4.*

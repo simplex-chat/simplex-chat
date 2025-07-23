@@ -123,13 +123,14 @@ See [API Events](./api/EVENTS.md) reference about specific JSON types for chat e
 
 ## Security considerations
 
-WebSockets API of SimpleX Chat CLI does not support any authentication. CLI binds only to localhost to prevent accidental access from public network, in case you did not close this port in firewall. The messages in WebSocket API are not encrypted in any way, and must not be sent via the public networks.
+WebSockets API of SimpleX Chat CLI does not support any authentication. CLI binds only to localhost to prevent accidental access from public network, in case you did not close this port in firewall. The messages in WebSocket API are not encrypted in any way, and must not be sent via public networks.
 
 It is usually simpler to run your bot process on the same machine where you run SimpleX Chat CLI, and to close CLI port in firewall. That makes connection between your bot and CLI secure. It also simplifies sending and receiving files via bot, as they are stored on the file system accessible to SimpleX Chat CLI.
 
-If you have to run your bot on another machine, you need to secure access to bot CLI via any web proxy that supports WebSockets, e.g. Caddy or Nginx. You must configure TLS termination in the proxy and connect CLI process from bot via a secure TLS connection. If you connect to bot via a public network, you also must configure HTTP basic auth with sufficiently large credentials (we recommend 256 bits) to prevent unauthorized access. You can validate TLS security of your proxy via a free test at [SSLLabs.com](https://www.ssllabs.com/ssltest/). You can also configure firewall on the machine where you run bot process to only allow connections from the IP address(es) where you run your bot.
+If you have to run your bot on another machine, you need to secure access to bot CLI via any web proxy that supports WebSockets, e.g. Caddy or Nginx. You must configure TLS termination in the proxy and connect CLI process from bot via a secure TLS connection. If you connect to bot via a public network, you also must configure HTTP basic auth to prevent unauthorized access. You can validate TLS security of your proxy via a free test at [SSLLabs.com](https://www.ssllabs.com/ssltest/). You can also configure firewall on the machine where you run SimpleX CLI to only allow connections from the IP address of your bot.
 
 
 ## Useful bots
 
-TODO
+- [Broadcast bot](../apps/simplex-broadcast-bot/) (Haskell) - we use it to send [status and release updates](https://status.simplex.chat/status/public).
+- [Moderation bot](https://github.com/NCalex42/simplex-bot) (Java)
