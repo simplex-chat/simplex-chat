@@ -884,6 +884,10 @@ full|entity|messages|[ notify=off]
 type + (type == 'messages' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
 ```
 
+```python
+type + ('' if type == 'messages' else (' notify=off' if not notifyelse '')) # Python
+```
+
 
 ---
 
@@ -1284,6 +1288,10 @@ Used in API commands. Chat scope can only be passed with groups.
 chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaScript
 ```
 
+```python
+str(chatType) + chatId + ((str(chatScope)) if chatScope is not None else '') # Python
+```
+
 
 ---
 
@@ -1324,6 +1332,10 @@ chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaSc
 
 ```javascript
 self == 'contact' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // JavaScript
+```
+
+```python
+'@' if self == 'contact' else '#' if self == 'group' else '*' if self == 'local' else '' # Python
 ```
 
 
@@ -1699,6 +1711,10 @@ User:
 connFullLink + (connShortLink ? ' ' + connShortLink : '') // JavaScript
 ```
 
+```python
+connFullLink + ((' ' + connShortLink) if connShortLink is not None else '') # Python
+```
+
 
 ---
 
@@ -2003,6 +2019,10 @@ MemberSupport:
 
 ```javascript
 '(_support' + (groupMemberId_ ? ':' + groupMemberId_ : '') + ')' // JavaScript
+```
+
+```python
+'(_support' + ((':' + groupMemberId_) if groupMemberId_ is not None else '') + ')' # Python
 ```
 
 
