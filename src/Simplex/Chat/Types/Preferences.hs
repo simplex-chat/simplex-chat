@@ -118,6 +118,7 @@ setPreference f allow_ prefs_ = setPreference_ f pref $ fromMaybe emptyChatPrefs
     pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
     setAllow = setField @"allow" (getPreference f prefs)
+    -- here global ttl won't matter because we only use setPreference' for timed messages
     prefs = mergePreferences Nothing prefs_
 
 setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences

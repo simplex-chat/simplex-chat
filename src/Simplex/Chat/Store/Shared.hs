@@ -517,6 +517,7 @@ toUser ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, dis
   User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash, userMemberProfileUpdatedAt, uiThemes}
   where
     profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences = userPreferences, localAlias = ""}
+    -- here global ttl will matter and should be kept (it's included into fullPreferences)
     fullPreferences = mergePreferences Nothing userPreferences
     viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 

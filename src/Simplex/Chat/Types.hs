@@ -576,9 +576,11 @@ groupFeatureMemberAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupMemb
 groupFeatureMemberAllowed feature GroupMember {memberRole} =
   groupFeatureMemberAllowed' feature memberRole . fullGroupPreferences
 
+-- this is used only in view to display preferences change - here we should only take into account contact override ttl
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
 mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
 
+-- this is used in above and in contactUserPreferences
 mergeUserChatPrefs' :: User -> Bool -> Preferences -> FullPreferences
 mergeUserChatPrefs' user connectedIncognito userPreferences =
   let userPrefs = if connectedIncognito then Nothing else preferences' user
@@ -614,7 +616,9 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
         ctUserPref_ = chatPrefSel f userPreferences
         userPref = getPreference f ctUserPrefs
         ctPref = getPreference f ctPrefs
+    -- here ttl will matter if we don't have override (it goes into CUPUser)
     ctUserPrefs = mergeUserChatPrefs' user connectedIncognito userPreferences
+    -- here global ttl won't matter because we only look at contact prefs (global user prefs is Nothing)
     ctPrefs = mergePreferences contactPreferences Nothing
 
 data Profile = Profile
@@ -662,6 +666,7 @@ userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
     then redactedMemberProfile p'
     else
       let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
+       -- here we need to set ttl only from user override if it's present (userPreferences <$> ct), otherwise null
        in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
 
 type LocalAlias = Text

@@ -1762,6 +1762,7 @@ viewPrefsUpdated ps ps'
       | pref ps == pref ps' = Nothing
       | otherwise = Just . plain $ chatFeatureNameText' f <> " allowed: " <> preferenceText (pref ps')
       where
+        -- here global ttl won't matter because we only look at contact prefs (global user prefs is Nothing)
         pref pss = getPreference f $ mergePreferences pss Nothing
 
 countactUserPrefText :: FeatureI f => ContactUserPref (FeaturePreference f) -> Text
