@@ -63,41 +63,41 @@ chatEventsDocsData =
       [ ( "CEvtContactConnected", "This event is sent after a user connects via bot SimpleX address (not a business address).")
       ],
       [
-        ("CEvtContactUpdated", ""),
-        ("CEvtContactDeletedByContact", ""),
-        ("CEvtReceivedContactRequest", "received - needs to be accepted"),
-        ("CEvtNewMemberContactReceivedInv", "only needs to be processed to associate contact with group"),
-        ("CEvtContactSndReady", "") -- JOINED - can send messages
+        ("CEvtContactUpdated", "Contact profile of another user is updated."),
+        ("CEvtContactDeletedByContact", "Bot user's connection with another contact is deleted (conversation is kept)."),
+        ("CEvtReceivedContactRequest", "Contact request received.\n\nThis event is only sent when auto-accept is disabled.\n\nThe request needs to be accepted using [APIAcceptContact](./COMMANDS.md#apiacceptcontact) command"),
+        ("CEvtNewMemberContactReceivedInv", "Received invitation to connect directly with a group member.\n\nThis event only needs to be processed to associate contact with group, the connection will proceed automatically."),
+        ("CEvtContactSndReady", "Connecting via 1-time invitation or after accepting contact request.\n\nAfter this event bot can send messages to this contact.") -- JOINED
       ]
     ),
     ( "Message events",
       "Bots must use these events to process received messages.",
-      [ ("CEvtNewChatItems", "")
+      [ ("CEvtNewChatItems", "Received message(s).")
       ],
-      [ ("CEvtChatItemReaction", ""),
-        ("CEvtChatItemsDeleted", ""),
-        ("CEvtChatItemUpdated", ""),
-        ("CEvtGroupChatItemsDeleted", ""),
-        ("CEvtChatItemsStatusesUpdated", "")
+      [ ("CEvtChatItemReaction", "Received message reaction."),
+        ("CEvtChatItemsDeleted", "Message was deleted by another user."),
+        ("CEvtChatItemUpdated", "Message was updated by another user."),
+        ("CEvtGroupChatItemsDeleted", "Group messages are deleted or moderated."),
+        ("CEvtChatItemsStatusesUpdated", "Message delivery status updates.")
       ]
     ),
     ( "Group events",
       "Bots may use these events to manage users' groups and business address groups.\n\n\
       \*Please note*: programming groups is more complex than programming direct connections",
       [ ("CEvtReceivedGroupInvitation", ""),
-        ("CEvtUserJoinedGroup", ""),
-        ("CEvtGroupUpdated", ""),
-        ("CEvtJoinedGroupMember", ""),
-        ("CEvtMemberRole", ""),
-        ("CEvtDeletedMember", ""),
-        ("CEvtLeftMember", ""),
-        ("CEvtDeletedMemberUser", ""),
-        ("CEvtGroupDeleted", "")
+        ("CEvtUserJoinedGroup", "Bot user joined group. Received when connection via group link completes."),
+        ("CEvtGroupUpdated", "Group profile or preferences updated."),
+        ("CEvtJoinedGroupMember", "Another member joined group."),
+        ("CEvtMemberRole", "Member (or bot user's) group role changed."),
+        ("CEvtDeletedMember", "Another member is removed from the group."),
+        ("CEvtLeftMember", "Another member left the group."),
+        ("CEvtDeletedMemberUser", "Bot user was removed from the group."),
+        ("CEvtGroupDeleted", "Group was deleted by the owner (not bot user).")
       ],
-      [ ("CEvtConnectedToGroupMember", ""),
-        ("CEvtMemberAcceptedByOther", ""),
-        ("CEvtMemberBlockedForAll", ""),
-        ("CEvtGroupMemberUpdated", "")
+      [ ("CEvtConnectedToGroupMember", "Connected to another group member."),
+        ("CEvtMemberAcceptedByOther", "Another group owner, admin or moderator accepted member to the group after review (\"knocking\")."),
+        ("CEvtMemberBlockedForAll", "Another member blocked for all members."),
+        ("CEvtGroupMemberUpdated", "Another group member profile updated.")
       ]
     ),
     ( "File events",
@@ -107,28 +107,32 @@ chatEventsDocsData =
       \[APIDeleteMemberChatItem](./COMMANDS.md#apideletememberchatitem)) \
       \when processing [NewChatItems](#newchatitems) event.\n\n\
       \Bots that need to send files should use [APISendMessages](./COMMANDS.md#apisendmessages) command.",
-      [ ("CEvtRcvFileDescrReady", ""),
-        ("CEvtRcvFileComplete", ""),
-        ("CEvtSndFileCompleteXFTP", "")
+      [ ( "CEvtRcvFileDescrReady",
+          "File is ready to be received.\n\n\
+          \This event is useful for processing sender file servers and monitoring file reception progress.\n\n\
+          \[ReceiveFile](./COMMANDS.md#receivefile) command can be used before this event."
+        ),
+        ("CEvtRcvFileComplete", "File reception is competed."),
+        ("CEvtSndFileCompleteXFTP", "File upload is competed.")
       ],
-      [ ("CEvtRcvFileStart", "file reception started (happens when FD is received)"),
-        ("CEvtRcvFileSndCancelled", "sender cancelled sending file"),
-        ("CEvtRcvFileAccepted", "when file auto-accepted - not recommended"),
-        ("CEvtRcvFileError", ""),
-        ("CEvtRcvFileWarning", ""),
-        ("CEvtSndFileError", ""),
-        ("CEvtSndFileWarning", "")
+      [ ("CEvtRcvFileStart", "File reception started. This event will be sent after [CEvtRcvFileDescrReady](#rcvfiledescrready) event."),
+        ("CEvtRcvFileSndCancelled", "File was cancelled by the sender. This event may be sent instead of [CEvtRcvFileDescrReady](#rcvfiledescrready) event."),
+        ("CEvtRcvFileAccepted", "This event will be sent when file is automatically accepted because of CLI option."),
+        ("CEvtRcvFileError", "Error receiving file."),
+        ("CEvtRcvFileWarning", "Warning when receiving file. It can happen when CLI settings do not allow to connect to file server(s)."),
+        ("CEvtSndFileError", "Error sending file."),
+        ("CEvtSndFileWarning", "Warning when sending file.")
       ]
     ),
     ( "Connection progress events",
       "Bots may use these events to track progress of connections for monitoring or debugging.",
-      [ ("CEvtAcceptingContactRequest", ""),
-        ("CEvtAcceptingBusinessRequest", ""),
-        ("CEvtContactConnecting", ""), -- CONF
-        ("CEvtBusinessLinkConnecting", ""), -- CONF
-        ("CEvtJoinedGroupMemberConnecting", ""), -- MSG
-        ("CEvtSentGroupInvitation", ""), -- INV
-        ("CEvtGroupLinkConnecting", "") -- CONF
+      [ ("CEvtAcceptingContactRequest", "Automatically accepting contact request via bot's SimpleX address with auto-accept enabled."),
+        ("CEvtAcceptingBusinessRequest", "Automatically accepting contact request via bot's business address."),
+        ("CEvtContactConnecting", "Contact confirmed connection.\n\nSent when contact started connecting via bot's 1-time invitation link or when bot connects to another SimpleX address."), -- CONF
+        ("CEvtBusinessLinkConnecting", "Contact confirmed connection.\n\nSent when bot connects to another business address."), -- CONF
+        ("CEvtJoinedGroupMemberConnecting", "Group member is announced to the group and will be connecting to bot."), -- MSG
+        ("CEvtSentGroupInvitation", "Sent when another user joins group via bot's link."), -- INV
+        ("CEvtGroupLinkConnecting", "Sent when bot joins group via another user link.") -- CONF
       ],
       []
     ),

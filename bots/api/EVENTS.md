@@ -97,7 +97,7 @@ This event is sent after a user connects via bot SimpleX address (not a business
 
 ### ContactUpdated
 
-Contact updated.
+Contact profile of another user is updated.
 
 **Record type**:
 - type: "contactUpdated"
@@ -110,7 +110,7 @@ Contact updated.
 
 ### ContactDeletedByContact
 
-Contact deleted by contact.
+Bot user's connection with another contact is deleted (conversation is kept).
 
 **Record type**:
 - type: "contactDeletedByContact"
@@ -122,7 +122,11 @@ Contact deleted by contact.
 
 ### ReceivedContactRequest
 
-received - needs to be accepted
+Contact request received.
+
+This event is only sent when auto-accept is disabled.
+
+The request needs to be accepted using [APIAcceptContact](./COMMANDS.md#apiacceptcontact) command
 
 **Record type**:
 - type: "receivedContactRequest"
@@ -135,7 +139,9 @@ received - needs to be accepted
 
 ### NewMemberContactReceivedInv
 
-only needs to be processed to associate contact with group
+Received invitation to connect directly with a group member.
+
+This event only needs to be processed to associate contact with group, the connection will proceed automatically.
 
 **Record type**:
 - type: "newMemberContactReceivedInv"
@@ -149,7 +155,9 @@ only needs to be processed to associate contact with group
 
 ### ContactSndReady
 
-Contact snd ready.
+Connecting via 1-time invitation or after accepting contact request.
+
+After this event bot can send messages to this contact.
 
 **Record type**:
 - type: "contactSndReady"
@@ -166,7 +174,7 @@ Bots must use these events to process received messages.
 
 ### NewChatItems
 
-New chat items.
+Received message(s).
 
 **Record type**:
 - type: "newChatItems"
@@ -178,7 +186,7 @@ New chat items.
 
 ### ChatItemReaction
 
-Chat item reaction.
+Received message reaction.
 
 **Record type**:
 - type: "chatItemReaction"
@@ -191,7 +199,7 @@ Chat item reaction.
 
 ### ChatItemsDeleted
 
-Chat items deleted.
+Message was deleted by another user.
 
 **Record type**:
 - type: "chatItemsDeleted"
@@ -205,7 +213,7 @@ Chat items deleted.
 
 ### ChatItemUpdated
 
-Chat item updated.
+Message was updated by another user.
 
 **Record type**:
 - type: "chatItemUpdated"
@@ -217,7 +225,7 @@ Chat item updated.
 
 ### GroupChatItemsDeleted
 
-Group chat items deleted.
+Group messages are deleted or moderated.
 
 **Record type**:
 - type: "groupChatItemsDeleted"
@@ -232,7 +240,7 @@ Group chat items deleted.
 
 ### ChatItemsStatusesUpdated
 
-Chat items statuses updated.
+Message delivery status updates.
 
 **Record type**:
 - type: "chatItemsStatusesUpdated"
@@ -266,7 +274,7 @@ Received group invitation.
 
 ### UserJoinedGroup
 
-User joined group.
+Bot user joined group. Received when connection via group link completes.
 
 **Record type**:
 - type: "userJoinedGroup"
@@ -279,7 +287,7 @@ User joined group.
 
 ### GroupUpdated
 
-Group updated.
+Group profile or preferences updated.
 
 **Record type**:
 - type: "groupUpdated"
@@ -293,7 +301,7 @@ Group updated.
 
 ### JoinedGroupMember
 
-Joined group member.
+Another member joined group.
 
 **Record type**:
 - type: "joinedGroupMember"
@@ -306,7 +314,7 @@ Joined group member.
 
 ### MemberRole
 
-Member role.
+Member (or bot user's) group role changed.
 
 **Record type**:
 - type: "memberRole"
@@ -322,7 +330,7 @@ Member role.
 
 ### DeletedMember
 
-Deleted member.
+Another member is removed from the group.
 
 **Record type**:
 - type: "deletedMember"
@@ -337,7 +345,7 @@ Deleted member.
 
 ### LeftMember
 
-Left member.
+Another member left the group.
 
 **Record type**:
 - type: "leftMember"
@@ -350,7 +358,7 @@ Left member.
 
 ### DeletedMemberUser
 
-Deleted member user.
+Bot user was removed from the group.
 
 **Record type**:
 - type: "deletedMemberUser"
@@ -364,7 +372,7 @@ Deleted member user.
 
 ### GroupDeleted
 
-Group deleted.
+Group was deleted by the owner (not bot user).
 
 **Record type**:
 - type: "groupDeleted"
@@ -377,7 +385,7 @@ Group deleted.
 
 ### ConnectedToGroupMember
 
-Connected to group member.
+Connected to another group member.
 
 **Record type**:
 - type: "connectedToGroupMember"
@@ -391,7 +399,7 @@ Connected to group member.
 
 ### MemberAcceptedByOther
 
-Member accepted by other.
+Another group owner, admin or moderator accepted member to the group after review ("knocking").
 
 **Record type**:
 - type: "memberAcceptedByOther"
@@ -405,7 +413,7 @@ Member accepted by other.
 
 ### MemberBlockedForAll
 
-Member blocked for all.
+Another member blocked for all members.
 
 **Record type**:
 - type: "memberBlockedForAll"
@@ -420,7 +428,7 @@ Member blocked for all.
 
 ### GroupMemberUpdated
 
-Group member updated.
+Another group member profile updated.
 
 **Record type**:
 - type: "groupMemberUpdated"
@@ -443,7 +451,11 @@ Bots that need to send files should use [APISendMessages](./COMMANDS.md#apisendm
 
 ### RcvFileDescrReady
 
-Rcv file descr ready.
+File is ready to be received.
+
+This event is useful for processing sender file servers and monitoring file reception progress.
+
+[ReceiveFile](./COMMANDS.md#receivefile) command can be used before this event.
 
 **Record type**:
 - type: "rcvFileDescrReady"
@@ -457,7 +469,7 @@ Rcv file descr ready.
 
 ### RcvFileComplete
 
-Rcv file complete.
+File reception is competed.
 
 **Record type**:
 - type: "rcvFileComplete"
@@ -469,7 +481,7 @@ Rcv file complete.
 
 ### SndFileCompleteXFTP
 
-Snd file complete x f t p.
+File upload is competed.
 
 **Record type**:
 - type: "sndFileCompleteXFTP"
@@ -482,7 +494,7 @@ Snd file complete x f t p.
 
 ### RcvFileStart
 
-file reception started (happens when FD is received)
+File reception started. This event will be sent after [CEvtRcvFileDescrReady](#rcvfiledescrready) event.
 
 **Record type**:
 - type: "rcvFileStart"
@@ -494,7 +506,7 @@ file reception started (happens when FD is received)
 
 ### RcvFileSndCancelled
 
-sender cancelled sending file
+File was cancelled by the sender. This event may be sent instead of [CEvtRcvFileDescrReady](#rcvfiledescrready) event.
 
 **Record type**:
 - type: "rcvFileSndCancelled"
@@ -507,7 +519,7 @@ sender cancelled sending file
 
 ### RcvFileAccepted
 
-when file auto-accepted - not recommended
+This event will be sent when file is automatically accepted because of CLI option.
 
 **Record type**:
 - type: "rcvFileAccepted"
@@ -519,7 +531,7 @@ when file auto-accepted - not recommended
 
 ### RcvFileError
 
-Rcv file error.
+Error receiving file.
 
 **Record type**:
 - type: "rcvFileError"
@@ -533,7 +545,7 @@ Rcv file error.
 
 ### RcvFileWarning
 
-Rcv file warning.
+Warning when receiving file. It can happen when CLI settings do not allow to connect to file server(s).
 
 **Record type**:
 - type: "rcvFileWarning"
@@ -547,7 +559,7 @@ Rcv file warning.
 
 ### SndFileError
 
-Snd file error.
+Error sending file.
 
 **Record type**:
 - type: "sndFileError"
@@ -561,7 +573,7 @@ Snd file error.
 
 ### SndFileWarning
 
-Snd file warning.
+Warning when sending file.
 
 **Record type**:
 - type: "sndFileWarning"
@@ -580,7 +592,7 @@ Bots may use these events to track progress of connections for monitoring or deb
 
 ### AcceptingContactRequest
 
-Accepting contact request.
+Automatically accepting contact request via bot's SimpleX address with auto-accept enabled.
 
 **Record type**:
 - type: "acceptingContactRequest"
@@ -592,7 +604,7 @@ Accepting contact request.
 
 ### AcceptingBusinessRequest
 
-Accepting business request.
+Automatically accepting contact request via bot's business address.
 
 **Record type**:
 - type: "acceptingBusinessRequest"
@@ -604,7 +616,9 @@ Accepting business request.
 
 ### ContactConnecting
 
-Contact connecting.
+Contact confirmed connection.
+
+Sent when contact started connecting via bot's 1-time invitation link or when bot connects to another SimpleX address.
 
 **Record type**:
 - type: "contactConnecting"
@@ -616,7 +630,9 @@ Contact connecting.
 
 ### BusinessLinkConnecting
 
-Business link connecting.
+Contact confirmed connection.
+
+Sent when bot connects to another business address.
 
 **Record type**:
 - type: "businessLinkConnecting"
@@ -630,7 +646,7 @@ Business link connecting.
 
 ### JoinedGroupMemberConnecting
 
-Joined group member connecting.
+Group member is announced to the group and will be connecting to bot.
 
 **Record type**:
 - type: "joinedGroupMemberConnecting"
@@ -644,7 +660,7 @@ Joined group member connecting.
 
 ### SentGroupInvitation
 
-Sent group invitation.
+Sent when another user joins group via bot's link.
 
 **Record type**:
 - type: "sentGroupInvitation"
@@ -658,7 +674,7 @@ Sent group invitation.
 
 ### GroupLinkConnecting
 
-Group link connecting.
+Sent when bot joins group via another user link.
 
 **Record type**:
 - type: "groupLinkConnecting"
