@@ -42,14 +42,18 @@ commandsDocText =
       (T.pack $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr <> "\n")
         <> foldMap commandDocText commands
       where
-        commandDocText CCDoc {commandType = ATUnionMember tag params, commandDescr, syntax, responses} =
-          ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n")
+        commandDocText CCDoc {commandType = ATUnionMember tag params, commandDescr, network, syntax, responses} =
+          ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n\n*Network usage*: " <> networkUsage <> ".\n")
             <> (if null params then "" else paramsText)
             <> (if syntax == "" then "" else syntaxText (tag, params) syntax)
             <> (if length responses > 1 then "\n**Responses**:\n" else "\n**Response**:\n")
             <> foldMap responseText responses
             <> "\n---\n"
           where
+            networkUsage = case network of
+              Nothing -> "no"
+              Just UNInteractive -> "interactive"
+              Just UNBackground -> "background"
             paramsText = "\n**Parameters**:\n" <> fieldsText "./TYPES.md" params
         responseText CRDoc {responseType = ATUnionMember tag fields, responseDescr} =
           (T.pack $ "\n" <> fstToUpper tag <> ": " <> respDescr <> ".\n")

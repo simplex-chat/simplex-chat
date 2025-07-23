@@ -67,6 +67,8 @@ Bots can use these commands to automatically check and create address when initi
 
 Create bot address.
 
+*Network usage*: interactive.
+
 **Parameters**:
 - userId: int64
 
@@ -94,6 +96,8 @@ UserContactLinkCreated: User contact address created.
 
 Delete bot address.
 
+*Network usage*: background.
+
 **Parameters**:
 - userId: int64
 
@@ -119,6 +123,8 @@ UserContactLinkDeleted: User contact address deleted.
 ### APIShowMyAddress
 
 Get bot address and settings.
+
+*Network usage*: no.
 
 **Parameters**:
 - userId: int64
@@ -146,6 +152,8 @@ UserContactLink: User contact address.
 ### APISetProfileAddress
 
 Add address to bot profile.
+
+*Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
@@ -176,6 +184,8 @@ UserProfileUpdated: User profile updated.
 ### APISetAddressSettings
 
 Set bot address settings.
+
+*Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
@@ -210,6 +220,8 @@ Commands to send, update, delete, moderate messages and set message reactions
 
 Send messages.
 
+*Network usage*: background.
+
 **Parameters**:
 - sendRef: [ChatRef](./TYPES.md#chatref)
 - liveMessage: bool
@@ -239,6 +251,8 @@ NewChatItems: New messages.
 ### APIUpdateChatItem
 
 Update message.
+
+*Network usage*: background.
 
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
@@ -279,6 +293,8 @@ ChatCmdError: Command error.
 
 Delete message.
 
+*Network usage*: background.
+
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
 - chatItemIds: [int64]
@@ -310,6 +326,8 @@ ChatItemsDeleted: Messages deleted.
 
 Moderate message. Requires Moderator role (and higher than message author's).
 
+*Network usage*: background.
+
 **Parameters**:
 - groupId: int64
 - chatItemIds: [int64]
@@ -339,6 +357,8 @@ ChatItemsDeleted: Messages deleted.
 ### APIChatItemReaction
 
 Add/remove message reaction.
+
+*Network usage*: background.
 
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
@@ -376,6 +396,8 @@ Commands to receive and to cancel files. Files are sent as part of the message, 
 
 Receive file.
 
+*Network usage*: no.
+
 **Parameters**:
 - fileId: int64
 - userApprovedRelays: bool
@@ -411,6 +433,8 @@ RcvFileAcceptedSndCancelled: File accepted, but no longer sent.
 ### CancelFile
 
 Cancel file.
+
+*Network usage*: background.
 
 **Parameters**:
 - fileId: int64
@@ -456,6 +480,8 @@ Commands to manage and moderate groups. These commands can be used with business
 
 Add contact to group. Requires bot to have Admin role.
 
+*Network usage*: interactive.
+
 **Parameters**:
 - groupId: int64
 - contactId: int64
@@ -487,9 +513,10 @@ SentGroupInvitation: Group invitation sent.
 
 Join group.
 
+*Network usage*: interactive.
+
 **Parameters**:
 - groupId: int64
-- enableNtfs: [MsgFilter](./TYPES.md#msgfilter)
 
 **Syntax**:
 
@@ -515,6 +542,8 @@ UserAcceptedGroupSent: User accepted group invitation.
 ### APIAcceptMember
 
 Accept group member. Requires Admin role.
+
+*Network usage*: background.
 
 **Parameters**:
 - groupId: int64
@@ -550,6 +579,8 @@ ChatCmdError: Command error.
 
 Set members role. Requires Admin role.
 
+*Network usage*: background.
+
 **Parameters**:
 - groupId: int64
 - groupMemberIds: [int64]
@@ -581,6 +612,8 @@ MembersRoleUser: Members role changed by user.
 
 Block members. Requires Moderator role.
 
+*Network usage*: background.
+
 **Parameters**:
 - groupId: int64
 - groupMemberIds: [int64]
@@ -611,6 +644,8 @@ MembersBlockedForAllUser: Members blocked for all by admin.
 ### APIRemoveMembers
 
 Remove members. Requires Admin role.
+
+*Network usage*: background.
 
 **Parameters**:
 - groupId: int64
@@ -647,6 +682,8 @@ ChatCmdError: Command error.
 
 Leave group.
 
+*Network usage*: background.
+
 **Parameters**:
 - groupId: int64
 
@@ -679,6 +716,8 @@ These commands can be used by bots that manage multiple public groups
 
 Create group link.
 
+*Network usage*: interactive.
+
 **Parameters**:
 - groupId: int64
 - memberRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
@@ -707,6 +746,8 @@ GroupLinkCreated: Group link created.
 ### APIGroupLinkMemberRole
 
 Set member role for group link.
+
+*Network usage*: no.
 
 **Parameters**:
 - groupId: int64
@@ -737,6 +778,8 @@ GroupLink: Group link.
 
 Delete group link.
 
+*Network usage*: background.
+
 **Parameters**:
 - groupId: int64
 
@@ -763,6 +806,8 @@ GroupLinkDeleted: Group link deleted.
 ### APIGetGroupLink
 
 Get group link.
+
+*Network usage*: no.
 
 **Parameters**:
 - groupId: int64
@@ -797,6 +842,8 @@ These commands may be used to create connections. Most bots do not need to use t
 
 Create 1-time invitation link.
 
+*Network usage*: interactive.
+
 **Parameters**:
 - userId: int64
 - incognito: bool
@@ -826,6 +873,8 @@ Invitation: One-time invitation.
 
 Determine SimpleX link type and if the bot is already connected via this link.
 
+*Network usage*: interactive.
+
 **Parameters**:
 - userId: int64
 - connectionLink: string?
@@ -854,6 +903,8 @@ ConnectionPlan: Connection link information.
 ### APIConnect
 
 Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link
+
+*Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
@@ -896,8 +947,9 @@ SentInvitation: Invitation sent to contact address.
 
 Accept contact request.
 
+*Network usage*: interactive.
+
 **Parameters**:
-- incognito: bool
 - contactReqId: int64
 
 **Syntax**:
@@ -923,6 +975,8 @@ AcceptingContactRequest: Contact request accepted.
 ### APIRejectContact
 
 Reject contact request. The user who sent the request is **not notified**.
+
+*Network usage*: no.
 
 **Parameters**:
 - contactReqId: int64
@@ -957,6 +1011,8 @@ Commands to list and delete coversations.
 
 Get contacts.
 
+*Network usage*: no.
+
 **Parameters**:
 - userId: int64
 
@@ -983,6 +1039,8 @@ ContactsList: Contacts.
 ### APIListGroups
 
 Get groups.
+
+*Network usage*: no.
 
 **Parameters**:
 - userId: int64
@@ -1012,6 +1070,8 @@ GroupsList: Groups.
 ### APIDeleteChat
 
 Delete chat.
+
+*Network usage*: background.
 
 **Parameters**:
 - chatRef: [ChatRef](./TYPES.md#chatref)
@@ -1056,6 +1116,8 @@ Most bots don't need to use these commands, as bot profile can be configured man
 
 Get active user profile
 
+*Network usage*: no.
+
 **Syntax**:
 
 ```
@@ -1074,6 +1136,8 @@ ActiveUser: Active user profile.
 ### CreateActiveUser
 
 Create new user profile
+
+*Network usage*: no.
 
 **Parameters**:
 - newUser: [NewUser](./TYPES.md#newuser)
@@ -1101,6 +1165,8 @@ ActiveUser: Active user profile.
 
 Get all user profiles
 
+*Network usage*: no.
+
 **Syntax**:
 
 ```
@@ -1119,6 +1185,8 @@ UsersList: Users.
 ### APISetActiveUser
 
 Set active user profile
+
+*Network usage*: no.
 
 **Parameters**:
 - userId: int64
@@ -1147,6 +1215,8 @@ ActiveUser: Active user profile.
 
 Delete user profile.
 
+*Network usage*: background.
+
 **Parameters**:
 - userId: int64
 - delSMPQueues: bool
@@ -1174,6 +1244,8 @@ CmdOk: Ok.
 ### APIUpdateProfile
 
 Update user profile.
+
+*Network usage*: background.
 
 **Parameters**:
 - userId: int64

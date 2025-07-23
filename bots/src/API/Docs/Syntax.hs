@@ -22,7 +22,7 @@ docSyntaxText :: TypeAndFields -> Expr -> Text
 docSyntaxText r@(tag, _) = T.pack . go Nothing
   where
     go param = \case
-      Concat exs -> concatMap (go param) exs -- TODO validate that subexpressions of type Param have types Int or String
+      Concat exs -> concatMap (go param) exs
       Param p ->
         withParamType r param p $ \case
           ATDef td -> strSyntax td

@@ -92,11 +92,14 @@ When command is processed, CLI will send a response as a WebSockets message in t
 
 `corrId` will be the same as you used in commands. Your bot must maintain the map of pending commands responses, and can implement an internal callback or async API for convenience. See our [TypeScript bot library](../packages/simplex-chat-client/typescript/README.md) for an example. TypeScript library sends commands sequentially, via a queue, but your bot can send commands concurrently.
 
-
 `resp` field is a command-specific response in JSON format. All command responses form a discriminated union with `type` field as a tag.
 
 See [API Commands and Responses](./api/COMMANDS.md) reference about specific command strings and JSON types for command responses. As CLI has the same API as used by mobile and desktop apps, it supports other commands not included in the reference.
 
+*Please note*: CLI uses network connection for most API commands. Command network usage is included in the reference:
+- "no" - command doesn't use network,
+- "interactive" - all or some network requests will complete before command response is sent to the bot,
+- "background" - command response will be sent to the bot before scheduled network requests are sent.
 
 ## Processing events
 
