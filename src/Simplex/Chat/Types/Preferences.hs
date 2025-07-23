@@ -117,9 +117,7 @@ setPreference f allow_ prefs_ = setPreference_ f pref $ fromMaybe emptyChatPrefs
   where
     pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
-    setAllow = setField @"allow" (getPreference f prefs)
-    -- here global ttl won't matter because we only use setPreference' for timed messages
-    prefs = mergePreferences Nothing prefs_
+    setAllow = setField @"allow" (getPreference f prefs_)
 
 setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences
 setPreference' f pref_ prefs_ = setPreference_ f pref_ $ fromMaybe emptyChatPrefs prefs_
@@ -768,6 +766,27 @@ groupFeatureState p =
 mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
 mergePreferences contactPrefs userPreferences =
   FullPreferences
+    { timedMessages = timedPref,
+      fullDelete = pref SCFFullDelete,
+      reactions = pref SCFReactions,
+      voice = pref SCFVoice,
+      calls = pref SCFCalls
+    }
+  where
+    timedPref :: TimedMessagesPreference
+    timedPref =
+      let allow = getField @"allow" $ pref SCFTimedMessages
+          -- when merging preferences, timed messages TTL is taken only from contact override
+          ttlOverride = contactPrefs >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
+       in TimedMessagesPreference {allow, ttl = ttlOverride}
+    pref :: SChatFeature f -> FeaturePreference f
+    pref f =
+      let sel = chatPrefSel f
+       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+
+fullPreferences' :: Maybe Preferences -> FullPreferences
+fullPreferences' userPreferences =
+  FullPreferences
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
@@ -778,7 +797,7 @@ mergePreferences contactPrefs userPreferences =
     pref :: SChatFeature f -> FeaturePreference f
     pref f =
       let sel = chatPrefSel f
-       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+       in fromMaybe (getPreference f defaultChatPrefs) $ (userPreferences >>= sel)
 
 mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
 mergeGroupPreferences groupPreferences =
