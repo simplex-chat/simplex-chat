@@ -9,6 +9,7 @@ import API.Docs.Commands
 import API.Docs.Events
 import API.Docs.Responses
 import API.Docs.Syntax
+import API.Docs.Syntax.Types
 import API.Docs.Types
 import API.TypeInfo
 import Data.Char (isSpace, isUpper, toLower, toUpper)
@@ -44,7 +45,7 @@ commandsDocText =
         commandDocText CCDoc {commandType = cmd@(ATUnionMember tag params), commandDescr, syntax, responses} =
           ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n")
             <> (if null params then "" else paramsText)
-            <> (if null syntax then "" else syntaxText)
+            <> (if syntax == "" then "" else syntaxText)
             <> (if length responses > 1 then "\n**Responses**:\n" else "\n**Response**:\n")
             <> foldMap responseText responses
               -- <> "\n\n**Record type**:\n"
@@ -53,8 +54,8 @@ commandsDocText =
             paramsText = "\n**Parameters**:\n" <> fieldsText "./TYPES.md" params
             syntaxText =
               "\n**Syntax**:\n"
-                <> "\n```\n" <> T.intercalate "\n" (map (docSyntaxText cmd) syntax) <> "\n```\n"
-                <> if all isConst syntax then "" else "\n```javascript\n" <> T.intercalate "\n" (map (jsSyntaxText cmd) syntax) <> (if length syntax == 1 then " // JavaScript" else "") <> "\n```\n"
+                <> "\n```\n" <> docSyntaxText cmd syntax <> "\n```\n"
+                <> if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText cmd syntax <> " // JavaScript" <> "\n```\n"
         responseText CRDoc {responseType = ATUnionMember tag fields, responseDescr} =
           (T.pack $ "\n" <> fstToUpper tag <> ": " <> respDescr <> ".\n")
             <> ("- type: \"" <> T.pack tag <> "\"\n")
@@ -107,7 +108,7 @@ typesDocText =
     <> (foldMap (\t -> T.pack $ "\n- " <> withLink "" (docTypeName t)) chatTypesDocs <> "\n")
     <> foldMap typeDocText chatTypesDocs
   where
-    typeDocText CTDoc {typeDefinition = APITypeDef {typeName' = name, typeDef}, typeDescr} =
+    typeDocText CTDoc {typeDef = APITypeDef {typeName' = name, typeDef}, typeDescr} =
       ("\n\n---\n\n## " <> T.pack name <> "\n")
         <> (if T.null typeDescr then "" else "\n" <> typeDescr <> "\n")
         <> typeDefText typeDef

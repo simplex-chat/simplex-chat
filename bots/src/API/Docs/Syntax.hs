@@ -10,41 +10,13 @@
 
 module API.Docs.Syntax where
 
+import API.Docs.Syntax.Types
 import API.Docs.Types
 import API.TypeInfo
 import Data.List (find, intercalate)
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
-import Data.Semigroup
-import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
-
-type ExprParam = String -- param name
-
-data Expr where
-  Assign :: ExprParam -> Expr -> Expr
-  Func :: String -> ExprParam -> Expr -> Expr
-  Call :: String -> ExprParam -> Expr
-  Concat :: NonEmpty Expr -> Expr
-  Param :: ExprParam -> Expr
-  Json :: ExprParam -> Expr
-  OnOff :: ExprParam -> Expr -- does not include leading space
-  OnOffParam :: String -> ExprParam -> Maybe Bool -> Expr -- name, param, default. Includes leading space in all cases. Name must not be empty
-  ChatRefExpr :: ExprParam -> Expr
-  Join :: Char -> ExprParam -> Expr
-  Optional :: Expr -> Expr -> ExprParam -> Expr -- Nothing expr, Just expr (using [$0] as ExprParam), optional param
-  Const :: String -> Expr
-  deriving (Eq, Show)
-
-isConst :: Expr -> Bool
-isConst = \case
-  Const _ -> True
-  _ -> False
-
-instance IsString Expr where fromString = Const
-
-instance Semigroup Expr where sconcat = Concat
 
 docSyntaxText :: ATUnionMember -> Expr -> Text
 docSyntaxText cmd@(ATUnionMember tag _) = T.pack . go Nothing
@@ -57,7 +29,12 @@ docSyntaxText cmd@(ATUnionMember tag _) = T.pack . go Nothing
       Param p ->
         withParamType cmd param p $ \case
           ATDef (APITypeDef _ (ATDEnum members)) -> intercalate "|" $ L.toList members
-          _ -> "<" <> paramName param p <> ">"
+          ATDef (APITypeDef typeName _) -> case find ((typeName ==) . docTypeName) chatTypesDocs of
+            Just CTDoc {typeSyntax} | typeSyntax /= "" -> "<cmdString(" <> paramName param p <> ")>"
+            _ -> defSyntax
+          _ -> defSyntax
+        where
+          defSyntax = "<" <> paramName param p <> ">"
       Json p ->
         withParamType cmd param p $ \_ -> "<json(" <> paramName param p <> ")>"
       OnOff p -> withBoolParam cmd param p "on|off"
@@ -112,7 +89,12 @@ jsSyntaxText cmd = T.replace "' + '" "" . T.pack . go Nothing True
       Func n p ex -> "let " <> n <> " = (" <> p <> ") => " <> go (Just p) top ex
       Call n p -> n <> "(" <> paramName param p <> ")"
       Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
-      Param p -> paramName param p
+      Param p ->
+        withParamType cmd param p $ \case
+          ATDef (APITypeDef typeName _) -> case find ((typeName ==) . docTypeName) chatTypesDocs of
+            Just CTDoc {typeSyntax} | typeSyntax /= "" -> "cmdString(" <> paramName param p <> ")"
+            _ -> paramName param p
+          _ -> paramName param p
       Json p -> "JSON.stringify(" <> paramName param p <> ")"
       OnOff p -> open <> paramName param p <> " ? 'on' : 'off'" <> close
       OnOffParam name p def_ -> case def_ of

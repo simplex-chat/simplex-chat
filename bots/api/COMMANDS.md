@@ -219,13 +219,11 @@ Send messages.
 **Syntax**:
 
 ```
-chat(r) = @<r.contactId>|#<r.groupId>[(_support[:r.groupMemberId])]
-/_send <chat(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
+/_send <ref(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
 ```
 
 ```javascript
-let chat = (r) => r.contactId ? `@${r.contactId}` : `#${r.groupId}` + (r.scope ? '(_support' + (r.scope.groupMemberId ? `:${r.scope.groupMemberId}` : '') + ')' : '')
-'/_send ' + chat(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages)
+'/_send ' + ref(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
 ```
 
 **Response**:
@@ -1006,11 +1004,11 @@ Delete chat.
 **Syntax**:
 
 ```
-/_delete <ref(chatRef)> <chatDeleteMode>
+/_delete <ref(chatRef)> <cmdString(chatDeleteMode)>
 ```
 
 ```javascript
-'/_delete ' + ref(chatRef) + ' ' + chatDeleteMode // JavaScript
+'/_delete ' + ref(chatRef) + ' ' + cmdString(chatDeleteMode) // JavaScript
 ```
 
 **Responses**:
