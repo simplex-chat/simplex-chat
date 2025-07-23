@@ -286,6 +286,9 @@ ChatCmdError: Command error.
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
+**Errors**:
+- InvalidChatItemUpdate: Not user's message or cannot be edited.
+
 ---
 
 
@@ -468,6 +471,9 @@ ChatCmdError: Command error.
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
+**Errors**:
+- FileCancel: Cannot cancel file.
+
 ---
 
 
@@ -572,6 +578,9 @@ ChatCmdError: Command error.
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
 
+**Errors**:
+- GroupMemberNotActive: Member is not connected yet.
+
 ---
 
 
@@ -674,6 +683,9 @@ UserDeletedMembers: Members deleted.
 ChatCmdError: Command error.
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)
+
+**Errors**:
+- GroupMemberNotFound: Group member not found.
 
 ---
 
@@ -1158,6 +1170,10 @@ ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
 
+**Errors**:
+- UserExists: User or contact with this name already exists.
+- InvalidDisplayName: Invalid user display name.
+
 ---
 
 
@@ -1207,6 +1223,9 @@ Set active user profile
 ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
+
+**Errors**:
+- ChatNotStarted: Chat not started.
 
 ---
 

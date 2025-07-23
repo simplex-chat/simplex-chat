@@ -19,7 +19,7 @@ import Data.List (find)
 import Data.Text (Text)
 import GHC.Generics
 import Simplex.Chat.Controller
-import Simplex.Messaging.Parsers (fstToLower)
+import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
 
 chatCommandsDocs :: [CCCategory]
 chatCommandsDocs = map toCategory chatCommandsDocsData
@@ -34,7 +34,8 @@ chatCommandsDocs = map toCategory chatCommandsDocsData
               Just resp -> resp
               Nothing -> error $ "Missing response doc for " <> name
             responses = map findResp respNames
-         in CCDoc {consName, commandType, commandDescr, responses, errors, network, syntax}
+            errors' = map (\(TD err descr) -> TD (dropPrefix "CE" err) descr) errors
+         in CCDoc {consName, commandType, commandDescr, responses, errors = errors', network, syntax}
       Nothing -> error $ "Missing command type info for " <> consName
 
 deriving instance Generic ChatCommand
@@ -53,63 +54,67 @@ data CCDoc = CCDoc
     commandType :: ATUnionMember,
     commandDescr :: Text,
     responses :: [CRDoc],
-    errors :: [TypeDoc], -- TODO add to doc or remove
+    errors :: [ErrorTypeDoc],
     network :: Maybe UsesNetwork,
     syntax :: Expr
   }
 
 instance ConstructorName CCDoc where consName' CCDoc {consName} = consName
 
--- TODO remove?
-data TypeDoc = TD
+data ErrorTypeDoc = TD
   { consName :: ConsName,
-    description :: Text
+    description :: String
   }
 
 data UsesNetwork = UNBackground | UNInteractive
 
-instance IsString TypeDoc where fromString s = TD s ""
+instance IsString ErrorTypeDoc where fromString s = TD s ""
 
 
 -- category name, category description, commands
 -- inner: constructor, description, responses, errors (ChatErrorType constructors), network usage, syntax
-chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName], [TypeDoc], Maybe UsesNetwork, Expr)])]
+chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName], [ErrorTypeDoc], Maybe UsesNetwork, Expr)])]
 chatCommandsDocsData =
   [ ( "Address commands",
       "Bots can use these commands to automatically check and create address when initialized",
-      [ ("APICreateMyAddress", [], "Create bot address.", ["CRUserContactLinkCreated"], [], Just UNInteractive, "/_address " <> Param "userId"), -- /_address <userId>
-        ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted"], [], Just UNBackground, "/_delete_address " <> Param "userId"), -- /_delete_address <userId>
-        ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink"], [], Nothing, "/_show_address " <> Param "userId"), -- /_show_address <userId>
-        ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"), -- /_profile_address <userId> on/off
-        ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> " " <> Json "settings") -- /_address_settings <userId> <json(settings)>
+      [ ("APICreateMyAddress", [], "Create bot address.", ["CRUserContactLinkCreated"], [], Just UNInteractive, "/_address " <> Param "userId"),
+        ("APIDeleteMyAddress", [], "Delete bot address.", ["CRUserContactLinkDeleted"], [], Just UNBackground, "/_delete_address " <> Param "userId"),
+        ("APIShowMyAddress", [], "Get bot address and settings.", ["CRUserContactLink"], [], Nothing, "/_show_address " <> Param "userId"),
+        ("APISetProfileAddress", [], "Add address to bot profile.", ["CRUserProfileUpdated"], [], Just UNInteractive, "/_profile_address " <> Param "userId" <> " " <> OnOff "enable"),
+        ("APISetAddressSettings", [], "Set bot address settings.", ["CRUserContactLinkUpdated"], [], Just UNInteractive, "/_address_settings " <> Param "userId" <> " " <> Json "settings")
       ]
     ),
     ( "Message commands",
       "Commands to send, update, delete, moderate messages and set message reactions",
-      [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"), -- /_send \(ref(type, id, scope: scope))[ live=on|off][ ttl=<ttl>] json <json(composedMessages)>
-        ("APIUpdateChatItem", [], "Update message.", ["CRChatItemUpdated", "CRChatItemNotChanged", "CRChatCmdError"], ["CEInvalidChatItemUpdate"], Just UNBackground, "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"), -- /_update item <ref(chatRef)> <chatItemId>[ live=on|off] \(updatedMessage.cmdString)"
-        ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"), -- /_delete item <ref(chatRef)> <chatItemIds> <mode>
-        ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"), -- "/_delete member item #<groupId> <chatItemIds>
-        ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction") -- "/_reaction <ref(chatRef)> <itemId> on|off <json(reaction)>
-        -- ("APIGetReactionMembers", [], "Get reaction members.", ["CRReactionMembers"], [], Nothing, ""),
-        -- ("APIReportMessage", [], "Report message.", ["CRNewChatItems"], [], Just UNBackground, ""),
+      [ ("APISendMessages", [], "Send messages.", ["CRNewChatItems"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"),
+        ( "APIUpdateChatItem",
+          [],
+          "Update message.",
+          ["CRChatItemUpdated", "CRChatItemNotChanged", "CRChatCmdError"],
+          [TD "CEInvalidChatItemUpdate" "Not user's message or cannot be edited"],
+          Just UNBackground,
+          "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"
+        ),
+        ("APIDeleteChatItem", [], "Delete message.", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"),
+        ("APIDeleteMemberChatItem", [], "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"),
+        ("APIChatItemReaction", [], "Add/remove message reaction.", ["CRChatItemReaction"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction")
       ]
     ),
     ( "File commands",
       "Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.",
-      [ ("ReceiveFile", [], "Receive file.", ["CRRcvFileAccepted", "CRRcvFileAcceptedSndCancelled"], [], Nothing, "/freceive " <> Param "fileId" <> OnOffParam "approved_relays" "userApprovedRelays" (Just False) <> OnOffParam "encrypt" "storeEncrypted" Nothing <> OnOffParam "inline" "fileInline" Nothing <> Optional "" (" " <> Param "$0") "filePath"), -- "/freceive <fileId> <onOffParam("approved_relays", userApprovedRelays)><onOffParam("encrypt", encrypt)><onOffParam("inline", inline)>"
-        ("CancelFile", [], "Cancel file.", ["CRSndFileCancelled", "CRRcvFileCancelled", "CRChatCmdError"], ["CEFileCancel"], Just UNBackground, "/fcancel " <> Param "fileId") -- "/fcancel <fileId>"
+      [ ("ReceiveFile", [], "Receive file.", ["CRRcvFileAccepted", "CRRcvFileAcceptedSndCancelled"], [], Nothing, "/freceive " <> Param "fileId" <> OnOffParam "approved_relays" "userApprovedRelays" (Just False) <> OnOffParam "encrypt" "storeEncrypted" Nothing <> OnOffParam "inline" "fileInline" Nothing <> Optional "" (" " <> Param "$0") "filePath"),
+        ("CancelFile", [], "Cancel file.", ["CRSndFileCancelled", "CRRcvFileCancelled", "CRChatCmdError"], [TD "CEFileCancel" "Cannot cancel file"], Just UNBackground, "/fcancel " <> Param "fileId")
       ]
     ),
     ( "Group commands",
       "Commands to manage and moderate groups. These commands can be used with business chats as well - they are groups. E.g., a common scenario would be to add human agents to business chat with the customer who connected via business address.",
-      [ ("APIAddMember", [], "Add contact to group. Requires bot to have Admin role.", ["CRSentGroupInvitation"], [], Just UNInteractive, "/_add #" <> Param "groupId" <> " " <> Param "contactId" <> " " <> Param "memberRole"), -- /_add #<groupId> <contactId> <memberRole>
-        ("APIJoinGroup", ["enableNtfs"], "Join group.", ["CRUserAcceptedGroupSent"], [], Just UNInteractive, "/_join #" <> Param "groupId"), -- /_join #<groupId>
-        ("APIAcceptMember", [], "Accept group member. Requires Admin role.", ["CRMemberAccepted", "CRChatCmdError"], ["CEGroupMemberNotActive"], Just UNBackground, "/_accept member #" <> Param "groupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"), -- /_accept member #<groupId> <groupMemberId> <memberRole>
-        ("APIMembersRole", [], "Set members role. Requires Admin role.", ["CRMembersRoleUser"], [], Just UNBackground, "/_member role #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> " " <> Param "memberRole"), -- /_member role #<groupId> <memberIds> <memberRole>
-        ("APIBlockMembersForAll", [], "Block members. Requires Moderator role.", ["CRMembersBlockedForAllUser"], [], Just UNBackground, "/_block #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "blocked" "blocked" Nothing), -- /_block #<groupId> <memberIds> blocked=on|off
-        ("APIRemoveMembers", [], "Remove members. Requires Admin role.", ["CRUserDeletedMembers", "CRChatCmdError"], ["CEGroupMemberNotFound"], Just UNBackground, "/_remove #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "messages" "withMessages" (Just False)), -- /_remove #<groupId> <memberIds> messages=on|off
-        ("APILeaveGroup", [], "Leave group.", ["CRLeftMemberUser"], [], Just UNBackground, "/_leave #" <> Param "groupId") -- /_leave #<groupId>
+      [ ("APIAddMember", [], "Add contact to group. Requires bot to have Admin role.", ["CRSentGroupInvitation"], [], Just UNInteractive, "/_add #" <> Param "groupId" <> " " <> Param "contactId" <> " " <> Param "memberRole"),
+        ("APIJoinGroup", ["enableNtfs"], "Join group.", ["CRUserAcceptedGroupSent"], [], Just UNInteractive, "/_join #" <> Param "groupId"),
+        ("APIAcceptMember", [], "Accept group member. Requires Admin role.", ["CRMemberAccepted", "CRChatCmdError"], [TD "CEGroupMemberNotActive" "Member is not connected yet"], Just UNBackground, "/_accept member #" <> Param "groupId" <> " " <> Param "groupMemberId" <> " " <> Param "memberRole"),
+        ("APIMembersRole", [], "Set members role. Requires Admin role.", ["CRMembersRoleUser"], [], Just UNBackground, "/_member role #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> " " <> Param "memberRole"),
+        ("APIBlockMembersForAll", [], "Block members. Requires Moderator role.", ["CRMembersBlockedForAllUser"], [], Just UNBackground, "/_block #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "blocked" "blocked" Nothing),
+        ("APIRemoveMembers", [], "Remove members. Requires Admin role.", ["CRUserDeletedMembers", "CRChatCmdError"], ["CEGroupMemberNotFound"], Just UNBackground, "/_remove #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "messages" "withMessages" (Just False)),
+        ("APILeaveGroup", [], "Leave group.", ["CRLeftMemberUser"], [], Just UNBackground, "/_leave #" <> Param "groupId")
         -- ("APIListMembers", [], "Get group members.", ["CRGroupMembers"], [], Nothing, ""),
         -- ("APINewGroup", [], "Create group.", ["CRGroupCreated"], [], Nothing, ""),
         -- ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated"], [], Just UNBackground, [])
@@ -117,26 +122,26 @@ chatCommandsDocsData =
     ),
     ( "Group link commands",
       "These commands can be used by bots that manage multiple public groups",
-      [ ("APICreateGroupLink", [], "Create group link.", ["CRGroupLinkCreated"], [], Just UNInteractive, "/_create link #" <> Param "groupId" <> " " <> Param "memberRole"), -- /_create link #<groupId> <memberRole>
-        ("APIGroupLinkMemberRole", [], "Set member role for group link.", ["CRGroupLink"], [], Nothing, "/_set link role #" <> Param "groupId" <> " " <> Param "memberRole"), -- /_set link role #<groupId> <memberRole>
-        ("APIDeleteGroupLink", [], "Delete group link.", ["CRGroupLinkDeleted"], [], Just UNBackground, "/_delete link #" <> Param "groupId"), -- /_delete link #<groupId>
-        ("APIGetGroupLink", [], "Get group link.", ["CRGroupLink"], [], Nothing, "/_get link #" <> Param "groupId") -- /_get link #<groupId>
+      [ ("APICreateGroupLink", [], "Create group link.", ["CRGroupLinkCreated"], [], Just UNInteractive, "/_create link #" <> Param "groupId" <> " " <> Param "memberRole"),
+        ("APIGroupLinkMemberRole", [], "Set member role for group link.", ["CRGroupLink"], [], Nothing, "/_set link role #" <> Param "groupId" <> " " <> Param "memberRole"),
+        ("APIDeleteGroupLink", [], "Delete group link.", ["CRGroupLinkDeleted"], [], Just UNBackground, "/_delete link #" <> Param "groupId"),
+        ("APIGetGroupLink", [], "Get group link.", ["CRGroupLink"], [], Nothing, "/_get link #" <> Param "groupId")
       ]
     ),
     ( "Connection commands",
       "These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
-      [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)), -- /_connect <userId>[ incognito=on|off]
-        ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"), -- /_connect plan <userId> <connLink>
-        ("APIConnect", [], "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> " " <> Param "connLink_"), -- /_connect <userId>[ incognito=on|off] connLink.connFullLink[ connLink.connShortLink]
-        ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"), -- /_accept[ incognito=on|off] <contactReqId>
-        ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected"], [], Nothing, "/_reject " <> Param "contactReqId") -- /_reject <contactReqId>
+      [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
+        ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"),
+        ("APIConnect", [], "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> " " <> Param "connLink_"),
+        ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
+        ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected"], [], Nothing, "/_reject " <> Param "contactReqId")
       ]
     ),
     ( "Chat commands",
       "Commands to list and delete coversations.",
-      [ ("APIListContacts", [], "Get contacts.", ["CRContactsList"], [], Nothing, "/_contacts " <> Param "userId"), -- /_contacts <userId>
-        ("APIListGroups", [], "Get groups.", ["CRGroupsList"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"), --       /_groups <userId>[ @<contactId>][ search]
-        ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode") -- /_delete <ref(chatRef)>[ full|entity|messages][ notify=on|off]
+      [ ("APIListContacts", [], "Get contacts.", ["CRContactsList"], [], Nothing, "/_contacts " <> Param "userId"),
+        ("APIListGroups", [], "Get groups.", ["CRGroupsList"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"),
+        ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode")
         -- ("APIChatItemsRead", [], "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", [], "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", [], "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),
@@ -158,11 +163,18 @@ chatCommandsDocsData =
     ( "User profile commands",
       "Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).",
       [ ("ShowActiveUser", [], "Get active user profile", ["CRActiveUser"], [], Nothing, "/user"),
-        ("CreateActiveUser", [], "Create new user profile", ["CRActiveUser"], ["CEUserExists", "CEInvalidDisplayName"], Nothing, "/_create user " <> Json "newUser"), -- "/_create user <json(NewUser)>"
+        ( "CreateActiveUser",
+          [],
+          "Create new user profile",
+          ["CRActiveUser"],
+          [TD "CEUserExists" "User or contact with this name already exists", TD "CEInvalidDisplayName" "Invalid user display name"],
+          Nothing,
+          "/_create user " <> Json "newUser"
+        ),
         ("ListUsers", [], "Get all user profiles", ["CRUsersList"], [], Nothing, "/users"),
-        ("APISetActiveUser", [], "Set active user profile", ["CRActiveUser"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"), -- "/_user <UserId>[ <quoted(UserPwd)>]"
-        ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"), -- /_delete user <userId>[ del_smp=on|off][ quoted(viewPwd)]
-        ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile") -- /_profile <userId> <json(profile)>
+        ("APISetActiveUser", [], "Set active user profile", ["CRActiveUser"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
+        ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"),
+        ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile")
       ]
     )
   ]

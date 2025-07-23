@@ -42,12 +42,14 @@ commandsDocText =
       (T.pack $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr <> "\n")
         <> foldMap commandDocText commands
       where
-        commandDocText CCDoc {commandType = ATUnionMember tag params, commandDescr, network, syntax, responses} =
+        commandDocText CCDoc {commandType = ATUnionMember tag params, commandDescr, network, syntax, responses, errors} =
           ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n\n*Network usage*: " <> networkUsage <> ".\n")
             <> (if null params then "" else paramsText)
             <> (if syntax == "" then "" else syntaxText (tag, params) syntax)
             <> (if length responses > 1 then "\n**Responses**:\n" else "\n**Response**:\n")
             <> foldMap responseText responses
+            <> (if null errors then "" else "\n**Errors**:\n")
+            <> foldMap errorText errors
             <> "\n---\n"
           where
             networkUsage = case network of
@@ -61,6 +63,9 @@ commandsDocText =
             <> fieldsText "./TYPES.md" fields
           where
             respDescr = if null responseDescr then camelToSpace tag else responseDescr
+        errorText (TD err descr) =
+          let descr' = if null descr then camelToSpace err else descr
+           in T.pack $ "- " <> fstToUpper err <> ": " <> descr' <> ".\n"
 
 syntaxText :: TypeAndFields -> Expr -> Text
 syntaxText r syntax =
