@@ -661,7 +661,13 @@ userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
     then redactedMemberProfile p'
     else
       let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
-       in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
+          fullPrefs =
+            case ct of
+              -- this overrides TTL when we already have contact (e.g. confirmation, profile update)
+              Just Contact {userPreferences} -> mergePreferences (Just userPreferences) userPrefs
+              -- this avoids overriding timed messages TTL on first send (e.g. initial connection)
+              Nothing -> fullPreferences' userPrefs
+       in (p' :: Profile) {preferences = Just $ toChatPrefs fullPrefs}
 
 type LocalAlias = Text
 
