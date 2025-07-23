@@ -219,11 +219,11 @@ Send messages.
 **Syntax**:
 
 ```
-/_send <ref(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
+/_send <str(sendRef)>[ live=on][ ttl=<ttl>] json <json(composedMessages)>
 ```
 
 ```javascript
-'/_send ' + ref(sendRef) + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
+'/_send ' + sendRef.toString() + (liveMessage ? ' live=on' : '') + (ttl ? ' ttl=' + ttl : '') + ' json ' + JSON.stringify(composedMessages) // JavaScript
 ```
 
 **Response**:
@@ -249,11 +249,11 @@ Update message.
 **Syntax**:
 
 ```
-/_update item <ref(chatRef)> <chatItemId>[ live=on] json <json(updatedMessage)>
+/_update item <str(chatRef)> <chatItemId>[ live=on] json <json(updatedMessage)>
 ```
 
 ```javascript
-'/_update item ' + ref(chatRef) + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
+'/_update item ' + chatRef.toString() + ' ' + chatItemId + (liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(updatedMessage) // JavaScript
 ```
 
 **Responses**:
@@ -283,11 +283,11 @@ Delete message.
 **Syntax**:
 
 ```
-/_delete item <ref(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark
+/_delete item <str(chatRef)> <chatItemIds[0]>[,<chatItemIds[1]>...] broadcast|internal|internalMark
 ```
 
 ```javascript
-'/_delete item ' + ref(chatRef) + ' ' + chatItemIds.join(',') + ' ' + deleteMode // JavaScript
+'/_delete item ' + chatRef.toString() + ' ' + chatItemIds.join(',') + ' ' + deleteMode // JavaScript
 ```
 
 **Response**:
@@ -345,11 +345,11 @@ Add/remove message reaction.
 **Syntax**:
 
 ```
-/_reaction <ref(chatRef)> <chatItemId> on|off <json(reaction)>
+/_reaction <str(chatRef)> <chatItemId> on|off <json(reaction)>
 ```
 
 ```javascript
-'/_reaction ' + ref(chatRef) + ' ' + chatItemId + ' ' + (add ? 'on' : 'off') + ' ' + JSON.stringify(reaction) // JavaScript
+'/_reaction ' + chatRef.toString() + ' ' + chatItemId + ' ' + (add ? 'on' : 'off') + ' ' + JSON.stringify(reaction) // JavaScript
 ```
 
 **Response**:
@@ -847,11 +847,11 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 **Syntax**:
 
 ```
-/_connect <userId> <link(connLink_)>
+/_connect <userId> <str(connLink_)>
 ```
 
 ```javascript
-'/_connect ' + userId + ' ' + link(connLink_) // JavaScript
+'/_connect ' + userId + ' ' + connLink_.toString() // JavaScript
 ```
 
 **Responses**:
@@ -1004,11 +1004,11 @@ Delete chat.
 **Syntax**:
 
 ```
-/_delete <ref(chatRef)> <cmdString(chatDeleteMode)>
+/_delete <str(chatRef)> <str(chatDeleteMode)>
 ```
 
 ```javascript
-'/_delete ' + ref(chatRef) + ' ' + cmdString(chatDeleteMode) // JavaScript
+'/_delete ' + chatRef.toString() + ' ' + chatDeleteMode.toString() // JavaScript
 ```
 
 **Responses**:

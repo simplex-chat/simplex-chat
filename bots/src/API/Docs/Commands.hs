@@ -87,11 +87,11 @@ chatCommandsDocsData =
     ( "Message commands",
       "Commands to send, update, delete, moderate messages and set message reactions", -- TODO chatRef command encoding
       -- [Func "chat" "r" (ChatRefExpr "$0"), "/_send " <> Call "chat" "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"]
-      [ ("APISendMessages", "Send messages.", ["CRNewChatItems"], [], Just UNBackground, "/_send " <> Call "ref" "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"), -- /_send \(ref(type, id, scope: scope))[ live=on|off][ ttl=<ttl>] json <json(composedMessages)>
-        ("APIUpdateChatItem", "Update message.", ["CRChatItemUpdated", "CRChatItemNotChanged"], ["CEInvalidChatItemUpdate"], Just UNBackground, "/_update item " <> Call "ref" "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"), -- /_update item <ref(chatRef)> <chatItemId>[ live=on|off] \(updatedMessage.cmdString)"
-        ("APIDeleteChatItem", "Delete message.", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete item " <> Call "ref" "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"), -- /_delete item <ref(chatRef)> <chatItemIds> <mode>
+      [ ("APISendMessages", "Send messages.", ["CRNewChatItems"], [], Just UNBackground, "/_send " <> Param "sendRef" <> OnOffParam "live" "liveMessage" (Just False) <> Optional "" (" ttl=" <> Param "$0") "ttl" <> " json " <> Json "composedMessages"), -- /_send \(ref(type, id, scope: scope))[ live=on|off][ ttl=<ttl>] json <json(composedMessages)>
+        ("APIUpdateChatItem", "Update message.", ["CRChatItemUpdated", "CRChatItemNotChanged"], ["CEInvalidChatItemUpdate"], Just UNBackground, "/_update item " <> Param "chatRef" <> " " <> Param "chatItemId" <> OnOffParam "live" "liveMessage" (Just False) <> " json " <> Json "updatedMessage"), -- /_update item <ref(chatRef)> <chatItemId>[ live=on|off] \(updatedMessage.cmdString)"
+        ("APIDeleteChatItem", "Delete message.", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete item " <> Param "chatRef" <> " " <> Join ',' "chatItemIds" <> " " <> Param "deleteMode"), -- /_delete item <ref(chatRef)> <chatItemIds> <mode>
         ("APIDeleteMemberChatItem", "Moderate message. Requires Moderator role (and higher than message author's).", ["CRChatItemsDeleted"], [], Just UNBackground, "/_delete member item #" <> Param "groupId" <> " " <> Join ',' "chatItemIds"), -- "/_delete member item #<groupId> <chatItemIds>
-        ("APIChatItemReaction", "Add/remove message reaction.", ["CRChatItemReaction"], [], Just UNBackground, "/_reaction " <> Call "ref" "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction") -- "/_reaction <ref(chatRef)> <itemId> on|off <json(reaction)>
+        ("APIChatItemReaction", "Add/remove message reaction.", ["CRChatItemReaction"], [], Just UNBackground, "/_reaction " <> Param "chatRef" <> " " <> Param "chatItemId" <> " " <> OnOff "add" <> " " <> Json "reaction") -- "/_reaction <ref(chatRef)> <itemId> on|off <json(reaction)>
         -- ("APIGetReactionMembers", "Get reaction members.", ["CRReactionMembers"], [], Nothing, ""),
         -- ("APIReportMessage", "Report message.", ["CRNewChatItems"], [], Just UNBackground, ""),
       ]
@@ -130,7 +130,7 @@ chatCommandsDocsData =
       [ ("APIAddContact", "Create 1-time invitation link.", ["CRInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)), -- /_connect <userId>[ incognito=on|off]
         ("APIConnectPlan", "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"), -- /_connect plan <userId> <connLink>
         -- TODO link command encoding
-        ("APIConnect", "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> " " <> Call "link" "connLink_"), -- /_connect <userId>[ incognito=on|off] connLink.connFullLink[ connLink.connShortLink]
+        ("APIConnect", "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation"], [], Just UNInteractive, "/_connect " <> Param "userId" <> " " <> Param "connLink_"), -- /_connect <userId>[ incognito=on|off] connLink.connFullLink[ connLink.connShortLink]
         -- TODO remove incognito
         ("APIAcceptContact", "Accept contact request.", ["CRAcceptingContactRequest"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"), -- /_accept[ incognito=on|off] <contactReqId>
         ("APIRejectContact", "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected"], [], Nothing, "/_reject " <> Param "contactReqId") -- /_reject <contactReqId>
@@ -140,7 +140,7 @@ chatCommandsDocsData =
       "Commands to list and delete coversations.",
       [ ("APIListContacts", "Get contacts.", ["CRContactsList"], [], Nothing, "/_contacts " <> Param "userId"), -- /_contacts <userId>
         ("APIListGroups", "Get groups.", ["CRGroupsList"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"), --       /_groups <userId>[ @<contactId>][ search]
-        ("APIDeleteChat", "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser"], [], Just UNBackground, "/_delete " <> Call "ref" "chatRef" <> " " <> Param "chatDeleteMode") -- /_delete <ref(chatRef)>[ full|entity|messages][ notify=on|off]
+        ("APIDeleteChat", "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode") -- /_delete <ref(chatRef)>[ full|entity|messages][ notify=on|off]
         -- ("APIChatItemsRead", "Mark items as read.", ["CRItemsReadForChat"], [], Nothing, ""),
         -- ("APIChatRead", "Mark chat as read.", ["CRCmdOk"], [], Nothing, ""),
         -- ("APIChatUnread", "Mark chat as unread.", ["CRCmdOk"], [], Nothing, ""),

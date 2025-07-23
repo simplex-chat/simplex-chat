@@ -37,6 +37,8 @@ data APITypeDefinition
   | ATDUnion (NonEmpty ATUnionMember)
   | ATDEnum (NonEmpty String)
 
+type TypeAndFields = (String, [APIRecordField])
+
 data APIRecordField = APIRecordField {fieldName' :: String, typeInfo :: APIType}
 
 data ATUnionMember = ATUnionMember {memberTag :: String, memberFields :: [APIRecordField]}

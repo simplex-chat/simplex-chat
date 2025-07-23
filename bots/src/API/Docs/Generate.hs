@@ -42,26 +42,27 @@ commandsDocText =
       (T.pack $ "\n\n## " <> categoryName <> "\n\n" <> categoryDescr <> "\n")
         <> foldMap commandDocText commands
       where
-        commandDocText CCDoc {commandType = cmd@(ATUnionMember tag params), commandDescr, syntax, responses} =
+        commandDocText CCDoc {commandType = ATUnionMember tag params, commandDescr, syntax, responses} =
           ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n")
             <> (if null params then "" else paramsText)
-            <> (if syntax == "" then "" else syntaxText)
+            <> (if syntax == "" then "" else syntaxText (tag, params) syntax)
             <> (if length responses > 1 then "\n**Responses**:\n" else "\n**Response**:\n")
             <> foldMap responseText responses
-              -- <> "\n\n**Record type**:\n"
             <> "\n---\n"
           where
             paramsText = "\n**Parameters**:\n" <> fieldsText "./TYPES.md" params
-            syntaxText =
-              "\n**Syntax**:\n"
-                <> "\n```\n" <> docSyntaxText cmd syntax <> "\n```\n"
-                <> if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText cmd syntax <> " // JavaScript" <> "\n```\n"
         responseText CRDoc {responseType = ATUnionMember tag fields, responseDescr} =
           (T.pack $ "\n" <> fstToUpper tag <> ": " <> respDescr <> ".\n")
             <> ("- type: \"" <> T.pack tag <> "\"\n")
             <> fieldsText "./TYPES.md" fields
           where
             respDescr = if null responseDescr then camelToSpace tag else responseDescr
+
+syntaxText :: TypeAndFields -> Expr -> Text
+syntaxText r syntax =
+  "\n**Syntax**:\n"
+    <> "\n```\n" <> docSyntaxText r syntax <> "\n```\n"
+    <> if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText r syntax <> " // JavaScript" <> "\n```\n"
 
 camelToSpace :: String -> String
 camelToSpace [] = []
@@ -108,10 +109,20 @@ typesDocText =
     <> (foldMap (\t -> T.pack $ "\n- " <> withLink "" (docTypeName t)) chatTypesDocs <> "\n")
     <> foldMap typeDocText chatTypesDocs
   where
-    typeDocText CTDoc {typeDef = APITypeDef {typeName' = name, typeDef}, typeDescr} =
+    typeDocText CTDoc {typeDef = td@APITypeDef {typeName' = name, typeDef}, typeDescr, typeSyntax} =
       ("\n\n---\n\n## " <> T.pack name <> "\n")
         <> (if T.null typeDescr then "" else "\n" <> typeDescr <> "\n")
         <> typeDefText typeDef
+        <> (if typeSyntax == "" then "" else syntaxText (name, self : typeFields) typeSyntax)
+      where
+        self = APIRecordField "self" (ATDef td)
+        typeFields = case typeDef of
+          ATDRecord fs -> L.toList fs
+          ATDUnion ms -> APIRecordField "type" tagType : concatMap (\(ATUnionMember _ fs) -> fs) ms
+            where
+              tagType = ATDef $ APITypeDef (name <> ".type") $ ATDEnum tags
+              tags = L.map (\(ATUnionMember tag _) -> tag) ms
+          ATDEnum _ -> []
     typeDefText = \case
       ATDRecord fields -> "\n**Record type**:\n" <> fieldsText "" (L.toList fields)
       ATDEnum cs -> "\n**Enum type**:\n" <> foldMap (\m -> "- \"" <> T.pack m <> "\"\n") cs

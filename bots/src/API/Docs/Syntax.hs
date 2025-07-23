@@ -18,88 +18,92 @@ import qualified Data.List.NonEmpty as L
 import Data.Text (Text)
 import qualified Data.Text as T
 
-docSyntaxText :: ATUnionMember -> Expr -> Text
-docSyntaxText cmd@(ATUnionMember tag _) = T.pack . go Nothing
+docSyntaxText :: TypeAndFields -> Expr -> Text
+docSyntaxText r@(tag, _) = T.pack . go Nothing
   where
     go param = \case
-      Assign p ex -> paramName param p <> " = " <> go param ex
-      Func n p ex -> n <> "(" <> p <> ") = " <> go (Just p) ex
-      Call n p -> withParamType cmd param p $ \_ -> "<" <> n <> "(" <> paramName param p <> ")>"
       Concat exs -> concatMap (go param) exs -- TODO validate that subexpressions of type Param have types Int or String
       Param p ->
-        withParamType cmd param p $ \case
-          ATDef (APITypeDef _ (ATDEnum members)) -> intercalate "|" $ L.toList members
-          ATDef (APITypeDef typeName _) -> case find ((typeName ==) . docTypeName) chatTypesDocs of
-            Just CTDoc {typeSyntax} | typeSyntax /= "" -> "<cmdString(" <> paramName param p <> ")>"
-            _ -> defSyntax
-          _ -> defSyntax
+        withParamType r param p $ \case
+          ATDef td -> strSyntax td
+          ATOptional (ATDef td) -> strSyntax td
+          _ -> defSyntax Nothing
         where
-          defSyntax = "<" <> paramName param p <> ">"
+          strSyntax (APITypeDef typeName t)
+            | typeHasSyntax typeName = "<str(" <> paramName param p <> ")>"
+            | otherwise = defSyntax (Just t)
+          defSyntax = \case
+            Just (ATDEnum ms) -> intercalate "|" $ L.toList ms
+            _ -> "<" <> paramName param p <> ">"
       Json p ->
-        withParamType cmd param p $ \_ -> "<json(" <> paramName param p <> ")>"
-      OnOff p -> withBoolParam cmd param p "on|off"
+        withParamType r param p $ \_ -> "<json(" <> paramName param p <> ")>"
+      OnOff p -> withBoolParam r param p "on|off"
       OnOffParam name p def_
         | null name -> error $ fstToUpper tag <> ": on/off parameter " <> paramName param p <> " has empty name"
         | otherwise -> case def_ of
-            Just def -> withOptBoolParam cmd param p $ \_ -> "[ " <> name <> "=" <> onOff <> "]"
+            Just def -> withOptBoolParam r param p $ \_ -> "[ " <> name <> "=" <> onOff <> "]"
               where
                 onOff = if def then "off" else "on"
-            Nothing -> withOptBoolParam cmd param p $ \optional -> if optional then "[" <> res <> "]" else res
+            Nothing -> withOptBoolParam r param p $ \optional -> if optional then "[" <> res <> "]" else res
               where
                 res = " " <> name <> "=on|off"
-      ChatRefExpr p -> let n = paramName param p in "@<" <> n <> ".contactId>|#<" <> n <> ".groupId>[(_support[:" <> n <> ".groupMemberId])]"
       Join c p ->
-        withParamType cmd param p $ \case
+        withParamType r param p $ \case
           ATArray {} -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
-          _ -> paramError cmd param p "is not array"
+          _ -> paramError r param p "is not array"
       Optional exN exJ p ->
-        withParamType cmd param p $ \case
+        withParamType r param p $ \case
           ATOptional {}
             | exN == "" -> "[" <> go (Just p) exJ <> "]"
             | otherwise -> go param exN <> "|" <> go (Just p) exJ
-          _ -> paramError cmd param p "is not optional"
+          _ -> paramError r param p "is not optional"
       Const s -> s
 
-paramError :: ATUnionMember -> Maybe ExprParam -> ExprParam -> String -> String
-paramError (ATUnionMember tag _) param p err = error $ fstToUpper tag <> ": " <> paramName param p <> " " <> err
+typeHasSyntax :: String -> Bool
+typeHasSyntax typeName = case find ((typeName ==) . docTypeName) chatTypesDocs of
+  Just CTDoc {typeSyntax} -> typeSyntax /= ""
+  _ -> False
 
-withParamType :: ATUnionMember -> Maybe ExprParam -> ExprParam -> (APIType -> String) -> String
-withParamType cmd@(ATUnionMember _ params) param p f = case find ((paramName param p ==) . fieldName') params of
+paramError :: TypeAndFields -> Maybe ExprParam -> ExprParam -> String -> String
+paramError (tag, _) param p err = error $ fstToUpper tag <> ": " <> paramName param p <> " " <> err
+
+withParamType :: TypeAndFields -> Maybe ExprParam -> ExprParam -> (APIType -> String) -> String
+withParamType r@(_, params) param p f = case find ((paramName param p ==) . fieldName') params of
   Just APIRecordField {typeInfo} -> f typeInfo
-  Nothing -> paramError cmd param p "is unknown"
+  Nothing -> paramError r param p "is unknown"
 
-withBoolParam :: ATUnionMember -> Maybe ExprParam -> ExprParam -> String -> String
-withBoolParam cmd param p s =
-  withParamType cmd param p $ \case
+withBoolParam :: TypeAndFields -> Maybe ExprParam -> ExprParam -> String -> String
+withBoolParam r param p s =
+  withParamType r param p $ \case
     ATPrim (PT TBool) -> s
-    _ -> paramError cmd param p "is not boolean"
+    _ -> paramError r param p "is not boolean"
 
-withOptBoolParam :: ATUnionMember -> Maybe ExprParam -> ExprParam -> (Bool -> String) -> String
-withOptBoolParam cmd param p f =
-  withParamType cmd param p $ \case
+withOptBoolParam :: TypeAndFields -> Maybe ExprParam -> ExprParam -> (Bool -> String) -> String
+withOptBoolParam r param p f =
+  withParamType r param p $ \case
     ATPrim (PT TBool) -> f False
     (ATOptional (ATPrim (PT TBool))) -> f True
-    _ -> paramError cmd param p "is not [optional] boolean"
+    _ -> paramError r param p "is not [optional] boolean"
 
-jsSyntaxText :: ATUnionMember -> Expr -> Text
-jsSyntaxText cmd = T.replace "' + '" "" . T.pack . go Nothing True
+jsSyntaxText :: TypeAndFields -> Expr -> Text
+jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
   where
     go param top = \case
-      Assign p ex -> "let " <> paramName param p <> " = " <> go param top ex
-      Func n p ex -> "let " <> n <> " = (" <> p <> ") => " <> go (Just p) top ex
-      Call n p -> n <> "(" <> paramName param p <> ")"
       Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
       Param p ->
-        withParamType cmd param p $ \case
-          ATDef (APITypeDef typeName _) -> case find ((typeName ==) . docTypeName) chatTypesDocs of
-            Just CTDoc {typeSyntax} | typeSyntax /= "" -> "cmdString(" <> paramName param p <> ")"
-            _ -> paramName param p
+        withParamType r param p $ \case
+          ATDef td -> toStringSyntax td
+          ATOptional (ATDef td) -> toStringSyntax td
           _ -> paramName param p
+        where
+          toStringSyntax (APITypeDef typeName _)
+            | typeHasSyntax typeName = paramName param p <> ".toString()"
+            | otherwise = paramName param p
       Json p -> "JSON.stringify(" <> paramName param p <> ")"
       OnOff p -> open <> paramName param p <> " ? 'on' : 'off'" <> close
       OnOffParam name p def_ -> case def_ of
         Nothing ->
-          withOptBoolParam cmd param p $ \optional ->
+          withOptBoolParam r param p $ \optional ->
             if optional
               then "(typeof " <> n <> " == 'boolean' ? " <> res <> " : '')"
               else res
@@ -111,7 +115,6 @@ jsSyntaxText cmd = T.replace "' + '" "" . T.pack . go Nothing True
           | otherwise -> open <> n <> " ? ' " <> name <> "=on' : ''" <> close
           where
             n = paramName param p
-      ChatRefExpr p -> let n = paramName param p in open <> n <> ".contactId ? `@${" <> n <> ".contactId}` : `#${" <> n <> ".groupId}` + (" <> n <> ".scope ? '(_support' + (" <> n <> ".scope.groupMemberId ? `:${" <> n <> ".scope.groupMemberId}` : '') + ')' : '')" <> close
       Join c p -> let n = paramName param p in n <> ".join('" <> [c] <> "')"
       Optional exN exJ p -> open <> n <> " ? " <> go (Just p) False exJ <> " : " <> nothing <> close
         where

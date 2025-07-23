@@ -874,6 +874,16 @@ Entity:
 Messages:
 - type: "messages"
 
+**Syntax**:
+
+```
+full|entity|messages[ notify=off]
+```
+
+```javascript
+type + (!notify ? ' notify=off' : '') // JavaScript
+```
+
 
 ---
 
@@ -1264,6 +1274,16 @@ Used in API commands. Chat scope can only be passed with groups.
 - chatId: int64
 - chatScope: [GroupChatScope](#groupchatscope)?
 
+**Syntax**:
+
+```
+<str(chatType)><chatId>[<str(chatScope)>]
+```
+
+```javascript
+chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaScript
+```
+
 
 ---
 
@@ -1297,6 +1317,16 @@ Used in API commands. Chat scope can only be passed with groups.
 - "local"
 - "contactRequest"
 - "contactConnection"
+
+**Syntax**:
+
+```
+<str(self)>
+```
+
+```javascript
+self.toString() // JavaScript
+```
 
 
 ---
@@ -1661,6 +1691,16 @@ User:
 - connFullLink: string
 - connShortLink: string?
 
+**Syntax**:
+
+```
+<connFullLink>[ <connShortLink>]
+```
+
+```javascript
+connFullLink + (connShortLink ? ' ' + connShortLink : '') // JavaScript
+```
+
 
 ---
 
@@ -1956,6 +1996,16 @@ Phone:
 MemberSupport:
 - type: "memberSupport"
 - groupMemberId_: int64?
+
+**Syntax**:
+
+```
+(_support[:<groupMemberId_>])
+```
+
+```javascript
+'(_support' + (groupMemberId_ ? ':' + groupMemberId_ : '') + ')' // JavaScript
+```
 
 
 ---
