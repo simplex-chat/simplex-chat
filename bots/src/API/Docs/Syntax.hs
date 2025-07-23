@@ -23,6 +23,7 @@ docSyntaxText r@(tag, _) = T.pack . go Nothing
   where
     go param = \case
       Concat exs -> concatMap (go param) exs
+      Const s -> s
       Param p ->
         withParamType r param p $ \case
           ATDef td -> strSyntax td
@@ -35,6 +36,16 @@ docSyntaxText r@(tag, _) = T.pack . go Nothing
           defSyntax = \case
             Just (ATDEnum ms) -> intercalate "|" $ L.toList ms
             _ -> "<" <> paramName param p <> ">"
+      Optional exN exJ p ->
+        withParamType r param p $ \case
+          ATOptional {}
+            | exN == "" -> "[" <> go (Just p) exJ <> "]"
+            | otherwise -> go param exN <> "|" <> go (Just p) exJ
+          _ -> paramError r param p "is not optional"
+      Join c p ->
+        withParamType r param p $ \case
+          ATArray {} -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
+          _ -> paramError r param p "is not array"
       Json p ->
         withParamType r param p $ \_ -> "<json(" <> paramName param p <> ")>"
       OnOff p -> withBoolParam r param p "on|off"
@@ -47,17 +58,6 @@ docSyntaxText r@(tag, _) = T.pack . go Nothing
             Nothing -> withOptBoolParam r param p $ \optional -> if optional then "[" <> res <> "]" else res
               where
                 res = " " <> name <> "=on|off"
-      Join c p ->
-        withParamType r param p $ \case
-          ATArray {} -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
-          _ -> paramError r param p "is not array"
-      Optional exN exJ p ->
-        withParamType r param p $ \case
-          ATOptional {}
-            | exN == "" -> "[" <> go (Just p) exJ <> "]"
-            | otherwise -> go param exN <> "|" <> go (Just p) exJ
-          _ -> paramError r param p "is not optional"
-      Const s -> s
 
 typeHasSyntax :: String -> Bool
 typeHasSyntax typeName = case find ((typeName ==) . docTypeName) chatTypesDocs of
@@ -90,6 +90,7 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
   where
     go param top = \case
       Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
+      Const s -> "'" <> escape '\'' s <> "'"
       Param p ->
         withParamType r param p $ \case
           ATDef td -> toStringSyntax td
@@ -99,6 +100,11 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
           toStringSyntax (APITypeDef typeName _)
             | typeHasSyntax typeName = paramName param p <> ".toString()"
             | otherwise = paramName param p
+      Optional exN exJ p -> open <> n <> " ? " <> go (Just p) False exJ <> " : " <> nothing <> close
+        where
+          n = paramName param p
+          nothing = if exN == "" then "''" else go param False exN
+      Join c p -> let n = paramName param p in n <> ".join('" <> [c] <> "')"
       Json p -> "JSON.stringify(" <> paramName param p <> ")"
       OnOff p -> open <> paramName param p <> " ? 'on' : 'off'" <> close
       OnOffParam name p def_ -> case def_ of
@@ -115,12 +121,6 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
           | otherwise -> open <> n <> " ? ' " <> name <> "=on' : ''" <> close
           where
             n = paramName param p
-      Join c p -> let n = paramName param p in n <> ".join('" <> [c] <> "')"
-      Optional exN exJ p -> open <> n <> " ? " <> go (Just p) False exJ <> " : " <> nothing <> close
-        where
-          n = paramName param p
-          nothing = if exN == "" then "''" else go param False exN
-      Const s -> "'" <> escape '\'' s <> "'"
       where
         open = if top then "" else "("
         close = if top then "" else ")"

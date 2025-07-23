@@ -10,13 +10,13 @@ type ExprParam = String -- param name
 
 data Expr
   = Concat (NonEmpty Expr)
+  | Const String
   | Param ExprParam
+  | Optional Expr Expr ExprParam -- Nothing expr, Just expr (using [$0] as ExprParam), optional param
+  | Join Char ExprParam
   | Json ExprParam
   | OnOff ExprParam -- does not include leading space
   | OnOffParam String ExprParam (Maybe Bool) -- name, param, default. Includes leading space in all cases. Name must not be empty
-  | Join Char ExprParam
-  | Optional Expr Expr ExprParam -- Nothing expr, Just expr (using [$0] as ExprParam), optional param
-  | Const String
   deriving (Eq, Show)
 
 isConst :: Expr -> Bool
