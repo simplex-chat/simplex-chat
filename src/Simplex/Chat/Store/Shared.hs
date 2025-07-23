@@ -422,24 +422,6 @@ newContactUserPrefs User {fullPreferences = FullPreferences {timedMessages = use
             override = TimedMessagesPreference {allow = userAllow, ttl = Just ctTTL}
         _ -> Nothing
 
--- newContactUserPrefs :: User -> Profile -> IncognitoEnabled -> Preferences
--- newContactUserPrefs
---   User {fullPreferences = FullPreferences {timedMessages = TimedMessagesPreference {allow = userAllow, ttl = userTTL_}}}
---   Profile {preferences = Preferences {timedMessages = ctTMPref}}
---   incognito
---     | incognito = emptyChatPrefs
---     | userAllow == FANo = emptyChatPrefs
---     | otherwise = case ctTMPref of
---         Just TimedMessagesPreference {allow = ctAllow, ttl = Just ctTTL}
---           | ctAllow == FAAlways || ctAllow == FAYes ->
-              -- case userTTL_ of
-              --   Nothing -> ctTTL
-              --   Just userTTL
-              --     | ctTTL > userTTL -> ctTTL
-              --     | otherwisчe -> Nothing
---               emptyChatPrefs
---         _ -> emptyChatPrefs
-
 type NewPreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId)
 
 toPreparedContactRow :: Maybe (ACreatedConnLink, Maybe SharedMsgId) -> NewPreparedContactRow
