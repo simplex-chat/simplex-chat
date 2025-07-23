@@ -169,7 +169,7 @@
     <string name="e2ee_info_pq_short">این گپ به وسیله رمزگذاری سرتاسر مقاوم در برابر کوانتوم محافظت شده است.</string>
     <string name="disable_notifications_button">غیرفعال کردن اعلان‌ها</string>
     <string name="system_restricted_background_desc">SimpleX نمی‌تواند در پس‌زمینه اجرا شود. فقط وقتی برنامه در حال اجراست اعلان‌ها را دریافت خواهید کرد.</string>
-    <string name="periodic_notifications_desc">برنامه پیام‌های جدید را به طور متناوب دریافت می‌کند - درصد معدودی از باتری در روز استفاده می‌کند. برنامه از اعلان‌های رانشی استفاده نمی‌کند - داده‌ای از دستگاه شما به سرورها فرستاده نمی‌شود.</string>
+    <string name="periodic_notifications_desc">برنامه پیام‌های جدید را به طور متناوب دریافت می‌کند - درصد کمی از باتری در روز استفاده می‌کند. برنامه از پوش نوتیفیکیشن استفاده نمی‌کند - داده‌ای از دستگاه شما به سرورها فرستاده نمی‌شود.</string>
     <string name="turn_off_battery_optimization_button">اجازه دادن</string>
     <string name="turn_off_system_restriction_button">باز کردن تنظیمات برنامه</string>
     <string name="settings_notification_preview_mode_title">نمایش پیش‌نمایش</string>
@@ -198,7 +198,7 @@
     <string name="notification_preview_new_message">پیام جدید</string>
     <string name="notification_preview_mode_message_desc">نمایش مخاطب و پیام</string>
     <string name="notification_new_contact_request">درخواست مخاطب جدید</string>
-    <string name="auth_stop_chat">توقف گپ</string>
+    <string name="auth_stop_chat">توقف چت</string>
     <string name="auth_open_migration_to_another_device">بازکردن صفحه جابه‌جایی</string>
     <string name="you_can_turn_on_lock">می‌توانید قفل SimpleX را از طریق تنظیمات روشن کنید.</string>
     <string name="error_showing_desktop_notification">خطا در نمایش اعلان، با توسعه‌دهندگان تماس بگیرید.</string>
@@ -213,7 +213,7 @@
     <string name="database_initialization_error_title">مقداردهی اولیه پایگاه داده ممکن نیست</string>
     <string name="enter_passphrase_notification_title">عبارت عبور الزامی است</string>
     <string name="enter_passphrase_notification_desc">برای دریافت اعلان‌ها، لطفا، عبارت عبور پایگاه داده را وارد کنید</string>
-    <string name="database_initialization_error_desc">پایگاه داده به درستی کار نمی‌کند. برای آگاهی بیشتر لمس کنید</string>
+    <string name="database_initialization_error_desc">پایگاه داده به درستی کار نمی‌کند. برای آگاهی بیشتر ضربه بزنید</string>
     <string name="simplex_service_notification_title">سرویس SimpleX Chat</string>
     <string name="simplex_service_notification_text">در حال دریافت پیام‌ها…</string>
     <string name="la_notice_turn_on">روشن کردن</string>
@@ -246,7 +246,7 @@
     <string name="copy_verb">کپی</string>
     <string name="delete_message_mark_deleted_warning">پیام به عنوان حذف شده علامت‌گذاری خواهد شد. گیرنده‌ها قادر خواهند بود این پیام را آشکار کنند.</string>
     <string name="icon_descr_sent_msg_status_send_failed">ارسال غیرموفق</string>
-    <string name="contact_tap_to_connect">برای اتصال لمس کنید</string>
+    <string name="contact_tap_to_connect">برای اتصال ضربه بزنید</string>
     <string name="video_decoding_exception_desc">امکان کدبرداری ویدئو وجود ندارد. لطفا، ویدئوی دیگری را امتحان کنید یا با توسعه‌دهندگان تماس بگیرید.</string>
     <string name="image_descr">تصویر</string>
     <string name="file_not_found">پرونده پیدا نشد</string>
@@ -273,7 +273,7 @@
     <string name="disappearing_message">پیام ناپدید شونده</string>
     <string name="send_disappearing_message_custom_time">زمان سفارشی</string>
     <string name="copied">به حافظه کپی شد</string>
-    <string name="add_contact_or_create_group">شروع گپ جدید</string>
+    <string name="add_contact_or_create_group">شروع چت جدید</string>
     <string name="from_gallery_button">از گالری</string>
     <string name="call_service_notification_video_call">تماس تصویری</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">برای محافظت از اطلاعاتتان، قفل SimpleX را روشن کنید.
@@ -326,14 +326,14 @@
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 کامپیوتر: از برنامه کد QR نمایش داده شده را اسکن کنید، از طریق <b>اسکن کد QR</b>.]]></string>
     <string name="share_file">اشتراک‌گذاری فایل…</string>
     <string name="images_limit_title">تعداد تصویر بیش از اندازه!</string>
-    <string name="tap_to_scan">برای اسکن لمس کنید</string>
+    <string name="tap_to_scan">برای اسکن ضربه بزنید</string>
     <string name="choose_file_title">انتخاب پرونده</string>
     <string name="to_start_a_new_chat_help_header">برای شروع گپ جدید</string>
     <string name="delivery">تحویل</string>
     <string name="delete_member_message__question">پیام عضو حذف شود؟</string>
     <string name="for_everybody">برای همه</string>
     <string name="stop_snd_file__message">ارسال پرونده متوقف خواهد شد.</string>
-    <string name="stop_rcv_file__title">دریافت پرونده متوقف شود؟</string>
+    <string name="stop_rcv_file__title">دریافت فایل متوقف شود؟</string>
     <string name="revoke_file__message">پرونده از سرورها حذف خواهد شد.</string>
     <string name="member_contact_send_direct_message">ارسال پیام مستقیم</string>
     <string name="share_image">اشتراک‌گذاری رسانه…</string>
@@ -363,15 +363,15 @@
     <string name="delete_verb">حذف</string>
     <string name="delete_message__question">پیام حذف شود؟</string>
     <string name="revoke_file__title">فایل ابطال شود؟</string>
-    <string name="stop_file__action">توقف پرونده</string>
-    <string name="stop_snd_file__title">ارسال پرونده متوقف شود؟</string>
+    <string name="stop_file__action">توقف فایل</string>
+    <string name="stop_snd_file__title">ارسال فایل متوقف شود؟</string>
     <string name="revoke_file__confirm">ابطال</string>
     <string name="contact_connection_pending">در حال اتصال…</string>
     <string name="your_chats">گپ‌ها</string>
     <string name="group_preview_you_are_invited">شما به گروه دعوت شده‌اید</string>
     <string name="group_preview_join_as">پیوستن به عنوان %s</string>
     <string name="search_or_paste_simplex_link">جستجو یا الصاق لینک SimpleX</string>
-    <string name="tap_to_start_new_chat">برای شروع گپ جدید لمس کنید</string>
+    <string name="tap_to_start_new_chat">برای شروع چت جدید ضربه بزنید</string>
     <string name="share_message">اشتراک‌گذاری پیام…</string>
     <string name="icon_descr_waiting_for_image">در انتظار تصویر</string>
     <string name="voice_message_send_text">پیام صوتی…</string>
@@ -413,14 +413,14 @@
     <string name="to_connect_via_link_title">اتصال از طریق لینک</string>
     <string name="image_will_be_received_when_contact_is_online">تصویر وقتی دریافت خواهد شد که مخاطبتان آنلاین شود، لطفا صبر کنید یا بعدا بررسی کنید!</string>
     <string name="la_lock_mode">حالت قفل SimpleX</string>
-    <string name="la_lock_mode_system">تصدیق سیستم</string>
+    <string name="la_lock_mode_system">احراز هویت سیستم</string>
     <string name="la_change_app_passcode">تغییر کد عبور</string>
     <string name="in_reply_to">در پاسخ به</string>
     <string name="la_immediately">فوری</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">تصدیق دستگاه فعال نیست. زمانی که تصدیق دستگاه را فعال کنید می‌توانید قفل SimpleX را از طریق تنظیمات روشن کنید.</string>
     <string name="allow_verb">اجازه دادن</string>
     <string name="attach">ضمیمه</string>
-    <string name="image_decoding_exception_desc">امکان کدبرداری تصویر وجود ندارد. لطفا، تصویر دیگری را امتحان کنید یا با توسعه‌دهندگان تماس بگیرید.</string>
+    <string name="image_decoding_exception_desc">تصویر قابل رمزگشایی نیست. لطفاً یک تصویر دیگر را امتحان کنید یا با توسعه‌دهندگان تماس بگیرید.</string>
     <string name="files_and_media_prohibited">پرونده‌ها و رسانه ممنوع است!</string>
     <string name="icon_descr_image_snd_complete">تصویر ارسال شد</string>
     <string name="waiting_for_video">در انتظار ویدئو</string>
@@ -459,7 +459,7 @@
     <string name="alert_title_contact_connection_pending">مخاطب هنوز متصل نشده است!</string>
     <string name="you_invited_a_contact">شما مخاطبی را دعوت کردید</string>
     <string name="delete_pending_connection__question">اتصال در حال انتظار حذف شود؟</string>
-    <string name="connection_you_accepted_will_be_cancelled">اتصالی که پذیرفتید لغو خواهد شد!</string>
+    <string name="connection_you_accepted_will_be_cancelled">اتصالی که شما قبول کردید، لغو خواهد شد!</string>
     <string name="mute_chat">بی‌صدا</string>
     <string name="unmute_chat">لغو بی‌صدا</string>
     <string name="mark_read">علامت‌گذاری به عنوان خوانده شده</string>
@@ -481,7 +481,7 @@
     <string name="your_chat_profiles">نمایه‌های گپ شما</string>
     <string name="smp_servers">سرورهای SMP</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat را برای ترمینال نصب کنید</string>
-    <string name="star_on_github">در GitHub ستاره بزنید</string>
+    <string name="star_on_github">در GitHub ستاره بدهید</string>
     <string name="contribute">همکاری کنید</string>
     <string name="image_descr_qr_code">کد QR</string>
     <string name="connect__a_new_random_profile_will_be_shared">یک نمایه تصادفی جدید به اشتراک گذاشته خواهد شد.</string>
@@ -490,7 +490,7 @@
     <string name="is_verified">%s تایید شده است</string>
     <string name="create_chat_profile">ایجاد نمایه گپ</string>
     <string name="chat_console">کنسول گپ</string>
-    <string name="smp_servers_test_server">آزمایش سرور</string>
+    <string name="smp_servers_test_server">سرور آزمایشی</string>
     <string name="smp_servers_enter_manually">وارد کردن دستی سرور</string>
     <string name="enter_one_ICE_server_per_line">سرورهای ICE (یکی در هر خط)</string>
     <string name="error_saving_ICE_servers">خطا در ذخیره کردن سرورهای ICE</string>
@@ -540,7 +540,7 @@
     <string name="send_us_an_email">به ما ایمیل بفرستید</string>
     <string name="chat_lock">قفل SimpleX</string>
     <string name="smp_servers_add">افزودن سرور</string>
-    <string name="smp_servers_test_servers">آزمایش سرورها</string>
+    <string name="smp_servers_test_servers">سرورهای آزمایشی</string>
     <string name="smp_servers_save">ذخیره سرورها</string>
     <string name="smp_servers_test_failed">عدم موفقیت آزمایش سرور!</string>
     <string name="smp_servers_test_some_failed">برخی از سرورها در تست ناموفق بودند:</string>
@@ -583,7 +583,7 @@
     <string name="learn_more">اطلاعات بیشتر</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">اگر بعدا نشانی‌ خود را حذف کنید، مخاطبان خود را از دست نخواهید داد.</string>
     <string name="share_this_1_time_link">این لینک دعوت یک‌بارمصرف را به اشتراک بگذارید</string>
-    <string name="tap_to_paste_link">برای الصاق لینک لمس کنید</string>
+    <string name="tap_to_paste_link">برای الصاق لینک ضربه بزنید</string>
     <string name="your_settings">تنظیمات شما</string>
     <string name="network_use_onion_hosts_required_desc">میزبان‌های Onion برای اتصال الزامی خواهد بود.
 \nلطفا توجه داشته باشید: شما بدون نشانی‌ onion. قادر نخواهید بود به سرورها متصل شوید.</string>
@@ -795,7 +795,7 @@
     <string name="audio_device_earpiece">گوشی</string>
     <string name="audio_device_speaker">بلندگو</string>
     <string name="audio_device_wired_headphones">هدفون‌ها</string>
-    <string name="next_generation_of_private_messaging">نسل بعدی پیام‌رسانی خصوصی</string>
+    <string name="next_generation_of_private_messaging">آینده پیام‌رسانی</string>
     <string name="callstate_ended">پایان یافت</string>
     <string name="unable_to_open_browser_title">خطا در باز کردن مرورگر</string>
     <string name="set_password_to_export">عبارت عبور برای اکسپورت را تعیین کنید</string>
@@ -895,7 +895,7 @@
 \nبروز این اتفاق می‌تواند به دلیل وجود اشکال نرم‌افزاری یا مورد حمله قرار گرفتن اتصال باشد.</string>
     <string name="alert_text_fragment_please_report_to_developers">لطفا آن را به توسعه‌دهندگان گزارش دهید.</string>
     <string name="integrity_msg_duplicate">پیام همسان</string>
-    <string name="stop_chat_question">گپ متوقف شود؟</string>
+    <string name="stop_chat_question">چت متوقف شود؟</string>
     <string name="set_password_to_export_desc">پایگاه داده با استفاده از یک عبارت عبور تصادفی رمزگذاری شده، لطفا پیش از صدور آن را تغییر دهید.</string>
     <string name="error_stopping_chat">خطا در متوقف کردن گپ</string>
     <string name="error_exporting_chat_database">خطا در صدور پایگاه داده گپ</string>
@@ -933,7 +933,7 @@
 \n۲. رمزگشایی پیام ناموفق بود، چون شما یا مخاطبتان از پشتیبان پایگاه داده قدیمی استفاده استفاده کردید.
 \n۳. اتصال مورد حمله قرار گرفته باشد.</string>
     <string name="settings_section_title_profile_images">تصاویر پروفایل</string>
-    <string name="stop_chat_to_export_import_or_delete_chat_database">به منظور صدور، ورود و حذف پایگاه داده گپ، گپ را متوقف کنید. هنگامی که گپ متوقف شده است، شما قادر به دریافت و ارسال پیام نخواهید بود.</string>
+    <string name="stop_chat_to_export_import_or_delete_chat_database">چت را متوقف کنید تا بتوانید پایگاه داده چت را اکسپورت، ایمپورت یا حذف کنید. در حالی که چت متوقف است، نمی‌توانید پیام‌ها را ارسال یا دریافت کنید.</string>
     <string name="your_current_chat_database_will_be_deleted_and_replaced_with_the_imported_one">پایگاه داده گپ فعلی شما حذف و توسط پایگاه داده وارد شده جایگزین خواهد شد.
 \nاین عمل قابل برگشت نیست - نمایه، مخاطبان، پیام‌ها و پرونده‌های شما به صورت غیر قابل بازگشت از بین خواهند رفت.</string>
     <string name="your_chat_database">پایگاه داده گپ شما</string>
@@ -1016,7 +1016,7 @@
     <string name="conn_event_ratchet_sync_allowed">مذاکره مجدد رمزگذاری مجاز است</string>
     <string name="group_member_status_group_deleted">گروه حذف شد</string>
     <string name="group_member_status_intro_invitation">در حال اتصال (دعوت معرفی)</string>
-    <string name="conn_event_disabled_pq">رمزگذاری سرتاسر استاندارد</string>
+    <string name="conn_event_disabled_pq">رمزنگاری استاندارد انتها به انتها</string>
     <string name="group_member_status_accepted">در حال اتصال (پذیرفته شد)</string>
     <string name="group_member_status_announced">در حال اتصال (اعلام شد)</string>
     <string name="group_member_status_connected">متصل شد</string>
@@ -1055,7 +1055,7 @@
     <string name="clear_contacts_selection_button">پاک کردن</string>
     <string name="terminal_always_visible">نمایش کنسول در پنجره جدید</string>
     <string name="you_can_start_chat_via_setting_or_by_restarting_the_app">می‌توانید گپ را از طریق تنظیمات برنامه / پایگاه داده یا با شروع مجدد برنامه شروع کنید.</string>
-    <string name="start_chat_question">گپ شروع شود؟</string>
+    <string name="start_chat_question">چت شروع شود؟</string>
     <string name="database_downgrade_warning">هشدار: ممکن است بعضی از اطلاعات را از دست بدهید!</string>
     <string name="chat_is_stopped_indication">گپ متوقف شده است</string>
     <string name="error_encrypting_database">خطا در رمزگذاری پایگاه داده</string>
@@ -1088,8 +1088,8 @@
     <string name="join_group_incognito_button">پیوستن به صورت ناشناس</string>
     <string name="alert_message_no_group">این گروه دیگر وجود ندارد.</string>
     <string name="you_sent_group_invitation">شما دعوت گروه ارسال کردید</string>
-    <string name="group_invitation_tap_to_join">برای پیوستن لمس کنید</string>
-    <string name="group_invitation_tap_to_join_incognito">برای پیوستن به صورت ناشناس لمس کنید</string>
+    <string name="group_invitation_tap_to_join">برای پیوستن ضربه بزنید</string>
+    <string name="group_invitation_tap_to_join_incognito">برای پیوستن به صورت ناشناس ضربه بزنید</string>
     <string name="rcv_group_event_member_blocked">%s مسدود شد</string>
     <string name="rcv_group_event_member_unblocked">مسدود سازی %s لغو شد</string>
     <string name="rcv_group_event_changed_your_role">نقش شما به %s تغییر کرد</string>
@@ -1294,7 +1294,7 @@
     <string name="group_full_name_field">نام کامل گروه:</string>
     <string name="network_option_protocol_timeout_per_kb">وقفه پروتکل به کیلوبایت</string>
     <string name="network_option_rcv_concurrency">همزمانی دریافت</string>
-    <string name="network_option_tcp_connection_timeout">زمان توقف اتصال TCP</string>
+    <string name="network_option_tcp_connection_timeout">وقفه زمانی اتصال TCP</string>
     <string name="network_option_ping_interval">فاصله زمانی بین هر پینگ</string>
     <string name="network_option_ping_count">تعداد پینگ</string>
     <string name="network_option_enable_tcp_keep_alive">فعال کردن زنده نگه‌داشتن TCP</string>
@@ -1304,7 +1304,7 @@
     <string name="user_unhide">لغو پنهان‌سازی</string>
     <string name="user_unmute">لغو بی‌صدا</string>
     <string name="enter_password_to_show">کلمه عبور را در جستجو وارد کنید</string>
-    <string name="tap_to_activate_profile">برای فعال‌سازی نمایه لمس کنید.</string>
+    <string name="tap_to_activate_profile">برای فعال‌سازی پروفای ضربه بزنید.</string>
     <string name="dont_show_again">دوباره نمایش داده نشود</string>
     <string name="muted_when_inactive">بی‌صدا هنگام غیرفعال بودن!</string>
     <string name="delete_chat_profile">حذف نمایه گپ</string>
@@ -1601,7 +1601,7 @@
 \n- ویرایش تاریخچه.</string>
     <string name="v5_4_better_groups_descr">پیوستن سریع‌تر و پیام‌های قابل اطمینان تر.</string>
     <string name="v5_7_forward">باز فرستادن و ذخیره پیام‌ها</string>
-    <string name="v5_7_shape_profile_images_descr">مربع، دایره، و هر چیزی در این بین.</string>
+    <string name="v5_7_shape_profile_images_descr">مربع، دایره، یا هر چیزی در این بین.</string>
     <string name="v5_7_quantum_resistant_encryption_descr">در گپ‌های مستقیم فعال خواهد شد!</string>
     <string name="sending_delivery_receipts_will_be_enabled">ارسال رسیدهای تحویل برای تمام مخاطبان فعال خواهد شد.</string>
     <string name="you_can_enable_delivery_receipts_later">می‌توانید بعدا از طریق تنظیمات آن را فعال کنید</string>
@@ -1628,7 +1628,7 @@
     <string name="migrate_from_device_database_init">در حال آماده‌سازی بارگذاری</string>
     <string name="migrate_from_device_finalize_migration">نهایی‌سازی جابه‌جایی</string>
     <string name="migrate_from_device_or_share_this_file_link">یا لینک پرونده را به صورت امن به اشتراک بگذارید</string>
-    <string name="migrate_from_device_start_chat">شروع گپ</string>
+    <string name="migrate_from_device_start_chat">شروع چت</string>
     <string name="network_type_ethernet">اترنت باسیم</string>
     <string name="v4_5_reduced_battery_usage_descr">بهبودهای بیشتر به زودی!</string>
     <string name="not_compatible">سازگار نیست!</string>
@@ -1697,7 +1697,7 @@
     <string name="custom_time_unit_months">ماه</string>
     <string name="custom_time_picker_select">انتخاب</string>
     <string name="new_mobile_device">دستگاه موبایل جدید</string>
-    <string name="migrate_from_device_stopping_chat">در حال متوقف کردن گپ</string>
+    <string name="migrate_from_device_stopping_chat">در حال متوقف کردن چت</string>
     <string name="network_type_no_network_connection">بدون اتصال شبکه</string>
     <string name="network_type_other">سایر</string>
     <string name="v4_4_verify_connection_security">تایید امنیت اتصال</string>
@@ -1782,7 +1782,7 @@
     <string name="linked_mobiles">موبایل‌های متصل</string>
     <string name="file_not_approved_title">سرورهای ناشناخته!</string>
     <string name="protect_ip_address">حفاظت از نشانی IP</string>
-    <string name="app_will_ask_to_confirm_unknown_file_servers">برنامه از شما خواهد خواست تا بارگیری‌ها از سرورهای پرونده ناشناخته را تایید کنید (به جز .onion یا وقتی پروکسی SOCKS فعال است).</string>
+    <string name="app_will_ask_to_confirm_unknown_file_servers">این اپلیکیشن از شما می‌خواهد که دانلودها از سرورهای فایل ناشناخته را تأیید کنید (به جز .onion یا زمانی که پروکسی SOCKS فعال باشد).</string>
     <string name="settings_section_title_files">پرونده‌ها</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">بدون تور یا VPN، نشانی IP شما برای سرورهای پرونده قابل رویت خواهد بود.</string>
     <string name="file_not_approved_descr">بدون تور یا VPN، نشانی IP شما برای این واسطه‌های XFTP قابل رویت خواهد بود:
@@ -1840,7 +1840,7 @@
     <string name="file_error_no_file">پرونده یافت نشد - احتمالا حذف یا لغو شده.</string>
     <string name="file_error_auth">کلید اشتباه یا نشانی پرونده ناشناخته - به احتمال زیاد پرونده حذف شده است.</string>
     <string name="file_error">خطای پرونده</string>
-    <string name="temporary_file_error">خطای پرونده موقت</string>
+    <string name="temporary_file_error">خطای فایل موقت</string>
     <string name="info_row_file_status">وضعیت پرونده</string>
     <string name="info_row_message_status">وضعیت پیام</string>
     <string name="share_text_file_status">وضعیت پرونده: %s</string>
@@ -2116,4 +2116,33 @@
     <string name="privacy_media_blur_radius_soft">نرم</string>
     <string name="chat_database_exported_not_all_files">برخی از فایل(ها) اکسپورت نشدند</string>
     <string name="icon_descr_sound_muted">صدا خاموش شد</string>
+    <string name="operator_servers_title">%s سرور</string>
+    <string name="app_check_for_updates_stable">پایدار</string>
+    <string name="servers_info_starting_from">در حال شروع از %s.</string>
+    <string name="servers_info_private_data_disclaimer">در حال شروع از %s.\nتمام داده‌ها به صورت خصوصی بر روی دستگاه شما نگهداری می‌شوند.</string>
+    <string name="servers_info_statistics_section_header">آمار</string>
+    <string name="strikethrough_text">خط‌خورده</string>
+    <string name="privacy_media_blur_radius_strong">قوی</string>
+    <string name="subscribed">مشترک شد</string>
+    <string name="subscription_errors">خطاهای اشتراک</string>
+    <string name="subscription_results_ignored">اشتراک‌ها نادیده گرفته شدند</string>
+    <string name="v6_1_better_calls_descr">در حین تماس، صدا و ویدیو را جابجا کنید.</string>
+    <string name="v6_1_switch_chat_profile_descr">پروفایل چت را برای دعوت‌های یک‌بار مصرف تغییر دهید.</string>
+    <string name="system_mode_toast">حالت سیستم</string>
+    <string name="settings_message_shape_tail">انتها</string>
+    <string name="chat_banner_connect_to_chat">برای چت، روی \"اتصال\" ضربه بزنید.</string>
+    <string name="chat_banner_send_request_to_connect">برای ارسال درخواست، روی \"اتصال\" ضربه بزنید.</string>
+    <string name="address_creation_instruction">برای ایجاد آدرس SimpleX در آینده، در منو روی \"ایجاد آدرس SimpleX\" ضربه بزنید.</string>
+    <string name="chat_banner_join_group">روی \"پیوستن به گروه\" ضربه بزنید.</string>
+    <string name="network_option_tcp_connection">اتصال TCP</string>
+    <string name="network_option_tcp_connection_timeout_background">وقفه زمانی اتصال TCP در پس‌زمینه</string>
+    <string name="network_smp_web_port_section_title">پورت TCP برای پیام‌رسانی</string>
+    <string name="onboarding_network_operators_app_will_use_different_operators">این اپلیکیشن با استفاده از اپراتورهای مختلف در هر مکالمه، از حریم خصوصی شما محافظت می‌کند.</string>
+    <string name="moderate_messages_will_be_deleted_warning">پیام‌ها برای تمام اعضا حذف خواهند شد.</string>
+    <string name="moderate_messages_will_be_marked_warning">پیام‌ها برای تمام اعضا به عنوان مدیریت‌شده علامت‌گذاری خواهند شد.</string>
+    <string name="accept_contact_request">پذیرفتن درخواست تماس</string>
+    <string name="chat_banner_accept_contact_request">پذیرفتن درخواست تماس</string>
+    <string name="privacy_chat_list_open_links_ask">پرسش</string>
+    <string name="attempts_label">تلاش‌ها</string>
+    <string name="app_check_for_updates_beta">بتا</string>
 </resources>
