@@ -15,6 +15,7 @@ import API.Docs.Types
 import API.TypeInfo
 import Data.List (find, intercalate)
 import qualified Data.List.NonEmpty as L
+import Data.Maybe (mapMaybe)
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -52,7 +53,9 @@ docSyntaxText r@(tag, _) = T.pack . go Nothing
             APITypeDef _ (ATDUnion _) -> choices
             APITypeDef _ (ATDEnum _) -> choices
             _ -> paramError r param p "is not union or enum type"
-          choices = intercalate "|" (map (go param . snd) (L.toList opts)) <> "|" <> go param else'
+          choices = (if null optsSyntax then "" else optsSyntax <> "|") <> go param else'
+            where
+              optsSyntax = intercalate "|" (mapMaybe ((\s -> if null s then Nothing else Just s) . go param . snd) (L.toList opts))
       Join c p ->
         withParamType r param p $ \case
           ATArray {} -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
@@ -101,7 +104,7 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
   where
     go param top = \case
       Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
-      Const s -> "'" <> escape '\'' s <> "'"
+      Const s -> "'" <> escapeChar '\'' s <> "'"
       Param p ->
         withParamType r param p $ \case
           ATDef td -> toStringSyntax td
@@ -128,7 +131,7 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
           choices var = open <> optsSyntax <> " : " <> go param top else' <> close
             where
               optsSyntax = intercalate " : " $ map (\(tag, ex) -> var <> " == '" <> tag <> "' ? " <> go param top ex) $ L.toList opts
-      Join c p -> let n = paramName param p in n <> ".join('" <> [c] <> "')"
+      Join c p -> paramName param p <> ".join('" <> [c] <> "')"
       Json p -> "JSON.stringify(" <> paramName param p <> ")"
       OnOff p -> open <> paramName param p <> " ? 'on' : 'off'" <> close
       OnOffParam name p def_ -> case def_ of
@@ -148,9 +151,68 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
       where
         open = if top then "" else "("
         close = if top then "" else ")"
-    escape c s
-      | c `elem` s = concatMap (\c' -> if c' == c then ['\\', c] else [c]) s
-      | otherwise = s
+
+escapeChar :: Char -> String -> String
+escapeChar c s
+  | c `elem` s = concatMap (\c' -> if c' == c then ['\\', c] else [c]) s
+  | otherwise = s
+
+pySyntaxText :: TypeAndFields -> Expr -> Text
+pySyntaxText r = T.pack . go Nothing True
+  where
+    go param top = \case
+      Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
+      Const s -> "'" <> escapeChar '\'' s <> "'"
+      Param p ->
+        withParamType r param p $ \case
+          ATPrim (PT TString) -> paramName param p
+          ATOptional (ATPrim (PT TString)) -> paramName param p
+          _ -> "str(" <> paramName param p <> ")"
+      Optional exN exJ p -> open <> "(" <> go (Just p) False exJ <> ") if " <> n <> " is not None else " <> nothing <> close
+        where
+          n = paramName param p
+          nothing = if exN == "" then "''" else go param False exN
+      Choice p opts else' ->
+        withParamType r param p $ \case
+          ATDef td -> choiceSyntax td
+          ATOptional (ATDef td) -> choiceSyntax td
+          _ -> paramError r param p "is not union type"
+        where
+          choiceSyntax = \case
+            APITypeDef _ (ATDUnion _) -> choices "type"
+            APITypeDef _ (ATDEnum _) -> choices "self"
+            _ -> paramError r param p "is not union type"
+          choices var = open <> optsSyntax <> " else " <> go param top else' <> close
+            where
+              optsSyntax = intercalate " else " $ map (\(tag, ex) -> go param top ex <> " if " <> var' <> " == '" <> tag <> "'") $ L.toList opts
+              var' =
+                withParamType r param var $ \case
+                  ATPrim (PT TString) -> var
+                  ATOptional (ATPrim (PT TString)) -> var
+                  _ -> "str(" <> var <> ")"
+      Join c p ->
+        withParamType r param p $ \case
+          ATArray {elemType = ATPrim (PT TString)} -> "'" <> [c] <> "'.join(" <> paramName param p <> ")"
+          _ -> "'" <> [c] <> "'.join(map(str, " <> paramName param p <> "))"
+      Json p -> "json.dumps(" <> paramName param p <> ")"
+      OnOff p -> open <> "'on' if " <> paramName param p <> " else 'off'" <> close
+      OnOffParam name p def_ -> case def_ of
+        Nothing ->
+          withOptBoolParam r param p $ \optional ->
+            if optional
+              then "((" <> res <> ") if " <> n <> " is not None else '')"
+              else res
+          where
+            n = paramName param p
+            res = "' " <> name <> "=' + ('on' if " <> n <> " else 'off')"
+        Just def
+          | def -> open <> "' " <> name <> "=off' if not " <> n <> " else ''" <> close
+          | otherwise -> open <> "' " <> name <> "=on' if " <> n <> " else ''" <> close
+          where
+            n = paramName param p
+      where
+        open = if top then "" else "("
+        close = if top then "" else ")"
 
 paramName :: Maybe ExprParam -> ExprParam -> String
 paramName param_ p = case param_ of
