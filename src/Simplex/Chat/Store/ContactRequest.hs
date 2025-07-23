@@ -187,11 +187,12 @@ createOrUpdateContactRequest
           | otherwise = createContact'
           where
             createContact' = do
+              let ctUserPreferences = newContactUserPrefs user profile
               liftIO $
                 DB.execute
                   db
-                  "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?)"
-                  (profileId, ldn, userId, currentTs, currentTs, currentTs, BI True, contactRequestId)
+                  "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?,?)"
+                  (profileId, ctUserPreferences, ldn, userId, currentTs, currentTs, currentTs, BI True, contactRequestId)
               contactId <- liftIO $ insertedRowId db
               liftIO $
                 DB.execute
@@ -217,6 +218,7 @@ createOrUpdateContactRequest
     updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       liftIO $ updateProfile currentTs
+      -- TODO update preferences?
       updateRequest currentTs
       ucr' <- getContactRequest db user contactRequestId
       re_ <- getRequestEntity ucr'

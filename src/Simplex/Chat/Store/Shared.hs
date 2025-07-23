@@ -382,12 +382,12 @@ setCommandConnId db User {userId} cmdId connId = do
     (connId, updatedAt, userId, cmdId)
 
 createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
-createContact db User {userId} profile = do
+createContact db user profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db userId profile Nothing "" Nothing currentTs
+  void $ createContact_ db user profile emptyChatPrefs Nothing "" Nothing currentTs
 
-createContact_ :: DB.Connection -> UserId -> Profile -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId Profile {displayName, fullName, shortDescr, image, contactLink, preferences} prepared localAlias viaGroup currentTs =
+createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO ContactId
+createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, preferences} ctUserPreferences prepared localAlias viaGroup currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -396,10 +396,49 @@ createContact_ db userId Profile {displayName, fullName, shortDescr, image, cont
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-      ((profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared)
+      "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((profileId, ctUserPreferences, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared)
     contactId <- insertedRowId db
-    pure $ Right (ldn, contactId, profileId)
+    pure $ Right contactId
+
+newContactUserPrefs :: User -> Profile -> Preferences
+newContactUserPrefs User {fullPreferences = FullPreferences {timedMessages = userTM}} Profile {preferences} =
+  let ctTM_ = chatPrefSel SCFTimedMessages =<< preferences
+      ctUserTM' = newContactUserTMPref userTM ctTM_
+   in emptyChatPrefs {timedMessages = ctUserTM'}
+  where
+    newContactUserTMPref :: TimedMessagesPreference -> Maybe TimedMessagesPreference -> Maybe TimedMessagesPreference
+    newContactUserTMPref userTMPref ctTMPref_ =
+      case (userTMPref, ctTMPref_) of
+        (TimedMessagesPreference {allow = FANo}, _) -> Nothing
+        (_, Just TimedMessagesPreference {allow = FANo}) -> Nothing
+        (TimedMessagesPreference {allow = userAllow, ttl = userTTL_}, Just TimedMessagesPreference {ttl = Just ctTTL}) ->
+          case userTTL_ of
+            Nothing -> Just override
+            Just userTTL
+              | ctTTL > userTTL -> Just override
+              | otherwise -> Nothing
+          where
+            override = TimedMessagesPreference {allow = userAllow, ttl = Just ctTTL}
+        _ -> Nothing
+
+-- newContactUserPrefs :: User -> Profile -> IncognitoEnabled -> Preferences
+-- newContactUserPrefs
+--   User {fullPreferences = FullPreferences {timedMessages = TimedMessagesPreference {allow = userAllow, ttl = userTTL_}}}
+--   Profile {preferences = Preferences {timedMessages = ctTMPref}}
+--   incognito
+--     | incognito = emptyChatPrefs
+--     | userAllow == FANo = emptyChatPrefs
+--     | otherwise = case ctTMPref of
+--         Just TimedMessagesPreference {allow = ctAllow, ttl = Just ctTTL}
+--           | ctAllow == FAAlways || ctAllow == FAYes ->
+              -- case userTTL_ of
+              --   Nothing -> ctTTL
+              --   Just userTTL
+              --     | ctTTL > userTTL -> ctTTL
+              --     | otherwisчe -> Nothing
+--               emptyChatPrefs
+--         _ -> emptyChatPrefs
 
 type NewPreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId)
 

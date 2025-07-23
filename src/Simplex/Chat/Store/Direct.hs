@@ -107,7 +107,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionModeI (..), ConnectionRequestUri, CreatedConnLink (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -343,39 +343,13 @@ createIncognitoProfile db User {userId} p = do
   createdAt <- getCurrentTime
   createIncognitoProfile_ db userId createdAt p
 
-createPreparedContact :: DB.Connection -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
-createPreparedContact db user@User {userId} p@Profile {preferences} connLinkToConnect@(ACCL m _) welcomeSharedMsgId = do
+createPreparedContact :: DB.Connection -> VersionRangeChat -> User -> Profile -> ACreatedConnLink -> Maybe SharedMsgId -> ExceptT StoreError IO Contact
+createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p prepared "" Nothing currentTs
-  let profile = toLocalProfile profileId p ""
-      userPreferences = emptyChatPrefs
-      mergedPreferences = contactUserPreferences user userPreferences preferences False
-  pure $
-    Contact
-      { contactId,
-        localDisplayName,
-        profile,
-        activeConn = Nothing,
-        viaGroup = Nothing,
-        contactUsed = True,
-        contactStatus = CSActive,
-        chatSettings = defaultChatSettings,
-        userPreferences,
-        mergedPreferences,
-        createdAt = currentTs,
-        updatedAt = currentTs,
-        chatTs = Just currentTs,
-        preparedContact = Just PreparedContact {connLinkToConnect, uiConnLinkType = connMode m, welcomeSharedMsgId, requestSharedMsgId = Nothing},
-        contactRequestId = Nothing,
-        contactGroupMemberId = Nothing,
-        contactGrpInvSent = False,
-        chatTags = [],
-        chatItemTTL = Nothing,
-        uiThemes = Nothing,
-        chatDeleted = False,
-        customData = Nothing
-      }
+      ctUserPreferences = newContactUserPrefs user p
+  contactId <- createContact_ db user p ctUserPreferences prepared "" Nothing currentTs
+  getContact db vr user contactId
 
 updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
 updatePreparedContactUser
@@ -406,39 +380,13 @@ updatePreparedContactUser
         safeDeleteLDN db user oldLDN
       getContact db vr newUser contactId
 
-createDirectContact :: DB.Connection -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
-createDirectContact db user@User {userId} conn@Connection {connId, localAlias} p@Profile {preferences} = do
+createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -> Profile -> ExceptT StoreError IO Contact
+createDirectContact db vr user conn@Connection {connId, localAlias} p = do
   currentTs <- liftIO getCurrentTime
-  (localDisplayName, contactId, profileId) <- createContact_ db userId p Nothing localAlias Nothing currentTs
+  let ctUserPreferences = if connIncognito conn then emptyChatPrefs else newContactUserPrefs user p
+  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias Nothing currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
-  let profile = toLocalProfile profileId p localAlias
-      userPreferences = emptyChatPrefs
-      mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
-  pure $
-    Contact
-      { contactId,
-        localDisplayName,
-        profile,
-        activeConn = Just conn,
-        viaGroup = Nothing,
-        contactUsed = True,
-        contactStatus = CSActive,
-        chatSettings = defaultChatSettings,
-        userPreferences,
-        mergedPreferences,
-        createdAt = currentTs,
-        updatedAt = currentTs,
-        chatTs = Just currentTs,
-        preparedContact = Nothing,
-        contactRequestId = Nothing,
-        contactGroupMemberId = Nothing,
-        contactGrpInvSent = False,
-        chatTags = [],
-        chatItemTTL = Nothing,
-        uiThemes = Nothing,
-        chatDeleted = False,
-        customData = Nothing
-      }
+  getContact db vr user contactId
 
 deleteContactConnections :: DB.Connection -> User -> Contact -> IO ()
 deleteContactConnections db User {userId} Contact {contactId} = do

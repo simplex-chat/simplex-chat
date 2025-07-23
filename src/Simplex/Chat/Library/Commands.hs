@@ -1777,7 +1777,7 @@ processChatCommand vr nm = \case
                   _ -> Chat cInfo [] emptyChatStats
             pure $ CRNewPreparedChat user $ AChat SCTGroup chat
       ACCL _ (CCLink cReq _) -> do
-        ct <- withStore $ \db -> createPreparedContact db user profile accLink welcomeSharedMsgId
+        ct <- withStore $ \db -> createPreparedContact db vr user profile accLink welcomeSharedMsgId
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
         let cd = CDDirectRcv ct
             createItem sharedMsgId content = createChatItem user cd False content sharedMsgId Nothing
