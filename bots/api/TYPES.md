@@ -877,11 +877,11 @@ Messages:
 **Syntax**:
 
 ```
-full|entity|messages[ notify=off]
+full|entity|messages|[ notify=off]
 ```
 
 ```javascript
-type + (!notify ? ' notify=off' : '') // JavaScript
+type + (type == 'messages' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
 ```
 
 
@@ -1315,17 +1315,15 @@ chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaSc
 - "direct"
 - "group"
 - "local"
-- "contactRequest"
-- "contactConnection"
 
 **Syntax**:
 
 ```
-<str(self)>
+@|#|*|
 ```
 
 ```javascript
-self.toString() // JavaScript
+self == 'contact' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // JavaScript
 ```
 
 

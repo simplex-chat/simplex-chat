@@ -13,6 +13,7 @@ data Expr
   | Const String
   | Param ExprParam
   | Optional Expr Expr ExprParam -- Nothing expr, Just expr (using [$0] as ExprParam), optional param
+  | Choice ExprParam (NonEmpty (String, Expr)) Expr -- union type param, choices for "type" tags, else
   | Join Char ExprParam
   | Json ExprParam
   | OnOff ExprParam -- does not include leading space

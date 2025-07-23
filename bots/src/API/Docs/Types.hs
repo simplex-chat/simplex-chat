@@ -4,6 +4,7 @@
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE OverloadedLists #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE StandaloneDeriving #-}
 {-# LANGUAGE TypeApplications #-}
@@ -73,7 +74,7 @@ chatTypesDocs = sortOn docTypeName $! snd $! mapAccumL toCTDoc (S.empty, M.empty
 toTypeDef :: (S.Set String, M.Map String APITypeDef) -> (SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text) -> ((S.Set String, M.Map String APITypeDef), Maybe APITypeDef)
 toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, consPrefix, hideConstrs, _, _) =
   let constrs = filter ((`notElem` hideConstrs) . consName') allConstrs
-    in case M.lookup typeName typeDefs of
+   in case M.lookup typeName typeDefs of
         Just td -> (acc, Just td)
         Nothing
           | S.member typeName visited -> (acc, Nothing)
@@ -206,7 +207,7 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
-    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> OnOffParam "notify" "notify" (Just True), ""),
+    (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
@@ -214,7 +215,7 @@ chatTypesDocsData =
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
-    (sti @ChatType, STEnum, "CT", [], Param "self", ""),
+    (sti @ChatType, STEnum, "CT", ["CTContactRequest", "CTContactConnection"], Choice "self" [("contact", "@"), ("group", "#"), ("local", "*")] "", ""),
     (sti @ChatWallpaper, STRecord, "", [], "", ""),
     (sti @ChatWallpaperScale, STEnum, "CWS", [], "", ""),
     (sti @CICallStatus, STEnum, "CISCall", [], "", ""),

@@ -42,6 +42,17 @@ docSyntaxText r@(tag, _) = T.pack . go Nothing
             | exN == "" -> "[" <> go (Just p) exJ <> "]"
             | otherwise -> go param exN <> "|" <> go (Just p) exJ
           _ -> paramError r param p "is not optional"
+      Choice p opts else' ->
+        withParamType r param p $ \case
+          ATDef td -> choiceSyntax td
+          ATOptional (ATDef td) -> choiceSyntax td
+          _ -> paramError r param p "is not union type"
+        where
+          choiceSyntax = \case
+            APITypeDef _ (ATDUnion _) -> choices
+            APITypeDef _ (ATDEnum _) -> choices
+            _ -> paramError r param p "is not union or enum type"
+          choices = intercalate "|" (map (go param . snd) (L.toList opts)) <> "|" <> go param else'
       Join c p ->
         withParamType r param p $ \case
           ATArray {} -> let n = paramName param p in "<" <> n <> "[0]>[" <> [c] <> "<" <> n <> "[1]>...]"
@@ -104,6 +115,19 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
         where
           n = paramName param p
           nothing = if exN == "" then "''" else go param False exN
+      Choice p opts else' ->
+        withParamType r param p $ \case
+          ATDef td -> choiceSyntax td
+          ATOptional (ATDef td) -> choiceSyntax td
+          _ -> paramError r param p "is not union type"
+        where
+          choiceSyntax = \case
+            APITypeDef _ (ATDUnion _) -> choices "type"
+            APITypeDef _ (ATDEnum _) -> choices "self"
+            _ -> paramError r param p "is not union type"
+          choices var = open <> optsSyntax <> " : " <> go param top else' <> close
+            where
+              optsSyntax = intercalate " : " $ map (\(tag, ex) -> var <> " == '" <> tag <> "' ? " <> go param top ex) $ L.toList opts
       Join c p -> let n = paramName param p in n <> ".join('" <> [c] <> "')"
       Json p -> "JSON.stringify(" <> paramName param p <> ")"
       OnOff p -> open <> paramName param p <> " ? 'on' : 'off'" <> close
