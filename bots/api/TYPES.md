@@ -885,7 +885,7 @@ type + (type == 'messages' ? '' : (!notify ? ' notify=off' : '')) // JavaScript
 ```
 
 ```python
-type + ('' if type == 'messages' else (' notify=off' if not notifyelse '')) # Python
+str(type) + ('' if type == 'messages' else (' notify=off' if not notifyelse '')) # Python
 ```
 
 
@@ -1289,7 +1289,7 @@ chatType.toString() + chatId + (chatScope ? chatScope.toString() : '') // JavaSc
 ```
 
 ```python
-str(chatType) + chatId + ((str(chatScope)) if chatScope is not None else '') # Python
+str(chatType) + str(chatId) + ((str(chatScope)) if chatScope is not None else '') # Python
 ```
 
 
@@ -2022,7 +2022,7 @@ MemberSupport:
 ```
 
 ```python
-'(_support' + ((':' + groupMemberId_) if groupMemberId_ is not None else '') + ')' # Python
+'(_support' + ((':' + str(groupMemberId_)) if groupMemberId_ is not None else '') + ')' # Python
 ```
 
 

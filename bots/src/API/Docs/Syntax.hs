@@ -162,13 +162,9 @@ pySyntaxText r = T.pack . go Nothing True
       Const s -> "'" <> escapeChar '\'' s <> "'"
       Param p ->
         withParamType r param p $ \case
-          ATDef td -> strSyntax td
-          ATOptional (ATDef td) -> strSyntax td
-          _ -> paramName param p
-        where
-          strSyntax (APITypeDef typeName _)
-            | typeHasSyntax typeName = "str(" <> paramName param p <> ")"
-            | otherwise = paramName param p
+          ATPrim (PT TString) -> paramName param p
+          ATOptional (ATPrim (PT TString)) -> paramName param p
+          _ -> "str(" <> paramName param p <> ")"
       Optional exN exJ p -> open <> "(" <> go (Just p) False exJ <> ") if " <> n <> " is not None else " <> nothing <> close
         where
           n = paramName param p
@@ -186,7 +182,10 @@ pySyntaxText r = T.pack . go Nothing True
           choices var = open <> optsSyntax <> " else " <> go param top else' <> close
             where
               optsSyntax = intercalate " else " $ map (\(tag, ex) -> go param top ex <> " if " <> var <> " == '" <> tag <> "'") $ L.toList opts
-      Join c p -> "'" <> [c] <> "'.join(" <> paramName param p <> ")"
+      Join c p ->
+        withParamType r param p $ \case
+          ATArray {elemType = ATPrim (PT TString)} -> "'" <> [c] <> "'.join(" <> paramName param p <> ")"
+          _ -> "'" <> [c] <> "'.join(map(str, " <> paramName param p <> "))"
       Json p -> "json.dumps(" <> paramName param p <> ")"
       OnOff p -> open <> "'on' if " <> paramName param p <> " else 'off'" <> close
       OnOffParam name p def_ -> case def_ of

@@ -83,7 +83,7 @@ Create bot address.
 ```
 
 ```python
-'/_address ' + userId # Python
+'/_address ' + str(userId) # Python
 ```
 
 **Response**:
@@ -116,7 +116,7 @@ Delete bot address.
 ```
 
 ```python
-'/_delete_address ' + userId # Python
+'/_delete_address ' + str(userId) # Python
 ```
 
 **Response**:
@@ -148,7 +148,7 @@ Get bot address and settings.
 ```
 
 ```python
-'/_show_address ' + userId # Python
+'/_show_address ' + str(userId) # Python
 ```
 
 **Response**:
@@ -182,7 +182,7 @@ Add address to bot profile.
 ```
 
 ```python
-'/_profile_address ' + userId + ' ' + ('on' if enable else 'off') # Python
+'/_profile_address ' + str(userId) + ' ' + ('on' if enable else 'off') # Python
 ```
 
 **Response**:
@@ -218,7 +218,7 @@ Set bot address settings.
 ```
 
 ```python
-'/_address_settings ' + userId + ' ' + json.dumps(settings) # Python
+'/_address_settings ' + str(userId) + ' ' + json.dumps(settings) # Python
 ```
 
 **Response**:
@@ -259,7 +259,7 @@ Send messages.
 ```
 
 ```python
-'/_send ' + str(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + ttl) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
+'/_send ' + str(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
 ```
 
 **Response**:
@@ -295,7 +295,7 @@ Update message.
 ```
 
 ```python
-'/_update item ' + str(chatRef) + ' ' + chatItemId + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
+'/_update item ' + str(chatRef) + ' ' + str(chatItemId) + (' live=on' if liveMessage else '') + ' json ' + json.dumps(updatedMessage) # Python
 ```
 
 **Responses**:
@@ -342,7 +342,7 @@ Delete message.
 ```
 
 ```python
-'/_delete item ' + str(chatRef) + ' ' + ','.join(chatItemIds) + ' ' + deleteMode # Python
+'/_delete item ' + str(chatRef) + ' ' + ','.join(map(str, chatItemIds)) + ' ' + str(deleteMode) # Python
 ```
 
 **Response**:
@@ -378,7 +378,7 @@ Moderate message. Requires Moderator role (and higher than message author's).
 ```
 
 ```python
-'/_delete member item #' + groupId + ' ' + ','.join(chatItemIds) # Python
+'/_delete member item #' + str(groupId) + ' ' + ','.join(map(str, chatItemIds)) # Python
 ```
 
 **Response**:
@@ -416,7 +416,7 @@ Add/remove message reaction.
 ```
 
 ```python
-'/_reaction ' + str(chatRef) + ' ' + chatItemId + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
+'/_reaction ' + str(chatRef) + ' ' + str(chatItemId) + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
 ```
 
 **Response**:
@@ -459,7 +459,7 @@ Receive file.
 ```
 
 ```python
-'/freceive ' + fileId + (' approved_relays=on' if userApprovedRelays else '') + ((' encrypt=' + ('on' if storeEncrypted else 'off')) if storeEncrypted is not None else '') + ((' inline=' + ('on' if fileInline else 'off')) if fileInline is not None else '') + ((' ' + filePath) if filePath is not None else '') # Python
+'/freceive ' + str(fileId) + (' approved_relays=on' if userApprovedRelays else '') + ((' encrypt=' + ('on' if storeEncrypted else 'off')) if storeEncrypted is not None else '') + ((' inline=' + ('on' if fileInline else 'off')) if fileInline is not None else '') + ((' ' + filePath) if filePath is not None else '') # Python
 ```
 
 **Responses**:
@@ -497,7 +497,7 @@ Cancel file.
 ```
 
 ```python
-'/fcancel ' + fileId # Python
+'/fcancel ' + str(fileId) # Python
 ```
 
 **Responses**:
@@ -552,7 +552,7 @@ Add contact to group. Requires bot to have Admin role.
 ```
 
 ```python
-'/_add #' + groupId + ' ' + contactId + ' ' + memberRole # Python
+'/_add #' + str(groupId) + ' ' + str(contactId) + ' ' + str(memberRole) # Python
 ```
 
 **Response**:
@@ -587,7 +587,7 @@ Join group.
 ```
 
 ```python
-'/_join #' + groupId # Python
+'/_join #' + str(groupId) # Python
 ```
 
 **Response**:
@@ -623,7 +623,7 @@ Accept group member. Requires Admin role.
 ```
 
 ```python
-'/_accept member #' + groupId + ' ' + groupMemberId + ' ' + memberRole # Python
+'/_accept member #' + str(groupId) + ' ' + str(groupMemberId) + ' ' + str(memberRole) # Python
 ```
 
 **Responses**:
@@ -666,7 +666,7 @@ Set members role. Requires Admin role.
 ```
 
 ```python
-'/_member role #' + groupId + ' ' + ','.join(groupMemberIds) + ' ' + memberRole # Python
+'/_member role #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' ' + str(memberRole) # Python
 ```
 
 **Response**:
@@ -703,7 +703,7 @@ Block members. Requires Moderator role.
 ```
 
 ```python
-'/_block #' + groupId + ' ' + ','.join(groupMemberIds) + ' blocked=' + ('on' if blocked else 'off') # Python
+'/_block #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' blocked=' + ('on' if blocked else 'off') # Python
 ```
 
 **Response**:
@@ -740,7 +740,7 @@ Remove members. Requires Admin role.
 ```
 
 ```python
-'/_remove #' + groupId + ' ' + ','.join(groupMemberIds) + (' messages=on' if withMessages else '') # Python
+'/_remove #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + (' messages=on' if withMessages else '') # Python
 ```
 
 **Responses**:
@@ -782,7 +782,7 @@ Leave group.
 ```
 
 ```python
-'/_leave #' + groupId # Python
+'/_leave #' + str(groupId) # Python
 ```
 
 **Response**:
@@ -821,7 +821,7 @@ Create group link.
 ```
 
 ```python
-'/_create link #' + groupId + ' ' + memberRole # Python
+'/_create link #' + str(groupId) + ' ' + str(memberRole) # Python
 ```
 
 **Response**:
@@ -856,7 +856,7 @@ Set member role for group link.
 ```
 
 ```python
-'/_set link role #' + groupId + ' ' + memberRole # Python
+'/_set link role #' + str(groupId) + ' ' + str(memberRole) # Python
 ```
 
 **Response**:
@@ -890,7 +890,7 @@ Delete group link.
 ```
 
 ```python
-'/_delete link #' + groupId # Python
+'/_delete link #' + str(groupId) # Python
 ```
 
 **Response**:
@@ -923,7 +923,7 @@ Get group link.
 ```
 
 ```python
-'/_get link #' + groupId # Python
+'/_get link #' + str(groupId) # Python
 ```
 
 **Response**:
@@ -963,7 +963,7 @@ Create 1-time invitation link.
 ```
 
 ```python
-'/_connect ' + userId + (' incognito=on' if incognito else '') # Python
+'/_connect ' + str(userId) + (' incognito=on' if incognito else '') # Python
 ```
 
 **Response**:
@@ -998,7 +998,7 @@ Determine SimpleX link type and if the bot is already connected via this link.
 ```
 
 ```python
-'/_connect plan ' + userId + ' ' + connectionLink # Python
+'/_connect plan ' + str(userId) + ' ' + connectionLink # Python
 ```
 
 **Response**:
@@ -1034,7 +1034,7 @@ Connect via SimpleX link. The link can be 1-time invitation link, contact addres
 ```
 
 ```python
-'/_connect ' + userId + ' ' + str(connLink_) # Python
+'/_connect ' + str(userId) + ' ' + str(connLink_) # Python
 ```
 
 **Responses**:
@@ -1079,7 +1079,7 @@ Accept contact request.
 ```
 
 ```python
-'/_accept ' + contactReqId # Python
+'/_accept ' + str(contactReqId) # Python
 ```
 
 **Response**:
@@ -1112,7 +1112,7 @@ Reject contact request. The user who sent the request is **not notified**.
 ```
 
 ```python
-'/_reject ' + contactReqId # Python
+'/_reject ' + str(contactReqId) # Python
 ```
 
 **Response**:
@@ -1151,7 +1151,7 @@ Get contacts.
 ```
 
 ```python
-'/_contacts ' + userId # Python
+'/_contacts ' + str(userId) # Python
 ```
 
 **Response**:
@@ -1186,7 +1186,7 @@ Get groups.
 ```
 
 ```python
-'/_groups ' + userId + ((' @' + contactId_) if contactId_ is not None else '') + ((' ' + search) if search is not None else '') # Python
+'/_groups ' + str(userId) + ((' @' + str(contactId_)) if contactId_ is not None else '') + ((' ' + search) if search is not None else '') # Python
 ```
 
 **Response**:
@@ -1347,7 +1347,7 @@ Set active user profile
 ```
 
 ```python
-'/_user ' + userId + ((' ' + json.dumps(viewPwd)) if viewPwd is not None else '') # Python
+'/_user ' + str(userId) + ((' ' + json.dumps(viewPwd)) if viewPwd is not None else '') # Python
 ```
 
 **Response**:
@@ -1384,7 +1384,7 @@ Delete user profile.
 ```
 
 ```python
-'/_delete user ' + userId + ' del_smp=' + ('on' if delSMPQueues else 'off') + ((' ' + json.dumps(viewPwd)) if viewPwd is not None else '') # Python
+'/_delete user ' + str(userId) + ' del_smp=' + ('on' if delSMPQueues else 'off') + ((' ' + json.dumps(viewPwd)) if viewPwd is not None else '') # Python
 ```
 
 **Response**:
@@ -1417,7 +1417,7 @@ Update user profile.
 ```
 
 ```python
-'/_profile ' + userId + ' ' + json.dumps(profile) # Python
+'/_profile ' + str(userId) + ' ' + json.dumps(profile) # Python
 ```
 
 **Response**:
