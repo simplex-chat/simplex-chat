@@ -218,7 +218,6 @@ createOrUpdateContactRequest
     updateContactRequest ucr@UserContactRequest {contactRequestId, contactId_, localDisplayName = oldLdn, profile = Profile {displayName = oldDisplayName}} = do
       currentTs <- liftIO getCurrentTime
       liftIO $ updateProfile currentTs
-      -- TODO update preferences?
       updateRequest currentTs
       ucr' <- getContactRequest db user contactRequestId
       re_ <- getRequestEntity ucr'
