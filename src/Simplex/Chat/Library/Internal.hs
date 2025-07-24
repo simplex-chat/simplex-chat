@@ -48,7 +48,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Data.Time (addUTCTime)
-import Data.Time.Clock (UTCTime, diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds)
+import Data.Time.Calendar (fromGregorian)
+import Data.Time.Clock (UTCTime (..), diffUTCTime, getCurrentTime, nominalDiffTimeToSeconds, secondsToDiffTime)
 import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Files
@@ -909,7 +910,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
         Just conn@Connection {customUserProfileId} -> do
           incognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
-  let profileToSend = userProfileToSend' user incognitoProfile (Just ct) False
+  let profileToSend = userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
   -- TODO [certs rcv]
   (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
@@ -922,7 +923,7 @@ acceptContactRequestAsync
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId, pqSupport = cReqPQSup}
   incognitoProfile = do
     subMode <- chatReadVar subscriptionMode
-    let profileToSend = userProfileToSend' user incognitoProfile (Just ct) False
+    let profileToSend = userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
     vr <- chatVersionRange
     let chatV = vr `peerConnChatVersion` cReqChatVRange
     (cmdId, acId) <- agentAcceptContactAsync user True cReqInvId (XInfo profileToSend) subMode cReqPQSup chatV
@@ -951,7 +952,7 @@ acceptGroupJoinRequestAsync
     (groupMemberId, memberId) <- withStore $ \db ->
       createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-    let Profile {displayName} = userProfileToSend' user incognitoProfile Nothing True
+    let Profile {displayName} = userProfileInGroup user (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkInv $
@@ -1010,7 +1011,7 @@ acceptBusinessJoinRequestAsync
   clientMember@GroupMember {groupMemberId, memberId}
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
-    let userProfile@Profile {displayName, preferences} = userProfileToSend' user Nothing Nothing True
+    let userProfile@Profile {displayName, preferences} = userProfileInGroup user Nothing
         -- TODO [short links] take groupPreferences from group info
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
         msg =
@@ -2287,6 +2288,17 @@ createSndFeatureItems user ct ct' =
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
 
+-- Used when contact is changed after creating initial feature items via createFeatureEnabledItems_
+-- (APIChangePreparedContactUser, APIConnectPreparedContact with incognito = True);
+-- creates feature items with CDDirectRcv direction so that changed feature items stay in the same place in chat view
+createContactChangedFeatureItems :: User -> Contact -> Contact -> CM' ()
+createContactChangedFeatureItems user ct ct' =
+  createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvChatPreference getPref
+  where
+    getPref ContactUserPreference {userPreference} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
+
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
 createFeatureEnabledItems :: User -> Contact -> CM ()
@@ -2529,3 +2541,6 @@ timeItToView s action = do
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
   toView' $ CEvtTimedAction s diff
   pure a
+
+epochStart :: UTCTime
+epochStart = UTCTime (fromGregorian 1970 1 1) (secondsToDiffTime 0)

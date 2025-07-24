@@ -104,7 +104,7 @@ chatTypeStr = \case
 chatNameStr :: ChatName -> String
 chatNameStr (ChatName cType name) = T.unpack $ chatTypeStr cType <> if T.any isSpace name then "'" <> name <> "'" else name
 
-data ChatRef = ChatRef ChatType Int64 (Maybe GroupChatScope)
+data ChatRef = ChatRef {chatType :: ChatType, chatId :: Int64, chatScope :: Maybe GroupChatScope}
   deriving (Eq, Show, Ord)
 
 data ChatInfo (c :: ChatType) where
@@ -1499,6 +1499,7 @@ instance (ChatTypeI c, MsgDirectionI d) => ToJSON (JSONAnyChatItem c d) where
   toJSON = $(JQ.mkToJSON defaultJSON ''JSONAnyChatItem)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''JSONAnyChatItem)
 
+-- if JSON encoding changes, update AChatItem type definition in bots/src/API/Docs/Types.hs
 instance FromJSON AChatItem where
   parseJSON = J.withObject "AChatItem" $ \o -> do
     AChatInfo c chatInfo <- o .: "chatInfo"
@@ -1560,6 +1561,7 @@ instance ChatTypeI c => ToJSON (JSONCIReaction c d) where
   toJSON = $(JQ.mkToJSON defaultJSON ''JSONCIReaction)
   toEncoding = $(JQ.mkToEncoding defaultJSON ''JSONCIReaction)
 
+-- if JSON encoding changes, update ACIReaction type definition in bots/src/API/Docs/Types.hs
 instance FromJSON ACIReaction where
   parseJSON = J.withObject "ACIReaction" $ \o -> do
     ACIR c d reaction <- o .: "chatReaction"

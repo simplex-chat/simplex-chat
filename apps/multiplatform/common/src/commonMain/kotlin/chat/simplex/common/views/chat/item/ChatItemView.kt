@@ -787,6 +787,7 @@ fun ChatItemView(
               is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
               is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
               is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
+              is CIContent.ChatBanner -> Spacer(modifier = Modifier.size(0.dp))
               is CIContent.InvalidJSON -> {
                 CIInvalidJSONView(c.json)
                 DeleteItemMenu()
@@ -1280,7 +1281,11 @@ sealed class ShapeStyle {
   data class RoundRect(val radius: Dp) : ShapeStyle()
 }
 
-fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
+val shapeStyle: (chatItem: ChatItem?, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean) -> ShapeStyle =
+  if (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) > 27) ::shapeStyleWithTail
+  else { _, _, _, _ -> ShapeStyle.RoundRect(msgRectMaxRadius) }
+
+fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
   if (chatItem == null) {
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }

@@ -191,7 +191,7 @@ deleteContactCIs db user@User {userId} ct@Contact {contactId} = do
   forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ?" (Only connId)
   DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ?" (Only contactId)
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?" (userId, contactId)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_content_tag != 'chatBanner'" (userId, contactId)
 
 getContactConnIds_ :: DB.Connection -> User -> Contact -> IO [Int64]
 getContactConnIds_ db User {userId} Contact {contactId} =
@@ -212,7 +212,7 @@ deleteGroupChatItemsMessages :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
   DB.execute db "DELETE FROM messages WHERE group_id = ?" (Only groupId)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ?" (Only groupId)
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'" (userId, groupId)
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId chatMsgEvent encodeMessage =
@@ -832,7 +832,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -845,7 +845,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND item_status = ?
+          WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN (
@@ -1608,7 +1608,7 @@ getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatSco
 getGroupUnreadCount_ db user g scopeInfo_ contentFilter =
   head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter baseQuery ""
   where
-    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL "
+    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL "
 
 getGroupReportsCount_ :: DB.Connection -> User -> GroupInfo -> Bool -> IO Int
 getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
@@ -3416,7 +3416,7 @@ deleteContactExpiredCIs db user@User {userId} ct@Contact {contactId} expirationD
   forM_ connIds $ \connId ->
     DB.execute db "DELETE FROM messages WHERE connection_id = ? AND created_at <= ?" (connId, expirationDate)
   DB.execute db "DELETE FROM chat_item_reactions WHERE contact_id = ? AND created_at <= ?" (contactId, expirationDate)
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ?" (userId, contactId, expirationDate)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND created_at <= ? AND item_content_tag != 'chatBanner'" (userId, contactId, expirationDate)
 
 getGroupExpiredFileInfo :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTime -> IO [CIFileInfo]
 getGroupExpiredFileInfo db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff =
@@ -3430,7 +3430,7 @@ deleteGroupExpiredCIs :: DB.Connection -> User -> GroupInfo -> UTCTime -> UTCTim
 deleteGroupExpiredCIs db User {userId} GroupInfo {groupId} expirationDate createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE group_id = ? AND created_at <= ?" (groupId, min expirationDate createdAtCutoff)
   DB.execute db "DELETE FROM chat_item_reactions WHERE group_id = ? AND reaction_ts <= ? AND created_at <= ?" (groupId, expirationDate, createdAtCutoff)
-  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ?" (userId, groupId, expirationDate, createdAtCutoff)
+  DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_ts <= ? AND created_at <= ? AND item_content_tag != 'chatBanner'" (userId, groupId, expirationDate, createdAtCutoff)
 
 createCIModeration :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> MessageId -> UTCTime -> IO ()
 createCIModeration db GroupInfo {groupId} moderatorMember itemMemberId itemSharedMId msgId moderatedAtTs =

@@ -114,9 +114,8 @@ Read about the app features and settings in the new [User guide](./docs/guide/RE
 
 We would love to have you join the development! You can help us with:
 
-- [share the color theme](./docs/THEMES.md) you use in Android app!
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- contributing to SimpleX Chat knowledge-base.
+- [develop a chat bot](#develop-a-chat-bot) for SimpleX Chat!
+- writing a tutorial or recipes about hosting servers, chat bots, etc.
 - developing features - please connect to us via chat so we can help you get started.
 
 ## Help translating SimpleX Chat
@@ -194,6 +193,7 @@ SimpleX Chat founder
 - [SimpleX Platform design](#simplex-platform-design)
 - [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
 - [For developers](#for-developers)
+- [Develop a chat bot](#develop-a-chat-bot)
 - [Roadmap](#roadmap)
 - [Disclaimers, Security contact, License](#disclaimers)
 
@@ -325,14 +325,22 @@ We plan to add:
 
 You can:
 
+- [create chat bots and services](#develop-a-chat-bot).
+- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
 - use SimpleX Chat library to integrate chat functionality into your mobile apps.
 - create chat bots and services in Haskell - see [simple](./apps/simplex-bot/) and more [advanced chat bot example](./apps/simplex-bot-advanced/).
-- create chat bots and services in any language running SimpleX Chat terminal CLI as a local WebSocket server. See [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
-- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
 
 If you are considering developing with SimpleX platform please get in touch for any advice and support.
 
 Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F6eHqy7uAbZPOcA6qBtrQgQquVlt4Ll91%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAqV_pg3FF00L98aCXp4D3bOs4Sxv_UmSd-gb0juVoQVs%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22XonlixcHBIb2ijCehbZoiw%3D%3D%22%7D) group to ask any questions and share your success stories.
+
+## Develop a chat bot
+
+You can create a chat bot or any chat-based service in any language running SimpleX Chat terminal CLI as a local WebSocket server.
+
+See [our new bot API reference](./bots/README.md). Most of it is automatically generated from core library types, so it stays up to date.
+
+Also see [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
 
 ## Roadmap
 

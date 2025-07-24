@@ -316,7 +316,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
-    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true, largeLinkData: false), ctrl: ctrl)
+    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true, largeLinkData: true), ctrl: ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -2539,7 +2539,7 @@ func processReceivedMsg(_ res: ChatEvent) async {
     case let .rcvFileAccepted(user, aChatItem): // usually rcvFileAccepted is a response, but it's also an event for XFTP files auto-accepted from NSE
         await chatItemSimpleUpdate(user, aChatItem)
 // TODO when aChatItem added
-//    case let .rcvFileAcceptedSndCancelled(user, aChatItem, _): // usually rcvFileAcceptedSndCancelled is a response, but it's also an event for XFTP files auto-accepted from NSE
+//    case let .rcvFileAcceptedSndCancelled(user, aChatItem, _): // usually rcvFileAcceptedSndCancelled is a response, but it's also an event for legacy files auto-accepted from NSE.
 //        await chatItemSimpleUpdate(user, aChatItem)
 //        Task { cleanupFile(aChatItem) }
     case let .rcvFileStart(user, aChatItem):

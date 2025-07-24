@@ -187,11 +187,12 @@ createOrUpdateContactRequest
           | otherwise = createContact'
           where
             createContact' = do
+              let ctUserPreferences = newContactUserPrefs user profile
               liftIO $
                 DB.execute
                   db
-                  "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?)"
-                  (profileId, ldn, userId, currentTs, currentTs, currentTs, BI True, contactRequestId)
+                  "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?,?)"
+                  (profileId, ctUserPreferences, ldn, userId, currentTs, currentTs, currentTs, BI True, contactRequestId)
               contactId <- liftIO $ insertedRowId db
               liftIO $
                 DB.execute
@@ -202,7 +203,7 @@ createOrUpdateContactRequest
               ct <- getContact db vr user contactId
               pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
             createBusinessChat = do
-              let Profile {preferences = userPreferences} = userProfileToSend' user Nothing Nothing True
+              let Profile {preferences = userPreferences} = userProfileInGroup user Nothing
                   groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
               (gInfo@GroupInfo {groupId}, clientMember) <-
                 createBusinessRequestGroup db vr gVar user cReqChatVRange profile profileId ldn groupPreferences

@@ -135,9 +135,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       "server queue info: " <> viewJSON qInfo
     ]
   CRContactSwitchStarted {} -> ["switch started"]
-  CEvtGroupMemberSwitchStarted {} -> ["switch started"]
+  CRGroupMemberSwitchStarted {} -> ["switch started"]
   CRContactSwitchAborted {} -> ["switch aborted"]
-  CEvtGroupMemberSwitchAborted {} -> ["switch aborted"]
+  CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
@@ -432,12 +432,10 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileWarning u Nothing e ft -> ttyUser u $ receivingFileStandalone "warning: " ft <> [sShow e]
   CEvtSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CEvtSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CEvtSndFileStartXFTP {} -> []
   CEvtSndFileProgressXFTP {} -> []
   CEvtSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
   CEvtSndStandaloneFileComplete u ft uris -> ttyUser u $ standaloneUploadComplete ft uris
   CEvtSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
-  CEvtSndFileCancelledXFTP {} -> []
   CEvtSndFileError u Nothing ft e -> ttyUser u $ uploadingFileStandalone "error" ft <> [plain e]
   CEvtSndFileError u (Just ci) _ e -> ttyUser u $ uploadingFile "error" ci <> [plain e]
   CEvtSndFileWarning u Nothing ft e -> ttyUser u $ uploadingFileStandalone "warning: " ft <> [plain e]
@@ -1343,13 +1341,13 @@ viewContactConnected ct userIncognitoProfile testView =
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
+viewGroupsList :: [GroupInfoSummary] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
+viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ :: GroupInfo -> Text
-    ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
-    groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
+    ldn_ :: GroupInfoSummary -> Text
+    ldn_ (GIS GroupInfo {localDisplayName} _) = T.toLower localDisplayName
+    groupSS (GIS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
@@ -1762,7 +1760,7 @@ viewPrefsUpdated ps ps'
       | pref ps == pref ps' = Nothing
       | otherwise = Just . plain $ chatFeatureNameText' f <> " allowed: " <> preferenceText (pref ps')
       where
-        pref pss = getPreference f $ mergePreferences pss Nothing
+        pref pss = getPreference f pss
 
 countactUserPrefText :: FeatureI f => ContactUserPref (FeaturePreference f) -> Text
 countactUserPrefText cup = case cup of

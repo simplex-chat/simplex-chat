@@ -485,6 +485,17 @@
   <string name="group_new_support_chat_one">1 chat with a member</string>
   <string name="group_new_support_chats_short">%d chat(s)</string>
 
+  <!-- ChatBannerView -->
+  <string name="chat_banner_connect_to_chat">Tap Connect to chat</string>
+  <string name="chat_banner_send_request_to_connect">Tap Connect to send request</string>
+  <string name="chat_banner_accept_contact_request">Accept contact request</string>
+  <string name="chat_banner_your_contact">Your contact</string>
+  <string name="chat_banner_join_group">Tap Join group</string>
+  <string name="chat_banner_your_group">Your group</string>
+  <string name="chat_banner_group">Group</string>
+  <string name="chat_banner_business_connection">Business connection</string>
+  <string name="chat_banner_your_business_contact">Your business contact</string>
+
   <!-- ShareListView.kt -->
   <string name="share_message">Share message…</string>
   <string name="share_image">Share media…</string>
@@ -1108,6 +1119,7 @@
   <string name="display_name__field">Profile name:</string>
   <string name="full_name__field">Full name:</string>
   <string name="short_descr__field">Bio:</string>
+  <string name="bio_too_large">Bio too large</string>
   <string name="your_current_profile">Your current profile</string>
   <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</string>
   <string name="edit_image">Edit image</string>
@@ -1916,6 +1928,7 @@
   <string name="group_display_name_field">Enter group name:</string>
   <string name="group_full_name_field">Group full name:</string>
   <string name="group_short_descr_field">Short description:</string>
+  <string name="group_descr_too_large">Description too large</string>
   <string name="group_main_profile_sent">Your chat profile will be sent to group members</string>
   <string name="chat_main_profile_sent">Your chat profile will be sent to chat members</string>
   <string name="create_group_button">Create group</string>
@@ -2125,6 +2138,7 @@
   <string name="accept_feature_set_1_day">Set 1 day</string>
   <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
   <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
+  <string name="time_to_disappear_is_set_only_for_new_contacts">Time to disappear is set only for new contacts.</string>
   <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
   <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages. (24 hours)</string>
   <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you. (24 hours)</string>

@@ -3,6 +3,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
+import APIDocs
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -58,6 +59,7 @@ main = do
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
 #else
       describe "Schema dump" schemaDumpTest
+      describe "API docs" apiDocsTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "SimpleX chat markdown" markdownTests

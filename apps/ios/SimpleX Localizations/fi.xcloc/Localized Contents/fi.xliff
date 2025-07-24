@@ -1147,6 +1147,14 @@ swipe action</note>
         <source>Better user experience</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Bio" xml:space="preserve">
+        <source>Bio</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Bio too large" xml:space="preserve">
+        <source>Bio too large</source>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
         <source>Black</source>
         <note>No comment provided by engineer.</note>
@@ -1222,6 +1230,10 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Business chats" xml:space="preserve">
         <source>Business chats</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Business connection" xml:space="preserve">
+        <source>Business connection</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
@@ -2398,6 +2410,10 @@ swipe action</note>
         <source>Description</source>
         <target>Kuvaus</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Description too large" xml:space="preserve">
+        <source>Description too large</source>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve">
         <source>Desktop address</source>
@@ -6506,10 +6522,6 @@ chat item action</note>
         <source>Sent reply</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent to your contact after connection." xml:space="preserve">
-        <source>Sent to your contact after connection.</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Sent total" xml:space="preserve">
         <source>Sent total</source>
         <note>No comment provided by engineer.</note>
@@ -6732,6 +6744,10 @@ chat item action</note>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
         <target>Jaa kontaktien kanssa</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Short description" xml:space="preserve">
+        <source>Short description</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
@@ -7102,8 +7118,20 @@ report reason</note>
         <target>Ota kuva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Tap Connect to chat" xml:space="preserve">
+        <source>Tap Connect to chat</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Connect to send request" xml:space="preserve">
+        <source>Tap Connect to send request</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
         <source>Tap Create SimpleX address in the menu to create it later.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Tap Join group" xml:space="preserve">
+        <source>Tap Join group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -8364,6 +8392,10 @@ Repeat connection request?</source>
         <target>SimpleX-osoitteesi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your business contact" xml:space="preserve">
+        <source>Your business contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
         <source>Your calls</source>
         <target>Puhelusi</target>
@@ -8396,6 +8428,10 @@ Repeat connection request?</source>
         <source>Your connection was moved to %@ but an error happened when switching profile.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Your contact" xml:space="preserve">
+        <source>Your contact</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
         <target>Yhteyshenkilösi lähetti tiedoston, joka on suurempi kuin tällä hetkellä tuettu enimmäiskoko (%@).</target>
@@ -8423,6 +8459,10 @@ Repeat connection request?</source>
       <trans-unit id="Your current profile" xml:space="preserve">
         <source>Your current profile</source>
         <target>Nykyinen profiilisi</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Your group" xml:space="preserve">
+        <source>Your group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">

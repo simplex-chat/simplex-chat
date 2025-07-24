@@ -68,7 +68,7 @@ fun GroupProfileLayout(
         shortDescr.value.trim() == (groupProfile.shortDescr ?: "") &&
         groupProfile.image == profileImage.value
   val closeWithAlert = {
-    if (dataUnchanged || !canUpdateProfile(displayName.value, groupProfile)) {
+    if (dataUnchanged || !canUpdateProfile(displayName.value, shortDescr.value, groupProfile)) {
       close()
     } else {
       showUnsavedChangesAlert({
@@ -143,18 +143,27 @@ fun GroupProfileLayout(
               ProfileNameField(fullName)
             }
 
-// TODO enable in v6.4.1, limit to 160 characters
+            Spacer(Modifier.height(DEFAULT_PADDING))
 
-//            Spacer(Modifier.height(DEFAULT_PADDING))
-//            Text(
-//              stringResource(MR.strings.group_short_descr_field),
-//              fontSize = 16.sp,
-//              modifier = Modifier.padding(bottom = DEFAULT_PADDING_HALF)
-//            )
-//            ProfileNameField(shortDescr)
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              Text(
+                stringResource(MR.strings.group_short_descr_field),
+                fontSize = 16.sp,
+              )
+              if (!bioFitsLimit(shortDescr.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                IconButton(
+                  onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.group_descr_too_large)) },
+                  Modifier.size(20.dp)
+                ) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
+              }
+            }
+            ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
 
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, groupProfile)
+            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile)
             if (enabled) {
               Text(
                 stringResource(MR.strings.save_group_profile),
@@ -189,8 +198,8 @@ fun GroupProfileLayout(
     }
 }
 
-private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =
-  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile)
+private fun canUpdateProfile(displayName: String, shortDescr: String, groupProfile: GroupProfile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile) && bioFitsLimit(shortDescr)
 
 private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile): Boolean =
   displayName == groupProfile.displayName || isValidDisplayName(displayName.trim())

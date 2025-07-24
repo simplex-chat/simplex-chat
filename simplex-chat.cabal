@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.4.0.7
+version:        6.4.1.0
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -111,6 +111,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250702_contact_requests_remove_cascade_delete
           Simplex.Chat.Store.Postgres.Migrations.M20250704_groups_conn_link_prepared_connection
           Simplex.Chat.Store.Postgres.Migrations.M20250709_profile_short_descr
+          Simplex.Chat.Store.Postgres.Migrations.M20250721_indexes
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -247,6 +248,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250702_contact_requests_remove_cascade_delete
           Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
           Simplex.Chat.Store.SQLite.Migrations.M20250709_profile_short_descr
+          Simplex.Chat.Store.SQLite.Migrations.M20250721_indexes
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -488,6 +490,7 @@ test-suite simplex-chat-test
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
+      APIDocs
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient
@@ -511,6 +514,14 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      API.Docs.Commands
+      API.Docs.Events
+      API.Docs.Generate
+      API.Docs.Responses
+      API.Docs.Syntax
+      API.Docs.Syntax.Types
+      API.Docs.Types
+      API.TypeInfo
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
@@ -532,6 +543,7 @@ test-suite simplex-chat-test
           SchemaDump
           WebRTCTests
   hs-source-dirs:
+      bots/src
       tests
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src

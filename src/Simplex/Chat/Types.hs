@@ -39,7 +39,7 @@ import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -509,6 +509,9 @@ data GroupSummary = GroupSummary
   }
   deriving (Show)
 
+data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+  deriving (Show)
+
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
 data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
@@ -582,7 +585,7 @@ mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) 
 mergeUserChatPrefs' :: User -> Bool -> Preferences -> FullPreferences
 mergeUserChatPrefs' user connectedIncognito userPreferences =
   let userPrefs = if connectedIncognito then Nothing else preferences' user
-   in mergePreferences (Just userPreferences) userPrefs
+   in mergePreferences (Just userPreferences) userPrefs False
 
 updateMergedPreferences :: User -> Contact -> Contact
 updateMergedPreferences user ct =
@@ -613,9 +616,8 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
         ctUserPref = getPreference f userPreferences
         ctUserPref_ = chatPrefSel f userPreferences
         userPref = getPreference f ctUserPrefs
-        ctPref = getPreference f ctPrefs
+        ctPref = getPreference f contactPreferences
     ctUserPrefs = mergeUserChatPrefs' user connectedIncognito userPreferences
-    ctPrefs = mergePreferences contactPreferences Nothing
 
 data Profile = Profile
   { displayName :: ContactName,
@@ -648,21 +650,28 @@ redactedMemberProfile Profile {displayName, fullName, shortDescr, image} =
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
-userProfileToSend' :: User -> Maybe IncognitoProfile -> Maybe Contact -> Bool -> Profile
-userProfileToSend' user ip = userProfileToSend user (fromIncognitoProfile <$> ip)
-  where
-    fromIncognitoProfile = \case
-      NewIncognito p -> p
-      ExistingIncognito lp -> fromLocalProfile lp
+fromIncognitoProfile :: IncognitoProfile -> Profile
+fromIncognitoProfile = \case
+  NewIncognito p -> p
+  ExistingIncognito lp -> fromLocalProfile lp
 
-userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
-userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
+userProfileInGroup :: User -> Maybe Profile -> Profile
+userProfileInGroup User {profile = p} incognitoProfile =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-  if inGroup
-    then redactedMemberProfile p'
-    else
-      let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
-       in (p' :: Profile) {preferences = Just . toChatPrefs $ mergePreferences (userPreferences <$> ct) userPrefs}
+   in redactedMemberProfile p'
+
+userProfileDirect :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
+userProfileDirect user@User {profile = p} incognitoProfile ct canFallbackToUserTTL =
+  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
+      fullPrefs = mergePreferences (userPreferences <$> ct) userPrefs canFallbackToUserTTL
+   in (p' :: Profile) {preferences = Just $ toChatPrefs fullPrefs}
+  where
+    userPrefs
+      | isNothing incognitoProfile = preferences' user
+      | otherwise = -- supplement user level TTL to incognito (default) preferences so that it can serve as fallback
+          let FullPreferences {timedMessages = TimedMessagesPreference {allow}} = defaultChatPrefs
+              userLevelTTL = preferences' user >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
+           in Just $ toChatPrefs (defaultChatPrefs :: FullPreferences) {timedMessages = TimedMessagesPreference {allow, ttl = userLevelTTL}}
 
 type LocalAlias = Text
 
@@ -1350,10 +1359,10 @@ data RcvFileDescr = RcvFileDescr
 
 data RcvFileStatus
   = RFSNew
-  | RFSAccepted RcvFileInfo
-  | RFSConnected RcvFileInfo
-  | RFSComplete RcvFileInfo
-  | RFSCancelled (Maybe RcvFileInfo)
+  | RFSAccepted {fileInfo :: RcvFileInfo}
+  | RFSConnected {fileInfo :: RcvFileInfo}
+  | RFSComplete {fileInfo :: RcvFileInfo}
+  | RFSCancelled {fileInfo_ :: Maybe RcvFileInfo}
   deriving (Eq, Show)
 
 rcvFileComplete :: RcvFileStatus -> Bool
@@ -2004,6 +2013,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInfo)
 $(JQ.deriveJSON defaultJSON ''Group)
 
 $(JQ.deriveJSON defaultJSON ''GroupSummary)
+
+$(JQ.deriveJSON defaultJSON ''GroupInfoSummary)
 
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 

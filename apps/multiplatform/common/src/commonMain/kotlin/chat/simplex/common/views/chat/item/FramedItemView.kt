@@ -203,7 +203,7 @@ fun FramedItemView(
     var metaColor = MaterialTheme.colors.secondary
     Box(contentAlignment = Alignment.BottomEnd) {
       val chatItemTail = remember { appPreferences.chatItemTail.state }
-      val style = shapeStyle(ci, chatItemTail.value, tailVisible, revealed = true)
+      val style = shapeStyle(ci, chatItemTail.value, tailVisible, true)
       val tailRendered = style is ShapeStyle.Bubble && style.tailVisible
       Column(
         Modifier

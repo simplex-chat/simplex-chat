@@ -416,7 +416,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [incognito] send saved profile
           (conn'', inGroup) <- saveConnInfo conn' connInfo
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing inGroup
+          let profileToSend =
+                if inGroup
+                  then userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
+                  else userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
         INFO pqSupport connInfo -> do
@@ -535,7 +538,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-              let p = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
+              let p = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
               allowAgentConnectionAsync user conn'' confId $ XInfo p
               void $ withStore' $ \db -> resetMemberContactFields db ct'
             XGrpLinkInv glInv -> do
@@ -545,7 +548,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 createGroupInvitedViaLink db vr user conn'' glInv
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-              let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing True
+              let profileToSend = userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
               allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
               toView $ CEvtBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
@@ -577,6 +580,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
               when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
                 (Nothing, Nothing) -> do
+                  createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
                   createE2EItem
                   createFeatureEnabledItems user ct'
                 (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->
@@ -758,7 +762,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
                 -- [incognito] send saved profile
                 incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-                let profileToSend = userProfileToSend user (fromLocalProfile <$> incognitoProfile) Nothing True
+                let profileToSend = userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
                 allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
                 toView $ CEvtGroupLinkConnecting user gInfo' m'
               XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
@@ -851,7 +855,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               sendXGrpLinkMem gInfo'' = do
                 let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
-                    profileToSend = userProfileToSend' user incognitoProfile Nothing True
+                    profileToSend = userProfileInGroup user (fromIncognitoProfile <$> incognitoProfile)
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
@@ -1337,6 +1341,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- they will be updated after connection is accepted.
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
+                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
                         let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
@@ -1366,6 +1371,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- they will be updated after connection is accepted.
                         upsertBusinessRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
+                        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
                         -- TODO [short links] possibly, we can just keep them created where they are created on the business side due to auto-accept
                         -- let e2eContent = CIRcvGroupE2EEInfo $ E2EInfo $ Just False -- no PQ encryption in groups
                         -- void $ createChatItem user cd False e2eContent Nothing Nothing
@@ -2249,6 +2255,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
         (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
         let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
@@ -2709,7 +2716,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       conn' <- updatePeerChatVRange activeConn chatVRange
       case chatMsgEvent of
         XInfo p -> do
-          ct <- withStore $ \db -> createDirectContact db user conn' p
+          ct <- withStore $ \db -> createDirectContact db vr user conn' p
           toView $ CEvtContactConnecting user ct
           pure (conn', False)
         XGrpLinkInv glInv -> do
@@ -3084,11 +3091,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           createItems mCt' m'
         joinConn subMode = do
           -- [incognito] send membership incognito profile
-          let p = userProfileToSend user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing False
+          let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
           -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
           dm <- encodeConnInfo $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
+          createInternalChatItem user (CDDirectSnd mCt') CIChatBanner (Just epochStart)
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CEvtNewMemberContactReceivedInv user mCt' g' m''
