@@ -777,7 +777,9 @@ mergePreferences contactPrefs userPreferences canFallbackToUserTTL =
     timedPrefNoTTLFallback =
       let allow = getField @"allow" $ pref SCFTimedMessages
           -- this is to avoid fallback to user level timed messages TTL even if there is no contact level override
-          -- (specifically to avoid sending user level TTL to contacts without override on profile update)
+          -- (specifically to avoid sending user level TTL to contacts without override on profile updates,
+          -- to make it "consistently not work" for all contacts, as we're using override mechanism to track TTL
+          -- for new and updated contacts, even though it's not really user's override)
           ttlOverride = contactPrefs >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
        in TimedMessagesPreference {allow, ttl = ttlOverride}
     pref :: SChatFeature f -> FeaturePreference f

@@ -39,7 +39,7 @@ import Data.ByteString.Char8 (ByteString, pack, unpack)
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -658,11 +658,17 @@ userProfileInGroup User {profile = p} incognitoProfile =
    in redactedMemberProfile p'
 
 userProfileDirect :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
-userProfileDirect user@User {profile = p} incognitoProfile ct canFallbackToUserTTL = do
+userProfileDirect user@User {profile = p} incognitoProfile ct canFallbackToUserTTL =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-      userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
       fullPrefs = mergePreferences (userPreferences <$> ct) userPrefs canFallbackToUserTTL
    in (p' :: Profile) {preferences = Just $ toChatPrefs fullPrefs}
+  where
+    userPrefs
+      | isNothing incognitoProfile = preferences' user
+      | otherwise = -- supplement user level TTL to incognito (default) preferences so that it can serve as fallback
+          let FullPreferences {timedMessages = TimedMessagesPreference {allow}} = defaultChatPrefs
+              userLevelTTL = preferences' user >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
+           in Just $ toChatPrefs (defaultChatPrefs :: FullPreferences) {timedMessages = TimedMessagesPreference {allow, ttl = userLevelTTL}}
 
 type LocalAlias = Text
 
