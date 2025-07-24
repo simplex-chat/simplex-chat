@@ -361,7 +361,7 @@ updatePreparedContactUser
     ExceptT . withLocalDisplayName db newUserId displayName $ \newLDN -> runExceptT $ do
       liftIO $ do
         currentTs <- getCurrentTime
-        let ctUserPreferences = newContactUserPrefs user (fromLocalProfile profile)
+        let ctUserPreferences = newContactUserPrefs newUser (fromLocalProfile profile)
         DB.execute
           db
           [sql|
