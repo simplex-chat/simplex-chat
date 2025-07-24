@@ -132,6 +132,7 @@ private fun TimedMessagesFeatureSection(
   onSelected: (Boolean) -> Unit,
   onTTLUpdated: (Int?) -> Unit
 ) {
+  val ttl = rememberSaveable(preferences) { mutableStateOf(preferences.timedMessages.ttl) }
   SectionView {
     PreferenceToggleWithIcon(
       ChatFeature.TimedMessages.text,
@@ -142,7 +143,6 @@ private fun TimedMessagesFeatureSection(
       onChange = onSelected
     )
     if (allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) {
-      val ttl = rememberSaveable(preferences) { mutableStateOf(preferences.timedMessages.ttl) }
       ExposedDropDownSettingRow(
         generalGetString(MR.strings.delete_after),
         TimedMessagesPreference.profileLevelTTLValues.map { v -> v to timeText(v) },
@@ -153,8 +153,8 @@ private fun TimedMessagesFeatureSection(
     }
   }
   SectionTextFooter(
-    if (allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) {
-      ChatFeature.TimedMessages.allowDescription(allowFeature.value) + " " + generalGetString(MR.strings.time_to_disappear_is_set_only_for_new_contacts)
+    if ((allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) && ttl.value != null) {
+      ChatFeature.TimedMessages.allowDescription(allowFeature.value) + "\n" + generalGetString(MR.strings.time_to_disappear_is_set_only_for_new_contacts)
     } else {
       ChatFeature.TimedMessages.allowDescription(allowFeature.value)
     }
