@@ -154,7 +154,7 @@
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>به وسیله تنظیمات می‌تواند غیرفعال شود</b> – اعلان‌ها تا زمانی که برنامه در حال اجراست، همچنان نمایش داده می‌شوند.]]></string>
     <string name="database_migration_in_progress">جابه‌جایی پایگاه داده در حال جریان است.
 \nممکن است دقایقی زمان ببرد.</string>
-    <string name="turn_off_battery_optimization"><![CDATA[برای استفاده از آن، لطفا در دیالوگ بعدی<b>به SimpleX اجازه دهید در پس‌زمینه اجرا شود</b>. در غیر این صورت، اعلان‌ها غیرفعال خواهند شد.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[در دیالوگ بعدی <b>اجازه دهید</b> تا اعلان‌ها را فوری دریافت کنید.]]></string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[برای حفاظت از حریم خصوصیتان، به جای اعلان‌های رانشی، برنامه یک <b>سرویس پس‌زمنیه SimpleX</b> دارد – سرویس، هر روز درصد معدودی از باتری را استفاده می‌کند.]]></string>
     <string name="saved_description">ذخیره شده</string>
     <string name="saved_from_description">ذخیره شده از %s</string>
@@ -2148,4 +2148,18 @@
     <string name="v6_1_message_dates_descr">بهبود تاریخ پیام‌ها</string>
     <string name="v6_1_better_security">امنیت بهتر ✅</string>
     <string name="v6_1_better_user_experience">تجربه کاربری بهتر</string>
+    <string name="short_descr__field">بیوگرافی:</string>
+    <string name="bio_too_large">بیو خیلی بزرگ است</string>
+    <string name="block_members_for_all_question">مسدود کردن اعضا برای همه؟</string>
+    <string name="appearance_bars_blur_radius">تار کردن</string>
+    <string name="v6_0_privacy_blur">تار کردن برای حفظ بهتر حریم خصوصی.</string>
+    <string name="privacy_media_blur_radius">تار کردن رسانه</string>
+    <string name="business_address">آدرس کسب و کار</string>
+    <string name="v6_2_business_chats">چت‌های تجاری</string>
+    <string name="chat_banner_business_connection">ارتباط تجاری</string>
+    <string name="chat_list_businesses">کسب و کارها</string>
+    <string name="onboarding_conditions_by_using_you_agree">با استفاده از SimpleX Chat شما موافقت می‌کنید که:\n- فقط محتوای قانونی را در گروه‌های عمومی ارسال کنید.\n- به سایر کاربران احترام بگذارید - از ارسال هرزنامه خودداری کنید.</string>
+    <string name="info_view_call_button">تماس</string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[لینک یک‌بار مصرف فقط می‌تواند <i> با یک مخاطب استفاده شود</i> - آن را به صورت حضوری یا از طریق هر پیام‌رسانی به اشتراک بگذارید.]]></string>
+    <string name="all_message_and_files_e2e_encrypted"><![CDATA[تمام پیام‌ها و فایل‌ها <b>به صورت رمزنگاری انتها به انتها</b>و با امنیت پساکوانتومی در پیام‌های مستقیم ارسال می‌شوند.]]></string>
 </resources>
