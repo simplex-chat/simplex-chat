@@ -2138,7 +2138,7 @@
   <string name="accept_feature_set_1_day">Set 1 day</string>
   <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
   <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
-  <string name="setting_delete_after_applies_only_to_new_contacts">Setting "Delete after" applies only to new contacts.</string>
+  <string name="time_to_disappear_applies_only_to_new_contacts">Time to disappear applies only to new contacts.</string>
   <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
   <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages. (24 hours)</string>
   <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you. (24 hours)</string>
