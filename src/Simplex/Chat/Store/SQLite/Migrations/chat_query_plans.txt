@@ -745,7 +745,7 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             UPDATE contacts
-            SET user_id = ?, local_display_name = ?, updated_at = ?
+            SET user_id = ?, local_display_name = ?, user_preferences = ?, updated_at = ?
             WHERE contact_id = ?
           
 Plan:
