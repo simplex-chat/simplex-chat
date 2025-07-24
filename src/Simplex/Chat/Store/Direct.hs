@@ -724,9 +724,9 @@ getContactRequest' db User {userId} contactRequestId =
     DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.contact_request_id = ?") (userId, contactRequestId)
 
 getBusinessContactRequest :: DB.Connection -> User -> GroupId -> IO (Maybe UserContactRequest)
-getBusinessContactRequest db User {userId} groupId =
+getBusinessContactRequest db _user groupId =
   maybeFirstRow toContactRequest $
-    DB.query db (contactRequestQuery <> " WHERE cr.user_id = ? AND cr.business_group_id = ?") (userId, groupId)
+    DB.query db (contactRequestQuery <> " WHERE cr.business_group_id = ?") (Only groupId)
 
 contactRequestQuery :: Query
 contactRequestQuery =

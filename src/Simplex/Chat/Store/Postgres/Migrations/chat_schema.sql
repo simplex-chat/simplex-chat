@@ -1624,6 +1624,10 @@ CREATE INDEX idx_chat_items_group_scope_item_ts ON test_chat_schema.chat_items U
 
 
 
+CREATE INDEX idx_chat_items_group_scope_stats_all ON test_chat_schema.chat_items USING btree (user_id, group_id, group_scope_tag, group_scope_group_member_id, item_status, chat_item_id, user_mention);
+
+
+
 CREATE UNIQUE INDEX idx_chat_items_group_shared_msg_id ON test_chat_schema.chat_items USING btree (user_id, group_id, group_member_id, shared_msg_id);
 
 
@@ -1784,7 +1788,7 @@ CREATE INDEX idx_contact_requests_user_contact_link_id ON test_chat_schema.conta
 
 
 
-CREATE INDEX idx_contact_requests_xcontact_id ON test_chat_schema.contact_requests USING btree (xcontact_id);
+CREATE INDEX idx_contact_requests_xcontact_id ON test_chat_schema.contact_requests USING btree (user_id, xcontact_id);
 
 
 
