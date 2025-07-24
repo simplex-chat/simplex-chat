@@ -745,7 +745,7 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             UPDATE contacts
-            SET user_id = ?, local_display_name = ?, updated_at = ?
+            SET user_id = ?, local_display_name = ?, user_preferences = ?, updated_at = ?
             WHERE contact_id = ?
           
 Plan:
@@ -5715,15 +5715,15 @@ Query: INSERT INTO contact_profiles (display_name, full_name, short_descr, image
 Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
-Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?)
-Plan:
-SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
-
 Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, is_user, created_at, updated_at, chat_ts) VALUES (?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
-Query: INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+Query: INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, created_at, updated_at, chat_ts, contact_used, contact_request_id) VALUES (?,?,?,?,?,?,?,?,?)
+Plan:
+SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
+
+Query: INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 

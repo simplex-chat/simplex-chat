@@ -382,12 +382,12 @@ setCommandConnId db User {userId} cmdId connId = do
     (connId, updatedAt, userId, cmdId)
 
 createContact :: DB.Connection -> User -> Profile -> ExceptT StoreError IO ()
-createContact db User {userId} profile = do
+createContact db user profile = do
   currentTs <- liftIO getCurrentTime
-  void $ createContact_ db userId profile Nothing "" Nothing currentTs
+  void $ createContact_ db user profile emptyChatPrefs Nothing "" Nothing currentTs
 
-createContact_ :: DB.Connection -> UserId -> Profile -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO (Text, ContactId, ProfileId)
-createContact_ db userId Profile {displayName, fullName, shortDescr, image, contactLink, preferences} prepared localAlias viaGroup currentTs =
+createContact_ :: DB.Connection -> User -> Profile -> Preferences -> Maybe (ACreatedConnLink, Maybe SharedMsgId) -> LocalAlias -> Maybe Int64 -> UTCTime -> ExceptT StoreError IO ContactId
+createContact_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, preferences} ctUserPreferences prepared localAlias viaGroup currentTs =
   ExceptT . withLocalDisplayName db userId displayName $ \ldn -> do
     DB.execute
       db
@@ -396,10 +396,31 @@ createContact_ db userId Profile {displayName, fullName, shortDescr, image, cont
     profileId <- insertedRowId db
     DB.execute
       db
-      "INSERT INTO contacts (contact_profile_id, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-      ((profileId, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared)
+      "INSERT INTO contacts (contact_profile_id, user_preferences, local_display_name, user_id, via_group, created_at, updated_at, chat_ts, contact_used, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((profileId, ctUserPreferences, ldn, userId, viaGroup, currentTs, currentTs, currentTs, BI True) :. toPreparedContactRow prepared)
     contactId <- insertedRowId db
-    pure $ Right (ldn, contactId, profileId)
+    pure $ Right contactId
+
+newContactUserPrefs :: User -> Profile -> Preferences
+newContactUserPrefs User {fullPreferences = FullPreferences {timedMessages = userTM}} Profile {preferences} =
+  let ctTM_ = chatPrefSel SCFTimedMessages =<< preferences
+      ctUserTM' = newContactUserTMPref userTM ctTM_
+   in emptyChatPrefs {timedMessages = ctUserTM'}
+  where
+    newContactUserTMPref :: TimedMessagesPreference -> Maybe TimedMessagesPreference -> Maybe TimedMessagesPreference
+    newContactUserTMPref userTMPref ctTMPref_ =
+      case (userTMPref, ctTMPref_) of
+        (TimedMessagesPreference {allow = FANo}, _) -> Nothing
+        (_, Nothing) -> Nothing
+        (_, Just TimedMessagesPreference {allow = FANo}) -> Nothing
+        (TimedMessagesPreference {allow = userAllow, ttl = userTTL_}, Just TimedMessagesPreference {ttl = ctTTL_}) ->
+          case (userTTL_, ctTTL_) of
+            (Just userTTL, Just ctTTL) -> Just $ override (max userTTL ctTTL)
+            (Just userTTL, Nothing) -> Just $ override userTTL
+            (Nothing, Just ctTTL) -> Just $ override ctTTL
+            (Nothing, Nothing) -> Nothing
+          where
+            override overrideTTL = TimedMessagesPreference {allow = userAllow, ttl = Just overrideTTL}
 
 type NewPreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId)
 
@@ -496,7 +517,7 @@ toUser ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, dis
   User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, viewPwdHash, userMemberProfileUpdatedAt, uiThemes}
   where
     profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences = userPreferences, localAlias = ""}
-    fullPreferences = mergePreferences Nothing userPreferences
+    fullPreferences = fullPreferences' userPreferences
     viewPwdHash = UserPwdHash <$> viewPwdHash_ <*> viewPwdSalt_
 
 toPendingContactConnection :: (Int64, ConnId, ConnStatus, Maybe ByteString, Maybe Int64, Maybe GroupLinkId, Maybe Int64, Maybe ConnReqInvitation, Maybe ShortLinkInvitation, LocalAlias, UTCTime, UTCTime) -> PendingContactConnection

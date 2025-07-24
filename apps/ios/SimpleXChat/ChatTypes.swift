@@ -372,6 +372,10 @@ public struct TimedMessagesPreference: Preference, Hashable {
     public static var ttlValues: [Int?] {
         [600, 3600, 86400, 7 * 86400, 30 * 86400, 3 * 30 * 86400, nil]
     }
+
+    public static var profileLevelTTLValues: [Int?] {
+        [7 * 86400, 30 * 86400, 3 * 30 * 86400, nil]
+    }
 }
 
 public enum CustomTimeUnit: Hashable {

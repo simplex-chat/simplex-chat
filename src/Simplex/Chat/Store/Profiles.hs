@@ -320,7 +320,7 @@ updateUserProfile db user p'
     User {userId, userContactId, localDisplayName, profile = LocalProfile {profileId, displayName, fullName, image, localAlias}, userMemberProfileUpdatedAt} = user
     Profile {displayName = newName, fullName = newFullName, image = newImage, preferences} = p'
     profile = toLocalProfile profileId p' localAlias
-    fullPreferences = mergePreferences Nothing preferences
+    fullPreferences = fullPreferences' preferences
 
 setUserProfileContactLink :: DB.Connection -> User -> Maybe UserContactLink -> IO User
 setUserProfileContactLink db user@User {userId, profile = p@LocalProfile {profileId}} ucl_ = do

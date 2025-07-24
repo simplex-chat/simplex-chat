@@ -69,9 +69,18 @@ private fun PreferencesLayout(
   ColumnWithScrollBar {
     AppBarTitle(stringResource(MR.strings.your_preferences))
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.allow) }
-    TimedMessagesFeatureSection(timedMessages) {
-      applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
+    val onTTLUpdated = { ttl: Int? ->
+      applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
     }
+    TimedMessagesFeatureSection(
+      preferences,
+      timedMessages,
+      onSelected = {
+        applyPrefs(preferences.copy(timedMessages = TimedMessagesPreference(allow = if (it) FeatureAllowed.YES else FeatureAllowed.NO)))
+      },
+      onTTLUpdated = onTTLUpdated
+    )
+
     SectionDividerSpaced(true, maxBottomPadding = false)
     val allowFullDeletion = remember(preferences) { mutableStateOf(preferences.fullDelete.allow) }
     FeatureSection(ChatFeature.FullDelete, allowFullDeletion) {
@@ -117,7 +126,13 @@ private fun FeatureSection(feature: ChatFeature, allowFeature: State<FeatureAllo
 }
 
 @Composable
-private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onSelected: (Boolean) -> Unit) {
+private fun TimedMessagesFeatureSection(
+  preferences: FullChatPreferences,
+  allowFeature: State<FeatureAllowed>,
+  onSelected: (Boolean) -> Unit,
+  onTTLUpdated: (Int?) -> Unit
+) {
+  val ttl = rememberSaveable(preferences) { mutableStateOf(preferences.timedMessages.ttl) }
   SectionView {
     PreferenceToggleWithIcon(
       ChatFeature.TimedMessages.text,
@@ -127,8 +142,23 @@ private fun TimedMessagesFeatureSection(allowFeature: State<FeatureAllowed>, onS
       extraPadding = false,
       onChange = onSelected
     )
+    if (allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) {
+      ExposedDropDownSettingRow(
+        generalGetString(MR.strings.delete_after),
+        TimedMessagesPreference.profileLevelTTLValues.map { v -> v to timeText(v) },
+        ttl,
+        icon = null,
+        onSelected = onTTLUpdated
+      )
+    }
   }
-  SectionTextFooter(ChatFeature.TimedMessages.allowDescription(allowFeature.value))
+  SectionTextFooter(
+    if ((allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) && ttl.value != null) {
+      ChatFeature.TimedMessages.allowDescription(allowFeature.value) + "\n" + generalGetString(MR.strings.time_to_disappear_is_set_only_for_new_contacts)
+    } else {
+      ChatFeature.TimedMessages.allowDescription(allowFeature.value)
+    }
+  )
 }
 
 @Composable
