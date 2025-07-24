@@ -1809,7 +1809,7 @@ processChatCommand vr nm = \case
     newUser <- privateGetUser newUserId
     ct' <- withFastStore $ \db -> updatePreparedContactUser db vr user ct newUser
     -- create changed feature items (new user may have different preferences)
-    lift $ createSndFeatureItems user ct ct'
+    lift $ createContactChangedFeatureItems user ct ct'
     pure $ CRContactUserChanged user ct newUser ct'
   APIChangePreparedGroupUser groupId newUserId -> withUser $ \user -> do
     (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
@@ -1832,7 +1832,7 @@ processChatCommand vr nm = \case
         -- get updated contact with connection
         ct' <- withFastStore $ \db -> getContact db vr user contactId
         -- create changed feature items (connecting incognito sends default preferences, instead of user preferences)
-        lift . when incognito $ createSndFeatureItems user ct ct'
+        lift . when incognito $ createContactChangedFeatureItems user ct ct'
         forM_ msgContent_ $ \mc -> do
           let evt = XMsgNew $ MCSimple (extMsgContent mc Nothing)
           (msg, _) <- sendDirectContactMessage user ct' evt
@@ -1857,7 +1857,7 @@ processChatCommand vr nm = \case
             -- get updated contact with connection
             ct' <- withFastStore $ \db -> getContact db vr user contactId
             -- create changed feature items (connecting incognito sends default preferences, instead of user preferences)
-            lift . when incognito $ createSndFeatureItems user ct ct'
+            lift . when incognito $ createContactChangedFeatureItems user ct ct'
             forM_ msg_ $ \(sharedMsgId, mc) -> do
               ci <- createChatItem user (CDDirectSnd ct') False (CISndMsgContent mc) (Just sharedMsgId) Nothing
               toView $ CEvtNewChatItems user [ci]

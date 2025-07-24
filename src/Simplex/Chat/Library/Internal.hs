@@ -2288,6 +2288,17 @@ createSndFeatureItems user ct ct' =
       CUPContact {preference} -> preference
       CUPUser {preference} -> preference
 
+-- Used when contact is changed after creating initial feature items via createFeatureEnabledItems_
+-- (APIChangePreparedContactUser, APIConnectPreparedContact with incognito = True);
+-- creates feature items with CDDirectRcv direction so that changed feature items stay in the same place in chat view
+createContactChangedFeatureItems :: User -> Contact -> Contact -> CM' ()
+createContactChangedFeatureItems user ct ct' =
+  createFeatureItems user ct ct' CDDirectRcv CIRcvChatFeature CIRcvChatPreference getPref
+  where
+    getPref ContactUserPreference {userPreference} = case userPreference of
+      CUPContact {preference} -> preference
+      CUPUser {preference} -> preference
+
 type FeatureContent a d = ChatFeature -> a -> Maybe Int -> CIContent d
 
 createFeatureEnabledItems :: User -> Contact -> CM ()
