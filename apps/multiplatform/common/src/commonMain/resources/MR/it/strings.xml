@@ -2499,4 +2499,5 @@
     <string name="chat_banner_your_business_contact">Il tuo contatto lavorativo</string>
     <string name="chat_banner_your_contact">Il tuo contatto</string>
     <string name="chat_banner_your_group">Il tuo gruppo</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Il tempo di scomparsa è impostato solo per i contatti nuovi.</string>
 </resources>
