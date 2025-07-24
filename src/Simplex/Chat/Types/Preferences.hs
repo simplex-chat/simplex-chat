@@ -763,20 +763,21 @@ groupFeatureState p =
         | otherwise = (Nothing, Nothing)
    in (enable, param, role)
 
-mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
-mergePreferences contactPrefs userPreferences =
+mergePreferences :: Maybe Preferences -> Maybe Preferences -> Bool -> FullPreferences
+mergePreferences contactPrefs userPreferences canFallbackToUserTTL =
   FullPreferences
-    { timedMessages = timedPref,
+    { timedMessages = if canFallbackToUserTTL then pref SCFTimedMessages else timedPrefNoTTLFallback,
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
       calls = pref SCFCalls
     }
   where
-    timedPref :: TimedMessagesPreference
-    timedPref =
+    timedPrefNoTTLFallback :: TimedMessagesPreference
+    timedPrefNoTTLFallback =
       let allow = getField @"allow" $ pref SCFTimedMessages
-          -- when merging preferences, timed messages TTL is taken only from contact override
+          -- this is to avoid fallback to user level timed messages TTL even if there is no contact level override
+          -- (specifically to avoid sending user level TTL to contacts without override on profile update)
           ttlOverride = contactPrefs >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
        in TimedMessagesPreference {allow, ttl = ttlOverride}
     pref :: SChatFeature f -> FeaturePreference f

@@ -582,7 +582,7 @@ mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) 
 mergeUserChatPrefs' :: User -> Bool -> Preferences -> FullPreferences
 mergeUserChatPrefs' user connectedIncognito userPreferences =
   let userPrefs = if connectedIncognito then Nothing else preferences' user
-   in mergePreferences (Just userPreferences) userPrefs
+   in mergePreferences (Just userPreferences) userPrefs False
 
 updateMergedPreferences :: User -> Contact -> Contact
 updateMergedPreferences user ct =
@@ -647,27 +647,22 @@ redactedMemberProfile Profile {displayName, fullName, shortDescr, image} =
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
-userProfileToSend' :: User -> Maybe IncognitoProfile -> Maybe Contact -> Bool -> Profile
-userProfileToSend' user ip = userProfileToSend user (fromIncognitoProfile <$> ip)
-  where
-    fromIncognitoProfile = \case
-      NewIncognito p -> p
-      ExistingIncognito lp -> fromLocalProfile lp
+fromIncognitoProfile :: IncognitoProfile -> Profile
+fromIncognitoProfile = \case
+  NewIncognito p -> p
+  ExistingIncognito lp -> fromLocalProfile lp
 
-userProfileToSend :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
-userProfileToSend user@User {profile = p} incognitoProfile ct inGroup = do
+userProfileInGroup :: User -> Maybe Profile -> Profile
+userProfileInGroup User {profile = p} incognitoProfile =
   let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-  if inGroup
-    then redactedMemberProfile p'
-    else
-      let userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
-          fullPrefs =
-            case ct of
-              -- this overrides TTL when we already have contact (e.g. confirmation, profile update)
-              Just Contact {userPreferences} -> mergePreferences (Just userPreferences) userPrefs
-              -- this avoids overriding timed messages TTL on first send (e.g. initial connection)
-              Nothing -> fullPreferences' userPrefs
-       in (p' :: Profile) {preferences = Just $ toChatPrefs fullPrefs}
+   in redactedMemberProfile p'
+
+userProfileDirect :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
+userProfileDirect user@User {profile = p} incognitoProfile ct canFallbackToUserTTL = do
+  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
+      userPrefs = maybe (preferences' user) (const Nothing) incognitoProfile
+      fullPrefs = mergePreferences (userPreferences <$> ct) userPrefs canFallbackToUserTTL
+   in (p' :: Profile) {preferences = Just $ toChatPrefs fullPrefs}
 
 type LocalAlias = Text
 

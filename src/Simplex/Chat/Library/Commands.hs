@@ -1700,7 +1700,7 @@ processChatCommand vr nm = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    userData <- contactShortLinkData (userProfileToSend user incognitoProfile Nothing False) Nothing
+    userData <- contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -1715,13 +1715,13 @@ processChatCommand vr nm = \case
     case (pccConnStatus, customUserProfileId, incognito) of
       (ConnNew, Nothing, True) -> do
         incognitoProfile <- liftIO generateRandomProfile
-        sLnk <- updatePCCShortLinkData conn $ userProfileToSend user (Just incognitoProfile) Nothing False
+        sLnk <- updatePCCShortLinkData conn $ userProfileDirect user (Just incognitoProfile) Nothing True
         conn' <- withFastStore' $ \db -> do
           pId <- createIncognitoProfile db user incognitoProfile
           updatePCCIncognito db user conn (Just pId) sLnk
         pure $ CRConnectionIncognitoUpdated user conn' (Just incognitoProfile)
       (ConnNew, Just pId, False) -> do
-        sLnk <- updatePCCShortLinkData conn $ userProfileToSend user Nothing Nothing False
+        sLnk <- updatePCCShortLinkData conn $ userProfileDirect user Nothing Nothing True
         conn' <- withFastStore' $ \db -> do
           deletePCCIncognitoProfile db user pId
           updatePCCIncognito db user conn Nothing sLnk
@@ -1742,7 +1742,7 @@ processChatCommand vr nm = \case
         let short = isJust $ connShortLink =<< connLinkInv
         userData_ <-
           if short
-            then Just <$> contactShortLinkData (userProfileToSend newUser Nothing Nothing False) Nothing
+            then Just <$> contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
             else pure Nothing
         -- TODO [certs rcv]
         (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True SCMInvitation userData_ Nothing IKPQOn subMode
@@ -1919,7 +1919,7 @@ processChatCommand vr nm = \case
     processChatCommand vr nm $ APIListContacts userId
   APICreateMyAddress userId -> withUserId userId $ \user -> do
     subMode <- chatReadVar subscriptionMode
-    userData <- contactShortLinkData (userProfileToSend user Nothing Nothing False) Nothing
+    userData <- contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -2953,7 +2953,7 @@ processChatCommand vr nm = \case
                 conn <- withFastStore' $ \db -> createDirectConnection' db userId connId ccLink contactId_ ConnPrepared incognitoProfile subMode chatV pqSup'
                 joinPreparedConn conn incognitoProfile chatV
               joinPreparedConn conn incognitoProfile chatV = do
-                let profileToSend = userProfileToSend user incognitoProfile Nothing False
+                let profileToSend = userProfileDirect user incognitoProfile Nothing True
                 dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
                 (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
@@ -3046,7 +3046,10 @@ processChatCommand vr nm = \case
           pure (connId, chatV)
     joinContact :: User -> Connection -> ConnReqContact -> Maybe Profile -> XContactId -> Maybe SharedMsgId -> Maybe (SharedMsgId, MsgContent) -> Bool -> PQSupport -> CM Connection
     joinContact user conn@Connection {connChatVersion = chatV} cReq incognitoProfile xContactId welcomeSharedMsgId msg_ inGroup pqSup = do
-      let profileToSend = userProfileToSend user incognitoProfile Nothing inGroup
+      let profileToSend =
+            if inGroup
+              then userProfileInGroup user incognitoProfile
+              else userProfileDirect user incognitoProfile Nothing True
       dm <- encodeConnInfoPQ pqSup chatV (XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_)
       subMode <- chatReadVar subscriptionMode
       void $ withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup subMode
@@ -3111,9 +3114,9 @@ processChatCommand vr nm = \case
                     ChangedProfileContact ct ct' mergedProfile' conn : changedCts
               _ -> changedCts
               where
-                mergedProfile = userProfileToSend user Nothing (Just ct) False
+                mergedProfile = userProfileDirect user Nothing (Just ct) False
                 ct' = updateMergedPreferences user' ct
-                mergedProfile' = userProfileToSend user' Nothing (Just ct') False
+                mergedProfile' = userProfileDirect user' Nothing (Just ct') False
             ctSndEvent :: ChangedProfileContact -> (ConnOrGroupId, ChatMsgEvent 'Json)
             ctSndEvent ChangedProfileContact {mergedProfile', conn = Connection {connId}} = (ConnectionId connId, XInfo mergedProfile')
             ctMsgReq :: ChangedProfileContact -> Either ChatError SndMessage -> Either ChatError ChatMsgReq
@@ -3123,7 +3126,7 @@ processChatCommand vr nm = \case
     setMyAddressData :: User -> UserContactLink -> CM UserContactLink
     setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db vr user
-      let shortLinkProfile = userProfileToSend user Nothing Nothing False
+      let shortLinkProfile = userProfileDirect user Nothing Nothing True
       -- TODO [short links] do not save address to server if data did not change, spinners, error handling
       userData <- contactShortLinkData shortLinkProfile $ Just addressSettings
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData Nothing)
@@ -3139,8 +3142,8 @@ processChatCommand vr nm = \case
           assertDirectAllowed user MDSnd ct XInfo_
           ct' <- withStore' $ \db -> updateContactUserPreferences db user ct contactUserPrefs'
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
-          let mergedProfile = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct) False
-              mergedProfile' = userProfileToSend user (fromLocalProfile <$> incognitoProfile) (Just ct') False
+          let mergedProfile = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct) False
+              mergedProfile' = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
               void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchChatError` eToView
