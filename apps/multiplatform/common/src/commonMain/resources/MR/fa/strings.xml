@@ -2145,4 +2145,7 @@
     <string name="privacy_chat_list_open_links_ask">پرسش</string>
     <string name="attempts_label">تلاش‌ها</string>
     <string name="app_check_for_updates_beta">بتا</string>
+    <string name="v6_1_message_dates_descr">بهبود تاریخ پیام‌ها</string>
+    <string name="v6_1_better_security">امنیت بهتر ✅</string>
+    <string name="v6_1_better_user_experience">تجربه کاربری بهتر</string>
 </resources>
