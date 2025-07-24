@@ -356,19 +356,20 @@ updatePreparedContactUser
   db
   vr
   user
-  Contact {contactId, localDisplayName = oldLDN, profile = LocalProfile {profileId, displayName}}
+  Contact {contactId, localDisplayName = oldLDN, profile = profile@LocalProfile {profileId, displayName}}
   newUser@User {userId = newUserId} = do
     ExceptT . withLocalDisplayName db newUserId displayName $ \newLDN -> runExceptT $ do
       liftIO $ do
         currentTs <- getCurrentTime
+        let ctUserPreferences = newContactUserPrefs user (fromLocalProfile profile)
         DB.execute
           db
           [sql|
             UPDATE contacts
-            SET user_id = ?, local_display_name = ?, updated_at = ?
+            SET user_id = ?, local_display_name = ?, user_preferences = ?, updated_at = ?
             WHERE contact_id = ?
           |]
-          (newUserId, newLDN, currentTs, contactId)
+          (newUserId, newLDN, ctUserPreferences, currentTs, contactId)
         DB.execute
           db
           [sql|
