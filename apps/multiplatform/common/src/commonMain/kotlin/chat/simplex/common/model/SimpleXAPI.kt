@@ -883,7 +883,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = false), ctrl)
+    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = true), ctrl)
     when (r.result) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -6144,12 +6144,10 @@ sealed class CR {
   @Serializable @SerialName("sndFileRcvCancelled") class SndFileRcvCancelled(val user: UserRef, val chatItem_: AChatItem?, val sndFileTransfer: SndFileTransfer): CR()
   @Serializable @SerialName("sndFileCancelled") class SndFileCancelled(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val sndFileTransfers: List<SndFileTransfer>): CR()
   @Serializable @SerialName("sndStandaloneFileCreated") class SndStandaloneFileCreated(val user: UserRef, val fileTransferMeta: FileTransferMeta): CR() // returned by _upload
-  @Serializable @SerialName("sndFileStartXFTP") class SndFileStartXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR() // not used
   @Serializable @SerialName("sndFileProgressXFTP") class SndFileProgressXFTP(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val sentSize: Long, val totalSize: Long): CR()
   @Serializable @SerialName("sndFileRedirectStartXFTP") class SndFileRedirectStartXFTP(val user: UserRef, val fileTransferMeta: FileTransferMeta, val redirectMeta: FileTransferMeta): CR()
   @Serializable @SerialName("sndFileCompleteXFTP") class SndFileCompleteXFTP(val user: UserRef, val chatItem: AChatItem, val fileTransferMeta: FileTransferMeta): CR()
   @Serializable @SerialName("sndStandaloneFileComplete") class SndStandaloneFileComplete(val user: UserRef, val fileTransferMeta: FileTransferMeta, val rcvURIs: List<String>): CR()
-  @Serializable @SerialName("sndFileCancelledXFTP") class SndFileCancelledXFTP(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta): CR()
   @Serializable @SerialName("sndFileError") class SndFileError(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val errorMessage: String): CR()
   @Serializable @SerialName("sndFileWarning") class SndFileWarning(val user: UserRef, val chatItem_: AChatItem?, val fileTransferMeta: FileTransferMeta, val errorMessage: String): CR()
   // call events
@@ -6319,7 +6317,6 @@ sealed class CR {
     is RcvStandaloneFileComplete -> "rcvStandaloneFileComplete"
     is RcvFileCancelled -> "rcvFileCancelled"
     is SndStandaloneFileCreated -> "sndStandaloneFileCreated"
-    is SndFileStartXFTP -> "sndFileStartXFTP"
     is RcvFileSndCancelled -> "rcvFileSndCancelled"
     is RcvFileProgressXFTP -> "rcvFileProgressXFTP"
     is SndFileRedirectStartXFTP -> "sndFileRedirectStartXFTP"
@@ -6332,7 +6329,6 @@ sealed class CR {
     is SndFileProgressXFTP -> "sndFileProgressXFTP"
     is SndFileCompleteXFTP -> "sndFileCompleteXFTP"
     is SndStandaloneFileComplete -> "sndStandaloneFileComplete"
-    is SndFileCancelledXFTP -> "sndFileCancelledXFTP"
     is SndFileError -> "sndFileError"
     is SndFileWarning -> "sndFileWarning"
     is CallInvitations -> "callInvitations"
@@ -6502,7 +6498,6 @@ sealed class CR {
     is RcvFileWarning -> withUser(user, "chatItem_: ${json.encodeToString(chatItem_)}\nagentError: ${agentError.string}\nrcvFileTransfer: $rcvFileTransfer")
     is SndFileCancelled -> json.encodeToString(chatItem_)
     is SndStandaloneFileCreated -> noDetails()
-    is SndFileStartXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndFileComplete -> withUser(user, json.encodeToString(chatItem))
     is SndFileRcvCancelled -> withUser(user, json.encodeToString(chatItem_))
     is SndFileStart -> withUser(user, json.encodeToString(chatItem))
@@ -6510,7 +6505,6 @@ sealed class CR {
     is SndFileRedirectStartXFTP -> withUser(user, json.encodeToString(redirectMeta))
     is SndFileCompleteXFTP -> withUser(user, json.encodeToString(chatItem))
     is SndStandaloneFileComplete -> withUser(user, rcvURIs.size.toString())
-    is SndFileCancelledXFTP -> withUser(user, json.encodeToString(chatItem_))
     is SndFileError -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
     is SndFileWarning -> withUser(user, "errorMessage: ${json.encodeToString(errorMessage)}\nchatItem: ${json.encodeToString(chatItem_)}")
     is CallInvitations -> "callInvitations: ${json.encodeToString(callInvitations)}"

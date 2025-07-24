@@ -577,6 +577,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
               when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
                 (Nothing, Nothing) -> do
+                  createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
                   createE2EItem
                   createFeatureEnabledItems user ct'
                 (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->
@@ -1337,6 +1338,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- they will be updated after connection is accepted.
                         upsertDirectRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
+                        void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
                         let e2eContent = CIRcvDirectE2EEInfo $ E2EInfo $ Just $ CR.pqSupportToEnc $ reqPQSup
                         void $ createChatItem user cd False e2eContent Nothing Nothing
                         void $ createFeatureEnabledItems_ user ct
@@ -1366,6 +1368,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                         -- they will be updated after connection is accepted.
                         upsertBusinessRequestItem cd (requestMsg_, prevSharedMsgId_)
                       Nothing -> do
+                        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
                         -- TODO [short links] possibly, we can just keep them created where they are created on the business side due to auto-accept
                         -- let e2eContent = CIRcvGroupE2EEInfo $ E2EInfo $ Just False -- no PQ encryption in groups
                         -- void $ createChatItem user cd False e2eContent Nothing Nothing
@@ -2249,6 +2252,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         when (fromMemId == memId) $ throwChatError CEGroupDuplicateMemberId
         -- [incognito] if direct connection with host is incognito, create membership using the same incognito profile
         (gInfo@GroupInfo {groupId, localDisplayName, groupProfile, membership}, hostId) <- withStore $ \db -> createGroupInvitation db vr user ct inv customUserProfileId
+        void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
         let GroupMember {groupMemberId, memberId = membershipMemId} = membership
         if sameGroupLinkId groupLinkId groupLinkId'
           then do
@@ -3089,6 +3093,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           dm <- encodeConnInfo $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
+          createInternalChatItem user (CDDirectSnd mCt') CIChatBanner (Just epochStart)
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CEvtNewMemberContactReceivedInv user mCt' g' m''

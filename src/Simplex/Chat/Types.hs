@@ -509,6 +509,9 @@ data GroupSummary = GroupSummary
   }
   deriving (Show)
 
+data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+  deriving (Show)
+
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
 
 data PreparedChatEntity = PCEContact Contact | PCEGroup {groupInfo :: GroupInfo, hostMember :: GroupMember}
@@ -1350,10 +1353,10 @@ data RcvFileDescr = RcvFileDescr
 
 data RcvFileStatus
   = RFSNew
-  | RFSAccepted RcvFileInfo
-  | RFSConnected RcvFileInfo
-  | RFSComplete RcvFileInfo
-  | RFSCancelled (Maybe RcvFileInfo)
+  | RFSAccepted {fileInfo :: RcvFileInfo}
+  | RFSConnected {fileInfo :: RcvFileInfo}
+  | RFSComplete {fileInfo :: RcvFileInfo}
+  | RFSCancelled {fileInfo_ :: Maybe RcvFileInfo}
   deriving (Eq, Show)
 
 rcvFileComplete :: RcvFileStatus -> Bool
@@ -2004,6 +2007,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInfo)
 $(JQ.deriveJSON defaultJSON ''Group)
 
 $(JQ.deriveJSON defaultJSON ''GroupSummary)
+
+$(JQ.deriveJSON defaultJSON ''GroupInfoSummary)
 
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 

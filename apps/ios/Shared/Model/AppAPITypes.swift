@@ -921,8 +921,6 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     // sending file responses
     case sndFileCancelled(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta, sndFileTransfers: [SndFileTransfer])
     case sndStandaloneFileCreated(user: UserRef, fileTransferMeta: FileTransferMeta) // returned by _upload
-    case sndFileStartXFTP(user: UserRef, chatItem: AChatItem, fileTransferMeta: FileTransferMeta) // not used
-    case sndFileCancelledXFTP(user: UserRef, chatItem_: AChatItem?, fileTransferMeta: FileTransferMeta)
     // call invitations
     case callInvitations(callInvitations: [RcvCallInvitation])
     // notifications
@@ -969,8 +967,6 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .rcvFileCancelled: "rcvFileCancelled"
         case .sndFileCancelled: "sndFileCancelled"
         case .sndStandaloneFileCreated: "sndStandaloneFileCreated"
-        case .sndFileStartXFTP: "sndFileStartXFTP"
-        case .sndFileCancelledXFTP: "sndFileCancelledXFTP"
         case .callInvitations: "callInvitations"
         case .ntfTokenStatus: "ntfTokenStatus"
         case .ntfToken: "ntfToken"
@@ -1015,8 +1011,6 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .rcvFileCancelled(u, chatItem, _): return withUser(u, String(describing: chatItem))
         case let .sndFileCancelled(u, chatItem, _, _): return withUser(u, String(describing: chatItem))
         case .sndStandaloneFileCreated: return noDetails
-        case let .sndFileStartXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
-        case let .sndFileCancelledXFTP(u, chatItem, _): return withUser(u, String(describing: chatItem))
         case let .callInvitations(invs): return String(describing: invs)
         case let .ntfTokenStatus(status): return String(describing: status)
         case let .ntfToken(token, status, ntfMode, ntfServer): return "token: \(token)\nstatus: \(status.rawValue)\nntfMode: \(ntfMode.rawValue)\nntfServer: \(ntfServer)"

@@ -490,6 +490,7 @@ test-suite simplex-chat-test
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
+      APIDocs
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient
@@ -513,6 +514,14 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      API.Docs.Commands
+      API.Docs.Events
+      API.Docs.Generate
+      API.Docs.Responses
+      API.Docs.Syntax
+      API.Docs.Syntax.Types
+      API.Docs.Types
+      API.TypeInfo
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
@@ -534,6 +543,7 @@ test-suite simplex-chat-test
           SchemaDump
           WebRTCTests
   hs-source-dirs:
+      bots/src
       tests
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src

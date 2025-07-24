@@ -311,7 +311,7 @@ markdownText (FormattedText f_ t) = case f_ of
         Just cStr -> cStr <> t `T.snoc` '!'
         Nothing -> t
       colorStr = \case
-        Red -> Just "!1 " 
+        Red -> Just "!1 "
         Green -> Just "!2 "
         Blue -> Just "!3 "
         Yellow -> Just "!4 "

@@ -2813,6 +2813,7 @@ data class ChatItem (
       is CIContent.RcvDirectE2EEInfo -> false
       is CIContent.SndGroupE2EEInfo -> false
       is CIContent.RcvGroupE2EEInfo -> false
+      is CIContent.ChatBanner -> false
       else -> true
     }
 
@@ -2879,6 +2880,7 @@ data class ChatItem (
       is CIContent.RcvDirectE2EEInfo -> false
       is CIContent.SndGroupE2EEInfo -> false
       is CIContent.RcvGroupE2EEInfo -> false
+      is CIContent.ChatBanner -> false
       is CIContent.InvalidJSON -> false
     }
 
@@ -3549,6 +3551,7 @@ sealed class CIContent: ItemContent {
   @Serializable @SerialName("rcvDirectE2EEInfo") class RcvDirectE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("sndGroupE2EEInfo") class SndGroupE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("rcvGroupE2EEInfo") class RcvGroupE2EEInfo(val e2eeInfo: E2EEInfo): CIContent() { override val msgContent: MsgContent? get() = null }
+  @Serializable @SerialName("chatBanner") object ChatBanner: CIContent() { override val msgContent: MsgContent? get() = null }
   @Serializable @SerialName("invalidJSON") data class InvalidJSON(val json: String): CIContent() { override val msgContent: MsgContent? get() = null }
 
   override val text: String get() = when (this) {
@@ -3582,6 +3585,7 @@ sealed class CIContent: ItemContent {
       is RcvDirectE2EEInfo -> directE2EEInfoStr(e2eeInfo)
       is SndGroupE2EEInfo -> e2eeInfoNoPQStr
       is RcvGroupE2EEInfo -> e2eeInfoNoPQStr
+      is ChatBanner -> ""
       is InvalidJSON -> "invalid data"
     }
 
