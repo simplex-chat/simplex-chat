@@ -154,7 +154,7 @@ private fun TimedMessagesFeatureSection(
   }
   SectionTextFooter(
     if (allowFeature.value == FeatureAllowed.ALWAYS || allowFeature.value == FeatureAllowed.YES) {
-      ChatFeature.TimedMessages.allowDescription(allowFeature.value) + " " + generalGetString(MR.strings.time_to_disappear_applies_only_to_new_contacts)
+      ChatFeature.TimedMessages.allowDescription(allowFeature.value) + " " + generalGetString(MR.strings.time_to_disappear_is_set_only_for_new_contacts)
     } else {
       ChatFeature.TimedMessages.allowDescription(allowFeature.value)
     }

@@ -81,7 +81,7 @@ struct PreferencesView: View {
         footer: {
             let featureFooterText = featureFooter(.timedMessages, allowFeature).foregroundColor(theme.colors.secondary)
             if allow.wrappedValue {
-                featureFooterText + Text(" ") + Text("Time to disappear applies only to new contacts.")
+                featureFooterText + Text(" ") + Text("Time to disappear is set only for new contacts.")
             } else {
                 featureFooterText
             }
