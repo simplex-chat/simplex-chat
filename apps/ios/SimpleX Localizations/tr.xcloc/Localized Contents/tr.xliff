@@ -1257,12 +1257,14 @@ swipe action</note>
         <target>Daha iyi kullanıcı deneyimi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio" xml:space="preserve">
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
+        <target state="translated">Biy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio too large" xml:space="preserve">
+      <trans-unit id="Bio too large" xml:space="preserve" approved="no">
         <source>Bio too large</source>
+        <target state="translated">Biyografi çok uzun</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1355,8 +1357,9 @@ swipe action</note>
         <target>İş konuşmaları</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business connection" xml:space="preserve">
+      <trans-unit id="Business connection" xml:space="preserve" approved="no">
         <source>Business connection</source>
+        <target state="translated">İş bağlantısı</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
@@ -2661,8 +2664,9 @@ swipe action</note>
         <target>Açıklama</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Description too large" xml:space="preserve">
+      <trans-unit id="Description too large" xml:space="preserve" approved="no">
         <source>Description too large</source>
+        <target state="translated">Açıklama çok büyük</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve">
@@ -7455,8 +7459,9 @@ chat item action</note>
         <target>Kişilerle paylaş</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Short description" xml:space="preserve">
+      <trans-unit id="Short description" xml:space="preserve" approved="no">
         <source>Short description</source>
+        <target state="translated">Kısa açıklama</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
@@ -7867,12 +7872,14 @@ report reason</note>
         <target>Fotoğraf çek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to chat" xml:space="preserve">
+      <trans-unit id="Tap Connect to chat" xml:space="preserve" approved="no">
         <source>Tap Connect to chat</source>
+        <target state="translated">Sohbet etmek için Bağlan'a dokunun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to send request" xml:space="preserve">
+      <trans-unit id="Tap Connect to send request" xml:space="preserve" approved="no">
         <source>Tap Connect to send request</source>
+        <target state="translated">Bağlan'a dokunarak isteği gönderin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -7880,8 +7887,9 @@ report reason</note>
         <target>Daha sonra oluşturmak için menüden BasitX adresi oluştur'a dokunun.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Join group" xml:space="preserve">
+      <trans-unit id="Tap Join group" xml:space="preserve" approved="no">
         <source>Tap Join group</source>
+        <target state="translated">Gruba katıl'a dokunun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -9274,8 +9282,9 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target>SimpleX adresin</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your business contact" xml:space="preserve">
+      <trans-unit id="Your business contact" xml:space="preserve" approved="no">
         <source>Your business contact</source>
+        <target state="translated">İş bağlantınız</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -9313,8 +9322,9 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target>Bağlantınız %@ adresine taşındı ancak sizi profile yönlendirirken beklenmedik bir hata oluştu.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact" xml:space="preserve">
+      <trans-unit id="Your contact" xml:space="preserve" approved="no">
         <source>Your contact</source>
+        <target state="translated">İrtibat kişiniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -9347,8 +9357,9 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target>Mevcut profiliniz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your group" xml:space="preserve">
+      <trans-unit id="Your group" xml:space="preserve" approved="no">
         <source>Your group</source>
+        <target state="translated">Grubunuz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
