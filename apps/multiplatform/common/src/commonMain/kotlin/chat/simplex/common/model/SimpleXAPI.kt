@@ -4925,6 +4925,9 @@ data class TimedMessagesPreference(
   companion object {
     val ttlValues: List<Int?>
       get() = listOf(600, 3600, 86400, 7 * 86400, 30 * 86400, 3 * 30 * 86400, null)
+
+    val profileLevelTTLValues: List<Int?>
+      get() = listOf(7 * 86400, 30 * 86400, 3 * 30 * 86400, null)
   }
 }
 

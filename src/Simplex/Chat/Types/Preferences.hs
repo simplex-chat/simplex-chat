@@ -117,8 +117,7 @@ setPreference f allow_ prefs_ = setPreference_ f pref $ fromMaybe emptyChatPrefs
   where
     pref = setAllow <$> allow_
     setAllow :: FeatureAllowed -> FeaturePreference f
-    setAllow = setField @"allow" (getPreference f prefs)
-    prefs = mergePreferences Nothing prefs_
+    setAllow = setField @"allow" (getPreference f prefs_)
 
 setPreference' :: SChatFeature f -> Maybe (FeaturePreference f) -> Maybe Preferences -> Preferences
 setPreference' f pref_ prefs_ = setPreference_ f pref_ $ fromMaybe emptyChatPrefs prefs_
@@ -764,8 +763,32 @@ groupFeatureState p =
         | otherwise = (Nothing, Nothing)
    in (enable, param, role)
 
-mergePreferences :: Maybe Preferences -> Maybe Preferences -> FullPreferences
-mergePreferences contactPrefs userPreferences =
+mergePreferences :: Maybe Preferences -> Maybe Preferences -> Bool -> FullPreferences
+mergePreferences contactPrefs userPreferences canFallbackToUserTTL =
+  FullPreferences
+    { timedMessages = if canFallbackToUserTTL then pref SCFTimedMessages else timedPrefNoTTLFallback,
+      fullDelete = pref SCFFullDelete,
+      reactions = pref SCFReactions,
+      voice = pref SCFVoice,
+      calls = pref SCFCalls
+    }
+  where
+    timedPrefNoTTLFallback :: TimedMessagesPreference
+    timedPrefNoTTLFallback =
+      let allow = getField @"allow" $ pref SCFTimedMessages
+          -- this is to avoid fallback to user level timed messages TTL even if there is no contact level override
+          -- (specifically to avoid sending user level TTL to contacts without override on profile updates,
+          -- to make it "consistently not work" for all contacts, as we're using override mechanism to track TTL
+          -- for new and updated contacts, even though it's not really user's override)
+          ttlOverride = contactPrefs >>= chatPrefSel SCFTimedMessages >>= (\TimedMessagesPreference {ttl} -> ttl)
+       in TimedMessagesPreference {allow, ttl = ttlOverride}
+    pref :: SChatFeature f -> FeaturePreference f
+    pref f =
+      let sel = chatPrefSel f
+       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+
+fullPreferences' :: Maybe Preferences -> FullPreferences
+fullPreferences' userPreferences =
   FullPreferences
     { timedMessages = pref SCFTimedMessages,
       fullDelete = pref SCFFullDelete,
@@ -777,7 +800,7 @@ mergePreferences contactPrefs userPreferences =
     pref :: SChatFeature f -> FeaturePreference f
     pref f =
       let sel = chatPrefSel f
-       in fromMaybe (getPreference f defaultChatPrefs) $ (contactPrefs >>= sel) <|> (userPreferences >>= sel)
+       in fromMaybe (getPreference f defaultChatPrefs) $ (userPreferences >>= sel)
 
 mergeGroupPreferences :: Maybe GroupPreferences -> FullGroupPreferences
 mergeGroupPreferences groupPreferences =
