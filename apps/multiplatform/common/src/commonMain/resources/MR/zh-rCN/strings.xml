@@ -2483,4 +2483,5 @@
     <string name="chat_banner_your_business_contact">你的企业联系人</string>
     <string name="chat_banner_your_contact">你的联系人</string>
     <string name="chat_banner_your_group">你的群</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">只为新联系人设置了消失时间。</string>
 </resources>
