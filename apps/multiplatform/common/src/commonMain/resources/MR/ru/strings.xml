@@ -56,7 +56,7 @@
     <string name="connection_error">Ошибка соединения</string>
     <string name="network_error_desc">Пожалуйста, проверьте Ваше соединение с сервером %1$s и попробуйте еще раз.</string>
     <string name="error_sending_message">Ошибка при отправке сообщения</string>
-    <string name="error_adding_members">Ошибка при добавлении членов группы</string>
+    <string name="error_adding_members">Ошибка при добавлении участников</string>
     <string name="error_joining_group">Ошибка при вступлении в группу</string>
     <string name="cannot_receive_file">Невозможно получить файл</string>
     <string name="sender_cancelled_file_transfer">Отправитель отменил передачу файла.</string>
@@ -253,7 +253,7 @@
     <string name="create_group">Создать секретную группу</string>
     <string name="to_share_with_your_contact">(чтобы отправить Вашему контакту)</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(сканировать или вставить из буфера)</string>
-    <string name="only_stored_on_members_devices">(хранится только у членов группы)</string>
+    <string name="only_stored_on_members_devices">(хранится только у участников группы)</string>
     <!-- GetImageView -->
     <string name="toast_permission_denied">Разрешение не получено!</string>
     <string name="use_camera_button">Камера</string>
@@ -419,7 +419,7 @@
     <string name="save_preferences_question">Сохранить предпочтения?</string>
     <string name="save_and_notify_contact">Сохранить и уведомить контакт</string>
     <string name="save_and_notify_contacts">Сохранить и уведомить контакты</string>
-    <string name="save_and_notify_group_members">Сохранить и уведомить членов группы</string>
+    <string name="save_and_notify_group_members">Сохранить и уведомить участников группы</string>
     <string name="exit_without_saving">Выйти без сохранения</string>
     <!-- Welcome Prompts - WelcomeView.kt -->
     <string name="you_control_your_chat">Вы контролируете Ваш чат!</string>
@@ -683,7 +683,7 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="icon_descr_add_members">Пригласить членов группы</string>
+    <string name="icon_descr_add_members">Добавить участников</string>
     <string name="icon_descr_group_inactive">Группа неактивна</string>
     <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
@@ -703,7 +703,7 @@
     <string name="rcv_group_event_member_added">пригласил(а) %1$s</string>
     <string name="rcv_group_event_member_connected">соединен(а)</string>
     <string name="rcv_group_event_member_left">покинул(а) группу</string>
-    <string name="rcv_group_event_changed_member_role">поменял(а) роль члена %s на: %s</string>
+    <string name="rcv_group_event_changed_member_role">поменял(а) роль участника %s на: %s</string>
     <string name="rcv_group_event_changed_your_role">поменял(а) Вашу роль на: %s</string>
     <string name="rcv_group_event_member_deleted">удалил(а) %1$s</string>
     <string name="rcv_group_event_user_deleted">удалил(а) Вас из группы</string>
@@ -723,7 +723,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed">Вы поменяли адрес</string>
     <string name="snd_conn_event_switch_queue_phase_changing">смена адреса…</string>
     <!-- GroupMemberRole -->
-    <string name="group_member_role_member">член группы</string>
+    <string name="group_member_role_member">участник</string>
     <string name="group_member_role_admin">админ</string>
     <string name="group_member_role_owner">владелец</string>
     <!-- GroupMemberStatus -->
@@ -741,7 +741,7 @@
     <string name="group_member_status_connecting">соединяется</string>
     <!-- AddGroupMembersView.kt -->
     <string name="no_contacts_to_add">Нет контактов для добавления</string>
-    <string name="new_member_role">Роль члена группы</string>
+    <string name="new_member_role">Роль нового участника</string>
     <string name="icon_descr_expand_role">Развернуть выбор роли</string>
     <string name="invite_to_group_button">Пригласить в группу</string>
     <string name="skip_inviting_button">Не приглашать членов</string>
@@ -753,12 +753,12 @@
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
     <string name="invite_prohibited_description">Вы пытаетесь пригласить в группу контакт, связь с которым установлена через профиль инкогнито, в то время как в самой группе вы используете свой основной профиль.</string>
     <!-- GroupChatInfoView.kt -->
-    <string name="button_add_members">Пригласить членов группы</string>
+    <string name="button_add_members">Добавить участников</string>
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех участников - это действие нельзя отменить!</string>
     <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для Вас - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
@@ -767,7 +767,7 @@
     <string name="delete_link_question">Удалить ссылку?</string>
     <string name="delete_link">Удалить ссылку</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR кодом - через них можно присоединиться к группе. Вы сможете удалить ссылку, сохранив членов группы, которые через нее соединились.</string>
-    <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через эту ссылку, останутся в группе.</string>
+    <string name="all_group_members_will_remain_connected">Все участники группы, которые соединились через эту ссылку, останутся в группе.</string>
     <string name="error_creating_link_for_group">Ошибка при создании ссылки группы</string>
     <string name="error_deleting_link_for_group">Ошибка при удалении ссылки группы</string>
     <string name="only_group_owners_can_change_prefs">Только владельцы группы могут изменять предпочтения группы.</string>
@@ -776,11 +776,11 @@
     <string name="info_row_local_name">Локальное имя</string>
     <string name="info_row_database_id">ID базы данных</string>
     <!-- GroupMemberInfoView.kt -->
-    <string name="button_remove_member">Удалить члена группы</string>
+    <string name="button_remove_member">Удалить участника</string>
     <string name="button_send_direct_message">Отправить сообщение</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удален - это действие нельзя отменить!</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Участник будет удалён из группы. Это действие нельзя отменить.</string>
     <string name="remove_member_confirmation">Удалить</string>
-    <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
+    <string name="member_info_section_title_member">УЧАСТНИК</string>
     <string name="role_in_group">Роль</string>
     <string name="change_role">Поменять роль</string>
     <string name="change_verb">Поменять</string>
@@ -788,7 +788,7 @@
     <string name="change_member_role_question">Поменять роль в группе?</string>
     <string name="member_role_will_be_changed_with_notification">Роль будет изменена на "%s". Все в группе получат сообщение.</string>
     <string name="member_role_will_be_changed_with_invitation">Роль будет изменена на "%s". Будет отправлено новое приглашение.</string>
-    <string name="error_removing_member">Ошибка при удалении члена группы</string>
+    <string name="error_removing_member">Ошибка при удалении участника</string>
     <string name="error_changing_role">Ошибка при изменении роли</string>
     <string name="info_row_group">Группа</string>
     <string name="info_row_connection">Соединение</string>
@@ -802,12 +802,12 @@
     <string name="switch_receiving_address">Переключить адрес получения</string>
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Создать скрытую группу</string>
-    <string name="group_is_decentralized">Группа полностью децентрализована – она видна только членам.</string>
+    <string name="group_is_decentralized">Группа полностью децентрализована – она видна только участникам.</string>
     <string name="group_display_name_field">Введите имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
     <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
     <!-- GroupProfileView.kt -->
-    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
+    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах участников, а не на серверах.</string>
     <string name="save_group_profile">Сохранить профиль группы</string>
     <string name="error_saving_group_profile">Ошибка при сохранении профиля группы</string>
     <!-- AdvancedNetworkSettings.kt -->
@@ -871,17 +871,17 @@
     <string name="only_you_can_send_voice">Только Вы можете отправлять голосовые сообщения.</string>
     <string name="only_your_contact_can_send_voice">Только Ваш контакт может отправлять голосовые сообщения.</string>
     <string name="voice_prohibited_in_this_chat">Голосовые сообщения запрещены в этом чате.</string>
-    <string name="allow_direct_messages">Разрешить посылать прямые сообщения членам группы.</string>
-    <string name="prohibit_direct_messages">Запретить посылать прямые сообщения членам группы.</string>
+    <string name="allow_direct_messages">Разрешить посылать прямые сообщения участникам группы.</string>
+    <string name="prohibit_direct_messages">Запретить посылать прямые сообщения участникам.</string>
     <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
-    <string name="group_members_can_send_dms">Члены могут посылать прямые сообщения.</string>
-    <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены.</string>
-    <string name="group_members_can_delete">Члены могут необратимо удалять отправленные сообщения. (24 часа)</string>
+    <string name="group_members_can_send_dms">Участники могут посылать прямые сообщения.</string>
+    <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между участниками запрещены в этой группе.</string>
+    <string name="group_members_can_delete">Участники могут необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено.</string>
-    <string name="group_members_can_send_voice">Члены могут отправлять голосовые сообщения.</string>
+    <string name="group_members_can_send_voice">Участники могут отправлять голосовые сообщения.</string>
     <string name="voice_messages_are_prohibited">Голосовые сообщения запрещены.</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Минимальный расход батареи</b>. Вы получите уведомления только когда приложение запущено, без фонового сервиса.]]></string>
     <string name="onboarding_notifications_mode_title">Уведомления</string>
@@ -939,7 +939,7 @@
     <string name="clear_verification">Сбросить подтверждение</string>
     <string name="allow_disappearing_messages_only_if">Разрешить исчезающие сообщения, только если Ваш контакт разрешает их Вам.</string>
     <string name="prohibit_sending_disappearing">Запретить посылать исчезающие сообщения.</string>
-    <string name="group_members_can_send_disappearing">Члены могут посылать исчезающие сообщения.</string>
+    <string name="group_members_can_send_disappearing">Участники могут посылать исчезающие сообщения.</string>
     <string name="whats_new">Что нового</string>
     <string name="new_in_version">Новое в %s</string>
     <string name="v4_2_security_assessment">Аудит безопасности</string>
@@ -986,7 +986,7 @@
     <string name="users_delete_all_chats_deleted">Все чаты и сообщения будут удалены - это нельзя отменить!</string>
     <string name="app_version_code">Сборка приложения: %s</string>
     <string name="app_version_name">Версия приложения: v%s</string>
-    <string name="network_session_mode_entity_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и члена группы</b>. \n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.]]></string>
+    <string name="network_session_mode_entity_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого контакта и участника группы</b>. \n<b>Обратите внимание</b>: если у Вас много контактов, потребление батареи и трафика может быть значительно выше, и некоторые соединения могут не работать.]]></string>
     <string name="network_session_mode_user_description"><![CDATA[Отдельное TCP-соединение (и авторизация SOCKS) будет использоваться <b>для каждого профиля чата, который Вы имеете в приложении</b>.]]></string>
     <string name="core_version">Версия ядра: v%s</string>
     <string name="users_delete_question">Удалить профиль чата\?</string>
@@ -1052,9 +1052,7 @@
     <string name="user_mute">Без звука</string>
     <string name="make_profile_private">Сделайте профиль конфиденциальным!</string>
     <string name="v4_6_reduced_battery_usage_descr">Дополнительные улучшения скоро!</string>
-    <string name="v4_6_group_moderation_descr">Теперь админы могут:
-\n- удалять сообщения членов.
-\n- приостанавливать членов (роль "наблюдатель")</string>
+    <string name="v4_6_group_moderation_descr">Теперь админы могут: \n- удалять сообщения участников. \n- приостанавливать участников (роль наблюдатель)</string>
     <string name="v4_6_hidden_chat_profiles_descr">Защитите Ваши профили чата паролем!</string>
     <string name="user_unhide">Раскрыть</string>
     <string name="v4_6_audio_video_calls_descr">Поддержка bluetooth и другие улучшения.</string>
@@ -1226,7 +1224,7 @@
     <string name="allow_message_reactions">Разрешить реакции на сообщения.</string>
     <string name="allow_message_reactions_only_if">Разрешить реакции на сообщения, только если ваш контакт разрешает их.</string>
     <string name="allow_your_contacts_adding_message_reactions">Разрешить контактам добавлять реакции на сообщения.</string>
-    <string name="group_members_can_add_message_reactions">Члены могут добавлять реакции на сообщения.</string>
+    <string name="group_members_can_add_message_reactions">Участники могут добавлять реакции на сообщения.</string>
     <string name="message_reactions_prohibited_in_this_chat">Реакции на сообщения в этом чате запрещены.</string>
     <string name="message_reactions_are_prohibited">Реакции на сообщения запрещены.</string>
     <string name="only_your_contact_can_add_message_reactions">Только Ваш контакт может добавлять реакции на сообщения.</string>
@@ -1347,7 +1345,7 @@
     <string name="shutdown_alert_desc">Нотификации перестанут работать, пока вы не перезапустите приложение</string>
     <string name="network_option_protocol_timeout_per_kb">Таймаут протокола на KB</string>
     <string name="allow_to_send_files">Разрешить посылать файлы и медиа.</string>
-    <string name="group_members_can_send_files">Члены могут слать файлы и медиа.</string>
+    <string name="group_members_can_send_files">Участники могут слать файлы и медиа.</string>
     <string name="files_are_prohibited_in_group">Файлы и медиа запрещены.</string>
     <string name="files_and_media_prohibited">Файлы и медиа запрещены!</string>
     <string name="only_owners_can_enable_files_and_media">Только владельцы группы могут разрешить файлы и медиа.</string>
@@ -1370,7 +1368,7 @@
     <string name="sender_at_ts">%s в %s</string>
     <string name="fix_connection">Починить соединение</string>
     <string name="fix_connection_not_supported_by_contact">Починка не поддерживается контактом.</string>
-    <string name="fix_connection_not_supported_by_group_member">Починка не поддерживается членом группы.</string>
+    <string name="fix_connection_not_supported_by_group_member">Исправление не поддерживается участником группы</string>
     <string name="renegotiate_encryption">Пересогласовать шифрование</string>
     <string name="v5_2_favourites_filter">Быстрый поиск чатов</string>
     <string name="v5_2_message_delivery_receipts">Отчеты о доставке сообщений!</string>
@@ -1456,9 +1454,7 @@
     <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
     <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Установите режим инкогнито при соединении.</string>
-    <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)!
-\n- отчеты о доставке (до 20 членов).
-\n- быстрее и стабильнее.</string>
+    <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)! \n- отчеты о доставке (до 20 участников). \n- быстрее и стабильнее.</string>
     <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
     <string name="rcv_group_event_open_chat">Открыть</string>
     <string name="error_creating_member_contact">Ошибка при создании контакта</string>
@@ -1467,7 +1463,7 @@
     <string name="member_contact_send_direct_message">Отправьте сообщение чтобы соединиться</string>
     <string name="rcv_group_event_member_created_contact">соединен напрямую</string>
     <string name="expand_verb">Раскрыть</string>
-    <string name="v5_4_block_group_members">Блокируйте членов группы</string>
+    <string name="v5_4_block_group_members">Блокируйте участников группы</string>
     <string name="connect_plan_repeat_connection_request">Повторить запрос на соединение?</string>
     <string name="encryption_renegotiation_error">Ошибка нового соглашения о шифровании</string>
     <string name="rcv_direct_event_contact_deleted">удалил(а) контакт</string>
@@ -1511,13 +1507,13 @@
     <string name="delete_messages__question">Удалить %d сообщений?</string>
     <string name="link_a_mobile">Связать мобильный</string>
     <string name="connect_with_contact_name_question">Соединиться с %1$s?</string>
-    <string name="remove_member_button">Удалить члена группы</string>
+    <string name="remove_member_button">Удалить участника</string>
     <string name="block_member_confirmation">Заблокировать</string>
     <string name="blocked_items_description">%d сообщений заблокировано</string>
-    <string name="block_member_button">Заблокировать члена группы</string>
+    <string name="block_member_button">Заблокировать участника</string>
     <string name="connected_mobile">Подключенный мобильный</string>
     <string name="connect_plan_repeat_join_request">Повторить запрос на вступление?</string>
-    <string name="button_remove_member_question">Удалить члена группы?</string>
+    <string name="button_remove_member_question">Удалить участника?,</string>
     <string name="delete_and_notify_contact">Удалить и уведомить контакт</string>
     <string name="connect_plan_open_group">Открыть группу</string>
     <string name="desktop_connection_terminated">Подключение прервано</string>
@@ -1527,7 +1523,7 @@
     <string name="error">Ошибка</string>
     <string name="connect_to_desktop">Подключиться к компьютеру</string>
     <string name="disconnect_remote_host">Отключить</string>
-    <string name="block_member_question">Заблокировать члена группы?</string>
+    <string name="block_member_question">Заблокировать участника?</string>
     <string name="rcv_group_events_count">%d событий</string>
     <string name="invalid_name">Неверное имя!</string>
     <string name="connected_to_mobile">Мобильный подключен</string>
@@ -1604,8 +1600,8 @@
     <string name="enable_camera_access">Включить доступ к камере</string>
     <string name="tap_to_scan">Нажмите, чтобы сканировать</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Создать группу</b>: создать новую группу.]]></string>
-    <string name="disable_sending_recent_history">Не отправлять историю новым членам.</string>
-    <string name="enable_sending_recent_history">Отправить до 100 последних сообщений новым членам.</string>
+    <string name="disable_sending_recent_history">Не отправлять историю новым участникам.</string>
+    <string name="enable_sending_recent_history">Отправить до 100 последних сообщений новым участникам.</string>
     <string name="clear_note_folder_warning">Все сообщения будут удалены - это нельзя отменить!</string>
     <string name="camera_not_available">Камера недоступна</string>
     <string name="la_app_passcode">Код доступа в приложение</string>
@@ -1635,7 +1631,7 @@
     <string name="start_chat_question">Запустить чат?</string>
     <string name="note_folder_local_display_name">Личные заметки</string>
     <string name="recent_history">Доступ к истории</string>
-    <string name="recent_history_is_not_sent_to_new_members">История не отправляется новым членам.</string>
+    <string name="recent_history_is_not_sent_to_new_members">История не отправляется новым участникам.</string>
     <string name="recent_history_is_sent_to_new_members">До 100 последних сообщений отправляются новым членам.</string>
     <string name="show_internal_errors">Показывать внутренние ошибки</string>
     <string name="remote_ctrl_error_bad_state">Ошибка соединения с компьютером</string>
@@ -1666,7 +1662,7 @@
     <string name="possible_slow_function_desc">Выполнение задачи занимает долгое время: %1$d секунд: %2$s</string>
     <string name="possible_slow_function_title">Медленный вызов</string>
     <string name="profile_update_event_contact_name_changed">контакт %1$s изменён на %2$s</string>
-    <string name="profile_update_event_member_name_changed">член %1$s изменился на %2$s</string>
+    <string name="profile_update_event_member_name_changed">участник %1$s изменился на %2$s</string>
     <string name="profile_update_event_removed_address">удалён адрес контакта</string>
     <string name="profile_update_event_removed_picture">удалена картинка профиля</string>
     <string name="profile_update_event_set_new_address">установлен новый адрес контакта</string>
@@ -1680,7 +1676,7 @@
     <string name="or_scan_qr_code">Или отсканируйте QR код</string>
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
-    <string name="past_member_vName">Бывший член %1$s</string>
+    <string name="past_member_vName">Бывший участник %1$s</string>
     <string name="saved_message_title">Сохраненное сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
@@ -1689,12 +1685,12 @@
     <string name="rcv_group_event_member_unblocked">%s разблокирован</string>
     <string name="snd_group_event_member_unblocked">Вы разблокировали %s</string>
     <string name="unblock_for_all">Разблокировать для всех</string>
-    <string name="block_for_all_question">Заблокировать члена для всех?</string>
+    <string name="block_for_all_question">Заблокировать участника для всех?</string>
     <string name="member_info_member_blocked">заблокирован</string>
     <string name="blocked_by_admin_item_description">заблокировано администратором</string>
     <string name="member_blocked_by_admin">Заблокирован администратором</string>
     <string name="block_for_all">Заблокировать для всех</string>
-    <string name="error_blocking_member_for_all">Ошибка при блокировании члена для всех</string>
+    <string name="error_blocking_member_for_all">Ошибка при блокировании участника для всех</string>
     <string name="unblock_for_all_question">Разблокировать члена для всех?</string>
     <string name="snd_group_event_member_blocked">Вы заблокировали %s</string>
     <string name="e2ee_info_no_pq"><![CDATA[Сообщения, файлы и звонки защищены <b>end-to-end шифрованием</b> с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.]]></string>
@@ -1715,7 +1711,7 @@
     <string name="v5_6_app_data_migration">Миграция данных</string>
     <string name="v5_6_quantum_resistant_encryption_descr">Включите для контактов (BETA)!</string>
     <string name="v5_6_safer_groups">Более безопасные группы</string>
-    <string name="v5_6_safer_groups_descr">Админы могут заблокировать члена группы.</string>
+    <string name="v5_6_safer_groups_descr">Админы могут заблокировать участника группы.</string>
     <string name="paste_archive_link">Вставьте ссылку архива</string>
     <string name="invalid_file_link">Ошибка ссылки</string>
     <string name="migrate_to_device_migrating">Миграция</string>
@@ -1817,9 +1813,9 @@
     <string name="simplex_links">Ссылки SimpleX</string>
     <string name="allow_to_send_simplex_links">Разрешить отправлять ссылки SimpleX.</string>
     <string name="prohibit_sending_simplex_links">Запретить отправку ссылок SimpleX</string>
-    <string name="group_members_can_send_simplex_links">Члены могут отправлять ссылки SimpleX</string>
+    <string name="group_members_can_send_simplex_links">Участники могут отправлять ссылки SimpleX</string>
     <string name="feature_roles_admins">админы</string>
-    <string name="feature_roles_all_members">все члены</string>
+    <string name="feature_roles_all_members">все участники</string>
     <string name="feature_roles_owners">владельцы</string>
     <string name="download_file">Загрузить</string>
     <string name="saved_chat_item_info_tab">Сохранено</string>
@@ -1935,11 +1931,11 @@
     <string name="app_check_for_updates_notice_title">Проверка на наличие обновлений</string>
     <string name="allow_calls_question">Разрешить звонки?</string>
     <string name="calls_prohibited_alert_title">Звонки запрещены!</string>
-    <string name="cant_call_member_alert_title">Не удается позвонить члену группы</string>
+    <string name="cant_call_member_alert_title">Не удается позвонить участнику группы</string>
     <string name="app_check_for_updates_download_completed_title">Обновление скачано</string>
     <string name="info_view_call_button">звонок</string>
     <string name="cant_call_contact_alert_title">Не удается позвонить контакту</string>
-    <string name="cant_send_message_to_member_alert_title">Не удается написать члену группы</string>
+    <string name="cant_send_message_to_member_alert_title">Не удается написать участнику группы</string>
     <string name="app_check_for_updates">Проверять обновления</string>
     <string name="info_view_connect_button">соединиться</string>
     <string name="proxy_destination_error_broker_host">Адрес сервера назначения %1$s несовместим с настройками пересылающего сервера %2$s.</string>
@@ -2042,14 +2038,14 @@
     <string name="network_error_broker_version_desc">Версия сервера несовместима с вашим приложением: %1$s.</string>
     <string name="subscription_errors">Ошибки подписки</string>
     <string name="uploaded_files">Отправленные файлы</string>
-    <string name="delete_members_messages__question">Удалить %d сообщений членов группы?</string>
+    <string name="delete_members_messages__question">Удалить %d сообщений от участников?</string>
     <string name="delete_messages_mark_deleted_warning">Сообщения будут помечены на удаление. Получатель(и) смогут посмотреть эти сообщения.</string>
     <string name="select_verb">Выбрать</string>
     <string name="moderate_messages_will_be_deleted_warning">Сообщения будут удалены для всех членов группы.</string>
     <string name="moderate_messages_will_be_marked_warning">Сообщения будут помечены как удаленные для всех членов группы.</string>
     <string name="contact_deleted">Контакт удален!</string>
     <string name="conversation_deleted">Разговор удален!</string>
-    <string name="member_inactive_title">Член неактивен</string>
+    <string name="member_inactive_title">Участник неактивен</string>
     <string name="message_forwarded_desc">Прямого соединения пока нет, сообщение переслано или будет переслано админом.</string>
     <string name="selected_chat_items_nothing_selected">Ничего не выбрано</string>
     <string name="info_view_open_button">открыть</string>
@@ -2115,7 +2111,7 @@
     <string name="smp_proxy_error_broker_host">Адрес пересылающего сервера несовместим с настройками сети: %1$s.</string>
     <string name="info_view_message_button">написать</string>
     <string name="compose_message_placeholder">Сообщение</string>
-    <string name="member_inactive_desc">Сообщение может быть доставлено позже, если член группы станет активным.</string>
+    <string name="member_inactive_desc">Сообщение может быть доставлено позже, если участник группы станет активным.</string>
     <string name="message_forwarded_title">Сообщение переслано</string>
     <string name="v6_0_reachable_chat_toolbar">Доступная панель чата</string>
     <string name="servers_info_detailed_statistics_received_total">Всего получено</string>
@@ -2291,7 +2287,7 @@
     <string name="only_chat_owners_can_change_prefs">Только владельцы разговора могут поменять предпочтения.</string>
     <string name="operator_conditions_failed_to_load">Текст условий использования не может быть показан, вы можете посмотреть их через ссылку:</string>
     <string name="info_row_chat">Разговор</string>
-    <string name="member_will_be_removed_from_chat_cannot_be_undone">Член будет удален из разговора - это действие нельзя отменить!</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Участник будет удалён из чата. Это действие нельзя отменить.</string>
     <string name="network_preset_servers_title">Серверы по умолчанию</string>
     <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на %s. Все участники разговора получат уведомление.</string>
     <string name="chat_main_profile_sent">Ваш профиль будет отправлен участникам разговора.</string>
@@ -2308,7 +2304,7 @@
     <string name="operator_use_for_messages_receiving">Для получения</string>
     <string name="operator_use_for_messages">Использовать для сообщений</string>
     <string name="appearance_bars_blur_radius">Размыть</string>
-    <string name="direct_messages_are_prohibited">Прямые сообщения между членами запрещены.</string>
+    <string name="direct_messages_are_prohibited">Прямые сообщения между участниками запрещены.</string>
     <string name="v6_2_business_chats">Бизнес разговоры</string>
     <string name="v6_2_improved_chat_navigation_descr">- Открывает разговор на первом непрочитанном сообщении.\n- Перейти к цитируемому сообщению.</string>
     <string name="v6_2_business_chats_descr">Конфиденциальность для ваших покупателей.</string>
@@ -2326,7 +2322,7 @@
     <string name="connection_error_quota_desc">Соединение достигло предела недоставленных сообщений. Возможно, Ваш контакт не в сети.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Чтобы защитить Вашу ссылку от замены, Вы можете сравнить код безопасности.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Например, если ваш контакт получает сообщения через сервер SimpleX Chat, ваше приложение будет доставлять их через сервер Flux.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами запрещены в этом разговоре.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между участниками запрещены в этом чате.</string>
     <string name="chat_list_groups">Группы</string>
     <string name="delete_chat_list_menu_action">Удалить</string>
     <string name="delete_chat_list_question">Удалить список?</string>
@@ -2430,7 +2426,7 @@
     <string name="group_member_status_pending_approval_short">ожидает</string>
     <string name="operator_updated_conditions">Обновленные условия</string>
     <string name="disable_sending_member_reports">Запретить жаловаться модераторам группы.</string>
-    <string name="group_members_can_send_reports">Члены группы могут пожаловаться модераторам.</string>
+    <string name="group_members_can_send_reports">Участники могут пожаловаться модераторам.</string>
     <string name="disable_automatic_deletion_message">Сообщения в этом чате никогда не будут удалены.</string>
     <string name="privacy_chat_list_open_links">Открыть ссылку из списка чатов</string>
     <string name="privacy_chat_list_open_web_link_question">Открыть веб-ссылку?</string>
@@ -2454,13 +2450,13 @@
     <string name="report_item_visibility_moderators">Только отправитель и модераторы видят это</string>
     <string name="report_item_visibility_submitter">Только вы и модераторы видят это</string>
     <string name="unblock_members_for_all_question">Разблокировать членов для всех?</string>
-    <string name="unblock_members_desc">Сообщения от этих членов группы будут показаны!</string>
-    <string name="block_members_desc">Все новые сообщения от этих членов группы будут скрыты!</string>
-    <string name="block_members_for_all_question">Заблокировать членов для всех?</string>
-    <string name="members_will_be_removed_from_group_cannot_be_undone">Члены группы будут удалены - это действие нельзя отменить!</string>
+    <string name="unblock_members_desc">Сообщения от этих участников группы будут показаны!</string>
+    <string name="block_members_desc">Все новые сообщения от этих участников группы будут скрыты!</string>
+    <string name="block_members_for_all_question">Заблокировать участников для всех?</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Участники будут удалены из группы. Это действие нельзя отменить.</string>
     <string name="members_will_be_removed_from_chat_cannot_be_undone">Участники будут удалены из разговора - это действие нельзя отменить!</string>
     <string name="feature_roles_moderators">модераторы</string>
-    <string name="button_remove_members_question">Удалить членов группы?</string>
+    <string name="button_remove_members_question">Удалить участников?</string>
     <string name="onboarding_conditions_accept">Принять</string>
     <string name="onboarding_conditions_by_using_you_agree">Используя SimpleX Chat, Вы согласны:\n- отправлять только законные сообщения в публичных группах.\n- уважать других пользователей – не отправлять спам.</string>
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
@@ -2481,38 +2477,38 @@
     <string name="group_member_status_pending_review">ожидает одобрения</string>
     <string name="reject_pending_member_button">Отклонить</string>
     <string name="reject_pending_member_alert_title">Отклонить участника?</string>
-    <string name="error_deleting_member_support_chat">Ошибка при удалении чата с членом группы</string>
+    <string name="error_deleting_member_support_chat">Ошибка при удалении чата с участником</string>
     <string name="full_link_button_text">Полная ссылка</string>
-    <string name="error_accepting_member">Ошибка вступления члена группы</string>
+    <string name="error_accepting_member">Ошибка при вступлении участника</string>
     <string name="unsupported_connection_link">Ссылка не поддерживается</string>
     <string name="link_requires_newer_app_version_please_upgrade">Эта ссылка требует новую версию. Обновите приложение или попросите Ваш контакт прислать совместимую ссылку.</string>
     <string name="group_new_support_messages">%d сообщений</string>
     <string name="report_sent_alert_msg_view_in_support_chat">Вы можете найти Ваши жалобы в Чате с админами.</string>
     <string name="button_support_chat">Чат с админами</string>
-    <string name="button_support_chat_member">Чат с членом группы</string>
+    <string name="button_support_chat_member">Чат с участником</string>
     <string name="member_criteria_off">выключено</string>
-    <string name="admission_stage_review">Одобрять членов</string>
-    <string name="member_support">Чаты с членами группы</string>
-    <string name="member_admission">Приём членов в группу</string>
-    <string name="admission_stage_review_descr">Одобрять членов для вступления в группу.</string>
-    <string name="no_support_chats">Нет чатов с членами группы</string>
+    <string name="admission_stage_review">Одобрять участников</string>
+    <string name="member_support">Чаты с участниками</string>
+    <string name="member_admission">Приём участников</string>
+    <string name="admission_stage_review_descr">Одобрять участников для вступления в группу.</string>
+    <string name="no_support_chats">Нет чатов с участниками</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Принять как читателя</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Принять в группу</string>
-    <string name="accept_pending_member_alert_title">Принять члена</string>
+    <string name="accept_pending_member_alert_title">Принять участника</string>
     <string name="reviewed_by_admins">одобрен админами</string>
     <string name="report_sent_alert_title">Жалоба отправлена модераторам</string>
     <string name="cant_send_message_you_left">Вы вышли</string>
     <string name="cant_send_message_generic">нельзя отправлять</string>
-    <string name="group_new_support_chats">%d чатов с членами группы</string>
+    <string name="group_new_support_chats">%d чатов с участниками</string>
     <string name="cant_send_message_contact_disabled">контакт выключен</string>
-    <string name="cant_send_message_member_has_old_version">член имеет старую версию</string>
+    <string name="cant_send_message_member_has_old_version">участник имеет старую версию</string>
     <string name="cant_send_message_alert_title">Вы не можете отправлять сообщения!</string>
     <string name="short_link_button_text">Короткая ссылка</string>
     <string name="save_admission_question">Сохранить настройки вступления?</string>
     <string name="snd_group_event_member_accepted">Вы приняли этого члена</string>
     <string name="group_member_status_pending_review_short">рассмотрение</string>
     <string name="set_member_admission">Установить вступление в группу</string>
-    <string name="delete_member_support_chat_alert_title">Удалить чат с членом группы?</string>
+    <string name="delete_member_support_chat_alert_title">Удалить чат с участником?</string>
     <string name="delete_member_support_chat_button">Удалить разговор</string>
     <string name="rcv_group_event_member_accepted">принят %1$s</string>
     <string name="support_chat">Чат с админами</string>
@@ -2527,7 +2523,7 @@
     <string name="e2ee_info_e2ee"><![CDATA[Сообщения защищены <b>end-to-end шифрованием</b>.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Вы сможете отправлять сообщения <b>только после того как Ваш запрос будет принят</b>.]]></string>
     <string name="v6_4_support_chat">Чат с админами</string>
-    <string name="v6_4_review_members_descr">Общайтесь с членами до того как принять их.</string>
+    <string name="v6_4_review_members_descr">Общайтесь с участниками до того как принять их.</string>
     <string name="compose_view_connect">Соединиться</string>
     <string name="v6_4_connect_faster">Соединяйтесь быстрее! 🚀</string>
     <string name="contact_should_accept">контакт должен принять…</string>
@@ -2551,9 +2547,9 @@
     <string name="share_profile_via_link_alert_text">Профиль будет добавлен в адрес.</string>
     <string name="network_option_protocol_timeout_background">Фоновый таймаут протокола</string>
     <string name="reject_contact_request">Отклонить запрос на соединение</string>
-    <string name="v6_4_role_moderator_descr">Может удалять сообщения и блокировать членов.</string>
+    <string name="v6_4_role_moderator_descr">Может удалять сообщения и блокировать участников.</string>
     <string name="cant_send_message_request_is_sent">запрос отправлен</string>
-    <string name="v6_4_review_members">Одобрять членов группы</string>
+    <string name="v6_4_review_members">Одобрять участников группы</string>
     <string name="compose_view_send_contact_request_alert_question">Отправить запрос на соединение?</string>
     <string name="compose_view_send_request">Отправить запрос</string>
     <string name="compose_view_send_request_without_message">Отправить запрос без сообщения</string>
