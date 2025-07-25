@@ -2072,7 +2072,7 @@
     <string name="forward_files_messages_deleted_after_selection_desc">Los mensajes han sido eliminados después de seleccionarlos.</string>
     <string name="forward_alert_title_nothing_to_forward">¡Nada para reenviar!</string>
     <string name="compose_save_messages_n">Guardando %1$s mensajes</string>
-    <string name="network_proxy_auth_mode_no_auth">No uses credenciales con proxy.</string>
+    <string name="network_proxy_auth_mode_no_auth">No se usan credenciales con proxy.</string>
     <string name="network_proxy_incorrect_config_title">Error guardando proxy</string>
     <string name="network_proxy_password">Contraseña</string>
     <string name="network_proxy_auth">Autenticación proxy</string>
@@ -2486,4 +2486,15 @@
     <string name="short_descr">Tu biografía:</string>
     <string name="bio_too_large">Biografía demasiado larga</string>
     <string name="group_descr_too_large">Descripción demasiado larga</string>
+    <string name="chat_banner_accept_contact_request">Aceptar solicitud de conexión</string>
+    <string name="chat_banner_business_connection">Conexión empresarial</string>
+    <string name="chat_banner_group">Grupo</string>
+    <string name="chat_banner_connect_to_chat">Pulsa Conectar para chatear</string>
+    <string name="chat_banner_send_request_to_connect">Pulsa Conectar para enviar solicitud</string>
+    <string name="chat_banner_join_group">Pulsa Unirte al grupo</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Mensajes temporales activados sólo para contactos nuevos.</string>
+    <string name="connect_use_incognito_profile">Usar perfil incógnito</string>
+    <string name="chat_banner_your_business_contact">Mi contacto empresarial</string>
+    <string name="chat_banner_your_contact">Mi contacto</string>
+    <string name="chat_banner_your_group">Mi grupo</string>
 </resources>
