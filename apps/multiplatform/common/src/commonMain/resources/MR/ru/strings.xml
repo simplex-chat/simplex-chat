@@ -690,7 +690,7 @@
     <string name="alert_title_no_group">Группа не найдена!</string>
     <string name="alert_message_no_group">Эта группа больше не существует.</string>
     <string name="alert_title_cant_invite_contacts">Нельзя пригласить контакты!</string>
-    <string name="alert_title_cant_invite_contacts_descr">Вы используете инкогнито профиль для этой группы - чтобы предотвратить раскрытие Вашего основного профиля, приглашать контакты не разрешено</string>
+    <string name="alert_title_cant_invite_contacts_descr">Поскольку в этой группе Вы используете профиль инкогнито, приглашать контакты запрещено. Это необходимо для защиты вашего основного профиля</string>
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
     <string name="you_are_invited_to_group">Вы приглашены в группу</string>
@@ -751,7 +751,7 @@
     <string name="num_contacts_selected">Выбрано контактов: %d</string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
-    <string name="invite_prohibited_description">Вы пытаетесь пригласить инкогнито контакт в группу, где Вы используете свой основной профиль</string>
+    <string name="invite_prohibited_description">Вы пытаетесь пригласить в группу контакт, связь с которым установлена через профиль инкогнито, в то время как в самой группе вы используете свой основной профиль.</string>
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить членов группы</string>
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
@@ -826,7 +826,7 @@
     <string name="incognito_random_profile">Случайный профиль</string>
     <string name="incognito_info_protects">Режим инкогнито защищает Вашу конфиденциальность — для каждого контакта создаётся новый случайный профиль.</string>
     <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
-    <string name="incognito_info_share">Когда Вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</string>
+    <string name="incognito_info_share">Когда Вы соединены с контактом инкогнито, тот же самый профиль инкогнито будет использоваться для групп с этим контактом.</string>
     <!-- Default themes -->
     <string name="theme_system">Системная</string>
     <string name="theme_light">Светлая</string>
@@ -1432,7 +1432,7 @@
     <string name="privacy_message_draft">Черновик сообщения</string>
     <string name="system_restricted_background_warn"><![CDATA[Чтобы включить нотификации, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="connect_use_current_profile">Использовать активный профиль</string>
-    <string name="connect_use_new_incognito_profile">Использовать новый Инкогнито профиль</string>
+    <string name="connect_use_new_incognito_profile">Использовать новый профиль инкогнито</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
     <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
@@ -2570,4 +2570,5 @@
     <string name="short_descr">О Вас:</string>
     <string name="context_user_picker_your_profile">Ваш профиль</string>
     <string name="bio_too_large">Описание слишком длинное</string>
+    <string name="connect_use_incognito_profile">Использовать профиль инкогнито</string>
 </resources>
