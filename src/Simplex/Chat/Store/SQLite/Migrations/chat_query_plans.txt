@@ -3230,7 +3230,7 @@ Query:
         WHERE ct.user_id = ?
           AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
           AND p.display_name = ? AND p.full_name = ?
-          AND p.short_descr IS ? AND p.image IS ?
+          AND p.short_descr IS NOT DISTINCT FROM ? AND p.image IS NOT DISTINCT FROM ?
       
 Plan:
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
@@ -3360,7 +3360,7 @@ Query:
         WHERE m.user_id = ? AND m.contact_id IS NULL
           AND m.member_category != ?
           AND p.display_name = ? AND p.full_name = ?
-          AND p.short_descr IS ? AND p.image IS ?
+          AND p.short_descr IS NOT DISTINCT FROM ? AND p.image IS NOT DISTINCT FROM ?
       
 Plan:
 SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
