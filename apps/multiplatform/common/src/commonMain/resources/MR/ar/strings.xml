@@ -2481,4 +2481,5 @@
     <string name="chat_banner_your_contact">جهة اتصالك</string>
     <string name="chat_banner_your_group">مجموعتك</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">وقت الاختفاء يتم تعيينه للجهات الاتصال الجديدة فقط.</string>
+    <string name="connect_use_incognito_profile">استخدم ملف تعريف متخفي</string>
 </resources>
