@@ -794,33 +794,49 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
   close: (() -> Unit)?,
   openChat: Boolean
 ) {
+  @Composable
+  fun UseCurrentProfileButton() {
+    SectionItemView({
+      AlertManager.privacySensitive.hideAlert()
+      withBGApi {
+        val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
+        if (ok && openChat) {
+          close?.invoke()
+          openDirectChat(rhId, contact.contactId)
+        }
+      }
+    }) {
+      Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+    }
+  }
+
+  @Composable
+  fun UseIncognitoProfileButton(text: String) {
+    SectionItemView({
+      AlertManager.privacySensitive.hideAlert()
+      withBGApi {
+        val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
+        if (ok && openChat) {
+          close?.invoke()
+          openDirectChat(rhId, contact.contactId)
+        }
+      }
+    }) {
+      Text(text, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+    }
+  }
+
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = String.format(generalGetString(MR.strings.connect_with_contact_name_question), contact.chatViewName),
     buttons = {
       Column {
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi {
-            close?.invoke()
-            val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
-            if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId)
-            }
-          }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi {
-            close?.invoke()
-            val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
-            if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId)
-            }
-          }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        if (!contact.profileChangeProhibited) {
+          UseCurrentProfileButton()
+          UseIncognitoProfileButton(generalGetString(MR.strings.connect_use_new_incognito_profile))
+        } else if (!contact.contactConnIncognito) {
+          UseCurrentProfileButton()
+        } else {
+          UseIncognitoProfileButton(generalGetString(MR.strings.connect_use_incognito_profile))
         }
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()

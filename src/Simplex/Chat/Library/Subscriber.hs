@@ -546,6 +546,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (gInfo, host) <- withStore $ \db -> do
                 liftIO $ deleteContactCardKeepConn db connId ct
                 createGroupInvitedViaLink db vr user conn'' glInv
+              void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
               let profileToSend = userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
