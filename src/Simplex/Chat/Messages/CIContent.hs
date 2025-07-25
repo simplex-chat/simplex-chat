@@ -14,10 +14,12 @@
 
 module Simplex.Chat.Messages.CIContent where
 
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -686,7 +688,13 @@ $(JQ.deriveJSON defaultJSON ''CIGroupInvitation)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CISCall") ''CICallStatus)
 
 -- platform specific
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
+
+-- We only need it for platform specific encoding to support remote desktop link
+instance FromJSON JSONCIContent where
+  parseJSON v =
+    $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent) v
+      <|> pure (JCIInvalidJSON MDRcv $ safeDecodeUtf8 $ LB.toStrict $ J.encode v)
 
 -- platform independent
 $(JQ.deriveJSON (singleFieldJSON $ dropPrefix "DBJCI") ''DBJSONCIContent)

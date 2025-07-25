@@ -164,8 +164,8 @@ runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} Cha
       case (chatDirNtf u chat chatDir (isUserMention ci), itemStatus) of
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
-              chatRef = chatInfoToRef chat
-          void $ runReaderT (execChatCommand' (APIChatItemsRead chatRef [itemId]) 0) cc
+              chatRef_ = chatInfoToRef chat
+          forM_ chatRef_ $ \chatRef -> runReaderT (execChatCommand' (APIChatItemsRead chatRef [itemId]) 0) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =

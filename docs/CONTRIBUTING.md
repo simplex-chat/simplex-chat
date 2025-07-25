@@ -1,9 +1,9 @@
 ---
 title: Contributing guide
-revision: 31.01.2023
+revision: 25.07.2025
 ---
 
-| Updated 31.01.2023 | Languages: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
+| Updated 25.07.2025 | Languages: EN, [FR](/docs/lang/fr/CONTRIBUTING.md), [CZ](/docs/lang/cs/CONTRIBUTING.md), [PL](/docs/lang/pl/CONTRIBUTING.md) |
 
 # Contributing guide
 
@@ -113,3 +113,21 @@ import Control.Monad
 ```
 
 [This PR](https://github.com/simplex-chat/simplex-chat/pull/2975/files) has all the differences.
+
+
+## Improving compatibility between versions for remote desktop connection
+
+UI already can handle failed JSON conversions of chats and chat items, and it helps both debugging and downgrading.
+
+While we can remove backwards compatibility between mobile and desktop versions connected via remote link, it is degrades remote link UX to the point of unusable, as in many cases users cannot upgrade mobile and desktop apps at the same time (because of different release cycles).
+
+It is particularly problematic for Android app that only allows downgrades via Export/Import, as older version cannot be installed on top of newer version.
+
+PR # already improved the status quo by:
+- adding CInfoInvalidJSON constructor, so that chats that cannot be parsed will show as "invalid chat" via remote connection (as when UI has field not present in API),
+- changing parsing for CIContent, so that ...
+
+The solution is to maintain backward compatibility on JSON encoding level by doing one of:
+- add new fields as optional to all types that are used in API,
+- add `omittedField` method to FromJSON instance of types of new fields to provide a default value, where appropriate,
+-

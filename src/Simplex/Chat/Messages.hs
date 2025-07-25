@@ -24,6 +24,7 @@ import Data.Aeson (FromJSON, ToJSON, (.:))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.Encoding as JE
 import qualified Data.Aeson.TH as JQ
+import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Lazy.Char8 as LB
@@ -113,6 +114,7 @@ data ChatInfo (c :: ChatType) where
   LocalChat :: NoteFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
+  CInfoInvalidJSON :: J.Object -> ChatInfo c -- this constructor is needed to catch JSON errors for Remote connection parsing
 
 deriving instance Show (ChatInfo c)
 
@@ -146,13 +148,14 @@ memberEventForwardScope m@GroupMember {memberRole, memberStatus}
   | memberRole >= GRModerator = Just GFSAll
   | otherwise = Just GFSMain
 
-chatInfoToRef :: ChatInfo c -> ChatRef
+chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
-  DirectChat Contact {contactId} -> ChatRef CTDirect contactId Nothing
-  GroupChat GroupInfo {groupId} scopeInfo -> ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
-  LocalChat NoteFolder {noteFolderId} -> ChatRef CTLocal noteFolderId Nothing
-  ContactRequest UserContactRequest {contactRequestId} -> ChatRef CTContactRequest contactRequestId Nothing
-  ContactConnection PendingContactConnection {pccConnId} -> ChatRef CTContactConnection pccConnId Nothing
+  DirectChat Contact {contactId} -> Just $ ChatRef CTDirect contactId Nothing
+  GroupChat GroupInfo {groupId} scopeInfo -> Just $ ChatRef CTGroup groupId (toChatScope <$> scopeInfo)
+  LocalChat NoteFolder {noteFolderId} -> Just $ ChatRef CTLocal noteFolderId Nothing
+  ContactRequest UserContactRequest {contactRequestId} -> Just $ ChatRef CTContactRequest contactRequestId Nothing
+  ContactConnection PendingContactConnection {pccConnId} -> Just $ ChatRef CTContactConnection pccConnId Nothing
+  CInfoInvalidJSON _ -> Nothing
 
 chatInfoMembership :: ChatInfo c -> Maybe GroupMember
 chatInfoMembership = \case
@@ -165,13 +168,24 @@ data JSONChatInfo
   | JCInfoLocal {noteFolder :: NoteFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
+  | JCInfoInvalidJSON {json :: J.Object}
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCSI") ''GroupChatScopeInfo)
 
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo)
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo)
+
+instance FromJSON JSONChatInfo where
+  parseJSON v@(J.Object o) =
+    $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo) v
+      <|> pure (JCInfoInvalidJSON o)
+  parseJSON invalid = JT.typeMismatch "Object" invalid
 
 instance ChatTypeI c => FromJSON (ChatInfo c) where
-  parseJSON v = (\(AChatInfo _ c) -> checkChatType c) <$?> J.parseJSON v
+  parseJSON v = checkChatInfo <$?> J.parseJSON v
+    where
+      checkChatInfo = \case
+        AChatInfo _ (CInfoInvalidJSON obj) -> Right $ CInfoInvalidJSON @c obj
+        AChatInfo _ c -> checkChatType c
 
 instance ToJSON (ChatInfo c) where
   toJSON = J.toJSON . jsonChatInfo
@@ -184,6 +198,7 @@ jsonChatInfo = \case
   LocalChat l -> JCInfoLocal l
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
+  CInfoInvalidJSON o -> JCInfoInvalidJSON o
 
 data AChatInfo = forall c. ChatTypeI c => AChatInfo (SChatType c) (ChatInfo c)
 
@@ -196,6 +211,7 @@ jsonAChatInfo = \case
   JCInfoLocal l -> AChatInfo SCTLocal $ LocalChat l
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
+  JCInfoInvalidJSON o -> AChatInfo SCTDirect $ CInfoInvalidJSON o
 
 instance FromJSON AChatInfo where
   parseJSON v = jsonAChatInfo <$> J.parseJSON v

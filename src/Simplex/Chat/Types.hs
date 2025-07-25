@@ -454,6 +454,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
+    -- testMissingRequiredField :: Int,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
