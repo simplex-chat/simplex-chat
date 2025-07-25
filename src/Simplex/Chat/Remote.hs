@@ -75,7 +75,7 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 4, 0, 5, 1]
+minRemoteCtrlVersion = AppVersion [6, 4, 1, 0]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion

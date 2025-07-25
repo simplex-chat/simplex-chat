@@ -541,11 +541,6 @@ RcvGroupE2EEInfo:
 ChatBanner:
 - type: "chatBanner"
 
-InvalidJSON:
-- type: "invalidJSON"
-- direction: [MsgDirection](#msgdirection)
-- json: string
-
 
 ---
 

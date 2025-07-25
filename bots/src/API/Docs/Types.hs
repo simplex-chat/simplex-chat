@@ -179,8 +179,8 @@ ciQuoteType =
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
 chatTypesDocsData =
   [ ((sti @(Chat 'CTDirect)) {typeName = "AChat"}, STRecord, "", [], "", ""),
-    ((sti @JSONChatInfo) {typeName = "ChatInfo"}, STUnion, "JCInfo", [], "", ""),
-    ((sti @JSONCIContent) {typeName = "CIContent"}, STUnion, "JCI", [], "", ""),
+    ((sti @JSONChatInfo) {typeName = "ChatInfo"}, STUnion, "JCInfo", ["JCInfoInvalidJSON"], "", ""),
+    ((sti @JSONCIContent) {typeName = "CIContent"}, STUnion, "JCI", ["JCIInvalidJSON"], "", ""),
     ((sti @JSONCIDeleted) {typeName = "CIDeleted"}, STUnion, "JCID", [], "", ""),
     ((sti @JSONCIDirection) {typeName = "CIDirection"}, STUnion, "JCI", [], "", ""),
     ((sti @JSONCIFileStatus) {typeName = "CIFileStatus"}, STUnion, "JCIFS", [], "", ""),
