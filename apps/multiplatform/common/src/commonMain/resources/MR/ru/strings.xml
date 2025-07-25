@@ -1239,7 +1239,7 @@
     <string name="if_you_cant_meet_in_person">Если Вы не можете встретиться лично, покажите QR-код во время видеозвонка или поделитесь ссылкой.</string>
     <string name="scan_qr_to_connect_to_contact">Чтобы соединиться с Вами, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Вы не потеряете контакты, если позже удалите Ваш адрес.</string>
-    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода - любой может соединиться с Вами.</string>
+    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода, и тогда к вам сможет подключиться кто угодно.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Узнать больше в <font color="#0088ff">Руководстве пользователя</font>.]]></string>
     <string name="your_contacts_will_remain_connected">Ваши контакты сохранятся.</string>
     <string name="customize_theme_title">Настроить тему</string>
