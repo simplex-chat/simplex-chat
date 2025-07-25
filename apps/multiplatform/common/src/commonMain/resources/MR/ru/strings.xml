@@ -90,7 +90,7 @@
     <string name="service_notifications_disabled">Мгновенные уведомления выключены!</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Чтобы улучшить конфиденциальность, <b>SimpleX выполняется в фоне</b> вместо уведомлений через сервер.]]></string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Он может быть выключен через Настройки</b> – Вы продолжите получать уведомления о сообщениях пока приложение запущено.]]></string>
-    <string name="turn_off_battery_optimization"><![CDATA[<b>Разрешите это</b> в следующем окне чтобы получать нотификации мгновенно.]]></string>
+    <string name="turn_off_battery_optimization"><![CDATA[<b>Разрешите это</b> в следующем окне, чтобы получать уведомления мгновенно.]]></string>
     <string name="turning_off_service_and_periodic">Оптимизация батареи включена, поэтому сервис уведомлений выключен. Вы можете снова включить его через Настройки.</string>
     <string name="periodic_notifications">Периодические уведомления</string>
     <string name="periodic_notifications_disabled">Периодические уведомления выключены!</string>
@@ -112,10 +112,10 @@
     <string name="settings_notification_preview_title">Показывать уведомления</string>
     <string name="notifications_mode_off">Включен, когда приложение открыто</string>
     <string name="notifications_mode_periodic">Запускается периодически</string>
-    <string name="notifications_mode_service">Всегда включен</string>
+    <string name="notifications_mode_service">Всегда включён</string>
     <string name="notifications_mode_off_desc">Приложение может получить сообщение только тогда, когда запущено, в фоне сервис запускаться не будет</string>
     <string name="notifications_mode_periodic_desc">Проверять новые сообщения раз в 10 минут на протяжении до 1 минуты</string>
-    <string name="notifications_mode_service_desc">Фоновый сервис всегда включен. Уведомления будут показаны без задержки при наличии сообщений</string>
+    <string name="notifications_mode_service_desc">Фоновый сервис всегда включён. Уведомления будут показаны без задержки при наличии сообщений</string>
     <string name="notification_preview_mode_message">Текст сообщения</string>
     <string name="notification_preview_mode_contact">Имена контактов</string>
     <string name="notification_preview_mode_hidden">Скрытое</string>
@@ -328,7 +328,7 @@
     <string name="connection_request_sent">Запрос на соединение послан!</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда Ваш контакт будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда устройство Вашего контакта появится в сети. Пожалуйста, подождите или проверьте позже.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Если Вы не можете встретиться лично, Вы можете <b>показать QR код во время видеозвонка</b> или поделиться ссылкой.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен
 \nВашему контакту</string>
@@ -372,7 +372,7 @@
     <string name="smp_servers_check_address">Проверьте адрес сервера и попробуйте снова.</string>
     <string name="smp_servers_delete_server">Удалить сервер</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat для терминала</string>
-    <string name="star_on_github">Поставить звездочку в GitHub</string>
+    <string name="star_on_github">Поставить звёздочку в GitHub</string>
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные SimpleX Chat?</string>
@@ -422,7 +422,7 @@
     <string name="save_and_notify_group_members">Сохранить и уведомить членов группы</string>
     <string name="exit_without_saving">Выйти без сохранения</string>
     <!-- Welcome Prompts - WelcomeView.kt -->
-    <string name="you_control_your_chat">Вы котролируете Ваш чат!</string>
+    <string name="you_control_your_chat">Вы контролируете Ваш чат!</string>
     <string name="the_messaging_and_app_platform_protecting_your_privacy_and_security">Платформа для сообщений и приложений, которая защищает Вашу личную информацию и безопасность.</string>
     <string name="we_do_not_store_contacts_or_messages_on_servers">Мы не храним Ваши контакты и сообщения (после доставки) на серверах.</string>
     <string name="create_profile">Создать профиль</string>
@@ -566,7 +566,7 @@
     <string name="settings_section_title_themes">ТЕМЫ</string>
     <string name="settings_section_title_messages">СООБЩЕНИЯ И ФАЙЛЫ</string>
     <string name="settings_section_title_calls">ЗВОНКИ</string>
-    <string name="settings_section_title_incognito">Режим Инкогнито</string>
+    <string name="settings_section_title_incognito">Режим инкогнито</string>
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">База данных</string>
     <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
@@ -824,7 +824,7 @@
     <!-- Incognito mode -->
     <string name="incognito">Инкогнито</string>
     <string name="incognito_random_profile">Случайный профиль</string>
-    <string name="incognito_info_protects">Режим Инкогнито защищает Вашу конфиденциальность — для каждого контакта создается новый случайный профиль.</string>
+    <string name="incognito_info_protects">Режим инкогнито защищает Вашу конфиденциальность — для каждого контакта создаётся новый случайный профиль.</string>
     <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
     <string name="incognito_info_share">Когда Вы соединены с контактом инкогнито, тот же самый инкогнито профиль будет использоваться для групп с этим контактом.</string>
     <!-- Default themes -->
@@ -1099,7 +1099,7 @@
     <string name="error_loading_smp_servers">Ошибка при загрузке SMP серверов</string>
     <string name="error_loading_xftp_servers">Ошибка при загрузке XFTP серверов</string>
     <string name="error_saving_xftp_servers">Ошибка при сохранении XFTP серверов</string>
-    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса XFTP северов в правильном формате и не дублируются.</string>
+    <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса XFTP-серверов указаны в правильном формате и не дублируются.</string>
     <string name="error_xftp_test_server_auth">Сервер требует авторизации для загрузки, проверьте пароль.</string>
     <string name="smp_server_test_compare_file">Сравнение файла</string>
     <string name="smp_server_test_delete_file">Удалить файл</string>
@@ -1394,7 +1394,7 @@
     <string name="sync_connection_force_confirm">Пересогласовать</string>
     <string name="sync_connection_force_question">Пересогласовать шифрование\?</string>
     <string name="prohibit_sending_files">Запретить слать файлы и медиа.</string>
-    <string name="connect_via_link_incognito">Соединиться Инкогнито</string>
+    <string name="connect_via_link_incognito">Соединиться инкогнито</string>
     <string name="turn_off_battery_optimization_button">Разрешить</string>
     <string name="turn_off_system_restriction_button">Открыть настройки приложения</string>
     <string name="disable_notifications_button">Выключить уведомления</string>
@@ -1448,14 +1448,14 @@
     <string name="remove_passphrase_from_settings">Удалить пароль из настроек\?</string>
     <string name="use_random_passphrase">Использовать случайный пароль</string>
     <string name="save_passphrase_in_settings">Сохранить пароль в настройках</string>
-    <string name="v5_3_simpler_incognito_mode">Упрощенный режим Инкогнито</string>
+    <string name="v5_3_simpler_incognito_mode">Упрощённый режим инкогнито</string>
     <string name="setup_database_passphrase">Установить пароль базы данных</string>
     <string name="set_database_passphrase">Установить пароль базы данных</string>
     <string name="open_database_folder">Открыть директорию базы данных</string>
     <string name="v5_3_new_interface_languages_descr">Арабский, болгарский, финский, иврит, тайский и украинский - благодаря пользователям и Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
     <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
-    <string name="v5_3_simpler_incognito_mode_descr">Установите режим Инкогнито при соединении.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Установите режим инкогнито при соединении.</string>
     <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)!
 \n- отчеты о доставке (до 20 членов).
 \n- быстрее и стабильнее.</string>
@@ -1494,7 +1494,7 @@
     <string name="discover_on_network">Обнаружение по локальной сети</string>
     <string name="rcv_group_and_other_events">и %d других событий</string>
     <string name="connect_plan_connect_via_link">Соединиться через ссылку?</string>
-    <string name="v5_4_incognito_groups">Инкогнито группы</string>
+    <string name="v5_4_incognito_groups">Группы инкогнито</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%1$d сообщений модерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
@@ -1882,7 +1882,7 @@
     <string name="message_queue_info">Информация об очереди сообщений</string>
     <string name="v5_8_persian_ui">Персидский интерфейс</string>
     <string name="protect_ip_address">Защитить IP адрес</string>
-    <string name="v5_8_private_routing_descr">Защитите ваш IP адрес от серверов сообщений, выбранных Вашими контактами. \nВключите в настройках Сети и серверов.</string>
+    <string name="v5_8_private_routing_descr">Защитите ваш IP-адрес от серверов сообщений, выбранных Вашими контактами. \nВключите в настройках «Сеть и серверы».</string>
     <string name="network_smp_proxy_fallback_allow_description">Отправьте сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="network_smp_proxy_mode_private_routing">Конфиденциальная доставка</string>
     <string name="network_smp_proxy_mode_unknown_description">Использовать конфиденциальную доставку с неизвестными серверами.</string>
@@ -2569,4 +2569,5 @@
     <string name="address_welcome_message">Приветственное сообщение</string>
     <string name="short_descr">О Вас:</string>
     <string name="context_user_picker_your_profile">Ваш профиль</string>
+    <string name="bio_too_large">Описание слишком длинное</string>
 </resources>
