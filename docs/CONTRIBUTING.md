@@ -119,15 +119,17 @@ import Control.Monad
 
 UI already can handle failed JSON conversions of chats and chat items, and it helps both debugging and downgrading.
 
-While we can remove backwards compatibility between mobile and desktop versions connected via remote link, it is degrades remote link UX to the point of unusable, as in many cases users cannot upgrade mobile and desktop apps at the same time (because of different release cycles).
+While we can increase versions for remote connections to make different versions incompatible, it degrades remote connection UX, as in many cases users can't upgrade mobile or desktop apps at the same time because of different release cycles.
 
-It is particularly problematic for Android app that only allows downgrades via Export/Import, as older version cannot be installed on top of newer version.
+It is especially problematic for Android app users, as they can only downgrade via Export/Import - older version can't be installed on top of newer version.
 
-PR # already improved the status quo by:
+PR #6105 improved it by:
 - adding CInfoInvalidJSON constructor, so that chats that cannot be parsed will show as "invalid chat" via remote connection (as when UI has field not present in API),
-- changing parsing for CIContent, so that ...
+- changing JSON parsing for CIContent, so that it falls back to CIInvalidJSON in platform-specific JSON parser.
 
-The solution is to maintain backward compatibility on JSON encoding level by doing one of:
-- add new fields as optional to all types that are used in API,
-- add `omittedField` method to FromJSON instance of types of new fields to provide a default value, where appropriate,
--
+To avoid "invalid" chats in the list we need to maintain forward compatibility on JSON encoding level of AChat type and subtypes:
+- add new fields as optional to these types,
+- add `omittedField` method to FromJSON instances of types of new fields to provide a default value, where appropriate,
+- define primitive non-optional fields as newtype with `omittedField` in JSON instance.
+
+To avoid fallback to invalid JSON in chat items we should do the same for ChatItem type and subtypes. It's especially important when adding fields to types used for all CIContent, as otherwise all items will be broken.

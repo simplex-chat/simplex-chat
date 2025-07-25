@@ -331,7 +331,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
           LocalChat _ -> ("*", toCIPreview items Nothing, Nothing)
           ContactRequest UserContactRequest {localDisplayName} -> ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
           ContactConnection PendingContactConnection {pccConnId, pccConnStatus} -> (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
-          CInfoInvalidJSON _ -> ("invalid chat info", "", Nothing)
+          CInfoInvalidJSON {} -> ("invalid chat info", "", Nothing)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
         toCIPreview (ci : _) membership_ = testViewItem ci membership_
         toCIPreview _ _ = ""
@@ -724,7 +724,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           context = maybe [] forwardedFrom itemForwarded
       ContactRequest {} -> []
       ContactConnection {} -> []
-      CInfoInvalidJSON _ -> ["invalid chat info"]
+      CInfoInvalidJSON {} -> ["invalid chat info"]
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
       Nothing -> item
       Just t -> item <> styled (colored Red) (" [" <> t <> "]")
@@ -922,7 +922,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
     (_, CILocalSnd) -> [sentText]
-    (CInfoInvalidJSON _, _) -> []
+    (CInfoInvalidJSON {}, _) -> []
   where
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
@@ -1029,7 +1029,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   LocalChat _ -> ["notes: all messages are removed"]
   ContactRequest _ -> []
   ContactConnection _ -> []
-  CInfoInvalidJSON _ -> []
+  CInfoInvalidJSON {} -> []
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =

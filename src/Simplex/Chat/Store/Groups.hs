@@ -350,7 +350,6 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     pure
       GroupInfo
         { groupId,
-          -- testMissingRequiredField = 0,
           localDisplayName = ldn,
           groupProfile,
           localAlias = "",
@@ -423,7 +422,6 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           pure
             ( GroupInfo
                 { groupId,
-                  -- testMissingRequiredField = 0,
                   localDisplayName,
                   groupProfile,
                   localAlias = "",

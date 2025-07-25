@@ -690,7 +690,7 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "CISCall") ''CICallStatus)
 -- platform specific
 $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
 
--- We only need it for platform specific encoding to support remote desktop link
+-- We only need this fallback for platform specific encoding to support remote desktop link
 instance FromJSON JSONCIContent where
   parseJSON v =
     $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent) v
@@ -709,7 +709,11 @@ instance MsgDirectionI d => ToJSON (CIContent d) where
   toEncoding = J.toEncoding . jsonCIContent
 
 instance MsgDirectionI d => FromJSON (CIContent d) where
-  parseJSON v = (\(ACIContent _ c) -> checkDirection c) <$?> J.parseJSON v
+  parseJSON v = unwrap <$?> J.parseJSON v
+    where
+      unwrap = \case
+        ACIContent _ (CIInvalidJSON t) -> Right $ CIInvalidJSON @d t -- ignoring direction in ACIContent - it may be incorrect from JSONCIContent parser fallback
+        ACIContent _ c -> checkDirection c
 
 -- platform independent
 dbParseACIContent :: Text -> Either String ACIContent

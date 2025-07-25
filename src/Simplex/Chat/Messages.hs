@@ -62,6 +62,61 @@ import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8, (<$?>))
 data ChatType = CTDirect | CTGroup | CTLocal | CTContactRequest | CTContactConnection
   deriving (Eq, Show, Ord)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "CT") ''ChatType)
+
+data SChatType (c :: ChatType) where
+  SCTDirect :: SChatType 'CTDirect
+  SCTGroup :: SChatType 'CTGroup
+  SCTLocal :: SChatType 'CTLocal
+  SCTContactRequest :: SChatType 'CTContactRequest
+  SCTContactConnection :: SChatType 'CTContactConnection
+
+deriving instance Show (SChatType c)
+
+instance TestEquality SChatType where
+  testEquality SCTDirect SCTDirect = Just Refl
+  testEquality SCTGroup SCTGroup = Just Refl
+  testEquality SCTLocal SCTLocal = Just Refl
+  testEquality SCTContactRequest SCTContactRequest = Just Refl
+  testEquality SCTContactConnection SCTContactConnection = Just Refl
+  testEquality _ _ = Nothing
+
+data AChatType = forall c. ChatTypeI c => ACT (SChatType c)
+
+class ChatTypeI (c :: ChatType) where
+  chatTypeI :: SChatType c
+
+instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
+
+instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
+
+instance ChatTypeI 'CTLocal where chatTypeI = SCTLocal
+
+instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
+
+instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
+
+toChatType :: SChatType c -> ChatType
+toChatType = \case
+  SCTDirect -> CTDirect
+  SCTGroup -> CTGroup
+  SCTLocal -> CTLocal
+  SCTContactRequest -> CTContactRequest
+  SCTContactConnection -> CTContactConnection
+
+aChatType :: ChatType -> AChatType
+aChatType = \case
+  CTDirect -> ACT SCTDirect
+  CTGroup -> ACT SCTGroup
+  CTLocal -> ACT SCTLocal
+  CTContactRequest -> ACT SCTContactRequest
+  CTContactConnection -> ACT SCTContactConnection
+
+checkChatType :: forall t c c'. (ChatTypeI c, ChatTypeI c') => t c' -> Either String (t c)
+checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
+  Just Refl -> Right x
+  Nothing -> Left "bad chat type"
+
 data GroupChatScope
   = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
@@ -114,7 +169,7 @@ data ChatInfo (c :: ChatType) where
   LocalChat :: NoteFolder -> ChatInfo 'CTLocal
   ContactRequest :: UserContactRequest -> ChatInfo 'CTContactRequest
   ContactConnection :: PendingContactConnection -> ChatInfo 'CTContactConnection
-  CInfoInvalidJSON :: J.Object -> ChatInfo c -- this constructor is needed to catch JSON errors for Remote connection parsing
+  CInfoInvalidJSON :: SChatType c -> J.Object -> ChatInfo c -- this constructor is needed to catch JSON errors for Remote connection parsing
 
 deriving instance Show (ChatInfo c)
 
@@ -155,7 +210,7 @@ chatInfoToRef = \case
   LocalChat NoteFolder {noteFolderId} -> Just $ ChatRef CTLocal noteFolderId Nothing
   ContactRequest UserContactRequest {contactRequestId} -> Just $ ChatRef CTContactRequest contactRequestId Nothing
   ContactConnection PendingContactConnection {pccConnId} -> Just $ ChatRef CTContactConnection pccConnId Nothing
-  CInfoInvalidJSON _ -> Nothing
+  CInfoInvalidJSON {} -> Nothing
 
 chatInfoMembership :: ChatInfo c -> Maybe GroupMember
 chatInfoMembership = \case
@@ -168,7 +223,7 @@ data JSONChatInfo
   | JCInfoLocal {noteFolder :: NoteFolder}
   | JCInfoContactRequest {contactRequest :: UserContactRequest}
   | JCInfoContactConnection {contactConnection :: PendingContactConnection}
-  | JCInfoInvalidJSON {json :: J.Object}
+  | JCInfoInvalidJSON {chatType :: ChatType, json :: J.Object}
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GCSI") ''GroupChatScopeInfo)
 
@@ -177,15 +232,11 @@ $(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo)
 instance FromJSON JSONChatInfo where
   parseJSON v@(J.Object o) =
     $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "JCInfo") ''JSONChatInfo) v
-      <|> pure (JCInfoInvalidJSON o)
+      <|> ((`JCInfoInvalidJSON` o) <$> o .: "type") -- fallback for forward compatible remote parser
   parseJSON invalid = JT.typeMismatch "Object" invalid
 
 instance ChatTypeI c => FromJSON (ChatInfo c) where
-  parseJSON v = checkChatInfo <$?> J.parseJSON v
-    where
-      checkChatInfo = \case
-        AChatInfo _ (CInfoInvalidJSON obj) -> Right $ CInfoInvalidJSON @c obj
-        AChatInfo _ c -> checkChatType c
+  parseJSON v = (\(AChatInfo _ c) -> checkChatType c) <$?> J.parseJSON v
 
 instance ToJSON (ChatInfo c) where
   toJSON = J.toJSON . jsonChatInfo
@@ -198,7 +249,7 @@ jsonChatInfo = \case
   LocalChat l -> JCInfoLocal l
   ContactRequest g -> JCInfoContactRequest g
   ContactConnection c -> JCInfoContactConnection c
-  CInfoInvalidJSON o -> JCInfoInvalidJSON o
+  CInfoInvalidJSON c o -> JCInfoInvalidJSON (toChatType c) o
 
 data AChatInfo = forall c. ChatTypeI c => AChatInfo (SChatType c) (ChatInfo c)
 
@@ -211,7 +262,7 @@ jsonAChatInfo = \case
   JCInfoLocal l -> AChatInfo SCTLocal $ LocalChat l
   JCInfoContactRequest g -> AChatInfo SCTContactRequest $ ContactRequest g
   JCInfoContactConnection c -> AChatInfo SCTContactConnection $ ContactConnection c
-  JCInfoInvalidJSON o -> AChatInfo SCTDirect $ CInfoInvalidJSON o
+  JCInfoInvalidJSON cType o -> case aChatType cType of ACT c -> AChatInfo c $ CInfoInvalidJSON c o
 
 instance FromJSON AChatInfo where
   parseJSON v = jsonAChatInfo <$> J.parseJSON v
@@ -1103,59 +1154,6 @@ type ChatItemId = Int64
 
 type ChatItemTs = UTCTime
 
-data SChatType (c :: ChatType) where
-  SCTDirect :: SChatType 'CTDirect
-  SCTGroup :: SChatType 'CTGroup
-  SCTLocal :: SChatType 'CTLocal
-  SCTContactRequest :: SChatType 'CTContactRequest
-  SCTContactConnection :: SChatType 'CTContactConnection
-
-deriving instance Show (SChatType c)
-
-instance TestEquality SChatType where
-  testEquality SCTDirect SCTDirect = Just Refl
-  testEquality SCTGroup SCTGroup = Just Refl
-  testEquality SCTLocal SCTLocal = Just Refl
-  testEquality SCTContactRequest SCTContactRequest = Just Refl
-  testEquality SCTContactConnection SCTContactConnection = Just Refl
-  testEquality _ _ = Nothing
-
-data AChatType = forall c. ChatTypeI c => ACT (SChatType c)
-
-class ChatTypeI (c :: ChatType) where
-  chatTypeI :: SChatType c
-
-instance ChatTypeI 'CTDirect where chatTypeI = SCTDirect
-
-instance ChatTypeI 'CTGroup where chatTypeI = SCTGroup
-
-instance ChatTypeI 'CTLocal where chatTypeI = SCTLocal
-
-instance ChatTypeI 'CTContactRequest where chatTypeI = SCTContactRequest
-
-instance ChatTypeI 'CTContactConnection where chatTypeI = SCTContactConnection
-
-toChatType :: SChatType c -> ChatType
-toChatType = \case
-  SCTDirect -> CTDirect
-  SCTGroup -> CTGroup
-  SCTLocal -> CTLocal
-  SCTContactRequest -> CTContactRequest
-  SCTContactConnection -> CTContactConnection
-
-aChatType :: ChatType -> AChatType
-aChatType = \case
-  CTDirect -> ACT SCTDirect
-  CTGroup -> ACT SCTGroup
-  CTLocal -> ACT SCTLocal
-  CTContactRequest -> ACT SCTContactRequest
-  CTContactConnection -> ACT SCTContactConnection
-
-checkChatType :: forall t c c'. (ChatTypeI c, ChatTypeI c') => t c' -> Either String (t c)
-checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
-  Just Refl -> Right x
-  Nothing -> Left "bad chat type"
-
 data SndMessage = SndMessage
   { msgId :: MessageId,
     sharedMsgId :: SharedMsgId,
@@ -1384,8 +1382,6 @@ data CIModeration = CIModeration
     moderatedAt :: UTCTime
   }
   deriving (Show)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "CT") ''ChatType)
 
 instance ChatTypeI c => FromJSON (SChatType c) where
   parseJSON v = (\(ACT t) -> checkChatType t) . aChatType <$?> J.parseJSON v
