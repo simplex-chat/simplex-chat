@@ -433,8 +433,8 @@ getTermLine cc@TestCC {printOutput} =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      -- when True $ do
-      when printOutput $ do
+      when True $ do
+      -- when printOutput $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -529,6 +529,7 @@ smpServerCfg =
       newQueueBasicAuth = Nothing, -- Just "server_password",
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
+      dailyBlockQueueQuota = 20,
       messageExpiration = Just defaultMessageExpiration,
       expireMessagesOnStart = False,
       idleQueueInterval = defaultIdleQueueInterval,
