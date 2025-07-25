@@ -529,6 +529,7 @@ smpServerCfg =
       newQueueBasicAuth = Nothing, -- Just "server_password",
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
+      dailyBlockQueueQuota = 20,
       messageExpiration = Just defaultMessageExpiration,
       expireMessagesOnStart = False,
       idleQueueInterval = defaultIdleQueueInterval,
