@@ -911,7 +911,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><p>| Updated 31.01.2023 | Languages: EN, <a href="/docs/lang/fr/contributing.html">FR</a>, <a href="/docs/lang/cs/contributing.html">CZ</a>, <a href="/docs/lang/pl/contributing.html">PL</a> |</p>
+                    <div><p>| Updated 25.07.2025 | Languages: EN, <a href="/docs/lang/fr/contributing.html">FR</a>, <a href="/docs/lang/cs/contributing.html">CZ</a>, <a href="/docs/lang/pl/contributing.html">PL</a> |</p>
 <h1 id="contributing-guide" tabindex="-1">Contributing guide</h1>
 <h2 id="compiling-with-sqlcipher-encryption-enabled" tabindex="-1">Compiling with SQLCipher encryption enabled</h2>
 <p>Add <code>cabal.project.local</code> to project root with the location of OpenSSL headers and libraries and flag setting encryption mode:</p>
@@ -1017,6 +1017,22 @@ let r' = (record :: Record) {field = value}
 import Control.Monad
 </code></pre>
 <p><a href="https://github.com/simplex-chat/simplex-chat/pull/2975/files">This PR</a> has all the differences.</p>
+<h2 id="improving-compatibility-between-versions-for-remote-desktop-connection" tabindex="-1">Improving compatibility between versions for remote desktop connection</h2>
+<p>UI already can handle failed JSON conversions of chats and chat items, and it helps both debugging and downgrading.</p>
+<p>While we can increase versions for remote connections to make different versions incompatible, it degrades remote connection UX, as in many cases users can't upgrade mobile or desktop apps at the same time because of different release cycles.</p>
+<p>It is especially problematic for Android app users, as they can only downgrade via Export/Import - older version can't be installed on top of newer version.</p>
+<p>PR #6105 improved it by:</p>
+<ul>
+<li>adding CInfoInvalidJSON constructor, so that chats that cannot be parsed will show as &quot;invalid chat&quot; via remote connection (as when UI has field not present in API),</li>
+<li>changing JSON parsing for CIContent, so that it falls back to CIInvalidJSON in platform-specific JSON parser.</li>
+</ul>
+<p>To avoid &quot;invalid&quot; chats in the list we need to maintain forward compatibility on JSON encoding level of AChat type and subtypes:</p>
+<ul>
+<li>add new fields as optional to these types,</li>
+<li>add <code>omittedField</code> method to FromJSON instances of types of new fields to provide a default value, where appropriate,</li>
+<li>define primitive non-optional fields as newtype with <code>omittedField</code> in JSON instance.</li>
+</ul>
+<p>To avoid fallback to invalid JSON in chat items we should do the same for ChatItem type and subtypes. It's especially important when adding fields to types used for all CIContent, as otherwise all items will be broken.</p>
 </div>
                 </article>
             </main>
