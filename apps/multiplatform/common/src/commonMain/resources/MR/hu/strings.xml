@@ -2464,4 +2464,5 @@
     <string name="chat_banner_connect_to_chat">Koppintson a „Kapcsolódás” gombra a csevegéshez</string>
     <string name="chat_banner_send_request_to_connect">Koppintson a „Kapcsolódás” gombra a meghívó elküldéséhez</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Az üzeneteltűnési idő csak az új partnerekre vonatkozik.</string>
+    <string name="connect_use_incognito_profile">Inkognitóprofil használata</string>
 </resources>
