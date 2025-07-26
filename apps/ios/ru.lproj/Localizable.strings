@@ -4781,9 +4781,6 @@ chat item action */
 "Sent reply" = "Отправленный ответ";
 
 /* No comment provided by engineer. */
-"Sent to your contact after connection." = "Отправляется Вашему контакту после соединения.";
-
-/* No comment provided by engineer. */
 "Sent total" = "Всего отправлено";
 
 /* No comment provided by engineer. */
@@ -6190,7 +6187,7 @@ report reason */
 "Your profile **%@** will be shared." = "Будет отправлен Ваш профиль **%@**.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль храниться на Вашем устройстве и отправляется только контактам.";
+"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль хранится на Вашем устройстве и отправляется только контактам.";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.";

@@ -816,6 +816,12 @@ swipe action */
 "Better user experience" = "Verbesserte Nutzer-Erfahrung";
 
 /* No comment provided by engineer. */
+"Bio" = "Biografie";
+
+/* alert title */
+"Bio too large" = "Biografie zu lang";
+
+/* No comment provided by engineer. */
 "Black" = "Schwarz";
 
 /* No comment provided by engineer. */
@@ -881,6 +887,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Business chats" = "Geschäftliche Chats";
+
+/* No comment provided by engineer. */
+"Business connection" = "Geschäftliche Verbindung";
 
 /* No comment provided by engineer. */
 "Businesses" = "Unternehmen";
@@ -1783,6 +1792,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Description" = "Beschreibung";
+
+/* alert title */
+"Description too large" = "Beschreibung zu lang";
 
 /* No comment provided by engineer. */
 "Desktop address" = "Desktop-Adresse";
@@ -4784,9 +4796,6 @@ chat item action */
 "Sent reply" = "Gesendete Antwort";
 
 /* No comment provided by engineer. */
-"Sent to your contact after connection." = "Wird nach der Verbindung an Ihren Kontakt gesendet.";
-
-/* No comment provided by engineer. */
 "Sent total" = "Summe aller gesendeten Nachrichten";
 
 /* No comment provided by engineer. */
@@ -4948,6 +4957,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share with contacts" = "Mit Kontakten teilen";
+
+/* No comment provided by engineer. */
+"Short description" = "Kurze Beschreibung";
 
 /* No comment provided by engineer. */
 "Short link" = "Verkürzter Link";
@@ -5191,7 +5203,16 @@ report reason */
 "Tap button " = "Schaltfläche antippen ";
 
 /* No comment provided by engineer. */
+"Tap Connect to chat" = "Verbinden tippen, um zu chatten";
+
+/* No comment provided by engineer. */
+"Tap Connect to send request" = "Verbinden tippen, um die Anfrage zu senden";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Tippen Sie im Menü auf SimpleX-Adresse erstellen, um sie später zu erstellen.";
+
+/* No comment provided by engineer. */
+"Tap Join group" = "Tippen, um der Gruppe beizutreten";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Zum Aktivieren des Profils tippen.";
@@ -6142,6 +6163,9 @@ report reason */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt";
 
 /* No comment provided by engineer. */
+"Your business contact" = "Ihr geschäftlicher Kontakt";
+
+/* No comment provided by engineer. */
 "Your calls" = "Anrufe";
 
 /* No comment provided by engineer. */
@@ -6163,6 +6187,9 @@ report reason */
 "Your connection was moved to %@ but an error happened when switching profile." = "Ihre Verbindung wurde auf %@ verschoben. Während Sie auf das Profil weitergeleitet wurden trat aber ein unerwarteter Fehler auf.";
 
 /* No comment provided by engineer. */
+"Your contact" = "Ihr Kontakt";
+
+/* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%@).";
 
 /* No comment provided by engineer. */
@@ -6179,6 +6206,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your current profile" = "Mein aktuelles Chat-Profil";
+
+/* No comment provided by engineer. */
+"Your group" = "Ihre Gruppe";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "Ihre ICE-Server";

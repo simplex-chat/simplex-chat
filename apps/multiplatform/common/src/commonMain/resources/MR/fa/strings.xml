@@ -185,7 +185,7 @@
     <string name="notification_preview_mode_hidden">پنهان</string>
     <string name="notification_display_mode_hidden_desc">پنهان کردن مخاطب و پیام</string>
     <string name="notification_preview_somebody">مخاطب پنهان:</string>
-    <string name="auth_open_chat_profiles"><![CDATA[تغییر پروفایل‌های چت]]></string>
+    <string name="auth_open_chat_profiles">تغییر پروفایل‌های چت</string>
     <string name="notifications_mode_service_desc">سرویس پس‌زمینه همیشه در حال اجراست - اعلان‌ها به محض موجود شدن پیام‌ها به نمایش درمی‌آیند.</string>
     <string name="la_notice_title_simplex_lock">قفل SimpleX</string>
     <string name="call_service_notification_end_call">پایان تماس</string>
@@ -2316,7 +2316,7 @@
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[برای استفاده از سرورهای <b>%s</b>، شرایط استفاده را بپذیرید.]]></string>
     <string name="connect_plan_you_are_already_connected_with_vName"><![CDATA[شما در حال حاضر با <b>%1$s</b> متصل هستید.]]></string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[شما تنها <b>پس از پذیرش درخواست‌تان</b> قادر به ارسال پیام خواهید بود.]]></string>
-    <string name="change_automatic_deletion_question"><![CDATA[تغییر حذف خودکار پیام؟]]></string>
+    <string name="change_automatic_deletion_question">تغییر حذف خودکار پیام؟</string>
     <string name="settings_section_title_chat_database">پایگاه داده چت</string>
     <string name="duplicates_label">تکراری‌ها</string>
     <string name="edit_chat_list_menu_action">تغییر</string>

@@ -816,6 +816,12 @@ swipe action */
 "Better user experience" = "Esperienza utente migliorata";
 
 /* No comment provided by engineer. */
+"Bio" = "Bio";
+
+/* alert title */
+"Bio too large" = "Bio troppo lunga";
+
+/* No comment provided by engineer. */
 "Black" = "Nero";
 
 /* No comment provided by engineer. */
@@ -881,6 +887,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Business chats" = "Chat di lavoro";
+
+/* No comment provided by engineer. */
+"Business connection" = "Connessione lavorativa";
 
 /* No comment provided by engineer. */
 "Businesses" = "Lavorative";
@@ -1783,6 +1792,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Description" = "Descrizione";
+
+/* alert title */
+"Description too large" = "Descrizione troppo lunga";
 
 /* No comment provided by engineer. */
 "Desktop address" = "Indirizzo desktop";
@@ -3303,7 +3315,7 @@ snd error text */
 "Message forwarded" = "Messaggio inoltrato";
 
 /* No comment provided by engineer. */
-"Message instantly once you tap Connect." = "Parla immediatamente appena tocchi \"Connetti\".";
+"Message instantly once you tap Connect." = "Parla immediatamente appena tocchi Connetti.";
 
 /* item status description */
 "Message may be delivered later if member becomes active." = "Il messaggio può essere consegnato più tardi se il membro diventa attivo.";
@@ -4784,9 +4796,6 @@ chat item action */
 "Sent reply" = "Risposta inviata";
 
 /* No comment provided by engineer. */
-"Sent to your contact after connection." = "Inviato al tuo contatto dopo la connessione.";
-
-/* No comment provided by engineer. */
 "Sent total" = "Totale inviato";
 
 /* No comment provided by engineer. */
@@ -4948,6 +4957,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share with contacts" = "Condividi con i contatti";
+
+/* No comment provided by engineer. */
+"Short description" = "Descrizione breve";
 
 /* No comment provided by engineer. */
 "Short link" = "Link breve";
@@ -5191,7 +5203,16 @@ report reason */
 "Tap button " = "Tocca il pulsante ";
 
 /* No comment provided by engineer. */
+"Tap Connect to chat" = "Tocca Connetti per chattare";
+
+/* No comment provided by engineer. */
+"Tap Connect to send request" = "Tocca Connetti per inviare la richiesta";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Tocca Crea indirizzo SimpleX nel menu per crearlo più tardi.";
+
+/* No comment provided by engineer. */
+"Tap Join group" = "Tocca Entra nel gruppo";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Tocca per attivare il profilo.";
@@ -6142,6 +6163,9 @@ report reason */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Stai usando un profilo in incognito per questo gruppo: per impedire la condivisione del tuo profilo principale non è consentito invitare contatti";
 
 /* No comment provided by engineer. */
+"Your business contact" = "Il tuo contatto lavorativo";
+
+/* No comment provided by engineer. */
 "Your calls" = "Le tue chiamate";
 
 /* No comment provided by engineer. */
@@ -6163,6 +6187,9 @@ report reason */
 "Your connection was moved to %@ but an error happened when switching profile." = "La tua connessione è stata spostata a %@, ma si è verificato un errore imprevisto durante il reindirizzamento al profilo.";
 
 /* No comment provided by engineer. */
+"Your contact" = "Il tuo contatto";
+
+/* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Il tuo contatto ha inviato un file più grande della dimensione massima attualmente supportata (%@).";
 
 /* No comment provided by engineer. */
@@ -6179,6 +6206,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your current profile" = "Il tuo profilo attuale";
+
+/* No comment provided by engineer. */
+"Your group" = "Il tuo gruppo";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "I tuoi server ICE";
