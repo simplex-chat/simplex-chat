@@ -9,6 +9,7 @@
   <string name="connect_via_group_link">Join group?</string>
   <string name="connect_use_current_profile">Use current profile</string>
   <string name="connect_use_new_incognito_profile">Use new incognito profile</string>
+  <string name="connect_use_incognito_profile">Use incognito profile</string>
   <string name="profile_will_be_sent_to_contact_sending_link">Your profile will be sent to the contact that you received this link from.</string>
   <string name="you_will_join_group">You will connect to all group members.</string>
   <string name="connect_via_link_verb">Connect</string>
@@ -2138,6 +2139,7 @@
   <string name="accept_feature_set_1_day">Set 1 day</string>
   <string name="allow_your_contacts_to_send_disappearing_messages">Allow your contacts to send disappearing messages.</string>
   <string name="allow_disappearing_messages_only_if">Allow disappearing messages only if your contact allows them.</string>
+  <string name="time_to_disappear_is_set_only_for_new_contacts">Time to disappear is set only for new contacts.</string>
   <string name="prohibit_sending_disappearing_messages">Prohibit sending disappearing messages.</string>
   <string name="allow_your_contacts_irreversibly_delete">Allow your contacts to irreversibly delete sent messages. (24 hours)</string>
   <string name="allow_irreversible_message_deletion_only_if">Allow irreversible message deletion only if your contact allows it to you. (24 hours)</string>

@@ -208,8 +208,14 @@ struct ContactListNavLink: View {
             .tint(.red)
         }
         .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
-            Button("Use current profile") { connectContactViaAddress_(contact, false) }
-            Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+            if !contact.profileChangeProhibited {
+                Button("Use current profile") { connectContactViaAddress_(contact, false) }
+                Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+            } else if !contact.contactConnIncognito {
+                Button("Use current profile") { connectContactViaAddress_(contact, false) }
+            } else {
+                Button("Use incognito profile") { connectContactViaAddress_(contact, true) }
+            }
         }
     }
 

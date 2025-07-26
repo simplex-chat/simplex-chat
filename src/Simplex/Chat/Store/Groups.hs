@@ -968,10 +968,10 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
   where
     search = maybe "" (map toLower) search_
 
-getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [(GroupInfo, GroupSummary)]
+getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfoSummary]
 getUserGroupsWithSummary db vr user _contactId_ search_ =
   getUserGroupDetails db vr user _contactId_ search_
-    >>= mapM (\g@GroupInfo {groupId} -> (g,) <$> getGroupSummary db user groupId)
+    >>= mapM (\g@GroupInfo {groupId} -> GIS g <$> getGroupSummary db user groupId)
 
 -- the statuses on non-current members should match memberCurrent' function
 getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
@@ -2147,7 +2147,7 @@ getMatchingContacts db vr user@User {userId} Contact {contactId, profile = Local
         WHERE ct.user_id = ? AND ct.contact_id != ?
           AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
           AND p.display_name = ? AND p.full_name = ?
-          AND p.short_descr IS ? AND p.image IS ?
+          AND p.short_descr IS NOT DISTINCT FROM ? AND p.image IS NOT DISTINCT FROM ?
       |]
 
 getMatchingMembers :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO [GroupMember]
@@ -2164,7 +2164,7 @@ getMatchingMembers db vr user@User {userId} Contact {profile = LocalProfile {dis
         WHERE m.user_id = ? AND m.contact_id IS NULL
           AND m.member_category != ?
           AND p.display_name = ? AND p.full_name = ?
-          AND p.short_descr IS ? AND p.image IS ?
+          AND p.short_descr IS NOT DISTINCT FROM ? AND p.image IS NOT DISTINCT FROM ?
       |]
 
 getMatchingMemberContacts :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [Contact]
@@ -2181,7 +2181,7 @@ getMatchingMemberContacts db vr user@User {userId} GroupMember {memberProfile = 
         WHERE ct.user_id = ?
           AND ct.contact_status = ? AND ct.deleted = 0 AND ct.is_user = 0
           AND p.display_name = ? AND p.full_name = ?
-          AND p.short_descr IS ? AND p.image IS ?
+          AND p.short_descr IS NOT DISTINCT FROM ? AND p.image IS NOT DISTINCT FROM ?
       |]
 
 createSentProbe :: DB.Connection -> TVar ChaChaDRG -> UserId -> ContactOrMember -> ExceptT StoreError IO (Probe, Int64)

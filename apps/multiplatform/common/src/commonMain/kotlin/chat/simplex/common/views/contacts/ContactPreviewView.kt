@@ -104,6 +104,9 @@ fun ContactPreviewView(
                 modifier = Modifier
                     .size(21.dp)
             )
+            if (chat.chatInfo.incognito) {
+                Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+            }
         }
 
         if (showDeletedChatIcon && chat.chatInfo.chatDeleted) {

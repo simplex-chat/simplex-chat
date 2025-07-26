@@ -832,7 +832,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
           (
             SELECT chat_item_id
             FROM chat_items ci
-            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL
+            WHERE ci.user_id = ? AND ci.group_id = g.group_id AND ci.group_scope_tag IS NULL AND ci.group_scope_group_member_id IS NULL
             ORDER BY ci.item_ts DESC
             LIMIT 1
           ) AS chat_item_id,
@@ -845,7 +845,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
         LEFT JOIN (
           SELECT group_id, COUNT(1) AS UnreadCount, SUM(user_mention) as UnreadMentions, MIN(chat_item_id) AS MinUnread
           FROM chat_items
-          WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND item_status = ?
+          WHERE user_id = ? AND group_id IS NOT NULL AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?
           GROUP BY group_id
         ) ChatStats ON ChatStats.group_id = g.group_id
         LEFT JOIN (
@@ -1608,7 +1608,7 @@ getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatSco
 getGroupUnreadCount_ db user g scopeInfo_ contentFilter =
   head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter baseQuery ""
   where
-    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL "
+    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL "
 
 getGroupReportsCount_ :: DB.Connection -> User -> GroupInfo -> Bool -> IO Int
 getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =

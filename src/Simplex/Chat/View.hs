@@ -135,9 +135,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
       "server queue info: " <> viewJSON qInfo
     ]
   CRContactSwitchStarted {} -> ["switch started"]
-  CEvtGroupMemberSwitchStarted {} -> ["switch started"]
+  CRGroupMemberSwitchStarted {} -> ["switch started"]
   CRContactSwitchAborted {} -> ["switch aborted"]
-  CEvtGroupMemberSwitchAborted {} -> ["switch aborted"]
+  CRGroupMemberSwitchAborted {} -> ["switch aborted"]
   CRContactRatchetSyncStarted {} -> ["connection synchronization started"]
   CRGroupMemberRatchetSyncStarted {} -> ["connection synchronization started"]
   CRConnectionVerified u verified code -> ttyUser u [plain $ if verified then "connection verified" else "connection not verified, current code is " <> code]
@@ -325,11 +325,13 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
     testViewChats chats = [sShow $ map toChatView chats]
       where
         toChatView :: AChat -> (Text, Text, Maybe ConnStatus)
-        toChatView (AChat _ (Chat (DirectChat Contact {localDisplayName, activeConn}) items _)) = ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
-        toChatView (AChat _ (Chat (GroupChat GroupInfo {membership, localDisplayName} _scopeInfo) items _)) = ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
-        toChatView (AChat _ (Chat (LocalChat _) items _)) = ("*", toCIPreview items Nothing, Nothing)
-        toChatView (AChat _ (Chat (ContactRequest UserContactRequest {localDisplayName}) items _)) = ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
-        toChatView (AChat _ (Chat (ContactConnection PendingContactConnection {pccConnId, pccConnStatus}) items _)) = (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
+        toChatView (AChat _ (Chat cInfo items _)) = case cInfo of
+          DirectChat Contact {localDisplayName, activeConn} -> ("@" <> localDisplayName, toCIPreview items Nothing, connStatus <$> activeConn)
+          GroupChat GroupInfo {membership, localDisplayName} _scopeInfo -> ("#" <> localDisplayName, toCIPreview items (Just membership), Nothing)
+          LocalChat _ -> ("*", toCIPreview items Nothing, Nothing)
+          ContactRequest UserContactRequest {localDisplayName} -> ("<@" <> localDisplayName, toCIPreview items Nothing, Nothing)
+          ContactConnection PendingContactConnection {pccConnId, pccConnStatus} -> (":" <> T.pack (show pccConnId), toCIPreview items Nothing, Just pccConnStatus)
+          CInfoInvalidJSON {} -> ("invalid chat info", "", Nothing)
         toCIPreview :: [CChatItem c] -> Maybe GroupMember -> Text
         toCIPreview (ci : _) membership_ = testViewItem ci membership_
         toCIPreview _ _ = ""
@@ -432,12 +434,10 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileWarning u Nothing e ft -> ttyUser u $ receivingFileStandalone "warning: " ft <> [sShow e]
   CEvtSndFileStart u _ ft -> ttyUser u $ sendingFile_ "started" ft
   CEvtSndFileComplete u _ ft -> ttyUser u $ sendingFile_ "completed" ft
-  CEvtSndFileStartXFTP {} -> []
   CEvtSndFileProgressXFTP {} -> []
   CEvtSndFileRedirectStartXFTP u ft ftRedirect -> ttyUser u $ standaloneUploadRedirect ft ftRedirect
   CEvtSndStandaloneFileComplete u ft uris -> ttyUser u $ standaloneUploadComplete ft uris
   CEvtSndFileCompleteXFTP u ci _ -> ttyUser u $ uploadingFile "completed" ci
-  CEvtSndFileCancelledXFTP {} -> []
   CEvtSndFileError u Nothing ft e -> ttyUser u $ uploadingFileStandalone "error" ft <> [plain e]
   CEvtSndFileError u (Just ci) _ e -> ttyUser u $ uploadingFile "error" ci <> [plain e]
   CEvtSndFileWarning u Nothing ft e -> ttyUser u $ uploadingFileStandalone "warning: " ft <> [plain e]
@@ -722,6 +722,7 @@ viewChatItem chat ci@ChatItem {chatDir, meta = meta@CIMeta {itemForwarded, forwa
           context = maybe [] forwardedFrom itemForwarded
       ContactRequest {} -> []
       ContactConnection {} -> []
+      CInfoInvalidJSON {} -> ["invalid chat info"]
     withItemDeleted item = case chatItemDeletedText ci (chatInfoMembership chat) of
       Nothing -> item
       Just t -> item <> styled (colored Red) (" [" <> t <> "]")
@@ -919,6 +920,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
     (_, CIDirectSnd) -> [sentText]
     (_, CIGroupSnd) -> [sentText]
     (_, CILocalSnd) -> [sentText]
+    (CInfoInvalidJSON {}, _) -> []
   where
     view from msg
       | showReactions = viewReceivedReaction from msg reactionText ts tz sentAt
@@ -1025,6 +1027,7 @@ viewChatCleared (AChatInfo _ chatInfo) = case chatInfo of
   LocalChat _ -> ["notes: all messages are removed"]
   ContactRequest _ -> []
   ContactConnection _ -> []
+  CInfoInvalidJSON {} -> []
 
 viewContactsList :: [Contact] -> [StyledString]
 viewContactsList =
@@ -1343,13 +1346,13 @@ viewContactConnected ct userIncognitoProfile testView =
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [(GroupInfo, GroupSummary)] -> [StyledString]
+viewGroupsList :: [GroupInfoSummary] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
-viewGroupsList gs = map groupSS $ sortOn (ldn_ . fst) gs
+viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ :: GroupInfo -> Text
-    ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
-    groupSS (g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}}, GroupSummary {currentMembers}) =
+    ldn_ :: GroupInfoSummary -> Text
+    ldn_ (GIS GroupInfo {localDisplayName} _) = T.toLower localDisplayName
+    groupSS (GIS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} GroupSummary {currentMembers}) =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
@@ -1762,7 +1765,7 @@ viewPrefsUpdated ps ps'
       | pref ps == pref ps' = Nothing
       | otherwise = Just . plain $ chatFeatureNameText' f <> " allowed: " <> preferenceText (pref ps')
       where
-        pref pss = getPreference f $ mergePreferences pss Nothing
+        pref pss = getPreference f pss
 
 countactUserPrefText :: FeatureI f => ContactUserPref (FeaturePreference f) -> Text
 countactUserPrefText cup = case cup of
