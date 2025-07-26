@@ -2490,4 +2490,16 @@
     <string name="short_descr__field">Bio:</string>
     <string name="short_descr">Biyografiniz:</string>
     <string name="group_short_descr_field">Kısa açıklama:</string>
+    <string name="chat_banner_connect_to_chat">Sohbet etmek için Bağlan\'a dokunun</string>
+    <string name="chat_banner_send_request_to_connect">Bağlan\'a dokunarak isteği gönderin</string>
+    <string name="chat_banner_accept_contact_request">İletişim isteğini kabul et</string>
+    <string name="chat_banner_your_contact">İrtibat kişiniz</string>
+    <string name="chat_banner_join_group">Gruba katıl\'a dokunun</string>
+    <string name="chat_banner_your_group">Grubunuz</string>
+    <string name="chat_banner_group">Grup</string>
+    <string name="chat_banner_business_connection">İş bağlantısı</string>
+    <string name="chat_banner_your_business_contact">İş bağlantınız</string>
+    <string name="bio_too_large">Biyografi çok uzun</string>
+    <string name="group_descr_too_large">Açıklama çok büyük</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Kaybolma süresi yalnızca yeni kişiler için ayarlanır.</string>
 </resources>

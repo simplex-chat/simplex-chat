@@ -8184,6 +8184,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Эта настройка применяется к сообщениям в Вашем текущем профиле чата **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
+        <source>Time to disappear is set only for new contacts.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
         <source>Title</source>
         <target>Заголовок</target>
@@ -8611,6 +8615,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
         <target>Использовать интерфейс iOS для звонков</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use incognito profile" xml:space="preserve">
+        <source>Use incognito profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -9370,7 +9378,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
         <source>Your profile is stored on your device and only shared with your contacts.</source>
-        <target>Ваш профиль храниться на Вашем устройстве и отправляется только контактам.</target>
+        <target>Ваш профиль хранится на Вашем устройстве и отправляется только контактам.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">

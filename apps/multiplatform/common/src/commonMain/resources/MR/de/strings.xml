@@ -2559,4 +2559,15 @@
     <string name="short_descr__field">Bio:</string>
     <string name="group_short_descr_field">Kurze Beschreibung:</string>
     <string name="short_descr">Ihre Biografie:</string>
+    <string name="bio_too_large">Biografie zu lang</string>
+    <string name="group_descr_too_large">Beschreibung zu lang</string>
+    <string name="chat_banner_accept_contact_request">Kontaktanfrage akzeptieren</string>
+    <string name="chat_banner_business_connection">Geschäftliche Verbindung</string>
+    <string name="chat_banner_group">Gruppe</string>
+    <string name="chat_banner_connect_to_chat">Verbinden tippen, um zu chatten</string>
+    <string name="chat_banner_send_request_to_connect">Verbinden tippen, um die Anfrage zu senden</string>
+    <string name="chat_banner_join_group">Tippen, um der Gruppe beizutreten</string>
+    <string name="chat_banner_your_business_contact">Ihr geschäftlicher Kontakt</string>
+    <string name="chat_banner_your_contact">Ihr Kontakt</string>
+    <string name="chat_banner_your_group">Ihre Gruppe</string>
 </resources>
