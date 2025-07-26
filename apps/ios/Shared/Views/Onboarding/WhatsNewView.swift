@@ -626,24 +626,9 @@ private let versionDescriptions: [VersionDescription] = [
             )),
             .view(FeatureView(
                 icon: nil,
-                title: "Create address short link",
-                view: { NewOperatorsView() }
-            )),
-            .feature(Description(
-                icon: { if #available(iOS 16, *) {"questionmark.bubble"} else {"questionmark.square"} }(),
-                title: "Chat with admins",
-                description: "Send your private feedback to groups."
-            )),
-            .feature(Description(
-                icon: "flag",
-                title: "New group role: Moderator",
-                description: "Removes messages and blocks members."
-            )),
-            .feature(Description(
-                icon: "battery.50",
-                title: "Improved message delivery",
-                description: "Less traffic on mobile networks."
-            )),
+                title: "Create or update address short link",
+                view: { CreateUpdateAddressShortLink() }
+            ))
         ]
     ),
 ]
@@ -673,6 +658,56 @@ fileprivate struct NewOperatorsView: View {
             HStack {
                 Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
+        }
+    }
+}
+
+fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Your short SimpleX address").font(.title3).bold()
+            if let addr = ChatModel.shared.userAddress {
+                actionText("qrcode", "Your address created ✅")
+                if addr.connLinkContact.connShortLink == nil {
+                    actionButton("plus", "Add short link") { print("create short link") }
+                    actionText("square.and.arrow.up", "Share on social media")
+                } else if !addr.shortLinkDataSet { // the condition needs to be if data not set or if large data not set
+                    actionButton("plus", "Include profile image")  { print("create short link") } // probably not show it in case there is no image
+                    actionText("square.and.arrow.up", "Share on social media")
+                } else {
+                    actionText("plus", "Short link added ✅") // probably should not be shown when address is just created
+                    actionButton("square.and.arrow.up", "Share on social media") { print("share") }
+                }
+            } else {
+                actionButton("qrcode", "Create your address") { print("create address") }
+                actionText("square.and.arrow.up", "Share on social media")
+            }
+        }
+    }
+
+    func actionText(_ icon: String, _ description: LocalizedStringKey) -> some View {
+        HStack(alignment: .center, spacing: 4) {
+            Image(systemName: icon)
+                .symbolRenderingMode(.monochrome)
+                .foregroundColor(theme.colors.secondary)
+                .frame(minWidth: 30, alignment: .center)
+            Text(description)
+                .multilineTextAlignment(.leading)
+                .lineLimit(3)
+        }
+    }
+
+    func actionButton(_ icon: String, _ description: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        HStack(alignment: .center, spacing: 4) {
+            Image(systemName: icon)
+                .symbolRenderingMode(.monochrome)
+                .foregroundColor(theme.colors.secondary)
+                .frame(minWidth: 30, alignment: .center)
+            Button(description, action: action)
+                .multilineTextAlignment(.leading)
+                .lineLimit(3)
         }
     }
 }
