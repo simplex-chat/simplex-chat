@@ -689,30 +689,6 @@ fileprivate struct CreateUpdateAddressShortLink: View {
             .lineLimit(10)
         }
     }
-
-    func actionText(_ icon: String, _ description: LocalizedStringKey) -> some View {
-        HStack(alignment: .center, spacing: 4) {
-            Image(systemName: icon)
-                .symbolRenderingMode(.monochrome)
-                .foregroundColor(theme.colors.secondary)
-                .frame(minWidth: 30, alignment: .center)
-            Text(description)
-                .multilineTextAlignment(.leading)
-                .lineLimit(3)
-        }
-    }
-
-    func actionButton(_ icon: String, _ description: LocalizedStringKey, action: @escaping () -> Void) -> some View {
-        HStack(alignment: .center, spacing: 4) {
-            Image(systemName: icon)
-                .symbolRenderingMode(.monochrome)
-                .foregroundColor(theme.colors.secondary)
-                .frame(minWidth: 30, alignment: .center)
-            Button(description, action: action)
-                .multilineTextAlignment(.leading)
-                .lineLimit(3)
-        }
-    }
 }
 
 private enum WhatsNewViewSheet: Identifiable {
