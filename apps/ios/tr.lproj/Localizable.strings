@@ -816,6 +816,12 @@ swipe action */
 "Better user experience" = "Daha iyi kullanıcı deneyimi";
 
 /* No comment provided by engineer. */
+"Bio" = "Biy";
+
+/* alert title */
+"Bio too large" = "Biyografi çok uzun";
+
+/* No comment provided by engineer. */
 "Black" = "Siyah";
 
 /* No comment provided by engineer. */
@@ -881,6 +887,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Business chats" = "İş konuşmaları";
+
+/* No comment provided by engineer. */
+"Business connection" = "İş bağlantısı";
 
 /* No comment provided by engineer. */
 "Businesses" = "İşletmeler";
@@ -1783,6 +1792,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Description" = "Açıklama";
+
+/* alert title */
+"Description too large" = "Açıklama çok büyük";
 
 /* No comment provided by engineer. */
 "Desktop address" = "Bilgisayar adresi";
@@ -4784,9 +4796,6 @@ chat item action */
 "Sent reply" = "Gönderilen cevap";
 
 /* No comment provided by engineer. */
-"Sent to your contact after connection." = "Bağlantıdan sonra kişinize gönderildi.";
-
-/* No comment provided by engineer. */
 "Sent total" = "Gönderilen tüm mesajların toplamı";
 
 /* No comment provided by engineer. */
@@ -4948,6 +4957,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Share with contacts" = "Kişilerle paylaş";
+
+/* No comment provided by engineer. */
+"Short description" = "Kısa açıklama";
 
 /* No comment provided by engineer. */
 "Short link" = "Kısa bağlantı";
@@ -5191,7 +5203,16 @@ report reason */
 "Tap button " = "Tuşa bas ";
 
 /* No comment provided by engineer. */
+"Tap Connect to chat" = "Sohbet etmek için Bağlan'a dokunun";
+
+/* No comment provided by engineer. */
+"Tap Connect to send request" = "Bağlan'a dokunarak isteği gönderin";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Daha sonra oluşturmak için menüden BasitX adresi oluştur'a dokunun.";
+
+/* No comment provided by engineer. */
+"Tap Join group" = "Gruba katıl'a dokunun";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Profili etkinleştirmek için tıkla.";
@@ -6142,6 +6163,9 @@ report reason */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Bu grup için gizli bir profil kullanıyorsunuz - ana profilinizi paylaşmayı önlemek için kişileri davet etmeye izin verilmiyor";
 
 /* No comment provided by engineer. */
+"Your business contact" = "İş bağlantınız";
+
+/* No comment provided by engineer. */
 "Your calls" = "Aramaların";
 
 /* No comment provided by engineer. */
@@ -6163,6 +6187,9 @@ report reason */
 "Your connection was moved to %@ but an error happened when switching profile." = "Bağlantınız %@ adresine taşındı ancak sizi profile yönlendirirken beklenmedik bir hata oluştu.";
 
 /* No comment provided by engineer. */
+"Your contact" = "İrtibat kişiniz";
+
+/* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Kişiniz şu anda desteklenen maksimum boyuttan (%@) daha büyük bir dosya gönderdi.";
 
 /* No comment provided by engineer. */
@@ -6179,6 +6206,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your current profile" = "Mevcut profiliniz";
+
+/* No comment provided by engineer. */
+"Your group" = "Grubunuz";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "ICE sunucularınız";
