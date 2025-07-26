@@ -610,6 +610,42 @@ private let versionDescriptions: [VersionDescription] = [
             )),
         ]
     ),
+    VersionDescription(
+        version: "v6.4.1",
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-connect-faster-protect-your-groups-app-security.html"),
+        features: [
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Welcome your contacts 👋",
+                description: "Set short bio and welcome message."
+            )),
+            .feature(Description(
+                icon: "stopwatch",
+                title: "Keep your chats clean",
+                description: "Enable disappearing messages by default."
+            )),
+            .view(FeatureView(
+                icon: nil,
+                title: "Create address short link",
+                view: { NewOperatorsView() }
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 16, *) {"questionmark.bubble"} else {"questionmark.square"} }(),
+                title: "Chat with admins",
+                description: "Send your private feedback to groups."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "New group role: Moderator",
+                description: "Removes messages and blocks members."
+            )),
+            .feature(Description(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "Less traffic on mobile networks."
+            )),
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
