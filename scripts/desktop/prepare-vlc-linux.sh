@@ -2,16 +2,18 @@
 
 set -e
 
+ARCH="$(uname -m)"
+
 function readlink() {
   echo "$(cd "$(dirname "$1")"; pwd -P)"
 }
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
-vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64/vlc
+vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${ARCH}/vlc
 
 mkdir $vlc_dir || exit 0
 
 vlc_tag='v3.0.21-1'
-vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-linux-x86_64.appimage"
+vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-linux-${ARCH}.appimage"
 
 cd /tmp
 mkdir tmp 2>/dev/null || true
