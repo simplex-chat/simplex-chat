@@ -751,7 +751,7 @@
     <string name="num_contacts_selected">Выбрано контактов: %d</string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
-    <string name="invite_prohibited_description">Вы пытаетесь пригласить в группу контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль.</string>
+    <string name="invite_prohibited_description">Вы пытаетесь пригласить контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль.</string>
     <!-- GroupChatInfoView.kt -->
     <string name="button_add_members">Пригласить членов группы</string>
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
