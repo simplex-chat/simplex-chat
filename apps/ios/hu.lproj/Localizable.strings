@@ -4106,7 +4106,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* alert message */
-"Profile will be shared with the address." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
+"Your profile will be shared with the address." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "A hívások kezdeményezése le van tiltva.";
@@ -6248,4 +6248,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
-

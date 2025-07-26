@@ -638,6 +638,10 @@ swipe action</note>
         <target>Dodaj znajomych</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Add link" xml:space="preserve">
+        <source>Add link</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Add list" xml:space="preserve">
         <source>Add list</source>
         <target>Dodaj listę</target>
@@ -664,7 +668,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Add short link" xml:space="preserve">
         <source>Add short link</source>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
@@ -2166,6 +2170,10 @@ To jest twój jednorazowy link!</target>
         <target>Utwórz kolejkę</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Create your address" xml:space="preserve">
+        <source>Create your address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
         <target>Utwórz swój profil</target>
@@ -2954,6 +2962,10 @@ chat item action</note>
       <trans-unit id="Enable camera access" xml:space="preserve">
         <source>Enable camera access</source>
         <target>Włącz dostęp do kamery</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+        <source>Enable disappearing messages by default.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4538,6 +4550,10 @@ To jest twój link do grupy %@!</target>
         <target>Zachować nieużyte zaproszenie?</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Keep your chats clean" xml:space="preserve">
+        <source>Keep your chats clean</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
         <target>Zachowaj swoje połączenia</target>
@@ -5978,10 +5994,6 @@ Błąd: %@</target>
         <target>Aktualizacja profilu zostanie wysłana do Twoich kontaktów.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
-        <source>Profile will be shared with the address.</source>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
         <target>Zabroń połączeń audio/wideo.</target>
@@ -7139,6 +7151,10 @@ chat item action</note>
         <target>Ustaw hasło do eksportu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set short bio and welcome message." xml:space="preserve">
+        <source>Set short bio and welcome message.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
         <source>Set the message shown to new members!</source>
         <target>Ustaw wiadomość wyświetlaną nowym członkom!</target>
@@ -7202,6 +7218,10 @@ chat item action</note>
         <target>Udostępnij z innych aplikacji.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share full link" xml:space="preserve">
+        <source>Share full link</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Share group profile via link" xml:space="preserve">
         <source>Share group profile via link</source>
         <note>No comment provided by engineer.</note>
@@ -7233,6 +7253,14 @@ chat item action</note>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
         <target>Udostępnij kontaktom</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share your address" xml:space="preserve">
+        <source>Share your address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Short SimpleX address" xml:space="preserve">
+        <source>Short SimpleX address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short description" xml:space="preserve">
@@ -8256,6 +8284,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
         <target>Zaktualizować ustawienia?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Update your address" xml:space="preserve">
+        <source>Update your address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
         <note>No comment provided by engineer.</note>
@@ -8593,6 +8625,10 @@ Aby się połączyć, poproś Twój kontakt o utworzenie kolejnego linku połąc
       <trans-unit id="Welcome message is too long" xml:space="preserve">
         <source>Welcome message is too long</source>
         <target>Wiadomość powitalna jest zbyt długa</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
+        <source>Welcome your contacts 👋</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -9120,6 +9156,10 @@ Powtórzyć prośbę połączenia?</target>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
         <target>Twój profil został zmieniony. Jeśli go zapiszesz, zaktualizowany profil zostanie wysłany do wszystkich kontaktów.</target>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Your profile will be shared with the address." xml:space="preserve">
+        <source>Your profile will be shared with the address.</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">

@@ -4106,7 +4106,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "La actualización del perfil se enviará a tus contactos.";
 
 /* alert message */
-"Profile will be shared with the address." = "El perfil será compartido mediante la dirección de contacto.";
+"Your profile will be shared with the address." = "El perfil será compartido mediante la dirección de contacto.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "No se permiten llamadas y videollamadas.";
@@ -6248,4 +6248,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
-

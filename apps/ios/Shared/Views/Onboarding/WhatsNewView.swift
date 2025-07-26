@@ -612,7 +612,7 @@ private let versionDescriptions: [VersionDescription] = [
     ),
     VersionDescription(
         version: "v6.4.1",
-        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-connect-faster-protect-your-groups-app-security.html"),
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"),
         features: [
             .feature(Description(
                 icon: "hand.wave",
@@ -626,7 +626,7 @@ private let versionDescriptions: [VersionDescription] = [
             )),
             .view(FeatureView(
                 icon: nil,
-                title: "Create or update address short link",
+                title: "Short SimpleX address",
                 view: { CreateUpdateAddressShortLink() }
             ))
         ]
@@ -667,23 +667,26 @@ fileprivate struct CreateUpdateAddressShortLink: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("Your short SimpleX address").font(.title3).bold()
-            if let addr = ChatModel.shared.userAddress {
-                actionText("qrcode", "Your address created ✅")
-                if addr.connLinkContact.connShortLink == nil {
-                    actionButton("plus", "Add short link") { print("create short link") }
-                    actionText("square.and.arrow.up", "Share on social media")
-                } else if !addr.shortLinkDataSet { // the condition needs to be if data not set or if large data not set
-                    actionButton("plus", "Include profile image")  { print("create short link") } // probably not show it in case there is no image
-                    actionText("square.and.arrow.up", "Share on social media")
-                } else {
-                    actionText("plus", "Short link added ✅") // probably should not be shown when address is just created
-                    actionButton("square.and.arrow.up", "Share on social media") { print("share") }
-                }
-            } else {
-                actionButton("qrcode", "Create your address") { print("create address") }
-                actionText("square.and.arrow.up", "Share on social media")
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Short SimpleX address").font(.title3).bold()
             }
+            Group {
+                if let addr = ChatModel.shared.userAddress {
+                    if addr.shortLinkDataSet { // update condition
+                        Button("Share your address") { print("share address") }
+                    } else {
+                        Button("Update your address") { print("update address") }
+                    }
+                } else {
+                    Button("Create your address") { print("create address") }
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .lineLimit(10)
         }
     }
 
