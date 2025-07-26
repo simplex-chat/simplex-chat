@@ -7,7 +7,7 @@
     <string name="connect_via_invitation_link">Соединиться через одноразовую ссылку?</string>
     <string name="connect_via_group_link">Вступить в группу?</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Ваш профиль будет отправлен контакту, от которого Вы получили эту ссылку.</string>
-    <string name="you_will_join_group">Вы подключитесь ко всем членам группы.</string>
+    <string name="you_will_join_group">Вы соединитесь со всеми членами группы.</string>
     <string name="connect_via_link_verb">Соединиться</string>
     <!-- Server info - ChatModel.kt -->
     <string name="server_connected">соединено</string>
@@ -112,10 +112,10 @@
     <string name="settings_notification_preview_title">Показывать уведомления</string>
     <string name="notifications_mode_off">Включен, когда приложение открыто</string>
     <string name="notifications_mode_periodic">Запускается периодически</string>
-    <string name="notifications_mode_service">Всегда включён</string>
+    <string name="notifications_mode_service">Всегда включен</string>
     <string name="notifications_mode_off_desc">Приложение может получить сообщение только тогда, когда запущено, в фоне сервис запускаться не будет</string>
     <string name="notifications_mode_periodic_desc">Проверять новые сообщения раз в 10 минут на протяжении до 1 минуты</string>
-    <string name="notifications_mode_service_desc">Фоновый сервис всегда включён. Уведомления будут показаны без задержки при наличии сообщений</string>
+    <string name="notifications_mode_service_desc">Фоновый сервис всегда включен. Уведомления будут показаны без задержки при наличии сообщений</string>
     <string name="notification_preview_mode_message">Текст сообщения</string>
     <string name="notification_preview_mode_contact">Имена контактов</string>
     <string name="notification_preview_mode_hidden">Скрытое</string>
@@ -328,7 +328,7 @@
     <string name="connection_request_sent">Запрос на соединение послан!</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Соединение с группой будет установлено, когда хост группы будет онлайн. Пожалуйста, подождите или проверьте позже!</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Соединение будет установлено, когда Ваш запрос будет принят. Пожалуйста, подождите или проверьте позже!</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда устройство Вашего контакта появится в сети. Пожалуйста, подождите или проверьте позже.</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Соединение будет установлено, когда Ваш контакт будет в сети. Пожалуйста, подождите или проверьте позже.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Если Вы не можете встретиться лично, Вы можете <b>показать QR-код во время видеозвонка</b> или поделиться ссылкой.]]></string>
     <string name="your_chat_profile_will_be_sent_to_your_contact">Ваш профиль будет отправлен
 \nВашему контакту</string>
@@ -566,7 +566,7 @@
     <string name="settings_section_title_themes">ТЕМЫ</string>
     <string name="settings_section_title_messages">СООБЩЕНИЯ И ФАЙЛЫ</string>
     <string name="settings_section_title_calls">ЗВОНКИ</string>
-    <string name="settings_section_title_incognito">Режим инкогнито</string>
+    <string name="settings_section_title_incognito">Режим Инкогнито</string>
     <!-- DatabaseView.kt -->
     <string name="your_chat_database">База данных</string>
     <string name="run_chat_section">ЗАПУСТИТЬ ЧАТ</string>
@@ -679,18 +679,18 @@
     <string name="join_group_button">Вступить</string>
     <string name="join_group_incognito_button">Вступить инкогнито</string>
     <string name="joining_group">Вступление в группу</string>
-    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в группу. Подключаемся к пригласившему вас члену группы.</string>
+    <string name="youve_accepted_group_invitation_connecting_to_inviting_group_member">Вы вступили в группу. Устанавливается соединение с пригласившим Вас членом группы.</string>
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="icon_descr_add_members">Добавить членов группы</string>
+    <string name="icon_descr_add_members"> Пригласить членов группы</string>
     <string name="icon_descr_group_inactive">Группа неактивна</string>
     <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
     <string name="alert_title_no_group">Группа не найдена!</string>
     <string name="alert_message_no_group">Эта группа больше не существует.</string>
     <string name="alert_title_cant_invite_contacts">Нельзя пригласить контакты!</string>
-    <string name="alert_title_cant_invite_contacts_descr">Поскольку в этой группе Вы используете профиль инкогнито, приглашать контакты запрещено. Это необходимо для защиты вашего основного профиля</string>
+    <string name="alert_title_cant_invite_contacts_descr">Вы используете профиль инкогнито в этой группе. Для защиты Вашего основного профиля приглашать контакты запрещено.</string>
     <!-- CIGroupInvitationView.kt -->
     <string name="you_sent_group_invitation">Вы отправили приглашение в группу</string>
     <string name="you_are_invited_to_group">Вы приглашены в группу</string>
@@ -703,14 +703,14 @@
     <string name="rcv_group_event_member_added">пригласил(а) %1$s</string>
     <string name="rcv_group_event_member_connected">соединен(а)</string>
     <string name="rcv_group_event_member_left">покинул(а) группу</string>
-    <string name="rcv_group_event_changed_member_role">поменял(а) роль члена группы %s на: %s</string>
+    <string name="rcv_group_event_changed_member_role">поменял(а) роль члена %s на: %s</string>
     <string name="rcv_group_event_changed_your_role">поменял(а) Вашу роль на: %s</string>
     <string name="rcv_group_event_member_deleted">удалил(а) %1$s</string>
     <string name="rcv_group_event_user_deleted">удалил(а) Вас из группы</string>
     <string name="rcv_group_event_group_deleted">удалил(а) группу</string>
     <string name="rcv_group_event_updated_group_profile">обновил(а) профиль группы</string>
     <string name="rcv_group_event_invited_via_your_group_link">приглашен(а) через Вашу ссылку группы</string>
-    <string name="snd_group_event_changed_member_role">Вы поменяли роль члена группы %s на: %s</string>
+    <string name="snd_group_event_changed_member_role">Вы поменяли роль члена %s на: %s</string>
     <string name="snd_group_event_changed_role_for_yourself">Вы поменяли роль себе на: %s</string>
     <string name="snd_group_event_member_deleted">Вы удалили %1$s</string>
     <string name="snd_group_event_user_left">Вы покинули группу</string>
@@ -744,21 +744,21 @@
     <string name="new_member_role">Роль нового члена группы</string>
     <string name="icon_descr_expand_role">Развернуть выбор роли</string>
     <string name="invite_to_group_button">Пригласить в группу</string>
-    <string name="skip_inviting_button">Не приглашать членов группы</string>
+    <string name="skip_inviting_button">Не приглашать членов</string>
     <string name="select_contacts">Выберите контакты</string>
     <string name="icon_descr_contact_checked">Контакт выбран</string>
     <string name="clear_contacts_selection_button">Очистить</string>
     <string name="num_contacts_selected">Выбрано контактов: %d</string>
     <string name="no_contacts_selected">Контакты не выбраны</string>
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
-    <string name="invite_prohibited_description">Вы пытаетесь пригласить в группу контакт, связь с которым установлена через профиль инкогнито, в то время как в самой группе вы используете свой основной профиль.</string>
+    <string name="invite_prohibited_description">Вы пытаетесь пригласить в группу контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль.</string>
     <!-- GroupChatInfoView.kt -->
-    <string name="button_add_members">Добавить членов группы</string>
-    <string name="group_info_section_title_num_members">ЧЛЕНЫ ГРУППЫ: %1$s</string>
+    <string name="button_add_members">Пригласить членов группы</string>
+    <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
     <string name="delete_group_question">Удалить группу?</string>
-    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов группы - это действие нельзя отменить!</string>
+    <string name="delete_group_for_all_members_cannot_undo_warning">Группа будет удалена для всех членов - это действие нельзя отменить!</string>
     <string name="delete_group_for_self_cannot_undo_warning">Группа будет удалена для Вас - это действие нельзя отменить!</string>
     <string name="button_leave_group">Выйти из группы</string>
     <string name="button_edit_group_profile">Редактировать профиль группы</string>
@@ -766,7 +766,7 @@
     <string name="button_create_group_link">Создать ссылку</string>
     <string name="delete_link_question">Удалить ссылку?</string>
     <string name="delete_link">Удалить ссылку</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR-кодом — любой сможет присоединиться к группе. Члены останутся в группе, даже если вы позже удалите ссылку.</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Вы можете поделиться ссылкой или QR-кодом — любой сможет присоединиться к группе. Члены группы останутся, даже если вы позже удалите ссылку.</string>
     <string name="all_group_members_will_remain_connected">Все члены группы, которые соединились через эту ссылку, останутся в группе.</string>
     <string name="error_creating_link_for_group">Ошибка при создании ссылки группы</string>
     <string name="error_deleting_link_for_group">Ошибка при удалении ссылки группы</string>
@@ -776,9 +776,9 @@
     <string name="info_row_local_name">Локальное имя</string>
     <string name="info_row_database_id">ID базы данных</string>
     <!-- GroupMemberInfoView.kt -->
-    <string name="button_remove_member">Удалить члена группа</string>
+    <string name="button_remove_member">Удалить члена группы</string>
     <string name="button_send_direct_message">Отправить сообщение</string>
-    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удалён. Это действие нельзя отменить.</string>
+    <string name="member_will_be_removed_from_group_cannot_be_undone">Член группы будет удалён - это действие нельзя отменить.</string>
     <string name="remove_member_confirmation">Удалить</string>
     <string name="member_info_section_title_member">ЧЛЕН ГРУППЫ</string>
     <string name="role_in_group">Роль</string>
@@ -802,12 +802,12 @@
     <string name="switch_receiving_address">Переключить адрес получения</string>
     <!-- AddGroupView.kt -->
     <string name="create_secret_group_title">Создать скрытую группу</string>
-    <string name="group_is_decentralized">Группа полностью децентрализована – она видна только членам группы.</string>
+    <string name="group_is_decentralized">Группа полностью децентрализована – она видна только членам.</string>
     <string name="group_display_name_field">Введите имя группы:</string>
     <string name="group_full_name_field">Полное имя:</string>
     <string name="group_main_profile_sent">Ваш профиль чата будет отправлен членам группы</string>
     <!-- GroupProfileView.kt -->
-    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов группы, а не на серверах.</string>
+    <string name="group_profile_is_stored_on_members_devices">Профиль группы хранится на устройствах членов, а не на серверах.</string>
     <string name="save_group_profile">Сохранить профиль группы</string>
     <string name="error_saving_group_profile">Ошибка при сохранении профиля группы</string>
     <!-- AdvancedNetworkSettings.kt -->
@@ -824,7 +824,7 @@
     <!-- Incognito mode -->
     <string name="incognito">Инкогнито</string>
     <string name="incognito_random_profile">Случайный профиль</string>
-    <string name="incognito_info_protects">Режим инкогнито защищает Вашу конфиденциальность — для каждого контакта создаётся новый случайный профиль.</string>
+    <string name="incognito_info_protects">Режим Инкогнито защищает Вашу конфиденциальность — для каждого контакта создаётся новый случайный профиль.</string>
     <string name="incognito_info_allows">Это позволяет иметь много анонимных соединений без общих данных между ними в одном профиле пользователя.</string>
     <string name="incognito_info_share">Когда Вы соединены с контактом инкогнито, тот же самый профиль инкогнито будет использоваться для групп с этим контактом.</string>
     <!-- Default themes -->
@@ -878,7 +878,7 @@
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
     <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
     <string name="group_members_can_send_dms">Члены могут посылать прямые сообщения.</string>
-    <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены в этой группе.</string>
+    <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены могут необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="message_deletion_prohibited_in_chat">Необратимое удаление сообщений запрещено.</string>
     <string name="group_members_can_send_voice">Члены могут отправлять голосовые сообщения.</string>
@@ -1057,7 +1057,7 @@
     <string name="user_unhide">Раскрыть</string>
     <string name="v4_6_audio_video_calls_descr">Поддержка bluetooth и другие улучшения.</string>
     <string name="save_welcome_message_question">Сохранить приветственное сообщение\?</string>
-    <string name="v4_6_group_welcome_message_descr">Задайте приветственное сообщение для новых членов группы.</string>
+    <string name="v4_6_group_welcome_message_descr">Установите приветственное сообщение для новых членов группы.</string>
     <string name="tap_to_activate_profile">Нажмите на профиль, чтобы переключиться на него.</string>
     <string name="v4_6_chinese_spanish_interface_descr">Благодаря пользователям - добавьте переводы через Weblate!</string>
     <string name="you_will_still_receive_calls_and_ntfs">Вы все равно получите звонки и уведомления в профилях без звука, когда они активные.</string>
@@ -1239,7 +1239,7 @@
     <string name="if_you_cant_meet_in_person">Если Вы не можете встретиться лично, покажите QR-код во время видеозвонка или поделитесь ссылкой.</string>
     <string name="scan_qr_to_connect_to_contact">Чтобы соединиться с Вами, Ваш контакт может отсканировать QR-код или использовать ссылку в приложении.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Вы не потеряете контакты, если позже удалите Ваш адрес.</string>
-    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода, и тогда к вам сможет подключиться кто угодно.</string>
+    <string name="you_can_share_your_address">Вы можете поделиться своим адресом в виде ссылки или QR-кода - любой может соединиться с Вами.</string>
     <string name="read_more_in_user_guide_with_link"><![CDATA[Узнать больше в <font color="#0088ff">Руководстве пользователя</font>.]]></string>
     <string name="your_contacts_will_remain_connected">Ваши контакты сохранятся.</string>
     <string name="customize_theme_title">Настроить тему</string>
@@ -1368,7 +1368,7 @@
     <string name="sender_at_ts">%s в %s</string>
     <string name="fix_connection">Починить соединение</string>
     <string name="fix_connection_not_supported_by_contact">Починка не поддерживается контактом.</string>
-    <string name="fix_connection_not_supported_by_group_member">Исправление не поддерживается членом группы</string>
+    <string name="fix_connection_not_supported_by_group_member">Восстановление шифрования не поддерживается членом группы</string>
     <string name="renegotiate_encryption">Пересогласовать шифрование</string>
     <string name="v5_2_favourites_filter">Быстрый поиск чатов</string>
     <string name="v5_2_message_delivery_receipts">Отчеты о доставке сообщений!</string>
@@ -1392,7 +1392,7 @@
     <string name="sync_connection_force_confirm">Пересогласовать</string>
     <string name="sync_connection_force_question">Пересогласовать шифрование\?</string>
     <string name="prohibit_sending_files">Запретить слать файлы и медиа.</string>
-    <string name="connect_via_link_incognito">Соединиться инкогнито</string>
+    <string name="connect_via_link_incognito">Соединиться Инкогнито </string>
     <string name="turn_off_battery_optimization_button">Разрешить</string>
     <string name="turn_off_system_restriction_button">Открыть настройки приложения</string>
     <string name="disable_notifications_button">Выключить уведомления</string>
@@ -1413,12 +1413,12 @@
     <string name="receipts_groups_disable_keep_overrides">Выключить (кроме исключений)</string>
     <string name="receipts_groups_enable_for_all">Включить для всех групп</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
-    <string name="send_receipts_disabled_alert_msg">В этой группе более %1$d членов группы, отчёты о доставке не отправляются.</string>
-    <string name="rcv_group_event_n_members_connected">%s, %s и %d других членов группы соединены</string>
+    <string name="send_receipts_disabled_alert_msg">В этой группе более %1$d членов, отчёты о доставке не отправляются.</string>
+    <string name="rcv_group_event_n_members_connected">%s, %s и %d других членов соединены</string>
     <string name="send_receipts_disabled">выключено</string>
     <string name="in_developing_desc">Эта функция ещё не поддерживается. Проверьте в следующем релизе.</string>
     <string name="connect_via_member_address_alert_title">Соединиться напрямую\?</string>
-    <string name="connect_via_member_address_alert_desc">Запрос на подключение будет отправлен этому члену группы.</string>
+    <string name="connect_via_member_address_alert_desc">Запрос на соединение будет отправлен этому члену группы.</string>
     <string name="receipts_groups_override_enabled">Отчёты о доставке включены для %d групп</string>
     <string name="privacy_show_last_messages">Показывать последние сообщения</string>
     <string name="in_developing_title">Скоро!</string>
@@ -1446,14 +1446,14 @@
     <string name="remove_passphrase_from_settings">Удалить пароль из настроек\?</string>
     <string name="use_random_passphrase">Использовать случайный пароль</string>
     <string name="save_passphrase_in_settings">Сохранить пароль в настройках</string>
-    <string name="v5_3_simpler_incognito_mode">Упрощённый режим инкогнито</string>
+    <string name="v5_3_simpler_incognito_mode">Упрощённый режим Инкогнито</string>
     <string name="setup_database_passphrase">Установить пароль базы данных</string>
     <string name="set_database_passphrase">Установить пароль базы данных</string>
     <string name="open_database_folder">Открыть директорию базы данных</string>
     <string name="v5_3_new_interface_languages_descr">Арабский, болгарский, финский, иврит, тайский и украинский - благодаря пользователям и Weblate.</string>
     <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
     <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
-    <string name="v5_3_simpler_incognito_mode_descr">Установите режим инкогнито при соединении.</string>
+    <string name="v5_3_simpler_incognito_mode_descr">Установите режим Инкогнито при соединении.</string>
     <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)! \n- отчеты о доставке (до 20 членов группы). \n- быстрее и стабильнее.</string>
     <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
     <string name="rcv_group_event_open_chat">Открыть</string>
@@ -1492,7 +1492,7 @@
     <string name="connect_plan_connect_via_link">Соединиться через ссылку?</string>
     <string name="v5_4_incognito_groups">Группы инкогнито</string>
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
-    <string name="moderated_items_description">%1$d сообщений отмодерировано членом группы %2$s</string>
+    <string name="moderated_items_description">%1$d сообщений отмодерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
     <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
@@ -1513,7 +1513,7 @@
     <string name="block_member_button">Заблокировать члена группы</string>
     <string name="connected_mobile">Подключенный мобильный</string>
     <string name="connect_plan_repeat_join_request">Повторить запрос на вступление?</string>
-    <string name="button_remove_member_question">Удалить члена группы?,</string>
+    <string name="button_remove_member_question">Удалить члена группы?</string>
     <string name="delete_and_notify_contact">Удалить и уведомить контакт</string>
     <string name="connect_plan_open_group">Открыть группу</string>
     <string name="desktop_connection_terminated">Подключение прервано</string>
@@ -1662,7 +1662,7 @@
     <string name="possible_slow_function_desc">Выполнение задачи занимает долгое время: %1$d секунд: %2$s</string>
     <string name="possible_slow_function_title">Медленный вызов</string>
     <string name="profile_update_event_contact_name_changed">контакт %1$s изменён на %2$s</string>
-    <string name="profile_update_event_member_name_changed">член группы %1$s изменился на %2$s</string>
+    <string name="profile_update_event_member_name_changed">член %1$s изменился на %2$s</string>
     <string name="profile_update_event_removed_address">удалён адрес контакта</string>
     <string name="profile_update_event_removed_picture">удалена картинка профиля</string>
     <string name="profile_update_event_set_new_address">установлен новый адрес контакта</string>
@@ -1676,7 +1676,7 @@
     <string name="or_scan_qr_code">Или отсканируйте QR-код</string>
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
-    <string name="past_member_vName">Бывший член группы %1$s</string>
+    <string name="past_member_vName">Бывший член %1$s</string>
     <string name="saved_message_title">Сохраненное сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
@@ -1878,7 +1878,7 @@
     <string name="message_queue_info">Информация об очереди сообщений</string>
     <string name="v5_8_persian_ui">Персидский интерфейс</string>
     <string name="protect_ip_address">Защитить IP адрес</string>
-    <string name="v5_8_private_routing_descr">Защитите ваш IP-адрес от серверов сообщений, выбранных Вашими контактами. \nВключите в настройках «Сеть и серверы».</string>
+    <string name="v5_8_private_routing_descr">Защитите ваш IP-адрес от серверов сообщений, выбранных Вашими контактами. \nВключите в настройках Сеть и серверы.</string>
     <string name="network_smp_proxy_fallback_allow_description">Отправьте сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="network_smp_proxy_mode_private_routing">Конфиденциальная доставка</string>
     <string name="network_smp_proxy_mode_unknown_description">Использовать конфиденциальную доставку с неизвестными серверами.</string>
@@ -2038,7 +2038,7 @@
     <string name="network_error_broker_version_desc">Версия сервера несовместима с вашим приложением: %1$s.</string>
     <string name="subscription_errors">Ошибки подписки</string>
     <string name="uploaded_files">Отправленные файлы</string>
-    <string name="delete_members_messages__question">Удалить %d сообщений от членов группы?</string>
+    <string name="delete_members_messages__question">Удалить %d сообщений членов группы?</string>
     <string name="delete_messages_mark_deleted_warning">Сообщения будут помечены на удаление. Получатель(и) смогут посмотреть эти сообщения.</string>
     <string name="select_verb">Выбрать</string>
     <string name="moderate_messages_will_be_deleted_warning">Сообщения будут удалены для всех членов группы.</string>
@@ -2270,7 +2270,7 @@
     <string name="button_delete_chat">Удалить разговор</string>
     <string name="delete_chat_question">Удалить разговор?</string>
     <string name="invite_to_chat_button">Пригласить в разговор</string>
-    <string name="delete_chat_for_all_members_cannot_undo_warning">Разговор будет удален для всех членов группы - это действие нельзя отменить!</string>
+    <string name="delete_chat_for_all_members_cannot_undo_warning">Разговор будет удален для всех участников - это действие нельзя отменить!</string>
     <string name="operator">Оператор</string>
     <string name="operator_servers_title">%s серверы</string>
     <string name="operators_conditions_will_be_accepted_for"><![CDATA[Условия будут приняты для оператора(ов): <b>%s</b>.]]></string>
@@ -2287,9 +2287,9 @@
     <string name="only_chat_owners_can_change_prefs">Только владельцы разговора могут поменять предпочтения.</string>
     <string name="operator_conditions_failed_to_load">Текст условий использования не может быть показан, вы можете посмотреть их через ссылку:</string>
     <string name="info_row_chat">Разговор</string>
-    <string name="member_will_be_removed_from_chat_cannot_be_undone">Член группы будет удалён из чата. Это действие нельзя отменить.</string>
+    <string name="member_will_be_removed_from_chat_cannot_be_undone">Участник будет удалён из разговора - это действие нельзя отменить.</string>
     <string name="network_preset_servers_title">Серверы по умолчанию</string>
-    <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на %s. Все члены разговора получат уведомление.</string>
+    <string name="member_role_will_be_changed_with_notification_chat">Роль будет изменена на %s. Все участники разговора получат уведомление.</string>
     <string name="chat_main_profile_sent">Ваш профиль будет отправлен участникам разговора.</string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Те же условия будут действовать для оператора <b>%s</b>.]]></string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Те же условия будут действовать для операторов: <b>%s</b>.]]></string>
@@ -2322,7 +2322,7 @@
     <string name="connection_error_quota_desc">Соединение достигло предела недоставленных сообщений. Возможно, Ваш контакт не в сети.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Чтобы защитить Вашу ссылку от замены, Вы можете сравнить код безопасности.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Например, если ваш контакт получает сообщения через сервер SimpleX Chat, ваше приложение будет доставлять их через сервер Flux.</string>
-    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между членами группы запрещены в этом чате.</string>
+    <string name="direct_messages_are_prohibited_in_chat">Прямые сообщения между участниками запрещены в этом разговоре.</string>
     <string name="chat_list_groups">Группы</string>
     <string name="delete_chat_list_menu_action">Удалить</string>
     <string name="delete_chat_list_question">Удалить список?</string>
@@ -2426,7 +2426,7 @@
     <string name="group_member_status_pending_approval_short">ожидает</string>
     <string name="operator_updated_conditions">Обновленные условия</string>
     <string name="disable_sending_member_reports">Запретить жаловаться модераторам группы.</string>
-    <string name="group_members_can_send_reports">Члены могут пожаловаться модераторам.</string>
+    <string name="group_members_can_send_reports">Члены группы могут пожаловаться модераторам.</string>
     <string name="disable_automatic_deletion_message">Сообщения в этом чате никогда не будут удалены.</string>
     <string name="privacy_chat_list_open_links">Открыть ссылку из списка чатов</string>
     <string name="privacy_chat_list_open_web_link_question">Открыть веб-ссылку?</string>
@@ -2453,8 +2453,8 @@
     <string name="unblock_members_desc">Сообщения от этих членов группы будут показаны!</string>
     <string name="block_members_desc">Все новые сообщения от этих членов группы будут скрыты!</string>
     <string name="block_members_for_all_question">Заблокировать членов группы для всех?</string>
-    <string name="members_will_be_removed_from_group_cannot_be_undone">Члены будут удалены из группы. Это действие нельзя отменить.</string>
-    <string name="members_will_be_removed_from_chat_cannot_be_undone">Члены будут удалены из разговора - это действие нельзя отменить!</string>
+    <string name="members_will_be_removed_from_group_cannot_be_undone">Члены группы будут удалены - это действие нельзя отменить!</string>
+    <string name="members_will_be_removed_from_chat_cannot_be_undone">Участники будут удалены из разговора - это действие нельзя отменить!</string>
     <string name="feature_roles_moderators">модераторы</string>
     <string name="button_remove_members_question">Удалить членов группы?</string>
     <string name="onboarding_conditions_accept">Принять</string>
@@ -2489,8 +2489,8 @@
     <string name="member_criteria_off">выключено</string>
     <string name="admission_stage_review">Одобрять членов группы</string>
     <string name="member_support">Чаты с членами группы</string>
-    <string name="member_admission">Приём членов группы</string>
-    <string name="admission_stage_review_descr">Одобрять членов группы для вступления в группу.</string>
+    <string name="member_admission">Приём членов в группу</string>
+    <string name="admission_stage_review_descr">Одобрять членов для вступления в группу.</string>
     <string name="no_support_chats">Нет чатов с членами группы</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Принять как читателя</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Принять в группу</string>
