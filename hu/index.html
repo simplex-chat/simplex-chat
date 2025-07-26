@@ -1744,9 +1744,9 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/network-1-dark.svg" alt="" class="hidden dark:block">
                 </div>
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
-                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">A P2P hálózatokkal ellentétben</h3>
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">A P2P-hálózatokkal ellentétben</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        Minden üzenet a kiszolgálókon keresztül kerül elküldésre, ami jobb metaadat-védelmet és megbízható aszinkron üzenetkézbesítést biztosít, miközben elkerülhető a sok <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">a P2P hálózatok problémái</a>.
+                        Minden üzenet a kiszolgálókon keresztül kerül elküldésre, ami jobb metaadat-védelmet és megbízható aszinkron üzenetkézbesítést biztosít, miközben elkerülhető a sok <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">a P2P-hálózatok problémái</a>.
                         
     
     </p><div id="comparison-with-p2p-protocols" data-scroll-to="network" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
@@ -1761,10 +1761,10 @@ window.addEventListener('scroll',changeHeaderBg);
 </p>
 <ol style="list-style: auto; padding-left: 1em;">
     <li>
-        A P2P hálózatok az üzenetek továbbítására a <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a> valamelyik változatát használják. A DHT kialakításakor egyensúlyt kell teremteni a kézbesítési garancia és a késleltetés között. A SimpleX jobb kézbesítési garanciával és alacsonyabb késleltetéssel rendelkezik, mint a P2P, mivel az üzenet redundánsan, a címzett által kiválasztott kiszolgálók segítségével több kiszolgálón keresztül párhuzamosan továbbítható. A P2P hálózatokban az üzenet <em>O(log N)</em> csomóponton halad át szekvenciálisan, az algoritmus által kiválasztott csomópontok segítségével.
+        A P2P-hálózatok az üzenetek továbbítására a <a href="https://en.wikipedia.org/wiki/Distributed_hash_table">DHT</a> valamelyik változatát használják. A DHT kialakításakor egyensúlyt kell teremteni a kézbesítési garancia és a késleltetés között. A SimpleX jobb kézbesítési garanciával és alacsonyabb késleltetéssel rendelkezik, mint a P2P, mivel az üzenet redundánsan, a címzett által kiválasztott kiszolgálók segítségével több kiszolgálón keresztül párhuzamosan továbbítható. A P2P-hálózatokban az üzenet <em>O(log N)</em> csomóponton halad át szekvenciálisan, az algoritmus által kiválasztott csomópontok segítségével.
     </li>
     <li>
-        A SimpleX kialakítása a legtöbb P2P hálózattól eltérően nem rendelkezik semmiféle globális felhasználói azonosítóval, még ideiglenessel sem, és csak az üzenetekhez használ ideiglenes, páros azonosítókat, ami jobb névtelenséget és metaadatvédelmet biztosít.
+        A SimpleX kialakítása a legtöbb P2P-hálózattól eltérően nem rendelkezik semmiféle globális felhasználói azonosítóval, még ideiglenessel sem, és csak az üzenetekhez használ ideiglenes, páros azonosítókat, ami jobb névtelenséget és metaadatvédelmet biztosít.
     </li>
     <li>
         A P2P nem oldja meg a <a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">MITM-támadás</a> problémát, és a legtöbb létező implementáció nem használ sávon kívüli üzeneteket a kezdeti kulcscseréhez. A SimpleX a kezdeti kulcscseréhez sávon kívüli üzeneteket, vagy bizonyos esetekben már meglévő biztonságos és megbízható kapcsolatokat használ.
@@ -1773,7 +1773,7 @@ window.addEventListener('scroll',changeHeaderBg);
         A P2P-megvalósításokat egyes internetszolgáltatók blokkolhatják (mint például a <a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>). A SimpleX átvitel-független — a szabványos webes protokollokon, például WebSocketsen keresztül is működik.
     </li>
     <li>
-        Minden ismert P2P hálózat sebezhető <a href="https://en.wikipedia.org/wiki/Sybil_attack">Sybil támadással</a>, mert minden egyes csomópont felderíthető, és a hálózat egészként működik. A támadások enyhítésére szolgáló ismert intézkedés lehet egy központi kiszolgáló (pl.: tracker), vagy egy drága <a href="https://en.wikipedia.org/wiki/Proof_of_work">tanúsítvány</a>. A SimpleX hálózat nem ismeri fel a kiszolgálókat, töredezett és több elszigetelt alhálózatként működik, ami lehetetlenné teszi az egész hálózatra kiterjedő támadásokat.
+        Minden ismert P2P-hálózat sebezhető <a href="https://en.wikipedia.org/wiki/Sybil_attack">Sybil támadással</a>, mert minden egyes csomópont felderíthető, és a hálózat egészként működik. A támadások enyhítésére szolgáló ismert intézkedés lehet egy központi kiszolgáló (pl.: tracker), vagy egy drága <a href="https://en.wikipedia.org/wiki/Proof_of_work">tanúsítvány</a>. A SimpleX hálózat nem ismeri fel a kiszolgálókat, töredezett és több elszigetelt alhálózatként működik, ami lehetetlenné teszi az egész hálózatra kiterjedő támadásokat.
     </li>
     <li>
         A P2P-hálózatok sebezhetőek lehetnek a <a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent">DRDoS-támadással</a> szemben, amikor a kliensek képesek a forgalmat újraközvetíteni és felerősíteni, ami az egész hálózatra kiterjedő szolgáltatásmegtagadást eredményez. A SimpleX kliensek csak az ismert kapcsolatból származó forgalmat továbbítják, és a támadó nem használhatja őket arra, hogy az egész hálózatban felerősítse a forgalmat.
@@ -2072,7 +2072,7 @@ window.addEventListener("load", function () {
                     <li> Ha az üzemeltetett kiszolgálók veszélybe kerülnek. Hitelesítse a biztonsági kódot a Signal vagy más biztonságos üzenetküldő alkalmazás segítségével a támadások veszélyeinek csökkentésére</li>
                     <li> Nem védi a felhasználók metaadatait</li>
                     <li> Bár a P2P elosztott, de nem föderált — egyetlen hálózatként működnek</li>
-                    <li> A P2P hálózatoknak vagy van egy központi hitelesítője, vagy az egész hálózat kompromittálódhat - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">tekintse meg itt</a></li>
+                    <li> A P2P-hálózatoknak vagy van egy központi hitelesítője, vagy az egész hálózat kompromittálódhat - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">tekintse meg itt</a></li>
                 </ol>
             </div>
         </div>
