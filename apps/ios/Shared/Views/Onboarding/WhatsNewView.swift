@@ -610,6 +610,27 @@ private let versionDescriptions: [VersionDescription] = [
             )),
         ]
     ),
+    VersionDescription(
+        version: "v6.4.1",
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"),
+        features: [
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Welcome your contacts 👋",
+                description: "Set profile bio and welcome message."
+            )),
+            .feature(Description(
+                icon: "stopwatch",
+                title: "Keep your chats clean",
+                description: "Enable disappearing messages by default."
+            )),
+            .view(FeatureView(
+                icon: nil,
+                title: "Short SimpleX address",
+                view: { CreateUpdateAddressShortLink() }
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -637,6 +658,35 @@ fileprivate struct NewOperatorsView: View {
             HStack {
                 Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
+        }
+    }
+}
+
+fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject var theme: AppTheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Short SimpleX address").font(.title3).bold()
+            }
+            Group {
+                if let addr = ChatModel.shared.userAddress {
+                    if addr.shortLinkDataSet { // update condition
+                        Button("Share your address") { print("share address") }
+                    } else {
+                        Button("Update your address") { print("update address") }
+                    }
+                } else {
+                    Button("Create your address") { print("create address") }
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .lineLimit(10)
         }
     }
 }

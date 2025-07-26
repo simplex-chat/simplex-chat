@@ -2445,6 +2445,16 @@
   <string name="v6_4_role_moderator">New group role: Moderator</string>
   <string name="v6_4_role_moderator_descr">Removes messages and blocks members.</string>
   <string name="v6_4_message_delivery_descr">Less traffic on mobile networks.</string>
+  <string name="v6_4_1_welcome_contacts">Welcome your contacts 👋</string>
+  <string name="v6_4_1_welcome_contacts_descr">Set profile bio and welcome message.</string>
+  <string name="v6_4_1_keep_chats_clean">Keep your chats clean</string>
+  <string name="v6_4_1_keep_chats_clean_descr">Enable disappearing messages by default.</string>
+  <string name="v6_4_1_short_address">Short SimpleX address</string>
+  <string name="v6_4_1_short_address_create">Create your address</string>
+  <string name="v6_4_1_short_address_update">Update your address</string>
+  <string name="v6_4_1_short_address_share">Share your address</string>
+  <string name="v6_4_1_new_interface_languages">4 new interface languages</string>
+  <string name="v6_4_1_new_interface_languages_descr">Catalan, Indonesian, Romanian and Vietnamese - thanks to our users!</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->

@@ -4091,7 +4091,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "Обновлённый профиль будет отправлен Вашим контактам.";
 
 /* alert message */
-"Profile will be shared with the address." = "Профиль будет добавлен в адрес.";
+"Your profile will be shared with the address." = "Профиль будет добавлен в адрес.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Запретить аудио/видео звонки.";
@@ -6209,4 +6209,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
-

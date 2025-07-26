@@ -216,17 +216,23 @@ struct UserAddressView: View {
 
     private func addShortLinkButton() -> some View {
         Button {
-            showAddShortLinkAlert()
+            showAddShortLinkAlert(
+                title: NSLocalizedString("Add short link", comment: "alert title"),
+                button: NSLocalizedString("Add link", comment: "alert button")
+            )
         } label: {
             settingsRow("plus", color: theme.colors.primary) {
-                Text("Add short link")
+                Text("Add link")
             }
         }
     }
 
     private func addProfileToShortLinkButton() -> some View {
         Button {
-            showAddShortLinkAlert()
+            showAddShortLinkAlert(
+                title: NSLocalizedString("Share profile with address", comment: "alert title"),
+                button: NSLocalizedString("Share profile", comment: "alert button")
+            )
         } label: {
             settingsRow("plus", color: theme.colors.primary) {
                 Text("Share profile with address")
@@ -234,25 +240,41 @@ struct UserAddressView: View {
         }
     }
 
-    private func showAddShortLinkAlert() {
+    private func showAddShortLinkAlert(title: String, button: String) {
         showAlert(
-            title: NSLocalizedString("Share profile with address", comment: "alert title"),
-            message: NSLocalizedString("Profile will be shared with the address.", comment: "alert message"),
-            buttonTitle: NSLocalizedString("Share profile", comment: "alert button"),
+            title: title,
+            message: NSLocalizedString("Your profile will be shared with the address.", comment: "alert message"),
+            buttonTitle: button,
             buttonAction: { addShortLink() },
             cancelButton: true
         )
     }
 
-    private func addShortLink() {
+    private func showUpdateAddressShareAlert(title: String, button: String, shareLink: @escaping () -> Void) {
+        showAlert(
+            title,
+            message: NSLocalizedString("Your profile will be shared with the address.", comment: "alert message"),
+            actions: {[
+                UIAlertAction(
+                    title: button,
+                    style: .default,
+                    handler: { _ in addShortLink(onCompletion: shareLink) }
+                ),
+                UIAlertAction(title: NSLocalizedString("Share full link", comment: "alert button"), style: .default) { _ in shareLink() }
+            ]}
+        )
+    }
+
+    private func addShortLink(onCompletion: (() -> Void)? = nil) {
         progressIndicator = true
         Task {
             do {
                 let userAddress = try await apiAddMyAddressShortLink()
                 await MainActor.run {
                     chatModel.userAddress = userAddress
+                    progressIndicator = false
+                    onCompletion?()
                 }
-                await MainActor.run { progressIndicator = false }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
                 let a = getErrorAlert(error, "Error adding short link")
@@ -284,8 +306,25 @@ struct UserAddressView: View {
     }
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
-        Button {
+        let shareLink = {
             showShareSheet(items: [simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: showShortLink))])
+        }
+        return Button {
+            if userAddress.connLinkContact.connShortLink == nil {
+                showUpdateAddressShareAlert(
+                    title: NSLocalizedString("Add short link", comment: "alert title"),
+                    button: NSLocalizedString("Add link", comment: "alert button"),
+                    shareLink: shareLink
+                )
+            } else if userAddress.shortLinkDataSet { // TODO update condition
+                shareLink()
+            } else {
+                showUpdateAddressShareAlert(
+                    title: NSLocalizedString("Share profile with address", comment: "alert title"),
+                    button: NSLocalizedString("Share profile", comment: "alert button"),
+                    shareLink: shareLink
+                )
+            }
         } label: {
             settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                 Text("Share address")
