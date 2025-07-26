@@ -7373,9 +7373,9 @@ chat item action</note>
         <target>Set passphrase to export</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set short bio and welcome message." xml:space="preserve">
-        <source>Set short bio and welcome message.</source>
-        <target>Set short bio and welcome message.</target>
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+        <source>Set profile bio and welcome message.</source>
+        <target>Set profile bio and welcome message.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">

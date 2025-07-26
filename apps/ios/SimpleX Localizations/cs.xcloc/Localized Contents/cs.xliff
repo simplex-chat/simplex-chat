@@ -6695,8 +6695,8 @@ chat item action</note>
         <target>Nastavení přístupové fráze pro export</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set short bio and welcome message." xml:space="preserve">
-        <source>Set short bio and welcome message.</source>
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+        <source>Set profile bio and welcome message.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">

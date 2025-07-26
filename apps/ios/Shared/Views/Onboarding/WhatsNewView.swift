@@ -617,7 +617,7 @@ private let versionDescriptions: [VersionDescription] = [
             .feature(Description(
                 icon: "hand.wave",
                 title: "Welcome your contacts 👋",
-                description: "Set short bio and welcome message."
+                description: "Set profile bio and welcome message."
             )),
             .feature(Description(
                 icon: "stopwatch",

@@ -848,8 +848,38 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.v6_4_message_delivery_descr
       ),
     )
-  )
-
+  ),
+  VersionDescription(
+    version = "v6.4.1",
+    post = "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_waving_hand,
+        titleId = MR.strings.v6_4_1_welcome_contacts,
+        descrId = MR.strings.v6_4_1_welcome_contacts_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_timer,
+        titleId = MR.strings.v6_4_1_keep_chats_clean,
+        descrId = MR.strings.v6_4_1_keep_chats_clean_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_link,
+        titleId = MR.strings.v6_4_1_short_address,
+        descrId = null,
+        subfeatures = listOf(
+          MR.images.ic_link to MR.strings.v6_4_1_short_address_create,
+          MR.images.ic_link to MR.strings.v6_4_1_short_address_update,
+          MR.images.ic_link to MR.strings.v6_4_1_short_address_share,
+        )
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v6_4_1_new_interface_languages,
+        descrId = MR.strings.v6_4_1_new_interface_languages_descr,
+      ),
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version
