@@ -1,18 +1,19 @@
 ---
 layout: layouts/article.html
-title: "SimpleX Chat v6.4.1: welcome your contacts, review group members to protect groups, and more."
+title: "SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more."
 date: 2025-07-29
 # previewBody: blog_previews/20250308.html
 # image: images/20250308-captcha.png
 # imageBottom: true
+draft: true
 permalink: "/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"
 ---
 
-# SimpleX Chat v6.4.1: welcome your contacts, review group members to protect groups, and more.
+# SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.
 
-**Published:** Jul 29, 2025
+**Will be published:** Jul 29, 2025
 
-This is a permalink for upcoming 6.4.1 release announcement.
+This is a placeholder for upcoming v6.4.1 release announcement.
 
 **What's new in v6.4.1**:
 
