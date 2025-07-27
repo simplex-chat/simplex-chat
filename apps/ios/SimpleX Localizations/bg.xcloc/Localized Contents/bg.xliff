@@ -100,14 +100,14 @@
         <target>%@ е потвърдено</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ server" xml:space="preserve" approved="no">
+      <trans-unit id="%@ server" xml:space="preserve">
         <source>%@ server</source>
-        <target state="translated">%@ сървър</target>
+        <target>%@ сървър</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
+      <trans-unit id="%@ servers" xml:space="preserve">
         <source>%@ servers</source>
-        <target state="translated">%@ сървъри</target>
+        <target>%@ сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
@@ -145,24 +145,24 @@
         <target>%d дни</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
-        <target state="translated">%d файл(ове) все още се теглят.</target>
+        <target>%d файл(ове) все още се теглят.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) failed to download." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
-        <target state="translated">Тегленето неуспешно за %d файл(ове).</target>
+        <target>Тегленето неуспешно за %d файл(ове).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were deleted." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
-        <target state="translated">%d файл(ове) бяха изтрити.</target>
+        <target>%d файл(ове) бяха изтрити.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
-      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve" approved="no">
+      <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
         <source>%d file(s) were not downloaded.</source>
-        <target state="translated">%d файл(ове) не бяха изтеглени.</target>
+        <target>%d файл(ове) не бяха изтеглени.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
@@ -170,9 +170,9 @@
         <target>%d часа</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
+      <trans-unit id="%d messages not forwarded" xml:space="preserve">
         <source>%d messages not forwarded</source>
-        <target state="translated">%d непрепратени съобщения</target>
+        <target>%d непрепратени съобщения</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -190,9 +190,9 @@
         <target>%d сек.</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
+      <trans-unit id="%d seconds(s)" xml:space="preserve">
         <source>%d seconds(s)</source>
-        <target state="translated">%d секунди</target>
+        <target>%d секунди</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
