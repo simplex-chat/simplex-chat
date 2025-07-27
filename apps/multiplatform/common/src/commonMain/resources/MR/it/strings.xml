@@ -2500,4 +2500,15 @@
     <string name="chat_banner_your_contact">Il tuo contatto</string>
     <string name="chat_banner_your_group">Il tuo gruppo</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Il tempo di scomparsa è impostato solo per i contatti nuovi.</string>
+    <string name="v6_4_1_new_interface_languages">4 nuove lingue</string>
+    <string name="v6_4_1_new_interface_languages_descr">Catalano, indonesiano, rumeno e vietnamita - grazie ai nostri utenti!</string>
+    <string name="v6_4_1_short_address_create">Crea il tuo indirizzo</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Attiva i messaggi a tempo in modo predefinito.</string>
+    <string name="v6_4_1_keep_chats_clean">Mantieni le chat pulite</string>
+    <string name="v6_4_1_welcome_contacts_descr">Imposta la bio del profilo e il messaggio di benvenuto.</string>
+    <string name="v6_4_1_short_address_share">Condividi il tuo indirizzo</string>
+    <string name="v6_4_1_short_address">Indirizzo breve di SimpleX</string>
+    <string name="v6_4_1_short_address_update">Aggiorna il tuo indirizzo</string>
+    <string name="connect_use_incognito_profile">Usa profilo in incognito</string>
+    <string name="v6_4_1_welcome_contacts">Dai il benvenuto ai tuoi contatti 👋</string>
 </resources>
