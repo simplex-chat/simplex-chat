@@ -420,9 +420,6 @@ swipe action */
 "Add servers by scanning QR codes." = "Karekod taratarak sunucuları ekleyin.";
 
 /* No comment provided by engineer. */
-"Add short link" = "Kısa bağlantı ekle";
-
-/* No comment provided by engineer. */
 "Add team members" = "Takım üyesi ekle";
 
 /* No comment provided by engineer. */
@@ -4105,9 +4102,6 @@ new chat action */
 /* alert message */
 "Profile update will be sent to your contacts." = "Profil güncellemesi kişilerinize gönderilecektir.";
 
-/* alert message */
-"The address will be short, and your profile will be shared via the address.." = "Profil adres bağlantısı aracılığıyla paylaşılacaktır.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Sesli/görüntülü aramaları yasakla.";
 
@@ -4935,16 +4929,10 @@ chat item action */
 "Share from other apps." = "Diğer uygulamalardan paylaşın.";
 
 /* No comment provided by engineer. */
-"Share group profile via link" = "Grup profilini bağlantı aracılığıyla paylaş";
-
-/* No comment provided by engineer. */
 "Share link" = "Bağlantıyı paylaş";
 
-/* alert button */
+/* No comment provided by engineer. */
 "Share profile" = "Profil paylaş";
-
-/* alert title */
-"Share profile with address" = "Profili bağlantı aracılığıyla paylaş";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "SimpleX adresini sosyal medyada paylaşın.";
@@ -6248,3 +6236,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX adresin";
+

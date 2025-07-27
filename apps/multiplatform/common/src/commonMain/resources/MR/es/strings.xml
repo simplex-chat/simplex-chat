@@ -223,7 +223,7 @@
     <string name="ttl_w">%ds</string>
     <string name="deleted_description">eliminado</string>
     <string name="connect_via_contact_link">¿Conectar mediante dirección de contacto?</string>
-    <string name="connect_via_group_link">¿Unirte al grupo?</string>
+    <string name="connect_via_group_link">¿Te unes al grupo?</string>
     <string name="connect_via_invitation_link">¿Conectar mediante enlace de invitación?</string>
     <string name="connect_via_link_verb">Conectar</string>
     <string name="server_connected">conectado</string>
@@ -530,7 +530,7 @@
     <string name="no_received_app_files">Sin archivos recibidos o enviados</string>
     <string name="messages_section_title">Mensajes</string>
     <string name="new_passphrase">Contraseña nueva…</string>
-    <string name="join_group_question">¿Unirte al grupo?</string>
+    <string name="join_group_question">¿Te unes al grupo?</string>
     <string name="joining_group">Entrando al grupo</string>
     <string name="keychain_error">Error en Keystore</string>
     <string name="icon_descr_add_members">Invitar miembros</string>
@@ -771,8 +771,8 @@
     <string name="first_platform_without_user_ids">Sin identificadores de usuario.</string>
     <string name="alert_message_no_group">Este grupo ya no existe.</string>
     <string name="accept_feature_set_1_day">Establecer 1 día</string>
-    <string name="v4_4_french_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
-    <string name="v4_5_italian_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
+    <string name="v4_4_french_interface_descr">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate.</string>
+    <string name="v4_5_italian_interface_descr">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="v4_5_private_filenames_descr">Para proteger la zona horaria, los archivos de imagen/voz usan la hora UTC.</string>
     <string name="v4_5_transport_isolation">Aislamiento de transporte</string>
     <string name="to_share_with_your_contact">(para compartir con tu contacto)</string>
@@ -864,7 +864,7 @@
 \nEsta acción es irreversible. Tu perfil, contactos, mensajes y archivos actuales se perderán.</string>
     <string name="incognito_random_profile">Tu perfil aleatorio</string>
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Te conectarás cuando tu solicitud se acepte, por favor espera o revisa más tarde.</string>
-    <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo de tu contacto esté en línea, por favor espera o revisa más tarde.</string>
+    <string name="you_will_be_connected_when_your_contacts_device_is_online">Te conectarás cuando el dispositivo del contacto esté en línea, por favor espera o revisa más tarde.</string>
     <string name="auth_you_will_be_required_to_authenticate_when_you_start_or_resume">Se te pedirá autenticarte cuando inicies la aplicación o sigas usándola tras 30 segundos en segundo plano.</string>
     <string name="invite_prohibited_description">Estás intentando invitar a un contacto con el que compartes un perfil incógnito a un grupo en el que usas tu perfil principal</string>
     <string name="simplex_link_mode_browser">Mediante navegador</string>
@@ -880,7 +880,7 @@
     <string name="you_are_invited_to_group_join_to_connect_with_group_members">Has sido invitado a un grupo. Únete para conectar con sus miembros.</string>
     <string name="snd_group_event_member_deleted">has expulsado a %1$s</string>
     <string name="group_info_member_you">Tú: %1$s</string>
-    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir un enlace o código QR para que cualquiera pueda unirse al grupo. Si decides eliminarlo más tarde, los miembros del grupo se mantendrán.</string>
+    <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Puedes compartir el enlace o el código QR para que cualquiera pueda unirse al grupo. Si más tarde lo eliminas, no afectará a los miembros del grupo.</string>
     <string name="incognito_info_share">Cuando compartes un perfil incógnito con alguien, este perfil también se usará para los grupos a los que te inviten.</string>
     <string name="your_preferences">Mis preferencias</string>
     <string name="v4_2_auto_accept_contact_requests_desc">Con mensaje de bienvenida opcional.</string>
@@ -914,7 +914,7 @@
     <string name="chat_preferences_you_allow">Permites</string>
     <string name="app_name">SimpleX</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
-    <string name="you_will_join_group">Te conectarás con todos los miembros del grupo.</string>
+    <string name="you_will_join_group">Conectarás con todos los miembros del grupo.</string>
     <string name="sender_you_pronoun">tu</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
     <string name="description_via_contact_address_link">mediante dirección de contacto</string>
@@ -937,7 +937,7 @@
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
     <string name="button_add_welcome_message">Añadir mensaje de bienvenida</string>
     <string name="v4_6_audio_video_calls">Llamadas y videollamadas</string>
@@ -965,7 +965,7 @@
     <string name="v4_6_audio_video_calls_descr">Ahora con soporte bluetooth y otras mejoras.</string>
     <string name="v4_6_group_welcome_message_descr">¡Guarda un mensaje para ser mostrado a los miembros nuevos!</string>
     <string name="v4_6_chinese_spanish_interface">Interfaz en chino y español</string>
-    <string name="v4_6_chinese_spanish_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
+    <string name="v4_6_chinese_spanish_interface_descr">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="error_updating_user_privacy">Error al actualizar privacidad de usuario</string>
     <string name="confirm_password">Confirmar contraseña</string>
     <string name="v4_6_reduced_battery_usage">Reducción consumo de batería</string>
@@ -997,7 +997,7 @@
     <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando el contacto termine de subirla.</string>
     <string name="show_developer_options">Mostrar opciones para desarrolladores</string>
     <string name="hide_dev_options">Ocultar:</string>
-    <string name="show_dev_options">Mostrar:</string>
+    <string name="show_dev_options">Muestra:</string>
     <string name="delete_chat_profile">Eliminar perfil</string>
     <string name="profile_password">Contraseña del perfil</string>
     <string name="unhide_chat_profile">Mostrar perfil oculto</string>
@@ -1093,7 +1093,7 @@
     <string name="v5_0_app_passcode">Código de acceso de la aplicación</string>
     <string name="v5_0_polish_interface">Interfaz en polaco</string>
     <string name="v5_0_app_passcode_descr">Úsalo en lugar de la autenticación del sistema.</string>
-    <string name="v5_0_polish_interface_descr">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
+    <string name="v5_0_polish_interface_descr">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="v5_0_large_files_support">Vídeos y archivos de hasta 1Gb</string>
     <string name="v5_0_large_files_support_descr">¡Rápido y sin necesidad de esperar a que el remitente esté en línea!</string>
     <string name="auth_open_chat_profiles">Cambiar perfil</string>
@@ -1110,7 +1110,7 @@
     <string name="simplex_address">Dirección SimpleX</string>
     <string name="you_can_accept_or_reject_connection">Cuando alguien solicite conectarse podrás aceptar o rechazar su solicitud.</string>
     <string name="share_address">Compartir dirección</string>
-    <string name="enter_welcome_message">Introduce mensaje de bienvenida…</string>
+    <string name="enter_welcome_message">Deja un mensaje de bienvenida…</string>
     <string name="theme_simplex">SimpleX</string>
     <string name="color_primary_variant">Color adicional</string>
     <string name="color_secondary_variant">Secundario adicional</string>
@@ -1124,7 +1124,7 @@
     <string name="continue_to_next_step">Continuar</string>
     <string name="dark_theme">Tema oscuro</string>
     <string name="customize_theme_title">Personalizar tema</string>
-    <string name="enter_welcome_message_optional">Introduce mensaje de bienvenida… (opcional)</string>
+    <string name="enter_welcome_message_optional">Deja un mensaje de bienvenida… (opcional)</string>
     <string name="create_address_and_let_people_connect">Crea una dirección para que otras personas puedan conectar contigo.</string>
     <string name="dont_create_address">No crear dirección SimpleX</string>
     <string name="email_invite_body">¡Hola!
@@ -1219,7 +1219,7 @@
     <string name="v5_1_better_messages_descr">- mensajes de voz de hasta 5 minutos.
 \n- tiempo personalizado para mensajes temporales.
 \n- historial de edición.</string>
-    <string name="whats_new_thanks_to_users_contribute_weblate">¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate.</string>
+    <string name="whats_new_thanks_to_users_contribute_weblate">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate.</string>
     <string name="v5_1_better_messages">Mensajes mejorados</string>
     <string name="v5_1_self_destruct_passcode_descr">Al introducirlo todos los datos son eliminados.</string>
     <string name="v5_1_custom_themes_descr">Personalizar y compartir temas de color.</string>
@@ -2120,7 +2120,7 @@
     <string name="share_1_time_link_with_a_friend">Compartir enlace de un uso con un amigo</string>
     <string name="share_simplex_address_on_social_media">Comparte tu dirección SimpleX en redes sociales.</string>
     <string name="address_settings">Ajustes de dirección</string>
-    <string name="create_1_time_link">Crear enlace de un uso</string>
+    <string name="create_1_time_link">Crear enlace de un solo uso</string>
     <string name="for_social_media">Para redes sociales</string>
     <string name="simplex_address_or_1_time_link">¿Dirección SimpleX o enlace de un uso?</string>
     <string name="onboarding_choose_server_operators">Operadores de servidores</string>
@@ -2422,10 +2422,10 @@
     <string name="rcv_group_event_user_accepted">te ha aceptado</string>
     <string name="rcv_group_event_new_member_pending_review">Un miembro nuevo desea unirse al grupo.</string>
     <string name="member_criteria_all">todos</string>
-    <string name="member_support">Chats con miembros</string>
+    <string name="member_support">Chat con miembros</string>
     <string name="support_chat">Chat con los administradores</string>
     <string name="delete_member_support_chat_button">Eliminar chat</string>
-    <string name="delete_member_support_chat_alert_title">¿Eliminar el chat con el miembro?</string>
+    <string name="delete_member_support_chat_alert_title">¿Eliminar chat con el miembro?</string>
     <string name="reject_pending_member_button">Rechazar</string>
     <string name="reject_pending_member_alert_title">¿Rechazar al miembro?</string>
     <string name="admission_stage_review">Revisar miembros</string>
@@ -2492,9 +2492,19 @@
     <string name="chat_banner_connect_to_chat">Pulsa Conectar para chatear</string>
     <string name="chat_banner_send_request_to_connect">Pulsa Conectar para enviar solicitud</string>
     <string name="chat_banner_join_group">Pulsa Unirte al grupo</string>
-    <string name="time_to_disappear_is_set_only_for_new_contacts">Mensajes temporales activados sólo para contactos nuevos.</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Mensajes temporales activados sólo para los contactos nuevos.</string>
     <string name="connect_use_incognito_profile">Usar perfil incógnito</string>
     <string name="chat_banner_your_business_contact">Mi contacto empresarial</string>
     <string name="chat_banner_your_contact">Mi contacto</string>
     <string name="chat_banner_your_group">Mi grupo</string>
+    <string name="v6_4_1_new_interface_languages">4 idiomas nuevos</string>
+    <string name="v6_4_1_new_interface_languages_descr">Catalán, Indonesio, Rumano y Vietnamita - gracias a los colaboradores!</string>
+    <string name="v6_4_1_short_address_create">Crea tu dirección</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Activa por defecto los mensajes temporaes</string>
+    <string name="v6_4_1_keep_chats_clean">Mantén los chats limpios</string>
+    <string name="v6_4_1_welcome_contacts_descr">Añade mensaje de bienvenida y biografía del perfil</string>
+    <string name="v6_4_1_short_address_share">Comparte tu dirección</string>
+    <string name="v6_4_1_short_address">Direcciones SimpleX cortas</string>
+    <string name="v6_4_1_short_address_update">Actualiza tu dirección</string>
+    <string name="v6_4_1_welcome_contacts">Da la bienvenida a tus contactos 👋</string>
 </resources>
