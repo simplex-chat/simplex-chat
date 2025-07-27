@@ -90,7 +90,7 @@ fun GroupLinkView(
               shareAddress()
             }) {
               Text(
-                generalGetString(MR.strings.share_old_address_alert_button),
+                generalGetString(MR.strings.share_old_link_alert_button),
                 Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colors.primary
