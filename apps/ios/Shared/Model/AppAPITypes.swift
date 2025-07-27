@@ -1408,8 +1408,22 @@ struct UserMsgReceiptSettings: Codable {
     var clearOverrides: Bool
 }
 
+protocol SimplexAddress {
+    var connLinkContact: CreatedConnLink { get }
+    var shortLinkDataSet: Bool { get }
+}
 
-struct UserContactLink: Decodable, Hashable {
+extension SimplexAddress {
+    var shouldBeUpgraded: Bool { // TODO update condition
+        connLinkContact.connShortLink == nil || !shortLinkDataSet
+    }
+
+    func shareAddress(short: Bool) {
+        showShareSheet(items: [simplexChatLink(connLinkContact.simplexChatUri(short: short))])
+    }
+}
+
+struct UserContactLink: Decodable, Hashable, SimplexAddress {
     var connLinkContact: CreatedConnLink
     var shortLinkDataSet: Bool
     var addressSettings: AddressSettings
@@ -1425,7 +1439,7 @@ struct AutoAccept: Codable, Hashable {
     var acceptIncognito: Bool
 }
 
-struct GroupLink: Decodable, Hashable {
+struct GroupLink: Decodable, Hashable, SimplexAddress {
     var userContactLinkId: Int64
     var connLinkContact: CreatedConnLink
     var shortLinkDataSet: Bool

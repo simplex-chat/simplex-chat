@@ -676,10 +676,10 @@ fileprivate struct CreateUpdateAddressShortLink: View {
             }
             Group {
                 if let addr = ChatModel.shared.userAddress {
-                    if addr.shortLinkDataSet { // update condition
-                        Button("Share your address") { print("share address") }
+                    if addr.shouldBeUpgraded {
+                        Button("Upgrade your address") { print("update address") }
                     } else {
-                        Button("Update your address") { print("update address") }
+                        Button("Share your address") { print("share address") }
                     }
                 } else {
                     Button("Create your address") { print("create address") }

@@ -642,10 +642,6 @@ swipe action</note>
         <target>Добавить друзей</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add link" xml:space="preserve">
-        <source>Add link</source>
-        <note>alert button</note>
-      </trans-unit>
       <trans-unit id="Add list" xml:space="preserve">
         <source>Add list</source>
         <target>Добавить список</target>
@@ -670,11 +666,6 @@ swipe action</note>
         <source>Add servers by scanning QR codes.</source>
         <target>Добавить серверы через QR код.</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Add short link" xml:space="preserve">
-        <source>Add short link</source>
-        <target>Добавить короткую ссылку</target>
-        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
@@ -7433,29 +7424,23 @@ chat item action</note>
         <target>Поделитесь из других приложений.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share full link" xml:space="preserve">
-        <source>Share full link</source>
-        <note>alert button</note>
-      </trans-unit>
-      <trans-unit id="Share group profile via link" xml:space="preserve">
-        <source>Share group profile via link</source>
-        <target>Добавить профиль группы в ссылку</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Поделиться ссылкой</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share old address" xml:space="preserve">
+        <source>Share old address</source>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Share old link" xml:space="preserve">
+        <source>Share old link</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Share profile" xml:space="preserve">
         <source>Share profile</source>
         <target>Поделиться профилем</target>
-        <note>alert button</note>
-      </trans-unit>
-      <trans-unit id="Share profile with address" xml:space="preserve">
-        <source>Share profile with address</source>
-        <target>Добавить профиль к адресу</target>
-        <note>alert title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
@@ -7996,6 +7981,10 @@ It can happen because of some bug or when the connection is compromised.</source
 Это может произойти из-за ошибки программы, или когда соединение компроментировано.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+        <source>The address will be short, and your profile will be shared via the address.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>Приложение может посылать Вам уведомления о сообщениях и запросах на соединение - уведомления можно включить в Настройках.</target>
@@ -8055,6 +8044,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The hash of the previous message is different.</source>
         <target>Хэш предыдущего сообщения отличается.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
+        <source>The link will be short, and group profile will be shared via the link.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
         <source>The message will be deleted for all members.</source>
@@ -8534,10 +8527,6 @@ To connect, please ask your contact to create another connection link and check 
         <target>Обновить настройки?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update your address" xml:space="preserve">
-        <source>Update your address</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
         <source>Updated conditions</source>
         <target>Обновленные условия</target>
@@ -8548,9 +8537,33 @@ To connect, please ask your contact to create another connection link and check 
         <target>Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Upgrade" xml:space="preserve">
+        <source>Upgrade</source>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Upgrade address" xml:space="preserve">
+        <source>Upgrade address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade address?" xml:space="preserve">
+        <source>Upgrade address?</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
         <source>Upgrade and open chat</source>
         <target>Обновить и открыть чат</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade group link?" xml:space="preserve">
+        <source>Upgrade group link?</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Upgrade link" xml:space="preserve">
+        <source>Upgrade link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade your address" xml:space="preserve">
+        <source>Upgrade your address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -9424,11 +9437,6 @@ Repeat connection request?</source>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
         <source>Your profile was changed. If you save it, the updated profile will be sent to all your contacts.</source>
         <target>Ваш профиль был изменен. Если вы сохраните его, обновленный профиль будет отправлен всем вашим контактам.</target>
-        <note>alert message</note>
-      </trans-unit>
-      <trans-unit id="Your profile will be shared with the address." xml:space="preserve">
-        <source>Your profile will be shared with the address.</source>
-        <target>Профиль будет добавлен в адрес.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">

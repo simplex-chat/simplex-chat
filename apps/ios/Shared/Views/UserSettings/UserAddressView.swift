@@ -138,7 +138,10 @@ struct UserAddressView: View {
         Section {
             SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
                 .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
-            shareQRCodeButton(userAddress)
+            if userAddress.shouldBeUpgraded {
+                upgradeAddressButton()
+            }
+            shareAddressButton(userAddress)
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
@@ -153,11 +156,6 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
-            if userAddress.connLinkContact.connShortLink == nil {
-                addShortLinkButton()
-            } else if !userAddress.shortLinkDataSet {
-                addProfileToShortLinkButton()
-            }
         } header: {
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
         } footer: {
@@ -214,58 +212,36 @@ struct UserAddressView: View {
         }
     }
 
-    private func addShortLinkButton() -> some View {
+    private func upgradeAddressButton() -> some View {
         Button {
-            showAddShortLinkAlert(
-                title: NSLocalizedString("Add short link", comment: "alert title"),
-                button: NSLocalizedString("Add link", comment: "alert button")
-            )
+            upgradeAndShareAddressAlert()
         } label: {
-            settingsRow("plus", color: theme.colors.primary) {
-                Text("Add link")
+            settingsRow("arrow.up", color: theme.colors.primary) {
+                Text("Upgrade address")
             }
         }
     }
 
-    private func addProfileToShortLinkButton() -> some View {
-        Button {
-            showAddShortLinkAlert(
-                title: NSLocalizedString("Share profile with address", comment: "alert title"),
-                button: NSLocalizedString("Share profile", comment: "alert button")
-            )
-        } label: {
-            settingsRow("plus", color: theme.colors.primary) {
-                Text("Share profile with address")
+    private func upgradeAndShareAddressAlert(userAddress: UserContactLink? = nil) {
+        showAlert(
+            NSLocalizedString("Upgrade address?", comment: "alert message"),
+            message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
+            actions: {
+                var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                    addShortLink(shareOnCompletion: userAddress != nil)
+                }]
+                if let userAddress {
+                    actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
+                        userAddress.shareAddress(short: showShortLink)
+                    })
+                }
+                actions.append(cancelAlertAction)
+                return actions
             }
-        }
-    }
-
-    private func showAddShortLinkAlert(title: String, button: String) {
-        showAlert(
-            title: title,
-            message: NSLocalizedString("Your profile will be shared with the address.", comment: "alert message"),
-            buttonTitle: button,
-            buttonAction: { addShortLink() },
-            cancelButton: true
         )
     }
 
-    private func showUpdateAddressShareAlert(title: String, button: String, shareLink: @escaping () -> Void) {
-        showAlert(
-            title,
-            message: NSLocalizedString("Your profile will be shared with the address.", comment: "alert message"),
-            actions: {[
-                UIAlertAction(
-                    title: button,
-                    style: .default,
-                    handler: { _ in addShortLink(onCompletion: shareLink) }
-                ),
-                UIAlertAction(title: NSLocalizedString("Share full link", comment: "alert button"), style: .default) { _ in shareLink() }
-            ]}
-        )
-    }
-
-    private func addShortLink(onCompletion: (() -> Void)? = nil) {
+    private func addShortLink(shareOnCompletion: Bool = false) {
         progressIndicator = true
         Task {
             do {
@@ -273,7 +249,9 @@ struct UserAddressView: View {
                 await MainActor.run {
                     chatModel.userAddress = userAddress
                     progressIndicator = false
-                    onCompletion?()
+                    if shareOnCompletion, let userAddress {
+                        userAddress.shareAddress(short: showShortLink)
+                    }
                 }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
@@ -305,25 +283,12 @@ struct UserAddressView: View {
         }
     }
 
-    private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
-        let shareLink = {
-            showShareSheet(items: [simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: showShortLink))])
-        }
+    private func shareAddressButton(_ userAddress: UserContactLink) -> some View {
         return Button {
-            if userAddress.connLinkContact.connShortLink == nil {
-                showUpdateAddressShareAlert(
-                    title: NSLocalizedString("Add short link", comment: "alert title"),
-                    button: NSLocalizedString("Add link", comment: "alert button"),
-                    shareLink: shareLink
-                )
-            } else if userAddress.shortLinkDataSet { // TODO update condition
-                shareLink()
+            if userAddress.shouldBeUpgraded {
+                upgradeAndShareAddressAlert(userAddress: userAddress)
             } else {
-                showUpdateAddressShareAlert(
-                    title: NSLocalizedString("Share profile with address", comment: "alert title"),
-                    button: NSLocalizedString("Share profile", comment: "alert button"),
-                    shareLink: shareLink
-                )
+                userAddress.shareAddress(short: showShortLink)
             }
         } label: {
             settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
@@ -389,12 +354,13 @@ struct UserAddressView: View {
 
 struct ToggleShortLinkHeader: View {
     @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     let text: Text
     var link: CreatedConnLink
     @Binding var short: Bool
 
     var body: some View {
-        if link.connShortLink == nil {
+        if link.connShortLink == nil || !developerTools {
             text.foregroundColor(theme.colors.secondary)
         } else {
             HStack {
