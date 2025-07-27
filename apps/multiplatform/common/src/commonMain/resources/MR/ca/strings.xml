@@ -2462,4 +2462,15 @@
     <string name="chat_banner_your_contact">El vostre contacte</string>
     <string name="chat_banner_your_group">El vostre grup</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">El temps de desaparició només està definit per a contactes nous.</string>
+    <string name="v6_4_1_new_interface_languages">4 idiomes nous</string>
+    <string name="v6_4_1_new_interface_languages_descr">Català, indonesi, romanès i vietnamita: gràcies per les col·laboracions!</string>
+    <string name="v6_4_1_short_address_create">Creeu la vostra adreça</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Activar els missatges que desapareixen per defecte.</string>
+    <string name="v6_4_1_keep_chats_clean">Mantingueu els vostres xats nets</string>
+    <string name="v6_4_1_welcome_contacts_descr">Definir la biografia del perfil i el missatge de benvinguda.</string>
+    <string name="v6_4_1_short_address_share">Compartir la vostra adreça</string>
+    <string name="v6_4_1_short_address">Adreça SimpleX curta</string>
+    <string name="v6_4_1_short_address_update">Actualitzar la vostra adreça</string>
+    <string name="connect_use_incognito_profile">Utilitzar el perfil d\'incògnit</string>
+    <string name="v6_4_1_welcome_contacts">Doneu la benvinguda als vostres contactes 👋</string>
 </resources>
