@@ -102,10 +102,12 @@
       </trans-unit>
       <trans-unit id="%@ server" xml:space="preserve">
         <source>%@ server</source>
+        <target>%@ сървър</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ servers" xml:space="preserve">
         <source>%@ servers</source>
+        <target>%@ сървъри</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ uploaded" xml:space="preserve">
@@ -145,18 +147,22 @@
       </trans-unit>
       <trans-unit id="%d file(s) are still being downloaded." xml:space="preserve">
         <source>%d file(s) are still being downloaded.</source>
+        <target>%d файл(ове) все още се теглят.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) failed to download." xml:space="preserve">
         <source>%d file(s) failed to download.</source>
+        <target>Тегленето неуспешно за %d файл(ове).</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were deleted." xml:space="preserve">
         <source>%d file(s) were deleted.</source>
+        <target>%d файл(ове) бяха изтрити.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d file(s) were not downloaded." xml:space="preserve">
         <source>%d file(s) were not downloaded.</source>
+        <target>%d файл(ове) не бяха изтеглени.</target>
         <note>forward confirmation reason</note>
       </trans-unit>
       <trans-unit id="%d hours" xml:space="preserve">
@@ -166,6 +172,7 @@
       </trans-unit>
       <trans-unit id="%d messages not forwarded" xml:space="preserve">
         <source>%d messages not forwarded</source>
+        <target>%d непрепратени съобщения</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -185,6 +192,7 @@
       </trans-unit>
       <trans-unit id="%d seconds(s)" xml:space="preserve">
         <source>%d seconds(s)</source>
+        <target>%d секунди</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">

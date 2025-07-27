@@ -2202,6 +2202,7 @@ Questo è il tuo link una tantum!</target>
       </trans-unit>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
+        <target>Crea il tuo indirizzo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -3016,6 +3017,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
         <source>Enable disappearing messages by default.</source>
+        <target>Attiva i messaggi a tempo in modo predefinito.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4652,6 +4654,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Keep your chats clean" xml:space="preserve">
         <source>Keep your chats clean</source>
+        <target>Mantieni le chat pulite</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -7362,6 +7365,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
         <source>Set profile bio and welcome message.</source>
+        <target>Imposta la bio del profilo e il messaggio di benvenuto.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
@@ -7441,6 +7445,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share old link" xml:space="preserve">
         <source>Share old link</source>
+        <target>Condividi il link completo</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share profile" xml:space="preserve">
@@ -7465,10 +7470,12 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share your address" xml:space="preserve">
         <source>Share your address</source>
+        <target>Condividi il tuo indirizzo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short SimpleX address" xml:space="preserve">
         <source>Short SimpleX address</source>
+        <target>Indirizzo breve di SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short description" xml:space="preserve">
@@ -8057,6 +8064,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
         <source>The link will be short, and group profile will be shared via the link.</source>
+        <target>Condividi il profilo del gruppo via link</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8216,6 +8224,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
         <source>Time to disappear is set only for new contacts.</source>
+        <target>Il tempo di scomparsa è impostato solo per i contatti nuovi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -8570,10 +8579,12 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">
         <source>Upgrade link</source>
+        <target>Aggiungi link</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade your address" xml:space="preserve">
         <source>Upgrade your address</source>
+        <target>Aggiorna il tuo indirizzo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -8673,6 +8684,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Use incognito profile" xml:space="preserve">
         <source>Use incognito profile</source>
+        <target>Usa profilo in incognito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -8912,6 +8924,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
         <source>Welcome your contacts 👋</source>
+        <target>Dai il benvenuto ai tuoi contatti 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
