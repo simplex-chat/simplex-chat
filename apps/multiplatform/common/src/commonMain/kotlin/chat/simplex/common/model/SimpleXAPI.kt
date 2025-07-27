@@ -6732,12 +6732,20 @@ enum class RatchetSyncState {
   @SerialName("agreed") Agreed
 }
 
+interface SimplexAddress {
+  val connLinkContact: CreatedConnLink
+  val shortLinkDataSet: Boolean
+
+  // TODO update condition
+  val shouldBeUpgraded: Boolean get() = connLinkContact.connShortLink == null || !shortLinkDataSet
+}
+
 @Serializable
 data class UserContactLinkRec(
-  val connLinkContact: CreatedConnLink,
-  val shortLinkDataSet: Boolean,
+  override val connLinkContact: CreatedConnLink,
+  override val shortLinkDataSet: Boolean,
   val addressSettings: AddressSettings
-)
+): SimplexAddress
 
 @Serializable
 data class AddressSettings(
@@ -6752,11 +6760,11 @@ data class AutoAccept(val acceptIncognito: Boolean)
 @Serializable
 data class GroupLink(
   val userContactLinkId: Long,
-  val connLinkContact: CreatedConnLink,
-  val shortLinkDataSet: Boolean,
+  override val connLinkContact: CreatedConnLink,
+  override val shortLinkDataSet: Boolean,
   val groupLinkId: String,
   val acceptMemberRole: GroupMemberRole
-) {
+): SimplexAddress {
   companion object {
     val nullableStateSaver: Saver<GroupLink?, List<Any?>> = Saver(
       save = { groupLink ->

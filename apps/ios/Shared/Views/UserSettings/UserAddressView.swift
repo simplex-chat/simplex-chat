@@ -222,17 +222,17 @@ struct UserAddressView: View {
         }
     }
 
-    private func upgradeAndShareAddressAlert(shareAddress: (() -> Void)? = nil) {
+    private func upgradeAndShareAddressAlert(userAddress: UserContactLink? = nil) {
         showAlert(
             NSLocalizedString("Upgrade address?", comment: "alert message"),
             message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
             actions: {
                 var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
-                    addShortLink(onCompletion: shareAddress)
+                    addShortLink(shareOnCompletion: userAddress != nil)
                 }]
-                if let shareAddress {
+                if let userAddress {
                     actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
-                        shareAddress()
+                        userAddress.shareAddress(short: showShortLink)
                     })
                 }
                 actions.append(cancelAlertAction)
@@ -241,7 +241,7 @@ struct UserAddressView: View {
         )
     }
 
-    private func addShortLink(onCompletion: (() -> Void)? = nil) {
+    private func addShortLink(shareOnCompletion: Bool = false) {
         progressIndicator = true
         Task {
             do {
@@ -249,7 +249,9 @@ struct UserAddressView: View {
                 await MainActor.run {
                     chatModel.userAddress = userAddress
                     progressIndicator = false
-                    onCompletion?()
+                    if shareOnCompletion, let userAddress {
+                        userAddress.shareAddress(short: showShortLink)
+                    }
                 }
             } catch let error {
                 logger.error("apiAddMyAddressShortLink: \(responseError(error))")
@@ -284,7 +286,7 @@ struct UserAddressView: View {
     private func shareAddressButton(_ userAddress: UserContactLink) -> some View {
         return Button {
             if userAddress.shouldBeUpgraded {
-                upgradeAndShareAddressAlert(shareAddress: { userAddress.shareAddress(short: showShortLink) })
+                upgradeAndShareAddressAlert(userAddress: userAddress)
             } else {
                 userAddress.shareAddress(short: showShortLink)
             }

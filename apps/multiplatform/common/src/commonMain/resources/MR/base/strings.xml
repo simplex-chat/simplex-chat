@@ -1103,11 +1103,16 @@
   <string name="address_settings">Address settings</string>
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
-  <string name="add_short_link">Add short link</string>
-  <string name="share_profile_via_link">Share profile with address</string>
-  <string name="share_profile_via_link_alert_text">Profile will be shared with the address.</string>
-  <string name="share_profile_via_link_alert_confirm">Share profile</string>
-  <string name="share_group_profile_via_link">Share group profile via link</string>
+  <string name="add_short_link">Upgrade address</string>
+  <string name="share_profile_via_link">Upgrade address?</string>
+  <string name="share_profile_via_link_alert_text">The address will be short, and your profile will be shared via the address.</string>
+  <string name="share_profile_via_link_alert_confirm">Upgrade</string>
+  <string name="upgrade_group_link">Upgrade group link</string>
+  <string name="share_group_profile_via_link">Upgrade group link?</string>
+  <string name="share_group_profile_via_link_alert_text">The link will be short, and group profile will be shared via the link.</string>
+  <string name="share_profile_via_link_alert_confirm">Upgrade</string>
+  <string name="share_old_address_alert_button">Share old address</string>
+  <string name="share_old_link_alert_button">Share old link</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>

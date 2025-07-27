@@ -89,7 +89,7 @@ struct GroupLinkView: View {
                     }
                     Button {
                         if groupLink.shouldBeUpgraded {
-                            upgradeAndShareLinkAlert { groupLink.shareAddress(short: showShortLink) }
+                            upgradeAndShareLinkAlert(groupLink: groupLink)
                         } else {
                             groupLink.shareAddress(short: showShortLink)
                         }
@@ -174,17 +174,17 @@ struct GroupLinkView: View {
         }
     }
 
-    private func upgradeAndShareLinkAlert(shareAddress: (() -> Void)? = nil) {
+    private func upgradeAndShareLinkAlert(groupLink: GroupLink? = nil) {
         showAlert(
             NSLocalizedString("Upgrade group link?", comment: "alert message"),
             message: NSLocalizedString("The link will be short, and group profile will be shared via the link.", comment: "alert message"),
             actions: {
                 var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
-                    addShortLink(onCompletion: shareAddress)
+                    addShortLink(shareOnCompletion: groupLink != nil)
                 }]
-                if let shareAddress {
-                    actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
-                        shareAddress()
+                if let groupLink {
+                    actions.append(UIAlertAction(title: NSLocalizedString("Share old link", comment: "alert button"), style: .default) { _ in
+                        groupLink.shareAddress(short: showShortLink)
                     })
                 }
                 actions.append(cancelAlertAction)
@@ -193,7 +193,7 @@ struct GroupLinkView: View {
         )
     }
 
-    private func addShortLink(onCompletion: (() -> Void)? = nil) {
+    private func addShortLink(shareOnCompletion: Bool = false) {
         Task {
             do {
                 creatingLink = true
@@ -201,7 +201,9 @@ struct GroupLinkView: View {
                 await MainActor.run {
                     creatingLink = false
                     groupLink = gLink
-                    onCompletion?()
+                    if shareOnCompletion, let gLink {
+                        gLink.shareAddress(short: showShortLink)
+                    }
                 }
             } catch let error {
                 logger.error("apiAddGroupShortLink: \(responseError(error))")
