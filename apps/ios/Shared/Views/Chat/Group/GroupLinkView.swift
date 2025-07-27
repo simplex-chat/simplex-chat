@@ -80,24 +80,21 @@ struct GroupLinkView: View {
                     .frame(height: 36)
                     SimpleXCreatedLinkQRCode(link: groupLink.connLinkContact, short: $showShortLink)
                         .id("simplex-qrcode-view-for-\(groupLink.connLinkContact.simplexChatUri(short: showShortLink))")
+                    if groupLink.shouldBeUpgraded {
+                        Button {
+                            upgradeAndShareLinkAlert()
+                        } label: {
+                            Label("Upgrade link", systemImage: "arrow.up")
+                        }
+                    }
                     Button {
-                        showShareSheet(items: [groupLink.connLinkContact.simplexChatUri(short: showShortLink)])
+                        if groupLink.shouldBeUpgraded {
+                            upgradeAndShareLinkAlert { groupLink.shareAddress(short: showShortLink) }
+                        } else {
+                            groupLink.shareAddress(short: showShortLink)
+                        }
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
-                    }
-
-                    if groupLink.connLinkContact.connShortLink == nil {
-                        Button {
-                            addShortLink()
-                        } label: {
-                            Label("Add short link", systemImage: "plus")
-                        }
-                    } else if !groupLink.shortLinkDataSet {
-                        Button {
-                            addShortLink()
-                        } label: {
-                            Label("Share group profile via link", systemImage: "plus")
-                        }
                     }
 
                     if !creatingGroup {
@@ -177,7 +174,26 @@ struct GroupLinkView: View {
         }
     }
 
-    private func addShortLink() {
+    private func upgradeAndShareLinkAlert(shareAddress: (() -> Void)? = nil) {
+        showAlert(
+            NSLocalizedString("Upgrade group link?", comment: "alert message"),
+            message: NSLocalizedString("The link will be short, and group profile will be shared via the link.", comment: "alert message"),
+            actions: {
+                var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                    addShortLink(onCompletion: shareAddress)
+                }]
+                if let shareAddress {
+                    actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
+                        shareAddress()
+                    })
+                }
+                actions.append(cancelAlertAction)
+                return actions
+            }
+        )
+    }
+
+    private func addShortLink(onCompletion: (() -> Void)? = nil) {
         Task {
             do {
                 creatingLink = true
@@ -185,6 +201,7 @@ struct GroupLinkView: View {
                 await MainActor.run {
                     creatingLink = false
                     groupLink = gLink
+                    onCompletion?()
                 }
             } catch let error {
                 logger.error("apiAddGroupShortLink: \(responseError(error))")

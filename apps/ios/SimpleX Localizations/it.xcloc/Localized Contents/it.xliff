@@ -9440,8 +9440,8 @@ Ripetere la richiesta di connessione?</target>
         <target>Il tuo profilo è stato cambiato. Se lo salvi, il profilo aggiornato verrà inviato a tutti i tuoi contatti.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your profile will be shared with the address." xml:space="preserve">
-        <source>Your profile will be shared with the address.</source>
+      <trans-unit id="The address will be short, and your profile will be shared via the address.." xml:space="preserve">
+        <source>The address will be short, and your profile will be shared via the address..</source>
         <target>Il profilo verrà condiviso tramite il link dell'indirizzo.</target>
         <note>alert message</note>
       </trans-unit>

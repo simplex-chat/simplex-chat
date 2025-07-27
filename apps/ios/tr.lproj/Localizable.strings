@@ -4106,7 +4106,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "Profil güncellemesi kişilerinize gönderilecektir.";
 
 /* alert message */
-"Your profile will be shared with the address." = "Profil adres bağlantısı aracılığıyla paylaşılacaktır.";
+"The address will be short, and your profile will be shared via the address.." = "Profil adres bağlantısı aracılığıyla paylaşılacaktır.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Sesli/görüntülü aramaları yasakla.";

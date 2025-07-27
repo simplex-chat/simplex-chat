@@ -4091,7 +4091,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "Обновлённый профиль будет отправлен Вашим контактам.";
 
 /* alert message */
-"Your profile will be shared with the address." = "Профиль будет добавлен в адрес.";
+"The address will be short, and your profile will be shared via the address.." = "Профиль будет добавлен в адрес.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Запретить аудио/видео звонки.";

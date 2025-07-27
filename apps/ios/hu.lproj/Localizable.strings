@@ -4106,7 +4106,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "A profilfrissítés el lesz küldve a partnerei számára.";
 
 /* alert message */
-"Your profile will be shared with the address." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
+"The address will be short, and your profile will be shared via the address.." = "A profil meg lesz osztva a címhivatkozáson keresztül.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "A hívások kezdeményezése le van tiltva.";

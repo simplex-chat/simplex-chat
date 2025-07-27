@@ -9315,8 +9315,8 @@ Repeat connection request?</source>
         <target>Ваш профіль було змінено. Якщо ви збережете його, оновлений профіль буде надіслано всім вашим контактам.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your profile will be shared with the address." xml:space="preserve">
-        <source>Your profile will be shared with the address.</source>
+      <trans-unit id="The address will be short, and your profile will be shared via the address.." xml:space="preserve">
+        <source>The address will be short, and your profile will be shared via the address..</source>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your random profile" xml:space="preserve">

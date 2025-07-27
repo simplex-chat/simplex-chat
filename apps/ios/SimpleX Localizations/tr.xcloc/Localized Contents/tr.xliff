@@ -9440,8 +9440,8 @@ Bağlantı isteği tekrarlansın mı?</target>
         <target>Profiliniz değiştirildi. Kaydederseniz, güncellenmiş profil tüm kişilerinize gönderilecektir.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Your profile will be shared with the address." xml:space="preserve">
-        <source>Your profile will be shared with the address.</source>
+      <trans-unit id="The address will be short, and your profile will be shared via the address.." xml:space="preserve">
+        <source>The address will be short, and your profile will be shared via the address..</source>
         <target>Profil adres bağlantısı aracılığıyla paylaşılacaktır.</target>
         <note>alert message</note>
       </trans-unit>

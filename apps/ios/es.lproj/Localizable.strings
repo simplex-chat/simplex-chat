@@ -4106,7 +4106,7 @@ new chat action */
 "Profile update will be sent to your contacts." = "La actualización del perfil se enviará a tus contactos.";
 
 /* alert message */
-"Your profile will be shared with the address." = "El perfil será compartido mediante la dirección de contacto.";
+"The address will be short, and your profile will be shared via the address.." = "El perfil será compartido mediante la dirección de contacto.";
 
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "No se permiten llamadas y videollamadas.";
