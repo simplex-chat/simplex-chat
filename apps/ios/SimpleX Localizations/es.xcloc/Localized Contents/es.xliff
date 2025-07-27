@@ -642,8 +642,9 @@ swipe action</note>
         <target>Añadir amigos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add link" xml:space="preserve">
+      <trans-unit id="Add link" xml:space="preserve" approved="no">
         <source>Add link</source>
+        <target state="translated">Añadir enlace</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Add list" xml:space="preserve">
@@ -1653,9 +1654,9 @@ set passcode view</note>
         <target>Chats</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chats with members" xml:space="preserve">
+      <trans-unit id="Chats with members" xml:space="preserve" approved="no">
         <source>Chats with members</source>
-        <target>Chats con miembros</target>
+        <target state="translated">Chat con miembros</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Check messages every 20 min." xml:space="preserve">
@@ -2154,9 +2155,9 @@ This is your own one-time link!</source>
         <target>Crear</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create 1-time link" xml:space="preserve">
+      <trans-unit id="Create 1-time link" xml:space="preserve" approved="no">
         <source>Create 1-time link</source>
-        <target>Crear enlace de un uso</target>
+        <target state="translated">Crear enlace de un solo uso</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create SimpleX address" xml:space="preserve">
@@ -2209,8 +2210,9 @@ This is your own one-time link!</source>
         <target>Crear cola</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create your address" xml:space="preserve">
+      <trans-unit id="Create your address" xml:space="preserve" approved="no">
         <source>Create your address</source>
+        <target state="translated">Crea tu dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -2467,9 +2469,9 @@ swipe action</note>
         <target>¿Eliminar perfil?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat with member?" xml:space="preserve">
+      <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
         <source>Delete chat with member?</source>
-        <target>¿Eliminar el chat con el miembro?</target>
+        <target state="translated">¿Eliminar chat con el miembro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -3023,8 +3025,9 @@ chat item action</note>
         <target>Permitir acceso a la cámara</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
         <source>Enable disappearing messages by default.</source>
+        <target state="translated">Activa por defecto los mensajes temporaes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -3192,14 +3195,14 @@ chat item action</note>
         <target>Nombre de este dispositivo…</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message…" xml:space="preserve">
+      <trans-unit id="Enter welcome message…" xml:space="preserve" approved="no">
         <source>Enter welcome message…</source>
-        <target>Introduce mensaje de bienvenida…</target>
+        <target state="translated">Deja un mensaje de bienvenida…</target>
         <note>placeholder</note>
       </trans-unit>
-      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve">
+      <trans-unit id="Enter welcome message… (optional)" xml:space="preserve" approved="no">
         <source>Enter welcome message… (optional)</source>
-        <target>Introduce mensaje de bienvenida… (opcional)</target>
+        <target state="translated">Deja un mensaje de bienvenida… (opcional)</target>
         <note>placeholder</note>
       </trans-unit>
       <trans-unit id="Enter your name…" xml:space="preserve">
@@ -4659,8 +4662,9 @@ This is your link for group %@!</source>
         <target>¿Guardar enlace no usado?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Keep your chats clean" xml:space="preserve">
+      <trans-unit id="Keep your chats clean" xml:space="preserve" approved="no">
         <source>Keep your chats clean</source>
+        <target state="translated">Mantén los chats limpios</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -7369,8 +7373,9 @@ chat item action</note>
         <target>Escribe la contraseña para exportar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve" approved="no">
         <source>Set profile bio and welcome message.</source>
+        <target state="translated">Añade mensaje de bienvenida y biografía del perfil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
@@ -7439,8 +7444,9 @@ chat item action</note>
         <target>Comparte desde otras aplicaciones.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share full link" xml:space="preserve">
+      <trans-unit id="Share full link" xml:space="preserve" approved="no">
         <source>Share full link</source>
+        <target state="translated">Comparte enlace completo</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share group profile via link" xml:space="preserve">
@@ -7478,12 +7484,14 @@ chat item action</note>
         <target>Compartir con contactos</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share your address" xml:space="preserve">
+      <trans-unit id="Share your address" xml:space="preserve" approved="no">
         <source>Share your address</source>
+        <target state="translated">Comparte tu dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Short SimpleX address" xml:space="preserve">
+      <trans-unit id="Short SimpleX address" xml:space="preserve" approved="no">
         <source>Short SimpleX address</source>
+        <target state="translated">Direcciones SimpleX cortas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short description" xml:space="preserve">
@@ -7536,9 +7544,9 @@ chat item action</note>
         <target>Mostrar → en mensajes con enrutamiento privado.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show:" xml:space="preserve">
+      <trans-unit id="Show:" xml:space="preserve" approved="no">
         <source>Show:</source>
-        <target>Mostrar:</target>
+        <target state="translated">Muestra:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="SimpleX" xml:space="preserve">
@@ -7994,9 +8002,9 @@ report reason</note>
         <target>¡Nuestro agradecimiento a todos los colaboradores, [puedes contribuir a través de Weblate](https://github.com/simplex-chat/simplex-chat/tree/stable#traducir-el-aplicaciones)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve">
+      <trans-unit id="Thanks to the users – contribute via Weblate!" xml:space="preserve" approved="no">
         <source>Thanks to the users – contribute via Weblate!</source>
-        <target>¡Nuestro agradecimiento a todos los colaboradores! Puedes contribuir a través de Weblate</target>
+        <target state="translated">¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The ID of the next message is incorrect (less or equal to the previous).&#10;It can happen because of some bug or when the connection is compromised." xml:space="preserve">
@@ -8221,8 +8229,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Esta configuración se aplica a los mensajes del perfil actual **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
+      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve" approved="no">
         <source>Time to disappear is set only for new contacts.</source>
+        <target state="translated">Mensajes temporales activados sólo para los contactos nuevos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -8544,8 +8553,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>¿Actualizar configuración?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update your address" xml:space="preserve">
+      <trans-unit id="Update your address" xml:space="preserve" approved="no">
         <source>Update your address</source>
+        <target state="translated">Actualiza tu dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Updated conditions" xml:space="preserve">
@@ -8658,8 +8668,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Usar interfaz de llamada de iOS</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use incognito profile" xml:space="preserve">
+      <trans-unit id="Use incognito profile" xml:space="preserve" approved="no">
         <source>Use incognito profile</source>
+        <target state="translated">Usar perfil incógnito</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -8897,8 +8908,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Mensaje de bienvenida demasiado largo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
+      <trans-unit id="Welcome your contacts 👋" xml:space="preserve" approved="no">
         <source>Welcome your contacts 👋</source>
+        <target state="translated">Da la bienvenida a tus contactos 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -9133,9 +9145,9 @@ Repeat join request?</source>
         <target>Puedes configurar las notificaciones de la pantalla de bloqueo desde Configuración.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve">
+      <trans-unit id="You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it." xml:space="preserve" approved="no">
         <source>You can share a link or a QR code - anybody will be able to join the group. You won't lose members of the group if you later delete it.</source>
-        <target>Puedes compartir un enlace o código QR para que cualquiera pueda unirse al grupo. Si decides eliminarlo más tarde, los miembros del grupo se mantendrán.</target>
+        <target state="translated">Puedes compartir el enlace o el código QR para que cualquiera pueda unirse al grupo. Si más tarde lo eliminas, no afectará a los miembros del grupo.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can share this address with your contacts to let them connect with **%@**." xml:space="preserve">
@@ -9430,9 +9442,9 @@ Repeat connection request?</source>
         <target>El perfil sólo se comparte con tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
-        <target>Tu perfil es almacenado en tu dispositivo y solamente se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</target>
+        <target state="translated">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
