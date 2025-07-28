@@ -214,50 +214,10 @@ struct UserAddressView: View {
 
     private func upgradeAddressButton() -> some View {
         Button {
-            upgradeAndShareAddressAlert()
+            upgradeAndShareAddressAlert(progressIndicator: $progressIndicator)
         } label: {
             settingsRow("arrow.up", color: theme.colors.primary) {
                 Text("Upgrade address")
-            }
-        }
-    }
-
-    private func upgradeAndShareAddressAlert(userAddress: UserContactLink? = nil) {
-        showAlert(
-            NSLocalizedString("Upgrade address?", comment: "alert message"),
-            message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
-            actions: {
-                var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
-                    addShortLink(shareOnCompletion: userAddress != nil)
-                }]
-                if let userAddress {
-                    actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
-                        userAddress.shareAddress(short: showShortLink)
-                    })
-                }
-                actions.append(cancelAlertAction)
-                return actions
-            }
-        )
-    }
-
-    private func addShortLink(shareOnCompletion: Bool = false) {
-        progressIndicator = true
-        Task {
-            do {
-                let userAddress = try await apiAddMyAddressShortLink()
-                await MainActor.run {
-                    chatModel.userAddress = userAddress
-                    progressIndicator = false
-                    if shareOnCompletion, let userAddress {
-                        userAddress.shareAddress(short: showShortLink)
-                    }
-                }
-            } catch let error {
-                logger.error("apiAddMyAddressShortLink: \(responseError(error))")
-                let a = getErrorAlert(error, "Error adding short link")
-                alert = .error(title: a.title, error: a.message)
-                await MainActor.run { progressIndicator = false }
             }
         }
     }
@@ -286,7 +246,7 @@ struct UserAddressView: View {
     private func shareAddressButton(_ userAddress: UserContactLink) -> some View {
         return Button {
             if userAddress.shouldBeUpgraded {
-                upgradeAndShareAddressAlert(userAddress: userAddress)
+                upgradeAndShareAddressAlert(progressIndicator: $progressIndicator, shareAddress: { userAddress.shareAddress(short: showShortLink) })
             } else {
                 userAddress.shareAddress(short: showShortLink)
             }
@@ -351,6 +311,46 @@ struct UserAddressView: View {
         }
     }
 }
+
+func upgradeAndShareAddressAlert(progressIndicator: Binding<Bool>, shareAddress: (() -> Void)? = nil) {
+    showAlert(
+        NSLocalizedString("Upgrade address?", comment: "alert message"),
+        message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
+        actions: {
+            var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                addShortLink(progressIndicator: progressIndicator, shareOnCompletion: shareAddress != nil)
+            }]
+            if let shareAddress {
+                actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
+                    shareAddress()
+                })
+            }
+            actions.append(cancelAlertAction)
+            return actions
+        }
+    )
+}
+
+private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: Bool = false) {
+    progressIndicator.wrappedValue = true
+    Task {
+        do {
+            let userAddress = try await apiAddMyAddressShortLink()
+            await MainActor.run {
+                ChatModel.shared.userAddress = userAddress
+                progressIndicator.wrappedValue = false
+                if shareOnCompletion, let userAddress {
+                    userAddress.shareAddress(short: true)
+                }
+            }
+        } catch let error {
+            logger.error("apiAddMyAddressShortLink: \(responseError(error))")
+            showAlert("Error adding short link", message: responseError(error))
+            await MainActor.run { progressIndicator.wrappedValue = false }
+        }
+    }
+}
+
 
 struct ToggleShortLinkHeader: View {
     @EnvironmentObject var theme: AppTheme

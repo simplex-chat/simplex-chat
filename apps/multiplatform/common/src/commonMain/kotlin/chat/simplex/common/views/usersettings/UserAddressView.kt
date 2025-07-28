@@ -39,7 +39,7 @@ fun UserAddressView(
 ) {
   // TODO close when remote host changes
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
-  var progressIndicator by remember { mutableStateOf(false) }
+  val progressIndicator = remember { mutableStateOf(false) }
   val user = remember { chatModel.currentUser }
   val clipboard = LocalClipboardManager.current
   KeyChangeEffect(user.value?.remoteHostId, user.value?.userId) {
@@ -47,7 +47,7 @@ fun UserAddressView(
   }
 
   fun setProfileAddress(on: Boolean) {
-    progressIndicator = true
+    progressIndicator.value = true
     withBGApi {
       try {
         val u = chatModel.controller.apiSetProfileAddress(user.value?.remoteHostId, on)
@@ -57,14 +57,14 @@ fun UserAddressView(
       } catch (e: Exception) {
         Log.e(TAG, "UserAddressView apiSetProfileAddress: ${e.stackTraceToString()}")
       } finally {
-        progressIndicator = false
+        progressIndicator.value = false
       }
     }
   }
 
   fun createAddress() {
     withBGApi {
-      progressIndicator = true
+      progressIndicator.value = true
       val connReqContact = chatModel.controller.apiCreateUserAddress(user.value?.remoteHostId)
       if (connReqContact != null) {
         val slDataSet = connReqContact.connShortLink != null
@@ -85,71 +85,11 @@ fun UserAddressView(
           }
         )
       }
-      progressIndicator = false
+      progressIndicator.value = false
     }
   }
 
-  fun addShortLink(shareOnCompletion: Boolean = false) {
-    withBGApi {
-      progressIndicator = true
-      val userAddress = chatModel.controller.apiAddMyAddressShortLink(user.value?.remoteHostId)
-      if (userAddress != null) {
-        chatModel.userAddress.value = userAddress
-        if (shareOnCompletion) {
-          clipboard.shareText(userAddress.connLinkContact.simplexChatUri(short = true))
-        }
-      }
-      progressIndicator = false
-    }
-  }
-
-  fun showAddShortLinkAlert(shareAddress: (() -> Unit)? = null) {
-    AlertManager.shared.showAlertDialogButtonsColumn(
-      title = generalGetString(MR.strings.share_profile_via_link),
-      text = generalGetString(MR.strings.share_profile_via_link_alert_text),
-      buttons = {
-        Column {
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-            addShortLink(shareOnCompletion = shareAddress != null)
-          }) {
-            Text(
-              generalGetString(MR.strings.share_profile_via_link_alert_confirm),
-              Modifier.fillMaxWidth(),
-              textAlign = TextAlign.Center,
-              color = MaterialTheme.colors.primary
-            )
-          }
-
-          if (shareAddress != null) {
-            // Delete without notification
-            SectionItemView({
-              AlertManager.shared.hideAlert()
-              shareAddress()
-            }) {
-              Text(
-                generalGetString(MR.strings.share_old_address_alert_button),
-                Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center,
-                color = MaterialTheme.colors.primary
-              )
-            }
-          }
-          // Cancel
-          SectionItemView({
-            AlertManager.shared.hideAlert()
-          }) {
-            Text(
-              stringResource(MR.strings.cancel_verb),
-              Modifier.fillMaxWidth(),
-              textAlign = TextAlign.Center,
-              color = MaterialTheme.colors.primary
-            )
-          }
-        }
-      }
-    )
-  }
+  fun share(userAddress: String) { clipboard.shareText(userAddress) }
 
   LaunchedEffect(autoCreateAddress) {
     if (chatModel.userAddress.value == null && autoCreateAddress) {
@@ -164,13 +104,15 @@ fun UserAddressView(
       userAddress = userAddress.value,
       shareViaProfile,
       createAddress = ::createAddress,
-      showAddShortLinkAlert = ::showAddShortLinkAlert,
+      showAddShortLinkAlert = { shareAddress: (() -> Unit)? ->
+        showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share, shareAddress = shareAddress)
+      },
       learnMore = {
         ModalManager.start.showModal {
           UserAddressLearnMore()
         }
       },
-      share = { userAddress: String -> clipboard.shareText(userAddress) },
+      share = ::share,
       sendEmail = { userAddress ->
         uriHandler.sendEmail(
           generalGetString(MR.strings.email_invite_subject),
@@ -184,14 +126,14 @@ fun UserAddressView(
           text = if (shareViaProfile.value) generalGetString(MR.strings.all_your_contacts_will_remain_connected_update_sent) else generalGetString(MR.strings.all_your_contacts_will_remain_connected),
           confirmText = generalGetString(MR.strings.delete_verb),
           onConfirm = {
-            progressIndicator = true
+            progressIndicator.value = true
             withBGApi {
               val u = chatModel.controller.apiDeleteUserAddress(user.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
                 chatModel.updateUser(u)
                 shareViaProfile.value = false
-                progressIndicator = false
+                progressIndicator.value = false
               }
             }
           },
@@ -214,7 +156,7 @@ fun UserAddressView(
     showLayout()
   }
 
-  if (progressIndicator) {
+  if (progressIndicator.value) {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
@@ -231,6 +173,75 @@ fun UserAddressView(
       )
     }
   }
+}
+
+private fun addShortLink(
+  progressIndicator: MutableState<Boolean>,
+  share: (String) -> Unit,
+  shareOnCompletion: Boolean = false
+) {
+  withBGApi {
+    progressIndicator.value = true
+    val userAddress = chatModel.controller.apiAddMyAddressShortLink(chatModel.currentUser.value?.remoteHostId)
+    if (userAddress != null) {
+      chatModel.userAddress.value = userAddress
+      if (shareOnCompletion) {
+        share(userAddress.connLinkContact.simplexChatUri(short = true))
+      }
+    }
+    progressIndicator.value = false
+  }
+}
+
+fun showAddShortLinkAlert(
+  progressIndicator: MutableState<Boolean>,
+  share: (String) -> Unit,
+  shareAddress: (() -> Unit)? = null
+) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.share_profile_via_link),
+    text = generalGetString(MR.strings.share_profile_via_link_alert_text),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          addShortLink(progressIndicator = progressIndicator, share = share, shareOnCompletion = shareAddress != null)
+        }) {
+          Text(
+            generalGetString(MR.strings.share_profile_via_link_alert_confirm),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary
+          )
+        }
+
+        if (shareAddress != null) {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            shareAddress()
+          }) {
+            Text(
+              generalGetString(MR.strings.share_old_address_alert_button),
+              Modifier.fillMaxWidth(),
+              textAlign = TextAlign.Center,
+              color = MaterialTheme.colors.primary
+            )
+          }
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(
+            stringResource(MR.strings.cancel_verb),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary
+          )
+        }
+      }
+    }
+  )
 }
 
 @Composable
