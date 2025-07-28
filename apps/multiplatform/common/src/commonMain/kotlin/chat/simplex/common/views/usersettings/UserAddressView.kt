@@ -102,7 +102,9 @@ fun UserAddressView(
       userAddress = userAddress.value,
       shareViaProfile,
       createAddress = ::createAddress,
-      showAddShortLinkAlert = { showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share) },
+      showAddShortLinkAlert = { shareAddress: (() -> Unit)? ->
+        showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share, shareAddress = shareAddress)
+      },
       learnMore = {
         ModalManager.start.showModal {
           UserAddressLearnMore()
