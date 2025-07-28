@@ -6735,15 +6735,16 @@ enum class RatchetSyncState {
 interface SimplexAddress {
   val connLinkContact: CreatedConnLink
   val shortLinkDataSet: Boolean
+  val shortLinkLargeDataSet: Boolean
 
-  // TODO update condition
-  val shouldBeUpgraded: Boolean get() = connLinkContact.connShortLink == null || !shortLinkDataSet
+  val shouldBeUpgraded: Boolean get() = connLinkContact.connShortLink == null || !shortLinkDataSet || !shortLinkLargeDataSet
 }
 
 @Serializable
 data class UserContactLinkRec(
   override val connLinkContact: CreatedConnLink,
   override val shortLinkDataSet: Boolean,
+  override val shortLinkLargeDataSet: Boolean,
   val addressSettings: AddressSettings
 ): SimplexAddress
 
@@ -6762,6 +6763,7 @@ data class GroupLink(
   val userContactLinkId: Long,
   override val connLinkContact: CreatedConnLink,
   override val shortLinkDataSet: Boolean,
+  override val shortLinkLargeDataSet: Boolean,
   val groupLinkId: String,
   val acceptMemberRole: GroupMemberRole
 ): SimplexAddress {
@@ -6777,6 +6779,7 @@ data class GroupLink(
           groupLink.userContactLinkId,
           connData,
           groupLink.shortLinkDataSet,
+          groupLink.shortLinkLargeDataSet,
           groupLink.groupLinkId,
           groupLink.acceptMemberRole.name
         )
@@ -6789,13 +6792,15 @@ data class GroupLink(
         val connFullLink = connPair.first as? String ?: return@Saver null
         val connShortLink = connPair.second as? String
         val shortLinkDataSet = list.getOrNull(2) as? Boolean ?: return@Saver null
-        val groupLinkId = list.getOrNull(3) as? String ?: return@Saver null
-        val roleName = list.getOrNull(4) as? String ?: return@Saver null
+        val shortLinkLargeDataSet = list.getOrNull(3) as? Boolean ?: return@Saver null
+        val groupLinkId = list.getOrNull(4) as? String ?: return@Saver null
+        val roleName = list.getOrNull(5) as? String ?: return@Saver null
 
         GroupLink(
           userContactLinkId = userContactLinkId,
           connLinkContact = CreatedConnLink(connFullLink, connShortLink),
           shortLinkDataSet = shortLinkDataSet,
+          shortLinkLargeDataSet = shortLinkLargeDataSet,
           groupLinkId = groupLinkId,
           acceptMemberRole = GroupMemberRole.valueOf(roleName)
         )
