@@ -1960,6 +1960,15 @@ instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
 
+-- This type is needed for backward compatibility of new remote controller with old remote host.
+-- See CONTRIBUTING.md
+newtype BoolDef = BoolDef Bool
+  deriving newtype (Show, ToJSON)
+
+instance FromJSON BoolDef where
+  parseJSON v = BoolDef <$> parseJSON v
+  omittedField = Just (BoolDef False)
+
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
 $(JQ.deriveJSON defaultJSON ''Profile)

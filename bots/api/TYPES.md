@@ -2099,6 +2099,7 @@ MemberSupport:
 - userContactLinkId: int64
 - connLinkContact: [CreatedConnLink](#createdconnlink)
 - shortLinkDataSet: bool
+- shortLinkLargeDataSet: bool
 - groupLinkId: string
 - acceptMemberRole: [GroupMemberRole](#groupmemberrole)
 
@@ -3622,6 +3623,7 @@ Handshake:
 - userContactLinkId: int64
 - connLinkContact: [CreatedConnLink](#createdconnlink)
 - shortLinkDataSet: bool
+- shortLinkLargeDataSet: bool
 - addressSettings: [AddressSettings](#addresssettings)
 
 
