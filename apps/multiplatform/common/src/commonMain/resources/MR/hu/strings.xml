@@ -2459,8 +2459,8 @@
     <string name="chat_banner_group">Csoport</string>
     <string name="chat_banner_join_group">Koppintson a „Csatlakozás a csoporthoz” gombra</string>
     <string name="chat_banner_your_group">Saját csoport</string>
-    <string name="chat_banner_your_business_contact">Saját üzleti partner</string>
-    <string name="chat_banner_your_contact">Saját partner</string>
+    <string name="chat_banner_your_business_contact">Üzleti partner</string>
+    <string name="chat_banner_your_contact">Partner</string>
     <string name="chat_banner_connect_to_chat">Koppintson a „Kapcsolódás” gombra a csevegéshez</string>
     <string name="chat_banner_send_request_to_connect">Koppintson a „Kapcsolódás” gombra a kérés elküldéséhez</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Az üzeneteltűnési idő csak az új partnerekre vonatkozik.</string>
