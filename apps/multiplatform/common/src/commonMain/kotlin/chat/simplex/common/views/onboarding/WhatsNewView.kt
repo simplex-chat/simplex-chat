@@ -26,9 +26,11 @@ import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
+import chat.simplex.common.views.usersettings.showAddShortLinkAlert
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -896,6 +898,11 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
 
 @Composable
 fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
+  val clipboard = LocalClipboardManager.current
+  val progressIndicator = remember { mutableStateOf(false) }
+
+  fun share(userAddress: String) { clipboard.shareText(userAddress) }
+
   Column(modifier = Modifier.padding(bottom = 12.dp)) {
     Row(
       verticalAlignment = Alignment.CenterVertically,
@@ -920,15 +927,17 @@ fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
           TextButton(
-            onClick = {  }
+            onClick = { showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share) }
           ) {
             Text(stringResource(MR.strings.v6_4_1_short_address_update), color = MaterialTheme.colors.primary, fontSize = 15.sp)
           }
+          if (progressIndicator.value) {
+            CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
+          }
         }
       } else {
-        val clipboard = LocalClipboardManager.current
         TextButton(
-          onClick = { clipboard.shareText(addr.connLinkContact.simplexChatUri(short = true)) }
+          onClick = { share(addr.connLinkContact.simplexChatUri(short = true)) }
         ) {
           Text(stringResource(MR.strings.v6_4_1_short_address_share), color = MaterialTheme.colors.primary, fontSize = 15.sp)
         }
