@@ -9357,9 +9357,9 @@ Megismétli a kapcsolódási kérést?</target>
         <target>Profil SimpleX-címe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your business contact" xml:space="preserve">
+      <trans-unit id="Your business contact" xml:space="preserve" approved="no">
         <source>Your business contact</source>
-        <target>Saját üzleti partner</target>
+        <target state="translated">Üzleti partner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -9397,9 +9397,9 @@ Megismétli a kapcsolódási kérést?</target>
         <target>A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact" xml:space="preserve">
+      <trans-unit id="Your contact" xml:space="preserve" approved="no">
         <source>Your contact</source>
-        <target>Saját partner</target>
+        <target state="translated">Partner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
