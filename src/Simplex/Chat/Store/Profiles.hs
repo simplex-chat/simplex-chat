@@ -357,10 +357,11 @@ createUserContactLink :: DB.Connection -> User -> ConnId -> CreatedLinkContact -
 createUserContactLink db User {userId} agentConnId (CCLink cReq shortLink) subMode =
   checkConstraint SEDuplicateContactLink . liftIO $ do
     currentTs <- getCurrentTime
+    let slDataSet = BI (isJust shortLink)
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?)"
-      (userId, cReq, shortLink, BI (isJust shortLink), currentTs, currentTs)
+      "INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?,?)"
+      (userId, cReq, shortLink, slDataSet, slDataSet, currentTs, currentTs)
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode CR.PQSupportOff
 
@@ -426,6 +427,7 @@ data UserContactLink = UserContactLink
   { userContactLinkId :: Int64,
     connLinkContact :: CreatedLinkContact,
     shortLinkDataSet :: Bool,
+    shortLinkLargeDataSet :: BoolDef,
     addressSettings :: AddressSettings
   }
   deriving (Show)
@@ -457,9 +459,9 @@ $(J.deriveJSON defaultJSON ''AddressSettings)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
-toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, BI businessAddress, BI autoAccept', BI acceptIncognito, autoReply) =
-  UserContactLink userContactLinkId (CCLink connReq shortLink) shortLinkDataSet $
+toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolDef, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, shortLinkLargeDataSet, BI businessAddress, BI autoAccept', BI acceptIncognito, autoReply) =
+  UserContactLink userContactLinkId (CCLink connReq shortLink) shortLinkDataSet shortLinkLargeDataSet $
     let autoAccept = if autoAccept' then Just AutoAccept {acceptIncognito} else Nothing
      in AddressSettings {businessAddress, autoAccept, autoReply}
 
@@ -474,7 +476,7 @@ getUserContactLinkById db userId userContactLinkId =
     DB.query
       db
       [sql|
-        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
+        SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content, group_id, group_link_member_role
         FROM user_contact_links
         WHERE user_id = ? AND user_contact_link_id = ?
       |]
@@ -510,7 +512,7 @@ getUserContactLinkViaShortLink db User {userId} shortLink =
 userContactLinkQuery :: Query
 userContactLinkQuery =
   [sql|
-    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content
+    SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, business_address, auto_accept, auto_accept_incognito, auto_reply_msg_content
     FROM user_contact_links
   |]
 
@@ -522,10 +524,11 @@ setUserContactLinkShortLink db userContactLinkId shortLink =
       UPDATE user_contact_links
       SET short_link_contact = ?,
           short_link_data_set = ?,
+          short_link_large_data_set = ?,
           auto_accept_incognito = ?
       WHERE user_contact_link_id = ?
     |]
-    (shortLink, BI True, BI False, userContactLinkId)
+    (shortLink, BI True, BI True, BI False, userContactLinkId)
 
 getContactWithoutConnViaAddress :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe Contact)
 getContactWithoutConnViaAddress db vr user@User {userId} (cReqSchema1, cReqSchema2) = do

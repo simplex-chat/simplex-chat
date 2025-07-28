@@ -4,6 +4,7 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DerivingVia #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
@@ -53,7 +54,7 @@ import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
-import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
@@ -1959,6 +1960,14 @@ instance FromJSON ChatVersionRange where
 instance ToJSON ChatVersionRange where
   toJSON (ChatVersionRange vr) = strToJSON vr
   toEncoding (ChatVersionRange vr) = strToJEncoding vr
+
+newtype BoolDef = BoolDef Bool
+  deriving newtype (Show, ToJSON)
+  deriving (ToField, FromField) via BoolInt
+
+instance FromJSON BoolDef where
+  parseJSON v = BoolDef <$> parseJSON v
+  omittedField = Just (BoolDef False)
 
 $(JQ.deriveJSON defaultJSON ''UserContact)
 
