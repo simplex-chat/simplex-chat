@@ -170,8 +170,9 @@
         <target>%d hodin</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d messages not forwarded" xml:space="preserve">
+      <trans-unit id="%d messages not forwarded" xml:space="preserve" approved="no">
         <source>%d messages not forwarded</source>
+        <target state="translated">%d zprávy nebyly přeposlány</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -189,8 +190,9 @@
         <target>%d sek</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve">
+      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
         <source>%d seconds(s)</source>
+        <target state="translated">%d sekund</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -247,8 +249,9 @@
         <target>%lld zprávy označeno jako smazáno</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
+      <trans-unit id="%lld messages moderated by %@" xml:space="preserve" approved="no">
         <source>%lld messages moderated by %@</source>
+        <target state="translated">%lld zprávy moderované %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
@@ -311,8 +314,9 @@
         <target>%u zpráv přeskočeno.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(new)" xml:space="preserve">
+      <trans-unit id="(new)" xml:space="preserve" approved="no">
         <source>(new)</source>
+        <target state="translated">(nový)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(this device v%@)" xml:space="preserve">
@@ -320,12 +324,14 @@
         <target>(toto zařízení v%@)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve">
+      <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve" approved="no">
         <source>**Create 1-time link**: to create and share a new invitation link.</source>
+        <target state="translated">**Vytvořit jednorázový odkaz**: pro vytvoření a sdílení nové pozvánky.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
+      <trans-unit id="**Create group**: to create a new group." xml:space="preserve" approved="no">
         <source>**Create group**: to create a new group.</source>
+        <target state="translated">**Vytvořit skupinu**: pro vytvoření nové skupiny.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve">
@@ -352,8 +358,9 @@
         <target>**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve">
+      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve" approved="no">
         <source>**Scan / Paste link**: to connect via a link you received.</source>
+        <target state="translated">**Skenovat / Vložit odkaz**: pro připojení pomocí odkazu který jste obdrželi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -361,8 +368,9 @@
         <target>**Upozornění**: Okamžitě doručovaná oznámení vyžadují přístupové heslo uložené v Klíčence.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve">
+      <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve" approved="no">
         <source>**Warning**: the archive will be removed.</source>
+        <target state="translated">**Varování**: archiv bude odstraněn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
