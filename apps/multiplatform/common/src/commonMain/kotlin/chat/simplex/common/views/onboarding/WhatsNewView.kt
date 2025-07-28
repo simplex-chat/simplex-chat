@@ -926,32 +926,51 @@ fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-          TextButton(
-            onClick = { showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share) }
-          ) {
-            Text(stringResource(MR.strings.v6_4_1_short_address_update), color = MaterialTheme.colors.primary, fontSize = 15.sp)
-          }
+          Text(
+            stringResource(MR.strings.v6_4_1_short_address_update),
+            color = MaterialTheme.colors.primary,
+            fontSize = 15.sp,
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share)
+              }
+          )
           if (progressIndicator.value) {
-            CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
+            CIFileViewScope.progressIndicator(sizeMultiplier = 0.5f)
           }
         }
       } else {
-        TextButton(
-          onClick = { share(addr.connLinkContact.simplexChatUri(short = true)) }
-        ) {
-          Text(stringResource(MR.strings.v6_4_1_short_address_share), color = MaterialTheme.colors.primary, fontSize = 15.sp)
-        }
+        Text(
+          stringResource(MR.strings.v6_4_1_short_address_share),
+          color = MaterialTheme.colors.primary,
+          fontSize = 15.sp,
+          modifier = Modifier
+            .clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = null
+            ) {
+              share(addr.connLinkContact.simplexChatUri(short = true))
+            }
+        )
       }
     } else {
-      TextButton(
-        onClick = {
-          modalManager.showModalCloseable { close ->
-            UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+      Text(
+        stringResource(MR.strings.v6_4_1_short_address_create),
+        color = MaterialTheme.colors.primary,
+        fontSize = 15.sp,
+        modifier = Modifier
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+          ) {
+            modalManager.showModalCloseable { close ->
+              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+            }
           }
-        }
-      ) {
-        Text(stringResource(MR.strings.v6_4_1_short_address_create), color = MaterialTheme.colors.primary, fontSize = 15.sp)
-      }
+      )
     }
   }
 }
