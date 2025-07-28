@@ -581,7 +581,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
               when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
                 (Nothing, Nothing) -> do
-                  createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
+                  unlessM (withStore' $ \db -> checkContactHasItems db user ct') $
+                    createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
                   createE2EItem
                   createFeatureEnabledItems user ct'
                 (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->

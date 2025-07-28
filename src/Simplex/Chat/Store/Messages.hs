@@ -43,6 +43,7 @@ module Simplex.Chat.Store.Messages
     createNewChatItemNoMsg,
     createNewChatItem_,
     getChatPreviews,
+    checkContactHasItems,
     getDirectChat,
     getGroupChat,
     getGroupChatScopeInfoForItem,
@@ -1129,6 +1130,14 @@ getContactConnectionChatPreviews_ db User {userId} pagination clq = case clq of
       let conn@PendingContactConnection {updatedAt} = toPendingContactConnection connRow
           aChat = AChat SCTContactConnection $ Chat (ContactConnection conn) [] emptyChatStats
        in ACPD SCTContactConnection $ ContactConnectionPD updatedAt aChat
+
+checkContactHasItems :: DB.Connection -> User -> Contact -> IO Bool
+checkContactHasItems db User {userId} Contact {contactId} =
+  fromOnly . head
+    <$> DB.query
+      db
+      "SELECT EXISTS (SELECT 1 FROM chat_items WHERE user_id = ? AND contact_id = ?)"
+      (userId, contactId)
 
 getDirectChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ChatPagination -> Maybe String -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
 getDirectChat db vr user contactId pagination search_ = do
