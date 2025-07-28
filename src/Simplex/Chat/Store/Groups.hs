@@ -290,12 +290,12 @@ getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
   ExceptT . firstRow toGroupLink (SEGroupLinkNotFound gInfo) $
     DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
   where
-    toGroupLink (userContactLinkId, cReq, shortLink, BI shortLinkDataSet, shortLinkLargeDataSet, groupLinkId, mRole_) =
+    toGroupLink (userContactLinkId, cReq, shortLink, BI shortLinkDataSet, BI slLargeDataSet, groupLinkId, mRole_) =
       GroupLink {
         userContactLinkId,
         connLinkContact = CCLink cReq shortLink,
         shortLinkDataSet,
-        shortLinkLargeDataSet,
+        shortLinkLargeDataSet = BoolDef slLargeDataSet,
         groupLinkId,
         acceptMemberRole = fromMaybe GRMember mRole_
       }

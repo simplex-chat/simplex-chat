@@ -459,9 +459,9 @@ $(J.deriveJSON defaultJSON ''AddressSettings)
 
 $(J.deriveJSON defaultJSON ''UserContactLink)
 
-toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolDef, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
-toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, shortLinkLargeDataSet, BI businessAddress, BI autoAccept', BI acceptIncognito, autoReply) =
-  UserContactLink userContactLinkId (CCLink connReq shortLink) shortLinkDataSet shortLinkLargeDataSet $
+toUserContactLink :: (Int64, ConnReqContact, Maybe ShortLinkContact, BoolInt, BoolInt, BoolInt, BoolInt, BoolInt, Maybe MsgContent) -> UserContactLink
+toUserContactLink (userContactLinkId, connReq, shortLink, BI shortLinkDataSet, BI slLargeDataSet, BI businessAddress, BI autoAccept', BI acceptIncognito, autoReply) =
+  UserContactLink userContactLinkId (CCLink connReq shortLink) shortLinkDataSet (BoolDef slLargeDataSet) $
     let autoAccept = if autoAccept' then Just AutoAccept {acceptIncognito} else Nothing
      in AddressSettings {businessAddress, autoAccept, autoReply}
 
