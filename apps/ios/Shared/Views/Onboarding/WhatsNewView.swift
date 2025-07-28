@@ -680,7 +680,12 @@ fileprivate struct CreateUpdateAddressShortLink: View {
             Group {
                 if let addr = chatModel.userAddress {
                     if addr.shouldBeUpgraded {
-                        Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
+                        HStack(spacing: 8) {
+                            Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
+                            if progressIndicator {
+                                ProgressView()
+                            }
+                        }
                     } else {
                         Button("Share your address") { addr.shareAddress(short: true) }
                     }
