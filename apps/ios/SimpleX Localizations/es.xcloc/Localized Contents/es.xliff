@@ -7439,8 +7439,9 @@ chat item action</note>
         <target>Compartir enlace</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share old address" xml:space="preserve">
+      <trans-unit id="Share old address" xml:space="preserve" approved="no">
         <source>Share old address</source>
+        <target state="translated">Compartir dirección antigua</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share old link" xml:space="preserve">
@@ -7998,8 +7999,9 @@ It can happen because of some bug or when the connection is compromised.</source
 Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve" approved="no">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target state="translated">La dirección será corta y tu perfil se compartirá mediante la dirección.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -8062,9 +8064,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>El hash del mensaje anterior es diferente.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
+      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve" approved="no">
         <source>The link will be short, and group profile will be shared via the link.</source>
-        <target>Compartir perfil de grupo mediante enlace</target>
+        <target state="translated">El enlace será corto y el perfil del grupo se compartirá mediante el enlace.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8556,16 +8558,19 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Para actualizar la configuración el cliente se reconectará a todos los servidores.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade" xml:space="preserve">
+      <trans-unit id="Upgrade" xml:space="preserve" approved="no">
         <source>Upgrade</source>
+        <target state="translated">Actualizar</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Upgrade address" xml:space="preserve">
+      <trans-unit id="Upgrade address" xml:space="preserve" approved="no">
         <source>Upgrade address</source>
+        <target state="translated">Actualizar dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade address?" xml:space="preserve">
+      <trans-unit id="Upgrade address?" xml:space="preserve" approved="no">
         <source>Upgrade address?</source>
+        <target state="translated">¿Actualizar la dirección?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -8573,8 +8578,9 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
         <target>Actualizar y abrir Chat</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade group link?" xml:space="preserve">
+      <trans-unit id="Upgrade group link?" xml:space="preserve" approved="no">
         <source>Upgrade group link?</source>
+        <target state="translated">¿Actualizar enlace de grupo?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">
