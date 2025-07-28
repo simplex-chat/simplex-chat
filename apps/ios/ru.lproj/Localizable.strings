@@ -420,9 +420,6 @@ swipe action */
 "Add servers by scanning QR codes." = "Добавить серверы через QR код.";
 
 /* No comment provided by engineer. */
-"Add short link" = "Добавить короткую ссылку";
-
-/* No comment provided by engineer. */
 "Add team members" = "Добавить сотрудников";
 
 /* No comment provided by engineer. */
@@ -4090,9 +4087,6 @@ new chat action */
 /* alert message */
 "Profile update will be sent to your contacts." = "Обновлённый профиль будет отправлен Вашим контактам.";
 
-/* alert message */
-"Profile will be shared with the address." = "Профиль будет добавлен в адрес.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Запретить аудио/видео звонки.";
 
@@ -4781,9 +4775,6 @@ chat item action */
 "Sent reply" = "Отправленный ответ";
 
 /* No comment provided by engineer. */
-"Sent to your contact after connection." = "Отправляется Вашему контакту после соединения.";
-
-/* No comment provided by engineer. */
 "Sent total" = "Всего отправлено";
 
 /* No comment provided by engineer. */
@@ -4923,16 +4914,10 @@ chat item action */
 "Share from other apps." = "Поделитесь из других приложений.";
 
 /* No comment provided by engineer. */
-"Share group profile via link" = "Добавить профиль группы в ссылку";
-
-/* No comment provided by engineer. */
 "Share link" = "Поделиться ссылкой";
 
-/* alert button */
+/* No comment provided by engineer. */
 "Share profile" = "Поделиться профилем";
-
-/* alert title */
-"Share profile with address" = "Добавить профиль к адресу";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Поделитесь SimpleX адресом в социальных сетях.";
@@ -6190,7 +6175,7 @@ report reason */
 "Your profile **%@** will be shared." = "Будет отправлен Ваш профиль **%@**.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль храниться на Вашем устройстве и отправляется только контактам.";
+"Your profile is stored on your device and only shared with your contacts." = "Ваш профиль хранится на Вашем устройстве и отправляется только контактам.";
 
 /* No comment provided by engineer. */
 "Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.";

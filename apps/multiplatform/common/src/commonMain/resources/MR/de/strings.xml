@@ -2559,4 +2559,27 @@
     <string name="short_descr__field">Bio:</string>
     <string name="group_short_descr_field">Kurze Beschreibung:</string>
     <string name="short_descr">Ihre Biografie:</string>
+    <string name="bio_too_large">Biografie zu lang</string>
+    <string name="group_descr_too_large">Beschreibung zu lang</string>
+    <string name="chat_banner_accept_contact_request">Kontaktanfrage akzeptieren</string>
+    <string name="chat_banner_business_connection">Geschäftliche Verbindung</string>
+    <string name="chat_banner_group">Gruppe</string>
+    <string name="chat_banner_connect_to_chat">Verbinden tippen, um zu chatten</string>
+    <string name="chat_banner_send_request_to_connect">Verbinden tippen, um die Anfrage zu senden</string>
+    <string name="chat_banner_join_group">Tippen, um der Gruppe beizutreten</string>
+    <string name="chat_banner_your_business_contact">Ihr geschäftlicher Kontakt</string>
+    <string name="chat_banner_your_contact">Ihr Kontakt</string>
+    <string name="chat_banner_your_group">Ihre Gruppe</string>
+    <string name="v6_4_1_new_interface_languages">4 neue Sprachen für die Bedienoberfläche</string>
+    <string name="v6_4_1_new_interface_languages_descr">Katalanisch, Indonesisch, Rumänisch und Vietnamesisch - Dank unserer Nutzer!</string>
+    <string name="v6_4_1_short_address_create">Ihre Adresse erstellen</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Verschwindende Nachrichten per Voreinstellung aktiviert.</string>
+    <string name="v6_4_1_keep_chats_clean">Halten Sie Ihre Chats übersichtlich</string>
+    <string name="v6_4_1_welcome_contacts_descr">Geben Sie eine Profil-Biografie und eine Begrüßungsmeldung ein.</string>
+    <string name="v6_4_1_short_address_share">Ihre Adresse teilen</string>
+    <string name="v6_4_1_short_address">Verkürzte SimpleX-Adresse</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Die Zeit bis zum Verschwinden wird nur für neue Kontakte eingestellt.</string>
+    <string name="v6_4_1_short_address_update">Ihre Adresse aktualisieren</string>
+    <string name="connect_use_incognito_profile">Inkognito-Profil nutzen</string>
+    <string name="v6_4_1_welcome_contacts">Begrüßen Sie Ihre Kontakte 👋</string>
 </resources>

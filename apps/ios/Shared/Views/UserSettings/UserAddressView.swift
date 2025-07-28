@@ -138,7 +138,10 @@ struct UserAddressView: View {
         Section {
             SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: $showShortLink)
                 .id("simplex-contact-address-qrcode-\(userAddress.connLinkContact.simplexChatUri(short: showShortLink))")
-            shareQRCodeButton(userAddress)
+            if userAddress.shouldBeUpgraded {
+                upgradeAddressButton()
+            }
+            shareAddressButton(userAddress)
             // if MFMailComposeViewController.canSendMail() {
             //     shareViaEmailButton(userAddress)
             // }
@@ -153,11 +156,6 @@ struct UserAddressView: View {
                     }
             }
             addressSettingsButton(userAddress)
-            if userAddress.connLinkContact.connShortLink == nil {
-                addShortLinkButton()
-            } else if !userAddress.shortLinkDataSet {
-                addProfileToShortLinkButton()
-            }
         } header: {
             ToggleShortLinkHeader(text: Text("For social media"), link: userAddress.connLinkContact, short: $showShortLink)
         } footer: {
@@ -200,7 +198,7 @@ struct UserAddressView: View {
             do {
                 if let connLinkContact = try await apiCreateUserAddress() {
                     DispatchQueue.main.async {
-                        chatModel.userAddress = UserContactLink(connLinkContact: connLinkContact, shortLinkDataSet: connLinkContact.connShortLink != nil, addressSettings: AddressSettings(businessAddress: false))
+                        chatModel.userAddress = UserContactLink(connLinkContact)
                         alert = .shareOnCreate
                         progressIndicator = false
                     }
@@ -214,50 +212,12 @@ struct UserAddressView: View {
         }
     }
 
-    private func addShortLinkButton() -> some View {
+    private func upgradeAddressButton() -> some View {
         Button {
-            showAddShortLinkAlert()
+            upgradeAndShareAddressAlert(progressIndicator: $progressIndicator)
         } label: {
-            settingsRow("plus", color: theme.colors.primary) {
-                Text("Add short link")
-            }
-        }
-    }
-
-    private func addProfileToShortLinkButton() -> some View {
-        Button {
-            showAddShortLinkAlert()
-        } label: {
-            settingsRow("plus", color: theme.colors.primary) {
-                Text("Share profile with address")
-            }
-        }
-    }
-
-    private func showAddShortLinkAlert() {
-        showAlert(
-            title: NSLocalizedString("Share profile with address", comment: "alert title"),
-            message: NSLocalizedString("Profile will be shared with the address.", comment: "alert message"),
-            buttonTitle: NSLocalizedString("Share profile", comment: "alert button"),
-            buttonAction: { addShortLink() },
-            cancelButton: true
-        )
-    }
-
-    private func addShortLink() {
-        progressIndicator = true
-        Task {
-            do {
-                let userAddress = try await apiAddMyAddressShortLink()
-                await MainActor.run {
-                    chatModel.userAddress = userAddress
-                }
-                await MainActor.run { progressIndicator = false }
-            } catch let error {
-                logger.error("apiAddMyAddressShortLink: \(responseError(error))")
-                let a = getErrorAlert(error, "Error adding short link")
-                alert = .error(title: a.title, error: a.message)
-                await MainActor.run { progressIndicator = false }
+            settingsRow("arrow.up", color: theme.colors.primary) {
+                Text("Upgrade address")
             }
         }
     }
@@ -283,9 +243,13 @@ struct UserAddressView: View {
         }
     }
 
-    private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
-        Button {
-            showShareSheet(items: [simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: showShortLink))])
+    private func shareAddressButton(_ userAddress: UserContactLink) -> some View {
+        return Button {
+            if userAddress.shouldBeUpgraded {
+                upgradeAndShareAddressAlert(progressIndicator: $progressIndicator, shareAddress: { userAddress.shareAddress(short: showShortLink) })
+            } else {
+                userAddress.shareAddress(short: showShortLink)
+            }
         } label: {
             settingsRow("square.and.arrow.up", color: theme.colors.secondary) {
                 Text("Share address")
@@ -348,14 +312,55 @@ struct UserAddressView: View {
     }
 }
 
+func upgradeAndShareAddressAlert(progressIndicator: Binding<Bool>, shareAddress: (() -> Void)? = nil) {
+    showAlert(
+        NSLocalizedString("Upgrade address?", comment: "alert message"),
+        message: NSLocalizedString("The address will be short, and your profile will be shared via the address.", comment: "alert message"),
+        actions: {
+            var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                addShortLink(progressIndicator: progressIndicator, shareOnCompletion: shareAddress != nil)
+            }]
+            if let shareAddress {
+                actions.append(UIAlertAction(title: NSLocalizedString("Share old address", comment: "alert button"), style: .default) { _ in
+                    shareAddress()
+                })
+            }
+            actions.append(cancelAlertAction)
+            return actions
+        }
+    )
+}
+
+private func addShortLink(progressIndicator: Binding<Bool>, shareOnCompletion: Bool = false) {
+    progressIndicator.wrappedValue = true
+    Task {
+        do {
+            let userAddress = try await apiAddMyAddressShortLink()
+            await MainActor.run {
+                ChatModel.shared.userAddress = userAddress
+                progressIndicator.wrappedValue = false
+                if shareOnCompletion, let userAddress {
+                    userAddress.shareAddress(short: true)
+                }
+            }
+        } catch let error {
+            logger.error("apiAddMyAddressShortLink: \(responseError(error))")
+            showAlert("Error adding short link", message: responseError(error))
+            await MainActor.run { progressIndicator.wrappedValue = false }
+        }
+    }
+}
+
+
 struct ToggleShortLinkHeader: View {
     @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     let text: Text
     var link: CreatedConnLink
     @Binding var short: Bool
 
     var body: some View {
-        if link.connShortLink == nil {
+        if link.connShortLink == nil || !developerTools {
             text.foregroundColor(theme.colors.secondary)
         } else {
             HStack {
@@ -598,12 +603,7 @@ private func saveAddressSettings(_ settings: AddressSettingsState, _ savedSettin
 struct UserAddressView_Previews: PreviewProvider {
     static var previews: some View {
         let chatModel = ChatModel()
-        chatModel.userAddress = UserContactLink(
-            connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil),
-            shortLinkDataSet: false,
-            addressSettings: AddressSettings(businessAddress: false)
-        )
-
+        chatModel.userAddress = UserContactLink(CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil))
 
         return Group {
             UserAddressView()

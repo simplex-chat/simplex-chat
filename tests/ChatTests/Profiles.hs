@@ -111,17 +111,12 @@ chatProfileTests = do
     it "should plan and connect via one-time invitation" testPlanShortLinkInvitation
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
-  aroundWith (. (\params -> params {largeLinkData = True} :: TestParams)) $
-    describe "short links with attached data (largeLinkData = True)" $ shortLinkTests True
-  aroundWith (. (\params -> params {largeLinkData = False} :: TestParams)) $
-    describe "short links with attached data (largeLinkData = False)" $ shortLinkTests False
+  describe "short links with attached data" shortLinkTests
 
-shortLinkTests :: Bool -> SpecWith TestParams
-shortLinkTests largeLinkData = do
+shortLinkTests :: SpecWith TestParams
+shortLinkTests = do
   it "prepare contact using invitation short link data and connect" testShortLinkInvitationPrepareContact
-  if largeLinkData
-    then it "prepare contact with image in profile" testShortLinkInvitationImage
-    else it "prepare contact with a long name in profile" testShortLinkInvitationLongName
+  it "prepare contact with image in profile" testShortLinkInvitationImage
   it "prepare contact via invitation and retry connecting" testShortLinkInvitationConnectRetry
   it "prepare contact using address short link data and connect" testShortLinkAddressPrepareContact
   it "address connect plan after contact is deleted but conversation kept" testShortLinkAddressDeleteContact
@@ -2966,7 +2961,7 @@ testShortLinkJoinGroup =
         ]
 
 testShortLinkInvitationPrepareContact :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkInvitationPrepareContact = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/_connect 1"
@@ -2984,8 +2979,6 @@ testShortLinkInvitationPrepareContact ps@TestParams {largeLinkData} = testChatCf
                WithTime "@alice hello"
              ]
       alice <# "bob> hello"
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -3000,7 +2993,7 @@ testShortLinkInvitationPrepareContact ps@TestParams {largeLinkData} = testChatCf
       bob <## "invitation link: known deleted contact alice"
 
 testShortLinkInvitationImage :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationImage ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkInvitationImage = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       bob ##> "/_connect 1"
@@ -3021,33 +3014,8 @@ testShortLinkInvitationImage ps@TestParams {largeLinkData} = testChatCfg2 testCf
         (bob <## "alice (Alice): contact is connected")
       bob <##> alice
 
-testShortLinkInvitationLongName :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationLongName = testChatCfg2 testCfg {largeLinkData = False} aliceProfile bobProfile {displayName = T.pack longName, fullName = ""} $ \alice bob -> do
-  bob ##> "/_connect 1"
-  (shortLink, fullLink) <- getInvitations bob
-  alice ##> ("/_connect plan 1 " <> shortLink)
-  alice <## "invitation link: ok to connect"
-  contactSLinkData <- getTermLine alice
-  alice ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
-  alice <## (longName <> ": contact is prepared")
-  alice ##> "/_connect contact @2 text hello"
-  alice
-    <### [ ConsoleString (longName <> ": connection started"),
-           WithTime ("@" <> longName <> " hello")
-         ]
-  bob <# "alice> hello"
-  concurrentlyN_
-    [ do
-        alice <## ("contact " <> longName <> " updated bio: Bob")
-        alice <## (longName <> " (Bob): contact is connected"),
-      (bob <## "alice (Alice): contact is connected")
-    ]
-  bob <##> alice
-  where
-    longName = "012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789"
-
 testShortLinkInvitationConnectRetry :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationConnectRetry ps@TestParams {largeLinkData} = testChatCfgOpts2 testCfg {largeLinkData} opts' aliceProfile bobProfile test ps
+testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
   where
     test alice bob = do
       shortLink <- withSmpServer' serverCfg' $ do
@@ -3073,8 +3041,6 @@ testShortLinkInvitationConnectRetry ps@TestParams {largeLinkData} = testChatCfgO
                 WithTime "@alice hello"
               ]
         alice <# "bob> hello"
-        unless largeLinkData $
-          bob <## "contact alice updated bio: Alice"
         concurrently_
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
@@ -3096,7 +3062,7 @@ testShortLinkInvitationConnectRetry ps@TestParams {largeLinkData} = testChatCfgO
         }
 
 testShortLinkAddressPrepareContact :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkAddressPrepareContact = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/ad"
@@ -3123,8 +3089,6 @@ testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 
       alice <## "bad chat command: incognito not allowed for address with short link data"
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -3140,7 +3104,7 @@ testShortLinkAddressPrepareContact ps@TestParams {largeLinkData} = testChatCfg2 
       void $ getTermLine bob
 
 testShortLinkAddressDeleteContact :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressDeleteContact ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkAddressDeleteContact = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/ad"
@@ -3165,8 +3129,6 @@ testShortLinkAddressDeleteContact ps@TestParams {largeLinkData} = testChatCfg2 t
       alice <## "to reject: /rc bob (the sender will NOT be notified)"
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -3180,7 +3142,7 @@ testShortLinkAddressDeleteContact ps@TestParams {largeLinkData} = testChatCfg2 t
       void $ getTermLine bob
 
 testShortLinkDeletedInvitation :: HasCallStack => TestParams -> IO ()
-testShortLinkDeletedInvitation ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkDeletedInvitation = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/_connect 1"
@@ -3199,7 +3161,7 @@ testShortLinkDeletedInvitation ps@TestParams {largeLinkData} = testChatCfg2 test
       bob <##. "error: connection authorization failed"
 
 testShortLinkDeletedAddress :: HasCallStack => TestParams -> IO ()
-testShortLinkDeletedAddress ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkDeletedAddress = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/ad"
@@ -3218,9 +3180,9 @@ testShortLinkDeletedAddress ps@TestParams {largeLinkData} = testChatCfg2 testCfg
       bob <##. "error: connection authorization failed"
 
 testShortLinkAddressConnectRetry :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressConnectRetry ps@TestParams {largeLinkData} =
-  withNewTestChatCfgOpts ps testCfg {largeLinkData} opts' "alice" aliceProfile $ \alice ->
-    withNewTestChatCfgOpts ps testCfg {largeLinkData} opts' "bob" bobProfile $ \bob -> do
+testShortLinkAddressConnectRetry ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
@@ -3251,8 +3213,6 @@ testShortLinkAddressConnectRetry ps@TestParams {largeLinkData} =
         alice <## "to reject: /rc bob (the sender will NOT be notified)"
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
-        unless largeLinkData $
-          bob <## "contact alice updated bio: Alice"
         concurrently_
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
@@ -3275,9 +3235,9 @@ testShortLinkAddressConnectRetry ps@TestParams {largeLinkData} =
         }
 
 testShortLinkAddressConnectRetryIncognito :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressConnectRetryIncognito ps@TestParams {largeLinkData} =
-  withNewTestChatCfgOpts ps testCfg {largeLinkData} opts' "alice" aliceProfile $ \alice ->
-    withNewTestChatCfgOpts ps testCfg {largeLinkData} opts' "bob" bobProfile $ \bob -> do
+testShortLinkAddressConnectRetryIncognito ps =
+  withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps opts' "bob" bobProfile $ \bob -> do
       shortLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         (shortLink, fullLink) <- getContactLinks alice True
@@ -3309,8 +3269,6 @@ testShortLinkAddressConnectRetryIncognito ps@TestParams {largeLinkData} =
         alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
         alice ##> ("/ac " <> bobIncognito)
         alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
-        unless largeLinkData $
-          bob <## "contact alice updated bio: Alice"
         concurrentlyN_
           [ do
               _ <- getTermLine bob
@@ -3341,7 +3299,7 @@ testShortLinkAddressConnectRetryIncognito ps@TestParams {largeLinkData} =
         }
 
 testShortLinkAddressPrepareBusiness :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressPrepareBusiness ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test ps
+testShortLinkAddressPrepareBusiness = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test
   where
     test biz alice bob = do
       biz ##> "/ad"
@@ -3408,7 +3366,7 @@ testShortLinkAddressPrepareBusiness ps@TestParams {largeLinkData} = testChatCfg3
       void $ getTermLine bob
 
 testBusinessAddressRequestMessage :: HasCallStack => TestParams -> IO ()
-testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test ps
+testBusinessAddressRequestMessage = testChat3 businessProfile aliceProfile {fullName = "Alice @ Biz"} bobProfile test
   where
     test biz alice bob = do
       biz ##> "/ad"
@@ -3422,7 +3380,7 @@ testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 t
       contactSLinkData <- getTermLine bob
       bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
       bob <## "#biz: group is prepared"
-      bob #$> ("/_get chat #1 count=100", chat, businessGroupFeatures <> [(0, "Welcome!") | largeLinkData])
+      bob #$> ("/_get chat #1 count=100", chat, businessGroupFeatures <> [(0, "Welcome!")])
       bob ##> "/_connect group #1 text Hello!"
       bob
         <###
@@ -3432,8 +3390,8 @@ testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 t
       biz <# "#bob bob_1> Hello!"
       biz <## "#bob (Bob): accepting business address request..."
       bob <## "#biz: joining the group..."
-      biz <### (["#bob: bob_1 joined the group"] <> [WithTime "#bob Welcome!" | not largeLinkData])
-      bob <### (["#biz: you joined the group"] <> [WithTime "#biz biz_1> Welcome!" | not largeLinkData])
+      biz <### ["#bob: bob_1 joined the group"]
+      bob <### ["#biz: you joined the group"]
       -- Another member should receive history
       connectUsers biz alice
       biz ##> "/a bob alice"
@@ -3456,7 +3414,7 @@ testBusinessAddressRequestMessage ps@TestParams {largeLinkData} = testChatCfg3 t
         ]
 
 testShortLinkPrepareGroup :: HasCallStack => TestParams -> IO ()
-testShortLinkPrepareGroup ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       createGroup2 "team" alice cath
@@ -3501,7 +3459,7 @@ testShortLinkPrepareGroup ps@TestParams {largeLinkData} = testChatCfg3 testCfg {
       void $ getTermLine bob
 
 testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
-testShortLinkPrepareGroupReject ps@TestParams {largeLinkData} = testChatCfg3 cfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkPrepareGroupReject = testChatCfg3 cfg aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       createGroup2 "team" alice cath
@@ -3529,7 +3487,7 @@ testShortLinkPrepareGroupReject ps@TestParams {largeLinkData} = testChatCfg3 cfg
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Left GRRBlockedName)}}
 
 testGroupShortLinkWelcome :: HasCallStack => TestParams -> IO ()
-testGroupShortLinkWelcome ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testGroupShortLinkWelcome = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/g team"
@@ -3545,7 +3503,7 @@ testGroupShortLinkWelcome ps@TestParams {largeLinkData} = testChatCfg2 testCfg {
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
-      bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!") | largeLinkData])
+      bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!")])
       threadDelay 1000000 -- TODO [short links] to compensate for rounding of timestamps of received messages
       bob ##> "/_connect group #1"
       bob <## "#team: connection started"
@@ -3554,7 +3512,7 @@ testGroupShortLinkWelcome ps@TestParams {largeLinkData} = testChatCfg2 testCfg {
         [ alice <## "#team: bob joined the group",
           do
             bob <## "#team: joining the group..."
-            bob <### (["#team: you joined the group"] <> [WithTime "#team alice> Welcome!" | not largeLinkData])
+            bob <### ["#team: you joined the group"]
         ]
       bob #$> ("/_get chat #1 count=100", chat, groupFeaturesNoE2E <> [(0, "Welcome!"), (0, e2eeInfoNoPQStr), (0, "connected")])
       alice #> "#team 1"
@@ -3563,7 +3521,7 @@ testGroupShortLinkWelcome ps@TestParams {largeLinkData} = testChatCfg2 testCfg {
       alice <# "#team bob> 2"
 
 testShortLinkGroupRetry :: HasCallStack => TestParams -> IO ()
-testShortLinkGroupRetry ps@TestParams {largeLinkData} = testChatCfgOpts2 testCfg {largeLinkData} opts' aliceProfile bobProfile test ps
+testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
   where
     test alice bob = do
       shortLink <- withSmpServer' serverCfg' $ do
@@ -3623,7 +3581,7 @@ testShortLinkGroupRetry ps@TestParams {largeLinkData} = testChatCfgOpts2 testCfg
         }
 
 testShortLinkInvitationConnectPreparedContactIncognito :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationConnectPreparedContactIncognito ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkInvitationConnectPreparedContactIncognito = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/_connect 1"
@@ -3636,8 +3594,6 @@ testShortLinkInvitationConnectPreparedContactIncognito ps@TestParams {largeLinkD
       bob ##> "/_connect contact @2 incognito=on"
       bobIncognito <- getTermLine bob
       bob <## "alice: connection started incognito"
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       _ <- getTermLine bob
       concurrentlyN_
         [ alice <## (bobIncognito <> ": contact is connected"),
@@ -3651,7 +3607,7 @@ testShortLinkInvitationConnectPreparedContactIncognito ps@TestParams {largeLinkD
       alice <# (bobIncognito <> "> hey")
 
 testShortLinkAddressConnectPreparedContactIncognito :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressConnectPreparedContactIncognito ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkAddressConnectPreparedContactIncognito = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/ad"
@@ -3669,8 +3625,6 @@ testShortLinkAddressConnectPreparedContactIncognito ps@TestParams {largeLinkData
       alice <## ("to reject: /rc " <> bobIncognito <> " (the sender will NOT be notified)")
       alice ##> ("/ac " <> bobIncognito)
       alice <## (bobIncognito <> ": accepting contact request, you can send messages to contact")
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       _ <- getTermLine bob
       concurrentlyN_
         [ alice <## (bobIncognito <> ": contact is connected"),
@@ -3684,7 +3638,7 @@ testShortLinkAddressConnectPreparedContactIncognito ps@TestParams {largeLinkData
       alice <# (bobIncognito <> "> hey")
 
 testShortLinkChangePreparedContactUser :: HasCallStack => TestParams -> IO ()
-testShortLinkChangePreparedContactUser ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkChangePreparedContactUser = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       bob ##> "/create user robert"
@@ -3713,8 +3667,6 @@ testShortLinkChangePreparedContactUser ps@TestParams {largeLinkData} = testChatC
                WithTime "@alice hello"
              ]
       alice <# "robert> hello"
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "robert: contact is connected")
@@ -3731,7 +3683,7 @@ testShortLinkChangePreparedContactUser ps@TestParams {largeLinkData} = testChatC
       bob `hasContactProfiles` ["bob"]
 
 testShortLinkChangePreparedContactUserDuplicate :: HasCallStack => TestParams -> IO ()
-testShortLinkChangePreparedContactUserDuplicate ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkChangePreparedContactUserDuplicate = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       bob ##> "/create user robert"
@@ -3767,8 +3719,6 @@ testShortLinkChangePreparedContactUserDuplicate ps@TestParams {largeLinkData} = 
                WithTime "@alice_1 hello"
              ]
       alice <# "robert_1> hello"
-      unless largeLinkData $
-        bob <## "contact alice_1 updated bio: Alice"
       concurrently_
         (bob <## "alice_1 (Alice): contact is connected")
         (alice <## "robert_1: contact is connected")
@@ -3790,7 +3740,7 @@ testShortLinkChangePreparedContactUserDuplicate ps@TestParams {largeLinkData} = 
       bob `hasContactProfiles` ["bob"]
 
 testShortLinkConnectPreparedGroupIncognito :: HasCallStack => TestParams -> IO ()
-testShortLinkConnectPreparedGroupIncognito ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkConnectPreparedGroupIncognito = testChat3 aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       createGroup2 "team" alice cath
@@ -3828,7 +3778,7 @@ testShortLinkConnectPreparedGroupIncognito ps@TestParams {largeLinkData} = testC
       bob ?<# "#team cath> 3"
 
 testShortLinkChangePreparedGroupUser :: HasCallStack => TestParams -> IO ()
-testShortLinkChangePreparedGroupUser ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       createGroup2 "team" alice cath
@@ -3886,7 +3836,7 @@ testShortLinkChangePreparedGroupUser ps@TestParams {largeLinkData} = testChatCfg
       bob `hasContactProfiles` ["bob"]
 
 testShortLinkChangePreparedGroupUserDuplicate :: HasCallStack => TestParams -> IO ()
-testShortLinkChangePreparedGroupUserDuplicate ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkChangePreparedGroupUserDuplicate = testChat3 aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       createGroup2 "team" alice cath
@@ -3999,7 +3949,7 @@ testShortLinkChangePreparedGroupUserDuplicate ps@TestParams {largeLinkData} = te
       bob `hasContactProfiles` ["bob"]
 
 testShortLinkInvitationSetIncognito :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationSetIncognito ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkInvitationSetIncognito = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/_connect 1"
@@ -4033,7 +3983,7 @@ testShortLinkInvitationSetIncognito ps@TestParams {largeLinkData} = testChatCfg2
       alice ?<# ("bob> hey")
 
 testShortLinkInvitationChangeUser :: HasCallStack => TestParams -> IO ()
-testShortLinkInvitationChangeUser ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkInvitationChangeUser = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/create user alisa"
@@ -4071,7 +4021,7 @@ testShortLinkInvitationChangeUser ps@TestParams {largeLinkData} = testChatCfg2 t
       alice <##> bob
 
 testShortLinkAddressChangeProfile :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressChangeProfile ps@TestParams {largeLinkData} = testChatCfg2 testCfg {largeLinkData} aliceProfile bobProfile test ps
+testShortLinkAddressChangeProfile = testChat2 aliceProfile bobProfile test
   where
     test alice bob = do
       alice ##> "/ad"
@@ -4106,7 +4056,7 @@ testShortLinkAddressChangeProfile ps@TestParams {largeLinkData} = testChatCfg2 t
       alice <##> bob
 
 testShortLinkAddressChangeAutoReply :: HasCallStack => TestParams -> IO ()
-testShortLinkAddressChangeAutoReply ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkAddressChangeAutoReply = testChat3 aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       alice ##> "/ad"
@@ -4130,11 +4080,9 @@ testShortLinkAddressChangeAutoReply ps@TestParams {largeLinkData} = testChatCfg3
       alice <# "bob> hello"
       alice <## "bob (Bob): accepting contact request..."
       alice <## "bob (Bob): you can send messages to contact"
-      unless largeLinkData $
-        bob <## "contact alice updated bio: Alice"
       concurrently_
-        (bob <### (["alice (Alice): contact is connected"] <> [WithTime "alice> welcome!" | not largeLinkData]))
-        (alice <### (["bob (Bob): contact is connected"] <> [WithTime "@bob welcome!" | not largeLinkData]))
+        (bob <### ["alice (Alice): contact is connected"])
+        (alice <### ["bob (Bob): contact is connected"])
       alice <##> bob
       alice ##> "/auto_accept on incognito=off"
       alice <## "auto_accept on"
@@ -4152,15 +4100,13 @@ testShortLinkAddressChangeAutoReply ps@TestParams {largeLinkData} = testChatCfg3
       alice <# "cath> hello"
       alice <## "cath (Catherine): accepting contact request..."
       alice <## "cath (Catherine): you can send messages to contact"
-      unless largeLinkData $
-        cath <## "contact alice updated bio: Alice"
       concurrently_
         (cath <## "alice (Alice): contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       alice <##> cath
 
 testShortLinkGroupChangeProfile :: HasCallStack => TestParams -> IO ()
-testShortLinkGroupChangeProfile ps@TestParams {largeLinkData} = testChatCfg3 testCfg {largeLinkData} aliceProfile bobProfile cathProfile test ps
+testShortLinkGroupChangeProfile = testChat3 aliceProfile bobProfile cathProfile test
   where
     test alice bob cath = do
       createGroup2 "team" alice cath

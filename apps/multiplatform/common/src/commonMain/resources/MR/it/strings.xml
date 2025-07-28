@@ -2475,7 +2475,7 @@
     <string name="v6_4_review_members_descr">Chatta con i membri prima che si uniscano.</string>
     <string name="v6_4_connect_faster">Connettiti più velocemente! 🚀</string>
     <string name="v6_4_message_delivery_descr">Meno traffico sulle reti mobili.</string>
-    <string name="v6_4_connect_faster_descr">Parla immediatamente appena tocchi \"Connetti\".</string>
+    <string name="v6_4_connect_faster_descr">Parla immediatamente appena tocchi Connetti.</string>
     <string name="v6_4_role_moderator">Nuovo ruolo nei gruppi: Moderatore</string>
     <string name="private_routing_no_session">Nessuna sessione di instradamento privato</string>
     <string name="private_routing_timeout">Scadenza dell\'instradamento privato</string>
@@ -2488,4 +2488,27 @@
     <string name="short_descr__field">Bio:</string>
     <string name="group_short_descr_field">Descrizione breve:</string>
     <string name="short_descr">La tua bio:</string>
+    <string name="bio_too_large">Bio troppo lunga</string>
+    <string name="group_descr_too_large">Descrizione troppo lunga</string>
+    <string name="chat_banner_accept_contact_request">Accetta la richiesta di contatto</string>
+    <string name="chat_banner_business_connection">Connessione lavorativa</string>
+    <string name="chat_banner_group">Gruppo</string>
+    <string name="chat_banner_connect_to_chat">Tocca Connetti per chattare</string>
+    <string name="chat_banner_send_request_to_connect">Tocca Connetti per inviare la richiesta</string>
+    <string name="chat_banner_join_group">Tocca Entra nel gruppo</string>
+    <string name="chat_banner_your_business_contact">Il tuo contatto lavorativo</string>
+    <string name="chat_banner_your_contact">Il tuo contatto</string>
+    <string name="chat_banner_your_group">Il tuo gruppo</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Il tempo di scomparsa è impostato solo per i contatti nuovi.</string>
+    <string name="v6_4_1_new_interface_languages">4 nuove lingue</string>
+    <string name="v6_4_1_new_interface_languages_descr">Catalano, indonesiano, rumeno e vietnamita - grazie ai nostri utenti!</string>
+    <string name="v6_4_1_short_address_create">Crea il tuo indirizzo</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Attiva i messaggi a tempo in modo predefinito.</string>
+    <string name="v6_4_1_keep_chats_clean">Mantieni le chat pulite</string>
+    <string name="v6_4_1_welcome_contacts_descr">Imposta la bio del profilo e il messaggio di benvenuto.</string>
+    <string name="v6_4_1_short_address_share">Condividi il tuo indirizzo</string>
+    <string name="v6_4_1_short_address">Indirizzo breve di SimpleX</string>
+    <string name="v6_4_1_short_address_update">Aggiorna il tuo indirizzo</string>
+    <string name="connect_use_incognito_profile">Usa profilo in incognito</string>
+    <string name="v6_4_1_welcome_contacts">Dai il benvenuto ai tuoi contatti 👋</string>
 </resources>

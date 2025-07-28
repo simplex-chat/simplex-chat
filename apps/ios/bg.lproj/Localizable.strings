@@ -122,6 +122,12 @@
 "%@ is verified" = "%@ е потвърдено";
 
 /* No comment provided by engineer. */
+"%@ server" = "%@ сървър";
+
+/* No comment provided by engineer. */
+"%@ servers" = "%@ сървъри";
+
+/* No comment provided by engineer. */
 "%@ uploaded" = "%@ качено";
 
 /* notification title */
@@ -142,8 +148,23 @@
 /* time interval */
 "%d days" = "%d дни";
 
+/* forward confirmation reason */
+"%d file(s) are still being downloaded." = "%d файл(ове) все още се теглят.";
+
+/* forward confirmation reason */
+"%d file(s) failed to download." = "Тегленето неуспешно за %d файл(ове).";
+
+/* forward confirmation reason */
+"%d file(s) were deleted." = "%d файл(ове) бяха изтрити.";
+
+/* forward confirmation reason */
+"%d file(s) were not downloaded." = "%d файл(ове) не бяха изтеглени.";
+
 /* time interval */
 "%d hours" = "%d часа";
+
+/* alert title */
+"%d messages not forwarded" = "%d непрепратени съобщения";
 
 /* time interval */
 "%d min" = "%d мин.";
@@ -153,6 +174,9 @@
 
 /* time interval */
 "%d sec" = "%d сек.";
+
+/* delete after time */
+"%d seconds(s)" = "%d секунди";
 
 /* integrity error chat item */
 "%d skipped message(s)" = "%d пропуснато(и) съобщение(я)";

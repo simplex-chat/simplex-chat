@@ -610,6 +610,27 @@ private let versionDescriptions: [VersionDescription] = [
             )),
         ]
     ),
+    VersionDescription(
+        version: "v6.4.1",
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"),
+        features: [
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Welcome your contacts 👋",
+                description: "Set profile bio and welcome message."
+            )),
+            .feature(Description(
+                icon: "stopwatch",
+                title: "Keep your chats clean",
+                description: "Enable disappearing messages by default."
+            )),
+            .view(FeatureView(
+                icon: nil,
+                title: "Short SimpleX address",
+                view: { CreateUpdateAddressShortLink() }
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -636,6 +657,51 @@ fileprivate struct NewOperatorsView: View {
                 .lineLimit(10)
             HStack {
                 Text("Enable Flux in Network & servers settings for better metadata privacy.")
+            }
+        }
+    }
+}
+
+fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject private var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @State private var showAddressSheet = false
+    @State private var progressIndicator = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Short SimpleX address").font(.title3).bold()
+            }
+            Group {
+                if let addr = chatModel.userAddress {
+                    if addr.shouldBeUpgraded {
+                        HStack(spacing: 8) {
+                            Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
+                            if progressIndicator {
+                                ProgressView()
+                            }
+                        }
+                    } else {
+                        Button("Share your address") { addr.shareAddress(short: true) }
+                    }
+                } else {
+                    Button("Create your address") { showAddressSheet = true }
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .lineLimit(10)
+        }
+        .sheet(isPresented: $showAddressSheet) {
+            NavigationView {
+                UserAddressView(autoCreate: true)
+                    .navigationTitle("SimpleX address")
+                    .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             }
         }
     }

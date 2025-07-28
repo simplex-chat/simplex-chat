@@ -665,10 +665,6 @@ swipe action</note>
         <target>Додайте сервери, відсканувавши QR-код.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add short link" xml:space="preserve">
-        <source>Add short link</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
         <target>Додайте учасників команди</target>
@@ -2196,6 +2192,10 @@ This is your own one-time link!</source>
         <target>Створити чергу</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Create your address" xml:space="preserve">
+        <source>Create your address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
         <target>Створіть свій профіль</target>
@@ -3002,6 +3002,10 @@ chat item action</note>
       <trans-unit id="Enable camera access" xml:space="preserve">
         <source>Enable camera access</source>
         <target>Увімкніть доступ до камери</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+        <source>Enable disappearing messages by default.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4629,6 +4633,10 @@ This is your link for group %@!</source>
         <target>Зберігати невикористані запрошення?</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Keep your chats clean" xml:space="preserve">
+        <source>Keep your chats clean</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
         <target>Зберігайте свої зв'язки</target>
@@ -6096,10 +6104,6 @@ Error: %@</source>
         <target>Оновлення профілю буде надіслано вашим контактам.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
-        <source>Profile will be shared with the address.</source>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
         <target>Заборонити аудіо/відеодзвінки.</target>
@@ -7262,6 +7266,10 @@ chat item action</note>
         <target>Встановити ключову фразу для експорту</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+        <source>Set profile bio and welcome message.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
         <source>Set the message shown to new members!</source>
         <target>Налаштуйте повідомлення, яке показуватиметься новим користувачам!</target>
@@ -7328,23 +7336,23 @@ chat item action</note>
         <target>Діліться з інших програм.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share group profile via link" xml:space="preserve">
-        <source>Share group profile via link</source>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Поділіться посиланням</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share old address" xml:space="preserve">
+        <source>Share old address</source>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Share old link" xml:space="preserve">
+        <source>Share old link</source>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Share profile" xml:space="preserve">
         <source>Share profile</source>
         <target>Поділіться профілем</target>
-        <note>alert button</note>
-      </trans-unit>
-      <trans-unit id="Share profile with address" xml:space="preserve">
-        <source>Share profile with address</source>
-        <note>alert title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
@@ -7359,6 +7367,14 @@ chat item action</note>
       <trans-unit id="Share with contacts" xml:space="preserve">
         <source>Share with contacts</source>
         <target>Поділіться з контактами</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Share your address" xml:space="preserve">
+        <source>Share your address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Short SimpleX address" xml:space="preserve">
+        <source>Short SimpleX address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short description" xml:space="preserve">
@@ -7870,6 +7886,10 @@ It can happen because of some bug or when the connection is compromised.</source
 Це може статися через помилку або коли з'єднання скомпрометовано.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+        <source>The address will be short, and your profile will be shared via the address.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>Додаток може сповіщати вас, коли ви отримуєте повідомлення або запити на контакт - будь ласка, відкрийте налаштування, щоб увімкнути цю функцію.</target>
@@ -7929,6 +7949,10 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The hash of the previous message is different.</source>
         <target>Хеш попереднього повідомлення відрізняється.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
+        <source>The link will be short, and group profile will be shared via the link.</source>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
         <source>The message will be deleted for all members.</source>
@@ -8080,6 +8104,10 @@ It can happen because of some bug or when the connection is compromised.</source
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
         <target>Це налаштування застосовується до повідомлень у вашому поточному профілі чату **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
+        <source>Time to disappear is set only for new contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -8407,9 +8435,33 @@ To connect, please ask your contact to create another connection link and check 
         <target>Оновлення налаштувань призведе до перепідключення клієнта до всіх серверів.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Upgrade" xml:space="preserve">
+        <source>Upgrade</source>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Upgrade address" xml:space="preserve">
+        <source>Upgrade address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade address?" xml:space="preserve">
+        <source>Upgrade address?</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
         <source>Upgrade and open chat</source>
         <target>Оновлення та відкритий чат</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade group link?" xml:space="preserve">
+        <source>Upgrade group link?</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Upgrade link" xml:space="preserve">
+        <source>Upgrade link</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade your address" xml:space="preserve">
+        <source>Upgrade your address</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -8503,6 +8555,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
         <target>Використовуйте інтерфейс виклику iOS</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use incognito profile" xml:space="preserve">
+        <source>Use incognito profile</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -8737,6 +8793,10 @@ To connect, please ask your contact to create another connection link and check 
       <trans-unit id="Welcome message is too long" xml:space="preserve">
         <source>Welcome message is too long</source>
         <target>Привітальне повідомлення занадто довге</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
+        <source>Welcome your contacts 👋</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">

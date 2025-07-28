@@ -667,11 +667,6 @@ swipe action</note>
         <target>Server durch Scannen von QR Codes hinzufügen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Add short link" xml:space="preserve">
-        <source>Add short link</source>
-        <target>Verkürzten Link hinzufügen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Add team members" xml:space="preserve">
         <source>Add team members</source>
         <target>Team-Mitglieder aufnehmen</target>
@@ -1259,10 +1254,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Bio" xml:space="preserve">
         <source>Bio</source>
+        <target>Biografie</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bio too large" xml:space="preserve">
         <source>Bio too large</source>
+        <target>Biografie zu lang</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1357,6 +1354,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Business connection" xml:space="preserve">
         <source>Business connection</source>
+        <target>Geschäftliche Verbindung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
@@ -2202,6 +2200,11 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Erzeuge Warteschlange</target>
         <note>server test step</note>
       </trans-unit>
+      <trans-unit id="Create your address" xml:space="preserve">
+        <source>Create your address</source>
+        <target>Ihre Adresse erstellen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
         <source>Create your profile</source>
         <target>Erstellen Sie Ihr Profil</target>
@@ -2663,6 +2666,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Description too large" xml:space="preserve">
         <source>Description too large</source>
+        <target>Beschreibung zu lang</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve">
@@ -3009,6 +3013,11 @@ chat item action</note>
       <trans-unit id="Enable camera access" xml:space="preserve">
         <source>Enable camera access</source>
         <target>Kamera-Zugriff aktivieren</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+        <source>Enable disappearing messages by default.</source>
+        <target>Verschwindende Nachrichten per Voreinstellung aktiviert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4643,6 +4652,11 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Nicht genutzte Einladung behalten?</target>
         <note>alert title</note>
       </trans-unit>
+      <trans-unit id="Keep your chats clean" xml:space="preserve">
+        <source>Keep your chats clean</source>
+        <target>Halten Sie Ihre Chats übersichtlich</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
         <source>Keep your connections</source>
         <target>Ihre Verbindungen beibehalten</target>
@@ -6154,11 +6168,6 @@ Fehler: %@</target>
         <target>Profil-Aktualisierung wird an Ihre Kontakte gesendet.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Profile will be shared with the address." xml:space="preserve">
-        <source>Profile will be shared with the address.</source>
-        <target>Das Profil wird über den Adress-Link geteilt.</target>
-        <note>alert message</note>
-      </trans-unit>
       <trans-unit id="Prohibit audio/video calls." xml:space="preserve">
         <source>Prohibit audio/video calls.</source>
         <target>Audio-/Video-Anrufe nicht erlauben.</target>
@@ -7354,6 +7363,11 @@ chat item action</note>
         <target>Passwort für den Export festlegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+        <source>Set profile bio and welcome message.</source>
+        <target>Geben Sie eine Profil-Biografie und eine Begrüßungsmeldung ein.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
         <source>Set the message shown to new members!</source>
         <target>Definieren Sie eine Begrüßungsmeldung, die neuen Mitgliedern angezeigt wird!</target>
@@ -7420,25 +7434,24 @@ chat item action</note>
         <target>Aus anderen Apps heraus teilen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share group profile via link" xml:space="preserve">
-        <source>Share group profile via link</source>
-        <target>Gruppenprofil über einen Link teilen</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
       <trans-unit id="Share link" xml:space="preserve">
         <source>Share link</source>
         <target>Link teilen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share old address" xml:space="preserve">
+        <source>Share old address</source>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Share old link" xml:space="preserve">
+        <source>Share old link</source>
+        <target>Vollständigen Link teilen</target>
+        <note>alert button</note>
+      </trans-unit>
       <trans-unit id="Share profile" xml:space="preserve">
         <source>Share profile</source>
         <target>Profil teilen</target>
-        <note>alert button</note>
-      </trans-unit>
-      <trans-unit id="Share profile with address" xml:space="preserve">
-        <source>Share profile with address</source>
-        <target>Profil über einen Link teilen</target>
-        <note>alert title</note>
+        <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Share this 1-time invite link" xml:space="preserve">
         <source>Share this 1-time invite link</source>
@@ -7455,8 +7468,19 @@ chat item action</note>
         <target>Mit Kontakten teilen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Share your address" xml:space="preserve">
+        <source>Share your address</source>
+        <target>Ihre Adresse teilen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Short SimpleX address" xml:space="preserve">
+        <source>Short SimpleX address</source>
+        <target>Verkürzte SimpleX-Adresse</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Short description" xml:space="preserve">
         <source>Short description</source>
+        <target>Kurze Beschreibung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
@@ -7869,10 +7893,12 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
         <source>Tap Connect to chat</source>
+        <target>Verbinden tippen, um zu chatten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to send request" xml:space="preserve">
         <source>Tap Connect to send request</source>
+        <target>Verbinden tippen, um die Anfrage zu senden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -7882,6 +7908,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Tap Join group" xml:space="preserve">
         <source>Tap Join group</source>
+        <target>Tippen, um der Gruppe beizutreten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -7971,6 +7998,10 @@ It can happen because of some bug or when the connection is compromised.</source
 Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+        <source>The address will be short, and your profile will be shared via the address.</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
         <source>The app can notify you when you receive messages or contact requests - please open settings to enable.</source>
         <target>Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.</target>
@@ -8030,6 +8061,11 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <source>The hash of the previous message is different.</source>
         <target>Der Hash der vorherigen Nachricht unterscheidet sich.</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
+        <source>The link will be short, and group profile will be shared via the link.</source>
+        <target>Gruppenprofil über einen Link teilen</target>
+        <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
         <source>The message will be deleted for all members.</source>
@@ -8184,6 +8220,11 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
         <target>Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
+        <source>Time to disappear is set only for new contacts.</source>
+        <target>Die Zeit bis zum Verschwinden wird nur für neue Kontakte eingestellt.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -8515,9 +8556,35 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
         <target>Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Upgrade" xml:space="preserve">
+        <source>Upgrade</source>
+        <note>alert button</note>
+      </trans-unit>
+      <trans-unit id="Upgrade address" xml:space="preserve">
+        <source>Upgrade address</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade address?" xml:space="preserve">
+        <source>Upgrade address?</source>
+        <note>alert message</note>
+      </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
         <source>Upgrade and open chat</source>
         <target>Aktualisieren und den Chat öffnen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade group link?" xml:space="preserve">
+        <source>Upgrade group link?</source>
+        <note>alert message</note>
+      </trans-unit>
+      <trans-unit id="Upgrade link" xml:space="preserve">
+        <source>Upgrade link</source>
+        <target>Link hinzufügen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Upgrade your address" xml:space="preserve">
+        <source>Upgrade your address</source>
+        <target>Ihre Adresse aktualisieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -8613,6 +8680,11 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Use iOS call interface" xml:space="preserve">
         <source>Use iOS call interface</source>
         <target>iOS Anrufschnittstelle nutzen</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Use incognito profile" xml:space="preserve">
+        <source>Use incognito profile</source>
+        <target>Inkognito-Profil nutzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -8848,6 +8920,11 @@ Bitten Sie Ihren Kontakt darum einen weiteren Verbindungs-Link zu erzeugen, um s
       <trans-unit id="Welcome message is too long" xml:space="preserve">
         <source>Welcome message is too long</source>
         <target>Die Begrüßungsmeldung ist zu lang</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
+        <source>Welcome your contacts 👋</source>
+        <target>Begrüßen Sie Ihre Kontakte 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -9276,6 +9353,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
+        <target>Ihr geschäftlicher Kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -9315,6 +9393,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
+        <target>Ihr Kontakt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -9349,6 +9428,7 @@ Verbindungsanfrage wiederholen?</target>
       </trans-unit>
       <trans-unit id="Your group" xml:space="preserve">
         <source>Your group</source>
+        <target>Ihre Gruppe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">

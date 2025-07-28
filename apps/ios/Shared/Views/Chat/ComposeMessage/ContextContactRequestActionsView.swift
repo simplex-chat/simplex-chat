@@ -84,10 +84,8 @@ struct ContextContactRequestActionsView: View {
     }
 
     private func acceptRequest(incognito: Bool = false) {
-        inProgress = true
         Task {
-            await acceptContactRequest(incognito: incognito, contactRequestId: contactRequestId)
-            await MainActor.run { inProgress = false }
+            await acceptContactRequest(incognito: incognito, contactRequestId: contactRequestId, inProgress: $inProgress)
         }
     }
 }

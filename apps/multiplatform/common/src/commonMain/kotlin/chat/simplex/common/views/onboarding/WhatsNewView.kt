@@ -15,6 +15,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.ChatController.appPrefs
@@ -24,8 +26,11 @@ import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ServerOperator.Companion.dummyOperatorInfo
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.helpers.*
+import chat.simplex.common.views.usersettings.UserAddressView
 import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
+import chat.simplex.common.views.usersettings.showAddShortLinkAlert
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -848,8 +853,33 @@ private val versionDescriptions: List<VersionDescription> = listOf(
         descrId = MR.strings.v6_4_message_delivery_descr
       ),
     )
-  )
-
+  ),
+  VersionDescription(
+    version = "v6.4.1",
+    post = "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html",
+    features = listOf(
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_waving_hand,
+        titleId = MR.strings.v6_4_1_welcome_contacts,
+        descrId = MR.strings.v6_4_1_welcome_contacts_descr
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_timer,
+        titleId = MR.strings.v6_4_1_keep_chats_clean,
+        descrId = MR.strings.v6_4_1_keep_chats_clean_descr
+      ),
+      VersionFeature.FeatureView(
+        icon = null,
+        titleId = MR.strings.v6_4_1_short_address,
+        view = { modalManager -> CreateUpdateAddressShortLinkView(modalManager) }
+      ),
+      VersionFeature.FeatureDescription(
+        icon = MR.images.ic_translate,
+        titleId = MR.strings.v6_4_1_new_interface_languages,
+        descrId = MR.strings.v6_4_1_new_interface_languages_descr,
+      ),
+    )
+  ),
 )
 
 private val lastVersion = versionDescriptions.last().version
@@ -864,6 +894,85 @@ fun shouldShowWhatsNew(m: ChatModel): Boolean {
   val v = m.controller.appPrefs.whatsNewVersion.get()
   setLastVersionDefault(m)
   return v != lastVersion
+}
+
+@Composable
+fun CreateUpdateAddressShortLinkView(modalManager: ModalManager) {
+  val clipboard = LocalClipboardManager.current
+  val progressIndicator = remember { mutableStateOf(false) }
+
+  fun share(userAddress: String) { clipboard.shareText(userAddress) }
+
+  Column(modifier = Modifier.padding(bottom = 12.dp)) {
+    Row(
+      verticalAlignment = Alignment.CenterVertically,
+      horizontalArrangement = Arrangement.spacedBy(8.dp),
+      modifier = Modifier.padding(bottom = 4.dp)
+    ) {
+      Icon(painterResource(MR.images.ic_link), stringResource(MR.strings.v6_4_1_short_address), tint = MaterialTheme.colors.secondary)
+      Text(
+        generalGetString(MR.strings.v6_4_1_short_address),
+        maxLines = 2,
+        overflow = TextOverflow.Ellipsis,
+        style = MaterialTheme.typography.h4,
+        fontWeight = FontWeight.Medium,
+        modifier = Modifier.padding(bottom = 6.dp)
+      )
+    }
+    val addr = chatModel.userAddress.value
+    if (addr != null) {
+      if (addr.shouldBeUpgraded) {
+        Row(
+          verticalAlignment = Alignment.CenterVertically,
+          horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+          Text(
+            stringResource(MR.strings.v6_4_1_short_address_update),
+            color = MaterialTheme.colors.primary,
+            fontSize = 15.sp,
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share)
+              }
+          )
+          if (progressIndicator.value) {
+            CIFileViewScope.progressIndicator(sizeMultiplier = 0.5f)
+          }
+        }
+      } else {
+        Text(
+          stringResource(MR.strings.v6_4_1_short_address_share),
+          color = MaterialTheme.colors.primary,
+          fontSize = 15.sp,
+          modifier = Modifier
+            .clickable(
+              interactionSource = remember { MutableInteractionSource() },
+              indication = null
+            ) {
+              share(addr.connLinkContact.simplexChatUri(short = true))
+            }
+        )
+      }
+    } else {
+      Text(
+        stringResource(MR.strings.v6_4_1_short_address_create),
+        color = MaterialTheme.colors.primary,
+        fontSize = 15.sp,
+        modifier = Modifier
+          .clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null
+          ) {
+            modalManager.showModalCloseable { close ->
+              UserAddressView(chatModel = chatModel, shareViaProfile = false, autoCreateAddress = true, close = close)
+            }
+          }
+      )
+    }
+  }
 }
 
 @Preview/*(

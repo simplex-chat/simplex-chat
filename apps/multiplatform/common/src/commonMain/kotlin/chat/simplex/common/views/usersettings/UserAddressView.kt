@@ -16,16 +16,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.ShareAddressButton
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.MsgContent
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
 
@@ -38,14 +39,15 @@ fun UserAddressView(
 ) {
   // TODO close when remote host changes
   val shareViaProfile = remember { mutableStateOf(shareViaProfile) }
-  var progressIndicator by remember { mutableStateOf(false) }
+  val progressIndicator = remember { mutableStateOf(false) }
   val user = remember { chatModel.currentUser }
+  val clipboard = LocalClipboardManager.current
   KeyChangeEffect(user.value?.remoteHostId, user.value?.userId) {
     close()
   }
 
   fun setProfileAddress(on: Boolean) {
-    progressIndicator = true
+    progressIndicator.value = true
     withBGApi {
       try {
         val u = chatModel.controller.apiSetProfileAddress(user.value?.remoteHostId, on)
@@ -55,19 +57,21 @@ fun UserAddressView(
       } catch (e: Exception) {
         Log.e(TAG, "UserAddressView apiSetProfileAddress: ${e.stackTraceToString()}")
       } finally {
-        progressIndicator = false
+        progressIndicator.value = false
       }
     }
   }
 
   fun createAddress() {
     withBGApi {
-      progressIndicator = true
+      progressIndicator.value = true
       val connReqContact = chatModel.controller.apiCreateUserAddress(user.value?.remoteHostId)
       if (connReqContact != null) {
+        val slDataSet = connReqContact.connShortLink != null
         chatModel.userAddress.value = UserContactLinkRec(
           connReqContact,
-          shortLinkDataSet = connReqContact.connShortLink != null,
+          shortLinkDataSet = slDataSet,
+          shortLinkLargeDataSet = slDataSet,
           addressSettings = AddressSettings(businessAddress = false, autoAccept = null, autoReply = null)
         )
 
@@ -81,31 +85,11 @@ fun UserAddressView(
           }
         )
       }
-      progressIndicator = false
+      progressIndicator.value = false
     }
   }
 
-  fun addShortLink() {
-    withBGApi {
-      progressIndicator = true
-      val userAddress = chatModel.controller.apiAddMyAddressShortLink(user.value?.remoteHostId)
-      if (userAddress != null) {
-        chatModel.userAddress.value = userAddress
-      }
-      progressIndicator = false
-    }
-  }
-
-  fun showAddShortLinkAlert() {
-    AlertManager.shared.showAlertDialogStacked(
-      title = generalGetString(MR.strings.share_profile_via_link),
-      text = generalGetString(MR.strings.share_profile_via_link_alert_text),
-      confirmText = generalGetString(MR.strings.share_profile_via_link_alert_confirm),
-      onConfirm = {
-        addShortLink()
-      }
-    )
-  }
+  fun share(userAddress: String) { clipboard.shareText(userAddress) }
 
   LaunchedEffect(autoCreateAddress) {
     if (chatModel.userAddress.value == null && autoCreateAddress) {
@@ -113,21 +97,22 @@ fun UserAddressView(
     }
   }
   val userAddress = remember { chatModel.userAddress }
-  val clipboard = LocalClipboardManager.current
   val uriHandler = LocalUriHandler.current
   val showLayout = @Composable {
     UserAddressLayout(
       user = user.value,
       userAddress = userAddress.value,
       shareViaProfile,
-      createAddress = { createAddress() },
-      showAddShortLinkAlert = { showAddShortLinkAlert() },
+      createAddress = ::createAddress,
+      showAddShortLinkAlert = { shareAddress: (() -> Unit)? ->
+        showAddShortLinkAlert(progressIndicator = progressIndicator, share = ::share, shareAddress = shareAddress)
+      },
       learnMore = {
         ModalManager.start.showModal {
           UserAddressLearnMore()
         }
       },
-      share = { userAddress: String -> clipboard.shareText(userAddress) },
+      share = ::share,
       sendEmail = { userAddress ->
         uriHandler.sendEmail(
           generalGetString(MR.strings.email_invite_subject),
@@ -141,14 +126,14 @@ fun UserAddressView(
           text = if (shareViaProfile.value) generalGetString(MR.strings.all_your_contacts_will_remain_connected_update_sent) else generalGetString(MR.strings.all_your_contacts_will_remain_connected),
           confirmText = generalGetString(MR.strings.delete_verb),
           onConfirm = {
-            progressIndicator = true
+            progressIndicator.value = true
             withBGApi {
               val u = chatModel.controller.apiDeleteUserAddress(user.value?.remoteHostId)
               if (u != null) {
                 chatModel.userAddress.value = null
                 chatModel.updateUser(u)
                 shareViaProfile.value = false
-                progressIndicator = false
+                progressIndicator.value = false
               }
             }
           },
@@ -171,7 +156,7 @@ fun UserAddressView(
     showLayout()
   }
 
-  if (progressIndicator) {
+  if (progressIndicator.value) {
     Box(
       Modifier.fillMaxSize(),
       contentAlignment = Alignment.Center
@@ -190,13 +175,82 @@ fun UserAddressView(
   }
 }
 
+private fun addShortLink(
+  progressIndicator: MutableState<Boolean>,
+  share: (String) -> Unit,
+  shareOnCompletion: Boolean = false
+) {
+  withBGApi {
+    progressIndicator.value = true
+    val userAddress = chatModel.controller.apiAddMyAddressShortLink(chatModel.currentUser.value?.remoteHostId)
+    if (userAddress != null) {
+      chatModel.userAddress.value = userAddress
+      if (shareOnCompletion) {
+        share(userAddress.connLinkContact.simplexChatUri(short = true))
+      }
+    }
+    progressIndicator.value = false
+  }
+}
+
+fun showAddShortLinkAlert(
+  progressIndicator: MutableState<Boolean>,
+  share: (String) -> Unit,
+  shareAddress: (() -> Unit)? = null
+) {
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    title = generalGetString(MR.strings.share_profile_via_link),
+    text = generalGetString(MR.strings.share_profile_via_link_alert_text),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          addShortLink(progressIndicator = progressIndicator, share = share, shareOnCompletion = shareAddress != null)
+        }) {
+          Text(
+            generalGetString(MR.strings.share_profile_via_link_alert_confirm),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary
+          )
+        }
+
+        if (shareAddress != null) {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            shareAddress()
+          }) {
+            Text(
+              generalGetString(MR.strings.share_old_address_alert_button),
+              Modifier.fillMaxWidth(),
+              textAlign = TextAlign.Center,
+              color = MaterialTheme.colors.primary
+            )
+          }
+        }
+        // Cancel
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(
+            stringResource(MR.strings.cancel_verb),
+            Modifier.fillMaxWidth(),
+            textAlign = TextAlign.Center,
+            color = MaterialTheme.colors.primary
+          )
+        }
+      }
+    }
+  )
+}
+
 @Composable
 private fun UserAddressLayout(
   user: User?,
   userAddress: UserContactLinkRec?,
   shareViaProfile: MutableState<Boolean>,
   createAddress: () -> Unit,
-  showAddShortLinkAlert: () -> Unit,
+  showAddShortLinkAlert: ((() -> Unit)?) -> Unit,
   learnMore: () -> Unit,
   share: (String) -> Unit,
   sendEmail: (UserContactLinkRec) -> Unit,
@@ -235,15 +289,19 @@ private fun UserAddressLayout(
           titleButton = if (userAddress.connLinkContact.connShortLink != null) {{ ToggleShortLinkButton(showShortLink) }} else null
         ) {
           SimpleXCreatedLinkQRCode(userAddress.connLinkContact, short = showShortLink.value)
-          ShareAddressButton { share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value)) }
+          if (userAddress.shouldBeUpgraded) {
+            AddShortLinkButton(text = stringResource(MR.strings.add_short_link)) { showAddShortLinkAlert(null) }
+          }
+          ShareAddressButton {
+            if (userAddress.shouldBeUpgraded) {
+              showAddShortLinkAlert { share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value)) }
+            } else {
+              share(userAddress.connLinkContact.simplexChatUri(short = showShortLink.value))
+            }
+          }
           // ShareViaEmailButton { sendEmail(userAddress) }
           BusinessAddressToggle(addressSettingsState) { saveAddressSettings(addressSettingsState.value, savedAddressSettingsState) }
           AddressSettingsButton(user, userAddress, shareViaProfile, setProfileAddress, saveAddressSettings)
-          if (userAddress.connLinkContact.connShortLink == null) {
-            AddShortLinkButton(text = stringResource(MR.strings.add_short_link), showAddShortLinkAlert)
-          } else if (!userAddress.shortLinkDataSet) {
-            AddShortLinkButton(text = stringResource(MR.strings.share_profile_via_link), showAddShortLinkAlert)
-          }
 
           if (addressSettingsState.value.businessAddress) {
             SectionTextFooter(stringResource(MR.strings.add_your_team_members_to_conversations))
@@ -284,7 +342,7 @@ private fun CreateAddressButton(onClick: () -> Unit) {
 @Composable
 private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
   SettingsActionItem(
-    painterResource(MR.images.ic_add),
+    painterResource(MR.images.ic_arrow_upward),
     text,
     onClick,
     iconColor = MaterialTheme.colors.primary,
@@ -656,6 +714,7 @@ fun PreviewUserAddressLayoutAddressCreated() {
       userAddress = UserContactLinkRec(
         CreatedConnLink("https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", null),
         shortLinkDataSet = false,
+        shortLinkLargeDataSet = false,
         addressSettings = AddressSettings(businessAddress = false, autoAccept = null, autoReply = null)
       ),
       createAddress = {},

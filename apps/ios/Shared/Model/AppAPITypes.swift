@@ -23,7 +23,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(mainApp: Bool, enableSndFiles: Bool, largeLinkData: Bool)
+    case startChat(mainApp: Bool, enableSndFiles: Bool)
     case checkChatRunning
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
@@ -203,7 +203,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(mainApp, enableSndFiles, largeLinkData): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles)) large_link_data=\(onOff(largeLinkData))"
+            case let .startChat(mainApp, enableSndFiles): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles))"
             case .checkChatRunning: return "/_check running"
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"
@@ -698,7 +698,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .tagsUpdated: "tagsUpdated"
         }
     }
-    
+
     var details: String {
         switch self {
         case let .activeUser(user): return String(describing: user)
@@ -840,7 +840,7 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .contactsList: "contactsList"
         }
     }
-    
+
     var details: String {
         switch self {
         case let .contactDeleted(u, contact): return withUser(u, String(describing: contact))
@@ -1108,7 +1108,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case remoteCtrlStopped(rcsState: RemoteCtrlSessionState, rcStopReason: RemoteCtrlStopReason)
     // pq
     case contactPQEnabled(user: UserRef, contact: Contact, pqEnabled: Bool)
-    
+
     var responseType: String {
         switch self {
         case .chatSuspended: "chatSuspended"
@@ -1182,7 +1182,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .contactPQEnabled: "contactPQEnabled"
         }
     }
-    
+
     var details: String {
         switch self {
         case .chatSuspended: return noDetails
@@ -1263,7 +1263,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .remoteCtrlStopped(rcsState, rcStopReason): return "rcsState: \(String(describing: rcsState))\nrcStopReason: \(String(describing: rcStopReason))"
         case let .contactPQEnabled(u, contact, pqEnabled): return withUser(u, "contact: \(String(describing: contact))\npqEnabled: \(pqEnabled)")
         }
-    }    
+    }
 }
 
 struct NewUser: Encodable {
@@ -1332,7 +1332,7 @@ struct ChatTagData: Encodable {
 struct UpdatedMessage: Encodable {
     var msgContent: MsgContent
     var mentions: [String: Int64]
-    
+
     var cmdString: String {
         "json \(encodeJSON(self))"
     }
@@ -1408,11 +1408,35 @@ struct UserMsgReceiptSettings: Codable {
     var clearOverrides: Bool
 }
 
+protocol SimplexAddress {
+    var connLinkContact: CreatedConnLink { get }
+    var shortLinkDataSet: Bool { get }
+    var shortLinkLargeDataSet: Bool { get }
+}
 
-struct UserContactLink: Decodable, Hashable {
+extension SimplexAddress {
+    var shouldBeUpgraded: Bool {
+        connLinkContact.connShortLink == nil || !shortLinkDataSet || !shortLinkLargeDataSet
+    }
+
+    func shareAddress(short: Bool) {
+        showShareSheet(items: [simplexChatLink(connLinkContact.simplexChatUri(short: short))])
+    }
+}
+
+struct UserContactLink: Decodable, Hashable, SimplexAddress {
     var connLinkContact: CreatedConnLink
     var shortLinkDataSet: Bool
+    var shortLinkLargeDataSet: Bool
     var addressSettings: AddressSettings
+
+    init(_ ccLink: CreatedConnLink) {
+        connLinkContact = ccLink
+        let slDataSet = ccLink.connShortLink != nil
+        shortLinkDataSet = slDataSet
+        shortLinkLargeDataSet = slDataSet
+        addressSettings = AddressSettings(businessAddress: false)
+    }
 }
 
 struct AddressSettings: Codable, Hashable {
@@ -1425,10 +1449,11 @@ struct AutoAccept: Codable, Hashable {
     var acceptIncognito: Bool
 }
 
-struct GroupLink: Decodable, Hashable {
+struct GroupLink: Decodable, Hashable, SimplexAddress {
     var userContactLinkId: Int64
     var connLinkContact: CreatedConnLink
     var shortLinkDataSet: Bool
+    var shortLinkLargeDataSet: Bool
     var groupLinkId: String
     var acceptMemberRole: GroupMemberRole
 }
