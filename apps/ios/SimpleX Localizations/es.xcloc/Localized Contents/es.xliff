@@ -1252,9 +1252,9 @@ swipe action</note>
         <target>Experiencia de usuario mejorada</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio" xml:space="preserve">
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
-        <target>Bio</target>
+        <target state="translated">Biografía</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bio too large" xml:space="preserve">
