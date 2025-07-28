@@ -713,4 +713,6 @@
     <string name="encryption_renegotiation_in_progress">Genforhandling af kryptering i gang.</string>
     <string name="view_security_code">Vis sikkerhedsnummer</string>
     <string name="verify_security_code">Verificier sikkerhedsnummer</string>
+    <string name="connect_use_incognito_profile">Brug inkognito -profil</string>
+    <string name="icon_descr_send_message">Send besked</string>
 </resources>
