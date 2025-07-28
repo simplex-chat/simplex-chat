@@ -2480,7 +2480,7 @@
     <string name="context_user_picker_your_profile">Tu perfil</string>
     <string name="e2ee_info_e2ee"><![CDATA[Los mensajes están protegidos mediante<b>cifrado de extremo a extremo</b>.]]></string>
     <string name="context_user_picker_cant_change_profile_alert_title">No se puede cambiar el perfil</string>
-    <string name="short_descr__field">Bio:</string>
+    <string name="short_descr__field">Biografía:</string>
     <string name="loading_profile">Cargando perfil. . .</string>
     <string name="group_short_descr_field">Descripción corta:</string>
     <string name="short_descr">Tu biografía:</string>
