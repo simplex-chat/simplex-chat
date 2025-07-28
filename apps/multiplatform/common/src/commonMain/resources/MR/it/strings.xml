@@ -2438,7 +2438,7 @@
     <string name="reject_pending_member_alert_title">Rifiutare il membro?</string>
     <string name="delete_member_support_chat_button">Elimina chat</string>
     <string name="error_deleting_member_support_chat">Errore di eliminazione della chat con il membro</string>
-    <string name="add_short_link">Aggiungi link breve</string>
+    <string name="add_short_link">Aggiorna l\'indirizzo</string>
     <string name="accept_contact_request">Accetta la richiesta di contatto</string>
     <string name="compose_view_add_message">Aggiungi un messaggio</string>
     <string name="e2ee_info_e2ee"><![CDATA[I messaggi sono protetti da <b>crittografia end-to-end</b>.]]></string>
@@ -2456,16 +2456,16 @@
     <string name="open_to_accept">Apri per accettare</string>
     <string name="open_to_connect">Apri per connettere</string>
     <string name="group_preview_open_to_join">Apri per entrare</string>
-    <string name="share_profile_via_link_alert_text">Il profilo verrà condiviso con l\'indirizzo.</string>
+    <string name="share_profile_via_link_alert_text">L\'indirizzo sarà breve e il tuo profilo verrà condiviso attraverso l\'indirizzo.</string>
     <string name="reject_contact_request">Rifiuta la richiesta di contatto</string>
     <string name="cant_send_message_request_is_sent">richiesta inviata</string>
     <string name="compose_view_send_contact_request_alert_question">Inviare una richiesta di contatto?</string>
     <string name="compose_view_send_request">Invia richiesta</string>
     <string name="compose_view_send_request_without_message">Invia richiesta senza messaggio</string>
     <string name="sent_to_your_contact_after_connection">Inviato al tuo contatto dopo la connessione.</string>
-    <string name="share_group_profile_via_link">Condividi il profilo del gruppo via link</string>
-    <string name="share_profile_via_link_alert_confirm">Condividi il profilo</string>
-    <string name="share_profile_via_link">Condividi il profilo con l\'indirizzo</string>
+    <string name="share_group_profile_via_link">Aggiornare il link del gruppo?</string>
+    <string name="share_profile_via_link_alert_confirm">Aggiorna</string>
+    <string name="share_profile_via_link">Aggiornare l\'indirizzo?</string>
     <string name="the_sender_will_not_be_notified">Il mittente NON verrà avvisato.</string>
     <string name="address_welcome_message">Messaggio di benvenuto</string>
     <string name="context_user_picker_your_profile">Il tuo profilo</string>
@@ -2511,4 +2511,8 @@
     <string name="v6_4_1_short_address_update">Aggiorna il tuo indirizzo</string>
     <string name="connect_use_incognito_profile">Usa profilo in incognito</string>
     <string name="v6_4_1_welcome_contacts">Dai il benvenuto ai tuoi contatti 👋</string>
+    <string name="share_old_address_alert_button">Condividi l\'indirizzo vecchio</string>
+    <string name="share_old_link_alert_button">Condividi il link vecchio</string>
+    <string name="share_group_profile_via_link_alert_text">Il link sarà breve e il profilo del gruppo verrà condiviso attraverso il link.</string>
+    <string name="upgrade_group_link">Aggiorna il link del gruppo</string>
 </resources>

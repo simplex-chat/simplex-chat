@@ -2509,7 +2509,7 @@
     <string name="cant_send_message_generic">Es können keine Nachrichten gesendet werden</string>
     <string name="cant_send_message_contact_deleted">Kontakt gelöscht</string>
     <string name="cant_send_message_member_has_old_version">Das Mitglied hat eine alte App-Version</string>
-    <string name="add_short_link">Verkürzten Link hinzufügen</string>
+    <string name="add_short_link">Adresse aktualisieren</string>
     <string name="accept_contact_request">Kontaktanfrage akzeptieren</string>
     <string name="compose_view_add_message">Nachricht hinzufügen</string>
     <string name="e2ee_info_e2ee"><![CDATA[Nachrichten sind durch <b>Ende-zu-Ende-Verschlüsselung</b> geschützt.]]></string>
@@ -2527,16 +2527,16 @@
     <string name="open_to_accept">Zum Akzeptieren öffnen</string>
     <string name="open_to_connect">Zum Verbinden öffnen</string>
     <string name="group_preview_open_to_join">Zum Beitreten öffnen</string>
-    <string name="share_profile_via_link_alert_text">Das Profil wird mit der Adresse geteilt.</string>
+    <string name="share_profile_via_link_alert_text">Die Adresse wird gekürzt sein, und Ihr Profil wird über die Adresse geteilt.</string>
     <string name="reject_contact_request">Kontakt-Anfrage ablehnen</string>
     <string name="cant_send_message_request_is_sent">Anfrage wurde gesendet</string>
     <string name="compose_view_send_contact_request_alert_question">Kontakt-Anfrage senden?</string>
     <string name="compose_view_send_request">Anfrage senden</string>
     <string name="compose_view_send_request_without_message">Anfrage ohne Nachricht senden</string>
     <string name="sent_to_your_contact_after_connection">Wird nach der Verbindung an Ihren Kontakt gesendet.</string>
-    <string name="share_group_profile_via_link">Gruppenprofil über einen Link teilen</string>
-    <string name="share_profile_via_link_alert_confirm">Profil teilen</string>
-    <string name="share_profile_via_link">Profil mit der Adresse teilen</string>
+    <string name="share_group_profile_via_link">Gruppen-Link aktualisieren?</string>
+    <string name="share_profile_via_link_alert_confirm">Aktualisieren</string>
+    <string name="share_profile_via_link">Adresse aktualisieren?</string>
     <string name="the_sender_will_not_be_notified">Der Absender wird NICHT benachrichtigt.</string>
     <string name="address_welcome_message">Begrüßungsmeldung</string>
     <string name="context_user_picker_your_profile">Ihr Profil</string>
@@ -2582,4 +2582,8 @@
     <string name="v6_4_1_short_address_update">Ihre Adresse aktualisieren</string>
     <string name="connect_use_incognito_profile">Inkognito-Profil nutzen</string>
     <string name="v6_4_1_welcome_contacts">Begrüßen Sie Ihre Kontakte 👋</string>
+    <string name="share_old_address_alert_button">Alte Adresse teilen</string>
+    <string name="share_old_link_alert_button">Alten Link teilen</string>
+    <string name="share_group_profile_via_link_alert_text">Der Link wird gekürzt sein, und das Gruppen-Profil wird über den Link geteilt.</string>
+    <string name="upgrade_group_link">Gruppen-Link aktualisieren</string>
 </resources>

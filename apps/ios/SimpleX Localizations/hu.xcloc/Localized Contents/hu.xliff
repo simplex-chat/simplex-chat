@@ -7441,6 +7441,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share old address" xml:space="preserve">
         <source>Share old address</source>
+        <target>Régi cím megosztása</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share old link" xml:space="preserve">
@@ -8000,6 +8001,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target>A cím rövid lesz és a profil meg lesz osztva a címen keresztül.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -8064,7 +8066,7 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       </trans-unit>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
         <source>The link will be short, and group profile will be shared via the link.</source>
-        <target>Csoportprofil megosztása a hivatkozáson keresztül</target>
+        <target>A hivatkozás rövid lesz és a csoportprofil meg lesz osztva a hivatkozáson keresztül.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8558,14 +8560,17 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="Upgrade" xml:space="preserve">
         <source>Upgrade</source>
+        <target>Frissítés</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Upgrade address" xml:space="preserve">
         <source>Upgrade address</source>
+        <target>Cím frissítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade address?" xml:space="preserve">
         <source>Upgrade address?</source>
+        <target>Frissíti a címet?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -8575,16 +8580,17 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
       </trans-unit>
       <trans-unit id="Upgrade group link?" xml:space="preserve">
         <source>Upgrade group link?</source>
+        <target>Frissíti a csoporthivatkozást?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">
         <source>Upgrade link</source>
-        <target>Hivatkozás hozzáadása</target>
+        <target>Hivatkozás frissítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade your address" xml:space="preserve">
         <source>Upgrade your address</source>
-        <target>SimpleX-címek frissítése</target>
+        <target>Cím frissítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -9353,7 +9359,7 @@ Megismétli a kapcsolódási kérést?</target>
       </trans-unit>
       <trans-unit id="Your business contact" xml:space="preserve">
         <source>Your business contact</source>
-        <target>Saját üzleti partner</target>
+        <target>Üzleti partner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -9393,7 +9399,7 @@ Megismétli a kapcsolódási kérést?</target>
       </trans-unit>
       <trans-unit id="Your contact" xml:space="preserve">
         <source>Your contact</source>
-        <target>Saját partner</target>
+        <target>Partner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">

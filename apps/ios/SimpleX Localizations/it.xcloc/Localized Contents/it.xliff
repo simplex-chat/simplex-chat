@@ -7441,6 +7441,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share old address" xml:space="preserve">
         <source>Share old address</source>
+        <target>Condividi l'indirizzo vecchio</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share old link" xml:space="preserve">
@@ -8000,6 +8001,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target>L'indirizzo sarà breve e il tuo profilo verrà condiviso attraverso l'indirizzo.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -8064,7 +8066,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
         <source>The link will be short, and group profile will be shared via the link.</source>
-        <target>Condividi il profilo del gruppo via link</target>
+        <target>Il link sarà breve e il profilo del gruppo verrà condiviso attraverso il link.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8558,14 +8560,17 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Upgrade" xml:space="preserve">
         <source>Upgrade</source>
+        <target>Aggiorna</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Upgrade address" xml:space="preserve">
         <source>Upgrade address</source>
+        <target>Aggiorna l'indirizzo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade address?" xml:space="preserve">
         <source>Upgrade address?</source>
+        <target>Aggiornare l'indirizzo?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -8575,6 +8580,7 @@ Per connetterti, chiedi al tuo contatto di creare un altro link di connessione e
       </trans-unit>
       <trans-unit id="Upgrade group link?" xml:space="preserve">
         <source>Upgrade group link?</source>
+        <target>Aggiornare il link del gruppo?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">

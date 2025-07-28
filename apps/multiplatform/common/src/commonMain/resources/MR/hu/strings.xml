@@ -2402,7 +2402,7 @@
     <string name="delete_member_support_chat_button">Csevegés törlése</string>
     <string name="reject_pending_member_button">Elutasítás</string>
     <string name="reject_pending_member_alert_title">Elutasítja a tagot?</string>
-    <string name="add_short_link">Rövid hivatkozás hozzáadása</string>
+    <string name="add_short_link">Cím frissítése</string>
     <string name="connect_plan_open_chat">Csevegés megnyitása</string>
     <string name="connect_plan_open_new_chat">Új csevegés megnyitása</string>
     <string name="connect_plan_open_new_group">Új csoport megnyitása</string>
@@ -2429,10 +2429,10 @@
     <string name="context_user_picker_your_profile">Saját profil</string>
     <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
     <string name="address_welcome_message">Üdvözlőüzenet</string>
-    <string name="share_profile_via_link">Profil megosztása a címmel együtt</string>
-    <string name="share_profile_via_link_alert_text">A profil meg lesz osztva a címmel együtt.</string>
-    <string name="share_profile_via_link_alert_confirm">Profil megosztása</string>
-    <string name="share_group_profile_via_link">Csoportprofil megosztása a hivatkozáson keresztül</string>
+    <string name="share_profile_via_link">Frissíti a címet?</string>
+    <string name="share_profile_via_link_alert_text">A cím rövid lesz és a profil meg lesz osztva a címen keresztül.</string>
+    <string name="share_profile_via_link_alert_confirm">Frissítés</string>
+    <string name="share_group_profile_via_link">Frissíti a csoporthivatkozást?</string>
     <string name="context_user_picker_cant_change_profile_alert_title">Nem lehet módosítani a profilt</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Másik profil használatához a kapcsolatfelvételi kísérlet után törölje a csevegést, és használja újra a hivatkozást.</string>
     <string name="v6_4_support_chat">Csevegés az adminisztrátorokkal</string>
@@ -2459,8 +2459,8 @@
     <string name="chat_banner_group">Csoport</string>
     <string name="chat_banner_join_group">Koppintson a „Csatlakozás a csoporthoz” gombra</string>
     <string name="chat_banner_your_group">Saját csoport</string>
-    <string name="chat_banner_your_business_contact">Saját üzleti partner</string>
-    <string name="chat_banner_your_contact">Saját partner</string>
+    <string name="chat_banner_your_business_contact">Üzleti partner</string>
+    <string name="chat_banner_your_contact">Partner</string>
     <string name="chat_banner_connect_to_chat">Koppintson a „Kapcsolódás” gombra a csevegéshez</string>
     <string name="chat_banner_send_request_to_connect">Koppintson a „Kapcsolódás” gombra a kérés elküldéséhez</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Az üzeneteltűnési idő csak az új partnerekre vonatkozik.</string>
@@ -2471,8 +2471,12 @@
     <string name="v6_4_1_welcome_contacts_descr">Bemutatkozószöveg és üdvözlőüzenet beállítása a profilokhoz.</string>
     <string name="v6_4_1_short_address_share">Saját cím megosztása</string>
     <string name="v6_4_1_short_address">Rövid SimpleX-cím</string>
-    <string name="v6_4_1_short_address_update">SimpleX-címek frissítése</string>
+    <string name="v6_4_1_short_address_update">Cím frissítése</string>
     <string name="v6_4_1_welcome_contacts">Üdvözölje a partnereit 👋</string>
     <string name="v6_4_1_new_interface_languages">4 új kezelőfelületi nyelv</string>
     <string name="v6_4_1_new_interface_languages_descr">Katalán, indonéz, román és vietnami - köszönjük felhasználóinknak!</string>
+    <string name="upgrade_group_link">Csoporthivatkozás frissítése</string>
+    <string name="share_group_profile_via_link_alert_text">A hivatkozás rövid lesz és a csoportprofil meg lesz osztva a hivatkozáson keresztül.</string>
+    <string name="share_old_address_alert_button">Régi cím megosztása</string>
+    <string name="share_old_link_alert_button">Régi hivatkozás megosztása</string>
 </resources>

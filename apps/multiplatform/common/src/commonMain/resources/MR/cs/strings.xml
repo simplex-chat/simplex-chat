@@ -2428,4 +2428,8 @@
     <string name="accept_pending_member_alert_confirmation_as_observer">Přijmout jako pozorovatele</string>
     <string name="reject_pending_member_alert_title">Odmítnout člena?</string>
     <string name="error_deleting_member_support_chat">Chyba odstranění chatu se členem</string>
+    <string name="connect_use_incognito_profile">Použït profil inkognito</string>
+    <string name="connect_plan_open_chat">Otevřít chat</string>
+    <string name="connect_plan_open_new_chat">Otevřít nový chat</string>
+    <string name="connect_plan_open_new_group">Otevřít novou skupinu</string>
 </resources>

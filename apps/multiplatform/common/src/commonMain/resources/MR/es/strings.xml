@@ -2434,7 +2434,7 @@
     <string name="accept_pending_member_alert_title">Aceptar miembro</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Aceptar como miembro</string>
     <string name="accept_pending_member_alert_question">El miembro se unirá al grupo, ¿aceptas al miembro?</string>
-    <string name="add_short_link">Añadir enlace corto</string>
+    <string name="add_short_link">Actualizar dirección</string>
     <string name="accept_contact_request">Aceptar petición de contacto</string>
     <string name="compose_view_add_message">Añadir mensaje</string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Podrás enviar mensajes <b>después de que tu petición sea aceptada</b>.]]></string>
@@ -2459,7 +2459,7 @@
     <string name="open_to_connect">Abrir para conectar</string>
     <string name="group_preview_open_to_join">Abrir para unirte</string>
     <string name="private_routing_timeout">Timeout enrutamiento privado</string>
-    <string name="share_profile_via_link_alert_text">El perfil será compartido con la dirección</string>
+    <string name="share_profile_via_link_alert_text">La dirección será corta y tu perfil se compartirá mediante la dirección.</string>
     <string name="network_option_protocol_timeout_background">Timeout protocolo en segundo plano</string>
     <string name="reject_contact_request">Rechazar solicitud del contacto</string>
     <string name="v6_4_role_moderator_descr">Elimina mensajes y bloquea miembros.</string>
@@ -2470,9 +2470,9 @@
     <string name="compose_view_send_request_without_message">Enviar solicitud sin mensaje</string>
     <string name="v6_4_support_chat_descr">Envía tu comentario privado a los grupos.</string>
     <string name="sent_to_your_contact_after_connection">Enviadp a tu contacto tras la conexión.</string>
-    <string name="share_group_profile_via_link">Compartir perfil de grupo mediante enlace</string>
-    <string name="share_profile_via_link_alert_confirm">Compartir perfil</string>
-    <string name="share_profile_via_link">Compartir perfil con la dirección</string>
+    <string name="share_group_profile_via_link">¿Actualizar enlace de grupo?</string>
+    <string name="share_profile_via_link_alert_confirm">Actualizar</string>
+    <string name="share_profile_via_link">¿Actualizar la dirección?</string>
     <string name="network_option_tcp_connection_timeout_background">Timeout conexión TCP sp</string>
     <string name="the_sender_will_not_be_notified">El remitente NO será notificado.</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Para usar otro perfil tras el intento de conexión, elimina el chat y usa el enlace de nuevo.</string>
@@ -2480,7 +2480,7 @@
     <string name="context_user_picker_your_profile">Tu perfil</string>
     <string name="e2ee_info_e2ee"><![CDATA[Los mensajes están protegidos mediante<b>cifrado de extremo a extremo</b>.]]></string>
     <string name="context_user_picker_cant_change_profile_alert_title">No se puede cambiar el perfil</string>
-    <string name="short_descr__field">Bio:</string>
+    <string name="short_descr__field">Biografía:</string>
     <string name="loading_profile">Cargando perfil. . .</string>
     <string name="group_short_descr_field">Descripción corta:</string>
     <string name="short_descr">Tu biografía:</string>
@@ -2507,4 +2507,8 @@
     <string name="v6_4_1_short_address">Direcciones SimpleX cortas</string>
     <string name="v6_4_1_short_address_update">Actualiza tu dirección</string>
     <string name="v6_4_1_welcome_contacts">Da la bienvenida a tus contactos 👋</string>
+    <string name="share_old_address_alert_button">Compartir dirección antigua</string>
+    <string name="share_old_link_alert_button">Compartir enlace antiguo</string>
+    <string name="share_group_profile_via_link_alert_text">El enlace será corto y el perfil del grupo se compartirá mediante el enlace.</string>
+    <string name="upgrade_group_link">Actualizar enlace de grupo</string>
 </resources>

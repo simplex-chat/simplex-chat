@@ -1254,7 +1254,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Bio" xml:space="preserve">
         <source>Bio</source>
-        <target>Bio</target>
+        <target>Biografía</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Bio too large" xml:space="preserve">
@@ -7441,6 +7441,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share old address" xml:space="preserve">
         <source>Share old address</source>
+        <target>Compartir dirección antigua</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share old link" xml:space="preserve">
@@ -8000,6 +8001,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target>La dirección será corta y tu perfil se compartirá mediante la dirección.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -8064,7 +8066,7 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
       </trans-unit>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
         <source>The link will be short, and group profile will be shared via the link.</source>
-        <target>Compartir perfil de grupo mediante enlace</target>
+        <target>El enlace será corto y el perfil del grupo se compartirá mediante el enlace.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8558,14 +8560,17 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Upgrade" xml:space="preserve">
         <source>Upgrade</source>
+        <target>Actualizar</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Upgrade address" xml:space="preserve">
         <source>Upgrade address</source>
+        <target>Actualizar dirección</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade address?" xml:space="preserve">
         <source>Upgrade address?</source>
+        <target>¿Actualizar la dirección?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -8575,6 +8580,7 @@ Para conectarte pide a tu contacto que cree otro enlace y comprueba la conexión
       </trans-unit>
       <trans-unit id="Upgrade group link?" xml:space="preserve">
         <source>Upgrade group link?</source>
+        <target>¿Actualizar enlace de grupo?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">

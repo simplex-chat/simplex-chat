@@ -2419,7 +2419,7 @@
     <string name="reviewed_by_admins">رُجع من قِبل المُدراء</string>
     <string name="no_support_chats">لا دردشات مع الأعضاء</string>
     <string name="cant_send_message_member_has_old_version">العضو لديه نُسخة قديمة</string>
-    <string name="add_short_link">أضف رابط قصير</string>
+    <string name="add_short_link">رقِّ العنوان</string>
     <string name="accept_contact_request">اقبل طلب جهة الاتصال</string>
     <string name="compose_view_add_message">أضف رسالة</string>
     <string name="e2ee_info_e2ee"><![CDATA[الرسائل محمية بواسطة <b>التعمية بين الطرفين</b>.]]></string>
@@ -2437,16 +2437,16 @@
     <string name="open_to_accept">افتح للقبول</string>
     <string name="open_to_connect">افتح لاتصال</string>
     <string name="group_preview_open_to_join">افتح لانضمام</string>
-    <string name="share_profile_via_link_alert_text">سيتم مشاركة ملف التعريف مع العنوان.</string>
+    <string name="share_profile_via_link_alert_text">سيكون العنوان قصيراً، وسيتم مشاركة ملف تعريفك عبر العنوان.</string>
     <string name="reject_contact_request">ارفض طلب جهة الاتصال</string>
     <string name="cant_send_message_request_is_sent">أُرسل الطلب</string>
     <string name="compose_view_send_contact_request_alert_question">إرسال طلب جهة اتصال؟</string>
     <string name="compose_view_send_request">أرسل طلب</string>
     <string name="compose_view_send_request_without_message">أرسل طلب دون رسالة</string>
     <string name="sent_to_your_contact_after_connection">أُرسل إلى جهة اتصالك بعد الاتصال.</string>
-    <string name="share_group_profile_via_link">شارك ملف تعريف المجموعة عبر الرابط</string>
-    <string name="share_profile_via_link_alert_confirm">شارك ملف التعريف</string>
-    <string name="share_profile_via_link">شارك ملف التعريف مع العنوان</string>
+    <string name="share_group_profile_via_link">ترقية رابط المجموعة؟</string>
+    <string name="share_profile_via_link_alert_confirm">رقِّ</string>
+    <string name="share_profile_via_link">ترقية العنوان؟</string>
     <string name="the_sender_will_not_be_notified">لن يتم إشعار المرسل.</string>
     <string name="address_welcome_message">رسالة الترحيب</string>
     <string name="context_user_picker_your_profile">ملف تعريفك</string>
@@ -2492,4 +2492,8 @@
     <string name="v6_4_1_short_address">عنوان SimpleX قصير</string>
     <string name="v6_4_1_short_address_update">حدّث عنوانك</string>
     <string name="v6_4_1_welcome_contacts">رحب بجهات اتصالك 👋</string>
+    <string name="share_old_address_alert_button">شارك العنوان القديم</string>
+    <string name="share_old_link_alert_button">شارك الرابط القديم</string>
+    <string name="share_group_profile_via_link_alert_text">سيكون الرابط قصيراً، وسيتم مشاركة الملف التعريفي للمجموعة عبر الرابط.</string>
+    <string name="upgrade_group_link">رقِّ رابط المجموعة</string>
 </resources>
