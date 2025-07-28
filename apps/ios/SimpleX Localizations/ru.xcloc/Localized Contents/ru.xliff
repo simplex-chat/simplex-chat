@@ -1252,12 +1252,14 @@ swipe action</note>
         <target>Улучшенный интерфейс</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio" xml:space="preserve">
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
+        <target state="translated">О себе</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio too large" xml:space="preserve">
+      <trans-unit id="Bio too large" xml:space="preserve" approved="no">
         <source>Bio too large</source>
+        <target state="translated">Описание слишком длинное</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -1350,8 +1352,9 @@ swipe action</note>
         <target>Бизнес разговоры</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Business connection" xml:space="preserve">
+      <trans-unit id="Business connection" xml:space="preserve" approved="no">
         <source>Business connection</source>
+        <target state="translated">Бизнес контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Businesses" xml:space="preserve">
@@ -2197,8 +2200,9 @@ This is your own one-time link!</source>
         <target>Создание очереди</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create your address" xml:space="preserve">
+      <trans-unit id="Create your address" xml:space="preserve" approved="no">
         <source>Create your address</source>
+        <target state="translated">Создайте Ваш адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -2660,8 +2664,9 @@ swipe action</note>
         <target>Описание</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Description too large" xml:space="preserve">
+      <trans-unit id="Description too large" xml:space="preserve" approved="no">
         <source>Description too large</source>
+        <target state="translated">Описание слишком длинное</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Desktop address" xml:space="preserve">
@@ -3010,8 +3015,9 @@ chat item action</note>
         <target>Включить доступ к камере</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
         <source>Enable disappearing messages by default.</source>
+        <target state="translated">Включите исчезающие сообщения по умолчанию.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4645,8 +4651,9 @@ This is your link for group %@!</source>
         <target>Оставить неиспользованное приглашение?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Keep your chats clean" xml:space="preserve">
+      <trans-unit id="Keep your chats clean" xml:space="preserve" approved="no">
         <source>Keep your chats clean</source>
+        <target state="translated">Очищайте Ваши чаты</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -4764,8 +4771,9 @@ This is your link for group %@!</source>
         <target>"Живые" сообщения</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Loading profile…" xml:space="preserve">
+      <trans-unit id="Loading profile…" xml:space="preserve" approved="no">
         <source>Loading profile…</source>
+        <target state="translated">Загрузка профиля…</target>
         <note>in progress text</note>
       </trans-unit>
       <trans-unit id="Local name" xml:space="preserve">
@@ -7354,8 +7362,9 @@ chat item action</note>
         <target>Установите пароль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve" approved="no">
         <source>Set profile bio and welcome message.</source>
+        <target state="translated">Добавьте описание и приветственное сообщение.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
@@ -7429,12 +7438,14 @@ chat item action</note>
         <target>Поделиться ссылкой</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share old address" xml:space="preserve">
+      <trans-unit id="Share old address" xml:space="preserve" approved="no">
         <source>Share old address</source>
+        <target state="translated">Поделиться старым адресом</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Share old link" xml:space="preserve">
+      <trans-unit id="Share old link" xml:space="preserve" approved="no">
         <source>Share old link</source>
+        <target state="translated">Поделиться старой ссылкой</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share profile" xml:space="preserve">
@@ -7457,16 +7468,19 @@ chat item action</note>
         <target>Поделиться с контактами</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Share your address" xml:space="preserve">
+      <trans-unit id="Share your address" xml:space="preserve" approved="no">
         <source>Share your address</source>
+        <target state="translated">Поделитесь Вашим адресом</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Short SimpleX address" xml:space="preserve">
+      <trans-unit id="Short SimpleX address" xml:space="preserve" approved="no">
         <source>Short SimpleX address</source>
+        <target state="translated">Короткий адрес SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Short description" xml:space="preserve">
+      <trans-unit id="Short description" xml:space="preserve" approved="no">
         <source>Short description</source>
+        <target state="translated">Цель</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short link" xml:space="preserve">
@@ -7877,12 +7891,14 @@ report reason</note>
         <target>Сделать фото</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to chat" xml:space="preserve">
+      <trans-unit id="Tap Connect to chat" xml:space="preserve" approved="no">
         <source>Tap Connect to chat</source>
+        <target state="translated">Нажмите Соединиться</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to send request" xml:space="preserve">
+      <trans-unit id="Tap Connect to send request" xml:space="preserve" approved="no">
         <source>Tap Connect to send request</source>
+        <target state="translated">Нажмите Соединиться, чтобы отправить запрос</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -7890,8 +7906,9 @@ report reason</note>
         <target>Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Join group" xml:space="preserve">
+      <trans-unit id="Tap Join group" xml:space="preserve" approved="no">
         <source>Tap Join group</source>
+        <target state="translated">Нажмите Вступить в группу</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap button " xml:space="preserve">
@@ -7981,8 +7998,9 @@ It can happen because of some bug or when the connection is compromised.</source
 Это может произойти из-за ошибки программы, или когда соединение компроментировано.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve" approved="no">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target state="translated">Адрес будет коротким, и Ваш профиль будет добавлен в адрес.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -8045,8 +8063,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Хэш предыдущего сообщения отличается.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
+      <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve" approved="no">
         <source>The link will be short, and group profile will be shared via the link.</source>
+        <target state="translated">Ссылка будет короткой, и профиль группы будет добавлен в ссылку.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8204,8 +8223,9 @@ It can happen because of some bug or when the connection is compromised.</source
         <target>Эта настройка применяется к сообщениям в Вашем текущем профиле чата **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
+      <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve" approved="no">
         <source>Time to disappear is set only for new contacts.</source>
+        <target state="translated">Время удаления устанавливается только для новых контактов.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -8537,16 +8557,19 @@ To connect, please ask your contact to create another connection link and check 
         <target>Обновление настроек приведет к сбросу и установке нового соединения со всеми серверами.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade" xml:space="preserve">
+      <trans-unit id="Upgrade" xml:space="preserve" approved="no">
         <source>Upgrade</source>
+        <target state="translated">Обновить</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="Upgrade address" xml:space="preserve">
+      <trans-unit id="Upgrade address" xml:space="preserve" approved="no">
         <source>Upgrade address</source>
+        <target state="translated">Обновить адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade address?" xml:space="preserve">
+      <trans-unit id="Upgrade address?" xml:space="preserve" approved="no">
         <source>Upgrade address?</source>
+        <target state="translated">Обновить адрес?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -8554,16 +8577,19 @@ To connect, please ask your contact to create another connection link and check 
         <target>Обновить и открыть чат</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade group link?" xml:space="preserve">
+      <trans-unit id="Upgrade group link?" xml:space="preserve" approved="no">
         <source>Upgrade group link?</source>
+        <target state="translated">Обновить ссылку группы?</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Upgrade link" xml:space="preserve">
+      <trans-unit id="Upgrade link" xml:space="preserve" approved="no">
         <source>Upgrade link</source>
+        <target state="translated">Обновить ссылку</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Upgrade your address" xml:space="preserve">
+      <trans-unit id="Upgrade your address" xml:space="preserve" approved="no">
         <source>Upgrade your address</source>
+        <target state="translated">Обновите Ваш адрес</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -8661,8 +8687,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Использовать интерфейс iOS для звонков</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use incognito profile" xml:space="preserve">
+      <trans-unit id="Use incognito profile" xml:space="preserve" approved="no">
         <source>Use incognito profile</source>
+        <target state="translated">Использовать профиль инкогнито</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -8900,8 +8927,9 @@ To connect, please ask your contact to create another connection link and check 
         <target>Приветственное сообщение слишком длинное</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
+      <trans-unit id="Welcome your contacts 👋" xml:space="preserve" approved="no">
         <source>Welcome your contacts 👋</source>
+        <target state="translated">Приветствуйте Ваши контакты 👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -9328,8 +9356,9 @@ Repeat connection request?</source>
         <target>Ваш адрес SimpleX</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your business contact" xml:space="preserve">
+      <trans-unit id="Your business contact" xml:space="preserve" approved="no">
         <source>Your business contact</source>
+        <target state="translated">Ваш бизнес контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your calls" xml:space="preserve">
@@ -9357,8 +9386,9 @@ Repeat connection request?</source>
         <target>Ваши профили чата</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve">
+      <trans-unit id="Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile." xml:space="preserve" approved="no">
         <source>Your chat was moved to %@ but an unexpected error occurred while redirecting you to the profile.</source>
+        <target state="translated">Соединение было перемещено в профиль %@, но при переключении профиля произошла ошибка.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Your connection was moved to %@ but an error happened when switching profile." xml:space="preserve">
@@ -9366,8 +9396,9 @@ Repeat connection request?</source>
         <target>Соединение было перемещено на %@, но при смене профиля произошла неожиданная ошибка.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact" xml:space="preserve">
+      <trans-unit id="Your contact" xml:space="preserve" approved="no">
         <source>Your contact</source>
+        <target state="translated">Ваш контакт</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
@@ -9400,8 +9431,9 @@ Repeat connection request?</source>
         <target>Ваш активный профиль</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your group" xml:space="preserve">
+      <trans-unit id="Your group" xml:space="preserve" approved="no">
         <source>Your group</source>
+        <target state="translated">Ваша группа</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your preferences" xml:space="preserve">
