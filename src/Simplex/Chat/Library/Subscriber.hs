@@ -581,7 +581,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
               when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
                 (Nothing, Nothing) -> do
-                  createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
+                  unlessM (withStore' $ \db -> checkContactHasItems db user ct') $
+                    createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
                   createE2EItem
                   createFeatureEnabledItems user ct'
                 (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->
@@ -3089,6 +3090,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           connIds <- joinConn subMode
           -- [incognito] reuse membership incognito profile
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
+          createInternalChatItem user (CDDirectSnd mCt') CIChatBanner (Just epochStart)
           createItems mCt' m'
         joinConn subMode = do
           -- [incognito] send membership incognito profile
@@ -3097,7 +3099,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           dm <- encodeConnInfo $ XInfo p
           joinAgentConnectionAsync user True connReq dm subMode
         createItems mCt' m' = do
-          createInternalChatItem user (CDDirectSnd mCt') CIChatBanner (Just epochStart)
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
           toView $ CEvtNewMemberContactReceivedInv user mCt' g' m''
