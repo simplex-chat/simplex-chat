@@ -19,7 +19,7 @@ inputs:
      description: "Cache path"
    cabal_ver:
      required: false
-     default: 3.10.1.0
+     default: 3.10.2.0
      description: "GHC version to install"
 runs:
   using: "composite"
