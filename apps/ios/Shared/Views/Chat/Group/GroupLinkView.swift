@@ -223,6 +223,7 @@ struct GroupLinkView_Previews: PreviewProvider {
             userContactLinkId: 1,
             connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil),
             shortLinkDataSet: false,
+            shortLinkLargeDataSet: false,
             groupLinkId: "abc",
             acceptMemberRole: .member
         )
@@ -234,4 +235,3 @@ struct GroupLinkView_Previews: PreviewProvider {
         }
     }
 }
-

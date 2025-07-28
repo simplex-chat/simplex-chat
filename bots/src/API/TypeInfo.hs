@@ -162,6 +162,7 @@ toTypeInfo tr =
       "AgentUserId" -> ST TInt64 []
       "Integer" -> ST TInt64 []
       "Version" -> ST TInt []
+      "BoolDef" -> ST TBool []
       "PQEncryption" -> ST TBool []
       "PQSupport" -> ST TBool []
       "ACreatedConnLink" -> ST "CreatedConnLink" []

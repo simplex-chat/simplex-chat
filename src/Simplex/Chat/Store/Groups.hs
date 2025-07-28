@@ -209,10 +209,11 @@ createGroupLink :: DB.Connection -> User -> GroupInfo -> ConnId -> CreatedLinkCo
 createGroupLink db user@User {userId} groupInfo@GroupInfo {groupId, localDisplayName} agentConnId (CCLink cReq shortLink) groupLinkId memberRole subMode = do
   checkConstraint (SEDuplicateGroupLink groupInfo) . liftIO $ do
     currentTs <- getCurrentTime
+    let slDataSet = BI (isJust shortLink)
     DB.execute
       db
-      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, short_link_data_set, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)"
-      ((userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, shortLink, BI (isJust shortLink)) :. (memberRole, BI True, currentTs, currentTs))
+      "INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)"
+      ((userId, groupId, groupLinkId, "group_link_" <> localDisplayName, cReq, shortLink, slDataSet, slDataSet) :. (memberRole, BI True, currentTs, currentTs))
     userContactLinkId <- insertedRowId db
     void $ createConnection_ db userId ConnUserContact (Just userContactLinkId) agentConnId ConnNew initialChatVersion chatInitialVRange Nothing Nothing Nothing 0 currentTs subMode PQSupportOff
   getGroupLink db user groupInfo
@@ -278,6 +279,7 @@ data GroupLink = GroupLink
   { userContactLinkId :: Int64,
     connLinkContact :: CreatedLinkContact,
     shortLinkDataSet :: Bool,
+    shortLinkLargeDataSet :: BoolDef,
     groupLinkId :: GroupLinkId,
     acceptMemberRole :: GroupMemberRole
   }
@@ -286,13 +288,14 @@ data GroupLink = GroupLink
 getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO GroupLink
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
   ExceptT . firstRow toGroupLink (SEGroupLinkNotFound gInfo) $
-    DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
+    DB.query db "SELECT user_contact_link_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, group_link_id, group_link_member_role FROM user_contact_links WHERE user_id = ? AND group_id = ? LIMIT 1" (userId, groupId)
   where
-    toGroupLink (userContactLinkId, cReq, shortLink, BI shortLinkDataSet, groupLinkId, mRole_) =
+    toGroupLink (userContactLinkId, cReq, shortLink, BI shortLinkDataSet, BI slLargeDataSet, groupLinkId, mRole_) =
       GroupLink {
         userContactLinkId,
         connLinkContact = CCLink cReq shortLink,
         shortLinkDataSet,
+        shortLinkLargeDataSet = BoolDef slLargeDataSet,
         groupLinkId,
         acceptMemberRole = fromMaybe GRMember mRole_
       }
@@ -314,11 +317,12 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
     [sql|
       UPDATE user_contact_links
       SET short_link_contact = ?,
-          short_link_data_set = ?
+          short_link_data_set = ?,
+          short_link_large_data_set = ?
       WHERE user_contact_link_id = ?
     |]
-    (shortLink, BI True, userContactLinkId)
-  pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True}
+    (shortLink, BI True, BI True, userContactLinkId)
+  pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo

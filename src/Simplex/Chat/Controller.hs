@@ -157,8 +157,7 @@ data ChatConfig = ChatConfig
     coreApi :: Bool,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
-    chatHooks :: ChatHooks,
-    largeLinkData :: Bool
+    chatHooks :: ChatHooks
   }
 
 data RandomAgentServers = RandomAgentServers
@@ -249,8 +248,7 @@ data ChatController = ChatController
     tempDirectory :: TVar (Maybe FilePath),
     assetsDirectory :: TVar (Maybe FilePath),
     logFilePath :: Maybe FilePath,
-    contactMergeEnabled :: TVar Bool,
-    useLargeLinkData :: TVar Bool
+    contactMergeEnabled :: TVar Bool
   }
 
 data HelpSection = HSMain | HSFiles | HSGroups | HSContacts | HSMyAddress | HSIncognito | HSMarkdown | HSMessages | HSRemote | HSSettings | HSDatabase
@@ -277,7 +275,7 @@ data ChatCommand
   | UnmuteUser
   | APIDeleteUser {userId :: UserId, delSMPQueues :: Bool, viewPwd :: Maybe UserPwd}
   | DeleteUser UserName Bool (Maybe UserPwd)
-  | StartChat {mainApp :: Bool, enableSndFiles :: Bool, largeLinkData :: Bool} -- enableSndFiles has no effect when mainApp is True
+  | StartChat {mainApp :: Bool, enableSndFiles :: Bool} -- enableSndFiles has no effect when mainApp is True
   | CheckChatRunning
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
