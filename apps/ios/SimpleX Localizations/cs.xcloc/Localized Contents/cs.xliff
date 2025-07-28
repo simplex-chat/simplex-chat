@@ -172,6 +172,7 @@
       </trans-unit>
       <trans-unit id="%d messages not forwarded" xml:space="preserve">
         <source>%d messages not forwarded</source>
+        <target>%d zprávy nebyly přeposlány</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="%d min" xml:space="preserve">
@@ -191,6 +192,7 @@
       </trans-unit>
       <trans-unit id="%d seconds(s)" xml:space="preserve">
         <source>%d seconds(s)</source>
+        <target>%d sekund</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -249,6 +251,7 @@
       </trans-unit>
       <trans-unit id="%lld messages moderated by %@" xml:space="preserve">
         <source>%lld messages moderated by %@</source>
+        <target>%lld zprávy moderované %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld minutes" xml:space="preserve">
@@ -313,6 +316,7 @@
       </trans-unit>
       <trans-unit id="(new)" xml:space="preserve">
         <source>(new)</source>
+        <target>(nový)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="(this device v%@)" xml:space="preserve">
@@ -322,10 +326,12 @@
       </trans-unit>
       <trans-unit id="**Create 1-time link**: to create and share a new invitation link." xml:space="preserve">
         <source>**Create 1-time link**: to create and share a new invitation link.</source>
+        <target>**Vytvořit jednorázový odkaz**: pro vytvoření a sdílení nové pozvánky.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create group**: to create a new group." xml:space="preserve">
         <source>**Create group**: to create a new group.</source>
+        <target>**Vytvořit skupinu**: pro vytvoření nové skupiny.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve">
@@ -354,6 +360,7 @@
       </trans-unit>
       <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve">
         <source>**Scan / Paste link**: to connect via a link you received.</source>
+        <target>**Skenovat / Vložit odkaz**: pro připojení pomocí odkazu který jste obdrželi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
@@ -363,6 +370,7 @@
       </trans-unit>
       <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve">
         <source>**Warning**: the archive will be removed.</source>
+        <target>**Varování**: archiv bude odstraněn.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">

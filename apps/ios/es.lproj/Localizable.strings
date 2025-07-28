@@ -813,7 +813,7 @@ swipe action */
 "Better user experience" = "Experiencia de usuario mejorada";
 
 /* No comment provided by engineer. */
-"Bio" = "Bio";
+"Bio" = "Biografía";
 
 /* alert title */
 "Bio too large" = "Biografía demasiado larga";
@@ -4944,6 +4944,9 @@ chat item action */
 "Share link" = "Compartir enlace";
 
 /* alert button */
+"Share old address" = "Compartir dirección antigua";
+
+/* alert button */
 "Share old link" = "Comparte enlace completo";
 
 /* No comment provided by engineer. */
@@ -5289,6 +5292,9 @@ report reason */
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate";
 
+/* alert message */
+"The address will be short, and your profile will be shared via the address." = "La dirección será corta y tu perfil se compartirá mediante la dirección.";
+
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "La aplicación puede notificarte cuando recibas mensajes o solicitudes de contacto: por favor, abre la configuración para activarlo.";
 
@@ -5329,7 +5335,7 @@ report reason */
 "The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "El ID del siguiente mensaje es incorrecto (menor o igual que el anterior).\nPuede ocurrir por algún bug o cuando la conexión está comprometida.";
 
 /* alert message */
-"The link will be short, and group profile will be shared via the link." = "Compartir perfil de grupo mediante enlace";
+"The link will be short, and group profile will be shared via the link." = "El enlace será corto y el perfil del grupo se compartirá mediante el enlace.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "El mensaje se eliminará para todos los miembros.";
@@ -5646,8 +5652,20 @@ report reason */
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Para actualizar la configuración el cliente se reconectará a todos los servidores.";
 
+/* alert button */
+"Upgrade" = "Actualizar";
+
+/* No comment provided by engineer. */
+"Upgrade address" = "Actualizar dirección";
+
+/* alert message */
+"Upgrade address?" = "¿Actualizar la dirección?";
+
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Actualizar y abrir Chat";
+
+/* alert message */
+"Upgrade group link?" = "¿Actualizar enlace de grupo?";
 
 /* No comment provided by engineer. */
 "Upgrade link" = "Añadir enlace";

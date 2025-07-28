@@ -4944,6 +4944,9 @@ chat item action */
 "Share link" = "Megosztás";
 
 /* alert button */
+"Share old address" = "Régi cím megosztása";
+
+/* alert button */
 "Share old link" = "Teljes hivatkozás megosztása";
 
 /* No comment provided by engineer. */
@@ -5289,6 +5292,9 @@ report reason */
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Köszönet a felhasználóknak a Weblate-en való közreműködésért!";
 
+/* alert message */
+"The address will be short, and your profile will be shared via the address." = "A cím rövid lesz és a profil meg lesz osztva a címen keresztül.";
+
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Az alkalmazás értesíteni fogja, amikor üzeneteket vagy kéréseket kap – ezt a beállítások menüben engedélyezheti.";
 
@@ -5329,7 +5335,7 @@ report reason */
 "The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "A következő üzenet azonosítója érvénytelen (kisebb vagy egyenlő az előzővel).\nEz valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.";
 
 /* alert message */
-"The link will be short, and group profile will be shared via the link." = "Csoportprofil megosztása a hivatkozáson keresztül";
+"The link will be short, and group profile will be shared via the link." = "A hivatkozás rövid lesz és a csoportprofil meg lesz osztva a hivatkozáson keresztül.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "Az üzenet az összes tag számára törölve lesz.";
@@ -5646,14 +5652,26 @@ report reason */
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "A beállítások frissítése a kiszolgálókhoz való újra kapcsolódással jár.";
 
+/* alert button */
+"Upgrade" = "Frissítés";
+
+/* No comment provided by engineer. */
+"Upgrade address" = "Cím frissítése";
+
+/* alert message */
+"Upgrade address?" = "Frissíti a címet?";
+
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Fejlesztés és a csevegés megnyitása";
 
-/* No comment provided by engineer. */
-"Upgrade link" = "Hivatkozás hozzáadása";
+/* alert message */
+"Upgrade group link?" = "Frissíti a csoporthivatkozást?";
 
 /* No comment provided by engineer. */
-"Upgrade your address" = "SimpleX-címek frissítése";
+"Upgrade link" = "Hivatkozás frissítése";
+
+/* No comment provided by engineer. */
+"Upgrade your address" = "Cím frissítése";
 
 /* No comment provided by engineer. */
 "Upload errors" = "Feltöltési hibák";
@@ -6190,7 +6208,7 @@ report reason */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Inkognitóprofilt használ ehhez a csoporthoz – fő profilja megosztásának elkerülése érdekében a meghívók küldése le van tiltva";
 
 /* No comment provided by engineer. */
-"Your business contact" = "Saját üzleti partner";
+"Your business contact" = "Üzleti partner";
 
 /* No comment provided by engineer. */
 "Your calls" = "Hívások";
@@ -6214,7 +6232,7 @@ report reason */
 "Your connection was moved to %@ but an error happened when switching profile." = "A kapcsolata át lett helyezve ide: %@, de egy váratlan hiba történt a profilra való átirányításkor.";
 
 /* No comment provided by engineer. */
-"Your contact" = "Saját partner";
+"Your contact" = "Partner";
 
 /* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "A partnere a jelenleg megengedett maximális méretű (%@) fájlnál nagyobbat küldött.";

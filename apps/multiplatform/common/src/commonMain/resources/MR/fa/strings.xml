@@ -1876,7 +1876,7 @@
     <string name="chat_list_add_list">افزودن فهرست</string>
     <string name="address_or_1_time_link">نشانی یا پیوند یک‌بار مصرف؟</string>
     <string name="address_settings">تنظیمات نشانی</string>
-    <string name="add_short_link">افزودن پیوند کوتاه</string>
+    <string name="add_short_link">به‌روزرسانی آدرس</string>
     <string name="button_add_team_members">اضافه کردن اعضای تیم</string>
     <string name="add_to_list">افزودن به فهرست</string>
     <string name="add_your_team_members_to_conversations">اعضای تیم خود را به چت‌ها اضافه کنید.</string>
@@ -2022,7 +2022,7 @@
     <string name="onboarding_conditions_private_chats_not_accessible">چت‌های خصوصی، گروه‌ها و مخاطبین شما برای اپراتورهای سرور قابل دسترسی نیستند.</string>
     <string name="v6_3_private_media_file_names">نام‌های فایل‌های رسانه‌ای خصوصی.</string>
     <string name="private_routing_timeout">وقفه در مسیردهی خصوصی</string>
-    <string name="share_profile_via_link_alert_text">پروفایل با آدرس به اشتراک گذاشته خواهد شد.</string>
+    <string name="share_profile_via_link_alert_text">آدرس کوتاه خواهد بود و پروفایل شما از طریق آدرس به اشتراک گذاشته خواهد شد.</string>
     <string name="disable_sending_member_reports">ممنوع کردن گزارش پیام‌ها به مدیران.</string>
     <string name="network_option_protocol_timeout_background">وقفه پس‌زمینه پروتکل</string>
     <string name="proxied">پروکسی شده</string>
@@ -2092,10 +2092,10 @@
     <string name="toolbar_settings">تنظیمات</string>
     <string name="share_1_time_link_with_a_friend">اشتراک‌گذاری لینک یک بار مصرف با یک دوست</string>
     <string name="share_address_publicly">اشتراک‌گذاری آدرس به صورت عمومی</string>
-    <string name="share_group_profile_via_link">اشتراک‌گذاری پروفایل گروه از طریق لینک</string>
+    <string name="share_group_profile_via_link">آیا لینک گروه به‌روزرسانی شود؟</string>
     <string name="new_chat_share_profile">اشتراک‌گذاری پروفایل</string>
-    <string name="share_profile_via_link_alert_confirm">اشتراک‌گذاری پروفایل</string>
-    <string name="share_profile_via_link">اشتراک‌گذاری پروفایل با آدرس</string>
+    <string name="share_profile_via_link_alert_confirm">به‌روزرسانی</string>
+    <string name="share_profile_via_link">آیا آدرس به‌روزرسانی شود؟</string>
     <string name="share_simplex_address_on_social_media">اشتراک‌گذاری آدرس SimpleX در شبکه‌های اجتماعی</string>
     <string name="group_short_descr_field">توضیح کوتاه:</string>
     <string name="short_link_button_text">لینک کوتاه</string>
@@ -2493,4 +2493,19 @@
     <string name="your_servers">سرورهای شما</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">شما دیگر پیام‌هایی از این چت دریافت نخواهید کرد. تاریخچه چت حفظ خواهد شد.</string>
     <string name="appearance_zoom">بزرگنمایی</string>
+    <string name="connect_use_incognito_profile">استفاده از پروفایل ناشناس</string>
+    <string name="upgrade_group_link">به‌روزرسانی لینک گروه</string>
+    <string name="share_group_profile_via_link_alert_text">لینک کوتاه خواهد بود و پروفایل گروه از طریق لینک به اشتراک گذاشته خواهد شد.</string>
+    <string name="share_old_address_alert_button">اشتراک آدرس قدیمی</string>
+    <string name="share_old_link_alert_button">اشتراک لینک قدیمی</string>
+    <string name="v6_4_1_welcome_contacts">به مخاطبین خود خوش آمد بگویید 👋</string>
+    <string name="v6_4_1_welcome_contacts_descr">بیوگرافی پروفایل و پیام خوش آمد را تنظیم کنید.</string>
+    <string name="v6_4_1_keep_chats_clean">چت‌های خود را تمیز نگه‌دارید</string>
+    <string name="v6_4_1_keep_chats_clean_descr">پیام‌های ناپدید شونده به‌طور پیش‌فرض فعال شوند.</string>
+    <string name="v6_4_1_short_address">آدرس کوتاه SimpleX</string>
+    <string name="v6_4_1_short_address_create">آدرس خود را ایجاد کنید</string>
+    <string name="v6_4_1_short_address_update">آدرس خود را به‌روزرسانی کنید</string>
+    <string name="v6_4_1_short_address_share">آدرس خود را به اشتراک بگذارید</string>
+    <string name="v6_4_1_new_interface_languages">۴ زبان جدید رابط کاربری</string>
+    <string name="v6_4_1_new_interface_languages_descr">کاتالان، اندونزیایی، رومانیایی و ویتنامی - با تشکر از کاربران ما!</string>
 </resources>
