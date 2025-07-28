@@ -883,7 +883,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = true), ctrl)
+    val r = sendCmd(null, CC.StartChat(mainApp = true), ctrl)
     when (r.result) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -3515,7 +3515,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val mainApp: Boolean, val largeLinkData: Boolean): CC()
+  class StartChat(val mainApp: Boolean): CC()
   class CheckChatRunning: CC()
   class ApiStopChat: CC()
   @Serializable
@@ -3692,7 +3692,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start main=${onOff(mainApp)} large_link_data=${onOff(largeLinkData)}"
+    is StartChat -> "/_start main=${onOff(mainApp)}"
     is CheckChatRunning -> "/_check running"
     is ApiStopChat -> "/_stop"
     is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"

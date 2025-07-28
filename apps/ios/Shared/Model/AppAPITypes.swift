@@ -23,7 +23,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiMuteUser(userId: Int64)
     case apiUnmuteUser(userId: Int64)
     case apiDeleteUser(userId: Int64, delSMPQueues: Bool, viewPwd: String?)
-    case startChat(mainApp: Bool, enableSndFiles: Bool, largeLinkData: Bool)
+    case startChat(mainApp: Bool, enableSndFiles: Bool)
     case checkChatRunning
     case apiStopChat
     case apiActivateChat(restoreChat: Bool)
@@ -203,7 +203,7 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
             case let .apiUnmuteUser(userId): return "/_unmute user \(userId)"
             case let .apiDeleteUser(userId, delSMPQueues, viewPwd): return "/_delete user \(userId) del_smp=\(onOff(delSMPQueues))\(maybePwd(viewPwd))"
-            case let .startChat(mainApp, enableSndFiles, largeLinkData): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles)) large_link_data=\(onOff(largeLinkData))"
+            case let .startChat(mainApp, enableSndFiles): return "/_start main=\(onOff(mainApp)) snd_files=\(onOff(enableSndFiles))"
             case .checkChatRunning: return "/_check running"
             case .apiStopChat: return "/_stop"
             case let .apiActivateChat(restore): return "/_app activate restore=\(onOff(restore))"

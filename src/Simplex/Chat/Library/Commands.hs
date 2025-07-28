@@ -414,8 +414,7 @@ processChatCommand vr nm = \case
     checkDeleteChatUser user'
     withChatLock "deleteUser" $ deleteChatUser user' delSMPQueues
   DeleteUser uName delSMPQueues viewPwd_ -> withUserName uName $ \userId -> APIDeleteUser userId delSMPQueues viewPwd_
-  StartChat {mainApp, enableSndFiles, largeLinkData} -> withUser' $ \_ -> do
-    chatWriteVar useLargeLinkData largeLinkData
+  StartChat {mainApp, enableSndFiles} -> withUser' $ \_ ->
     asks agentAsync >>= readTVarIO >>= \case
       Just _ -> pure CRChatRunning
       _ -> checkStoreNotChanged . lift $ startChatController mainApp enableSndFiles $> CRChatStarted
@@ -1701,7 +1700,7 @@ processChatCommand vr nm = \case
     -- [incognito] generate profile for connection
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
-    userData <- contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
+    let userData = contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -1741,10 +1740,9 @@ processChatCommand vr nm = \case
       recreateConn user conn@PendingContactConnection {customUserProfileId, connLinkInv} newUser = do
         subMode <- chatReadVar subscriptionMode
         let short = isJust $ connShortLink =<< connLinkInv
-        userData_ <-
-          if short
-            then Just <$> contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
-            else pure Nothing
+            userData_
+              | short = Just $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
+              | otherwise = Nothing
         -- TODO [certs rcv]
         (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True SCMInvitation userData_ Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
@@ -1936,7 +1934,7 @@ processChatCommand vr nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    userData <- contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
+    let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
@@ -2544,8 +2542,8 @@ processChatCommand vr nm = \case
     when (mRole > GRMember) $ throwChatError $ CEGroupMemberInitialRole gInfo mRole
     groupLinkId <- GroupLinkId <$> drgRandomBytes 16
     subMode <- chatReadVar subscriptionMode
-    userData <- groupShortLinkData groupProfile
-    let crClientData = encodeJSON $ CRDataGroup groupLinkId
+    let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+        crClientData = encodeJSON $ CRDataGroup groupLinkId
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
@@ -3159,8 +3157,8 @@ processChatCommand vr nm = \case
     setMyAddressData user ucl@UserContactLink {userContactLinkId, connLinkContact = CCLink connFullLink _sLnk_, addressSettings} = do
       conn <- withFastStore $ \db -> getUserAddressConnection db vr user
       let shortLinkProfile = userProfileDirect user Nothing Nothing True
-      -- TODO [short links] do not save address to server if data did not change, spinners, error handling
-      userData <- contactShortLinkData shortLinkProfile $ Just addressSettings
+          -- TODO [short links] do not save address to server if data did not change, spinners, error handling
+          userData = contactShortLinkData shortLinkProfile $ Just addressSettings
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
@@ -3219,8 +3217,8 @@ processChatCommand vr nm = \case
     setGroupLinkData :: User -> GroupInfo -> GroupLink -> CM ChatResponse
     setGroupLinkData user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
       conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
-      userData <- groupShortLinkData groupProfile
-      let crClientData = encodeJSON $ CRDataGroup groupLinkId
+      let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+          crClientData = encodeJSON $ CRDataGroup groupLinkId
       sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData (Just crClientData))
       gLink' <- withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
       pure $ CRGroupLink user gInfo gLink'
@@ -3586,29 +3584,19 @@ processChatCommand vr nm = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
     restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
-    contactShortLinkData :: Profile -> Maybe AddressSettings -> CM UserLinkData
-    contactShortLinkData p settings = do
-      large <- chatReadVar useLargeLinkData
+    contactShortLinkData :: Profile -> Maybe AddressSettings -> UserLinkData
+    contactShortLinkData p settings =
       let msg = autoReply =<< settings
           business = maybe False businessAddress settings
-          contactData
-            | large = ContactShortLinkData p msg business
-            | otherwise = ContactShortLinkData p {fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing} Nothing business
-      pure $ encodeShortLinkData large contactData
-    groupShortLinkData :: GroupProfile -> CM UserLinkData
-    groupShortLinkData gp = do
-      large <- chatReadVar useLargeLinkData
-      let gp'
-            | large = gp
-            | otherwise = gp {fullName = "", shortDescr = Nothing, description = Nothing, image = Nothing, memberAdmission = Nothing}
-      pure $ encodeShortLinkData large $ GroupShortLinkData gp'
-    encodeShortLinkData :: J.ToJSON a => Bool -> a -> UserLinkData
-    encodeShortLinkData large d =
+          contactData = ContactShortLinkData p msg business
+       in encodeShortLinkData contactData
+    encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
+    encodeShortLinkData d =
       let s = LB.toStrict $ J.encode d
           -- 10kb size limit for compression to be used is based on 13784 limit for link data
           -- and the space reserved for the other fields in ConnLinkData encoding (most of these fields are currently unused).
           s'
-            | B.length s > (if large then 10240 else 254) = B.cons 'X' $ Z1.compress compressionLevel s
+            | B.length s > 10240 = B.cons 'X' $ Z1.compress compressionLevel s
             | otherwise = s
        in UserLinkData s'
     decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
@@ -3627,7 +3615,7 @@ processChatCommand vr nm = \case
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
       forM (connShortLink =<< connLinkInv) $ \_ -> do
-        userData <- contactShortLinkData profile Nothing
+        let userData = contactShortLinkData profile Nothing
         shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userData Nothing)
     shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
     shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)
@@ -4362,9 +4350,8 @@ chatCommandP =
       "/_start " *> do
         mainApp <- "main=" *> onOffP
         enableSndFiles <- " snd_files=" *> onOffP <|> pure mainApp
-        largeLinkData <- " large_link_data=" *> onOffP <|> pure False
-        pure StartChat {mainApp, enableSndFiles, largeLinkData},
-      "/_start" $> StartChat {mainApp = True, enableSndFiles = True, largeLinkData = False},
+        pure StartChat {mainApp, enableSndFiles},
+      "/_start" $> StartChat {mainApp = True, enableSndFiles = True},
       "/_check running" $> CheckChatRunning,
       "/_stop" $> APIStopChat,
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
