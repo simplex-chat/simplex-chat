@@ -663,7 +663,10 @@ fileprivate struct NewOperatorsView: View {
 }
 
 fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject private var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
+    @State private var showAddressSheet = false
+    @State private var progressIndicator = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -675,18 +678,26 @@ fileprivate struct CreateUpdateAddressShortLink: View {
                 Text("Short SimpleX address").font(.title3).bold()
             }
             Group {
-                if let addr = ChatModel.shared.userAddress {
+                if let addr = chatModel.userAddress {
                     if addr.shouldBeUpgraded {
-                        Button("Upgrade your address") { print("update address") }
+                        Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
                     } else {
-                        Button("Share your address") { print("share address") }
+                        Button("Share your address") { addr.shareAddress(short: true) }
                     }
                 } else {
-                    Button("Create your address") { print("create address") }
+                    Button("Create your address") { showAddressSheet = true }
                 }
             }
             .multilineTextAlignment(.leading)
             .lineLimit(10)
+        }
+        .sheet(isPresented: $showAddressSheet) {
+            NavigationView {
+                UserAddressView(autoCreate: true)
+                    .navigationTitle("SimpleX address")
+                    .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
+            }
         }
     }
 }
