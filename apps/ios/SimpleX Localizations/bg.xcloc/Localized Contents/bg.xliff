@@ -463,8 +463,9 @@ time interval</note>
         <note>delete after time
 time interval</note>
       </trans-unit>
-      <trans-unit id="1 year" xml:space="preserve">
+      <trans-unit id="1 year" xml:space="preserve" approved="no">
         <source>1 year</source>
+        <target state="translated">1 година</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
@@ -563,12 +564,14 @@ accept incoming call via notification
 alert action
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept as member" xml:space="preserve">
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
         <source>Accept as member</source>
+        <target state="translated">Приеми като член</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept as observer" xml:space="preserve">
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
         <source>Accept as observer</source>
+        <target state="translated">Приеми като наблюдател</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Accept conditions" xml:space="preserve">
@@ -581,8 +584,9 @@ swipe action</note>
         <target>Приемане на заявка за връзка?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request" xml:space="preserve">
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
         <source>Accept contact request</source>
+        <target state="translated">Приеми заявка за контакт</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
