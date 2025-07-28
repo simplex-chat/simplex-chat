@@ -883,7 +883,7 @@ object ChatController {
   }
 
   suspend fun apiStartChat(ctrl: ChatCtrl? = null): Boolean {
-    val r = sendCmd(null, CC.StartChat(mainApp = true, largeLinkData = true), ctrl)
+    val r = sendCmd(null, CC.StartChat(mainApp = true), ctrl)
     when (r.result) {
       is CR.ChatStarted -> return true
       is CR.ChatRunning -> return false
@@ -3515,7 +3515,7 @@ sealed class CC {
   class ApiMuteUser(val userId: Long): CC()
   class ApiUnmuteUser(val userId: Long): CC()
   class ApiDeleteUser(val userId: Long, val delSMPQueues: Boolean, val viewPwd: String?): CC()
-  class StartChat(val mainApp: Boolean, val largeLinkData: Boolean): CC()
+  class StartChat(val mainApp: Boolean): CC()
   class CheckChatRunning: CC()
   class ApiStopChat: CC()
   @Serializable
@@ -3692,7 +3692,7 @@ sealed class CC {
     is ApiMuteUser -> "/_mute user $userId"
     is ApiUnmuteUser -> "/_unmute user $userId"
     is ApiDeleteUser -> "/_delete user $userId del_smp=${onOff(delSMPQueues)}${maybePwd(viewPwd)}"
-    is StartChat -> "/_start main=${onOff(mainApp)} large_link_data=${onOff(largeLinkData)}"
+    is StartChat -> "/_start main=${onOff(mainApp)}"
     is CheckChatRunning -> "/_check running"
     is ApiStopChat -> "/_stop"
     is ApiSetAppFilePaths -> "/set file paths ${json.encodeToString(this)}"
@@ -6732,12 +6732,21 @@ enum class RatchetSyncState {
   @SerialName("agreed") Agreed
 }
 
+interface SimplexAddress {
+  val connLinkContact: CreatedConnLink
+  val shortLinkDataSet: Boolean
+  val shortLinkLargeDataSet: Boolean
+
+  val shouldBeUpgraded: Boolean get() = connLinkContact.connShortLink == null || !shortLinkDataSet || !shortLinkLargeDataSet
+}
+
 @Serializable
 data class UserContactLinkRec(
-  val connLinkContact: CreatedConnLink,
-  val shortLinkDataSet: Boolean,
+  override val connLinkContact: CreatedConnLink,
+  override val shortLinkDataSet: Boolean,
+  override val shortLinkLargeDataSet: Boolean,
   val addressSettings: AddressSettings
-)
+): SimplexAddress
 
 @Serializable
 data class AddressSettings(
@@ -6752,11 +6761,12 @@ data class AutoAccept(val acceptIncognito: Boolean)
 @Serializable
 data class GroupLink(
   val userContactLinkId: Long,
-  val connLinkContact: CreatedConnLink,
-  val shortLinkDataSet: Boolean,
+  override val connLinkContact: CreatedConnLink,
+  override val shortLinkDataSet: Boolean,
+  override val shortLinkLargeDataSet: Boolean,
   val groupLinkId: String,
   val acceptMemberRole: GroupMemberRole
-) {
+): SimplexAddress {
   companion object {
     val nullableStateSaver: Saver<GroupLink?, List<Any?>> = Saver(
       save = { groupLink ->
@@ -6769,6 +6779,7 @@ data class GroupLink(
           groupLink.userContactLinkId,
           connData,
           groupLink.shortLinkDataSet,
+          groupLink.shortLinkLargeDataSet,
           groupLink.groupLinkId,
           groupLink.acceptMemberRole.name
         )
@@ -6781,13 +6792,15 @@ data class GroupLink(
         val connFullLink = connPair.first as? String ?: return@Saver null
         val connShortLink = connPair.second as? String
         val shortLinkDataSet = list.getOrNull(2) as? Boolean ?: return@Saver null
-        val groupLinkId = list.getOrNull(3) as? String ?: return@Saver null
-        val roleName = list.getOrNull(4) as? String ?: return@Saver null
+        val shortLinkLargeDataSet = list.getOrNull(3) as? Boolean ?: return@Saver null
+        val groupLinkId = list.getOrNull(4) as? String ?: return@Saver null
+        val roleName = list.getOrNull(5) as? String ?: return@Saver null
 
         GroupLink(
           userContactLinkId = userContactLinkId,
           connLinkContact = CreatedConnLink(connFullLink, connShortLink),
           shortLinkDataSet = shortLinkDataSet,
+          shortLinkLargeDataSet = shortLinkLargeDataSet,
           groupLinkId = groupLinkId,
           acceptMemberRole = GroupMemberRole.valueOf(roleName)
         )

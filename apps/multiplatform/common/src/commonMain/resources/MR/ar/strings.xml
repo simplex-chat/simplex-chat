@@ -195,7 +195,7 @@
     <string name="icon_descr_server_status_error">خطأ</string>
     <string name="create_group">أنشئ مجموعة سرية</string>
     <string name="error_aborting_address_change">خطأ في إحباط تغيير العنوان</string>
-    <string name="auth_enable_simplex_lock">تفعيل قفل SimpleX</string>
+    <string name="auth_enable_simplex_lock">فعّل قفل SimpleX</string>
     <string name="auth_confirm_credential">تأكد من بيانات اعتمادك</string>
     <string name="create_simplex_address">أنشئ عنوان SimpleX</string>
     <string name="continue_to_next_step">متابعة</string>
@@ -215,7 +215,7 @@
     <string name="callstate_ended">انتهى</string>
     <string name="callstate_connected">متصل</string>
     <string name="alert_text_decryption_error_too_many_skipped">%1$d تخطت الرسائل</string>
-    <string name="enable_lock">تفعيل القفل</string>
+    <string name="enable_lock">فعّل القفل</string>
     <string name="confirm_passcode">تأكيد رمز المرور</string>
     <string name="error_deleting_database">خطأ في حذف قاعدة بيانات الدردشة</string>
     <string name="error_encrypting_database">خطأ في تعمية قاعدة البيانات</string>
@@ -244,7 +244,7 @@
     <string name="clear_contacts_selection_button">مسح</string>
     <string name="error_creating_link_for_group">خطأ في إنشاء رابط المجموعة</string>
     <string name="item_info_current">(حاضِر)</string>
-    <string name="network_option_enable_tcp_keep_alive">تفعيل أبقِ TCP على قيد الحياة</string>
+    <string name="network_option_enable_tcp_keep_alive">فعّل أبقِ TCP على قيد الحياة</string>
     <string name="contact_connection_pending">جار الاتصال…</string>
     <string name="group_connection_pending">جار الاتصال…</string>
     <string name="connection_request_sent">أرسلت طلب الاتصال!</string>
@@ -263,7 +263,7 @@
     <string name="error_changing_address">خطأ في تغيير العنوان</string>
     <string name="integrity_msg_skipped">%1$d رسائل تخطت</string>
     <string name="change_lock_mode">تغيير وضع القفل</string>
-    <string name="enabled_self_destruct_passcode">تفعيل رمز التدمير الذاتي</string>
+    <string name="enabled_self_destruct_passcode">فعّل رمز التدمير الذاتي</string>
     <string name="change_member_role_question">تغيير دور المجموعة؟</string>
     <string name="chat_preferences">تفضيلات الدردشة</string>
     <string name="enter_correct_passphrase">أدخل عبارة المرور الصحيحة.</string>
@@ -316,7 +316,7 @@
     <string name="create_profile_button">أنشئ</string>
     <string name="create_your_profile">أنشئ ملف تعريفك</string>
     <string name="icon_descr_call_connecting">مكالمة جارية...</string>
-    <string name="enable_self_destruct">تفعيل التدمير الذاتي</string>
+    <string name="enable_self_destruct">فعّل التدمير الذاتي</string>
     <string name="conn_event_ratchet_sync_started">الموافقة على التعمية…</string>
     <string name="snd_conn_event_ratchet_sync_started">الموافقة على التعمية لـ%s…</string>
     <string name="group_member_status_introduced">متصل (مقدم)</string>
@@ -590,7 +590,7 @@
     <string name="leave_group_question">مغادرة المجموعة؟</string>
     <string name="group_member_status_left">غادر</string>
     <string name="delivery_receipts_are_disabled">إيصالات التسليم مُعطَّلة!</string>
-    <string name="no_call_on_lock_screen">تعطيل</string>
+    <string name="no_call_on_lock_screen">عطّل</string>
     <string name="timed_messages">رسائل تختفي</string>
     <string name="auth_device_authentication_is_disabled_turning_off">استيثاق الجهاز مُعطَّل. جارِ إيقاف تشغيل قفل SimpleX.</string>
     <string name="ttl_m">%d شهر</string>
@@ -601,7 +601,7 @@
     <string name="smp_server_test_disconnect">قطع الاتصال</string>
     <string name="auth_device_authentication_is_not_enabled_you_can_turn_on_in_settings_once_enabled">مصادقة الجهاز غير مفعّلة. يمكنك تشغيل قفل SimpleX عبر الإعدادات، بمجرد تفعيل مصادقة الجهاز.</string>
     <string name="smp_server_test_download_file">نزّل الملف</string>
-    <string name="auth_disable_simplex_lock">تعطيل قفل SimpleX</string>
+    <string name="auth_disable_simplex_lock">عطّل قفل SimpleX</string>
     <string name="edit_verb">تحرير</string>
     <string name="display_name__field">اسم ملف التعريف:</string>
     <string name="icon_descr_email">البريد الإلكتروني</string>
@@ -629,8 +629,8 @@
     <string name="total_files_count_and_size">%d ملف/ات بإجمالي الحجم %s</string>
     <string name="ttl_s">%d ثانية</string>
     <string name="receipts_section_contacts">جهات الاتصال</string>
-    <string name="receipts_contacts_disable_for_all">تعطيل للجميع</string>
-    <string name="receipts_contacts_disable_keep_overrides">تعطيل (الاحتفاظ بالتجاوزات)</string>
+    <string name="receipts_contacts_disable_for_all">عطّل للجميع</string>
+    <string name="receipts_contacts_disable_keep_overrides">عطّل (الاحتفاظ بالتجاوزات)</string>
     <string name="receipts_contacts_title_disable">تعطيل الإيصالات؟</string>
     <string name="mtr_error_different">الهجرة المختلفة في التطبيق / قاعدة البيانات: %s / %s</string>
     <string name="info_row_disappears_at">يختفي في</string>
@@ -672,13 +672,13 @@
     <string name="make_private_connection">أجري اتصال خاص</string>
     <string name="error_stopping_chat">خطأ في إيقاف الدردشة</string>
     <string name="error_loading_details">خطأ في تحميل التفاصيل</string>
-    <string name="allow_accepting_calls_from_lock_screen">تفعيل المكالمات من شاشة القفل عبر الإعدادات.</string>
+    <string name="allow_accepting_calls_from_lock_screen">فعّل المكالمات من شاشة القفل عبر الإعدادات.</string>
     <string name="enable_automatic_deletion_question">تفعيل الحذف التلقائي للرسائل؟</string>
     <string name="error_removing_member">خطأ في إزالة العضو</string>
     <string name="error_setting_address">خطأ في تحديد العنوان</string>
     <string name="mark_read">علّم مقروءة</string>
-    <string name="receipts_contacts_enable_for_all">تفعيل للجميع</string>
-    <string name="receipts_contacts_enable_keep_overrides">تفعيل (الاحتفاظ بالتجاوزات)</string>
+    <string name="receipts_contacts_enable_for_all">فعِّل للجميع</string>
+    <string name="receipts_contacts_enable_keep_overrides">فعّل (الاحتفاظ بالتجاوزات)</string>
     <string name="receipts_contacts_title_enable">تفعيل الإيصالات؟</string>
     <string name="error_starting_chat">خطأ في بدء الدردشة</string>
     <string name="error_exporting_chat_database">خطأ في تصدير قاعدة بيانات الدردشة</string>
@@ -686,7 +686,7 @@
     <string name="make_profile_private">اجعل ملف التعريف خاصًا!</string>
     <string name="v5_2_favourites_filter_descr">تصفية الدردشات غير المقروءة والمفضلة.</string>
     <string name="v5_2_favourites_filter">البحث عن الدردشات بشكل أسرع</string>
-    <string name="enable_receipts_all">تفعيل</string>
+    <string name="enable_receipts_all">فعّل</string>
     <string name="v5_2_disappear_one_message_descr">حتى عندما يتم تعطيله في المحادثة.</string>
     <string name="v5_2_fix_encryption_descr">إصلاح التعمية بعد استعادة النُسخ الاحتياطية.</string>
     <string name="v5_2_disappear_one_message">اجعل رسالة واحدة تختفي</string>
@@ -1300,17 +1300,17 @@
     <string name="v4_2_auto_accept_contact_requests_desc">مع رسالة ترحيب اختيارية.</string>
     <string name="in_developing_title">قريباً!</string>
     <string name="in_developing_desc">هذه الميزة ليست مدعومة بعد. جرب الإصدار القادم.</string>
-    <string name="receipts_groups_disable_keep_overrides">تعطيل (الاحتفاظ بتجاوزات المجموعة)</string>
-    <string name="receipts_groups_enable_for_all">تفعيل لجميع المجموعات</string>
+    <string name="receipts_groups_disable_keep_overrides">عطّل (الاحتفاظ بتجاوزات المجموعة)</string>
+    <string name="receipts_groups_enable_for_all">فعِّل لجميع المجموعات</string>
     <string name="receipts_groups_override_enabled">إرسال الإيصالات مفعّلة لـ%d مجموعات</string>
-    <string name="receipts_groups_disable_for_all">تعطيل لجميع المجموعات</string>
+    <string name="receipts_groups_disable_for_all">عطّل لجميع المجموعات</string>
     <string name="send_receipts_disabled_alert_title">الإيصالات مُعطَّلة</string>
     <string name="recipient_colon_delivery_status">%s: %s</string>
     <string name="send_receipts_disabled_alert_msg">تضم هذه المجموعة أكثر من %1$d عضو، ولا يتم إرسال إيصالات التسليم.</string>
     <string name="delivery">التوصيل</string>
     <string name="send_receipts_disabled">مُعطَّل</string>
     <string name="receipts_groups_title_disable">تعطيل الإيصالات للمجموعات؟</string>
-    <string name="receipts_groups_enable_keep_overrides">تفعيل (الاحتفاظ بتجاوزات المجموعة)</string>
+    <string name="receipts_groups_enable_keep_overrides">فعّل (الاحتفاظ بتجاوزات المجموعة)</string>
     <string name="receipts_groups_title_enable">تفعيل الإيصالات للمجموعات؟</string>
     <string name="no_info_on_delivery">لا توجد معلومات عن التسليم</string>
     <string name="no_selected_chat">لا توجد دردشة محدّدة</string>
@@ -1320,7 +1320,7 @@
     <string name="connect_via_member_address_alert_desc">سيتم إرسال طلب الاتصال لعضو المجموعة هذا.</string>
     <string name="connect_via_link_incognito">اتصال متخفي</string>
     <string name="connect_use_current_profile">استخدم ملف التعريف الحالي</string>
-    <string name="disable_notifications_button">تعطيل الإشعارات</string>
+    <string name="disable_notifications_button">عطّل الإشعارات</string>
     <string name="turn_off_system_restriction_button">افتح إعدادات التطبيق</string>
     <string name="system_restricted_background_desc">لا يمكن تشغيل SimpleX في الخلفية. ستستلم الإشعارات فقط عندما يكون التطبيق قيد التشغيل.</string>
     <string name="connect__a_new_random_profile_will_be_shared">سيتم مشاركة ملف تعريف عشوائي جديد.</string>
@@ -2419,7 +2419,7 @@
     <string name="reviewed_by_admins">رُجع من قِبل المُدراء</string>
     <string name="no_support_chats">لا دردشات مع الأعضاء</string>
     <string name="cant_send_message_member_has_old_version">العضو لديه نُسخة قديمة</string>
-    <string name="add_short_link">أضف رابط قصير</string>
+    <string name="add_short_link">رقِّ العنوان</string>
     <string name="accept_contact_request">اقبل طلب جهة الاتصال</string>
     <string name="compose_view_add_message">أضف رسالة</string>
     <string name="e2ee_info_e2ee"><![CDATA[الرسائل محمية بواسطة <b>التعمية بين الطرفين</b>.]]></string>
@@ -2437,16 +2437,16 @@
     <string name="open_to_accept">افتح للقبول</string>
     <string name="open_to_connect">افتح لاتصال</string>
     <string name="group_preview_open_to_join">افتح لانضمام</string>
-    <string name="share_profile_via_link_alert_text">سيتم مشاركة ملف التعريف مع العنوان.</string>
+    <string name="share_profile_via_link_alert_text">سيكون العنوان قصيراً، وسيتم مشاركة ملف تعريفك عبر العنوان.</string>
     <string name="reject_contact_request">ارفض طلب جهة الاتصال</string>
     <string name="cant_send_message_request_is_sent">أُرسل الطلب</string>
     <string name="compose_view_send_contact_request_alert_question">إرسال طلب جهة اتصال؟</string>
     <string name="compose_view_send_request">أرسل طلب</string>
     <string name="compose_view_send_request_without_message">أرسل طلب دون رسالة</string>
     <string name="sent_to_your_contact_after_connection">أُرسل إلى جهة اتصالك بعد الاتصال.</string>
-    <string name="share_group_profile_via_link">شارك ملف تعريف المجموعة عبر الرابط</string>
-    <string name="share_profile_via_link_alert_confirm">شارك ملف التعريف</string>
-    <string name="share_profile_via_link">شارك ملف التعريف مع العنوان</string>
+    <string name="share_group_profile_via_link">ترقية رابط المجموعة؟</string>
+    <string name="share_profile_via_link_alert_confirm">رقِّ</string>
+    <string name="share_profile_via_link">ترقية العنوان؟</string>
     <string name="the_sender_will_not_be_notified">لن يتم إشعار المرسل.</string>
     <string name="address_welcome_message">رسالة الترحيب</string>
     <string name="context_user_picker_your_profile">ملف تعريفك</string>
@@ -2468,5 +2468,32 @@
     <string name="loading_profile">جارِ تحميل ملف التعريف…</string>
     <string name="short_descr__field">السيرة الذاتية:</string>
     <string name="group_short_descr_field">وصف قصير:</string>
-    <string name="short_descr">سيرتك الذاتية:</string>
+    <string name="short_descr">نبذتك:</string>
+    <string name="bio_too_large">النبذة كبيرة جدًا</string>
+    <string name="group_descr_too_large">الوصف كبير جدًا</string>
+    <string name="chat_banner_accept_contact_request">اقبل طلب جهة الاتصال</string>
+    <string name="chat_banner_business_connection">اتصال عمل</string>
+    <string name="chat_banner_group">مجموعة</string>
+    <string name="chat_banner_connect_to_chat">انقر على \"اتصل\" للدردشة</string>
+    <string name="chat_banner_send_request_to_connect">انقر على \"اتصل\" لإرسال الطلب</string>
+    <string name="chat_banner_join_group">انقر على \"انضم للمجموعة\"</string>
+    <string name="chat_banner_your_business_contact">جهة عمل اتصالك</string>
+    <string name="chat_banner_your_contact">جهة اتصالك</string>
+    <string name="chat_banner_your_group">مجموعتك</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">وقت الاختفاء يتم تعيينه للجهات الاتصال الجديدة فقط.</string>
+    <string name="connect_use_incognito_profile">استخدم ملف تعريف متخفي</string>
+    <string name="v6_4_1_new_interface_languages">4 لغات واجهة جديدة</string>
+    <string name="v6_4_1_new_interface_languages_descr">الكتالانية والإندونيسية والرومانية والفيتنامية - بفضل مستخدمينا!</string>
+    <string name="v6_4_1_short_address_create">أنشئ عنوانك</string>
+    <string name="v6_4_1_keep_chats_clean_descr">فعّل الرسائل ذاتية الاختفاء افتراضيًا.</string>
+    <string name="v6_4_1_keep_chats_clean">أبقِ محادثاتك نظيفة</string>
+    <string name="v6_4_1_welcome_contacts_descr">عيّن نبذة عن الملف التعريف ورسالة الترحيب.</string>
+    <string name="v6_4_1_short_address_share">شارك عنوانك</string>
+    <string name="v6_4_1_short_address">عنوان SimpleX قصير</string>
+    <string name="v6_4_1_short_address_update">حدّث عنوانك</string>
+    <string name="v6_4_1_welcome_contacts">رحب بجهات اتصالك 👋</string>
+    <string name="share_old_address_alert_button">شارك العنوان القديم</string>
+    <string name="share_old_link_alert_button">شارك الرابط القديم</string>
+    <string name="share_group_profile_via_link_alert_text">سيكون الرابط قصيراً، وسيتم مشاركة الملف التعريفي للمجموعة عبر الرابط.</string>
+    <string name="upgrade_group_link">رقِّ رابط المجموعة</string>
 </resources>

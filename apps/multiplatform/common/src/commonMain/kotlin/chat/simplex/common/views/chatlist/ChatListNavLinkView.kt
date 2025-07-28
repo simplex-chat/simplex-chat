@@ -707,7 +707,6 @@ fun acceptContactRequest(
   withBGApi {
     inProgress?.value = true
     val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
-    inProgress?.value = false
     if (contact != null && isCurrentUser) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       withContext(Dispatchers.Main) {
@@ -716,9 +715,12 @@ fun acceptContactRequest(
         } else {
           chatModel.chatsContext.replaceChat(rhId, contactRequestChatId(contactRequestId), chat)
         }
+        inProgress?.value = false
       }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       close?.invoke(chat)
+    } else {
+      inProgress?.value = false
     }
   }
 }

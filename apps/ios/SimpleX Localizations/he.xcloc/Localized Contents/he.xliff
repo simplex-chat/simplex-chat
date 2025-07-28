@@ -5681,6 +5681,10 @@ Enable in *Network &amp; servers* settings.</source>
         <source>%@ connected</source>
         <target state="translated">%@ מחובר</target>
       </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+        <source>%@ uploaded</source>
+        <target state="translated">%@ הועלה</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="he" datatype="plaintext">

@@ -316,7 +316,7 @@ func apiDeleteUser(_ userId: Int64, _ delSMPQueues: Bool, viewPwd: String?) asyn
 }
 
 func apiStartChat(ctrl: chat_ctrl? = nil) throws -> Bool {
-    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true, largeLinkData: true), ctrl: ctrl)
+    let r: ChatResponse0 = try chatSendCmdSync(.startChat(mainApp: true, enableSndFiles: true), ctrl: ctrl)
     switch r {
     case .chatStarted: return true
     case .chatRunning: return false
@@ -1617,7 +1617,8 @@ func networkErrorAlert<R>(_ res: APIResult<R>) -> Alert? {
     }
 }
 
-func acceptContactRequest(incognito: Bool, contactRequestId: Int64) async {
+func acceptContactRequest(incognito: Bool, contactRequestId: Int64, inProgress: Binding<Bool>? = nil) async {
+    await MainActor.run { inProgress?.wrappedValue = true }
     if let contact = await apiAcceptContactRequest(incognito: incognito, contactReqId: contactRequestId) {
         let chat = Chat(chatInfo: ChatInfo.direct(contact: contact), chatItems: [])
         await MainActor.run {
@@ -1627,6 +1628,7 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64) async {
                 ChatModel.shared.replaceChat(contactRequestChatId(contactRequestId), chat)
             }
             NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+            inProgress?.wrappedValue = false
         }
         if contact.sndReady {
             let chatId = chat.id
@@ -1636,6 +1638,8 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64) async {
                 }
             }
         }
+    } else {
+        await MainActor.run { inProgress?.wrappedValue = false }
     }
 }
 

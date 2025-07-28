@@ -1103,11 +1103,15 @@
   <string name="address_settings">Address settings</string>
   <string name="business_address">Business address</string>
   <string name="add_your_team_members_to_conversations">Add your team members to the conversations.</string>
-  <string name="add_short_link">Add short link</string>
-  <string name="share_profile_via_link">Share profile with address</string>
-  <string name="share_profile_via_link_alert_text">Profile will be shared with the address.</string>
-  <string name="share_profile_via_link_alert_confirm">Share profile</string>
-  <string name="share_group_profile_via_link">Share group profile via link</string>
+  <string name="add_short_link">Upgrade address</string>
+  <string name="share_profile_via_link">Upgrade address?</string>
+  <string name="share_profile_via_link_alert_text">The address will be short, and your profile will be shared via the address.</string>
+  <string name="share_profile_via_link_alert_confirm">Upgrade</string>
+  <string name="upgrade_group_link">Upgrade group link</string>
+  <string name="share_group_profile_via_link">Upgrade group link?</string>
+  <string name="share_group_profile_via_link_alert_text">The link will be short, and group profile will be shared via the link.</string>
+  <string name="share_old_address_alert_button">Share old address</string>
+  <string name="share_old_link_alert_button">Share old link</string>
 
   <!-- CreateSimpleXAddress.kt -->
   <string name="continue_to_next_step">Continue</string>
@@ -2445,6 +2449,16 @@
   <string name="v6_4_role_moderator">New group role: Moderator</string>
   <string name="v6_4_role_moderator_descr">Removes messages and blocks members.</string>
   <string name="v6_4_message_delivery_descr">Less traffic on mobile networks.</string>
+  <string name="v6_4_1_welcome_contacts">Welcome your contacts 👋</string>
+  <string name="v6_4_1_welcome_contacts_descr">Set profile bio and welcome message.</string>
+  <string name="v6_4_1_keep_chats_clean">Keep your chats clean</string>
+  <string name="v6_4_1_keep_chats_clean_descr">Enable disappearing messages by default.</string>
+  <string name="v6_4_1_short_address">Short SimpleX address</string>
+  <string name="v6_4_1_short_address_create">Create your address</string>
+  <string name="v6_4_1_short_address_update">Update your address</string>
+  <string name="v6_4_1_short_address_share">Share your address</string>
+  <string name="v6_4_1_new_interface_languages">4 new interface languages</string>
+  <string name="v6_4_1_new_interface_languages_descr">Catalan, Indonesian, Romanian and Vietnamese - thanks to our users!</string>
   <string name="view_updated_conditions">View updated conditions</string>
 
   <!-- CustomTimePicker -->

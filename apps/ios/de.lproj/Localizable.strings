@@ -420,9 +420,6 @@ swipe action */
 "Add servers by scanning QR codes." = "Server durch Scannen von QR Codes hinzufügen.";
 
 /* No comment provided by engineer. */
-"Add short link" = "Verkürzten Link hinzufügen";
-
-/* No comment provided by engineer. */
 "Add team members" = "Team-Mitglieder aufnehmen";
 
 /* No comment provided by engineer. */
@@ -816,6 +813,12 @@ swipe action */
 "Better user experience" = "Verbesserte Nutzer-Erfahrung";
 
 /* No comment provided by engineer. */
+"Bio" = "Biografie";
+
+/* alert title */
+"Bio too large" = "Biografie zu lang";
+
+/* No comment provided by engineer. */
 "Black" = "Schwarz";
 
 /* No comment provided by engineer. */
@@ -881,6 +884,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Business chats" = "Geschäftliche Chats";
+
+/* No comment provided by engineer. */
+"Business connection" = "Geschäftliche Verbindung";
 
 /* No comment provided by engineer. */
 "Businesses" = "Unternehmen";
@@ -1480,6 +1486,9 @@ set passcode view */
 "Create SimpleX address" = "SimpleX-Adresse erstellen";
 
 /* No comment provided by engineer. */
+"Create your address" = "Ihre Adresse erstellen";
+
+/* No comment provided by engineer. */
 "Create your profile" = "Erstellen Sie Ihr Profil";
 
 /* No comment provided by engineer. */
@@ -1784,6 +1793,9 @@ swipe action */
 /* No comment provided by engineer. */
 "Description" = "Beschreibung";
 
+/* alert title */
+"Description too large" = "Beschreibung zu lang";
+
 /* No comment provided by engineer. */
 "Desktop address" = "Desktop-Adresse";
 
@@ -2000,6 +2012,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Kamera-Zugriff aktivieren";
+
+/* No comment provided by engineer. */
+"Enable disappearing messages by default." = "Verschwindende Nachrichten per Voreinstellung aktiviert.";
 
 /* No comment provided by engineer. */
 "Enable Flux in Network & servers settings for better metadata privacy." = "Für einen besseren Metadatenschutz Flux in den Netzwerk- und Servereinstellungen aktivieren.";
@@ -3093,6 +3108,9 @@ snd error text */
 "Keep unused invitation?" = "Nicht genutzte Einladung behalten?";
 
 /* No comment provided by engineer. */
+"Keep your chats clean" = "Halten Sie Ihre Chats übersichtlich";
+
+/* No comment provided by engineer. */
 "Keep your connections" = "Ihre Verbindungen beibehalten";
 
 /* No comment provided by engineer. */
@@ -4093,9 +4111,6 @@ new chat action */
 /* alert message */
 "Profile update will be sent to your contacts." = "Profil-Aktualisierung wird an Ihre Kontakte gesendet.";
 
-/* alert message */
-"Profile will be shared with the address." = "Das Profil wird über den Adress-Link geteilt.";
-
 /* No comment provided by engineer. */
 "Prohibit audio/video calls." = "Audio-/Video-Anrufe nicht erlauben.";
 
@@ -4784,9 +4799,6 @@ chat item action */
 "Sent reply" = "Gesendete Antwort";
 
 /* No comment provided by engineer. */
-"Sent to your contact after connection." = "Wird nach der Verbindung an Ihren Kontakt gesendet.";
-
-/* No comment provided by engineer. */
 "Sent total" = "Summe aller gesendeten Nachrichten";
 
 /* No comment provided by engineer. */
@@ -4889,6 +4901,9 @@ chat item action */
 "Set passphrase to export" = "Passwort für den Export festlegen";
 
 /* No comment provided by engineer. */
+"Set profile bio and welcome message." = "Geben Sie eine Profil-Biografie und eine Begrüßungsmeldung ein.";
+
+/* No comment provided by engineer. */
 "Set the message shown to new members!" = "Definieren Sie eine Begrüßungsmeldung, die neuen Mitgliedern angezeigt wird!";
 
 /* No comment provided by engineer. */
@@ -4926,16 +4941,16 @@ chat item action */
 "Share from other apps." = "Aus anderen Apps heraus teilen.";
 
 /* No comment provided by engineer. */
-"Share group profile via link" = "Gruppenprofil über einen Link teilen";
-
-/* No comment provided by engineer. */
 "Share link" = "Link teilen";
 
 /* alert button */
-"Share profile" = "Profil teilen";
+"Share old address" = "Alte Adresse teilen";
 
-/* alert title */
-"Share profile with address" = "Profil über einen Link teilen";
+/* alert button */
+"Share old link" = "Vollständigen Link teilen";
+
+/* No comment provided by engineer. */
+"Share profile" = "Profil teilen";
 
 /* No comment provided by engineer. */
 "Share SimpleX address on social media." = "Die SimpleX-Adresse auf sozialen Medien teilen.";
@@ -4950,7 +4965,16 @@ chat item action */
 "Share with contacts" = "Mit Kontakten teilen";
 
 /* No comment provided by engineer. */
+"Share your address" = "Ihre Adresse teilen";
+
+/* No comment provided by engineer. */
+"Short description" = "Kurze Beschreibung";
+
+/* No comment provided by engineer. */
 "Short link" = "Verkürzter Link";
+
+/* No comment provided by engineer. */
+"Short SimpleX address" = "Verkürzte SimpleX-Adresse";
 
 /* No comment provided by engineer. */
 "Show → on messages sent via private routing." = "Bei Nachrichten, die über privates Routing versendet wurden, → anzeigen.";
@@ -5191,7 +5215,16 @@ report reason */
 "Tap button " = "Schaltfläche antippen ";
 
 /* No comment provided by engineer. */
+"Tap Connect to chat" = "Verbinden tippen, um zu chatten";
+
+/* No comment provided by engineer. */
+"Tap Connect to send request" = "Verbinden tippen, um die Anfrage zu senden";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Tippen Sie im Menü auf SimpleX-Adresse erstellen, um sie später zu erstellen.";
+
+/* No comment provided by engineer. */
+"Tap Join group" = "Tippen, um der Gruppe beizutreten";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Zum Aktivieren des Profils tippen.";
@@ -5259,6 +5292,9 @@ report reason */
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Dank der Nutzer - Tragen Sie per Weblate bei!";
 
+/* alert message */
+"The address will be short, and your profile will be shared via the address." = "Die Adresse wird gekürzt sein, und Ihr Profil wird über die Adresse geteilt.";
+
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.";
 
@@ -5297,6 +5333,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).\nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.";
+
+/* alert message */
+"The link will be short, and group profile will be shared via the link." = "Der Link wird gekürzt sein, und das Gruppen-Profil wird über den Link geteilt.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "Diese Nachricht wird für alle Gruppenmitglieder gelöscht.";
@@ -5393,6 +5432,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";
+
+/* No comment provided by engineer. */
+"Time to disappear is set only for new contacts." = "Die Zeit bis zum Verschwinden wird nur für neue Kontakte eingestellt.";
 
 /* No comment provided by engineer. */
 "Title" = "Bezeichnung";
@@ -5610,8 +5652,26 @@ report reason */
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.";
 
+/* alert button */
+"Upgrade" = "Aktualisieren";
+
+/* No comment provided by engineer. */
+"Upgrade address" = "Adresse aktualisieren";
+
+/* alert message */
+"Upgrade address?" = "Adresse aktualisieren?";
+
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Aktualisieren und den Chat öffnen";
+
+/* alert message */
+"Upgrade group link?" = "Gruppen-Link aktualisieren?";
+
+/* No comment provided by engineer. */
+"Upgrade link" = "Link hinzufügen";
+
+/* No comment provided by engineer. */
+"Upgrade your address" = "Ihre Adresse aktualisieren";
 
 /* No comment provided by engineer. */
 "Upload errors" = "Fehler beim Hochladen";
@@ -5654,6 +5714,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Use from desktop" = "Vom Desktop aus nutzen";
+
+/* No comment provided by engineer. */
+"Use incognito profile" = "Inkognito-Profil nutzen";
 
 /* No comment provided by engineer. */
 "Use iOS call interface" = "iOS Anrufschnittstelle nutzen";
@@ -5846,6 +5909,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Welcome message is too long" = "Die Begrüßungsmeldung ist zu lang";
+
+/* No comment provided by engineer. */
+"Welcome your contacts 👋" = "Begrüßen Sie Ihre Kontakte 👋";
 
 /* No comment provided by engineer. */
 "What's new" = "Was ist neu";
@@ -6142,6 +6208,9 @@ report reason */
 "You're using an incognito profile for this group - to prevent sharing your main profile inviting contacts is not allowed" = "Sie verwenden ein Inkognito-Profil für diese Gruppe. Um zu verhindern, dass Sie Ihr Hauptprofil teilen, ist in diesem Fall das Einladen von Kontakten nicht erlaubt";
 
 /* No comment provided by engineer. */
+"Your business contact" = "Ihr geschäftlicher Kontakt";
+
+/* No comment provided by engineer. */
 "Your calls" = "Anrufe";
 
 /* No comment provided by engineer. */
@@ -6163,6 +6232,9 @@ report reason */
 "Your connection was moved to %@ but an error happened when switching profile." = "Ihre Verbindung wurde auf %@ verschoben. Während Sie auf das Profil weitergeleitet wurden trat aber ein unerwarteter Fehler auf.";
 
 /* No comment provided by engineer. */
+"Your contact" = "Ihr Kontakt";
+
+/* No comment provided by engineer. */
 "Your contact sent a file that is larger than currently supported maximum size (%@)." = "Ihr Kontakt hat eine Datei gesendet, die größer ist als die derzeit unterstützte maximale Größe (%@).";
 
 /* No comment provided by engineer. */
@@ -6179,6 +6251,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your current profile" = "Mein aktuelles Chat-Profil";
+
+/* No comment provided by engineer. */
+"Your group" = "Ihre Gruppe";
 
 /* No comment provided by engineer. */
 "Your ICE servers" = "Ihre ICE-Server";
