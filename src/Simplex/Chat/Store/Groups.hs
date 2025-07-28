@@ -322,7 +322,7 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
       WHERE user_contact_link_id = ?
     |]
     (shortLink, BI True, BI True, userContactLinkId)
-  pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True}
+  pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
 -- | creates completely new group with a single member - the current user
 createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> ExceptT StoreError IO GroupInfo

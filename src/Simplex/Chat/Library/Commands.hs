@@ -3164,7 +3164,7 @@ processChatCommand vr nm = \case
       sLnk <- shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData Nothing)
       withFastStore' $ \db -> setUserContactLinkShortLink db userContactLinkId sLnk
       let autoAccept' = (\aa -> aa {acceptIncognito = False}) <$> autoAccept addressSettings
-          ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = True, addressSettings = addressSettings {autoAccept = autoAccept'}}
+          ucl' = (ucl :: UserContactLink) {connLinkContact = CCLink connFullLink (Just sLnk), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True, addressSettings = addressSettings {autoAccept = autoAccept'}}
       pure ucl'
     updateContactPrefs :: User -> Contact -> Preferences -> CM ChatResponse
     updateContactPrefs _ ct@Contact {activeConn = Nothing} _ = throwChatError $ CEContactNotActive ct
