@@ -17,6 +17,9 @@
 "!1 colored!" = "!1 barevný!";
 
 /* No comment provided by engineer. */
+"(new)" = "(nový)";
+
+/* No comment provided by engineer. */
 "(this device v%@)" = "(toto zařízení v%@)";
 
 /* No comment provided by engineer. */
@@ -27,6 +30,12 @@
 
 /* No comment provided by engineer. */
 "[Star on GitHub](https://github.com/simplex-chat/simplex-chat)" = "[Hvězda na GitHubu](https://github.com/simplex-chat/simplex-chat)";
+
+/* No comment provided by engineer. */
+"**Create 1-time link**: to create and share a new invitation link." = "**Vytvořit jednorázový odkaz**: pro vytvoření a sdílení nové pozvánky.";
+
+/* No comment provided by engineer. */
+"**Create group**: to create a new group." = "**Vytvořit skupinu**: pro vytvoření nové skupiny.";
 
 /* No comment provided by engineer. */
 "**e2e encrypted** audio call" = "**e2e šifrovaný** audio hovor";
@@ -47,7 +56,13 @@
 "**Recommended**: device token and end-to-end encrypted notifications are sent to SimpleX Chat push server, but it does not see the message content, size or who it is from." = "**Doporučeno**: Token zařízení a oznámení se odesílají na oznamovací server SimpleX Chat, ale nikoli obsah, velikost nebo od koho jsou zprávy.";
 
 /* No comment provided by engineer. */
+"**Scan / Paste link**: to connect via a link you received." = "**Skenovat / Vložit odkaz**: pro připojení pomocí odkazu který jste obdrželi.";
+
+/* No comment provided by engineer. */
 "**Warning**: Instant push notifications require passphrase saved in Keychain." = "**Upozornění**: Okamžitě doručovaná oznámení vyžadují přístupové heslo uložené v Klíčence.";
+
+/* No comment provided by engineer. */
+"**Warning**: the archive will be removed." = "**Varování**: archiv bude odstraněn.";
 
 /* No comment provided by engineer. */
 "*bold*" = "\\*tučně*";
@@ -145,6 +160,9 @@
 /* time interval */
 "%d hours" = "%d hodin";
 
+/* alert title */
+"%d messages not forwarded" = "%d zprávy nebyly přeposlány";
+
 /* time interval */
 "%d min" = "%d minuty";
 
@@ -153,6 +171,9 @@
 
 /* time interval */
 "%d sec" = "%d sek";
+
+/* delete after time */
+"%d seconds(s)" = "%d sekund";
 
 /* integrity error chat item */
 "%d skipped message(s)" = "%d přeskočené zprávy";
@@ -183,6 +204,9 @@
 
 /* No comment provided by engineer. */
 "%lld messages marked deleted" = "%lld zprávy označeno jako smazáno";
+
+/* No comment provided by engineer. */
+"%lld messages moderated by %@" = "%lld zprávy moderované %@";
 
 /* No comment provided by engineer. */
 "%lld minutes" = "%lld minut";

@@ -4944,6 +4944,9 @@ chat item action */
 "Share link" = "Link teilen";
 
 /* alert button */
+"Share old address" = "Alte Adresse teilen";
+
+/* alert button */
 "Share old link" = "Vollständigen Link teilen";
 
 /* No comment provided by engineer. */
@@ -5289,6 +5292,9 @@ report reason */
 /* No comment provided by engineer. */
 "Thanks to the users – contribute via Weblate!" = "Dank der Nutzer - Tragen Sie per Weblate bei!";
 
+/* alert message */
+"The address will be short, and your profile will be shared via the address." = "Die Adresse wird gekürzt sein, und Ihr Profil wird über die Adresse geteilt.";
+
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "Wenn sie Nachrichten oder Kontaktanfragen empfangen, kann Sie die App benachrichtigen - Um dies zu aktivieren, öffnen Sie bitte die Einstellungen.";
 
@@ -5329,7 +5335,7 @@ report reason */
 "The ID of the next message is incorrect (less or equal to the previous).\nIt can happen because of some bug or when the connection is compromised." = "Die ID der nächsten Nachricht ist falsch (kleiner oder gleich der Vorherigen).\nDies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompromittiert wurde.";
 
 /* alert message */
-"The link will be short, and group profile will be shared via the link." = "Gruppenprofil über einen Link teilen";
+"The link will be short, and group profile will be shared via the link." = "Der Link wird gekürzt sein, und das Gruppen-Profil wird über den Link geteilt.";
 
 /* No comment provided by engineer. */
 "The message will be deleted for all members." = "Diese Nachricht wird für alle Gruppenmitglieder gelöscht.";
@@ -5646,8 +5652,20 @@ report reason */
 /* No comment provided by engineer. */
 "Updating settings will re-connect the client to all servers." = "Die Aktualisierung der Einstellungen wird den Client wieder mit allen Servern verbinden.";
 
+/* alert button */
+"Upgrade" = "Aktualisieren";
+
+/* No comment provided by engineer. */
+"Upgrade address" = "Adresse aktualisieren";
+
+/* alert message */
+"Upgrade address?" = "Adresse aktualisieren?";
+
 /* No comment provided by engineer. */
 "Upgrade and open chat" = "Aktualisieren und den Chat öffnen";
+
+/* alert message */
+"Upgrade group link?" = "Gruppen-Link aktualisieren?";
 
 /* No comment provided by engineer. */
 "Upgrade link" = "Link hinzufügen";
