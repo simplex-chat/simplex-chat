@@ -1943,13 +1943,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         createContentItem gInfo' m' scopeInfo = do
           file_ <- processFileInv m'
           newChatItem gInfo' m' scopeInfo (CIRcvMsgContent content, ts) (snd <$> file_) (timed' gInfo') live'
-          when (showMessages $ memberSettings m') $ autoAcceptFile file_
+          unless (memberBlocked m') $ autoAcceptFile file_
         processFileInv m' =
           processFileInvitation fInv_ content $ \db -> createRcvGroupFileTransfer db userId m'
         newChatItem gInfo' m' scopeInfo ciContent ciFile_ timed_ live = do
-          let mentions' = if showMessages (memberSettings m') then mentions else []
+          let mentions' = if memberBlocked m' then [] else mentions
           (ci, cInfo) <- saveRcvCI gInfo' m' scopeInfo ciContent ciFile_ timed_ live mentions'
-          ci' <- blockedMember m' ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo' ci
+          ci' <- blockedMemberCI gInfo' m' ci
           reactions <- maybe (pure []) (\sharedMsgId -> withStore' $ \db -> getGroupCIReactions db gInfo' memberId sharedMsgId) sharedMsgId_
           groupMsgToView cInfo ci' {reactions}
 
@@ -1963,14 +1963,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- received an update from the sender, so that it can be referenced later (e.g. by broadcast delete).
             -- Chat item and update message which created it will have different sharedMsgId in this case...
             let timed_ = rcvGroupCITimed gInfo ttl_
-                mentions' = if showMessages (memberSettings m) then mentions else []
+                mentions' = if memberBlocked m then [] else mentions
             (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
             (ci, cInfo) <- saveRcvChatItem' user (CDGroupRcv gInfo' scopeInfo m') msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
             ci' <- withStore' $ \db -> do
               createChatItemVersion db (chatItemId' ci) brokerTs mc
-              ci' <- updateGroupChatItem db user groupId ci content True live Nothing
-              blockedMember m' ci' $ markGroupChatItemBlocked db user gInfo' ci'
-            toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci')
+              updateGroupChatItem db user groupId ci content True live Nothing
+            ci'' <- blockedMemberCI gInfo' m' ci'
+            toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
             pure $ Just $ toGroupForwardScope gInfo scopeInfo
       where
         content = CIRcvMsgContent mc
@@ -2088,13 +2088,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           ciFile = Just $ CIFile {fileId, fileName, fileSize, fileSource = Nothing, fileStatus = CIFSRcvInvitation, fileProtocol}
           content = ciContentNoParse $ CIRcvMsgContent $ MCFile ""
       (ci, cInfo) <- saveRcvChatItem' user (CDGroupRcv gInfo Nothing m) msg sharedMsgId_ brokerTs content ciFile Nothing False M.empty
-      ci' <- blockedMember m ci $ withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
+      ci' <- blockedMemberCI gInfo m ci
       groupMsgToView cInfo ci'
 
-    blockedMember :: Monad m' => GroupMember -> ChatItem c d -> m' (ChatItem c d) -> m' (ChatItem c d)
-    blockedMember m ci blockedCI
-      | showMessages (memberSettings m) = pure ci
-      | otherwise = blockedCI
+    blockedMemberCI :: GroupInfo -> GroupMember -> ChatItem 'CTGroup 'MDRcv -> CM (ChatItem 'CTGroup 'MDRcv)
+    blockedMemberCI gInfo m ci
+      | blockedByAdmin m =
+          withStore' $ \db -> markGroupCIBlockedByAdmin db user gInfo ci
+      | not (showMessages $ memberSettings m) =
+          withStore' $ \db -> markGroupChatItemBlocked db user gInfo ci
+      | otherwise =
+          pure ci
 
     receiveInlineMode :: FileInvitation -> Maybe MsgContent -> Integer -> CM (Maybe InlineFileMode)
     receiveInlineMode FileInvitation {fileSize, fileInline, fileDescr} mc_ chSize = case (fileInline, fileDescr) of
@@ -3061,25 +3065,27 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
-    xGrpDirectInv g m mConn connReq mContent_ msg brokerTs = do
-      unless (groupFeatureMemberAllowed SGFDirectMessages m g) $ messageError "x.grp.direct.inv: direct messages not allowed"
-      let GroupMember {memberContactId} = m
-      subMode <- chatReadVar subscriptionMode
-      case memberContactId of
-        Nothing -> createNewContact subMode
-        Just mContactId -> do
-          mCt <- withStore $ \db -> getContact db vr user mContactId
-          let Contact {activeConn, contactGrpInvSent} = mCt
-          forM_ activeConn $ \Connection {connId} ->
-            if contactGrpInvSent
-              then do
-                ownConnReq <- withStore $ \db -> getConnReqInv db connId
-                -- in case both members sent x.grp.direct.inv before receiving other's for processing,
-                -- only the one who received greater connReq joins, the other creates items and waits for confirmation
-                if strEncode connReq > strEncode ownConnReq
-                  then joinExistingContact subMode mCt
-                  else createItems mCt m
-              else joinExistingContact subMode mCt
+    xGrpDirectInv g m mConn connReq mContent_ msg brokerTs
+      | not (groupFeatureMemberAllowed SGFDirectMessages m g) = messageError "x.grp.direct.inv: direct messages not allowed"
+      | memberBlocked m = messageWarning "x.grp.direct.inv: member is blocked (ignoring)"
+      | otherwise = do
+          let GroupMember {memberContactId} = m
+          subMode <- chatReadVar subscriptionMode
+          case memberContactId of
+            Nothing -> createNewContact subMode
+            Just mContactId -> do
+              mCt <- withStore $ \db -> getContact db vr user mContactId
+              let Contact {activeConn, contactGrpInvSent} = mCt
+              forM_ activeConn $ \Connection {connId} ->
+                if contactGrpInvSent
+                  then do
+                    ownConnReq <- withStore $ \db -> getConnReqInv db connId
+                    -- in case both members sent x.grp.direct.inv before receiving other's for processing,
+                    -- only the one who received greater connReq joins, the other creates items and waits for confirmation
+                    if strEncode connReq > strEncode ownConnReq
+                      then joinExistingContact subMode mCt
+                      else createItems mCt m
+                  else joinExistingContact subMode mCt
       where
         joinExistingContact subMode mCt = do
           connIds <- joinConn subMode

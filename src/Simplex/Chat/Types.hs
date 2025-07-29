@@ -995,6 +995,9 @@ incognitoMembershipProfile GroupInfo {membership = m@GroupMember {memberProfile}
 memberSecurityCode :: GroupMember -> Maybe SecurityCode
 memberSecurityCode GroupMember {activeConn} = connectionCode =<< activeConn
 
+memberBlocked :: GroupMember -> Bool
+memberBlocked m = blockedByAdmin m || not (showMessages $ memberSettings m)
+
 data NewGroupMember = NewGroupMember
   { memInfo :: MemberInfo,
     memCategory :: GroupMemberCategory,
