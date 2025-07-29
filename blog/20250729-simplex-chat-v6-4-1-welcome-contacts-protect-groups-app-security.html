@@ -51,7 +51,7 @@
     <meta property="og:type" content="article" />
     <meta property="og:title" content="SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more." />
     
-      <meta property="og:image" content="https://simplex.chat/img/share_simplex.png" />
+      <meta property="og:image" content="https://simplex.chat/blog/images/20250729-join2.png" />
     
     <meta name="twitter:card" content="summary" />
     <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
@@ -398,12 +398,78 @@ window.addEventListener('scroll',changeHeaderBg);
 
     <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
       <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-v641-welcome-your-contacts-review-members-to-protect-groups-and-more" tabindex="-1">SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.</h1>
-<p><strong>Will be published:</strong> Jul 29, 2025</p>
-<p>This is a placeholder for upcoming v6.4.1 release announcement.</p>
+<p><strong>Published:</strong> Jul 29, 2025</p>
 <p><strong>What's new in v6.4.1</strong>:</p>
-<p>TODO</p>
+<ul>
+<li><a href="#welcome-your-contacts-the-new-experience-of-making-connections">welcome your contacts</a>: set your profile bio and welcome message.</li>
+<li><a href="#protect-your-groups">protect your communities</a> from spam and abuse:
+<ul>
+<li>review new members (&quot;knocking&quot;),</li>
+<li>moderator role to delegate message moderation to trusted members,</li>
+<li>receive direct feedback from your group members.</li>
+</ul>
+</li>
+<li><a href="#other-improvements">other improvements</a>: set default time to delete messages for new contacts.</li>
+<li><a href="#improved-app-integrity">improved app integrity</a>.</li>
+</ul>
+<p>Also, we added 3 new interface languages to Android and desktop apps: Indonesian, Romanian and Vietnamese.</p>
+<p>Huge thanks to our users who <a href="https://github.com/simplex-chat/simplex-chat#help-translating-simplex-chat">contributed translations</a>.</p>
 <h2 id="whats-new-in-v641" tabindex="-1">What's new in v6.4.1</h2>
-<p>TODO</p>
+<h3 id="welcome-your-contacts-the-new-experience-of-making-connections" tabindex="-1">Welcome your contacts: the new experience of making connections</h3>
+<p><img src="./images/20250729-connect2.png" width="288" class="float-to-right"> <img src="./images/20250729-connect1.png" width="288" class="float-to-right"></p>
+<p>The new simple way to connect to your friends is fully available in this version.</p>
+<p>We received many compliments from our users who started using it in beta versions and in v6.4 about how it simplifies connecting with friends. We agree - this is the biggest UX revolution since the app was released.</p>
+<p>Instead of connecting blindly, and waiting until your contact is online, as it was before, you can now see profile and welcome message of the person you connect to, before you connect.</p>
+<p>When you tap Open new chat you can decide which profile to use to connect or if you want to connect incognito, and in some cases you can include a message with your connection request.</p>
+<p>This way, the conversation with your friends starts even before they connect to you!</p>
+<p>For previously created SimpleX addresses and group links you have an option to upgrade. The links will become short, and will include profile information into link data. Old long links will continue to work, so you won't lose any contacts or members during the upgrade.</p>
+<p>These links are now short enough to be shared in your social media profiles - they are less than 80 characters.</p>
+<p>And as before, it is as secure - servers cannot see you profiles, unless they have the link, and cannot modify them even if they somehow get the link. You can read more about security property and other technical details in our <a href="/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html">post about SimpleX protocols extension</a> supporting this new user experience.</p>
+<p>Thank you for bringing your friends to SimpleX network!</p>
+<h3 id="protect-your-groups" tabindex="-1">Protect your groups</h3>
+<p><img src="./images/20250729-join2.png" width="288" class="float-to-right"> <img src="./images/20250729-join1.png" width="288" class="float-to-right"></p>
+<p><strong>Review new members</strong></p>
+<p>Since v6.4 there are some major improvements in your ability to protect your group from spam and abuse.</p>
+<p>You can enable an option to review all new group members. It is also commonly called &quot;knocking&quot;. It allows you to:</p>
+<ul>
+<li>ask prospective members any questions,</li>
+<li>explain the group rules,</li>
+<li>make sure their profile is appropriate for the group,</li>
+<li>decide whether to allow them joining the group, and whether they should be able to send messages in the group.</li>
+</ul>
+<p>Some small groups may enable member review permanently, while larger public groups may enable it temporarily during spam/troll attacks.</p>
+<p><strong>New role for group moderators</strong></p>
+<p>In addition to that, there is a new group role - moderator.</p>
+<p>This role allows:</p>
+<ul>
+<li>to approve members in review,</li>
+<li>moderate messages,</li>
+<li>block members for all.</li>
+</ul>
+<p>Unlike admins, moderators can't add new members or permanently remove members from the group. This allows you to delegate group moderation to your community members without risking that they may disrupt the group.</p>
+<p><strong>Receive direct feedback from group members</strong></p>
+<p>Your group members now can send messages to group admins. Each conversation with a group member is a mini-group where all group owners, admins and moderators can talk to a member. Reports that members can send since v... are also added to chat with member, allowing you to discuss the report.</p>
+<h3 id="other-improvements" tabindex="-1">Other improvements</h3>
+<p><strong>Enable disappearing messages for new contacts</strong></p>
+<p>Now you can enable disappearing messages for all new contacts automatically. Tap your profile image in the corner, then tap Chat preferences and set time for messages to disappear.</p>
+<p><strong>Improved message delivery</strong></p>
+<p>We improved networking layer by increasing request timeouts for all background requests. It substantially reduces traffic on slow networks.</p>
+<h3 id="improved-app-integrity" tabindex="-1">Improved app integrity</h3>
+<p><strong>Supply chain security</strong></p>
+<p>The app security depends on security of its components and its build process, and many of these components are created by third parties. In this version we improved the build process to control the upgrades of these components:</p>
+<ul>
+<li>all 3rd party GitHub actions used during the build are now moved to <a href="https://github.com/simplex-chat?q=action&amp;type=fork&amp;sort=name">the forks we control</a> - it prevents supply chain attacks via build actions.</li>
+<li>we now build VLC library for all platforms from the source code ourselves, in <a href="https://github.com/simplex-chat/vlc">this repository</a>.</li>
+<li>SQLCipher and <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/dependencies/HASKELL.md">Haskell dependencies</a> versions were already &quot;locked&quot; prior to this version.</li>
+</ul>
+<p><strong>Automatic virus scanning</strong></p>
+<p>We now run automatic daily virus scanning of all apps released via GitHub using <a href="https://www.virustotal.com/">VirusTotal.com</a>.</p>
+<p>You can see the scan results <a href="https://github.com/simplex-chat/simplex-virutstotal-scan">here</a>.</p>
+<p><strong>Reproducible builds</strong></p>
+<p>In addition to <a href="https://github.com/simplex-chat/simplexmq/releases/tag/v6.4.1">server builds</a> that were reproducible since v6.3, the builds of Linux CLI and desktop apps are now reproducible too. You can build Linux apps from source using <a href="https://github.com/simplex-chat/simplex-chat/blob/master/scripts/simplex-chat-reproduce-builds.sh">this script</a>.</p>
+<p><em>Please note</em>: Linux package upgrades may change the build.</p>
+<p>Stable builds of Linux apps are now independently reproduced and <a href="https://github.com/simplex-chat/simplex-chat/releases/tag/v6.4.1">signed by our and Flux teams</a> - it verifies the integrity of GitHub builds.</p>
+<p>Huge thanks to <a href="https://runonflux.com/">Flux</a> for doing that and for providing their servers via the app.</p>
 <h2 id="simplex-network" tabindex="-1">SimpleX network</h2>
 <p>Some links to answer the most common questions:</p>
 <p><a href="/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
