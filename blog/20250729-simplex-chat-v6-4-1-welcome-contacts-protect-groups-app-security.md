@@ -32,24 +32,26 @@ Huge thanks to our users who [contributed translations](https://github.com/simpl
 
 TODO image
 
-We wrote before about the new user experience of connecting with people - it was released in v6.4.
+The new simple way to connect to your friends is fully available in this version.
 
-To maintain backward compatibility, with v6.4 your short link included only your profile name and chat preferences.
+We received many compliments from our users who starting using it in beta versions and in v6.4 about how it simplifies connecting with friends. We agree - this is the biggest UX revolution since the app was released.
 
-The links and addresses in this version, your contacts can see before connecting:
-- your profile name and bio,
-- your profile image,
+Instead of connecting blindly, and waiting until your contact is online, you now can see full information about the person you connect to or the group join even before you connect. It includes:
+- contact or group profile name and bio,
+- profile image,
 - for SimpleX addresses and group links - welcome message.
 
-It allows you to start chatting with your contacts and group members even before they connect.
+When you tap Open new chat you can decide which profile to use to connect or if you want to connect incognito, and in some cases you can include a message with your connection request.
 
-For previously created addresses you will have an option to upgrade. It will make them short, and include profiles into link data. Old long addresses will continue to work, so you won't lose any contacts during the upgrade.
+In this way, the conversation with your friends now starts even before they connect to you!
 
-And as before, it is as secure from servers - servers cannot see you profiles, unless they have the link, and cannot modify them even if they do have the link.
+For previously created SimpleX addresses and group links you will have an option to upgrade. The links will become short, and will include profile information into link data. Old long links will continue to work, so you won't lose any contacts or members during the upgrade.
 
-Read more in the mentioned post about security model of new SimpleX links and addresses.
+These links are now short enough to be shared in your social media profiles - they are less than 80 characters.
 
-And now you can share your short address in your social media profiles - it's less than 80 characters.
+And as before, it is as secure - servers cannot see you profiles, unless they have the link, and cannot modify them even if they somehow get the link. You can read more about security property and other technical details in our [post about SimpleX protocols extension](./20250703-simplex-network-protocol-extension-for-securely-connecting-people.md) supporting this new user experience.
+
+Thank you for bringing your friends to SimpleX network!
 
 ### Protect your groups
 
