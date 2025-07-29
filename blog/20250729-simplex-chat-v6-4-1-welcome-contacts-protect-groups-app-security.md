@@ -109,7 +109,7 @@ You can see the scan results [here](https://github.com/simplex-chat/simplex-viru
 
 **Reproducible builds**
 
-In addition to [server builds](https://github.com/simplex-chat/simplexmq/releases/tag/v6.4.1) that were reproducible since v6.3, the builds of Linux CLI and desktop apps are now reproducible too. You can build Linux apps from source using this script.
+In addition to [server builds](https://github.com/simplex-chat/simplexmq/releases/tag/v6.4.1) that were reproducible since v6.3, the builds of Linux CLI and desktop apps are now reproducible too. You can build Linux apps from source using [this script](https://github.com/simplex-chat/simplex-chat/blob/master/scripts/simplex-chat-reproduce-builds.sh).
 
 *Please note*: there are some system level dependencies that would change the build when they are updated, which happens rarely.
 
