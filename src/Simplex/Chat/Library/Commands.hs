@@ -1539,7 +1539,7 @@ processChatCommand vr nm = \case
     m <- withFastStore $ \db -> do
       liftIO $ updateGroupMemberSettings db user gId gMemberId settings
       getGroupMember db vr user gId gMemberId
-    let ntfOn = showMessages $ memberSettings m
+    let ntfOn = not (memberBlocked m)
     toggleNtf m ntfOn
     ok user
   APIContactInfo contactId -> withUser $ \user@User {userId} -> do
