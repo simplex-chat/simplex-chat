@@ -196,7 +196,7 @@ data Contact = Contact
     -- to a group member via direct message feature
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
-    -- contactGrpInvLink is used for accepting connection request from member via direct message feature
+    -- contactGrpInvLink is used for accepting connection request made via direct message feature by a group member
     -- when auto-accept is disabled - this is the opposite side of contactGroupMemberId + contactGrpInvSent
     contactGrpInvLink :: Maybe ConnReqInvitation,
     chatTags :: [ChatTagId],
