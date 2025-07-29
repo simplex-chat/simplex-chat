@@ -196,9 +196,9 @@ data Contact = Contact
     -- to a group member via direct message feature
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
-    -- contactGrpInvLink is used for accepting connection request made via direct message feature by a group member
+    -- contactGrpInv is used for accepting connection request made via direct message feature by a group member
     -- when auto-accept is disabled - this is the opposite side of contactGroupMemberId + contactGrpInvSent
-    contactGrpInvLink :: Maybe ConnReqInvitation,
+    contactGrpInv :: Maybe ContactGroupInv,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -215,6 +215,13 @@ data PreparedContact = PreparedContact
     uiConnLinkType :: ConnectionMode,
     welcomeSharedMsgId :: Maybe SharedMsgId,
     requestSharedMsgId :: Maybe SharedMsgId
+  }
+  deriving (Eq, Show)
+
+data ContactGroupInv = ContactGroupInv
+  { contactGrpInvLink :: ConnReqInvitation,
+    fromGroupId_ :: Maybe GroupId,
+    fromGroupMemberId_ :: Maybe GroupMemberId
   }
   deriving (Eq, Show)
 
@@ -2077,6 +2084,8 @@ $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
 
 $(JQ.deriveJSON defaultJSON ''PreparedContact)
+
+$(JQ.deriveJSON defaultJSON ''ContactGroupInv)
 
 $(JQ.deriveJSON defaultJSON ''LocalFileMeta)
 

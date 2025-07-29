@@ -457,19 +457,22 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
 
 type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId, Maybe SharedMsgId)
 
-type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt, Maybe ConnReqInvitation, Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
+type ContactGroupInvRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId)
+
+type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. ContactGroupInvRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
 
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, shortDescr, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent, contactGrpInvLink, uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, shortDescr, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. contactGroupInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
       preparedContact = toPreparedContact preparedContactRow
-   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, contactGrpInvLink, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
+      contactGroupInv = toContactGroupInv contactGroupInvRow
+   in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, contactGroupInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
 
 toPreparedContact :: PreparedContactRow -> Maybe PreparedContact
 toPreparedContact (connFullLink, connShortLink, welcomeSharedMsgId, requestSharedMsgId) =
@@ -481,6 +484,10 @@ toACreatedConnLink_ Nothing _ = Nothing
 toACreatedConnLink_ (Just (ACR m cr)) csl = case csl of
   Nothing -> Just $ ACCL m $ CCLink cr Nothing
   Just (ACSL m' l) -> (\Refl -> ACCL m $ CCLink cr (Just l)) <$> testEquality m m'
+
+toContactGroupInv :: ContactGroupInvRow -> Maybe ContactGroupInv
+toContactGroupInv (Nothing, _, _) = Nothing
+toContactGroupInv (Just contactGrpInvLink, fromGroupId_, fromGroupMemberId_) = Just $ ContactGroupInv {contactGrpInvLink, fromGroupId_, fromGroupMemberId_}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =
