@@ -2625,6 +2625,7 @@ processChatCommand vr nm = \case
     --   - reuse connectViaInvitation? problem: it uses CreatedLinkInvitation, not ConnReqInvitation
     -- reset contact_grp_inv_link to NULL
     -- send updated contact to UI
+    -- response CRMemberContactAccepted
     ok_
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
