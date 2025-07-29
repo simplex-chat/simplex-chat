@@ -823,6 +823,7 @@ struct ChatView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
         @ObservedObject var chat: Chat
+        @State private var showSecrets: Set<Int> = []
 
         var body: some View {
             let v = VStack(spacing: 8) {
@@ -846,8 +847,8 @@ struct ChatView: View {
                 }
 
                 if let shortDescr = chat.chatInfo.shortDescr {
-                    Text(shortDescr)
-                        .font(.subheadline)
+                    let r = markdownText(shortDescr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
+                    msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
                         .multilineTextAlignment(.center)
                         .lineLimit(4)
                         .fixedSize(horizontal: false, vertical: true)
