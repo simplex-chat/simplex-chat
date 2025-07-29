@@ -132,6 +132,7 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
+    autoAcceptGrpInvLinks :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     uiThemes :: Maybe UIThemeEntityOverrides
   }
@@ -191,8 +192,13 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     preparedContact :: Maybe PreparedContact,
     contactRequestId :: Maybe Int64,
+    -- contactGroupMemberId + contactGrpInvSent are used in conjunction for making connection request
+    -- to a group member via direct message feature
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
+    -- contactGrpInvLink is used for accepting connection request from member via direct message feature
+    -- when auto-accept is disabled - this is the opposite side of contactGroupMemberId + contactGrpInvSent
+    contactGrpInvLink :: Maybe ConnReqInvitation,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,

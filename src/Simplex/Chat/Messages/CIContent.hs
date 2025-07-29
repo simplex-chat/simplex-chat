@@ -209,6 +209,7 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvDirectEvent rde -> case rde of
       RDEContactDeleted -> False
       RDEProfileUpdated {} -> False
+      RDEGroupInvLinkReceived -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
@@ -328,6 +329,7 @@ rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
   RDEContactDeleted -> "contact deleted"
   RDEProfileUpdated {} -> "updated profile"
+  RDEGroupInvLinkReceived -> "requested connection from group"
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case

@@ -3088,11 +3088,25 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else joinExistingContact subMode mCt
       where
         joinExistingContact subMode mCt = do
+          -- TODO [group inv links] auto/manual accept
+          -- if auto-accept:
+          --   as now
+          -- else:
+          --   set contact_grp_inv_link for contact
+          --   don't joinConn automatically
+          --   create CIRcvDirectEvent RDEGroupInvLinkReceived
           connIds <- joinConn subMode
           mCt' <- withStore $ \db -> updateMemberContactInvited db user connIds g mConn mCt subMode
           createItems mCt' m
           securityCodeChanged mCt'
         createNewContact subMode = do
+          -- TODO [group inv links] auto/manual accept
+          -- if auto-accept:
+          --   as now
+          -- else:
+          --   create contact with contact_grp_inv_link
+          --   don't joinConn automatically
+          --   create CIRcvDirectEvent RDEGroupInvLinkReceived
           connIds <- joinConn subMode
           -- [incognito] reuse membership incognito profile
           (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode

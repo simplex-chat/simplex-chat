@@ -379,6 +379,12 @@ processChatCommand vr nm = \case
     withFastStore' $ \db -> updateUserGroupReceipts db user' settings
     ok user
   SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserGroupReceipts userId settings
+  APISetUserAutoAcceptGroupInvLinks userId' onOff -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withFastStore' $ \db -> updateUserAutoAcceptGrpInvLinks db user' onOff
+    ok user
+  SetUserAutoAcceptGroupInvLinks onOff -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserAutoAcceptGroupInvLinks userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -2053,6 +2059,12 @@ processChatCommand vr nm = \case
       Just ctId -> do
         let sendRef = SRDirect ctId
         processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage Nothing mc]
+  AcceptMemberContact cName -> withUser $ \user -> do
+    -- TODO [group inv links] go into APIAcceptMemberContact api
+    ok_
+  RejectMemberContact cName -> withUser $ \user -> do
+    -- TODO [group inv links] go into DeleteContact api
+    ok_
   SendLiveMessage chatName msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     withSendRef chatRef $ \sendRef -> do
@@ -2607,6 +2619,13 @@ processChatCommand vr nm = \case
           toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
+  APIAcceptMemberContact contactId -> withUser $ \user -> do
+    -- TODO [group inv links]
+    -- join connection
+    --   - reuse connectViaInvitation? problem: it uses CreatedLinkInvitation, not ConnReqInvitation
+    -- reset contact_grp_inv_link to NULL
+    -- send updated contact to UI
+    ok_
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand vr nm $ APICreateGroupLink groupId mRole
@@ -4336,6 +4355,8 @@ chatCommandP =
       "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),
       "/_set receipts groups " *> (APISetUserGroupReceipts <$> A.decimal <* A.space <*> receiptSettings),
       "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
+      "/_set accept group inv links " *> (APISetUserAutoAcceptGroupInvLinks <$> A.decimal <* A.space <*> onOffP),
+      "/set accept group inv links " *> (SetUserAutoAcceptGroupInvLinks <$> onOffP),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),
@@ -4569,6 +4590,7 @@ chatCommandP =
       "/show link #" *> (ShowGroupLink <$> displayNameP),
       "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
+      "/_accept member contact @" *> (APIAcceptMemberContact <$> A.decimal),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -4592,6 +4614,8 @@ chatCommandP =
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
+      "/accept member contact " *> (AcceptMemberContact <$> displayNameP),
+      "/reject member contact " *> (RejectMemberContact <$> displayNameP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),

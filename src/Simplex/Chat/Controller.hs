@@ -265,6 +265,8 @@ data ChatCommand
   | SetUserContactReceipts UserMsgReceiptSettings
   | APISetUserGroupReceipts UserId UserMsgReceiptSettings
   | SetUserGroupReceipts UserMsgReceiptSettings
+  | APISetUserAutoAcceptGroupInvLinks UserId Bool
+  | SetUserAutoAcceptGroupInvLinks Bool
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId
@@ -373,6 +375,7 @@ data ChatCommand
   | APIAddGroupShortLink GroupId
   | APICreateMemberContact GroupId GroupMemberId
   | APISendMemberContactInvitation {contactId :: ContactId, msgContent_ :: Maybe MsgContent}
+  | APIAcceptMemberContact ContactId
   | GetUserProtoServers AProtocolType
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
   | APITestProtoServer UserId AProtoServerWithAuth
@@ -477,6 +480,8 @@ data ChatCommand
   | ForwardLocalMessage {toChatName :: ChatName, forwardedMsg :: Text}
   | SendMessage SendName Text
   | SendMemberContactMessage GroupName ContactName Text
+  | AcceptMemberContact ContactName
+  | RejectMemberContact ContactName
   | SendLiveMessage ChatName Text
   | SendMessageQuote {contactName :: ContactName, msgDir :: AMsgDirection, quotedMsg :: Text, message :: Text}
   | SendMessageBroadcast MsgContent -- UserId (not used in UI)
