@@ -804,6 +804,7 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             contactRequestId = Nothing,
             contactGroupMemberId = Nothing,
             contactGrpInvSent = False,
+            contactGrpInv = Nothing,
             chatTags = [],
             chatItemTTL = Nothing,
             uiThemes = Nothing,
