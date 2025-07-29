@@ -1122,9 +1122,9 @@ swipe action</note>
         <target>Adjuntar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve" approved="no">
         <source>Audio &amp; video calls</source>
-        <target>Llamadas y videollamadas</target>
+        <target state="translated">Llamadas y Videollamadas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
@@ -3015,9 +3015,9 @@ chat item action</note>
         <target>Permitir acceso a la cámara</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
         <source>Enable disappearing messages by default.</source>
-        <target>Activa por defecto los mensajes temporaes.</target>
+        <target state="translated">Activa por defecto los mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -4165,9 +4165,9 @@ Error: %2$@</target>
         <target>Ocultar perfil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Hide:" xml:space="preserve">
+      <trans-unit id="Hide:" xml:space="preserve" approved="no">
         <source>Hide:</source>
-        <target>Ocultar:</target>
+        <target state="translated">Oculta:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="History" xml:space="preserve">
@@ -7999,9 +7999,9 @@ It can happen because of some bug or when the connection is compromised.</source
 Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
+      <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve" approved="no">
         <source>The address will be short, and your profile will be shared via the address.</source>
-        <target>La dirección será corta y tu perfil se compartirá mediante la dirección.</target>
+        <target state="translated">La dirección pasará a ser corta y tu perfil será compartido mediante la dirección.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
