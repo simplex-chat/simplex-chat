@@ -3092,7 +3092,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- if auto-accept:
           --   as now
           -- else:
-          --   set contact_grp_inv_link for contact
+          --   set contact_grp_inv_link for contact, reset contact_status to active (in case it was deleted - to remove x in UI)
           --   don't joinConn automatically
           --   create CIRcvDirectEvent RDEGroupInvLinkReceived
           connIds <- joinConn subMode
