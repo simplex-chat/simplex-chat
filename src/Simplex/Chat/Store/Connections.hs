@@ -113,7 +113,8 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
             SELECT
               c.contact_profile_id, c.local_display_name, c.via_group, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.local_alias, c.contact_used, c.contact_status, c.enable_ntfs, c.send_rcpts, c.favorite,
               p.preferences, c.user_preferences, c.created_at, c.updated_at, c.chat_ts, c.conn_full_link_to_connect, c.conn_short_link_to_connect, c.welcome_shared_msg_id, c.request_shared_msg_id, c.contact_request_id,
-              c.contact_group_member_id, c.contact_grp_inv_sent, c.contact_grp_inv_link, c.contact_grp_inv_from_group_id, c.contact_grp_inv_from_group_member_id, c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
+              c.contact_group_member_id, c.contact_grp_inv_sent, c.contact_grp_inv_link, c.contact_grp_inv_from_group_id, c.contact_grp_inv_from_group_member_id, c.contact_grp_inv_from_member_conn_id, c.contact_grp_inv_started_connection,
+              c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
             WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0

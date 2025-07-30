@@ -246,7 +246,6 @@ cliCommands =
     "SendLiveMessage",
     "SendMemberContactMessage",
     "AcceptMemberContact",
-    "RejectMemberContact",
     "SendMessage",
     "SendMessageBroadcast",
     "SendMessageQuote",

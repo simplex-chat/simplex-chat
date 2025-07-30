@@ -457,7 +457,7 @@ deleteUnusedIncognitoProfileById_ db User {userId} profileId =
 
 type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Maybe SharedMsgId, Maybe SharedMsgId)
 
-type ContactGroupInvRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId)
+type ContactGroupInvRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId, Maybe Int64, BoolInt)
 
 type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. ContactGroupInvRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
 
@@ -486,8 +486,9 @@ toACreatedConnLink_ (Just (ACR m cr)) csl = case csl of
   Just (ACSL m' l) -> (\Refl -> ACCL m $ CCLink cr (Just l)) <$> testEquality m m'
 
 toContactGroupInv :: ContactGroupInvRow -> Maybe ContactGroupInv
-toContactGroupInv (Nothing, _, _) = Nothing
-toContactGroupInv (Just contactGrpInvLink, fromGroupId_, fromGroupMemberId_) = Just $ ContactGroupInv {contactGrpInvLink, fromGroupId_, fromGroupMemberId_}
+toContactGroupInv (Nothing, _, _, _, _) = Nothing
+toContactGroupInv (Just contactGrpInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, BI grpInvStartedConnection) =
+  Just $ ContactGroupInv {contactGrpInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, grpInvStartedConnection}
 
 getProfileById :: DB.Connection -> UserId -> Int64 -> ExceptT StoreError IO LocalProfile
 getProfileById db userId profileId =

@@ -171,7 +171,7 @@ undocumentedResponses =
     "CRNetworkStatuses",
     "CRNewMemberContact",
     "CRNewMemberContactSentInv",
-    "CRMemberContactAccepted"
+    "CRMemberContactAccepted",
     "CRNewPreparedChat",
     "CRNtfConns",
     "CRNtfToken",

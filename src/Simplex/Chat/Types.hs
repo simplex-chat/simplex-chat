@@ -221,7 +221,9 @@ data PreparedContact = PreparedContact
 data ContactGroupInv = ContactGroupInv
   { contactGrpInvLink :: ConnReqInvitation,
     fromGroupId_ :: Maybe GroupId,
-    fromGroupMemberId_ :: Maybe GroupMemberId
+    fromGroupMemberId_ :: Maybe GroupMemberId,
+    fromGroupMemberConnId_ :: Maybe Int64,
+    grpInvStartedConnection :: Bool
   }
   deriving (Eq, Show)
 
@@ -1978,8 +1980,8 @@ instance ToJSON ChatVersionRange where
 
 -- This type is needed for backward compatibility of new remote controller with old remote host.
 -- See CONTRIBUTING.md
-newtype BoolDef = BoolDef Bool
-  deriving newtype (Show, ToJSON)
+newtype BoolDef = BoolDef {unBD :: Bool}
+  deriving newtype (Eq, Show, ToJSON)
 
 instance FromJSON BoolDef where
   parseJSON v = BoolDef <$> parseJSON v
