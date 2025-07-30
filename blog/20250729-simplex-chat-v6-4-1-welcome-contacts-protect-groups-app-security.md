@@ -79,7 +79,7 @@ Unlike admins, moderators can't add new members or permanently remove members fr
 
 **Receive direct feedback from group members**
 
-Your group members now can send messages to group admins. Each conversation with a group member is a mini-group where all group owners, admins and moderators can talk to a member. Reports that members can send since v... are also added to chat with member, allowing you to discuss the report.
+Your group members now can send messages to group admins. Each conversation with a group member is a mini-group where all group owners, admins and moderators can talk to a member. Reports that members can send [since v6.3](./20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md) are also added to chat with member, allowing you to discuss the report.
 
 ### Other improvements
 
