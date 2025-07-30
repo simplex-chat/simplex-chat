@@ -12,7 +12,7 @@ With Nostr that uses secp256k1 key as identity it's even better, as ownership of
 
 2. Authenticity of owners' and admins messages delivered via chat relays (aka superpeers).
 
-For the next generation of groups we want to protect from attacks by chat relays who otherwise could deliver messages that they have to right to send. E.g., messages that can only be sent by owners and or by the admin.
+For the next generation of groups we want to protect from attacks by chat relays who otherwise could deliver messages that they have no right to send. E.g., messages that can only be sent by owners and or by the admin.
 
 Group identity is established by root Ed25519 key included into immutable part of group link data, and further ownership changes are recorded as an ownership chain, as described [here](https://github.com/simplex-chat/simplexmq/blob/master/rfcs/2025-04-04-short-links-for-groups.md#multiple-owners-managing-queue-data).
 
