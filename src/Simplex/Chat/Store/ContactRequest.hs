@@ -109,7 +109,7 @@ createOrUpdateContactRequest
             [sql|
               SELECT
                 -- Contact
-                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+                ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
                 cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
                 ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
@@ -143,7 +143,7 @@ createOrUpdateContactRequest
             SELECT
               cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
               cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-              cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, cr.xcontact_id,
+              cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
               cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
               cr.created_at, cr.updated_at,
               cr.peer_chat_min_version, cr.peer_chat_max_version

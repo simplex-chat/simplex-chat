@@ -1,9 +1,11 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DerivingStrategies #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -34,7 +36,7 @@ import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON, taggedObjectJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
 
 data ChatFeature
@@ -137,9 +139,14 @@ data Preferences = Preferences
     fullDelete :: Maybe FullDeletePreference,
     reactions :: Maybe ReactionsPreference,
     voice :: Maybe VoicePreference,
-    calls :: Maybe CallsPreference
+    calls :: Maybe CallsPreference,
+    commands :: Maybe [ChatBotCommand]
   }
   deriving (Eq, Show)
+
+class HasCommands p where commands_ :: p -> Maybe [ChatBotCommand]
+
+instance HasCommands Preferences where commands_ Preferences {commands} = commands
 
 data GroupFeature
   = GFTimedMessages
@@ -271,8 +278,23 @@ data GroupPreferences = GroupPreferences
     files :: Maybe FilesGroupPreference,
     simplexLinks :: Maybe SimplexLinksGroupPreference,
     reports :: Maybe ReportsGroupPreference,
-    history :: Maybe HistoryGroupPreference
+    history :: Maybe HistoryGroupPreference,
+    commands :: Maybe [ChatBotCommand]
   }
+  deriving (Eq, Show)
+
+instance HasCommands GroupPreferences where commands_ GroupPreferences {commands} = commands
+
+data ChatBotCommand
+  = CBCCommand
+      { keyword :: Text, -- "/order"
+        label :: Text, -- Information about order
+        template :: Text -- "/order <order number>"
+      }
+  | CBCMenu
+      { label :: Text, -- Orders
+        commands :: [ChatBotCommand]
+      }
   deriving (Eq, Show)
 
 setGroupPreference :: forall f. GroupFeatureNoRoleI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
@@ -320,9 +342,18 @@ data FullPreferences = FullPreferences
     fullDelete :: FullDeletePreference,
     reactions :: ReactionsPreference,
     voice :: VoicePreference,
-    calls :: CallsPreference
+    calls :: CallsPreference,
+    commands :: ListDef ChatBotCommand
   }
   deriving (Eq, Show)
+
+newtype ListDef a = ListDef [a]
+  deriving (Eq, Show)
+  deriving newtype (ToJSON)
+
+instance FromJSON a => FromJSON (ListDef a) where
+  parseJSON v = ListDef <$> parseJSON v
+  omittedField = Just (ListDef [])
 
 -- full collection of group preferences defined in the app - it is used to ensure we include all preferences and to simplify processing
 -- if some of the preferences are not defined in GroupPreferences, defaults from defaultGroupPrefs are used here.
@@ -335,7 +366,8 @@ data FullGroupPreferences = FullGroupPreferences
     files :: FilesGroupPreference,
     simplexLinks :: SimplexLinksGroupPreference,
     reports :: ReportsGroupPreference,
-    history :: HistoryGroupPreference
+    history :: HistoryGroupPreference,
+    commands :: ListDef ChatBotCommand
   }
   deriving (Eq, Show)
 
@@ -360,13 +392,14 @@ data ContactUserPref p = CUPContact {preference :: p} | CUPUser {preference :: p
   deriving (Eq, Show)
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, calls} =
+toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, calls, commands = ListDef cmds} =
   Preferences
     { timedMessages = Just timedMessages,
       fullDelete = Just fullDelete,
       reactions = Just reactions,
       voice = Just voice,
-      calls = Just calls
+      calls = Just calls,
+      commands = if null cmds then Nothing else Just cmds
     }
 
 defaultChatPrefs :: FullPreferences
@@ -376,11 +409,12 @@ defaultChatPrefs =
       fullDelete = FullDeletePreference {allow = FANo},
       reactions = ReactionsPreference {allow = FAYes},
       voice = VoicePreference {allow = FAYes},
-      calls = CallsPreference {allow = FAYes}
+      calls = CallsPreference {allow = FAYes},
+      commands = ListDef []
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -393,11 +427,12 @@ defaultGroupPrefs =
       files = FilesGroupPreference {enable = FEOn, role = Nothing},
       simplexLinks = SimplexLinksGroupPreference {enable = FEOn, role = Nothing},
       reports = ReportsGroupPreference {enable = FEOn},
-      history = HistoryGroupPreference {enable = FEOff}
+      history = HistoryGroupPreference {enable = FEOff},
+      commands = ListDef []
     }
 
 emptyGroupPrefs :: GroupPreferences
-emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
 businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice} =
@@ -424,7 +459,8 @@ defaultBusinessGroupPrefs =
       files = Just $ FilesGroupPreference FEOn Nothing,
       simplexLinks = Just $ SimplexLinksGroupPreference FEOn Nothing,
       reports = Just $ ReportsGroupPreference FEOff,
-      history = Just $ HistoryGroupPreference FEOn
+      history = Just $ HistoryGroupPreference FEOn,
+      commands = Nothing
     }
 
 data TimedMessagesPreference = TimedMessagesPreference
@@ -770,7 +806,8 @@ mergePreferences contactPrefs userPreferences canFallbackToUserTTL =
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
-      calls = pref SCFCalls
+      calls = pref SCFCalls,
+      commands = ListDef $ fromMaybe [] $ (contactPrefs >>= commands_) <|> (userPreferences >>= commands_)
     }
   where
     timedPrefNoTTLFallback :: TimedMessagesPreference
@@ -794,7 +831,8 @@ fullPreferences' userPreferences =
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
-      calls = pref SCFCalls
+      calls = pref SCFCalls,
+      commands = ListDef $ fromMaybe [] $ userPreferences >>= commands_
     }
   where
     pref :: SChatFeature f -> FeaturePreference f
@@ -813,14 +851,15 @@ mergeGroupPreferences groupPreferences =
       files = pref SGFFiles,
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
-      history = pref SGFHistory
+      history = pref SGFHistory,
+      commands = ListDef $ fromMaybe [] $ groupPreferences >>= commands_
     }
   where
     pref :: SGroupFeature f -> GroupFeaturePreference f
     pref pt = fromMaybe (getGroupPreference pt defaultGroupPrefs) (groupPreferences >>= groupPrefSel pt)
 
 toGroupPreferences :: FullGroupPreferences -> GroupPreferences
-toGroupPreferences groupPreferences =
+toGroupPreferences groupPreferences@FullGroupPreferences {commands = ListDef cmds} =
   GroupPreferences
     { timedMessages = pref SGFTimedMessages,
       directMessages = pref SGFDirectMessages,
@@ -830,7 +869,8 @@ toGroupPreferences groupPreferences =
       files = pref SGFFiles,
       simplexLinks = pref SGFSimplexLinks,
       reports = pref SGFReports,
-      history = pref SGFHistory
+      history = pref SGFHistory,
+      commands = if null cmds then Nothing else Just cmds
     }
   where
     pref :: SGroupFeature f -> Maybe (GroupFeaturePreference f)
@@ -913,6 +953,8 @@ $(J.deriveJSON defaultJSON ''ReactionsPreference)
 $(J.deriveJSON defaultJSON ''VoicePreference)
 
 $(J.deriveJSON defaultJSON ''CallsPreference)
+
+$(J.deriveJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotCommand)
 
 $(J.deriveJSON defaultJSON ''Preferences)
 

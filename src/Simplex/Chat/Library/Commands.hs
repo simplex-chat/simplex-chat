@@ -4753,7 +4753,7 @@ chatCommandP =
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
     newUserP = do
       (cName, shortDescr) <- profileNameDescr
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, preferences = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
       pure NewUser {profile, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

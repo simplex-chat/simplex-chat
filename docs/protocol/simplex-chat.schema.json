@@ -88,64 +88,48 @@
           }
         },
         "forward": {"type": "boolean"},
-        "dialog": {
-          "optionalProperties": {
-            "persistent": {
-              "enum": {
-                "type": "boolean",
-                "metadata": {
-                  "comment": "the choices will remain without bot sending additional message",
-                  "default": false
-                }
-              }
-            },
-            "layout": {
-              "enum": ["column", "row"],
-              "metadata": {"default": "column"}
-            },
-            "allow": {
-              "optionalProperties": {
-                "text": {
-                  "type": "boolean",
-                  "metadata": {"default": false}
-                }
-              }
-            },
-            "choices": {
+        "choice": {
+          "properties": {
+            "options": {
               "elements": {
                 "properties": {
-                  "text": {"type": "string"}
-                },
-                "optionalProperties": {
                   "tag": {
                     "type": "string",
-                    "metadata": {"comment": "unique tag that will be sent in choiceTag property of response"}
+                    "metadata": {"comment": "unique tag that will be sent in choiceTag property of response. The clients should not show buttons with duplicate tags."}
                   },
+                  "text": {
+                    "type": "string",
+                    "metadata": {"comment": "unique text shown to user and sent in response. The clients should not show buttons with duplicate texts."}
+                  }
+                },
+                "optionalProperties": {
                   "role": {
                     "enum": ["primary", "destructive", "default"],
-                    "metadata": {"comment": "color name or hex code for the button", "default": "default"}
-                  },
-                  "info": {
-                    "type": "string",
-                    "metadata": {"comment": "additional information for the user about the choice"}
+                    "metadata": {"comment": "button role", "default": "default"}
                   },
                   "icon": {
                     "type": "string",
                     "metadata": {"comment": "emoji or name of the icon"}
-                  },
-                  "disabled": {
-                    "type": "boolean",
-                    "metadata": {"default": false}
                   }
                 }
-              },
-              "metadata": {"comment": "each key must be one of the choices in the text"}
+              }
+            }
+          },
+          "optionalProperties": {
+            "layout": {
+              "enum": ["column", "row"],
+              "metadata": {"default": "column"}
             }
           }
         },
-        "dialogTag": {
-          "type": "string",
-          "metadata": {"comment": "sent inside the response to `dialog`, mutually exclusive with `dialog`"}
+        "choiceResponse": {
+          "properties": {
+            "tag": {
+              "type": "string",
+              "metadata": {"comment": "tag from dialog choices"}
+            }
+          },
+          "metadata": {"comment": "mutually exclusive with `dialog`"}
         }
       },
       "metadata": {

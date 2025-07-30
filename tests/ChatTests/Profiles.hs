@@ -278,7 +278,7 @@ testMultiWordProfileNames =
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
-    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =

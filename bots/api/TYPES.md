@@ -32,6 +32,7 @@ This file is generated automatically.
 - [CIReactionCount](#cireactioncount)
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
+- [ChatBotCommand](#chatbotcommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
 - [ChatErrorType](#chaterrortype)
@@ -39,6 +40,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
 - [ChatStats](#chatstats)
@@ -854,6 +856,19 @@ Invalid:
 
 ---
 
+## ChatBotCommand
+
+**Discriminated union type**:
+
+Command:
+- type: "command"
+- keyword: string
+- label: string
+- template: string
+
+
+---
+
 ## ChatDeleteMode
 
 **Discriminated union type**:
@@ -1260,6 +1275,15 @@ Message deletion result.
 **Record type**:
 - deletedChatItem: [AChatItem](#achatitem)
 - toChatItem: [AChatItem](#achatitem)?
+
+
+---
+
+## ChatPeerType
+
+**Enum type**:
+- "human"
+- "bot"
 
 
 ---
@@ -1982,6 +2006,7 @@ Phone:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]
 
 
 ---
@@ -1994,6 +2019,7 @@ Phone:
 - reactions: [SimplePreference](#simplepreference)
 - voice: [SimplePreference](#simplepreference)
 - calls: [SimplePreference](#simplepreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]
 
 
 ---
@@ -2250,6 +2276,7 @@ Known:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)?
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2399,6 +2426,7 @@ Unknown:
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
+- peerType: [ChatPeerType](#chatpeertype)?
 - localAlias: string
 
 
@@ -2625,6 +2653,7 @@ Unknown:
 - reactions: [SimplePreference](#simplepreference)?
 - voice: [SimplePreference](#simplepreference)?
 - calls: [SimplePreference](#simplepreference)?
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2661,6 +2690,7 @@ Unknown:
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
+- peerType: [ChatPeerType](#chatpeertype)?
 
 
 ---

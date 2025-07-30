@@ -207,11 +207,13 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
+    (sti @ChatBotCommand, STUnion1, "CBC", ["CBCMenu"], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
     (sti @ChatItemDeletion, STRecord, "", [], "", "Message deletion result."),
+    (sti @ChatPeerType, STEnum, "CPT", [], "", ""),
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
@@ -391,11 +393,13 @@ deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
+deriving instance Generic ChatBotCommand
 deriving instance Generic ChatDeleteMode
 deriving instance Generic ChatError
 deriving instance Generic ChatErrorType
 deriving instance Generic ChatFeature
 deriving instance Generic ChatItemDeletion
+deriving instance Generic ChatPeerType
 deriving instance Generic ChatRef
 deriving instance Generic ChatSettings
 deriving instance Generic ChatStats

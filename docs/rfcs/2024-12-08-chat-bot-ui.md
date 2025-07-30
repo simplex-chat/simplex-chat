@@ -45,11 +45,10 @@ The last option where the bot sends text message to the old clients and structur
 
 ### Protocol
 
-Add to message container an optional property `dialog`, an object with these optional properties:
+Add to message container an optional property `dialog`, an object with these properties:
 
-- `persistent`: boolean indicating that the choice should remain after user making a choice without bot sending additional messages, and won't be removed when bot sends additional messages, unless this additional message contains a choice. This is convenient for service bots with limited number of persistent choices, e.g. directory bot that may have buttons "Menu" (or "Help") and free text entry for search queries. This menu will be removed when a message with another choice is received.
+- `choices`: required property with an array of choices presented as buttons, with required property `text` and optional properties `tag`, `role`, `icon`.
 - `layout`: "row" or "column" (default). "column" layout could use standard confirmation dialogue to present choices on iOS (although it should not be modal, and should allow scrolling the conversation, but not replying or sending messages).
 - `allow`: an object showing possible arbitrary message responses, currently only `text` property is allowed with `false` (default) or `true` value. Because button responses are just text messages, if free text is allowed, and user sends the same text as button, with or without surrounding spaces, the bots should interpret them in the same way.
-- `choices`: an array of choices presented as buttons, with required property `text` and optional properties `tag`, `role`, `info`, `icon` and `disabled`.
 
 See the schema in the protocol schema document.
