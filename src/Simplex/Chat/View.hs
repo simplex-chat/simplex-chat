@@ -1418,7 +1418,7 @@ viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
       [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   | otherwise =
       [ ttyGroup' g <> " " <> ttyMember m <> " requests to create direct contact with you",
-        "to accept: " <> highlight ("/accept member contact @" <> viewName c),
+        "to accept: " <> highlight ("/accept_member_contact @" <> viewName c),
         "to reject: " <> highlight ("/delete @" <> viewName c) <> " (the sender will NOT be notified)"
       ]
 

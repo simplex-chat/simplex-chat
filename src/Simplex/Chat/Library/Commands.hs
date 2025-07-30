@@ -4643,7 +4643,7 @@ chatCommandP =
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
-      "/accept member contact @" *> (AcceptMemberContact <$> displayNameP),
+      "/accept_member_contact @" *> (AcceptMemberContact <$> displayNameP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),
