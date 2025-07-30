@@ -19,6 +19,7 @@ struct SimpleXApp: App {
 
     @Environment(\.scenePhase) var scenePhase
     @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
+    @State private var appOpenUrlLater: URL?
 
     init() {
         DispatchQueue.global(qos: .background).sync {
@@ -42,7 +43,11 @@ struct SimpleXApp: App {
                 .environmentObject(AppTheme.shared)
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
-                    chatModel.appOpenUrl = url
+                    if AppChatState.shared.value == .active {
+                        chatModel.appOpenUrl = url
+                    } else {
+                        appOpenUrlLater = url
+                    }
                 }
                 .onAppear() {
                     // Present screen for continue migration if it wasn't finished yet
@@ -93,7 +98,16 @@ struct SimpleXApp: App {
                                             if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
                                                 await updateCallInvitations()
                                             }
+                                            if let url = appOpenUrlLater {
+                                                await MainActor.run {
+                                                    appOpenUrlLater = nil
+                                                    chatModel.appOpenUrl = url
+                                                }
+                                            }
                                         }
+                                    } else if let url = appOpenUrlLater {
+                                        appOpenUrlLater = nil
+                                        chatModel.appOpenUrl = url
                                     }
                                 }
                             }
@@ -145,12 +159,12 @@ struct SimpleXApp: App {
             if let id = chatModel.chatId,
                let chat = chatModel.getChat(id),
                !NtfManager.shared.navigatingToChat {
-                Task { await loadChat(chat: chat, clearItems: false) }
+                Task { await loadChat(chat: chat, im: ItemsModel.shared, clearItems: false) }
             }
             if let ncr = chatModel.ntfContactRequest {
                 await MainActor.run { chatModel.ntfContactRequest = nil }
                 if case let .contactRequest(contactRequest) = chatModel.getChat(ncr.chatId)?.chatInfo {
-                    Task { await acceptContactRequest(incognito: ncr.incognito, contactRequest: contactRequest) }
+                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
                 }
             }
         } catch let error {

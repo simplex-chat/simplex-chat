@@ -539,7 +539,98 @@ private let versionDescriptions: [VersionDescription] = [
                 description: "Delivered even when Apple drops them."
             )),
         ]
-    )
+    ),
+    VersionDescription(
+        version: "v6.3",
+        post: URL(string: "https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html"),
+        features: [
+            .feature(Description(
+                icon: "at",
+                title: "Mention members 👋",
+                description: "Get notified when mentioned."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "Send private reports",
+                description: "Help admins moderating their groups."
+            )),
+            .feature(Description(
+                icon: "list.bullet",
+                title: "Organize chats into lists",
+                description: "Don't miss important messages."
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better privacy and security",
+                description: nil,
+                subfeatures: [
+                    ("eye.slash", "Private media file names."),
+                    ("trash", "Set message expiration in chats.")
+                ]
+            )),
+            .feature(Description(
+                icon: nil,
+                title: "Better groups performance",
+                description: nil,
+                subfeatures: [
+                    ("bolt", "Faster sending messages."),
+                    ("person.2.slash", "Faster deletion of groups.")
+                ]
+            )),
+        ]
+    ),
+    VersionDescription(
+        version: "v6.4",
+        post: URL(string: "https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html"),
+        features: [
+            .feature(Description(
+                icon: "person",
+                title: "Connect faster! 🚀",
+                description: "Message instantly once you tap Connect."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 17, *) {"person.bubble"} else  {"person.crop.square"} }(),
+                title: "Review group members",
+                description: "Chat with members before they join."
+            )),
+            .feature(Description(
+                icon: { if #available(iOS 16, *) {"questionmark.bubble"} else {"questionmark.square"} }(),
+                title: "Chat with admins",
+                description: "Send your private feedback to groups."
+            )),
+            .feature(Description(
+                icon: "flag",
+                title: "New group role: Moderator",
+                description: "Removes messages and blocks members."
+            )),
+            .feature(Description(
+                icon: "battery.50",
+                title: "Improved message delivery",
+                description: "Less traffic on mobile networks."
+            )),
+        ]
+    ),
+    VersionDescription(
+        version: "v6.4.1",
+        post: URL(string: "https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html"),
+        features: [
+            .feature(Description(
+                icon: "hand.wave",
+                title: "Welcome your contacts 👋",
+                description: "Set profile bio and welcome message."
+            )),
+            .feature(Description(
+                icon: "stopwatch",
+                title: "Keep your chats clean",
+                description: "Enable disappearing messages by default."
+            )),
+            .view(FeatureView(
+                icon: nil,
+                title: "Short SimpleX address",
+                view: { CreateUpdateAddressShortLink() }
+            ))
+        ]
+    ),
 ]
 
 private let lastVersion = versionDescriptions.last!.version
@@ -555,8 +646,6 @@ func shouldShowWhatsNew() -> Bool {
 }
 
 fileprivate struct NewOperatorsView: View {
-    @State private var showOperatorsSheet = false
-
     var body: some View {
         VStack(alignment: .leading) {
             Image((operatorsInfo[.flux] ?? ServerOperator.dummyOperatorInfo).largeLogo)
@@ -567,16 +656,52 @@ fileprivate struct NewOperatorsView: View {
                 .multilineTextAlignment(.leading)
                 .lineLimit(10)
             HStack {
-                Button("Enable Flux") {
-                    showOperatorsSheet = true
-                }
-                Text("for better metadata privacy.")
+                Text("Enable Flux in Network & servers settings for better metadata privacy.")
             }
         }
-        .sheet(isPresented: $showOperatorsSheet) {
+    }
+}
+
+fileprivate struct CreateUpdateAddressShortLink: View {
+    @EnvironmentObject private var chatModel: ChatModel
+    @EnvironmentObject var theme: AppTheme
+    @State private var showAddressSheet = false
+    @State private var progressIndicator = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(alignment: .center, spacing: 4) {
+                Image(systemName: "link")
+                    .symbolRenderingMode(.monochrome)
+                    .foregroundColor(theme.colors.secondary)
+                    .frame(minWidth: 30, alignment: .center)
+                Text("Short SimpleX address").font(.title3).bold()
+            }
+            Group {
+                if let addr = chatModel.userAddress {
+                    if addr.shouldBeUpgraded {
+                        HStack(spacing: 8) {
+                            Button("Upgrade your address") { upgradeAndShareAddressAlert(progressIndicator: $progressIndicator) }
+                            if progressIndicator {
+                                ProgressView()
+                            }
+                        }
+                    } else {
+                        Button("Share your address") { addr.shareAddress(short: true) }
+                    }
+                } else {
+                    Button("Create your address") { showAddressSheet = true }
+                }
+            }
+            .multilineTextAlignment(.leading)
+            .lineLimit(10)
+        }
+        .sheet(isPresented: $showAddressSheet) {
             NavigationView {
-                ChooseServerOperators(onboarding: false)
-                    .modifier(ThemedBackground())
+                UserAddressView(autoCreate: true)
+                    .navigationTitle("SimpleX address")
+                    .navigationBarTitleDisplayMode(.large)
+                    .modifier(ThemedBackground(grouped: true))
             }
         }
     }

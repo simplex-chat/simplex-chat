@@ -4,6 +4,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-unrecognised-pragmas #-}
 
 {-# HLINT ignore "Use newtype instead of data" #-}
@@ -16,24 +17,23 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
-import Data.Char (isDigit, isPunctuation)
+import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (foldl', intercalate)
 import Data.List.NonEmpty (NonEmpty)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe, isNothing)
+import Data.Maybe (fromMaybe, isNothing, mapMaybe)
 import Data.Semigroup (sconcat)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), ConnReqUriData (..), ConnectionRequestUri (..), SMPQueue (..))
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
@@ -49,19 +49,29 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: Text, smpHosts :: NonEmpty Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  | Mention {memberName :: Text}
   | Email
   | Phone
   deriving (Eq, Show)
 
-data SimplexLinkType = XLContact | XLInvitation | XLGroup
+mentionedNames :: MarkdownList -> [Text]
+mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
+  where
+    mentionedName = \case
+      Mention name -> Just name
+      _ -> Nothing
+
+data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel
   deriving (Eq, Show)
 
 colored :: Color -> Format
 colored = Colored . FormatColor
+{-# INLINE colored #-}
 
 markdown :: Format -> Text -> Markdown
 markdown = Markdown . Just
+{-# INLINE markdown #-}
 
 instance Semigroup Markdown where
   m <> (Markdown _ "") = m
@@ -163,6 +173,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '`' -> formattedP '`' Snippet
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
+          '@' -> mentionP <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -192,14 +203,20 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
+    mentionP = do
+      c <- A.char '@' *> A.peekChar'
+      (name, punct) <- displayNameTextP_
+      let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
+          mention = markdown (Mention name) ('@' `T.cons` sName)
+      pure $ if T.null punct then mention else mention :|: unmarked punct
     colorP =
       A.anyChar >>= \case
-        'r' -> "ed" $> Red <|> pure Red
-        'g' -> "reen" $> Green <|> pure Green
-        'b' -> "lue" $> Blue <|> pure Blue
-        'y' -> "ellow" $> Yellow <|> pure Yellow
-        'c' -> "yan" $> Cyan <|> pure Cyan
-        'm' -> "agenta" $> Magenta <|> pure Magenta
+        'r' -> optional "ed" $> Red
+        'g' -> optional "reen" $> Green
+        'b' -> optional "lue" $> Blue
+        'y' -> optional "ellow" $> Yellow
+        'c' -> optional "yan" $> Cyan
+        'm' -> optional "agenta" $> Magenta
         '1' -> pure Red
         '2' -> pure Green
         '3' -> pure Blue
@@ -221,35 +238,105 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s =
-          let t = T.takeWhileEnd isPunctuation' s
-              uri = uriMarkdown $ T.dropWhileEnd isPunctuation' s
-           in if T.null t then uri else uri :|: unmarked t
-      | isEmail s = markdown Email s
+      | isUri s' = res $ uriMarkdown s'
+      | isDomain s' = res $ markdown Uri s'
+      | isEmail s' = res $ markdown Email s'
       | otherwise = unmarked s
+      where
+        punct = T.takeWhileEnd isPunctuation' s
+        s' = T.dropWhileEnd isPunctuation' s
+        res md' = if T.null punct then md' else md' :|: unmarked punct
     isPunctuation' = \case
       '/' -> False
       ')' -> False
       c -> isPunctuation c
     uriMarkdown s = case strDecode $ encodeUtf8 s of
-      Right cReq -> markdown (simplexUriFormat cReq) s
+      Right cLink -> markdown (simplexUriFormat cLink) s
       _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
+    -- matches what is likely to be a domain, not all valid domain names
+    isDomain s = case T.splitOn "." s of
+      [name, tld] -> isDomain_ name tld
+      [sub, name, tld] -> T.length sub >= 3 && T.length sub <= 8 && isDomain_ name tld
+      _ -> False
+      where
+        isDomain_ name tld =
+          (let n = T.length name in n >= 1 && n <= 24)
+            && (let n = T.length tld in n >= 2 && n <= 8)
+            && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
-    simplexUriFormat :: AConnectionRequestUri -> Format
+    simplexUriFormat :: AConnectionLink -> Format
     simplexUriFormat = \case
-      ACR _ (CRContactUri crData) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRContactUri crData {crScheme = SSSimplex}
-         in SimplexLink (linkType' crData) uri $ uriHosts crData
-      ACR _ (CRInvitationUri crData e2e) ->
-        let uri = safeDecodeUtf8 . strEncode $ CRInvitationUri crData {crScheme = SSSimplex} e2e
-         in SimplexLink XLInvitation uri $ uriHosts crData
-      where
-        uriHosts ConnReqUriData {crSmpQueues} = L.map (safeDecodeUtf8 . strEncode) $ sconcat $ L.map (host . qServer) crSmpQueues
-        linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
-          Just (CRDataGroup _) -> XLGroup
-          Nothing -> XLContact
+      ACL m (CLFull cReq) -> case cReq of
+        CRContactUri crData -> SimplexLink (linkType' crData) cLink $ uriHosts crData
+        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink $ uriHosts crData
+        where
+          cLink = ACL m $ CLFull $ simplexConnReqUri cReq
+          uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
+          linkType' ConnReqUriData {crClientData} = case crClientData >>= decodeJSON of
+            Just (CRDataGroup _) -> XLGroup
+            Nothing -> XLContact
+      ACL m (CLShort sLnk) -> case sLnk of
+        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink $ uriHosts srv
+        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink $ uriHosts srv
+        where
+          cLink = ACL m $ CLShort $ simplexShortLink sLnk
+          uriHosts srv = L.map strEncodeText $ host srv
+          linkType' = \case
+            CCTGroup -> XLGroup
+            CCTChannel -> XLChannel
+            CCTContact -> XLContact
+    strEncodeText :: StrEncoding a => a -> Text
+    strEncodeText = safeDecodeUtf8 . strEncode
+
+markdownText :: FormattedText -> Text
+markdownText (FormattedText f_ t) = case f_ of
+  Nothing -> t
+  Just f -> case f of
+    Bold -> around '*'
+    Italic -> around '_'
+    StrikeThrough -> around '~'
+    Snippet -> around '`'
+    Secret -> around '#'
+    Colored (FormatColor c) -> color c
+    Uri -> t
+    SimplexLink {} -> t
+    Mention _ -> t
+    Email -> t
+    Phone -> t
+    where
+      around c = c `T.cons` t `T.snoc` c
+      color c = case colorStr c of
+        Just cStr -> cStr <> t `T.snoc` '!'
+        Nothing -> t
+      colorStr = \case
+        Red -> Just "!1 "
+        Green -> Just "!2 "
+        Blue -> Just "!3 "
+        Yellow -> Just "!4 "
+        Cyan -> Just "!5 "
+        Magenta -> Just "!6 "
+        Black -> Nothing
+        White -> Nothing
+
+displayNameTextP :: Parser Text
+displayNameTextP = displayNameTextP_ >>= \(t, sfx) -> if T.null sfx then pure t else fail "Name ends with punctuation"
+{-# INLINE displayNameTextP #-}
+
+displayNameTextP_ :: Parser (Text, Text)
+displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill isSpace
+  where
+    takeNameTill p =
+      A.peekChar' >>= \c ->
+        if refChar c then A.takeTill p else fail "invalid first character in display name"
+    splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
+    quoted c = A.char c *> takeNameTill (== c) <* A.char c
+    refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
+
+-- quotes names that contain spaces or end on punctuation
+viewName :: Text -> Text
+viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s) then "'" <> s <> "'" else s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 

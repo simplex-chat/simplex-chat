@@ -14,11 +14,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalView
 import chat.simplex.common.AppScreen
-import chat.simplex.common.model.clear
 import chat.simplex.common.model.clearAndNotify
 import chat.simplex.common.views.helpers.*
 import androidx.compose.ui.platform.LocalContext as LocalContext1
 import chat.simplex.res.MR
+import kotlinx.coroutines.*
 
 actual fun showToast(text: String, timeout: Long) = Toast.makeText(androidAppContext, text, Toast.LENGTH_SHORT).show()
 
@@ -74,9 +74,13 @@ actual class GlobalExceptionsHandler: Thread.UncaughtExceptionHandler {
     if (ModalManager.start.hasModalsOpen()) {
       ModalManager.start.closeModal()
     } else if (chatModel.chatId.value != null) {
-      // Since no modals are open, the problem is probably in ChatView
-      chatModel.chatId.value = null
-      chatModel.chatItems.clearAndNotify()
+      withApi {
+        withContext(Dispatchers.Main) {
+          // Since no modals are open, the problem is probably in ChatView
+          chatModel.chatId.value = null
+          chatModel.chatsContext.chatItems.clearAndNotify()
+        }
+      }
     } else {
       // ChatList, nothing to do. Maybe to show other view except ChatList
     }

@@ -21,6 +21,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -127,7 +128,9 @@ fun SettingsLayout(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_support)) {
-      ContributeItem(uriHandler)
+      if (!BuildConfigCommon.ANDROID_BUNDLE) {
+        ContributeItem(uriHandler)
+      }
       RateAppItem(uriHandler)
       StarOnGithubItem(uriHandler)
     }
@@ -444,17 +447,19 @@ fun doWithAuth(title: String, desc: String, block: () -> Unit) {
           runAuth(title, desc, onFinishAuth)
         }
       }
-      Box(
-        Modifier.fillMaxSize().background(MaterialTheme.colors.background),
-        contentAlignment = Alignment.Center
-      ) {
-        SimpleButton(
-          stringResource(MR.strings.auth_unlock),
-          icon = painterResource(MR.images.ic_lock),
-          click = {
-            runAuth(title, desc, onFinishAuth)
-          }
-        )
+      Surface(color = MaterialTheme.colors.background.copy(1f), contentColor = LocalContentColor.current) {
+        Box(
+          Modifier.fillMaxSize(),
+          contentAlignment = Alignment.Center
+        ) {
+          SimpleButton(
+            stringResource(MR.strings.auth_unlock),
+            icon = painterResource(MR.images.ic_lock),
+            click = {
+              runAuth(title, desc, onFinishAuth)
+            }
+          )
+        }
       }
     }
   }

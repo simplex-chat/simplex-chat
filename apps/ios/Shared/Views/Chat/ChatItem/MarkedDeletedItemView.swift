@@ -14,6 +14,7 @@ struct MarkedDeletedItemView: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.revealed) var revealed: Bool
     @ObservedObject var chat: Chat
+    @ObservedObject var im: ItemsModel
     var chatItem: ChatItem
 
     var body: some View {
@@ -29,14 +30,14 @@ struct MarkedDeletedItemView: View {
     var mergedMarkedDeletedText: LocalizedStringKey {
         if !revealed,
            let ciCategory = chatItem.mergeCategory,
-           var i = m.getChatItemIndex(chatItem) {
+           var i = m.getChatItemIndex(im, chatItem) {
             var moderated = 0
             var blocked = 0
             var blockedByAdmin = 0
             var deleted = 0
             var moderatedBy: Set<String> = []
-            while i < ItemsModel.shared.reversedChatItems.count,
-                  let ci = .some(ItemsModel.shared.reversedChatItems[i]),
+            while i < im.reversedChatItems.count,
+                  let ci = .some(im.reversedChatItems[i]),
                   ci.mergeCategory == ciCategory,
                   let itemDeleted = ci.meta.itemDeleted {
                 switch itemDeleted {
@@ -67,11 +68,15 @@ struct MarkedDeletedItemView: View {
     // same texts are in markedDeletedText in ChatPreviewView, but it returns String;
     // can be refactored into a single function if functions calling these are changed to return same type
     var markedDeletedText: LocalizedStringKey {
-        switch chatItem.meta.itemDeleted {
-        case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
-        case .blocked: "blocked"
-        case .blockedByAdmin: "blocked by admin"
-        case .deleted, nil: "marked deleted"
+        if chatItem.meta.itemDeleted != nil, chatItem.isReport {
+            "archived report"
+        } else {
+            switch chatItem.meta.itemDeleted {
+            case let .moderated(_, byGroupMember): "moderated by \(byGroupMember.displayName)"
+            case .blocked: "blocked"
+            case .blockedByAdmin: "blocked by admin"
+            case .deleted, nil: "marked deleted"
+            }
         }
     }
 }
@@ -81,6 +86,7 @@ struct MarkedDeletedItemView_Previews: PreviewProvider {
         Group {
             MarkedDeletedItemView(
                 chat: Chat.sampleData,
+                im: ItemsModel.shared,
                 chatItem: ChatItem.getSample(1, .directSnd, .now, "hello", .sndSent(sndProgress: .complete), itemDeleted: .deleted(deletedTs: .now))
             ).environment(\.revealed, true)
         }

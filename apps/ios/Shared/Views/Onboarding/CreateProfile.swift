@@ -25,10 +25,13 @@ enum UserProfileAlert: Identifiable {
     }
 }
 
+let MAX_BIO_LENGTH_BYTES = 160
+
 struct CreateProfile: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     @State private var displayName: String = ""
+    @State private var profileBio: String = ""
     @FocusState private var focusDisplayName
     @State private var alert: UserProfileAlert?
 
@@ -37,12 +40,13 @@ struct CreateProfile: View {
             Section {
                 TextField("Enter your name…", text: $displayName)
                     .focused($focusDisplayName)
+                TextField("Bio", text: $profileBio)
                 Button {
                     createProfile()
                 } label: {
                     Label("Create profile", systemImage: "checkmark")
                 }
-                .disabled(!canCreateProfile(displayName))
+                .disabled(!canCreateProfile(displayName) || !bioFitsLimit())
             } header: {
                 HStack {
                     Text("Your profile")
@@ -52,18 +56,20 @@ struct CreateProfile: View {
                     let validName = mkValidName(name)
                     if name != validName {
                         Spacer()
-                        Image(systemName: "exclamationmark.circle")
-                            .foregroundColor(.red)
-                            .onTapGesture {
-                                alert = .invalidNameError(validName: validName)
-                            }
+                        validationErrorIndicator {
+                            alert = .invalidNameError(validName: validName)
+                        }
+                    } else if !bioFitsLimit() {
+                        Spacer()
+                        validationErrorIndicator {
+                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
+                        }
                     }
                 }
                 .frame(height: 20)
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Your profile, contacts and delivered messages are stored on your device.")
-                    Text("The profile is only shared with your contacts.")
+                    Text("Your profile is stored on your device and only shared with your contacts.")
                 }
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -79,11 +85,25 @@ struct CreateProfile: View {
         }
     }
 
+    private func validationErrorIndicator(_ onTap: @escaping () -> Void) -> some View {
+        Image(systemName: "exclamationmark.circle")
+            .foregroundColor(.red)
+            .onTapGesture {
+                onTap()
+            }
+    }
+
+    private func bioFitsLimit() -> Bool {
+        chatJsonLength(profileBio) <= MAX_BIO_LENGTH_BYTES
+    }
+
     private func createProfile() {
         hideKeyboard()
+        let shortDescr: String? = if profileBio.isEmpty { nil } else { profileBio }
         let profile = Profile(
             displayName: displayName.trimmingCharacters(in: .whitespaces),
-            fullName: ""
+            fullName: "",
+            shortDescr: shortDescr
         )
         let m = ChatModel.shared
         do {
@@ -118,25 +138,22 @@ struct CreateFirstProfile: View {
     @State private var nextStepNavLinkActive = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            VStack(alignment: .center, spacing: 20) {
-                Text("Create your profile")
+        let v = VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .center, spacing: 16) {
+                Text("Create profile")
                     .font(.largeTitle)
                     .bold()
                     .multilineTextAlignment(.center)
-                
-                Text("Your profile, contacts and delivered messages are stored on your device.")
-                    .font(.callout)
-                    .foregroundColor(theme.colors.secondary)
-                    .multilineTextAlignment(.center)
-                
-                Text("The profile is only shared with your contacts.")
+
+                Text("Your profile is stored on your device and only shared with your contacts.")
                     .font(.callout)
                     .foregroundColor(theme.colors.secondary)
                     .multilineTextAlignment(.center)
             }
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity) // Ensures it takes up the full width
             .padding(.horizontal, 10)
+            .onTapGesture { focusDisplayName = false }
 
             HStack {
                 let name = displayName.trimmingCharacters(in: .whitespaces)
@@ -145,6 +162,7 @@ struct CreateFirstProfile: View {
                     TextField("Enter your name…", text: $displayName)
                         .focused($focusDisplayName)
                         .padding(.horizontal)
+                        .padding(.trailing, 20)
                         .padding(.vertical, 10)
                         .background(
                             RoundedRectangle(cornerRadius: 10, style: .continuous)
@@ -173,12 +191,23 @@ struct CreateFirstProfile: View {
             }
         }
         .onAppear() {
-            focusDisplayName = true
+            if #available(iOS 16, *) {
+                focusDisplayName = true
+            } else {
+                // it does not work before animation completes on iOS 15
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    focusDisplayName = true
+                }
+            }
         }
         .padding(.horizontal, 25)
-        .padding(.top, 10)
         .padding(.bottom, 25)
         .frame(maxWidth: .infinity, alignment: .leading)
+        if #available(iOS 16, *) {
+            return v.padding(.top, 10)
+        } else {
+            return v.padding(.top, 75).ignoresSafeArea(.all, edges: .top)
+        }
     }
 
     func createProfileButton() -> some View {
@@ -206,7 +235,7 @@ struct CreateFirstProfile: View {
     }
 
     private func nextStepDestinationView() -> some View {
-        ChooseServerOperators(onboarding: true)
+        OnboardingConditionsView()
             .navigationBarBackButtonHidden(true)
             .modifier(ThemedBackground())
     }
@@ -235,15 +264,15 @@ private func showCreateProfileAlert(
     _ error: Error
 ) {
     let m = ChatModel.shared
-    switch error as? ChatResponse {
-    case .chatCmdError(_, .errorStore(.duplicateName)),
-         .chatCmdError(_, .error(.userExists)):
+    switch error as? ChatError {
+    case .errorStore(.duplicateName),
+         .error(.userExists):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(duplicateUserAlert)
         } else {
             showAlert(.duplicateUserError)
         }
-    case .chatCmdError(_, .error(.invalidDisplayName)):
+    case .error(.invalidDisplayName):
         if m.currentUser == nil {
             AlertManager.shared.showAlert(invalidDisplayNameAlert)
         } else {

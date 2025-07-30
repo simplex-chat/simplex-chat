@@ -11,7 +11,6 @@ import SwiftUI
 public struct ErrorAlert: Error {
     public let title: LocalizedStringKey
     public let message: LocalizedStringKey?
-    public let actions: Optional<() -> AnyView>
 
     public init(
         title: LocalizedStringKey,
@@ -19,7 +18,6 @@ public struct ErrorAlert: Error {
     ) {
         self.title = title
         self.message = message
-        self.actions = nil
     }
 
     public init<A: View>(
@@ -29,7 +27,6 @@ public struct ErrorAlert: Error {
     ) {
         self.title = title
         self.message = message
-        self.actions = { AnyView(actions()) }
     }
 
     public init(_ title: LocalizedStringKey) {
@@ -37,22 +34,18 @@ public struct ErrorAlert: Error {
     }
 
     public init(_ error: any Error) {
-        self = if let chatResponse = error as? ChatResponse {
-            ErrorAlert(chatResponse)
+        self = if let e = error as? ChatError {
+            ErrorAlert(e)
         } else {
-            ErrorAlert(LocalizedStringKey(error.localizedDescription))
+            ErrorAlert("\(error.localizedDescription)")
         }
     }
 
     public init(_ chatError: ChatError) {
-        self = ErrorAlert("\(chatErrorString(chatError))")
-    }
-
-    public init(_ chatResponse: ChatResponse) {
-        self = if let networkErrorAlert = getNetworkErrorAlert(chatResponse) {
+        self = if let networkErrorAlert = getNetworkErrorAlert(chatError) {
             networkErrorAlert
         } else {
-            ErrorAlert("\(responseError(chatResponse))")
+            ErrorAlert("\(chatErrorString(chatError))")
         }
     }
 }
@@ -79,11 +72,7 @@ extension View {
                 set: { if !$0 { errorAlert.wrappedValue = nil } }
             ),
             actions: {
-                if let actions_ = errorAlert.wrappedValue?.actions {
-                    actions_()
-                } else {
-                    if let alert = errorAlert.wrappedValue { actions(alert) }
-                }
+                if let alert = errorAlert.wrappedValue { actions(alert) }
             },
             message: {
                 if let message = errorAlert.wrappedValue?.message {
@@ -94,22 +83,21 @@ extension View {
     }
 }
 
-public func getNetworkErrorAlert(_ r: ChatResponse) -> ErrorAlert? {
-    switch r {
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TIMEOUT))):
-        return ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .NETWORK))):
-        return ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .HOST))):
-        return ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.BROKER(addr, .TRANSPORT(.version)))):
-        return ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
-    case let .chatCmdError(_, .errorAgent(.SMP(serverAddress, .PROXY(proxyErr)))):
-        return smpProxyErrorAlert(proxyErr, serverAddress)
-    case let .chatCmdError(_, .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr))))):
-        return proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
-    default:
-        return nil
+public func getNetworkErrorAlert(_ e: ChatError) -> ErrorAlert? {
+    switch e {
+    case let .errorAgent(.BROKER(addr, .TIMEOUT)):
+        ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .errorAgent(.BROKER(addr, .NETWORK)):
+        ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .errorAgent(.BROKER(addr, .HOST)):
+        ErrorAlert(title: "Connection error", message: "Server address is incompatible with network settings: \(serverHostname(addr)).")
+    case let .errorAgent(.BROKER(addr, .TRANSPORT(.version))):
+        ErrorAlert(title: "Connection error", message: "Server version is incompatible with your app: \(serverHostname(addr)).")
+    case let .errorAgent(.SMP(serverAddress, .PROXY(proxyErr))):
+        smpProxyErrorAlert(proxyErr, serverAddress)
+    case let .errorAgent(.PROXY(proxyServer, relayServer, .protocolError(.PROXY(proxyErr)))):
+        proxyDestinationErrorAlert(proxyErr, proxyServer, relayServer)
+    default: nil
     }
 }
 

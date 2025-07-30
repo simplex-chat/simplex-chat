@@ -28,7 +28,11 @@ struct ProfileImage: View {
                 .resizable()
                 .foregroundColor(c)
                 .frame(width: size, height: size)
-                .background(Circle().fill(backgroundColor != nil ? backgroundColor! : .clear))
+                .background(
+                    Circle()
+                        .fill(backgroundColor != nil ? backgroundColor! : .clear)
+                        .frame(width: size - 2, height: size - 2) // less than size of Image to avoid slightly visible border
+                )
         }
     }
 }

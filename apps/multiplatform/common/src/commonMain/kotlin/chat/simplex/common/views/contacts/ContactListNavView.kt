@@ -5,7 +5,6 @@ import androidx.compose.ui.graphics.Color
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.*
 import chat.simplex.common.views.chat.item.ItemAction
@@ -21,7 +20,9 @@ fun onRequestAccepted(chat: Chat) {
     if (chatInfo is ChatInfo.Direct) {
         ModalManager.start.closeModals()
         if (chatInfo.contact.sndReady) {
-            openLoadedChat(chat)
+            withApi {
+                openLoadedChat(chat)
+            }
         }
     }
 }
@@ -52,15 +53,9 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 click = {
                     hideKeyboard(view)
                     when (contactType) {
-                        ContactType.RECENT -> {
+                        ContactType.RECENT, ContactType.CONTACT_WITH_REQUEST, ContactType.CHAT_DELETED -> {
                             withApi {
-                                openChat(rhId, chat.chatInfo)
-                                ModalManager.start.closeModals()
-                            }
-                        }
-                        ContactType.CHAT_DELETED -> {
-                            withApi {
-                                openChat(rhId, chat.chatInfo)
+                                openChat(secondaryChatsCtx = null, rhId, chat.chatInfo)
                                 ModalManager.start.closeModals()
                             }
                         }
@@ -78,7 +73,17 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
-                        DeleteContactAction(chat, chatModel, showMenu)
+                        if (contactType == ContactType.CONTACT_WITH_REQUEST && chat.chatInfo.contact.contactRequestId != null) {
+                            ContactRequestMenuItems(
+                                rhId = chat.remoteHostId,
+                                contactRequestId = chat.chatInfo.contact.contactRequestId,
+                                chatModel = chatModel,
+                                showMenu = showMenu,
+                                onSuccess = { onRequestAccepted(it) }
+                            )
+                        } else {
+                            DeleteContactAction(chat, chatModel, showMenu)
+                        }
                     }
                 },
                 showMenu,
@@ -107,7 +112,7 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
                         ContactRequestMenuItems(
                             rhId = chat.remoteHostId,
-                            chatInfo = chat.chatInfo,
+                            contactRequestId = chat.chatInfo.apiId,
                             chatModel = chatModel,
                             showMenu = showMenu,
                             onSuccess = { onRequestAccepted(it) }

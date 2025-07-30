@@ -20,20 +20,17 @@ struct ContactListNavLink: View {
     @State private var showContactRequestDialog = false
 
     var body: some View {
-        let contactType = chatContactType(chat)
-
         Group {
             switch (chat.chatInfo) {
             case let .direct(contact):
-                switch contactType {
-                case .recent:
-                    recentContactNavLink(contact)
-                case .chatDeleted:
-                    deletedChatNavLink(contact)
-                case .card:
+                if contact.nextAcceptContactRequest {
+                    contactWithRequestNavLink(contact)
+                } else if contact.isContactCard {
                     contactCardNavLink(contact)
-                default:
-                    EmptyView()
+                } else if contact.chatDeleted {
+                    deletedChatNavLink(contact)
+                } else if contact.active {
+                    recentContactNavLink(contact)
                 }
             case let .contactRequest(contactRequest):
                 contactRequestNavLink(contactRequest)
@@ -59,7 +56,7 @@ struct ContactListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id)
             }
         } label: {
-            contactPreview(contact, titleColor: theme.colors.onBackground)
+            contactPreview(contact, titleColor: contact.sendMsgToConnect ? theme.colors.primary : theme.colors.onBackground)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
@@ -75,6 +72,38 @@ struct ContactListNavLink: View {
                 Label("Delete", systemImage: "trash")
             }
             .tint(.red)
+        }
+    }
+
+    func contactWithRequestNavLink(_ contact: Contact) -> some View {
+        Button {
+            dismissAllSheets(animated: true) {
+                ItemsModel.shared.loadOpenChat(contact.id)
+            }
+        } label: {
+            contactRequestPreview()
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            if let contactRequestId = contact.contactRequestId {
+                Button {
+                    Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                } label: { Label("Accept", systemImage: "checkmark") }
+                    .tint(theme.colors.primary)
+                if !ChatModel.shared.addressShortLinkDataSet {
+                    Button {
+                        Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                    } label: {
+                        Label("Accept incognito", systemImage: "theatermasks")
+                    }
+                    .tint(.indigo)
+                }
+                Button {
+                    alert = SomeAlert(alert: rejectContactRequestAlert(contactRequestId), id: "rejectContactRequestAlert")
+                } label: {
+                    Label("Reject", systemImage: "multiply")
+                }
+                .tint(.red)
+            }
         }
     }
 
@@ -140,9 +169,9 @@ struct ContactListNavLink: View {
         }
     }
 
-    @ViewBuilder private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
+    private func previewTitle(_ contact: Contact, titleColor: Color) -> some View {
         let t = Text(chat.chatInfo.chatViewName).foregroundColor(titleColor)
-        (
+        return (
             contact.verified == true
             ? verifiedIcon + t
             : t
@@ -179,8 +208,14 @@ struct ContactListNavLink: View {
             .tint(.red)
         }
         .confirmationDialog("Connect with \(contact.chatViewName)", isPresented: $showConnectContactViaAddressDialog, titleVisibility: .visible) {
-            Button("Use current profile") { connectContactViaAddress_(contact, false) }
-            Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+            if !contact.profileChangeProhibited {
+                Button("Use current profile") { connectContactViaAddress_(contact, false) }
+                Button("Use new incognito profile") { connectContactViaAddress_(contact, true) }
+            } else if !contact.contactConnIncognito {
+                Button("Use current profile") { connectContactViaAddress_(contact, false) }
+            } else {
+                Button("Use incognito profile") { connectContactViaAddress_(contact, true) }
+            }
         }
     }
 
@@ -188,8 +223,7 @@ struct ContactListNavLink: View {
         Task {
             let ok = await connectContactViaAddress(contact.contactId, incognito, showAlert: { alert = SomeAlert(alert: $0, id: "ContactListNavLink connectContactViaAddress") })
             if ok {
-                ItemsModel.shared.loadOpenChat(contact.id)
-                DispatchQueue.main.async {
+                ItemsModel.shared.loadOpenChat(contact.id) {
                     dismissAllSheets(animated: true) {
                         AlertManager.shared.showAlert(connReqSentAlert(.contact))
                     }
@@ -220,36 +254,40 @@ struct ContactListNavLink: View {
         Button {
             showContactRequestDialog = true
         } label: {
-            contactRequestPreview(contactRequest)
+            contactRequestPreview()
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } label: { Label("Accept", systemImage: "checkmark") }
                 .tint(theme.colors.primary)
-            Button {
-                Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
-            } label: {
-                Label("Accept incognito", systemImage: "theatermasks")
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button {
+                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
+                } label: {
+                    Label("Accept incognito", systemImage: "theatermasks")
+                }
+                .tint(.indigo)
             }
-            .tint(.indigo)
             Button {
-                alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest), id: "rejectContactRequestAlert")
+                alert = SomeAlert(alert: rejectContactRequestAlert(contactRequest.apiId), id: "rejectContactRequestAlert")
             } label: {
                 Label("Reject", systemImage: "multiply")
             }
             .tint(.red)
         }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
-            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
-            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+            }
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
         }
     }
 
-    func contactRequestPreview(_ contactRequest: UserContactRequest) -> some View {
+    func contactRequestPreview() -> some View {
         HStack{
-            ProfileImage(imageStr: contactRequest.image, size: 30)
+            ProfileImage(imageStr: chat.chatInfo.image, size: 30)
 
             Text(chat.chatInfo.chatViewName)
                 .foregroundColor(.accentColor)

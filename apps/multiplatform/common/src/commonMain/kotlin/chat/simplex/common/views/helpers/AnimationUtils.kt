@@ -9,3 +9,7 @@ fun <T> newChatSheetAnimSpec() = tween<T>(256, 0, LinearEasing)
 fun <T> audioProgressBarAnimationSpec() = tween<T>(durationMillis = 30, easing = LinearEasing)
 
 fun <T> userPickerAnimSpec() = tween<T>(256, 0, FastOutSlowInEasing)
+
+fun <T> mentionPickerAnimSpec() = tween<T>(256, 0, FastOutSlowInEasing)
+
+fun <T> contextUserPickerAnimSpec() = tween<T>(256, 0, FastOutSlowInEasing)

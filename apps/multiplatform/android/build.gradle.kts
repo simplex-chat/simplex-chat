@@ -85,6 +85,7 @@ android {
         "en",
         "ar",
         "bg",
+        "ca",
         "cs",
         "de",
         "es",
@@ -92,6 +93,7 @@ android {
         "fi",
         "fr",
         "hu",
+        "in",
         "it",
         "iw",
         "ja",
@@ -99,10 +101,12 @@ android {
         "nl",
         "pl",
         "pt-rBR",
+        "ro",
         "ru",
         "th",
         "tr",
         "uk",
+        "vi",
         "zh-rCN"
     )
     ndkVersion = "23.1.7779620"

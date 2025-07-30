@@ -54,6 +54,13 @@ struct DeveloperView: View {
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
                         }
+                        NavigationLink {
+                            StorageView()
+                                .navigationTitle("Storage")
+                                .navigationBarTitleDisplayMode(.large)
+                        } label: {
+                            settingsRow("internaldrive", color: theme.colors.secondary) { Text("Storage") }
+                        }
                     } header: {
                         Text("Developer options")
                     }

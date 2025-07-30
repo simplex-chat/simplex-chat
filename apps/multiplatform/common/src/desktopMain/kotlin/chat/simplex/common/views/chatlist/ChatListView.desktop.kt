@@ -21,6 +21,12 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+actual fun TagsRow(content: @Composable() (() -> Unit)) {
+  FlowRow(modifier = Modifier.padding(horizontal = 14.dp)) { content() }
+}
+
 @Composable
 actual fun ActiveCallInteractiveArea(call: Call) {
   val showMenu = remember { mutableStateOf(false) }
@@ -45,7 +51,7 @@ private fun ActiveCallInteractiveAreaOneHand(call: Call, showMenu: MutableState<
         val chat = chatModel.getChat(call.contact.id)
         if (chat != null) {
           withBGApi {
-            openChat(chat.remoteHostId, chat.chatInfo)
+            openChat(secondaryChatsCtx = null, chat.remoteHostId, chat.chatInfo)
           }
         }
       },
@@ -110,7 +116,7 @@ private fun ActiveCallInteractiveAreaNonOneHand(call: Call, showMenu: MutableSta
           val chat = chatModel.getChat(call.contact.id)
           if (chat != null) {
             withBGApi {
-              openChat(chat.remoteHostId, chat.chatInfo)
+              openChat(secondaryChatsCtx = null, chat.remoteHostId, chat.chatInfo)
             }
           }
         },

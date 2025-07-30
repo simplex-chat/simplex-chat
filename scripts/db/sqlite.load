@@ -1,0 +1,20 @@
+LOAD DATABASE
+     FROM {{SQLITE_DBPATH}}
+     INTO {{POSTGRES_CONN}}
+
+ WITH include no drop,
+      truncate,
+      disable triggers,
+      create no tables,
+      create no indexes,
+      -- pgloader implementation doesn't find "GENERATED ALWAYS AS IDENTITY" sequences,
+      -- instead we reset sequences manually via custom query after load
+      reset no sequences,
+      data only
+
+ EXCLUDING TABLE NAMES LIKE 'migrations', 'sqlite_sequence'
+
+ SET work_mem to '16MB',
+     maintenance_work_mem to '512 MB',
+     search_path to '{{POSTGRES_SCHEMA}}'
+;

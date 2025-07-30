@@ -38,9 +38,9 @@ struct YourServersView: View {
             .allowsHitTesting(!testing)
     }
 
-    @ViewBuilder private func yourServersView() -> some View {
+    private func yourServersView() -> some View {
         let duplicateHosts = findDuplicateHosts(serverErrors)
-        List {
+        return List {
             if !userServers[operatorIndex].smpServers.filter({ !$0.deleted }).isEmpty {
                 Section {
                     ForEach($userServers[operatorIndex].smpServers) { srv in

@@ -168,20 +168,14 @@ struct VoiceMessagePlayer: View {
                 case .sndCancelled: playbackButton()
                 case let .sndError(sndFileError):
                     fileStatusIcon("multiply", 14)
-                        .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("File error"),
-                                message: Text(sndFileError.errorInfo)
-                            ))
-                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            showFileErrorAlert(sndFileError)
+                        })
                 case let .sndWarning(sndFileError):
                     fileStatusIcon("exclamationmark.triangle.fill", 16)
-                        .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("Temporary file error"),
-                                message: Text(sndFileError.errorInfo)
-                            ))
-                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            showFileErrorAlert(sndFileError, temporary: true)
+                        })
                 case .rcvInvitation: downloadButton(recordingFile, "play.fill")
                 case .rcvAccepted: loadingIcon()
                 case .rcvTransfer: loadingIcon()
@@ -190,20 +184,14 @@ struct VoiceMessagePlayer: View {
                 case .rcvCancelled: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 case let .rcvError(rcvFileError):
                     fileStatusIcon("multiply", 14)
-                        .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("File error"),
-                                message: Text(rcvFileError.errorInfo)
-                            ))
-                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            showFileErrorAlert(rcvFileError)
+                        })
                 case let .rcvWarning(rcvFileError):
                     fileStatusIcon("exclamationmark.triangle.fill", 16)
-                        .onTapGesture {
-                            AlertManager.shared.showAlert(Alert(
-                                title: Text("Temporary file error"),
-                                message: Text(rcvFileError.errorInfo)
-                            ))
-                        }
+                        .simultaneousGesture(TapGesture().onEnded {
+                            showFileErrorAlert(rcvFileError, temporary: true)
+                        })
                 case .invalid: playPauseIcon("play.fill", Color(uiColor: .tertiaryLabel))
                 }
             } else {
@@ -267,59 +255,29 @@ struct VoiceMessagePlayer: View {
         }
     }
 
-    @ViewBuilder private func playbackButton() -> some View {
-        if sizeMultiplier != 1 {
-            switch playbackState {
-            case .noPlayback:
-                playPauseIcon("play.fill", theme.colors.primary)
-                    .onTapGesture {
-                        if let recordingSource = getLoadedFileSource(recordingFile) {
-                            startPlayback(recordingSource)
-                        }
-                    }
-            case .playing:
-                playPauseIcon("pause.fill", theme.colors.primary)
-                    .onTapGesture {
-                        audioPlayer?.pause()
-                        playbackState = .paused
-                        notifyStateChange()
-                    }
-            case .paused:
-                playPauseIcon("play.fill", theme.colors.primary)
-                    .onTapGesture {
-                        audioPlayer?.play()
-                        playbackState = .playing
-                        notifyStateChange()
-                    }
-            }
-        } else {
-            switch playbackState {
-            case .noPlayback:
-                Button {
+    private func playbackButton() -> some View {
+        let icon = switch playbackState {
+        case .noPlayback: "play.fill"
+        case .playing: "pause.fill"
+        case .paused: "play.fill"
+        }
+        return playPauseIcon(icon, theme.colors.primary)
+            .simultaneousGesture(TapGesture().onEnded { _ in
+                switch playbackState {
+                case .noPlayback:
                     if let recordingSource = getLoadedFileSource(recordingFile) {
                         startPlayback(recordingSource)
                     }
-                } label: {
-                    playPauseIcon("play.fill", theme.colors.primary)
-                }
-            case .playing:
-                Button {
+                case .playing:
                     audioPlayer?.pause()
                     playbackState = .paused
                     notifyStateChange()
-                } label: {
-                    playPauseIcon("pause.fill", theme.colors.primary)
-                }
-            case .paused:
-                Button {
+                case .paused:
                     audioPlayer?.play()
                     playbackState = .playing
                     notifyStateChange()
-                } label: {
-                    playPauseIcon("play.fill", theme.colors.primary)
                 }
-            }
-        }
+            })
     }
 
     private func playPauseIcon(_ image: String, _ color: Color/* = .accentColor*/) -> some View {
@@ -341,28 +299,14 @@ struct VoiceMessagePlayer: View {
     }
 
     private func downloadButton(_ recordingFile: CIFile, _ icon: String) -> some View {
-        Group {
-            if sizeMultiplier != 1 {
-                playPauseIcon(icon, theme.colors.primary)
-                    .onTapGesture {
-                        Task {
-                            if let user = chatModel.currentUser {
-                                await receiveFile(user: user, fileId: recordingFile.fileId)
-                            }
-                        }
+        playPauseIcon(icon, theme.colors.primary)
+            .simultaneousGesture(TapGesture().onEnded {
+                Task {
+                    if let user = chatModel.currentUser {
+                        await receiveFile(user: user, fileId: recordingFile.fileId)
                     }
-            } else {
-                Button {
-                    Task {
-                        if let user = chatModel.currentUser {
-                            await receiveFile(user: user, fileId: recordingFile.fileId)
-                        }
-                    }
-                } label: {
-                    playPauseIcon(icon, theme.colors.primary)
                 }
-            }
-        }
+            })
     }
 
     func notifyStateChange() {
@@ -442,6 +386,7 @@ struct VoiceMessagePlayer: View {
     }
 }
 
+@inline(__always)
 func voiceMessageSizeBasedOnSquareSize(_ squareSize: CGFloat) -> CGFloat {
     let squareToCircleRatio = 0.935
     return squareSize + squareSize * (1 - squareToCircleRatio)
@@ -458,10 +403,12 @@ class VoiceItemState {
         self.playbackTime = playbackTime
     }
 
+    @inline(__always)
     static func id(_ chat: Chat, _ chatItem: ChatItem) -> String {
         "\(chat.id) \(chatItem.id)"
     }
 
+    @inline(__always)
     static func id(_ chatInfo: ChatInfo, _ chatItem: ChatItem) -> String {
         "\(chatInfo.id) \(chatItem.id)"
     }
@@ -488,6 +435,7 @@ class VoiceItemState {
 
 struct CIVoiceView_Previews: PreviewProvider {
     static var previews: some View {
+        let im = ItemsModel.shared
         let sentVoiceMessage: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
@@ -510,10 +458,10 @@ struct CIVoiceView_Previews: PreviewProvider {
                 duration: 30,
                 allowMenu: Binding.constant(true)
             )
-            ChatItemView(chat: Chat.sampleData, chatItem: sentVoiceMessage, allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), allowMenu: .constant(true))
-            ChatItemView(chat: Chat.sampleData, chatItem: voiceMessageWtFile, allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentVoiceMessage, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getVoiceMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: voiceMessageWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil), allowMenu: .constant(true))
         }
         .previewLayout(.fixed(width: 360, height: 360))
     }

@@ -31,7 +31,7 @@ struct CreateSimpleXAddress: View {
                         Spacer()
 
                         if let userAddress = m.userAddress {
-                            SimpleXLinkQRCode(uri: userAddress.connReqContact)
+                            SimpleXCreatedLinkQRCode(link: userAddress.connLinkContact, short: Binding.constant(false))
                                 .frame(maxHeight: g.size.width)
                             shareQRCodeButton(userAddress)
                                 .frame(maxWidth: .infinity)
@@ -77,9 +77,10 @@ struct CreateSimpleXAddress: View {
                 progressIndicator = true
                 Task {
                     do {
-                        let connReqContact = try await apiCreateUserAddress()
-                        DispatchQueue.main.async {
-                            m.userAddress = UserContactLink(connReqContact: connReqContact)
+                        if let connLinkContact = try await apiCreateUserAddress() {
+                            DispatchQueue.main.async {
+                                m.userAddress = UserContactLink(connLinkContact)
+                            }
                         }
                         await MainActor.run { progressIndicator = false }
                     } catch let error {
@@ -121,7 +122,7 @@ struct CreateSimpleXAddress: View {
 
     private func shareQRCodeButton(_ userAddress: UserContactLink) -> some View {
         Button {
-            showShareSheet(items: [simplexChatLink(userAddress.connReqContact)])
+            showShareSheet(items: [simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: false))])
         } label: {
             Label("Share", systemImage: "square.and.arrow.up")
         }
@@ -189,7 +190,7 @@ struct SendAddressMailView: View {
         let messageBody = String(format: NSLocalizedString("""
             <p>Hi!</p>
             <p><a href="%@">Connect to me via SimpleX Chat</a></p>
-            """, comment: "email text"), simplexChatLink(userAddress.connReqContact))
+            """, comment: "email text"), simplexChatLink(userAddress.connLinkContact.simplexChatUri(short: false)))
         MailView(
             isShowing: self.$showMailView,
             result: $mailViewResult,

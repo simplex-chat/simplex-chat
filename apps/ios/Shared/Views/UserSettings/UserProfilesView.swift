@@ -221,11 +221,11 @@ struct UserProfilesView: View {
         !user.hidden ? nil : trimmedSearchTextOrPassword
     }
 
-    @ViewBuilder private func profileActionView(_ action: UserProfileAction) -> some View {
+    private func profileActionView(_ action: UserProfileAction) -> some View {
         let passwordValid = actionPassword == actionPassword.trimmingCharacters(in: .whitespaces)
         let passwordField = PassphraseField(key: $actionPassword, placeholder: "Profile password", valid: passwordValid)
         let actionEnabled: (User) -> Bool = { user in actionPassword != "" && passwordValid && correctPassword(user, actionPassword) }
-        List {
+        return List {
             switch action {
             case let .deleteUser(user, delSMPQueues):
                 actionHeader("Delete profile", user)
@@ -298,6 +298,7 @@ struct UserProfilesView: View {
     private func removeUser(_ user: User, _ delSMPQueues: Bool, viewPwd: String?) async {
         do {
             if user.activeUser {
+                ChatModel.shared.removeWallpaperFilesFromAllChats(user)
                 if let newActive = m.users.first(where: { u in !u.user.activeUser && !u.user.hidden }) {
                     try await changeActiveUserAsync_(newActive.user.userId, viewPwd: nil)
                     try await deleteUser()
@@ -323,6 +324,7 @@ struct UserProfilesView: View {
 
         func deleteUser() async throws {
             try await apiDeleteUser(user.userId, delSMPQueues, viewPwd: viewPwd)
+            removeWallpaperFilesFromTheme(user.uiThemes)
             await MainActor.run { withAnimation { m.removeUser(user) } }
         }
     }
@@ -348,7 +350,7 @@ struct UserProfilesView: View {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
                 } else {
                     if userInfo.unreadCount > 0 {
-                        UnreadBadge(userInfo: userInfo)
+                        userUnreadBadge(userInfo, theme: theme)
                     }
                     if user.hidden {
                         Image(systemName: "lock").foregroundColor(theme.colors.secondary)

@@ -23,7 +23,7 @@ struct AddGroupView: View {
     @State private var showTakePhoto = false
     @State private var chosenImage: UIImage? = nil
     @State private var showInvalidNameAlert = false
-    @State private var groupLink: String?
+    @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
 
     var body: some View {
@@ -104,7 +104,9 @@ struct AddGroupView: View {
                 }
                 .foregroundColor(theme.colors.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .onTapGesture(perform: hideKeyboard)
+                .onTapGesture {
+                    focusDisplayName = false
+                }
             }
         }
         .onAppear() {
@@ -161,18 +163,14 @@ struct AddGroupView: View {
             } else {
                 Image(systemName: "pencil").foregroundColor(theme.colors.secondary)
             }
-            textField("Enter group name…", text: $profile.displayName)
+            TextField("Enter group name…", text: $profile.displayName)
+                .padding(.leading, 36)
                 .focused($focusDisplayName)
                 .submitLabel(.continue)
                 .onSubmit {
                     if canCreateProfile() { createGroup() }
                 }
         }
-    }
-
-    func textField(_ placeholder: LocalizedStringKey, text: Binding<String>) -> some View {
-        TextField(placeholder, text: text)
-            .padding(.leading, 36)
     }
 
     func sharedGroupProfileInfo(_ incognito: Bool) -> Text {
@@ -185,19 +183,15 @@ struct AddGroupView: View {
     }
 
     func createGroup() {
-        hideKeyboard()
+        focusDisplayName = false
         do {
             profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
             profile.groupPreferences = GroupPreferences(history: GroupPreference(enable: .on))
             let gInfo = try apiNewGroup(incognito: incognitoDefault, groupProfile: profile)
             Task {
-                let groupMembers = await apiListMembers(gInfo.groupId)
-                await MainActor.run {
-                    m.groupMembers = groupMembers.map { GMember.init($0) }
-                    m.populateGroupMembersIndexes()
-                }
+                await m.loadGroupMembers(gInfo)
             }
-            let c = Chat(chatInfo: .group(groupInfo: gInfo), chatItems: [])
+            let c = Chat(chatInfo: .group(groupInfo: gInfo, groupChatScope: nil), chatItems: [])
             m.addChat(c)
             withAnimation {
                 groupInfo = gInfo
@@ -221,6 +215,8 @@ struct AddGroupView: View {
     }
 }
 
+// Using this method may freeze the app in some cases, so it should be avoided when possible, especially when combined with .focussed modifier.
+// It also must only be called from background thread.
 func hideKeyboard() {
     UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
 }

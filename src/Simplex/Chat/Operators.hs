@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE FlexibleContexts #-}
@@ -36,63 +37,36 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing, mapMaybe)
-import Data.Scientific (floatingOrInteger)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
-import Database.SQLite.Simple.FromField (FromField (..))
-import Database.SQLite.Simple.ToField (ToField (..))
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types (User)
 import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
 usageConditionsCommit :: Text
-usageConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
+usageConditionsCommit = "7471fd2af5838dc0467aebc570b5ea75e5df3209"
 
 previousConditionsCommit :: Text
-previousConditionsCommit = "11a44dc1fd461a93079f897048b46998db55da5c"
+previousConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
 
 usageConditionsText :: Text
 usageConditionsText =
   $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
       in [|stripFrontMatter $(lift (safeDecodeUtf8 s))|]
    )
-
-data DBStored = DBStored | DBNew
-
-data SDBStored (s :: DBStored) where
-  SDBStored :: SDBStored 'DBStored
-  SDBNew :: SDBStored 'DBNew
-
-deriving instance Show (SDBStored s)
-
-class DBStoredI s where sdbStored :: SDBStored s
-
-instance DBStoredI 'DBStored where sdbStored = SDBStored
-
-instance DBStoredI 'DBNew where sdbStored = SDBNew
-
-data DBEntityId' (s :: DBStored) where
-  DBEntityId :: Int64 -> DBEntityId' 'DBStored
-  DBNewEntity :: DBEntityId' 'DBNew
-
-deriving instance Show (DBEntityId' s)
-
-deriving instance Eq (DBEntityId' s)
-
-type DBEntityId = DBEntityId' 'DBStored
-
-type DBNewEntity = DBEntityId' 'DBNew
 
 data OperatorTag = OTSimplex | OTFlux
   deriving (Eq, Ord, Show)
@@ -116,12 +90,6 @@ instance TextEncoding OperatorTag where
   textEncode = \case
     OTSimplex -> "simplex"
     OTFlux -> "flux"
-
--- this and other types only define instances of serialization for known DB IDs only,
--- entities without IDs cannot be serialized to JSON
-instance FromField DBEntityId where fromField f = DBEntityId <$> fromField f
-
-instance ToField DBEntityId where toField (DBEntityId i) = toField i
 
 data UsageConditions = UsageConditions
   { conditionsId :: Int64,
@@ -167,7 +135,7 @@ conditionsRequiredOrDeadline createdAt notifiedAtOrNow =
     conditionsDeadline = addUTCTime (31 * nominalDay)
 
 data ConditionsAcceptance
-  = CAAccepted {acceptedAt :: Maybe UTCTime}
+  = CAAccepted {acceptedAt :: Maybe UTCTime, autoAccepted :: Bool}
   | CARequired {deadline :: Maybe UTCTime}
   deriving (Show)
 
@@ -267,6 +235,10 @@ data UserServer' s (p :: ProtocolType) = UserServer
   }
   deriving (Show)
 
+presetServerAddress :: UserServer' s p -> ProtocolServer p
+presetServerAddress UserServer {server = ProtoServerWithAuth srv _} = srv
+{-# INLINE presetServerAddress #-}
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
@@ -289,6 +261,9 @@ operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
   SPSMP -> useSMP
   SPXFTP -> useXFTP
 
+presetServer' :: Bool -> ProtocolServer p -> NewUserServer p
+presetServer' enabled = presetServer enabled . (`ProtoServerWithAuth` Nothing)
+
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer = newUserServer_ True
 
@@ -300,22 +275,22 @@ newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
--- it evaluates to (conditions to mark as accepted to SimpleX operator, current conditions, and conditions to add)
-usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+-- it evaluates to (current conditions, and conditions to add)
+usageConditionsToAdd :: Bool -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
 usageConditionsToAdd = usageConditionsToAdd' previousConditionsCommit usageConditionsCommit
 
 -- This function is used in unit tests
-usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (Maybe UsageConditions, UsageConditions, [UsageConditions])
+usageConditionsToAdd' :: Text -> Text -> Bool -> UTCTime -> [UsageConditions] -> (UsageConditions, [UsageConditions])
 usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
   []
-    | newUser -> (Just sourceCond, sourceCond, [sourceCond])
-    | otherwise -> (Just prevCond, sourceCond, [prevCond, sourceCond])
+    | newUser -> (sourceCond, [sourceCond])
+    | otherwise -> (sourceCond, [prevCond, sourceCond])
     where
       prevCond = conditions 1 prevCommit
       sourceCond = conditions 2 sourceCommit
   conds
-    | hasSourceCond -> (Nothing, last conds, [])
-    | otherwise -> (Nothing, sourceCond, [sourceCond])
+    | hasSourceCond -> (last conds, [])
+    | otherwise -> (sourceCond, [sourceCond])
     where
       hasSourceCond = any ((sourceCommit ==) . conditionsCommit) conds
       sourceCond = conditions cId sourceCommit
@@ -338,7 +313,7 @@ updatedServerOperators presetOps storedOps =
     <> map (\op -> (Nothing, Just $ ASO SDBStored op)) (filter (isNothing . operatorTag) storedOps)
   where
     -- TODO remove domains of preset operators from custom
-    addPreset op = ((Just op, storedOp' <$> pOperator op) :)      
+    addPreset op = ((Just op, storedOp' <$> pOperator op) :)
       where
         storedOp' presetOp = case find ((operatorTag presetOp ==) . operatorTag) storedOps of
           Just ServerOperator {operatorId, conditionsAcceptance, enabled, smpRoles, xftpRoles} ->
@@ -427,7 +402,7 @@ groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
   where
     mkUS op = UserOperatorServers op [] []
     addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
-    addServer ss custom add srv = 
+    addServer ss custom add srv =
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
        in atomicModifyIORef'_ v (add srv <$>)
     addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
@@ -445,7 +420,7 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
   where
     currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
     otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
-    noServersErrs  :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
+    noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
       | noServers opEnabled = [USENoServers p' user]
       | otherwise = [USEStorageMissing p' user | noServers (hasRole storage)] <> [USEProxyMissing p' user | noServers (hasRole proxy)]
@@ -470,25 +445,6 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
           | otherwise = (S.insert h hs, dups)
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
-
-instance ToJSON (DBEntityId' s) where
-  toEncoding = \case
-    DBEntityId i -> toEncoding i
-    DBNewEntity -> JE.null_
-  toJSON = \case
-    DBEntityId i -> toJSON i
-    DBNewEntity -> J.Null
-
-instance DBStoredI s => FromJSON (DBEntityId' s) where
-  parseJSON v = case (v, sdbStored @s) of
-    (J.Null, SDBNew) -> pure DBNewEntity
-    (J.Number n, SDBStored) -> case floatingOrInteger n of
-      Left (_ :: Double) -> fail "bad DBEntityId"
-      Right i -> pure $ DBEntityId (fromInteger i)
-    _ -> fail "bad DBEntityId"
-  omittedField = case sdbStored @s of
-    SDBStored -> Nothing
-    SDBNew -> Just DBNewEntity
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 

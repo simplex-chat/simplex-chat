@@ -25,7 +25,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.ChatInfoToolbarTitle
 import chat.simplex.common.views.helpers.*
@@ -34,6 +33,7 @@ import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
+import kotlinx.coroutines.*
 
 @Composable
 fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolean = false, chatModel: ChatModel, close: () -> Unit) {
@@ -55,14 +55,27 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
         GroupPreferencesView(chatModel, rhId, groupInfo.id, close)
       }
     },
+    openMemberAdmission = {
+      ModalManager.end.showCustomModal { close ->
+        MemberAdmissionView(
+          chat.simplex.common.platform.chatModel,
+          rhId,
+          groupInfo.id,
+          close
+        )
+      }
+    },
     inviteMembers = {
       allowModifyMembers = false
       withLongRunningApi(slow = 120_000) {
         for (contactId in selectedContacts) {
           val member = chatModel.controller.apiAddMember(rhId, groupInfo.groupId, contactId, selectedRole.value)
           if (member != null) {
-            withChats {
-              upsertGroupMember(rhId, groupInfo, member)
+            withContext(Dispatchers.Main) {
+              chatModel.chatsContext.upsertGroupMember(rhId, groupInfo, member)
+            }
+            withContext(Dispatchers.Main) {
+              chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, groupInfo, member)
             }
           } else {
             break
@@ -83,15 +96,16 @@ fun AddGroupMembersView(rhId: Long?, groupInfo: GroupInfo, creatingGroup: Boolea
 
 fun getContactsToAdd(chatModel: ChatModel, search: String): List<Contact> {
   val s = search.trim().lowercase()
-  val memberContactIds = chatModel.groupMembers
+  val memberContactIds = chatModel.groupMembers.value
     .filter { it.memberCurrent }
     .mapNotNull { it.memberContactId }
   return chatModel.chats.value
     .asSequence()
     .map { it.chatInfo }
     .filterIsInstance<ChatInfo.Direct>()
+    .filter { it.sendMsgEnabled }
     .map { it.contact }
-    .filter { c -> c.sendMsgEnabled && !c.nextSendGrpInv && c.contactId !in memberContactIds && c.anyNameContains(s)
+    .filter { c -> !c.sendMsgToConnect && c.contactId !in memberContactIds && c.anyNameContains(s)
     }
     .sortedBy { it.displayName.lowercase() }
     .toList()
@@ -107,6 +121,7 @@ fun AddGroupMembersLayout(
   allowModifyMembers: Boolean,
   searchText: MutableState<TextFieldValue>,
   openPreferences: () -> Unit,
+  openMemberAdmission: () -> Unit,
   inviteMembers: () -> Unit,
   clearSelection: () -> Unit,
   addContact: (Long) -> Unit,
@@ -141,7 +156,7 @@ fun AddGroupMembersLayout(
       horizontalArrangement = Arrangement.Center
     ) {
       ChatInfoToolbarTitle(
-        ChatInfo.Group(groupInfo),
+        ChatInfo.Group(groupInfo, groupChatScope = null),
         imageSize = 60.dp,
         iconColor = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight
       )
@@ -162,6 +177,9 @@ fun AddGroupMembersLayout(
     } else {
       SectionView {
         if (creatingGroup) {
+          SectionItemView(openMemberAdmission) {
+            Text(stringResource(MR.strings.set_member_admission))
+          }
           SectionItemView(openPreferences) {
             Text(stringResource(MR.strings.set_group_preferences))
           }
@@ -209,8 +227,8 @@ private fun RoleSelectionRow(groupInfo: GroupInfo, selectedRole: MutableState<Gr
     verticalAlignment = Alignment.CenterVertically,
     horizontalArrangement = Arrangement.SpaceBetween
   ) {
-    val values = GroupMemberRole.values()
-      .filter { it <= groupInfo.membership.memberRole && it != GroupMemberRole.Author }
+    val values = GroupMemberRole.selectableRoles
+      .filter { it <= groupInfo.membership.memberRole }
       .map { it to it.text }
     ExposedDropDownSettingRow(
       generalGetString(MR.strings.new_member_role),
@@ -373,6 +391,7 @@ fun PreviewAddGroupMembersLayout() {
       allowModifyMembers = true,
       searchText = remember { mutableStateOf(TextFieldValue("")) },
       openPreferences = {},
+      openMemberAdmission = {},
       inviteMembers = {},
       clearSelection = {},
       addContact = {},

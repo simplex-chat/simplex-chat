@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
+    var scrollToItem: ((ChatItem.ID) -> Void)? = nil
     var preview: UIImage?
     let maxWidth: CGFloat
     var imgWidth: CGFloat?
@@ -25,12 +26,14 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 Group { if smallView { smallViewImageView(uiImage) } else { imageView(uiImage) } }
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
+                    FullScreenMediaView(chatItem: chatItem, scrollToItem: scrollToItem, image: uiImage, showView: $showFullScreenImage)
                 }
                 .if(!smallView) { view in
                     view.modifier(PrivacyBlur(blurred: $blurred))
                 }
-                .onTapGesture { showFullScreenImage = true }
+                .if(!blurred) { v in
+                    v.simultaneousGesture(TapGesture().onEnded { showFullScreenImage = true })
+                }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
@@ -42,7 +45,7 @@ struct CIImageView: View {
                         imageView(preview).modifier(PrivacyBlur(blurred: $blurred))
                     }
                 }
-                    .onTapGesture {
+                    .simultaneousGesture(TapGesture().onEnded {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
@@ -69,29 +72,17 @@ struct CIImageView: View {
                             case .rcvComplete: () // ?
                             case .rcvCancelled: () // TODO
                             case let .rcvError(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(rcvFileError)
                             case let .rcvWarning(rcvFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(rcvFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(rcvFileError, temporary: true)
                             case let .sndError(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("File error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(sndFileError)
                             case let .sndWarning(sndFileError):
-                                AlertManager.shared.showAlert(Alert(
-                                    title: Text("Temporary file error"),
-                                    message: Text(sndFileError.errorInfo)
-                                ))
+                                showFileErrorAlert(sndFileError, temporary: true)
                             default: ()
                             }
                         }
-                    }
+                    })
             }
         }
         .onDisappear {

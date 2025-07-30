@@ -12,6 +12,7 @@ import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.text.InlineTextContent
 import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.runtime.*
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.unit.dp
@@ -30,7 +31,8 @@ fun ContextItemView(
   contextItems: List<ChatItem>,
   contextIcon: Painter,
   showSender: Boolean = true,
-  chatType: ChatType,
+  chatInfo: ChatInfo,
+  contextIconColor: Color = MaterialTheme.colors.secondary,
   cancelContextItem: () -> Unit,
 ) {
   val sentColor = MaterialTheme.appColors.sentMessage
@@ -62,6 +64,11 @@ fun ContextItemView(
       inlineContent = inlineContent,
       linkMode = SimplexLinkMode.DESCRIPTION,
       modifier = Modifier.fillMaxWidth(),
+      mentions = contextItem.mentions,
+      userMemberId = when {
+        chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
+        else -> null
+      }
     )
   }
 
@@ -85,7 +92,6 @@ fun ContextItemView(
 
   Row(
     Modifier
-      .padding(top = 8.dp)
       .background(if (sent) sentColor else receivedColor),
     verticalAlignment = Alignment.CenterVertically
   ) {
@@ -103,8 +109,8 @@ fun ContextItemView(
           .height(20.dp)
           .width(20.dp),
         contentDescription = stringResource(MR.strings.icon_descr_context),
-        tint = MaterialTheme.colors.secondary,
-      )
+        tint = contextIconColor,
+        )
 
       if (contextItems.count() == 1) {
         val contextItem = contextItems[0]
@@ -125,7 +131,7 @@ fun ContextItemView(
           ContextMsgPreview(contextItem, lines = 3)
         }
       } else if (contextItems.isNotEmpty()) {
-        Text(String.format(generalGetString(if (chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()), fontStyle = FontStyle.Italic)
+        Text(String.format(generalGetString(if (chatInfo.chatType == ChatType.Local) MR.strings.compose_save_messages_n else MR.strings.compose_forward_messages_n), contextItems.count()), fontStyle = FontStyle.Italic)
       }
     }
     IconButton(onClick = cancelContextItem) {
@@ -146,7 +152,7 @@ fun PreviewContextItemView() {
     ContextItemView(
       contextItems = listOf(ChatItem.getSampleData(1, CIDirection.DirectRcv(), Clock.System.now(), "hello")),
       contextIcon = painterResource(MR.images.ic_edit_filled),
-      chatType = ChatType.Direct
+      chatInfo = Chat.sampleData.chatInfo
     ) {}
   }
 }

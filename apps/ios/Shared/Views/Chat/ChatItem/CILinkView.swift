@@ -21,15 +21,15 @@ struct CILinkView: View {
                     .resizable()
                     .scaledToFit()
                     .modifier(PrivacyBlur(blurred: $blurred))
+                    .if(!blurred) { v in
+                        v.simultaneousGesture(TapGesture().onEnded {
+                            openBrowserAlert(uri: linkPreview.uri)
+                        })
+                    }
             }
             VStack(alignment: .leading, spacing: 6) {
                 Text(linkPreview.title)
                     .lineLimit(3)
-//                if linkPreview.description != "" {
-//                    Text(linkPreview.description)
-//                        .font(.subheadline)
-//                        .lineLimit(12)
-//                }
                 Text(linkPreview.uri.absoluteString)
                     .font(.caption)
                     .lineLimit(1)
@@ -37,8 +37,26 @@ struct CILinkView: View {
             }
             .padding(.horizontal, 12)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .simultaneousGesture(TapGesture().onEnded {
+                openBrowserAlert(uri: linkPreview.uri)
+            })
         }
     }
+}
+
+func openBrowserAlert(uri: URL) {
+    showAlert(
+        NSLocalizedString("Open link?", comment: "alert title"),
+        message: uri.absoluteString,
+        actions: {[
+            cancelAlertAction,
+            UIAlertAction(
+                title: NSLocalizedString("Open", comment: "alert action"),
+                style: .default,
+                handler: { _ in UIApplication.shared.open(uri) }
+            )
+        ]}
+    )
 }
 
 struct LargeLinkPreview_Previews: PreviewProvider {

@@ -19,6 +19,7 @@ struct PrivacySettings: View {
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
     @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
+    @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
@@ -118,7 +119,7 @@ struct PrivacySettings: View {
                             }
                     }
                     settingsRow("circle.filled.pattern.diagonalline.rectangle", color: theme.colors.secondary) {
-                        Picker("Blur media", selection: $privacyMediaBlurRadius) {
+                        WrappedPicker("Blur media", selection: $privacyMediaBlurRadius) {
                             let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
                             ForEach(values, id: \.self) { radius in
                                 let text: String = switch radius {
@@ -132,7 +133,6 @@ struct PrivacySettings: View {
                             }
                         }
                     }
-                    .frame(height: 36)
                     settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
                         Toggle("Protect IP address", isOn: $askToApproveRelays)
                     }

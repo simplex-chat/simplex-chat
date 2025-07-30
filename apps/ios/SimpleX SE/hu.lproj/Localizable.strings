@@ -2,7 +2,7 @@
 "%@" = "%@";
 
 /* No comment provided by engineer. */
-"App is locked!" = "Az alkalmazás zárolva!";
+"App is locked!" = "Az alkalmazás zárolva van!";
 
 /* No comment provided by engineer. */
 "Cancel" = "Mégse";
@@ -17,7 +17,7 @@
 "Comment" = "Hozzászólás";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Jelenleg a maximálisan támogatott fájlméret: %@.";
+"Currently maximum supported file size is %@." = "Jelenleg támogatott legnagyobb fájl méret: %@.";
 
 /* No comment provided by engineer. */
 "Database downgrade required" = "Adatbázis visszafejlesztése szükséges";
@@ -29,19 +29,19 @@
 "Database error" = "Adatbázishiba";
 
 /* No comment provided by engineer. */
-"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata eltér a kulcstartóban lévőtől.";
+"Database passphrase is different from saved in the keychain." = "Az adatbázis jelmondata nem egyezik a kulcstartóba mentettől.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "Adatbázis-jelmondat szükséges a csevegés megnyitásához.";
+"Database passphrase is required to open chat." = "A csevegés megnyitásához adja meg az adatbázis jelmondatát.";
 
 /* No comment provided by engineer. */
 "Database upgrade required" = "Adatbázis fejlesztése szükséges";
 
 /* No comment provided by engineer. */
-"Error preparing file" = "Hiba a fájl előkészítésekor";
+"Error preparing file" = "Hiba történt a fájl előkészítésekor";
 
 /* No comment provided by engineer. */
-"Error preparing message" = "Hiba az üzenet előkészítésekor";
+"Error preparing message" = "Hiba történt az üzenet előkészítésekor";
 
 /* No comment provided by engineer. */
 "Error: %@" = "Hiba: %@";
@@ -80,7 +80,7 @@
 "Please create a profile in the SimpleX app" = "Hozzon létre egy profilt a SimpleX alkalmazásban";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "A kiválasztott csevegési beállítások tiltják ezt az üzenetet.";
+"Selected chat preferences prohibit this message." = "A kijelölt csevegési beállítások tiltják ezt az üzenetet.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Az üzenet elküldése a vártnál tovább tart.";
@@ -92,7 +92,7 @@
 "Share" = "Megosztás";
 
 /* No comment provided by engineer. */
-"Slow network?" = "Lassú internetkapcsolat?";
+"Slow network?" = "Lassú a hálózata?";
 
 /* No comment provided by engineer. */
 "Unknown database error: %@" = "Ismeretlen adatbázishiba: %@";
@@ -104,7 +104,7 @@
 "Wait" = "Várjon";
 
 /* No comment provided by engineer. */
-"Wrong database passphrase" = "Hibás adatbázis-jelmondat";
+"Wrong database passphrase" = "Érvénytelen adatbázis-jelmondat";
 
 /* No comment provided by engineer. */
 "You can allow sharing in Privacy & Security / SimpleX Lock settings." = "A megosztást az Adatvédelem és biztonság / SimpleX-zár menüben engedélyezheti.";

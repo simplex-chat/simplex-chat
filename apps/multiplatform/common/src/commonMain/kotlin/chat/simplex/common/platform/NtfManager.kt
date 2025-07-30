@@ -10,8 +10,7 @@ import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 
 enum class NotificationAction {
-  ACCEPT_CONTACT_REQUEST,
-  ACCEPT_CONTACT_REQUEST_INCOGNITO
+  ACCEPT_CONTACT_REQUEST
 }
 
 lateinit var ntfManager: NtfManager
@@ -31,15 +30,14 @@ abstract class NtfManager {
     msgText = generalGetString(MR.strings.notification_new_contact_request),
     image = cInfo.image,
     listOf(
-      NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, incognito = false, cInfo.id) },
-      NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO to { acceptContactRequestAction(user.userId, incognito = true, cInfo.id) }
+      NotificationAction.ACCEPT_CONTACT_REQUEST to { acceptContactRequestAction(user.userId, incognito = false, cInfo.id) }
     )
   )
 
   fun notifyMessageReceived(rhId: Long?, user: UserLike, cInfo: ChatInfo, cItem: ChatItem) {
     if (
       cItem.showNotification &&
-      cInfo.ntfsEnabled &&
+      cInfo.ntfsEnabled(cItem) &&
       (
           allowedToShowNotification() ||
               chatModel.chatId.value != cInfo.id ||
@@ -51,14 +49,9 @@ abstract class NtfManager {
 
   fun acceptContactRequestAction(userId: Long?, incognito: Boolean, chatId: ChatId) {
     val isCurrentUser = ChatModel.currentUser.value?.userId == userId
-    val cInfo: ChatInfo.ContactRequest? = if (isCurrentUser) {
-      (ChatModel.getChat(chatId)?.chatInfo as? ChatInfo.ContactRequest) ?: return
-    } else {
-      null
-    }
     val apiId = chatId.replace("<@", "").toLongOrNull() ?: return
     // TODO include remote host in notification
-    acceptContactRequest(null, incognito, apiId, cInfo, isCurrentUser, ChatModel)
+    acceptContactRequest(null, incognito, apiId, isCurrentUser, ChatModel)
     cancelNotificationsForChat(chatId)
   }
 
@@ -73,7 +66,7 @@ abstract class NtfManager {
       }
       val cInfo = chatModel.getChat(chatId)?.chatInfo
       chatModel.clearOverlays.value = true
-      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(null, cInfo)
+      if (cInfo != null && (cInfo is ChatInfo.Direct || cInfo is ChatInfo.Group)) openChat(secondaryChatsCtx = null, rhId = null, cInfo)
     }
   }
 
@@ -134,7 +127,12 @@ abstract class NtfManager {
       }
       res
     } else {
-      cItem.text
+      val mc = cItem.content.msgContent
+      if (mc is MsgContent.MCReport) {
+        generalGetString(MR.strings.notification_group_report).format(cItem.text.ifEmpty { mc.reason.text })
+      } else {
+        cItem.text
+      }
     }
   }
 }

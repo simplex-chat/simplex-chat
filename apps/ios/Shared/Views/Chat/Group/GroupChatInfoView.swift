@@ -17,9 +17,12 @@ struct GroupChatInfoView: View {
     @Environment(\.dismiss) var dismiss: DismissAction
     @ObservedObject var chat: Chat
     @Binding var groupInfo: GroupInfo
+    @Binding var scrollToItemId: ChatItem.ID?
     var onSearch: () -> Void
+    @State var localAlias: String
+    @FocusState private var aliasTextFieldFocused: Bool
     @State private var alert: GroupChatInfoViewAlert? = nil
-    @State private var groupLink: String?
+    @State private var groupLink: GroupLink?
     @State private var groupLinkMemberRole: GroupMemberRole = .member
     @State private var groupLinkNavLinkActive: Bool = false
     @State private var addMembersNavLinkActive: Bool = false
@@ -27,6 +30,7 @@ struct GroupChatInfoView: View {
     @State private var connectionCode: String?
     @State private var sendReceipts = SendReceipts.userDefault(true)
     @State private var sendReceiptsUserDefault = true
+    @State private var progressIndicator = false
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
@@ -67,101 +71,133 @@ struct GroupChatInfoView: View {
                 .filter { m in let status = m.wrapped.memberStatus; return status != .memLeft && status != .memRemoved }
                 .sorted { $0.wrapped.memberRole > $1.wrapped.memberRole }
 
-            List {
-                groupInfoHeader()
-                    .listRowBackground(Color.clear)
-                    .padding(.bottom, 18)
+            ZStack {
+                List {
+                    groupInfoHeader()
+                        .listRowBackground(Color.clear)
 
-                infoActionButtons()
-                    .padding(.horizontal)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: infoViewActionButtonHeight)
-                    .listRowBackground(Color.clear)
-                    .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+                    localAliasTextEdit()
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .padding(.bottom, 18)
 
-                Section {
-                    if groupInfo.isOwner && groupInfo.businessChat == nil {
-                        editGroupButton()
-                    }
-                    if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
-                        addOrEditWelcomeMessage()
-                    }
-                    GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
-                    if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
-                        sendReceiptsOption()
-                    } else {
-                        sendReceiptsOptionDisabled()
-                    }
-                    NavigationLink {
-                        ChatWallpaperEditorSheet(chat: chat)
-                    } label: {
-                        Label("Chat theme", systemImage: "photo")
-                    }
-                } header: {
-                    Text("")
-                } footer: {
-                    let label: LocalizedStringKey = (
-                        groupInfo.businessChat == nil
-                        ? "Only group owners can change group preferences."
-                        : "Only chat owners can change preferences."
-                    )
-                    Text(label)
-                        .foregroundColor(theme.colors.secondary)
-                }
+                    infoActionButtons()
+                        .padding(.horizontal)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: infoViewActionButtonHeight)
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
 
-                Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
-                    if groupInfo.canAddMembers {
-                        if groupInfo.businessChat == nil {
+                    Section {
+                        if groupInfo.canAddMembers && groupInfo.businessChat == nil {
                             groupLinkButton()
                         }
-                        if (chat.chatInfo.incognito) {
-                            Label("Invite members", systemImage: "plus")
-                                .foregroundColor(Color(uiColor: .tertiaryLabel))
-                                .onTapGesture { alert = .cantInviteIncognitoAlert }
+                        if groupInfo.businessChat == nil && groupInfo.membership.memberRole >= .moderator {
+                            memberSupportButton()
+                        }
+                        if groupInfo.canModerate {
+                            GroupReportsChatNavLink(chat: chat, scrollToItemId: $scrollToItemId)
+                        }
+                        if groupInfo.membership.memberActive
+                            && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
+                            UserSupportChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                        }
+                    } header: {
+                        Text("")
+                    }
+
+                    Section {
+                        if groupInfo.isOwner && groupInfo.businessChat == nil {
+                            editGroupButton()
+                        }
+                        if groupInfo.groupProfile.description != nil || (groupInfo.isOwner && groupInfo.businessChat == nil) {
+                            addOrEditWelcomeMessage()
+                        }
+                        GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
+                    } footer: {
+                        let label: LocalizedStringKey = (
+                            groupInfo.businessChat == nil
+                            ? "Only group owners can change group preferences."
+                            : "Only chat owners can change preferences."
+                        )
+                        Text(label)
+                            .foregroundColor(theme.colors.secondary)
+                    }
+
+                    Section {
+                        if members.filter({ $0.wrapped.memberCurrent }).count <= SMALL_GROUPS_RCPS_MEM_LIMIT {
+                            sendReceiptsOption()
                         } else {
-                            addMembersButton()
+                            sendReceiptsOptionDisabled()
                         }
+                        NavigationLink {
+                            ChatWallpaperEditorSheet(chat: chat)
+                        } label: {
+                            Label("Chat theme", systemImage: "photo")
+                        }
+                        ChatTTLOption(chat: chat, progressIndicator: $progressIndicator)
+                    } footer: {
+                        Text("Delete chat messages from your device.")
                     }
-                    if members.count > 8 {
-                        searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
-                            .padding(.leading, 8)
-                    }
-                    let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
-                    let filteredMembers = s == "" ? members : members.filter { $0.wrapped.chatViewName.localizedLowercase.contains(s) }
-                    MemberRowView(groupInfo: groupInfo, groupMember: GMember(groupInfo.membership), user: true, alert: $alert)
-                    ForEach(filteredMembers) { member in
-                        ZStack {
-                            NavigationLink {
-                                memberInfoView(member)
-                            } label: {
-                                EmptyView()
+
+                    if !groupInfo.nextConnectPrepared {
+                        Section(header: Text("\(members.count + 1) members").foregroundColor(theme.colors.secondary)) {
+                            if groupInfo.canAddMembers {
+                                if (chat.chatInfo.incognito) {
+                                    Label("Invite members", systemImage: "plus")
+                                        .foregroundColor(Color(uiColor: .tertiaryLabel))
+                                        .onTapGesture { alert = .cantInviteIncognitoAlert }
+                                } else {
+                                    addMembersButton()
+                                }
                             }
-                            .opacity(0)
-                            MemberRowView(groupInfo: groupInfo, groupMember: member, alert: $alert)
+                            searchFieldView(text: $searchText, focussed: $searchFocussed, theme.colors.onBackground, theme.colors.secondary)
+                                .padding(.leading, 8)
+                            let s = searchText.trimmingCharacters(in: .whitespaces).localizedLowercase
+                            let filteredMembers = s == ""
+                            ? members
+                            : members.filter { $0.wrapped.localAliasAndFullName.localizedLowercase.contains(s) }
+                            MemberRowView(
+                                chat: chat,
+                                groupInfo: groupInfo,
+                                groupMember: GMember(groupInfo.membership),
+                                scrollToItemId: $scrollToItemId,
+                                user: true,
+                                alert: $alert
+                            )
+                            ForEach(filteredMembers) { member in
+                                MemberRowView(chat: chat, groupInfo: groupInfo, groupMember: member, scrollToItemId: $scrollToItemId, alert: $alert)
+                            }
+                        }
+                    }
+
+                    Section {
+                        clearChatButton()
+                        if groupInfo.canDelete {
+                            deleteGroupButton()
+                        }
+                        if groupInfo.membership.memberCurrentOrPending {
+                            leaveGroupButton()
+                        }
+                    }
+
+                    if developerTools {
+                        Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
+                            infoRow("Local name", chat.chatInfo.localDisplayName)
+                            infoRow("Database ID", "\(chat.chatInfo.apiId)")
                         }
                     }
                 }
+                .modifier(ThemedBackground(grouped: true))
+                .navigationBarHidden(true)
+                .disabled(progressIndicator)
+                .opacity(progressIndicator ? 0.6 : 1)
 
-                Section {
-                    clearChatButton()
-                    if groupInfo.canDelete {
-                        deleteGroupButton()
-                    }
-                    if groupInfo.membership.memberCurrent {
-                        leaveGroupButton()
-                    }
-                }
-
-                if developerTools {
-                    Section(header: Text("For console").foregroundColor(theme.colors.secondary)) {
-                        infoRow("Local name", chat.chatInfo.localDisplayName)
-                        infoRow("Database ID", "\(chat.chatInfo.apiId)")
-                    }
+                if progressIndicator {
+                    ProgressView().scaleEffect(2)
                 }
             }
-            .modifier(ThemedBackground(grouped: true))
-            .navigationBarHidden(true)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert(item: $alert) { alertItem in
@@ -185,8 +221,9 @@ struct GroupChatInfoView: View {
             }
             sendReceipts = SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, userDefault: sendReceiptsUserDefault)
             do {
-                if let link = try apiGetGroupLink(groupInfo.groupId) {
-                    (groupLink, groupLinkMemberRole) = link
+                if let gLink = try apiGetGroupLink(groupInfo.groupId) {
+                    groupLink = gLink
+                    groupLinkMemberRole = gLink.acceptMemberRole
                 }
             } catch let error {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
@@ -197,22 +234,63 @@ struct GroupChatInfoView: View {
     private func groupInfoHeader() -> some View {
         VStack {
             let cInfo = chat.chatInfo
+            // show actual display name, alias can be edited in this view
+            let displayName = (cInfo.groupInfo?.groupProfile.displayName ?? cInfo.displayName).trimmingCharacters(in: .whitespacesAndNewlines)
+            let fullName = cInfo.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             ChatInfoImage(chat: chat, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
-            Text(cInfo.displayName)
+            Text(displayName)
                 .font(.largeTitle)
                 .multilineTextAlignment(.center)
                 .lineLimit(4)
                 .padding(.bottom, 2)
-            if cInfo.fullName != "" && cInfo.fullName != cInfo.displayName {
+            if fullName != "" && fullName != displayName && fullName != cInfo.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                 Text(cInfo.fullName)
                     .font(.title2)
                     .multilineTextAlignment(.center)
-                    .lineLimit(8)
+                    .lineLimit(3)
+                    .padding(.bottom, 2)
+            }
+            if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
+                Text(descr)
+                    .font(.subheadline)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(4)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func localAliasTextEdit() -> some View {
+        TextField("Set chat name…", text: $localAlias)
+            .disableAutocorrection(true)
+            .focused($aliasTextFieldFocused)
+            .submitLabel(.done)
+            .onChange(of: aliasTextFieldFocused) { focused in
+                if !focused {
+                    setGroupAlias()
+                }
+            }
+            .onSubmit {
+                setGroupAlias()
+            }
+            .multilineTextAlignment(.center)
+            .foregroundColor(theme.colors.secondary)
+    }
+
+    private func setGroupAlias() {
+        Task {
+            do {
+                if let gInfo = try await apiSetGroupAlias(groupId: chat.chatInfo.apiId, localAlias: localAlias) {
+                    await MainActor.run {
+                        chatModel.updateGroup(gInfo)
+                    }
+                }
+            } catch {
+                logger.error("setGroupAlias error: \(responseError(error))")
+            }
+        }
     }
 
     func infoActionButtons() -> some View {
@@ -223,7 +301,9 @@ struct GroupChatInfoView: View {
                 if groupInfo.canAddMembers {
                     addMembersActionButton(width: buttonWidth)
                 }
-                muteButton(width: buttonWidth)
+                if let nextNtfMode = chat.chatInfo.nextNtfMode {
+                    muteButton(width: buttonWidth, nextNtfMode: nextNtfMode)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
@@ -237,9 +317,9 @@ struct GroupChatInfoView: View {
         .disabled(!groupInfo.ready || chat.chatItems.isEmpty)
     }
 
-    @ViewBuilder private func addMembersActionButton(width: CGFloat) -> some View {
-        if chat.chatInfo.incognito {
-            ZStack {
+    private func addMembersActionButton(width: CGFloat) -> some View {
+        ZStack {
+            if chat.chatInfo.incognito {
                 InfoViewButton(image: "link.badge.plus", title: "invite", width: width) {
                     groupLinkNavLinkActive = true
                 }
@@ -251,10 +331,7 @@ struct GroupChatInfoView: View {
                 }
                 .frame(width: 1, height: 1)
                 .hidden()
-            }
-            .disabled(!groupInfo.ready)
-        } else {
-            ZStack {
+            } else {
                 InfoViewButton(image: "person.fill.badge.plus", title: "invite", width: width) {
                     addMembersNavLinkActive = true
                 }
@@ -267,17 +344,17 @@ struct GroupChatInfoView: View {
                 .frame(width: 1, height: 1)
                 .hidden()
             }
-            .disabled(!groupInfo.ready)
         }
+        .disabled(!groupInfo.ready)
     }
 
-    private func muteButton(width: CGFloat) -> some View {
-        InfoViewButton(
-            image: chat.chatInfo.ntfsEnabled ? "speaker.slash.fill" : "speaker.wave.2.fill",
-            title: chat.chatInfo.ntfsEnabled ? "mute" : "unmute",
+    private func muteButton(width: CGFloat, nextNtfMode: MsgFilter) -> some View {
+        return InfoViewButton(
+            image: nextNtfMode.iconFilled,
+            title: "\(nextNtfMode.text(mentions: true))",
             width: width
         ) {
-            toggleNotifications(chat, enableNtfs: !chat.chatInfo.ntfsEnabled)
+            toggleNotifications(chat, enableNtfs: nextNtfMode)
         }
         .disabled(!groupInfo.ready)
     }
@@ -300,25 +377,23 @@ struct GroupChatInfoView: View {
             .onAppear {
                 searchFocussed = false
                 Task {
-                    let groupMembers = await apiListMembers(groupInfo.groupId)
-                    await MainActor.run {
-                        chatModel.groupMembers = groupMembers.map { GMember.init($0) }
-                        chatModel.populateGroupMembersIndexes()
-                    }
+                    await chatModel.loadGroupMembers(groupInfo)
                 }
             }
     }
 
     private struct MemberRowView: View {
+        var chat: Chat
         var groupInfo: GroupInfo
         @ObservedObject var groupMember: GMember
+        @Binding var scrollToItemId: ChatItem.ID?
         @EnvironmentObject var theme: AppTheme
         var user: Bool = false
         @Binding var alert: GroupChatInfoViewAlert?
 
         var body: some View {
             let member = groupMember.wrapped
-            let v = HStack{
+            let v1 = HStack{
                 MemberProfileImage(member, size: 38)
                     .padding(.trailing, 2)
                 // TODO server connection status
@@ -334,10 +409,24 @@ struct GroupChatInfoView: View {
                 Spacer()
                 memberInfo(member)
             }
-            
+
+            let v = ZStack {
+                if user {
+                    v1
+                } else {
+                    NavigationLink {
+                        memberInfoView()
+                    } label: {
+                        EmptyView()
+                    }
+                    .opacity(0)
+                    v1
+                }
+            }
+
             if user {
                 v
-            } else if groupInfo.membership.memberRole >= .admin {
+            } else if groupInfo.membership.memberRole >= .moderator {
                 // TODO if there are more actions, refactor with lists of swipeActions
                 let canBlockForAll = member.canBlockForAll(groupInfo: groupInfo)
                 let canRemove = member.canBeRemoved(groupInfo: groupInfo)
@@ -359,6 +448,11 @@ struct GroupChatInfoView: View {
             }
         }
 
+        private func memberInfoView() -> some View {
+            GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember, scrollToItemId: $scrollToItemId)
+                .navigationBarHidden(false)
+        }
+
         private func memberConnStatus(_ member: GroupMember) -> LocalizedStringKey {
             if member.activeConn?.connDisabled ?? false {
                 return "disabled"
@@ -375,7 +469,7 @@ struct GroupChatInfoView: View {
                     .foregroundColor(theme.colors.secondary)
             } else {
                 let role = member.memberRole
-                if [.owner, .admin, .observer].contains(role) {
+                if [.owner, .admin, .moderator, .observer].contains(role) {
                     Text(member.memberRole.text)
                         .foregroundColor(theme.colors.secondary)
                 }
@@ -438,11 +532,6 @@ struct GroupChatInfoView: View {
         }
     }
 
-    private func memberInfoView(_ groupMember: GMember) -> some View {
-        GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: groupMember)
-            .navigationBarHidden(false)
-    }
-
     private func groupLinkButton() -> some View {
         NavigationLink {
             groupLinkDestinationView()
@@ -468,15 +557,95 @@ struct GroupChatInfoView: View {
         .navigationBarTitleDisplayMode(.large)
     }
 
+    struct UserSupportChatNavLink: View {
+        @ObservedObject var chat: Chat
+        @EnvironmentObject var theme: AppTheme
+        var groupInfo: GroupInfo
+        @EnvironmentObject var chatModel: ChatModel
+        @Binding var scrollToItemId: ChatItem.ID?
+        @State private var navLinkActive = false
+
+        var body: some View {
+            let scopeInfo: GroupChatScopeInfo = .memberSupport(groupMember_: nil)
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: scopeInfo), chatItems: [], chatStats: ChatStats()),
+                    scrollToItemId: $scrollToItemId
+                )
+            } label: {
+                HStack {
+                    Label("Chat with admins", systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag")
+                    Spacer()
+                    if chat.supportUnreadCount > 0 {
+                        UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                    }
+                }
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(groupInfo.id, chatFilter: .groupChatScopeContext(groupScopeInfo: scopeInfo))
+                }
+            }
+        }
+    }
+
+    private func memberSupportButton() -> some View {
+        NavigationLink {
+            MemberSupportView(groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
+                .navigationBarTitle("Chats with members")
+                .modifier(ThemedBackground())
+                .navigationBarTitleDisplayMode(.large)
+        } label: {
+            HStack {
+                Label(
+                    "Chats with members",
+                    systemImage: chat.supportUnreadCount > 0 ? "flag.fill" : "flag"
+                )
+                Spacer()
+                if chat.supportUnreadCount > 0 {
+                    UnreadBadge(count: chat.supportUnreadCount, color: theme.colors.primary)
+                }
+            }
+        }
+    }
+
+    struct GroupReportsChatNavLink: View {
+        @EnvironmentObject var chatModel: ChatModel
+        @EnvironmentObject var theme: AppTheme
+        @State private var navLinkActive = false
+        @ObservedObject var chat: Chat
+        @Binding var scrollToItemId: ChatItem.ID?
+
+        var body: some View {
+            NavigationLink(isActive: $navLinkActive) {
+                SecondaryChatView(chat: chat, scrollToItemId: $scrollToItemId)
+            } label: {
+                HStack {
+                    Label {
+                        Text("Member reports")
+                    } icon: {
+                        Image(systemName: chat.chatStats.reportsCount > 0 ? "flag.fill" : "flag").foregroundColor(.red)
+                    }
+                    Spacer()
+                    if chat.chatStats.reportsCount > 0 {
+                        UnreadBadge(count: chat.chatStats.reportsCount, color: .red)
+                    }
+                }
+            }
+            .onChange(of: navLinkActive) { active in
+                if active {
+                    ItemsModel.loadSecondaryChat(chat.id, chatFilter: .msgContentTagContext(contentTag: .report))
+                }
+            }
+        }
+    }
+
     private func editGroupButton() -> some View {
         NavigationLink {
             GroupProfileView(
                 groupInfo: $groupInfo,
                 groupProfile: groupInfo.groupProfile
             )
-            .navigationBarTitle("Group profile")
-            .modifier(ThemedBackground())
-            .navigationBarTitleDisplayMode(.large)
         } label: {
             Label("Edit group profile", systemImage: "pencil")
         }
@@ -518,9 +687,9 @@ struct GroupChatInfoView: View {
         }
     }
 
-    @ViewBuilder private func leaveGroupButton() -> some View {
+    private func leaveGroupButton() -> some View {
         let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Leave group" : "Leave chat"
-        Button(role: .destructive) {
+        return Button(role: .destructive) {
             alert = .leaveGroupAlert
         } label: {
             Label(label, systemImage: "rectangle.portrait.and.arrow.right")
@@ -587,14 +756,13 @@ struct GroupChatInfoView: View {
     }
 
     private func sendReceiptsOption() -> some View {
-        Picker(selection: $sendReceipts) {
+        WrappedPicker(selection: $sendReceipts) {
             ForEach([.yes, .no, .userDefault(sendReceiptsUserDefault)]) { (opt: SendReceipts) in
                 Text(opt.text)
             }
         } label: {
             Label("Send receipts", systemImage: "checkmark.message")
         }
-        .frame(height: 36)
         .onChange(of: sendReceipts) { _ in
             setSendReceipts()
         }
@@ -628,21 +796,33 @@ struct GroupChatInfoView: View {
             title: Text("Remove member?"),
             message: Text(messageLabel),
             primaryButton: .destructive(Text("Remove")) {
-                Task {
-                    do {
-                        let updatedMember = try await apiRemoveMember(groupInfo.groupId, mem.groupMemberId)
-                        await MainActor.run {
-                            _ = chatModel.upsertGroupMember(groupInfo, updatedMember)
-                        }
-                    } catch let error {
-                        logger.error("apiRemoveMember error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error removing member")
-                        alert = .error(title: a.title, error: a.message)
-                    }
-                }
+                removeMember(groupInfo, mem)
             },
             secondaryButton: .cancel()
         )
+    }
+}
+
+func removeMember(_ groupInfo: GroupInfo, _ mem: GroupMember, dismiss: DismissAction? = nil) {
+    Task {
+        do {
+            let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
+            await MainActor.run {
+                ChatModel.shared.updateGroup(updatedGroupInfo)
+                updatedMembers.forEach { updatedMember in
+                    _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
+                }
+                dismiss?()
+            }
+        } catch let error {
+            logger.error("apiRemoveMembers error: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error removing member", comment: "alert title"),
+                    message: responseError(error)
+                )
+            }
+        }
     }
 }
 
@@ -659,11 +839,11 @@ struct GroupPreferencesButton: View {
     @State var preferences: FullGroupPreferences
     @State var currentPreferences: FullGroupPreferences
     var creatingGroup: Bool = false
-    
+
     private var label: LocalizedStringKey {
         groupInfo.businessChat == nil ? "Group preferences" : "Chat preferences"
     }
-    
+
     var body: some View {
         NavigationLink {
             GroupPreferencesView(
@@ -681,7 +861,7 @@ struct GroupPreferencesButton: View {
                     creatingGroup ? "Save" : "Save and notify group members",
                     comment: "alert button"
                 )
-                
+
                 if groupInfo.fullGroupPreferences != preferences {
                     showAlert(
                         title: NSLocalizedString("Save preferences?", comment: "alert title"),
@@ -699,7 +879,7 @@ struct GroupPreferencesButton: View {
             }
         }
     }
-    
+
     private func savePreferences() {
         Task {
             do {
@@ -716,7 +896,6 @@ struct GroupPreferencesButton: View {
             }
         }
     }
-
 }
 
 
@@ -739,7 +918,9 @@ struct GroupChatInfoView_Previews: PreviewProvider {
         GroupChatInfoView(
             chat: Chat(chatInfo: ChatInfo.sampleData.group, chatItems: []),
             groupInfo: Binding.constant(GroupInfo.sampleData),
-            onSearch: {}
+            scrollToItemId: Binding.constant(nil),
+            onSearch: {},
+            localAlias: ""
         )
     }
 }

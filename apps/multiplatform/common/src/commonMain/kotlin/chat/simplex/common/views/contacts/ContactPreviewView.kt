@@ -38,8 +38,9 @@ fun ContactPreviewView(
         val textColor = when {
             deleting -> MaterialTheme.colors.secondary
             contactType == ContactType.CARD -> MaterialTheme.colors.primary
+            contactType == ContactType.CONTACT_WITH_REQUEST -> MaterialTheme.colors.primary
             contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
-            contactType == ContactType.RECENT && chat.chatInfo.incognito -> Indigo
+            contactType == ContactType.RECENT -> if (chat.chatInfo.nextConnect) MaterialTheme.colors.primary else Color.Unspecified
             else -> Color.Unspecified
         }
 
@@ -85,7 +86,7 @@ fun ContactPreviewView(
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
-        if (chat.chatInfo is ChatInfo.ContactRequest) {
+        if (chat.chatInfo is ChatInfo.ContactRequest || contactType == ContactType.CONTACT_WITH_REQUEST) {
             Icon(
                 painterResource(MR.images.ic_check),
                 contentDescription = null,
@@ -103,6 +104,9 @@ fun ContactPreviewView(
                 modifier = Modifier
                     .size(21.dp)
             )
+            if (chat.chatInfo.incognito) {
+                Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+            }
         }
 
         if (showDeletedChatIcon && chat.chatInfo.chatDeleted) {

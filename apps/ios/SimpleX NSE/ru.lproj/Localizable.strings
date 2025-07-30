@@ -2,6 +2,9 @@
 "%d new events" = "%d новых сообщений";
 
 /* notification body */
+"From %d chat(s)" = "Из %d чатов";
+
+/* notification body */
 "From: %@" = "От: %@";
 
 /* notification */
@@ -9,7 +12,4 @@
 
 /* notification */
 "New messages" = "Новые сообщения";
-
-/* notification body */
-"New messages in %d chats" = "Новые сообщения в %d разговоре(ах)";
 

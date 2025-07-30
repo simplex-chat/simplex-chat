@@ -84,7 +84,6 @@ export type ChatResponse =
   | CRGroupRemoved
   | CRGroupDeleted
   | CRGroupUpdated
-  | CRUserContactLinkSubscribed
   | CRUserContactLinkSubError
   | CRContactConnectionDeleted
   | CRMessageError
@@ -182,7 +181,6 @@ type ChatResponseTag =
   | "groupRemoved"
   | "groupDeleted"
   | "groupUpdated"
-  | "userContactLinkSubscribed"
   | "userContactLinkSubError"
   | "newContactConnection"
   | "contactConnectionDeleted"
@@ -301,9 +299,7 @@ export interface CRUserContactLink extends CR {
 export interface CRUserContactLinkUpdated extends CR {
   type: "userContactLinkUpdated"
   user: User
-  connReqContact: string
-  autoAccept: boolean
-  autoReply?: MsgContent
+  contactLink: UserContactLink
 }
 
 export interface CRContactRequestRejected extends CR {
@@ -339,7 +335,7 @@ export interface CRContactAliasUpdated extends CR {
 export interface CRInvitation extends CR {
   type: "invitation"
   user: User
-  connReqInvitation: string
+  connLinkInvitation: CreatedConnLink
 }
 
 export interface CRSentConfirmation extends CR {
@@ -381,7 +377,7 @@ export interface CRChatCleared extends CR {
 export interface CRUserContactLinkCreated extends CR {
   type: "userContactLinkCreated"
   user: User
-  connReqContact: string
+  connLinkContact: CreatedConnLink
 }
 
 export interface CRUserContactLinkDeleted extends CR {
@@ -721,10 +717,6 @@ export interface CRGroupUpdated extends CR {
   member_?: GroupMember
 }
 
-export interface CRUserContactLinkSubscribed extends CR {
-  type: "userContactLinkSubscribed"
-}
-
 export interface CRUserContactLinkSubError extends CR {
   type: "userContactLinkSubError"
   chatError: ChatError
@@ -1000,8 +992,13 @@ interface FileTransferMeta {
 }
 
 interface UserContactLink {
-  connReqContact: string
+  connLinkContact: CreatedConnLink
   autoAccept?: AutoAccept
+}
+
+interface CreatedConnLink {
+  connFullLink: string
+  connShortLink?: string
 }
 
 interface AutoAccept {
