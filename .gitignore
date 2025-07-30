@@ -79,3 +79,6 @@ website/package-lock.json
 website/.cache
 website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
+packages/simplex-chat-nodejs/build
+packages/simplex-chat-nodejs/.vscode
+packages/simplex-chat-nodejs/libs
