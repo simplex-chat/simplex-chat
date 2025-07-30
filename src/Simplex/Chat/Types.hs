@@ -466,6 +466,7 @@ data GroupInfo = GroupInfo
     chatTs :: Maybe UTCTime,
     userMemberProfileSentAt :: Maybe UTCTime,
     preparedGroup :: Maybe PreparedGroup,
+    joinedViaLink :: Maybe ConnReqContact,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,

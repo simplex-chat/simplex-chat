@@ -644,7 +644,8 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
-   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
+      joinedViaLink = (\PreparedGroup {connLinkToConnect = CCLink fullLink _} -> fullLink) <$> preparedGroup
+   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, joinedViaLink, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
