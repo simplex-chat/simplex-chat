@@ -3690,7 +3690,7 @@ A few bugs and UX issues but great foundation. Love that it’s public domain.&l
 &lt;/ul&gt;
 &lt;p&gt;Unlike admins, moderators can&#39;t add new members or permanently remove members from the group. This allows you to delegate group moderation to your community members without risking that they may disrupt the group.&lt;/p&gt;
 &lt;p&gt;&lt;strong&gt;Receive direct feedback from group members&lt;/strong&gt;&lt;/p&gt;
-&lt;p&gt;Your group members now can send messages to group admins. Each conversation with a group member is a mini-group where all group owners, admins and moderators can talk to a member. Reports that members can send since v... are also added to chat with member, allowing you to discuss the report.&lt;/p&gt;
+&lt;p&gt;Your group members now can send messages to group admins. Each conversation with a group member is a mini-group where all group owners, admins and moderators can talk to a member. Reports that members can send &lt;a href=&quot;https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html&quot;&gt;since v6.3&lt;/a&gt; are also added to chat with member, allowing you to discuss the report.&lt;/p&gt;
 &lt;h3 id=&quot;other-improvements&quot; tabindex=&quot;-1&quot;&gt;Other improvements&lt;/h3&gt;
 &lt;p&gt;&lt;strong&gt;Enable disappearing messages for new contacts&lt;/strong&gt;&lt;/p&gt;
 &lt;p&gt;Now you can enable disappearing messages for all new contacts automatically. Tap your profile image in the corner, then tap Chat preferences and set time for messages to disappear.&lt;/p&gt;
