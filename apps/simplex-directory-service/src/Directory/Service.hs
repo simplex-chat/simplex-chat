@@ -724,8 +724,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       DCListUserGroups ->
         getUserGroupRegs st (contactId' ct) >>= \grs -> do
           sendReply $ tshow (length grs) <> " registered group(s)"
-          void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {userGroupRegId} ->
-            sendGroupInfo ct gr userGroupRegId Nothing
+          void . forkIO $ forM_ (reverse grs) $ \gr@GroupReg {dbGroupId, userGroupRegId} ->
+            let useGroupId = if isAdmin then dbGroupId else userGroupRegId
+             in sendGroupInfo ct gr useGroupId Nothing
       DCDeleteGroup gId gName ->
         (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} gr -> do
           delGroupReg st gr
