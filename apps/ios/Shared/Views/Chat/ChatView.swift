@@ -957,6 +957,8 @@ struct ChatView: View {
             if !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
                 contact.preparedContact?.uiConnLinkType == .con
                 ? "contact should accept…"
+                : contact.contactGroupMemberId != nil
+                ? "contact should accept…"
                 : "connecting…"
             } else {
                 nil

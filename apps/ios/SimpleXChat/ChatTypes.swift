@@ -1761,7 +1761,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedContact: PreparedContact?
     public var contactRequestId: Int64?
-    var contactGroupMemberId: Int64?
+    public var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
     public var groupDirectInv: GroupDirectInvitation?
     public var chatTags: [Int64]
