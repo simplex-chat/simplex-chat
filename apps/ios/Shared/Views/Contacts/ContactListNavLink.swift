@@ -103,6 +103,20 @@ struct ContactListNavLink: View {
                     Label("Reject", systemImage: "multiply")
                 }
                 .tint(.red)
+            } else {
+                Button {
+                    deleteContactDialog(
+                        chat,
+                        contact,
+                        dismissToChatList: false,
+                        showAlert: { alert = $0 },
+                        showActionSheet: { actionSheet = $0 },
+                        showSheetContent: { sheet = $0 }
+                    )
+                } label: {
+                    Label("Delete", systemImage: "trash")
+                }
+                .tint(.red)
             }
         }
     }
