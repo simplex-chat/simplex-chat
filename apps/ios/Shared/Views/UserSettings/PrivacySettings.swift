@@ -152,6 +152,18 @@ struct PrivacySettings: View {
                 }
 
                 Section {
+                    settingsRow("checkmark", color: theme.colors.secondary) {
+                        Toggle("Auto-accept", isOn: $autoAcceptGrpDirectInvs)
+                    }
+                } header: {
+                    Text("Contact requests from groups")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("This setting is for your current profile **\(m.currentUser?.displayName ?? "")**.")
+                        .foregroundColor(theme.colors.secondary)
+                }
+
+                Section {
                     settingsRow("person", color: theme.colors.secondary) {
                         Toggle("Contacts", isOn: $contactReceipts)
                     }
@@ -192,18 +204,6 @@ struct PrivacySettings: View {
                         groupReceiptsReset = true
                         groupReceipts.toggle()
                     }
-                }
-
-                Section {
-                    settingsRow("checkmark", color: theme.colors.secondary) {
-                        Toggle("Auto-accept", isOn: $autoAcceptGrpDirectInvs)
-                    }
-                } header: {
-                    Text("Group members connection requests")
-                        .foregroundColor(theme.colors.secondary)
-                } footer: {
-                    Text("This setting is for your current profile **\(m.currentUser?.displayName ?? "")**.")
-                        .foregroundColor(theme.colors.secondary)
                 }
             }
         }
