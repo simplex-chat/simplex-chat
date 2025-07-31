@@ -17,9 +17,6 @@ struct ContextGroupDirectInvitationActionsView: View {
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     @State private var inProgress = false
     @State private var progressByTimeout = false
-    @State private var alert: SomeAlert? = nil
-    @State private var actionSheet: SomeActionSheet? = nil
-    @State private var sheet: SomeSheet<AnyView>? = nil
 
     var body: some View {
         VStack {
@@ -31,7 +28,7 @@ struct ContextGroupDirectInvitationActionsView: View {
                     .frame(maxWidth: .infinity, minHeight: 60)
             } else {
                 HStack(spacing: 0) {
-                    Button(role: .destructive, action: showDeleteContactAlert) {
+                    Button(role: .destructive, action: showRejectRequestAlert) {
                         Label("Reject", systemImage: "multiply")
                     }
                     .frame(maxWidth: .infinity, minHeight: 60)
@@ -64,27 +61,39 @@ struct ContextGroupDirectInvitationActionsView: View {
                 progressByTimeout = false
             }
         }
-        .alert(item: $alert) { $0.alert }
-        .actionSheet(item: $actionSheet) { $0.actionSheet }
-        .sheet(item: $sheet) {
-            if #available(iOS 16.0, *) {
-                $0.content
-                    .presentationDetents([.fraction(0.4)])
-            } else {
-                $0.content
-            }
-        }
     }
 
-    private func showDeleteContactAlert() {
-        deleteContactDialog(
-            chat,
-            contact,
-            dismissToChatList: true,
-            showAlert: { alert = $0 },
-            showActionSheet: { actionSheet = $0 },
-            showSheetContent: { sheet = $0 }
+    private func showRejectRequestAlert() {
+        showAlert(
+            NSLocalizedString("Reject contact request", comment: "alert title"),
+            message: NSLocalizedString("The sender will NOT be notified", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Reject", comment: "alert action"), style: .destructive) { _ in
+                    deleteContact()
+                },
+                cancelAlertAction
+            ]}
         )
+    }
+
+    func deleteContact() {
+        Task {
+            do {
+                let _ct = try await apiDeleteContact(id: contact.contactId, chatDeleteMode: .full(notify: false))
+                await MainActor.run {
+                    ChatModel.shared.removeChat(contact.id)
+                    ChatModel.shared.chatId = nil
+                }
+            } catch let error {
+                logger.error("apiDeleteContact: \(responseError(error))")
+                await MainActor.run {
+                    showAlert(
+                        NSLocalizedString("Error deleting chat!", comment: "alert title"),
+                        message: responseError(error)
+                    )
+                }
+            }
+        }
     }
 
     private func acceptRequest() {
