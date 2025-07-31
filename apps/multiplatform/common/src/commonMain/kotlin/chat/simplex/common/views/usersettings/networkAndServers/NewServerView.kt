@@ -107,12 +107,15 @@ fun addServer(
       val operatorServers = updatedUserServers[operatorIndex]
       // Create a mutable copy of the smpServers or xftpServers and add the server
       when (serverProtocol) {
+        ServerProtocol.NTF -> {
+          // We use a single ntf server
+          updatedUserServers[operatorIndex] = operatorServers.copy(ntfServers = listOf(server))
+        }
         ServerProtocol.SMP -> {
           val updatedSMPServers = operatorServers.smpServers.toMutableList()
           updatedSMPServers.add(server)
           updatedUserServers[operatorIndex] = operatorServers.copy(smpServers = updatedSMPServers)
         }
-
         ServerProtocol.XFTP -> {
           val updatedXFTPServers = operatorServers.xftpServers.toMutableList()
           updatedXFTPServers.add(server)

@@ -131,6 +131,8 @@
   <string name="no_media_servers_configured">No media &amp; file servers.</string>
   <string name="no_media_servers_configured_for_sending">No servers to send files.</string>
   <string name="no_media_servers_configured_for_private_routing">No servers to receive files.</string>
+  <string name="no_notif_servers_configured">No notification servers.</string>
+  <string name="no_notif_servers_configured_for_receiving">No servers to notify.</string>
   <string name="for_chat_profile">For chat profile %s:</string>
   <string name="errors_in_servers_configuration">Errors in servers configuration.</string>
   <string name="error_accepting_operator_conditions">Error accepting conditions</string>
@@ -898,6 +900,7 @@
   <string name="smp_servers_per_user">The servers for new connections of your current chat profile</string>
   <string name="smp_save_servers_question">Save servers?</string>
   <string name="media_and_file_servers">Media &amp; file servers</string>
+  <string name="notif_servers">Notifications servers</string>
   <string name="xftp_servers">XFTP servers</string>
   <string name="xftp_servers_configured">Configured XFTP servers</string>
   <string name="xftp_servers_other">Other XFTP servers</string>
@@ -1921,6 +1924,7 @@
   <string name="operator_use_for_files">Use for files</string>
   <string name="operator_use_for_sending">To send</string>
   <string name="xftp_servers_per_user">The servers for new files of your current chat profile</string>
+  <string name="ntf_servers_per_user">The servers for your notifications.</string>
   <string name="operator_added_xftp_servers">Added media &amp; file servers</string>
   <string name="operator_open_conditions">Open conditions</string>
   <string name="operator_open_changes">Open changes</string>

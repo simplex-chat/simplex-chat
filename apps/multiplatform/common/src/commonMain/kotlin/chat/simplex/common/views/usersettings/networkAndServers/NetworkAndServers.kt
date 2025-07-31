@@ -932,6 +932,15 @@ fun globalXFTPServersError(serverErrors: List<UserServersError>): String? {
   return null
 }
 
+fun globalNTFServersError(serverErrors: List<UserServersError>): String? {
+  for (err in serverErrors) {
+    if (err.globalNTFError != null) {
+      return err.globalNTFError
+    }
+  }
+  return null
+}
+
 fun findDuplicateHosts(serverErrors: List<UserServersError>): Set<String> {
   val duplicateHostsList = serverErrors.mapNotNull { err ->
     if (err is UserServersError.DuplicateServer) {

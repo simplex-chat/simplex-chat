@@ -3906,6 +3906,7 @@ class DBEncryptionConfig(val currentKey: String, val newKey: String)
 
 @Serializable
 enum class ServerProtocol {
+  @SerialName("ntf") NTF,
   @SerialName("smp") SMP,
   @SerialName("xftp") XFTP;
 }
@@ -4023,6 +4024,12 @@ data class ServerOperator(
   val serverDomains: List<String>,
   val conditionsAcceptance: ConditionsAcceptance,
   val enabled: Boolean,
+  /**
+   * Roles for ntf servers
+   *
+   * default to (true, true), for transition from old ServerOperator
+   */
+  val ntfRoles: ServerRoles = ServerRoles(true, true),
   val smpRoles: ServerRoles,
   val xftpRoles: ServerRoles,
 ) {
@@ -4044,6 +4051,7 @@ data class ServerOperator(
       serverDomains = listOf("simplex.im"),
       conditionsAcceptance = ConditionsAcceptance.Accepted(acceptedAt = null, autoAccepted = false),
       enabled = true,
+      ntfRoles = ServerRoles(storage = true, proxy = true),
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
     )
@@ -4061,6 +4069,7 @@ data class ServerOperator(
         other.serverDomains == this.serverDomains &&
         other.conditionsAcceptance == this.conditionsAcceptance &&
         other.enabled == this.enabled &&
+        other.ntfRoles == this.ntfRoles &&
         other.smpRoles == this.smpRoles &&
         other.xftpRoles == this.xftpRoles
   }
@@ -4073,6 +4082,7 @@ data class ServerOperator(
     result = 31 * result + serverDomains.hashCode()
     result = 31 * result + conditionsAcceptance.hashCode()
     result = 31 * result + enabled.hashCode()
+    result = 31 * result + ntfRoles.hashCode()
     result = 31 * result + smpRoles.hashCode()
     result = 31 * result + xftpRoles.hashCode()
     return result
@@ -4111,6 +4121,7 @@ data class ServerRoles(
 @Serializable
 data class UserOperatorServers(
   val operator: ServerOperator?,
+  val ntfServers: List<UserServer> = listOf(),
   val smpServers: List<UserServer>,
   val xftpServers: List<UserServer>
 ) {
@@ -4126,6 +4137,7 @@ data class UserOperatorServers(
       serverDomains = emptyList(),
       conditionsAcceptance = ConditionsAcceptance.Accepted(null, autoAccepted = false),
       enabled = false,
+      ntfRoles = ServerRoles(storage = true, proxy = true),
       smpRoles = ServerRoles(storage = true, proxy = true),
       xftpRoles = ServerRoles(storage = true, proxy = true)
     )
@@ -4133,12 +4145,14 @@ data class UserOperatorServers(
   companion object {
     val sampleData1 = UserOperatorServers(
       operator = ServerOperator.sampleData1,
+      ntfServers = listOf(),
       smpServers = listOf(UserServer.sampleData.preset),
       xftpServers = listOf(UserServer.sampleData.xftpPreset)
     )
 
     val sampleDataNilOperator = UserOperatorServers(
       operator = null,
+      ntfServers = listOf(),
       smpServers = listOf(UserServer.sampleData.preset),
       xftpServers = listOf(UserServer.sampleData.xftpPreset)
     )
@@ -4154,6 +4168,7 @@ sealed class UserServersError {
 
   val globalError: String?
     get() = when (this.protocol_) {
+      ServerProtocol.NTF -> globalNTFError
       ServerProtocol.SMP -> globalSMPError
       ServerProtocol.XFTP -> globalXFTPError
     }
@@ -4195,6 +4210,24 @@ sealed class UserServersError {
 
         is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_media_servers_configured_for_private_routing)}" }
           ?: generalGetString(MR.strings.no_media_servers_configured_for_private_routing)
+
+        else -> null
+      }
+    } else {
+      null
+    }
+
+  val globalNTFError: String?
+    get() = if (this.protocol_ == ServerProtocol.SMP) {
+      when (this) {
+        is NoServers -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_notif_servers_configured)}" }
+          ?: generalGetString(MR.strings.no_notif_servers_configured)
+
+        is StorageMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_notif_servers_configured_for_receiving)}" }
+          ?: generalGetString(MR.strings.no_notif_servers_configured_for_receiving)
+
+        is ProxyMissing -> this.user?.let { "${userStr(it)} ${generalGetString(MR.strings.no_notif_servers_configured_for_receiving)}" }
+          ?: generalGetString(MR.strings.no_notif_servers_configured_for_receiving)
 
         else -> null
       }

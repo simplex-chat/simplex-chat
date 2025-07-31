@@ -387,14 +387,19 @@ fun OperatorViewLayout(
           testing = testing,
           smpServers = userServers.value[operatorIndex].smpServers,
           xftpServers = userServers.value[operatorIndex].xftpServers,
+          ntfServers = userServers.value[operatorIndex].ntfServers,
         ) { p, l ->
           when (p) {
+            ServerProtocol.NTF -> userServers.value = userServers.value.toMutableList().apply {
+              this[operatorIndex] = this[operatorIndex].copy(
+                ntfServers = l
+              )
+            }
             ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
               this[operatorIndex] = this[operatorIndex].copy(
                 xftpServers = l
               )
             }
-
             ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
               this[operatorIndex] = this[operatorIndex].copy(
                 smpServers = l
