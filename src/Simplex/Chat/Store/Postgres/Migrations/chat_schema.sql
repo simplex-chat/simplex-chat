@@ -332,7 +332,8 @@ CREATE TABLE test_chat_schema.contact_profiles (
     local_alias text DEFAULT ''::text NOT NULL,
     preferences text,
     contact_link bytea,
-    short_descr text
+    short_descr text,
+    chat_peer_type text
 );
 
 
