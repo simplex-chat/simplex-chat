@@ -32,7 +32,7 @@ import Test.Hspec hiding (it)
 directoryServiceTests :: SpecWith TestParams
 directoryServiceTests = do
   it "should register group" testDirectoryService
-  fit "should suspend and resume group, send message to owner" testSuspendResume
+  it "should suspend and resume group, send message to owner" testSuspendResume
   it "should delete group registration" testDeleteGroup
   it "admin should delete group registration" testDeleteGroupAdmin
   it "should change initial member role" testSetRole
