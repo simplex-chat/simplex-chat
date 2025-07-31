@@ -16,8 +16,7 @@ module Simplex.Chat.Store.Connections
     getConnectionEntityViaShortLink,
     getContactConnEntityByConnReqHash,
     getConnectionsToSubscribe,
-    unsetConnectionToSubscribe,
-    deleteConnectionRecord,
+    unsetConnectionToSubscribe
   )
 where
 
@@ -272,7 +271,3 @@ getConnectionsToSubscribe db vr = do
 
 unsetConnectionToSubscribe :: DB.Connection -> IO ()
 unsetConnectionToSubscribe db = DB.execute_ db "UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1"
-
-deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
-deleteConnectionRecord db User {userId} cId = do
-  DB.execute db "DELETE FROM connections WHERE user_id = ? AND connection_id = ?" (userId, cId)

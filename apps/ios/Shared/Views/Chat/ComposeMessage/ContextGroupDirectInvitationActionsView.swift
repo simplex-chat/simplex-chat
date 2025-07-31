@@ -24,22 +24,15 @@ struct ContextGroupDirectInvitationActionsView: View {
     var body: some View {
         VStack {
             if groupDirectInv.memberRemoved {
-                VStack(spacing: 0) {
-                    Button(role: .destructive, action: showDeleteContactAlert) {
-                        Label("Delete", systemImage: "multiply")
-                    }
+                Label("Member is deleted - can't accept request", systemImage: "info.circle")
+                    .foregroundColor(theme.colors.secondary)
+                    .font(.subheadline)
+                    .padding(.horizontal)
                     .frame(maxWidth: .infinity, minHeight: 60)
-
-                    Label("Member is deleted - can't accept request", systemImage: "info.circle")
-                        .foregroundColor(theme.colors.secondary)
-                        .font(.subheadline)
-                        .padding(.horizontal)
-                }
-                .frame(maxWidth: .infinity, minHeight: 80)
             } else {
                 HStack(spacing: 0) {
                     Button(role: .destructive, action: showDeleteContactAlert) {
-                        Label("Delete", systemImage: "multiply")
+                        Label("Reject", systemImage: "multiply")
                     }
                     .frame(maxWidth: .infinity, minHeight: 60)
 
@@ -52,7 +45,7 @@ struct ContextGroupDirectInvitationActionsView: View {
                 }
             }
         }
-        .disabled(inProgress)
+        .disabled(inProgress || groupDirectInv.memberRemoved)
         .frame(maxWidth: .infinity)
         .background(ToolbarMaterial.material(toolbarMaterial))
         .opacity(progressByTimeout ? 0.4 : 1)

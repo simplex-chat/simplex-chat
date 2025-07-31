@@ -3099,14 +3099,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           | isTrue (autoAcceptGrpDirectInvs user) = do
               (cmdId, acId) <- joinConn subMode
               mCt' <- withStore $ \db -> do
-                updateMemberContactInvited db mCt groupDirectInv
+                updateMemberContactInvited db user mCt groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
                 getContact db vr user mContactId
               securityCodeChanged mCt'
               createItems mCt' m
           | otherwise = do
               mCt' <- withStore $ \db -> do
-                updateMemberContactInvited db mCt groupDirectInv
+                updateMemberContactInvited db user mCt groupDirectInv
                 getContact db vr user mContactId
               securityCodeChanged mCt'
               createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing

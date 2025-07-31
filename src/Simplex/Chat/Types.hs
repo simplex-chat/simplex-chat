@@ -1605,6 +1605,9 @@ data Connection = Connection
   }
   deriving (Eq, Show)
 
+dbConnId :: Connection -> Int64
+dbConnId Connection {connId} = connId
+
 connReady :: Connection -> Bool
 connReady Connection {connStatus} = connStatus == ConnReady || connStatus == ConnSndReady
 

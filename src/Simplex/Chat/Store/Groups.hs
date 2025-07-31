@@ -2643,10 +2643,10 @@ createMemberContactInvited
           (contactId, currentTs, memberContactProfileId)
         pure contactId
 
-updateMemberContactInvited :: DB.Connection -> Contact -> GroupDirectInvitation -> ExceptT StoreError IO ()
-updateMemberContactInvited _ Contact {localDisplayName, activeConn = Nothing} _ = throwError $ SEContactNotReady localDisplayName
-updateMemberContactInvited db Contact {contactId, activeConn = Just oldContactConn} groupDirectInv = liftIO $ do
-  updateConnectionStatus db oldContactConn ConnDeleted
+updateMemberContactInvited :: DB.Connection -> User -> Contact -> GroupDirectInvitation -> ExceptT StoreError IO ()
+updateMemberContactInvited _ _ Contact {localDisplayName, activeConn = Nothing} _ = throwError $ SEContactNotReady localDisplayName
+updateMemberContactInvited db user Contact {contactId, activeConn = Just oldContactConn} groupDirectInv = liftIO $ do
+  deleteConnectionRecord db user (dbConnId oldContactConn)
   updateMemberContactFields groupDirectInv
   where
     -- - reset status to active (in case contact was deleted)

@@ -794,3 +794,7 @@ setViaGroupLinkHash db groupId connId =
       WHERE group_id = ?
     |]
     (connId, groupId)
+
+deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
+deleteConnectionRecord db User {userId} cId = do
+  DB.execute db "DELETE FROM connections WHERE user_id = ? AND connection_id = ?" (userId, cId)
