@@ -1974,6 +1974,10 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+Command:
+- type: "command"
+- commandStr: string
+
 Mention:
 - type: "mention"
 - memberName: string
