@@ -127,7 +127,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito conn
           activeConn = Just conn
           preparedContact = toPreparedContact preparedContactRow
-          groupDirectInv = toGroupDirectInv contactGrpInvRow
+          groupDirectInv = toGroupDirectInvitation groupDirectInvRow
        in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
     getGroupAndMember_ :: Int64 -> Connection -> ExceptT StoreError IO (GroupInfo, GroupMember)
     getGroupAndMember_ groupMemberId c = do

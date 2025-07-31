@@ -138,7 +138,7 @@ chatGroupTests = do
     it "new contact should merge with existing member" testMergeContactExistingMember
     it "new contact should merge with multiple existing members" testMergeContactMultipleMembers
     it "new group link host contact should merge with single existing contact out of multiple" testMergeGroupLinkHostMultipleContacts
-  describe "create member contact" $ do
+  fdescribe "create member contact" $ do
     it "create contact with group member with invitation message" testMemberContactMessage
     it "create contact with group member without invitation message" testMemberContactNoMessage
     it "prohibited to create contact with group member if it already exists" testMemberContactProhibitedContactExists

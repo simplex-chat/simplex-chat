@@ -459,19 +459,19 @@ type PreparedContactRow = (Maybe AConnectionRequestUri, Maybe AConnShortLink, Ma
 
 type GroupDirectInvitationRow = (Maybe ConnReqInvitation, Maybe GroupId, Maybe GroupMemberId, Maybe Int64, BoolInt)
 
-type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. ContactGroupInvRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
+type ContactRow' = (ProfileId, ContactName, Maybe Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, BoolInt, ContactStatus) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe Preferences, Preferences, UTCTime, UTCTime, Maybe UTCTime) :. PreparedContactRow :. (Maybe Int64, Maybe GroupMemberId, BoolInt) :. GroupDirectInvitationRow :. (Maybe UIThemeEntityOverrides, BoolInt, Maybe CustomData, Maybe Int64)
 
 type ContactRow = Only ContactId :. ContactRow'
 
 toContact :: VersionRangeChat -> User -> [ChatTagId] -> ContactRow :. MaybeConnectionRow -> Contact
-toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, shortDescr, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInv :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
+toContact vr user chatTags ((Only contactId :. (profileId, localDisplayName, viaGroup, displayName, fullName, shortDescr, image, contactLink, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) :. connRow) =
   let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, localAlias}
       activeConn = toMaybeConnection vr connRow
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       incognito = maybe False connIncognito activeConn
       mergedPreferences = contactUserPreferences user userPreferences preferences incognito
       preparedContact = toPreparedContact preparedContactRow
-      groupDirectInv = toGroupDirectInv groupDirectInvRow
+      groupDirectInv = toGroupDirectInvitation groupDirectInvRow
    in Contact {contactId, localDisplayName, profile, activeConn, viaGroup, contactUsed, contactStatus, chatSettings, userPreferences, mergedPreferences, createdAt, updatedAt, chatTs, preparedContact, contactRequestId, contactGroupMemberId, contactGrpInvSent, groupDirectInv, chatTags, chatItemTTL, uiThemes, chatDeleted, customData}
 
 toPreparedContact :: PreparedContactRow -> Maybe PreparedContact
