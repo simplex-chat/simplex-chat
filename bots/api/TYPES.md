@@ -58,7 +58,7 @@ This file is generated automatically.
 - [ConnectionPlan](#connectionplan)
 - [Contact](#contact)
 - [ContactAddressPlan](#contactaddressplan)
-- [ContactGroupInv](#contactgroupinv)
+- [GroupDirectInvitation](#groupdirectinvitation)
 - [ContactShortLinkData](#contactshortlinkdata)
 - [ContactStatus](#contactstatus)
 - [ContactUserPref](#contactuserpref)
@@ -1596,7 +1596,7 @@ Error:
 - contactRequestId: int64?
 - contactGroupMemberId: int64?
 - contactGrpInvSent: bool
-- contactGrpInv: [ContactGroupInv](#contactgroupinv)?
+- groupDirectInvitation: [GroupDirectInvitation](#groupdirectinvitation)?
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
@@ -1635,14 +1635,14 @@ ContactViaAddress:
 
 ---
 
-## ContactGroupInv
+## GroupDirectInvitation
 
 **Record type**:
-- contactGrpInvLink: string
+- groupDirectInvLink: string
 - fromGroupId_: int64?
 - fromGroupMemberId_: int64?
 - fromGroupMemberConnId_: int64?
-- grpInvStartedConnection: bool
+- groupDirectInvStartedConnection: bool
 
 
 ---
@@ -3618,7 +3618,7 @@ Handshake:
 - showNtfs: bool
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
-- autoAcceptGrpInvLinks: bool
+- autoAcceptGrpDirectInvs: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 

@@ -3087,36 +3087,36 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       else createItems mCt m
                   else joinExistingContact subMode mCt
       where
-        contactGrpInv =
-          ContactGroupInv {
-            contactGrpInvLink = connReq,
+        groupDirectInv =
+          GroupDirectInvitation {
+            groupDirectInvLink = connReq,
             fromGroupId_ = Just groupId,
             fromGroupMemberId_ = Just (groupMemberId' m),
             fromGroupMemberConnId_ = Just mConnId,
-            grpInvStartedConnection = unBD $ autoAcceptGrpInvLinks user
+            groupDirectInvStartedConnection = unBD $ autoAcceptGrpDirectInvs user
           }
         joinExistingContact subMode mCt@Contact {contactId = mContactId}
-          | unBD (autoAcceptGrpInvLinks user) = do
+          | unBD (autoAcceptGrpDirectInvs user) = do
               (cmdId, acId) <- joinConn subMode
               mCt' <- withStore $ \db -> do
-                updateMemberContactInvited db mCt contactGrpInv
+                updateMemberContactInvited db mCt groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
                 getContact db vr user mContactId
               securityCodeChanged mCt'
               createItems mCt' m
           | otherwise = do
               mCt' <- withStore $ \db -> do
-                updateMemberContactInvited db mCt contactGrpInv
+                updateMemberContactInvited db mCt groupDirectInv
                 getContact db vr user mContactId
               securityCodeChanged mCt'
               createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent RDEGroupInvLinkReceived) Nothing
               createItems mCt' m
         createNewContact subMode
-          | unBD (autoAcceptGrpInvLinks user) = do
+          | unBD (autoAcceptGrpDirectInvs user) = do
               (cmdId, acId) <- joinConn subMode
               -- [incognito] reuse membership incognito profile
               (mCt, m') <- withStore $ \db -> do
-                (mContactId, m') <- liftIO $ createMemberContactInvited db user g m contactGrpInv
+                (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
                 void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
                 mCt <- getContact db vr user mContactId
                 pure (mCt, m')
@@ -3124,7 +3124,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createItems mCt m'
           | otherwise = do
               (mCt, m') <- withStore $ \db -> do
-                (mContactId, m') <- liftIO $ createMemberContactInvited db user g m contactGrpInv
+                (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
                 mCt <- getContact db vr user mContactId
                 pure (mCt, m')
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)

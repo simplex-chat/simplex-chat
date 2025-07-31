@@ -382,7 +382,7 @@ processChatCommand vr nm = \case
   APISetUserAutoAcceptGroupInvLinks userId' onOff -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
-    withFastStore' $ \db -> updateUserAutoAcceptGrpInvLinks db user' onOff
+    withFastStore' $ \db -> updateUserautoAcceptGrpDirectInvs db user' onOff
     ok user
   SetUserAutoAcceptGroupInvLinks onOff -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserAutoAcceptGroupInvLinks userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
@@ -2617,20 +2617,20 @@ processChatCommand vr nm = \case
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
   APIAcceptMemberContact contactId -> withUser $ \user -> do
-    (g, mConn, ct, contactGrpInv) <- withFastStore $ \db -> getMemberContactInvited db vr user contactId
-    when (grpInvStartedConnection contactGrpInv) $ throwCmdError "connection already started"
-    connectMemberContact user g mConn ct contactGrpInv `catchChatError` \e -> do
+    (g, mConn, ct, groupDirectInv) <- withFastStore $ \db -> getMemberContactInvited db vr user contactId
+    when (groupDirectInvStartedConnection groupDirectInv) $ throwCmdError "connection already started"
+    connectMemberContact user g mConn ct groupDirectInv `catchChatError` \e -> do
       -- get updated contact, in case connection was started
       ct' <- withFastStore $ \db -> getContact db vr user contactId
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
-    -- get updated contact (grpInvStartedConnection) with connection
+    -- get updated contact (groupDirectInvStartedConnection) with connection
     ct' <- withFastStore $ \db -> do
-      liftIO $ setContactGrpInvStartedConnection db ct
+      liftIO $ setGroupDirectInvStartedConnection db ct
       getContact db vr user contactId
     pure $ CRMemberContactAccepted user ct'
     where
-      connectMemberContact user gInfo mConn Contact {activeConn} ContactGroupInv {contactGrpInvLink = cReq} =
+      connectMemberContact user gInfo mConn Contact {activeConn} GroupDirectInvitation {groupDirectInvLink = cReq} =
         withInvitationLock "connect" (strEncode cReq) $ do
           subMode <- chatReadVar subscriptionMode
           case activeConn of

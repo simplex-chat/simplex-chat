@@ -138,7 +138,7 @@ module Simplex.Chat.Store.Groups
     updateMemberContactInvited,
     createMemberContactConn,
     getMemberContactInvited,
-    setContactGrpInvStartedConnection,
+    setGroupDirectInvStartedConnection,
     resetMemberContactFields,
     updateMemberProfile,
     updateContactMemberProfile,
@@ -2586,7 +2586,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, contactGrpInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -2609,13 +2609,13 @@ setContactGrpInvSent db Contact {contactId} xGrpDirectInvSent = do
     "UPDATE contacts SET contact_grp_inv_sent = ?, updated_at = ? WHERE contact_id = ?"
     (BI xGrpDirectInvSent, currentTs, contactId)
 
-createMemberContactInvited :: DB.Connection -> User -> GroupInfo -> GroupMember -> ContactGroupInv -> IO (ContactId, GroupMember)
+createMemberContactInvited :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupDirectInvitation -> IO (ContactId, GroupMember)
 createMemberContactInvited
   db
   User {userId, profile = LocalProfile {preferences}}
   gInfo
   m@GroupMember {localDisplayName = memberLDN, memberContactProfileId}
-  ContactGroupInv {contactGrpInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, grpInvStartedConnection} = do
+  GroupDirectInvitation {groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection} = do
     currentTs <- liftIO getCurrentTime
     let userPreferences = fromMaybe emptyChatPrefs $ incognitoMembershipProfile gInfo >> preferences
     contactId <- createContactUpdateMember currentTs userPreferences
@@ -2628,12 +2628,12 @@ createMemberContactInvited
           [sql|
             INSERT INTO contacts (
               user_id, local_display_name, contact_profile_id, enable_ntfs, user_preferences, contact_used,
-              contact_grp_inv_link, contact_grp_inv_from_group_id, contact_grp_inv_from_group_member_id, contact_grp_inv_from_member_conn_id, contact_grp_inv_started_connection,
+              grp_direct_inv_link, grp_direct_inv_from_group_id, grp_direct_inv_from_group_member_id, grp_direct_inv_from_member_conn_id, grp_direct_inv_started_connection,
               created_at, updated_at, chat_ts
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (userId, memberLDN, memberContactProfileId, BI True, userPreferences, BI True)
-              :. (contactGrpInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, grpInvStartedConnection)
+              :. (groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection)
               :. (currentTs, currentTs, currentTs)
           )
         contactId <- insertedRowId db
@@ -2643,26 +2643,26 @@ createMemberContactInvited
           (contactId, currentTs, memberContactProfileId)
         pure contactId
 
-updateMemberContactInvited :: DB.Connection -> Contact -> ContactGroupInv -> ExceptT StoreError IO ()
+updateMemberContactInvited :: DB.Connection -> Contact -> GroupDirectInvitation -> ExceptT StoreError IO ()
 updateMemberContactInvited _ Contact {localDisplayName, activeConn = Nothing} _ = throwError $ SEContactNotReady localDisplayName
-updateMemberContactInvited db Contact {contactId, activeConn = Just oldContactConn} contactGrpInv = liftIO $ do
+updateMemberContactInvited db Contact {contactId, activeConn = Just oldContactConn} groupDirectInv = liftIO $ do
   updateConnectionStatus db oldContactConn ConnDeleted
-  updateMemberContactFields contactGrpInv
+  updateMemberContactFields groupDirectInv
   where
     -- - reset status to active (in case contact was deleted)
     -- - reset fields used for sending invitation
     -- - set fields used for accepting invitation
-    updateMemberContactFields ContactGroupInv {contactGrpInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, grpInvStartedConnection} =
+    updateMemberContactFields GroupDirectInvitation {groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection} =
       DB.execute
         db
         [sql|
           UPDATE contacts
           SET contact_status = ?,
               contact_group_member_id = NULL, contact_grp_inv_sent = 0,
-              contact_grp_inv_link = ?, contact_grp_inv_from_group_id = ?, contact_grp_inv_from_group_member_id = ?, contact_grp_inv_from_member_conn_id = ?, contact_grp_inv_started_connection = ?
+              grp_direct_inv_link = ?, grp_direct_inv_from_group_id = ?, grp_direct_inv_from_group_member_id = ?, grp_direct_inv_from_member_conn_id = ?, grp_direct_inv_started_connection = ?
           WHERE contact_id = ?
         |]
-        (CSActive, contactGrpInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, grpInvStartedConnection, contactId)
+        (CSActive, groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection, contactId)
 
 resetMemberContactFields :: DB.Connection -> Contact -> IO Contact
 resetMemberContactFields db ct@Contact {contactId} = do
@@ -2705,23 +2705,23 @@ createMemberContactConn
     forM_ cmdId_ $ \cmdId -> setCommandConnId db user cmdId connId
     pure connId
 
-getMemberContactInvited :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, Connection, Contact, ContactGroupInv)
+getMemberContactInvited :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, Connection, Contact, GroupDirectInvitation)
 getMemberContactInvited db vr user contactId = do
-  ct@Contact {contactGrpInv = contactGrpInv_} <- getContact db vr user contactId
-  case contactGrpInv_ of
-    Just contactGrpInv@ContactGroupInv {fromGroupId_ = Just groupId, fromGroupMemberId_ = Just _gmId, fromGroupMemberConnId_ = Just mConnId} -> do
+  ct@Contact {groupDirectInv = groupDirectInv_} <- getContact db vr user contactId
+  case groupDirectInv_ of
+    Just groupDirectInv@GroupDirectInvitation {fromGroupId_ = Just groupId, fromGroupMemberId_ = Just _gmId, fromGroupMemberConnId_ = Just mConnId} -> do
       g <- getGroupInfo db vr user groupId
       mConn <- getConnectionById db vr user mConnId
-      pure (g, mConn, ct, contactGrpInv)
+      pure (g, mConn, ct, groupDirectInv)
     _ ->
       throwError $ SEMemberContactGroupMemberNotFound contactId
 
-setContactGrpInvStartedConnection :: DB.Connection -> Contact -> IO ()
-setContactGrpInvStartedConnection db Contact {contactId} = do
+setGroupDirectInvStartedConnection :: DB.Connection -> Contact -> IO ()
+setGroupDirectInvStartedConnection db Contact {contactId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "UPDATE contacts SET contact_grp_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?"
+    "UPDATE contacts SET grp_direct_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?"
     (BI True, currentTs, contactId)
 
 updateMemberProfile :: DB.Connection -> User -> GroupMember -> Profile -> ExceptT StoreError IO GroupMember

@@ -132,7 +132,7 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    autoAcceptGrpInvLinks :: BoolDef,
+    autoAcceptGrpDirectInvs :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     uiThemes :: Maybe UIThemeEntityOverrides
   }
@@ -196,9 +196,10 @@ data Contact = Contact
     -- to a group member via direct message feature
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
-    -- contactGrpInv is used for accepting connection request made via direct message feature by a group member
+    -- groupDirectInv is used for accepting connection request made via direct message feature by a group member
     -- when auto-accept is disabled - this is the opposite side of contactGroupMemberId + contactGrpInvSent
-    contactGrpInv :: Maybe ContactGroupInv,
+    -- (there is no hidden meaning in naming inconsistency)
+    groupDirectInv :: Maybe GroupDirectInvitation,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -218,12 +219,12 @@ data PreparedContact = PreparedContact
   }
   deriving (Eq, Show)
 
-data ContactGroupInv = ContactGroupInv
-  { contactGrpInvLink :: ConnReqInvitation,
+data GroupDirectInvitation = GroupDirectInvitation
+  { groupDirectInvLink :: ConnReqInvitation,
     fromGroupId_ :: Maybe GroupId,
     fromGroupMemberId_ :: Maybe GroupMemberId,
     fromGroupMemberConnId_ :: Maybe Int64,
-    grpInvStartedConnection :: Bool
+    groupDirectInvStartedConnection :: Bool
   }
   deriving (Eq, Show)
 
@@ -2087,7 +2088,7 @@ $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
 
 $(JQ.deriveJSON defaultJSON ''PreparedContact)
 
-$(JQ.deriveJSON defaultJSON ''ContactGroupInv)
+$(JQ.deriveJSON defaultJSON ''GroupDirectInvitation)
 
 $(JQ.deriveJSON defaultJSON ''LocalFileMeta)
 
