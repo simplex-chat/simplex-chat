@@ -464,7 +464,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 onlyLinkChanged
                   GroupProfile {displayName = dn, fullName = fn, shortDescr = sd, image = i, description = d}
                   GroupProfile {displayName = dn', fullName = fn', shortDescr = sd', image = i', description = d'} =
-                    dn == dn' && fn == fn' && i == i' && sd == sd' && (T.words <$> d) == (T.words . T.replace linkNow linkBefore <$> d')
+                    dn == dn' && fn == fn' && i == i' && sd == sd' && (T.words . T.replace linkBefore "" <$> d) == (T.words . T.replace linkNow "" <$> d')
             GPServiceLinkError -> logError $ "Error: no group link for " <> groupRef <> " pending approval."
         groupProfileUpdate = profileUpdate <$> sendChatCmd cc (APIGetGroupLink groupId)
           where
