@@ -3065,7 +3065,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
-    xGrpDirectInv g@GroupInfo {groupId} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs
+    xGrpDirectInv g@GroupInfo {groupId, groupProfile = gp} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs
       | not (groupFeatureMemberAllowed SGFDirectMessages m g) = messageError "x.grp.direct.inv: direct messages not allowed"
       | memberBlocked m = messageWarning "x.grp.direct.inv: member is blocked (ignoring)"
       | otherwise = do
@@ -3109,7 +3109,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 updateMemberContactInvited db mCt groupDirectInv
                 getContact db vr user mContactId
               securityCodeChanged mCt'
-              createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent RDEGroupInvLinkReceived) Nothing
+              createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
               createItems mCt' m
         createNewContact subMode
           | unBD (autoAcceptGrpDirectInvs user) = do
@@ -3128,7 +3128,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 mCt <- getContact db vr user mContactId
                 pure (mCt, m')
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
-              createInternalChatItem user (CDDirectRcv mCt) (CIRcvDirectEvent RDEGroupInvLinkReceived) Nothing
+              createInternalChatItem user (CDDirectRcv mCt) (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
               createItems mCt m'
         joinConn subMode = do
           -- [incognito] send membership incognito profile

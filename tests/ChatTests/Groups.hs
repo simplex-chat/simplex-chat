@@ -4616,7 +4616,7 @@ testMemberContactAccept =
       cath <## "to accept: /accept_member_contact @bob"
       cath <## "to reject: /delete @bob (the sender will NOT be notified)"
 
-      cath #$> ("/_get chat @3 count=1", chat, [(0, "requested connection from group")])
+      cath #$> ("/_get chat @3 count=1", chat, [(0, "requested connection from group team")])
 
       cath ##> "/accept_member_contact @bob"
       cath <## "contact bob is accepted, starting connection"
