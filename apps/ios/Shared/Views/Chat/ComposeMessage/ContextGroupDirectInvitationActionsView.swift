@@ -11,7 +11,6 @@ import SimpleXChat
 
 struct ContextGroupDirectInvitationActionsView: View {
     @EnvironmentObject var theme: AppTheme
-    @ObservedObject var chat: Chat
     var contact: Contact
     var groupDirectInv: GroupDirectInvitation
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -105,7 +104,6 @@ struct ContextGroupDirectInvitationActionsView: View {
 
 #Preview {
     ContextGroupDirectInvitationActionsView(
-        chat: Chat.sampleData,
         contact: Contact.sampleData,
         groupDirectInv: GroupDirectInvitation.sampleData
     )

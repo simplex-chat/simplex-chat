@@ -161,7 +161,22 @@ fun PrivacySettingsView(
         }
       }
 
+      fun setAutoAcceptGrpDirectInvs(enable: Boolean) {
+        withApi {
+          chatModel.controller.apiSetUserAutoAcceptGroupInvLinks(currentUser, enable)
+          chatModel.currentUser.value = currentUser.copy(autoAcceptGrpDirectInvs = enable)
+        }
+      }
+
       if (!chatModel.desktopNoUserNoRemote) {
+        SectionDividerSpaced(maxTopPadding = true)
+        ContacRequestsFromGroupsSection(
+          currentUser = currentUser,
+          setAutoAcceptGrpDirectInvs = { enable ->
+            setAutoAcceptGrpDirectInvs(enable)
+          }
+        )
+
         SectionDividerSpaced(maxTopPadding = true)
         DeliveryReceiptsSection(
           currentUser = currentUser,
@@ -274,6 +289,34 @@ expect fun PrivacyDeviceSection(
   showSettingsModal: (@Composable (ChatModel) -> Unit) -> (() -> Unit),
   setPerformLA: (Boolean) -> Unit,
 )
+
+@Composable
+private fun ContacRequestsFromGroupsSection(
+  currentUser: User,
+  setAutoAcceptGrpDirectInvs: (Boolean) -> Unit
+) {
+  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
+    SettingsActionItemWithContent(painterResource(MR.images.ic_check), stringResource(MR.strings.auto_accept_contact)) {
+      DefaultSwitch(
+        checked = currentUser.autoAcceptGrpDirectInvs,
+        onCheckedChange = { enable ->
+          setAutoAcceptGrpDirectInvs(enable)
+        }
+      )
+    }
+  }
+  SectionTextFooter(
+    remember(currentUser.displayName) {
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.this_setting_is_for_your_current_profile) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(currentUser.displayName)
+        }
+        append(".")
+      }
+    }
+  )
+}
 
 @Composable
 private fun DeliveryReceiptsSection(

@@ -454,7 +454,7 @@ struct ComposeView: View {
             } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
                 ContextContactRequestActionsView(contactRequestId: crId)
             } else if let ct = contact, ct.nextAcceptContactRequest, let groupDirectInv = ct.groupDirectInv {
-                ContextGroupDirectInvitationActionsView(chat: chat, contact: ct, groupDirectInv: groupDirectInv)
+                ContextGroupDirectInvitationActionsView(contact: ct, groupDirectInv: groupDirectInv)
             } else {
                 HStack (alignment: .center) {
                     attachmentButton()
