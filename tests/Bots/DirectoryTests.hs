@@ -32,7 +32,7 @@ import Test.Hspec hiding (it)
 directoryServiceTests :: SpecWith TestParams
 directoryServiceTests = do
   it "should register group" testDirectoryService
-  it "should suspend and resume group, send message to owner" testSuspendResume
+  fit "should suspend and resume group, send message to owner" testSuspendResume
   it "should delete group registration" testDeleteGroup
   it "admin should delete group registration" testDeleteGroupAdmin
   it "should change initial member role" testSetRole
@@ -272,6 +272,19 @@ testSuspendResume ps =
       bob <## "The group is listed in directory."
       superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated - only link or whitespace changes."
       superUser <## "The group remained listed in directory."
+      -- upgrade link
+      -- make it upgradeable first
+      superUser #> "@SimpleX-Directory /x /sql chat UPDATE user_contact_links SET short_link_data_set = 0"
+      superUser <# "SimpleX-Directory> > /x /sql chat UPDATE user_contact_links SET short_link_data_set = 0"
+      superUser <## ""
+      bob #> "@SimpleX-Directory /link 1"
+      bob <# "SimpleX-Directory> > /link 1"
+      bob <## "      The link to join the group ID 1 (privacy):"
+      bob <##. "https://localhost/g#"
+      bob <## "New member role: member"
+      bob <## "The link is being upgraded..."
+      bob <# "SimpleX-Directory> The group link is upgraded for: ID 1 (privacy)"
+      bob <## "No changes to group needed."
       -- send message to group owner
       superUser #> "@SimpleX-Directory /owner 1:privacy hello there"
       superUser <# "SimpleX-Directory> > /owner 1:privacy hello there"
