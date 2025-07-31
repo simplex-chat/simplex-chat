@@ -1414,7 +1414,7 @@ viewContactsMerged c1 c2 ct' =
 
 viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
 viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
-  | unBD (autoAcceptGrpDirectInvs user) =
+  | isTrue (autoAcceptGrpDirectInvs user) =
       [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   | otherwise =
       [ ttyGroup' g <> " " <> ttyMember m <> " requests to create direct contact with you",

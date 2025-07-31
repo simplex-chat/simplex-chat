@@ -1981,7 +1981,7 @@ instance ToJSON ChatVersionRange where
 
 -- This type is needed for backward compatibility of new remote controller with old remote host.
 -- See CONTRIBUTING.md
-newtype BoolDef = BoolDef {unBD :: Bool}
+newtype BoolDef = BoolDef {isTrue :: Bool}
   deriving newtype (Eq, Show, ToJSON)
 
 instance FromJSON BoolDef where
