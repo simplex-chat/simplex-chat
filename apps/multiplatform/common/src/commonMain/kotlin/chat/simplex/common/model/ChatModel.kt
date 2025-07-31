@@ -1228,7 +1228,7 @@ data class User(
   override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
-  val autoAcceptGrpDirectInvs: Boolean,
+  val autoAcceptMemberContacts: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
 ): NamedChat, UserLike {
@@ -1258,7 +1258,7 @@ data class User(
       showNtfs = true,
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
-      autoAcceptGrpDirectInvs = false,
+      autoAcceptMemberContacts = false,
       viewPwdHash = null,
       uiThemes = null,
     )

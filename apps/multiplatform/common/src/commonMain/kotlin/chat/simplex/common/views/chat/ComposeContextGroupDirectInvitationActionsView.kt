@@ -21,7 +21,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 
 @Composable
-fun ComposeContextGroupDirectInvitationActionsView(
+fun ComposeContextMemberContactActionsView(
   rhId: Long?,
   contact: Contact,
   groupDirectInv: GroupDirectInvitation

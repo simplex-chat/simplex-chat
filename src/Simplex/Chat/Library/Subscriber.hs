@@ -3093,10 +3093,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             fromGroupId_ = Just groupId,
             fromGroupMemberId_ = Just (groupMemberId' m),
             fromGroupMemberConnId_ = Just mConnId,
-            groupDirectInvStartedConnection = isTrue $ autoAcceptGrpDirectInvs user
+            groupDirectInvStartedConnection = isTrue $ autoAcceptMemberContacts user
           }
         joinExistingContact subMode mCt@Contact {contactId = mContactId}
-          | isTrue (autoAcceptGrpDirectInvs user) = do
+          | isTrue (autoAcceptMemberContacts user) = do
               (cmdId, acId) <- joinConn subMode
               mCt' <- withStore $ \db -> do
                 updateMemberContactInvited db user mCt groupDirectInv
@@ -3112,7 +3112,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
               createItems mCt' m
         createNewContact subMode
-          | isTrue (autoAcceptGrpDirectInvs user) = do
+          | isTrue (autoAcceptMemberContacts user) = do
               (cmdId, acId) <- joinConn subMode
               -- [incognito] reuse membership incognito profile
               (mCt, m') <- withStore $ \db -> do

@@ -265,8 +265,8 @@ data ChatCommand
   | SetUserContactReceipts UserMsgReceiptSettings
   | APISetUserGroupReceipts UserId UserMsgReceiptSettings
   | SetUserGroupReceipts UserMsgReceiptSettings
-  | APISetUserAutoAcceptGroupInvLinks UserId Bool
-  | SetUserAutoAcceptGroupInvLinks Bool
+  | APISetUserAutoAcceptMemberContacts UserId Bool
+  | SetUserAutoAcceptMemberContacts Bool
   | APIHideUser UserId UserPwd
   | APIUnhideUser UserId UserPwd
   | APIMuteUser UserId

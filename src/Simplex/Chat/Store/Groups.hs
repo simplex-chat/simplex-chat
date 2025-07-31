@@ -138,7 +138,7 @@ module Simplex.Chat.Store.Groups
     updateMemberContactInvited,
     createMemberContactConn,
     getMemberContactInvited,
-    setGroupDirectInvStartedConnection,
+    setMemberContactStartedConnection,
     resetMemberContactFields,
     updateMemberProfile,
     updateContactMemberProfile,
@@ -2716,8 +2716,8 @@ getMemberContactInvited db vr user contactId = do
     _ ->
       throwError $ SEMemberContactGroupMemberNotFound contactId
 
-setGroupDirectInvStartedConnection :: DB.Connection -> Contact -> IO ()
-setGroupDirectInvStartedConnection db Contact {contactId} = do
+setMemberContactStartedConnection :: DB.Connection -> Contact -> IO ()
+setMemberContactStartedConnection db Contact {contactId} = do
   currentTs <- getCurrentTime
   DB.execute
     db

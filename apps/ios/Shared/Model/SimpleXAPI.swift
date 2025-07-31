@@ -289,8 +289,8 @@ func apiSetUserGroupReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgRec
     try await sendCommandOkResp(.apiSetUserGroupReceipts(userId: userId, userMsgReceiptSettings: userMsgReceiptSettings))
 }
 
-func apiSetUserAutoAcceptGroupInvLinks(_ userId: Int64, enable: Bool) async throws {
-    try await sendCommandOkResp(.apiSetUserAutoAcceptGroupInvLinks(userId: userId, enable: enable))
+func apiSetUserAutoAcceptMemberContacts(_ userId: Int64, enable: Bool) async throws {
+    try await sendCommandOkResp(.apiSetUserAutoAcceptMemberContacts(userId: userId, enable: enable))
 }
 
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {

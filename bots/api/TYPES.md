@@ -3619,7 +3619,7 @@ Handshake:
 - showNtfs: bool
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
-- autoAcceptGrpDirectInvs: bool
+- autoAcceptMemberContacts: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 

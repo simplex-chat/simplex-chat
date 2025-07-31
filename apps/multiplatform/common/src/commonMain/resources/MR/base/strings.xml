@@ -732,7 +732,7 @@
   <string name="reject_contact_request">Reject contact request</string>
   <string name="the_sender_will_not_be_notified">The sender will NOT be notified.</string>
 
-  <!-- ComposeContextGroupDirectInvitationActionsView.kt -->
+  <!-- ComposeContextMemberContactActionsView.kt -->
   <string name="member_is_deleted_cant_accept_request">Member is deleted - can\'t accept request</string>
 
   <!-- Clear Chat - ChatListNavLinkView.kt -->

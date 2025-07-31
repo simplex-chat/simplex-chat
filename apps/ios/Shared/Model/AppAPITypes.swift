@@ -18,7 +18,7 @@ enum ChatCommand: ChatCmdProtocol {
     case setAllContactReceipts(enable: Bool)
     case apiSetUserContactReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
     case apiSetUserGroupReceipts(userId: Int64, userMsgReceiptSettings: UserMsgReceiptSettings)
-    case apiSetUserAutoAcceptGroupInvLinks(userId: Int64, enable: Bool)
+    case apiSetUserAutoAcceptMemberContacts(userId: Int64, enable: Bool)
     case apiHideUser(userId: Int64, viewPwd: String)
     case apiUnhideUser(userId: Int64, viewPwd: String)
     case apiMuteUser(userId: Int64)
@@ -200,8 +200,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiSetUserGroupReceipts(userId, userMsgReceiptSettings):
                 let umrs = userMsgReceiptSettings
                 return "/_set receipts groups \(userId) \(onOff(umrs.enable)) clear_overrides=\(onOff(umrs.clearOverrides))"
-            case let .apiSetUserAutoAcceptGroupInvLinks(userId, enable):
-                return "/_set accept group inv links \(userId) \(onOff(enable))"
+            case let .apiSetUserAutoAcceptMemberContacts(userId, enable):
+                return "/_set accept member contacts \(userId) \(onOff(enable))"
             case let .apiHideUser(userId, viewPwd): return "/_hide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiUnhideUser(userId, viewPwd): return "/_unhide user \(userId) \(encodeJSON(viewPwd))"
             case let .apiMuteUser(userId): return "/_mute user \(userId)"
@@ -396,7 +396,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .setAllContactReceipts: return "setAllContactReceipts"
             case .apiSetUserContactReceipts: return "apiSetUserContactReceipts"
             case .apiSetUserGroupReceipts: return "apiSetUserGroupReceipts"
-            case .apiSetUserAutoAcceptGroupInvLinks: return "apiSetUserAutoAcceptGroupInvLinks"
+            case .apiSetUserAutoAcceptMemberContacts: return "apiSetUserAutoAcceptMemberContacts"
             case .apiHideUser: return "apiHideUser"
             case .apiUnhideUser: return "apiUnhideUser"
             case .apiMuteUser: return "apiMuteUser"

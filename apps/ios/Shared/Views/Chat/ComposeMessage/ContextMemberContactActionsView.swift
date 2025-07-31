@@ -1,5 +1,5 @@
 //
-//  ContextGroupDirectInvitationActionsView.swift
+//  ContextMemberContactActionsView.swift
 //  SimpleX (iOS)
 //
 //  Created by spaced4ndy on 31.07.2025.
@@ -9,7 +9,7 @@
 import SwiftUI
 import SimpleXChat
 
-struct ContextGroupDirectInvitationActionsView: View {
+struct ContextMemberContactActionsView: View {
     @EnvironmentObject var theme: AppTheme
     var contact: Contact
     var groupDirectInv: GroupDirectInvitation
@@ -103,7 +103,7 @@ struct ContextGroupDirectInvitationActionsView: View {
 }
 
 #Preview {
-    ContextGroupDirectInvitationActionsView(
+    ContextMemberContactActionsView(
         contact: Contact.sampleData,
         groupDirectInv: GroupDirectInvitation.sampleData
     )

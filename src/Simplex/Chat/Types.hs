@@ -132,7 +132,7 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    autoAcceptGrpDirectInvs :: BoolDef,
+    autoAcceptMemberContacts :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     uiThemes :: Maybe UIThemeEntityOverrides
   }

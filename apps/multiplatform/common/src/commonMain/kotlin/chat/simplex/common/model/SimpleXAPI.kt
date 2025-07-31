@@ -857,8 +857,8 @@ object ChatController {
     throw Exception("failed to set receipts for user groups ${r.responseType} ${r.details}")
   }
 
-  suspend fun apiSetUserAutoAcceptGroupInvLinks(u: User, enable: Boolean) {
-    val r = sendCmd(u.remoteHostId, CC.ApiSetUserAutoAcceptGroupInvLinks(u.userId, enable))
+  suspend fun apiSetUserAutoAcceptMemberContacts(u: User, enable: Boolean) {
+    val r = sendCmd(u.remoteHostId, CC.ApiSetUserAutoAcceptMemberContacts(u.userId, enable))
     if (r.result is CR.CmdOk) return
     throw Exception("failed to set auto-accept for direct invitations from groups ${r.responseType} ${r.details}")
   }
@@ -3526,7 +3526,7 @@ sealed class CC {
   class SetAllContactReceipts(val enable: Boolean): CC()
   class ApiSetUserContactReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
   class ApiSetUserGroupReceipts(val userId: Long, val userMsgReceiptSettings: UserMsgReceiptSettings): CC()
-  class ApiSetUserAutoAcceptGroupInvLinks(val userId: Long, val enable: Boolean): CC()
+  class ApiSetUserAutoAcceptMemberContacts(val userId: Long, val enable: Boolean): CC()
   class ApiHideUser(val userId: Long, val viewPwd: String): CC()
   class ApiUnhideUser(val userId: Long, val viewPwd: String): CC()
   class ApiMuteUser(val userId: Long): CC()
@@ -3705,7 +3705,7 @@ sealed class CC {
       val mrs = userMsgReceiptSettings
       "/_set receipts groups $userId ${onOff(mrs.enable)} clear_overrides=${onOff(mrs.clearOverrides)}"
     }
-    is ApiSetUserAutoAcceptGroupInvLinks -> "/_set accept group inv links $userId ${onOff(enable)}"
+    is ApiSetUserAutoAcceptMemberContacts -> "/_set accept member contacts $userId ${onOff(enable)}"
     is ApiHideUser -> "/_hide user $userId ${json.encodeToString(viewPwd)}"
     is ApiUnhideUser -> "/_unhide user $userId ${json.encodeToString(viewPwd)}"
     is ApiMuteUser -> "/_mute user $userId"
@@ -3899,7 +3899,7 @@ sealed class CC {
     is SetAllContactReceipts -> "setAllContactReceipts"
     is ApiSetUserContactReceipts -> "apiSetUserContactReceipts"
     is ApiSetUserGroupReceipts -> "apiSetUserGroupReceipts"
-    is ApiSetUserAutoAcceptGroupInvLinks -> "apiSetUserAutoAcceptGroupInvLinks"
+    is ApiSetUserAutoAcceptMemberContacts -> "apiSetUserAutoAcceptMemberContacts"
     is ApiHideUser -> "apiHideUser"
     is ApiUnhideUser -> "apiUnhideUser"
     is ApiMuteUser -> "apiMuteUser"

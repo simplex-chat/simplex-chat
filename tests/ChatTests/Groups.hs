@@ -438,7 +438,7 @@ testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      bob ##> "/set accept group inv links on"
+      bob ##> "/set accept member contacts on"
       bob <## "ok"
 
       connectUsers alice bob
@@ -850,7 +850,7 @@ testGroupDeleteInvitedContact :: HasCallStack => TestParams -> IO ()
 testGroupDeleteInvitedContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      bob ##> "/set accept group inv links on"
+      bob ##> "/set accept member contacts on"
       bob <## "ok"
 
       connectUsers alice bob
@@ -4151,9 +4151,9 @@ testMemberContactMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      bob ##> "/set accept group inv links on"
+      bob ##> "/set accept member contacts on"
       bob <## "ok"
-      cath ##> "/set accept group inv links on"
+      cath ##> "/set accept member contacts on"
       cath <## "ok"
 
       createGroup3 "team" alice bob cath
@@ -4223,7 +4223,7 @@ testMemberContactNoMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactNoMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      cath ##> "/set accept group inv links on"
+      cath ##> "/set accept member contacts on"
       cath <## "ok"
 
       createGroup3 "team" alice bob cath
@@ -4260,7 +4260,7 @@ testMemberContactProhibitedRepeatInv :: HasCallStack => TestParams -> IO ()
 testMemberContactProhibitedRepeatInv =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      cath ##> "/set accept group inv links on"
+      cath ##> "/set accept member contacts on"
       cath <## "ok"
 
       createGroup3 "team" alice bob cath
@@ -4291,7 +4291,7 @@ testMemberContactInvitedConnectionReplaced ps = do
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
-        bob ##> "/set accept group inv links on"
+        bob ##> "/set accept member contacts on"
         bob <## "ok"
 
         createGroup3 "team" alice bob cath
@@ -4364,7 +4364,7 @@ testMemberContactIncognito :: HasCallStack => TestParams -> IO ()
 testMemberContactIncognito =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      cath ##> "/set accept group inv links on"
+      cath ##> "/set accept member contacts on"
       cath <## "ok"
 
       -- create group, bob joins incognito
@@ -4457,7 +4457,7 @@ testMemberContactProfileUpdate :: HasCallStack => TestParams -> IO ()
 testMemberContactProfileUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      cath ##> "/set accept group inv links on"
+      cath ##> "/set accept member contacts on"
       cath <## "ok"
 
       createGroup3 "team" alice bob cath
@@ -4528,7 +4528,7 @@ testRecreateMemberContactManyGroups :: HasCallStack => TestParams -> IO ()
 testRecreateMemberContactManyGroups =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
-      bob ##> "/set accept group inv links on"
+      bob ##> "/set accept member contacts on"
       bob <## "ok"
 
       connectUsers alice bob

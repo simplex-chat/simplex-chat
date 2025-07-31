@@ -379,12 +379,12 @@ processChatCommand vr nm = \case
     withFastStore' $ \db -> updateUserGroupReceipts db user' settings
     ok user
   SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserGroupReceipts userId settings
-  APISetUserAutoAcceptGroupInvLinks userId' onOff -> withUser $ \user -> do
+  APISetUserAutoAcceptMemberContacts userId' onOff -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' Nothing
-    withFastStore' $ \db -> updateUserautoAcceptGrpDirectInvs db user' onOff
+    withFastStore' $ \db -> updateUserAutoAcceptMemberContacts db user' onOff
     ok user
-  SetUserAutoAcceptGroupInvLinks onOff -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserAutoAcceptGroupInvLinks userId onOff
+  SetUserAutoAcceptMemberContacts onOff -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserAutoAcceptMemberContacts userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -2626,7 +2626,7 @@ processChatCommand vr nm = \case
       throwError e
     -- get updated contact (groupDirectInvStartedConnection) with connection
     ct' <- withFastStore $ \db -> do
-      liftIO $ setGroupDirectInvStartedConnection db ct
+      liftIO $ setMemberContactStartedConnection db ct
       getContact db vr user contactId
     pure $ CRMemberContactAccepted user ct'
     where
@@ -4384,8 +4384,8 @@ chatCommandP =
       "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),
       "/_set receipts groups " *> (APISetUserGroupReceipts <$> A.decimal <* A.space <*> receiptSettings),
       "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
-      "/_set accept group inv links " *> (APISetUserAutoAcceptGroupInvLinks <$> A.decimal <* A.space <*> onOffP),
-      "/set accept group inv links " *> (SetUserAutoAcceptGroupInvLinks <$> onOffP),
+      "/_set accept member contacts " *> (APISetUserAutoAcceptMemberContacts <$> A.decimal <* A.space <*> onOffP),
+      "/set accept member contacts " *> (SetUserAutoAcceptMemberContacts <$> onOffP),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),

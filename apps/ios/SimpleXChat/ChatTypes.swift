@@ -39,7 +39,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var showNtfs: Bool
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
-    public var autoAcceptGrpDirectInvs: Bool
+    public var autoAcceptMemberContacts: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
 
@@ -67,7 +67,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         showNtfs: true,
         sendRcptsContacts: true,
         sendRcptsSmallGroups: false,
-        autoAcceptGrpDirectInvs: false
+        autoAcceptMemberContacts: false
     )
 }
 

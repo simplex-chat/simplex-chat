@@ -514,15 +514,15 @@ userQuery :: Query
 userQuery =
   [sql|
     SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.image, ucp.contact_link, ucp.preferences,
-      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_grp_direct_invs, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes
+      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes
     FROM users u
     JOIN contacts uct ON uct.contact_id = u.contact_id
     JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
   |]
 
 toUser :: (UserId, UserId, ContactId, ProfileId, BoolInt, Int64, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe Preferences) :. (BoolInt, BoolInt, BoolInt, BoolInt, Maybe B64UrlByteString, Maybe B64UrlByteString, Maybe UTCTime, Maybe UIThemeEntityOverrides) -> User
-toUser ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, displayName, fullName, shortDescr, image, contactLink, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptGrpDirectInvs, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, uiThemes)) =
-  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptGrpDirectInvs = BoolDef autoAcceptGrpDirectInvs, viewPwdHash, userMemberProfileUpdatedAt, uiThemes}
+toUser ((userId, auId, userContactId, profileId, BI activeUser, activeOrder, displayName, fullName, shortDescr, image, contactLink, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, viewPwdHash_, viewPwdSalt_, userMemberProfileUpdatedAt, uiThemes)) =
+  User {userId, agentUserId = AgentUserId auId, userContactId, localDisplayName = displayName, profile, activeUser, activeOrder, fullPreferences, showNtfs, sendRcptsContacts, sendRcptsSmallGroups, autoAcceptMemberContacts = BoolDef autoAcceptMemberContacts, viewPwdHash, userMemberProfileUpdatedAt, uiThemes}
   where
     profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences = userPreferences, localAlias = ""}
     fullPreferences = fullPreferences' userPreferences

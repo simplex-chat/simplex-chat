@@ -32,8 +32,8 @@ struct PrivacySettings: View {
     @State private var groupReceiptsReset = false
     @State private var groupReceiptsOverrides = 0
     @State private var groupReceiptsDialogue = false
-    @State private var autoAcceptGrpDirectInvs = false
-    @State private var autoAcceptGrpDirectInvsReset = false
+    @State private var autoAcceptMemberContacts = false
+    @State private var autoAcceptMemberContactsReset = false
     @State private var alert: PrivacySettingsViewAlert?
 
     enum PrivacySettingsViewAlert: Identifiable {
@@ -153,7 +153,7 @@ struct PrivacySettings: View {
 
                 Section {
                     settingsRow("checkmark", color: theme.colors.secondary) {
-                        Toggle("Auto-accept", isOn: $autoAcceptGrpDirectInvs)
+                        Toggle("Auto-accept", isOn: $autoAcceptMemberContacts)
                     }
                 } header: {
                     Text("Contact requests from groups")
@@ -221,11 +221,11 @@ struct PrivacySettings: View {
                 setOrAskSendReceiptsGroups(groupReceipts)
             }
         }
-        .onChange(of: autoAcceptGrpDirectInvs) { _ in
-            if autoAcceptGrpDirectInvsReset {
-                autoAcceptGrpDirectInvsReset = false
+        .onChange(of: autoAcceptMemberContacts) { _ in
+            if autoAcceptMemberContactsReset {
+                autoAcceptMemberContactsReset = false
             } else {
-                setAutoAcceptGrpDirectInvs(autoAcceptGrpDirectInvs)
+                setAutoAcceptGrpDirectInvs(autoAcceptMemberContacts)
             }
         }
         .onAppear {
@@ -238,9 +238,9 @@ struct PrivacySettings: View {
                     groupReceiptsReset = true
                     groupReceipts = u.sendRcptsSmallGroups
                 }
-                if autoAcceptGrpDirectInvs != u.autoAcceptGrpDirectInvs {
-                    autoAcceptGrpDirectInvsReset = true
-                    autoAcceptGrpDirectInvs = u.autoAcceptGrpDirectInvs
+                if autoAcceptMemberContacts != u.autoAcceptMemberContacts {
+                    autoAcceptMemberContactsReset = true
+                    autoAcceptMemberContacts = u.autoAcceptMemberContacts
                 }
             }
         }
@@ -362,10 +362,10 @@ struct PrivacySettings: View {
         Task {
             do {
                 if let currentUser = m.currentUser {
-                    try await apiSetUserAutoAcceptGroupInvLinks(currentUser.userId, enable: enable)
+                    try await apiSetUserAutoAcceptMemberContacts(currentUser.userId, enable: enable)
                     await MainActor.run {
                         var updatedUser = currentUser
-                        updatedUser.autoAcceptGrpDirectInvs = enable
+                        updatedUser.autoAcceptMemberContacts = enable
                         m.updateUser(updatedUser)
                     }
                 }
@@ -487,7 +487,7 @@ struct SimplexLockView: View {
                         Toggle("Allow sharing", isOn: $allowShareExtension)
                     }
                 }
-                
+
                 if performLA && laMode == .passcode {
                     Section(header: Text("Self-destruct passcode").foregroundColor(theme.colors.secondary)) {
                         Toggle(isOn: $selfDestruct) {

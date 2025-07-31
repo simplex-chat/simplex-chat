@@ -163,8 +163,8 @@ fun PrivacySettingsView(
 
       fun setAutoAcceptGrpDirectInvs(enable: Boolean) {
         withApi {
-          chatModel.controller.apiSetUserAutoAcceptGroupInvLinks(currentUser, enable)
-          chatModel.currentUser.value = currentUser.copy(autoAcceptGrpDirectInvs = enable)
+          chatModel.controller.apiSetUserAutoAcceptMemberContacts(currentUser, enable)
+          chatModel.currentUser.value = currentUser.copy(autoAcceptMemberContacts = enable)
         }
       }
 
@@ -298,7 +298,7 @@ private fun ContacRequestsFromGroupsSection(
   SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_check), stringResource(MR.strings.auto_accept_contact)) {
       DefaultSwitch(
-        checked = currentUser.autoAcceptGrpDirectInvs,
+        checked = currentUser.autoAcceptMemberContacts,
         onCheckedChange = { enable ->
           setAutoAcceptGrpDirectInvs(enable)
         }

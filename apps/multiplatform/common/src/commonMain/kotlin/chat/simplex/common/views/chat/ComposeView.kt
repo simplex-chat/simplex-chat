@@ -1472,7 +1472,7 @@ fun ComposeView(
         && chat.chatInfo.contact.nextAcceptContactRequest
         && chat.chatInfo.contact.groupDirectInv != null
       ) {
-        ComposeContextGroupDirectInvitationActionsView(
+        ComposeContextMemberContactActionsView(
           rhId = rhId,
           contact = chat.chatInfo.contact,
           groupDirectInv = chat.chatInfo.contact.groupDirectInv

@@ -249,7 +249,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
           Simplex.Chat.Store.SQLite.Migrations.M20250709_profile_short_descr
           Simplex.Chat.Store.SQLite.Migrations.M20250721_indexes
-          Simplex.Chat.Store.SQLite.Migrations.M20250729_contact_member_requests
+          Simplex.Chat.Store.SQLite.Migrations.M20250729_member_contact_requests
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
