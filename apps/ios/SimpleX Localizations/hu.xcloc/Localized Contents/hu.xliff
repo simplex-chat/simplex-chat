@@ -6482,9 +6482,9 @@ swipe action</note>
         <target>Elutasítás (a feladó NEM kap értesítést)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reject contact request" xml:space="preserve">
+      <trans-unit id="Reject contact request" xml:space="preserve" approved="no">
         <source>Reject contact request</source>
-        <target>Elutasítás</target>
+        <target state="translated">Partnerkérés elutasítása</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Reject member?" xml:space="preserve">
