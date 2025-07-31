@@ -222,7 +222,7 @@ struct PrivacySettings: View {
             }
         }
         .onChange(of: autoAcceptGrpDirectInvs) { _ in
-            if autoAcceptGrpDirectInvs {
+            if autoAcceptGrpDirectInvsReset {
                 autoAcceptGrpDirectInvsReset = false
             } else {
                 setAutoAcceptGrpDirectInvs(autoAcceptGrpDirectInvs)
