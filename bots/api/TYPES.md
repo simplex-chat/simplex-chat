@@ -58,7 +58,6 @@ This file is generated automatically.
 - [ConnectionPlan](#connectionplan)
 - [Contact](#contact)
 - [ContactAddressPlan](#contactaddressplan)
-- [GroupDirectInvitation](#groupdirectinvitation)
 - [ContactShortLinkData](#contactshortlinkdata)
 - [ContactStatus](#contactstatus)
 - [ContactUserPref](#contactuserpref)
@@ -83,6 +82,7 @@ This file is generated automatically.
 - [FullPreferences](#fullpreferences)
 - [GroupChatScope](#groupchatscope)
 - [GroupChatScopeInfo](#groupchatscopeinfo)
+- [GroupDirectInvitation](#groupdirectinvitation)
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
@@ -1596,7 +1596,7 @@ Error:
 - contactRequestId: int64?
 - contactGroupMemberId: int64?
 - contactGrpInvSent: bool
-- groupDirectInvitation: [GroupDirectInvitation](#groupdirectinvitation)?
+- groupDirectInv: [GroupDirectInvitation](#groupdirectinvitation)?
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
@@ -1631,18 +1631,6 @@ Known:
 ContactViaAddress:
 - type: "contactViaAddress"
 - contact: [Contact](#contact)
-
-
----
-
-## GroupDirectInvitation
-
-**Record type**:
-- groupDirectInvLink: string
-- fromGroupId_: int64?
-- fromGroupMemberId_: int64?
-- fromGroupMemberConnId_: int64?
-- groupDirectInvStartedConnection: bool
 
 
 ---
@@ -2044,6 +2032,18 @@ MemberSupport:
 MemberSupport:
 - type: "memberSupport"
 - groupMember_: [GroupMember](#groupmember)?
+
+
+---
+
+## GroupDirectInvitation
+
+**Record type**:
+- groupDirectInvLink: string
+- fromGroupId_: int64?
+- fromGroupMemberId_: int64?
+- fromGroupMemberConnId_: int64?
+- groupDirectInvStartedConnection: bool
 
 
 ---
@@ -2826,6 +2826,7 @@ ProfileUpdated:
 
 GroupInvLinkReceived:
 - type: "groupInvLinkReceived"
+- groupProfile: [GroupProfile](#groupprofile)
 
 
 ---

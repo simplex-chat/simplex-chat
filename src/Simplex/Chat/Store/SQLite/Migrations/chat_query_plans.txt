@@ -6158,15 +6158,15 @@ Query: UPDATE contacts SET contact_grp_inv_sent = ?, updated_at = ? WHERE contac
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE contacts SET grp_direct_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE contacts SET contact_used = ? WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET enable_ntfs = ?, send_rcpts = ?, favorite = ? WHERE user_id = ? AND contact_id = ?
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contacts SET grp_direct_inv_started_connection = ?, updated_at = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
