@@ -780,9 +780,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PCAll -> "_enabled_"
             Just PCNoImage -> "_enabled for profiles without image_"
       DCShowUpgradeGroupLink gId gName_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {localDisplayName = gName} _ -> do
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {groupId, localDisplayName = gName} _ -> do
           let groupRef = groupReference' gId gName
-          withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink gId) $
+          withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
             \GroupLink {connLinkContact = gLink@(CCLink _ sLnk_), acceptMemberRole, shortLinkDataSet, shortLinkLargeDataSet = BoolDef slLargeDataSet} -> do
               let shouldBeUpgraded = isNothing sLnk_ || not shortLinkDataSet || not slLargeDataSet
               sendReply $ T.unlines $
@@ -792,7 +792,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 ]
                   <> ["The link is being upgraded..." | shouldBeUpgraded]
               when shouldBeUpgraded $ do
-                withGroupLinkResult groupRef (sendChatCmd cc $ APIAddGroupShortLink gId) $
+                withGroupLinkResult groupRef (sendChatCmd cc $ APIAddGroupShortLink groupId) $
                   \GroupLink {connLinkContact = CCLink _ sLnk_'} ->
                     sendComposedMessage cc ct Nothing $ MCText $ T.unlines $
                       case (sLnk_, sLnk_') of
