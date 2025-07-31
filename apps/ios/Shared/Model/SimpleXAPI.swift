@@ -1927,6 +1927,26 @@ func apiAcceptMemberContact(contactId: Int64) async -> Contact? {
     return nil
 }
 
+func acceptMemberContact(contactId: Int64, inProgress: Binding<Bool>? = nil) async {
+    await MainActor.run { inProgress?.wrappedValue = true }
+    if let contact = await apiAcceptMemberContact(contactId: contactId) {
+        await MainActor.run {
+            ChatModel.shared.updateContact(contact)
+            NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+            inProgress?.wrappedValue = false
+        }
+        if contact.sndReady {
+            DispatchQueue.main.async {
+                dismissAllSheets(animated: true) {
+                    ItemsModel.shared.loadOpenChat(contact.id)
+                }
+            }
+        }
+    } else {
+        await MainActor.run { inProgress?.wrappedValue = false }
+    }
+}
+
 func apiGetVersion() throws -> CoreVersionInfo {
     let r: ChatResponse2 = try chatSendCmdSync(.showVersion)
     if case let .versionInfo(info, _, _) = r { return info }

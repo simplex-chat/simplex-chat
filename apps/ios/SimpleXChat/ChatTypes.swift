@@ -1763,7 +1763,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var contactRequestId: Int64?
     var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
-    var groupDirectInv: GroupDirectInvitation?
+    public var groupDirectInv: GroupDirectInvitation?
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
@@ -1777,7 +1777,11 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
-    public var nextAcceptContactRequest: Bool { active && contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
+    public var nextAcceptContactRequest: Bool {
+        active &&
+        (contactRequestId != nil || groupDirectInv != nil) &&
+        (activeConn == nil || activeConn?.connStatus == .new || activeConn?.connStatus == .prepared)
+    }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
@@ -1852,6 +1856,18 @@ public struct GroupDirectInvitation: Decodable, Hashable {
     public var fromGroupMemberId_: Int64?
     public var fromGroupMemberConnId_: Int64?
     public var groupDirectInvStartedConnection: Bool
+
+    public var memberRemoved: Bool {
+        fromGroupId_ == nil || fromGroupMemberId_ == nil || fromGroupMemberConnId_ == nil
+    }
+
+    public static let sampleData = GroupDirectInvitation(
+        groupDirectInvLink: "simplex_link",
+        fromGroupId_: 1,
+        fromGroupMemberId_: 1,
+        fromGroupMemberConnId_: 1,
+        groupDirectInvStartedConnection: false
+    )
 }
 
 public enum ConnectionMode: String, Decodable, Hashable {

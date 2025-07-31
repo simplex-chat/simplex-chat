@@ -81,7 +81,7 @@ struct ContactListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id)
             }
         } label: {
-            contactRequestPreview()
+            contactRequestPreview(color: contact.groupDirectInv?.memberRemoved == true ? theme.colors.secondary : theme.colors.primary)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if let contactRequestId = contact.contactRequestId {
@@ -254,7 +254,7 @@ struct ContactListNavLink: View {
         Button {
             showContactRequestDialog = true
         } label: {
-            contactRequestPreview()
+            contactRequestPreview(color: theme.colors.primary)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
@@ -285,12 +285,12 @@ struct ContactListNavLink: View {
         }
     }
 
-    func contactRequestPreview() -> some View {
+    func contactRequestPreview(color: Color) -> some View {
         HStack{
             ProfileImage(imageStr: chat.chatInfo.image, size: 30)
 
             Text(chat.chatInfo.chatViewName)
-                .foregroundColor(.accentColor)
+                .foregroundColor(color)
                 .lineLimit(1)
 
             Spacer()
@@ -299,7 +299,7 @@ struct ContactListNavLink: View {
                 .resizable()
                 .scaledToFill()
                 .frame(width: 14, height: 14)
-                .foregroundColor(.accentColor)
+                .foregroundColor(color)
         }
     }
 }
