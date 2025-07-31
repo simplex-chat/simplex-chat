@@ -257,16 +257,6 @@ SEARCH messages USING PRIMARY KEY (conn_id=?)
 
 Query: 
           SELECT user_id FROM users u
-          WHERE u.deleted = ?
-            AND NOT EXISTS (SELECT c.conn_id FROM connections c WHERE c.user_id = u.user_id)
-        
-Plan:
-SCAN u
-CORRELATED SCALAR SUBQUERY 1
-SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
-
-Query: 
-          SELECT user_id FROM users u
           WHERE u.user_id = ?
             AND u.deleted = ?
             AND NOT EXISTS (SELECT c.conn_id FROM connections c WHERE c.user_id = u.user_id)
@@ -977,14 +967,6 @@ SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_ex
 Query: SELECT DISTINCT conn_id FROM snd_message_deliveries WHERE failed = 0
 Plan:
 SCAN snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired
-
-Query: SELECT conn_id FROM connections WHERE deleted = ?
-Plan:
-SCAN connections
-
-Query: SELECT conn_id FROM connections WHERE deleted_at_wait_delivery IS NOT NULL
-Plan:
-SCAN connections
 
 Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:

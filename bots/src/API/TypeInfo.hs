@@ -211,6 +211,7 @@ toTypeInfo tr =
       [ "CallsPreference",
         "FullDeletePreference",
         "ReactionsPreference",
+        "SessionsPreference",
         "VoicePreference"
       ]
     groupPrefTypes =
@@ -223,5 +224,6 @@ toTypeInfo tr =
       [ "DirectMessagesGroupPreference",
         "VoiceGroupPreference",
         "FilesGroupPreference",
+        "SessionsGroupPreference",
         "SimplexLinksGroupPreference"
       ]

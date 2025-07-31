@@ -599,7 +599,8 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
-      calls = pref SCFCalls
+      calls = pref SCFCalls,
+      sessions = pref SCFSessions
     }
   where
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)

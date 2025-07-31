@@ -1221,6 +1221,7 @@ Exception:
 - "reactions"
 - "voice"
 - "calls"
+- "sessions"
 
 
 ---
@@ -1710,6 +1711,7 @@ User:
 - reactions: [ContactUserPreference](#contactuserpreference)
 - voice: [ContactUserPreference](#contactuserpreference)
 - calls: [ContactUserPreference](#contactuserpreference)
+- sessions: [ContactUserPreference](#contactuserpreference)
 
 
 ---
@@ -2006,6 +2008,7 @@ Phone:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
+- sessions: [RoleGroupPreference](#rolegrouppreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2019,6 +2022,7 @@ Phone:
 - reactions: [SimplePreference](#simplepreference)
 - voice: [SimplePreference](#simplepreference)
 - calls: [SimplePreference](#simplepreference)
+- sessions: [SimplePreference](#simplepreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
 
 
@@ -2072,6 +2076,7 @@ MemberSupport:
 - "simplexLinks"
 - "reports"
 - "history"
+- "sessions"
 
 
 ---
@@ -2276,6 +2281,7 @@ Known:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)?
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
+- sessions: [RoleGroupPreference](#rolegrouppreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
@@ -2653,6 +2659,7 @@ Unknown:
 - reactions: [SimplePreference](#simplepreference)?
 - voice: [SimplePreference](#simplepreference)?
 - calls: [SimplePreference](#simplepreference)?
+- sessions: [SimplePreference](#simplepreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
