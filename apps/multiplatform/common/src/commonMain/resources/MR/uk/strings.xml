@@ -2436,4 +2436,10 @@
     <string name="reject_pending_member_button">Відхилити</string>
     <string name="reject_pending_member_alert_title">Відхилити учасника?</string>
     <string name="cant_send_message_you_left">ви вийшли</string>
+    <string name="v6_4_1_new_interface_languages">4 нові мови інтерфейсу</string>
+    <string name="accept_contact_request">Прийняти запит на контакт</string>
+    <string name="chat_banner_accept_contact_request">Прийняти запит на контакт</string>
+    <string name="compose_view_add_message">Додати повідомлення</string>
+    <string name="short_descr__field">Біо:</string>
+    <string name="bio_too_large">Біографія занадто велика</string>
 </resources>
