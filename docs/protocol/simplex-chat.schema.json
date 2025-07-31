@@ -20,8 +20,18 @@
             "format": "data URI format for base64 encoded image"
           }
         },
+        "shortDescr": {
+          "type": "string",
+          "metadata": {"comment": "profile bio (160 characters)"}
+        },
         "contactLink": {"ref": "connReqUri"},
+        "peerType": {"enum": ["human", "bot"]},
         "preferences": {
+          "optionalProperties": {
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          },
           "additionalProperties": true,
           "metadata": {
             "format": "an object with user or contact preferences"
@@ -47,7 +57,16 @@
             "format": "data URI format for base64 encoded image"
           }
         },
+        "shortDescr": {
+          "type": "string",
+          "metadata": {"comment": "group purpose / short description (160 characters)"}
+        },
         "groupPreferences": {
+          "optionalProperties": {
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          },
           "additionalProperties": "true",
           "metadata": {
             "format": "an object with group preferences"
@@ -56,21 +75,39 @@
       },
       "additionalProperties": true
     },
-    "commands": {
-      "metadata": {"comment": "an object used in group or contact profile preferences for bot commands"},
-      "elements": {
-        "properties": {
-          "text": {"type": "string", "metadata": {"comment": "button text, should not include '/'"}}
+    "command": {
+      "discriminator": "type",
+      "mapping": {
+        "command": {
+          "properties": {
+            "keyword": {
+              "type": "string",
+              "metadata": {"format": "Must start from / and consist from letters, digits and underscores only, no punctuation or spaces"}
+            },
+            "label": {
+              "type": "string",
+              "metadata": {"comment": "shown to the user after command keyword in menus"}
+            }
+          },
+          "optionalProperties": {
+            "params": {
+              "type": "string",
+              "metadata": {"comment": "Params that can follow after keyword using command-line syntax. If params property is not present, command will be sent on selection"}}
+            },
+            "hidden": {
+              "type": "bool",
+              "metadata": {"comment": "Won't be shown in menu when true"}
+            }
+          }
         },
-        "optionalProperties": {
-          "allow": {"type": "boolean", "metadata": {"comment": "for contacts"}},
-          "enabled": {"type": "boolean", "metadata": {"comment": "for groups"}},
-          "info": {"type": "string", "metadata": {"comment": "information for the user"}},
-          "template": {"type": "string", "metadata": {"comment": "command message template, '/' + text will be used if absent"}},
-          "send": {"type": "boolean", "metadata": {"comment": "whether to send template on selection", "default": false}},
-          "menu": {"ref": "commands"}
-        },
-        "metadata": {"comment": "menu and template+send are mutually exclusive"}
+        "menu": {
+          "properties": {
+            "label": {"type": "string"},
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          }
+        }
       }
     },
     "msgContainer": {
@@ -87,50 +124,7 @@
             "content": {"ref": "msgContent"}
           }
         },
-        "forward": {"type": "boolean"},
-        "choice": {
-          "properties": {
-            "options": {
-              "elements": {
-                "properties": {
-                  "tag": {
-                    "type": "string",
-                    "metadata": {"comment": "unique tag that will be sent in choiceTag property of response. The clients should not show buttons with duplicate tags."}
-                  },
-                  "text": {
-                    "type": "string",
-                    "metadata": {"comment": "unique text shown to user and sent in response. The clients should not show buttons with duplicate texts."}
-                  }
-                },
-                "optionalProperties": {
-                  "role": {
-                    "enum": ["primary", "destructive", "default"],
-                    "metadata": {"comment": "button role", "default": "default"}
-                  },
-                  "icon": {
-                    "type": "string",
-                    "metadata": {"comment": "emoji or name of the icon"}
-                  }
-                }
-              }
-            }
-          },
-          "optionalProperties": {
-            "layout": {
-              "enum": ["column", "row"],
-              "metadata": {"default": "column"}
-            }
-          }
-        },
-        "choiceResponse": {
-          "properties": {
-            "tag": {
-              "type": "string",
-              "metadata": {"comment": "tag from dialog choices"}
-            }
-          },
-          "metadata": {"comment": "mutually exclusive with `dialog`"}
-        }
+        "forward": {"type": "boolean"}
       },
       "metadata": {
         "comment": "optional properties `quote` and `forward` are mutually exclusive"

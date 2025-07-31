@@ -304,7 +304,8 @@ data ChatBotCommand
   = CBCCommand
       { keyword :: Text, -- "/order"
         label :: Text, -- Information about order
-        template :: Text -- "/order <order number>"
+        params :: Maybe Text, -- "<order number>", command is sent on selection if params is absent
+        hidden :: Maybe Bool
       }
   | CBCMenu
       { label :: Text, -- Orders

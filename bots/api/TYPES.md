@@ -864,7 +864,8 @@ Command:
 - type: "command"
 - keyword: string
 - label: string
-- template: string
+- params: string?
+- hidden: bool?
 
 
 ---
