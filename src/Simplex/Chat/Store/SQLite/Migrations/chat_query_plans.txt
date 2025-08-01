@@ -1431,7 +1431,7 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
-          UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+          UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
           WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
             SELECT contact_id
             FROM group_members
@@ -3661,6 +3661,14 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        UPDATE groups
+        SET via_group_link_uri = ?, via_group_link_uri_hash = ?
+        WHERE group_id = ?
+      
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       DELETE FROM chat_items
       WHERE group_scope_group_member_id = ?
     
@@ -4190,10 +4198,10 @@ Plan:
 Query: 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
-        via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
+        via_contact_uri, via_contact_uri_hash, via_short_link_contact, contact_id, group_member_id,
         xcontact_id, custom_user_profile_id, via_group_link, group_link_id,
         created_at, updated_at, to_subscribe, conn_chat_version, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4619,16 +4627,6 @@ Query:
     
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE groups
-      SET via_group_link_uri_hash = (SELECT via_contact_uri_hash FROM connections WHERE connection_id = ?)
-      WHERE group_id = ?
-    
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
-SCALAR SUBQUERY 1
-SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE msg_deliveries
@@ -5328,6 +5326,9 @@ Error: SQLite3 returned ErrorError while attempting to perform prepare "explain 
 Query: CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)
 Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)": table temp_delete_members already exists
 
+Query: DELETE FROM app_settings
+Plan:
+
 Query: DELETE FROM calls WHERE user_id = ? AND contact_id = ?
 Plan:
 SEARCH calls USING INDEX idx_calls_contact_id (contact_id=?)
@@ -5717,6 +5718,9 @@ Plan:
 Query: DROP TABLE temp_delete_members
 Plan:
 
+Query: INSERT INTO app_settings (app_settings) VALUES (?)
+Plan:
+
 Query: INSERT INTO chat_item_mentions (chat_item_id, group_id, member_id, display_name) VALUES (?, ?, ?, ?)
 Plan:
 
@@ -6068,6 +6072,10 @@ Query: SELECT user_id FROM users WHERE local_display_name = ?
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_2 (local_display_name=?)
 
+Query: SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?
+Plan:
+SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT xgrplinkmem_received FROM group_members WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -6324,7 +6332,7 @@ Query: UPDATE groups SET user_member_profile_sent_at = ? WHERE user_id = ? AND g
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?
+Query: UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
