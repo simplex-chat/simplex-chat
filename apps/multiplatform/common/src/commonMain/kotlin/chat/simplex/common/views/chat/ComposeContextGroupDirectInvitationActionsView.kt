@@ -149,7 +149,7 @@ private fun deleteMemberContact(rhId: Long?, contact: Contact) {
 fun acceptMemberContact(
   rhId: Long?,
   contactId: Long,
-  close: ((chat: Chat) -> Unit)? = null, // currently unused, can pass function to open chat if reused in other views (e.g. see onRequestAccepted)
+  close: ((chat: Chat) -> Unit)? = null,
   inProgress: MutableState<Boolean>? = null
 ) {
   withBGApi {
