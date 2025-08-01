@@ -154,7 +154,8 @@ CREATE TABLE groups(
   conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
-  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0, -- received
+  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
+  via_group_link_uri BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -327,6 +328,7 @@ CREATE TABLE connections(
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
   short_link_inv BLOB,
   via_short_link_contact BLOB,
+  via_contact_uri BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
