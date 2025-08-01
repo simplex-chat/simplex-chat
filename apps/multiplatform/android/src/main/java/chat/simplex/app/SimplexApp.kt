@@ -236,6 +236,16 @@ class SimplexApp: Application(), LifecycleEventObserver {
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
+        if (mode == NotificationsMode.INSTANT) {
+          CoroutineScope(Dispatchers.Default).launch {
+            SimplexService.initUnifiedPush(this) {
+              // Change notifications mode only if everything is correctly setup
+              chatModel.controller.appPrefs.notificationsMode.set(mode)
+            }
+          }
+        } else {
+          chatModel.controller.appPrefs.notificationsMode.set(mode)
+        }
         SimplexService.showBackgroundServiceNoticeIfNeeded(showOffAlert = false)
       }
 
@@ -245,6 +255,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { platform.androidServiceStart() }
           NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
           NotificationsMode.OFF -> {}
+          NotificationsMode.INSTANT -> {}
         }
       }
 
@@ -369,6 +380,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
 
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
+      override val supportsPushNotifications = true
     }
   }
 
