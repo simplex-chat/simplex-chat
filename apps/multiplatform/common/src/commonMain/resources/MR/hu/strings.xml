@@ -90,7 +90,7 @@
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
     <string name="invite_prohibited">Nem lehet meghívni a partnert!</string>
     <string name="integrity_msg_bad_id">hibás az üzenet azonosítója</string>
-    <string name="v4_2_auto_accept_contact_requests">Partnerkérések automatikus elfogadása</string>
+    <string name="v4_2_auto_accept_contact_requests">Partneri kapcsolatkérések automatikus elfogadása</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Megjegyzés:</b> NEM fogja tudni helyreállítani, vagy módosítani a jelmondatot abban az esetben, ha elveszíti.]]></string>
     <string name="callstatus_calling">hívás…</string>
     <string name="color_secondary_variant">További másodlagos szín</string>
@@ -142,7 +142,7 @@
     <string name="bad_desktop_address">Hibás a számítógép címe</string>
     <string name="users_add">Profil hozzáadása</string>
     <string name="attach">Mellékelés</string>
-    <string name="v5_0_app_passcode">Alkalmazás jelkód</string>
+    <string name="v5_0_app_passcode">Alkalmazásjelkód</string>
     <string name="icon_descr_asked_to_receive">Felkérték a kép fogadására</string>
     <string name="use_camera_button">Kamera</string>
     <string name="cannot_access_keychain">Nem érhető el a Keystore az adatbázis jelszavának mentéséhez</string>
@@ -583,7 +583,7 @@
     <string name="error_aborting_address_change">Hiba történt a cím módosításának megszakításakor</string>
     <string name="error_receiving_file">Hiba történt a fájl fogadásakor</string>
     <string name="conn_event_ratchet_sync_ok">titkosítása rendben van</string>
-    <string name="error_deleting_contact_request">Hiba történt a partnerkérés törlésekor</string>
+    <string name="error_deleting_contact_request">Hiba történt a partneri kapcsolatkérés törlésekor</string>
     <string name="receipts_groups_title_enable">Engedélyezi a kézbesítési jelentéseket a csoportok számára?</string>
     <string name="fix_connection_not_supported_by_contact">Partner általi javítás nem támogatott</string>
     <string name="file_not_found">Fájl nem található</string>
@@ -608,7 +608,7 @@
     <string name="error_creating_address">Hiba történt a cím létrehozásakor</string>
     <string name="feature_enabled">engedélyezve</string>
     <string name="error_loading_details">Hiba történt a részletek betöltésekor</string>
-    <string name="error_accepting_contact_request">Hiba történt a partnerkérés elfogadásakor</string>
+    <string name="error_accepting_contact_request">Hiba történt a partneri kapcsolatkérés elfogadásakor</string>
     <string name="snd_conn_event_ratchet_sync_allowed">a titkosítás újraegyeztetése engedélyezve van %s számára</string>
     <string name="conn_event_ratchet_sync_required">a titkosítás újraegyeztetése szükséges</string>
     <string name="v4_6_hidden_chat_profiles">Rejtett csevegési profilok</string>
@@ -737,13 +737,13 @@
     <string name="network_use_onion_hosts_no_desc">Az onion kiszolgálók nem lesznek használva.</string>
     <string name="custom_time_unit_minutes">perc</string>
     <string name="learn_more">Tudjon meg többet</string>
-    <string name="notification_new_contact_request">Új partnerkérés</string>
+    <string name="notification_new_contact_request">Új partneri kapcsolatkérés</string>
     <string name="joining_group">Csatlakozás a csoporthoz</string>
     <string name="linked_desktop_options">Társított számítógép beállítások</string>
     <string name="rcv_group_event_invited_via_your_group_link">meghíva a saját csoporthivatkozásán keresztül</string>
     <string name="rcv_group_event_member_left">elhagyta a csoportot</string>
     <string name="linked_desktops">Társított számítógépek</string>
-    <string name="la_no_app_password">Nincs alkalmazás jelkód</string>
+    <string name="la_no_app_password">Nincs alkalmazásjelkód</string>
     <string name="muted_when_inactive">Némítás, ha inaktív!</string>
     <string name="alert_title_group_invitation_expired">A meghívó lejárt!</string>
     <string name="only_stored_on_members_devices">(csak a csoporttagok tárolják)</string>
@@ -1488,7 +1488,7 @@
     <string name="you_can_view_invitation_link_again">A meghívási hivatkozást újra megtekintheti a kapcsolat részleteinél.</string>
     <string name="start_chat_question">Elindítja a csevegést?</string>
     <string name="recent_history">Látható előzmények</string>
-    <string name="la_app_passcode">Alkalmazás jelkód</string>
+    <string name="la_app_passcode">Alkalmazásjelkód</string>
     <string name="add_contact_tab">Partner hozzáadása</string>
     <string name="tap_to_scan">Koppintson ide a QR-kód beolvasásához</string>
     <string name="tap_to_paste_link">Koppintson ide a hivatkozás beillesztéséhez</string>
@@ -2407,7 +2407,7 @@
     <string name="connect_plan_open_new_chat">Új csevegés megnyitása</string>
     <string name="connect_plan_open_new_group">Új csoport megnyitása</string>
     <string name="e2ee_info_e2ee"><![CDATA[Az üzenetek <b>végpontok közötti titkosítással</b> vannak védve.]]></string>
-    <string name="error_rejecting_contact_request">Hiba történt a partnerkérés elutasításakor</string>
+    <string name="error_rejecting_contact_request">Hiba történt a partneri kapcsolatkérés elutasításakor</string>
     <string name="error_preparing_contact">Hiba a csevegés megnyitásakor</string>
     <string name="error_preparing_group">Hiba a csoport megnyitásakor</string>
     <string name="error_changing_user">Hiba a profil módosításakor</string>
@@ -2418,13 +2418,13 @@
     <string name="compose_view_join_group">Csatlakozás a csoporthoz</string>
     <string name="compose_view_add_message">Üzenet hozzáadása</string>
     <string name="compose_view_connect">Kapcsolódás</string>
-    <string name="compose_view_send_contact_request_alert_question">Elküldi a partnerkérést?</string>
+    <string name="compose_view_send_contact_request_alert_question">Elküldi a partneri kapcsolatkérést?</string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Csak azután tud üzeneteket küldeni, <b>miután a kérését elfogadták</b>.]]></string>
     <string name="compose_view_send_request_without_message">Kérés küldése üzenet nélkül</string>
     <string name="compose_view_send_request">Kérés küldése</string>
     <string name="cant_send_message_request_is_sent">kérés elküldve</string>
-    <string name="accept_contact_request">Partnerkérés elfogadása</string>
-    <string name="reject_contact_request">Partnerkérés elutasítása</string>
+    <string name="accept_contact_request">Partneri kapcsolatkérés elfogadása</string>
+    <string name="reject_contact_request">Partneri kapcsolatkérés elutasítása</string>
     <string name="the_sender_will_not_be_notified">A feladó NEM lesz értesítve.</string>
     <string name="context_user_picker_your_profile">Saját profil</string>
     <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
@@ -2454,7 +2454,7 @@
     <string name="short_descr__field">Bemutatkozás:</string>
     <string name="bio_too_large">A bemutatkozás túl hosszú</string>
     <string name="group_descr_too_large">A leírás túl hosszú</string>
-    <string name="chat_banner_accept_contact_request">Partnerkérés elfogadása</string>
+    <string name="chat_banner_accept_contact_request">Partneri kapcsolatkérés elfogadása</string>
     <string name="chat_banner_business_connection">Üzleti kapcsolat</string>
     <string name="chat_banner_group">Csoport</string>
     <string name="chat_banner_join_group">Koppintson a „Csatlakozás a csoporthoz” gombra</string>
@@ -2479,7 +2479,7 @@
     <string name="share_group_profile_via_link_alert_text">A hivatkozás rövid lesz és a csoportprofil meg lesz osztva a hivatkozáson keresztül.</string>
     <string name="share_old_address_alert_button">Régi cím megosztása</string>
     <string name="share_old_link_alert_button">Régi hivatkozás megosztása</string>
-    <string name="settings_section_title_contact_requests_from_groups">PARTNERKÉRÉSEK A CSOPORTOKBÓL</string>
+    <string name="settings_section_title_contact_requests_from_groups">PARTNERI KAPCSOLATKÉRÉSEK A CSOPORTOKBÓL</string>
     <string name="member_is_deleted_cant_accept_request">A tag törölve lett – nem lehet elfogadni a kérést</string>
     <string name="rcv_direct_event_group_inv_link_received">a(z) %1$s nevű csoportból partnerkapcsolatot kért</string>
     <string name="this_setting_is_for_your_current_profile">Ez a beállítás a jelenlegi profiljára vonatkozik</string>
