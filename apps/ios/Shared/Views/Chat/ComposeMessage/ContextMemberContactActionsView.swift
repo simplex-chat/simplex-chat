@@ -27,13 +27,13 @@ struct ContextMemberContactActionsView: View {
                     .frame(maxWidth: .infinity, minHeight: 60)
             } else {
                 HStack(spacing: 0) {
-                    Button(role: .destructive, action: showRejectRequestAlert) {
+                    Button(role: .destructive, action: { showRejectMemberContactRequestAlert(contact) }) {
                         Label("Reject", systemImage: "multiply")
                     }
                     .frame(maxWidth: .infinity, minHeight: 60)
 
                     Button {
-                        acceptRequest()
+                        acceptMemberContactRequest(contact, inProgress: $inProgress)
                     } label: {
                         Label("Accept", systemImage: "checkmark")
                     }
@@ -61,44 +61,44 @@ struct ContextMemberContactActionsView: View {
             }
         }
     }
+}
 
-    private func showRejectRequestAlert() {
-        showAlert(
-            NSLocalizedString("Reject contact request", comment: "alert title"),
-            message: NSLocalizedString("The sender will NOT be notified", comment: "alert message"),
-            actions: {[
-                UIAlertAction(title: NSLocalizedString("Reject", comment: "alert action"), style: .destructive) { _ in
-                    deleteContact()
-                },
-                cancelAlertAction
-            ]}
-        )
-    }
+func showRejectMemberContactRequestAlert(_ contact: Contact) {
+    showAlert(
+        NSLocalizedString("Reject contact request", comment: "alert title"),
+        message: NSLocalizedString("The sender will NOT be notified", comment: "alert message"),
+        actions: {[
+            UIAlertAction(title: NSLocalizedString("Reject", comment: "alert action"), style: .destructive) { _ in
+                deleteContact(contact)
+            },
+            cancelAlertAction
+        ]}
+    )
+}
 
-    func deleteContact() {
-        Task {
-            do {
-                let _ct = try await apiDeleteContact(id: contact.contactId, chatDeleteMode: .full(notify: false))
-                await MainActor.run {
-                    ChatModel.shared.removeChat(contact.id)
-                    ChatModel.shared.chatId = nil
-                }
-            } catch let error {
-                logger.error("apiDeleteContact: \(responseError(error))")
-                await MainActor.run {
-                    showAlert(
-                        NSLocalizedString("Error deleting chat!", comment: "alert title"),
-                        message: responseError(error)
-                    )
-                }
+private func deleteContact(_ contact: Contact) {
+    Task {
+        do {
+            _ = try await apiDeleteContact(id: contact.contactId, chatDeleteMode: .full(notify: false))
+            await MainActor.run {
+                ChatModel.shared.removeChat(contact.id)
+                ChatModel.shared.chatId = nil
+            }
+        } catch let error {
+            logger.error("apiDeleteContact: \(responseError(error))")
+            await MainActor.run {
+                showAlert(
+                    NSLocalizedString("Error deleting chat!", comment: "alert title"),
+                    message: responseError(error)
+                )
             }
         }
     }
+}
 
-    private func acceptRequest() {
-        Task {
-            await acceptMemberContact(contactId: contact.contactId, inProgress: $inProgress)
-        }
+func acceptMemberContactRequest(_ contact: Contact, inProgress: Binding<Bool>? = nil) {
+    Task {
+        await acceptMemberContact(contactId: contact.contactId, inProgress: inProgress)
     }
 }
 
