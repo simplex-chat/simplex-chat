@@ -486,7 +486,8 @@ data GroupInfo = GroupInfo
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
-    membersRequireAttention :: Int
+    membersRequireAttention :: Int,
+    viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
 

@@ -638,21 +638,21 @@ type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, 
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupMemberRow
 
 type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime)
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, LocalAlias, Maybe Preferences)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image) :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention) :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image) :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
-   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention}
+   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention, viaGroupLinkUri}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -698,7 +698,7 @@ groupInfoQuery =
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
-      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
+      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
