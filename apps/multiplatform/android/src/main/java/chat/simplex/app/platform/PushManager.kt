@@ -55,7 +55,7 @@ object PushManager {
           showSelectPushServiceDialog(context, distributors) {
             UnifiedPush.saveDistributor(context, it)
             register(context)
-            onSuccess
+            onSuccess()
           }
         }
       }

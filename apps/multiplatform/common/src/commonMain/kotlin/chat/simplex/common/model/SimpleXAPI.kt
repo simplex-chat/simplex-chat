@@ -3717,6 +3717,9 @@ sealed class CC {
   class ResetAgentServersStats(): CC()
   class GetAgentSubsTotal(val userId: Long): CC()
   class GetAgentServersSummary(val userId: Long): CC()
+  class APIRegisterWebPush(val endpoint: String, val auth: String, val p256dh: String): CC()
+  class APIVerifySavedNtf(val code: String): CC()
+  class APIDeleteSavedNtf(): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -3919,6 +3922,9 @@ sealed class CC {
     is ResetAgentServersStats -> "/reset servers stats"
     is GetAgentSubsTotal -> "/get subs total $userId"
     is GetAgentServersSummary -> "/get servers summary $userId"
+    is APIRegisterWebPush -> "/_ntf register webpush $endpoint $auth $p256dh INSTANT"
+    is APIDeleteSavedNtf -> "/_ntf delete saved"
+    is APIVerifySavedNtf -> "/_ntf verify $code"
   }
 
   val cmdType: String get() = when (this) {
@@ -4087,6 +4093,9 @@ sealed class CC {
     is ResetAgentServersStats -> "resetAgentServersStats"
     is GetAgentSubsTotal -> "getAgentSubsTotal"
     is GetAgentServersSummary -> "getAgentServersSummary"
+    is APIRegisterWebPush -> "apiRegisterWebPush"
+    is APIDeleteSavedNtf -> "apiDeleteSavedNtf"
+    is APIVerifySavedNtf -> "apiVerifySavedNtf"
   }
 
   data class ItemRange(val from: Long, val to: Long)
