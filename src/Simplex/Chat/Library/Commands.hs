@@ -379,6 +379,12 @@ processChatCommand vr nm = \case
     withFastStore' $ \db -> updateUserGroupReceipts db user' settings
     ok user
   SetUserGroupReceipts settings -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserGroupReceipts userId settings
+  APISetUserAutoAcceptMemberContacts userId' onOff -> withUser $ \user -> do
+    user' <- privateGetUser userId'
+    validateUserPassword user user' Nothing
+    withFastStore' $ \db -> updateUserAutoAcceptMemberContacts db user' onOff
+    ok user
+  SetUserAutoAcceptMemberContacts onOff -> withUser $ \User {userId} -> processChatCommand vr nm $ APISetUserAutoAcceptMemberContacts userId onOff
   APIHideUser userId' (UserPwd viewPwd) -> withUser $ \user -> do
     user' <- privateGetUser userId'
     case viewPwdHash user' of
@@ -2053,6 +2059,9 @@ processChatCommand vr nm = \case
       Just ctId -> do
         let sendRef = SRDirect ctId
         processChatCommand vr nm $ APISendMessages sendRef False Nothing [composedMessage Nothing mc]
+  AcceptMemberContact cName -> withUser $ \user -> do
+    contactId <- withFastStore $ \db -> getContactIdByName db user cName
+    processChatCommand vr nm $ APIAcceptMemberContact contactId
   SendLiveMessage chatName msg -> withUser $ \user -> do
     (chatRef, mentions) <- getChatRefAndMentions user chatName msg
     withSendRef chatRef $ \sendRef -> do
@@ -2607,6 +2616,45 @@ processChatCommand vr nm = \case
           toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct') ci]
         pure $ CRNewMemberContactSentInv user ct' g m
       _ -> throwChatError CEGroupMemberNotActive
+  APIAcceptMemberContact contactId -> withUser $ \user -> do
+    (g, mConn, ct, groupDirectInv) <- withFastStore $ \db -> getMemberContactInvited db vr user contactId
+    when (groupDirectInvStartedConnection groupDirectInv) $ throwCmdError "connection already started"
+    connectMemberContact user g mConn ct groupDirectInv `catchChatError` \e -> do
+      -- get updated contact, in case connection was started
+      ct' <- withFastStore $ \db -> getContact db vr user contactId
+      toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
+      throwError e
+    -- get updated contact (groupDirectInvStartedConnection) with connection
+    ct' <- withFastStore $ \db -> do
+      liftIO $ setMemberContactStartedConnection db ct
+      getContact db vr user contactId
+    pure $ CRMemberContactAccepted user ct'
+    where
+      connectMemberContact user gInfo mConn Contact {activeConn} GroupDirectInvitation {groupDirectInvLink = cReq} =
+        withInvitationLock "connect" (strEncode cReq) $ do
+          subMode <- chatReadVar subscriptionMode
+          case activeConn of
+            Nothing -> joinNewConn subMode
+            Just conn@Connection {connStatus} -> case connStatus of
+              ConnPrepared -> joinPreparedConn subMode conn
+              _ -> throwChatError $ CEException "connection already started (past prepared status)"
+        where
+          joinNewConn subMode = do
+            -- possible improvement: use agent connRequestPQSupport to determine pqSupport here;
+            -- for joinPreparedConn below - same + encodeConnInfoPQ;
+            -- same for auto-accept on xGrpDirectInv
+            acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+            conn <- withStore $ \db -> do
+              connId <- liftIO $ createMemberContactConn db user acId Nothing gInfo mConn ConnPrepared contactId subMode
+              getConnectionById db vr user connId
+            joinPreparedConn subMode conn
+          joinPreparedConn subMode conn = do
+            -- [incognito] send membership incognito profile
+            let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
+            dm <- encodeConnInfo $ XInfo p
+            (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+            let newStatus = if sqSecured then ConnSndReady else ConnJoined
+            void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
   CreateGroupLink gName mRole -> withUser $ \user -> do
     groupId <- withFastStore $ \db -> getGroupIdByName db user gName
     processChatCommand vr nm $ APICreateGroupLink groupId mRole
@@ -4336,6 +4384,8 @@ chatCommandP =
       "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),
       "/_set receipts groups " *> (APISetUserGroupReceipts <$> A.decimal <* A.space <*> receiptSettings),
       "/set receipts groups " *> (SetUserGroupReceipts <$> receiptSettings),
+      "/_set accept member contacts " *> (APISetUserAutoAcceptMemberContacts <$> A.decimal <* A.space <*> onOffP),
+      "/set accept member contacts " *> (SetUserAutoAcceptMemberContacts <$> onOffP),
       "/_hide user " *> (APIHideUser <$> A.decimal <* A.space <*> jsonP),
       "/_unhide user " *> (APIUnhideUser <$> A.decimal <* A.space <*> jsonP),
       "/_mute user " *> (APIMuteUser <$> A.decimal),
@@ -4569,6 +4619,7 @@ chatCommandP =
       "/show link #" *> (ShowGroupLink <$> displayNameP),
       "/_create member contact #" *> (APICreateMemberContact <$> A.decimal <* A.space <*> A.decimal),
       "/_invite member contact @" *> (APISendMemberContactInvitation <$> A.decimal <*> optional (A.space *> msgContentP)),
+      "/_accept member contact @" *> (APIAcceptMemberContact <$> A.decimal),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <*> pure Nothing <*> quotedMsg <*> msgTextP),
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
@@ -4592,6 +4643,7 @@ chatCommandP =
       ForwardLocalMessage <$> chatNameP <* " <- * " <*> msgTextP,
       SendMessage <$> sendNameP <* A.space <*> msgTextP,
       "@#" *> (SendMemberContactMessage <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <* A.space <*> msgTextP),
+      "/accept_member_contact @" *> (AcceptMemberContact <$> displayNameP),
       "/live " *> (SendLiveMessage <$> chatNameP <*> (A.space *> msgTextP <|> pure "")),
       (">@" <|> "> @") *> sendMsgQuote (AMsgDirection SMDRcv),
       (">>@" <|> ">> @") *> sendMsgQuote (AMsgDirection SMDSnd),

@@ -242,6 +242,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
   CRNewMemberContactSentInv u _ct g m -> ttyUser u ["sent invitation to connect directly to member " <> ttyGroup' g <> " " <> ttyMember m]
+  CRMemberContactAccepted u ct -> ttyUser u ["contact " <> ttyContact' ct <> " is accepted, starting connection"]
   CRCallInvitations _ -> []
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
@@ -485,7 +486,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtGroupUpdated u g g' m -> ttyUser u $ viewGroupUpdated g g' m
   CEvtAcceptingGroupJoinRequestMember _ g m -> [ttyFullMember m <> ": accepting request to join group " <> ttyGroup' g <> "..."]
   CEvtNoMemberContactCreating u g m -> ttyUser u ["member " <> ttyGroup' g <> " " <> ttyMember m <> " does not have direct connection, creating"]
-  CEvtNewMemberContactReceivedInv u ct g m -> ttyUser u [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
+  CEvtNewMemberContactReceivedInv u ct g m -> ttyUser u $ viewNewMemberContactReceivedInv u ct g m
   CEvtContactAndMemberAssociated u ct g m ct' -> ttyUser u $ viewContactAndMemberAssociated ct g m ct'
   CEvtCallInvitation RcvCallInvitation {user, contact, callType, sharedKey} -> ttyUser user $ viewCallInvitation contact callType sharedKey
   CEvtCallOffer {user = u, contact, callType, offer, sharedKey} -> ttyUser u $ viewCallOffer contact callType offer sharedKey
@@ -1410,6 +1411,16 @@ viewContactsMerged c1 c2 ct' =
   [ "contact " <> ttyContact' c2 <> " is merged into " <> ttyContact' c1,
     "use " <> ttyToContact' ct' <> highlight' "<message>" <> " to send messages"
   ]
+
+viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
+viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
+  | isTrue (autoAcceptMemberContacts user) =
+      [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
+  | otherwise =
+      [ ttyGroup' g <> " " <> ttyMember m <> " requests to create direct contact with you",
+        "to accept: " <> highlight ("/accept_member_contact @" <> viewName c),
+        "to reject: " <> highlight ("/delete @" <> viewName c) <> " (the sender will NOT be notified)"
+      ]
 
 viewContactAndMemberAssociated :: Contact -> GroupInfo -> GroupMember -> Contact -> [StyledString]
 viewContactAndMemberAssociated ct g m ct' =

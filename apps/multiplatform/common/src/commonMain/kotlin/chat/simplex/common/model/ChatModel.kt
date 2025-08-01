@@ -1228,6 +1228,7 @@ data class User(
   override val showNtfs: Boolean,
   val sendRcptsContacts: Boolean,
   val sendRcptsSmallGroups: Boolean,
+  val autoAcceptMemberContacts: Boolean,
   val viewPwdHash: UserPwdHash?,
   val uiThemes: ThemeModeOverrides? = null,
 ): NamedChat, UserLike {
@@ -1257,6 +1258,7 @@ data class User(
       showNtfs = true,
       sendRcptsContacts = true,
       sendRcptsSmallGroups = false,
+      autoAcceptMemberContacts = false,
       viewPwdHash = null,
       uiThemes = null,
     )
@@ -1730,6 +1732,7 @@ data class Contact(
   val contactRequestId: Long?,
   val contactGroupMemberId: Long? = null,
   val contactGrpInvSent: Boolean,
+  val groupDirectInv: GroupDirectInvitation? = null,
   val chatTags: List<Long>,
   val chatItemTTL: Long?,
   override val chatDeleted: Boolean,
@@ -1745,7 +1748,10 @@ data class Contact(
   val nextSendGrpInv get() = contactGroupMemberId != null && !contactGrpInvSent
   override val nextConnectPrepared get() = active && preparedContact != null && (activeConn == null || activeConn.connStatus == ConnStatus.Prepared)
   override val profileChangeProhibited get() = activeConn != null
-  val nextAcceptContactRequest get() = active && contactRequestId != null && (activeConn == null || activeConn.connStatus == ConnStatus.New)
+  val nextAcceptContactRequest get() =
+    active &&
+        (contactRequestId != null || groupDirectInv != null) &&
+        (activeConn == null || activeConn.connStatus == ConnStatus.New || activeConn.connStatus == ConnStatus.Prepared)
   val sendMsgToConnect get() = nextSendGrpInv || nextConnectPrepared
   override val incognito get() = contactConnIncognito
   override fun featureEnabled(feature: ChatFeature) = when (feature) {
@@ -1835,6 +1841,18 @@ data class PreparedContact (
   val connLinkToConnect: CreatedConnLink,
   val uiConnLinkType: ConnectionMode
 )
+
+@Serializable
+data class GroupDirectInvitation (
+  val groupDirectInvLink: String,
+  val fromGroupId_: Long?,
+  val fromGroupMemberId_: Long?,
+  val fromGroupMemberConnId_: Long?,
+  val groupDirectInvStartedConnection: Boolean
+) {
+  val memberRemoved: Boolean
+    get() = fromGroupId_ == null || fromGroupMemberId_ == null || fromGroupMemberConnId_ == null
+}
 
 @Serializable
 enum class ConnectionMode {
@@ -2843,6 +2861,7 @@ data class ChatItem (
       is CIContent.RcvDirectEventContent -> when (content.rcvDirectEvent) {
         is RcvDirectEvent.ContactDeleted -> false
         is RcvDirectEvent.ProfileUpdated -> false
+        is RcvDirectEvent.GroupInvLinkReceived -> true
       }
       is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
         is RcvGroupEvent.MemberAdded -> false
@@ -4511,10 +4530,12 @@ sealed class MsgErrorType() {
 sealed class RcvDirectEvent() {
   @Serializable @SerialName("contactDeleted") class ContactDeleted(): RcvDirectEvent()
   @Serializable @SerialName("profileUpdated") class ProfileUpdated(val fromProfile: Profile, val toProfile: Profile): RcvDirectEvent()
+  @Serializable @SerialName("groupInvLinkReceived") class GroupInvLinkReceived(val groupProfile: GroupProfile): RcvDirectEvent()
 
   val text: String get() = when (this) {
     is ContactDeleted -> generalGetString(MR.strings.rcv_direct_event_contact_deleted)
     is ProfileUpdated -> profileUpdatedText(fromProfile, toProfile)
+    is GroupInvLinkReceived -> generalGetString(MR.strings.rcv_direct_event_group_inv_link_received).format(groupProfile.displayName)
   }
 
   private fun profileUpdatedText(from: Profile, to: Profile): String =
