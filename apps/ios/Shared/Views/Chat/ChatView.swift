@@ -733,7 +733,7 @@ struct ChatView: View {
                 return Group {
                     if case .chatBanner = ci.content {
                         VStack {
-                            ChatBannerView(chat: chat)
+                            ChatBannerView(chat: $chat)
                                 .padding(.bottom, 90)
                                 .padding(.top, 8)
 
@@ -822,7 +822,7 @@ struct ChatView: View {
     struct ChatBannerView: View {
         @EnvironmentObject var theme: AppTheme
         @AppStorage(DEFAULT_CHAT_ITEM_ROUNDNESS) private var roundness = defaultChatItemRoundness
-        @ObservedObject var chat: Chat
+        @Binding @ObservedObject var chat: Chat
 
         var body: some View {
             let v = VStack(spacing: 8) {
