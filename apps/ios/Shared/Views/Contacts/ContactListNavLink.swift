@@ -87,8 +87,10 @@ struct ContactListNavLink: View {
             if let contactRequestId = contact.contactRequestId {
                 Button {
                     Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
-                } label: { Label("Accept", systemImage: "checkmark") }
-                    .tint(theme.colors.primary)
+                } label: {
+                    Label("Accept", systemImage: "checkmark")
+                }
+                .tint(theme.colors.primary)
                 if !ChatModel.shared.addressShortLinkDataSet {
                     Button {
                         Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
@@ -99,6 +101,19 @@ struct ContactListNavLink: View {
                 }
                 Button {
                     alert = SomeAlert(alert: rejectContactRequestAlert(contactRequestId), id: "rejectContactRequestAlert")
+                } label: {
+                    Label("Reject", systemImage: "multiply")
+                }
+                .tint(.red)
+            } else if let groupDirectInv = contact.groupDirectInv, !groupDirectInv.memberRemoved {
+                Button {
+                    acceptMemberContactRequest(contact)
+                } label: {
+                    Label("Accept", systemImage: "checkmark")
+                }
+                .tint(theme.colors.primary)
+                Button {
+                    showRejectMemberContactRequestAlert(contact)
                 } label: {
                     Label("Reject", systemImage: "multiply")
                 }

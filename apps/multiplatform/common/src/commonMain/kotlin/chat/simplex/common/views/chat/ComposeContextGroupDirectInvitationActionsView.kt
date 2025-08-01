@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
@@ -59,7 +60,8 @@ fun ComposeContextMemberContactActionsView(
       if (groupDirectInv.memberRemoved) {
         Row(
           Modifier
-            .fillMaxSize(),
+            .fillMaxSize()
+            .padding(horizontal = DEFAULT_PADDING_HALF),
           verticalAlignment = Alignment.CenterVertically,
           horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
@@ -149,7 +151,7 @@ private fun deleteMemberContact(rhId: Long?, contact: Contact) {
 fun acceptMemberContact(
   rhId: Long?,
   contactId: Long,
-  close: ((chat: Chat) -> Unit)? = null, // currently unused, can pass function to open chat if reused in other views (e.g. see onRequestAccepted)
+  close: ((chat: Chat) -> Unit)? = null,
   inProgress: MutableState<Boolean>? = null
 ) {
   withBGApi {
