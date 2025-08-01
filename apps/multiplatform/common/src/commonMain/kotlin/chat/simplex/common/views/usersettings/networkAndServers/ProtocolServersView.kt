@@ -389,6 +389,32 @@ private suspend fun runServersTest(servers: List<UserServer>, m: ChatModel, onUp
   return fs
 }
 
+fun deleteNTFServer(
+  userServers: MutableState<List<UserOperatorServers>>,
+  operatorServersIndex: Int,
+  serverIndex: Int
+) {
+  val serverIsSaved = userServers.value[operatorServersIndex].ntfServers[serverIndex].serverId != null
+
+  if (serverIsSaved) {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        ntfServers = this[operatorServersIndex].ntfServers.toMutableList().apply {
+          this[serverIndex] = this[serverIndex].copy(deleted = true)
+        }
+      )
+    }
+  } else {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        ntfServers = this[operatorServersIndex].ntfServers.toMutableList().apply {
+          this.removeAt(serverIndex)
+        }
+      )
+    }
+  }
+}
+
 fun deleteXFTPServer(
   userServers: MutableState<List<UserOperatorServers>>,
   operatorServersIndex: Int,

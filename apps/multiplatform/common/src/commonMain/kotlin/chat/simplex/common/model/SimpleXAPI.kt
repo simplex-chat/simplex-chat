@@ -3464,6 +3464,9 @@ sealed class CC {
   class ResetAgentServersStats(): CC()
   class GetAgentSubsTotal(val userId: Long): CC()
   class GetAgentServersSummary(val userId: Long): CC()
+  class APIRegisterWebPush(val endpoint: String, val auth: String, val p256dh: String): CC()
+  class APIVerifySavedNtf(val code: String): CC()
+  class APIDeleteSavedNtf(): CC()
 
   val cmdString: String get() = when (this) {
     is Console -> cmd
@@ -3656,6 +3659,9 @@ sealed class CC {
     is ResetAgentServersStats -> "/reset servers stats"
     is GetAgentSubsTotal -> "/get subs total $userId"
     is GetAgentServersSummary -> "/get servers summary $userId"
+    is APIRegisterWebPush -> "/_ntf register webpush $endpoint $auth $p256dh INSTANT"
+    is APIDeleteSavedNtf -> "/_ntf delete saved"
+    is APIVerifySavedNtf -> "/_ntf verify $code"
   }
 
   val cmdType: String get() = when (this) {
@@ -3814,6 +3820,9 @@ sealed class CC {
     is ResetAgentServersStats -> "resetAgentServersStats"
     is GetAgentSubsTotal -> "getAgentSubsTotal"
     is GetAgentServersSummary -> "getAgentServersSummary"
+    is APIRegisterWebPush -> "apiRegisterWebPush"
+    is APIDeleteSavedNtf -> "apiDeleteSavedNtf"
+    is APIVerifySavedNtf -> "apiVerifySavedNtf"
   }
 
   data class ItemRange(val from: Long, val to: Long)
@@ -6952,7 +6961,7 @@ sealed class AgentErrorType {
     is CMD -> "CMD ${cmdErr.string} $errContext"
     is CONN -> "CONN ${connErr.string}"
     is SMP -> "SMP ${smpErr.string}"
-    // is NTF -> "NTF ${ntfErr.string}"
+    is NTF -> "NTF ${ntfErr.string}"
     is XFTP -> "XFTP ${xftpErr.string}"
     is PROXY -> "PROXY $proxyServer $relayServer ${proxyErr.string}"
     is RCP -> "RCP ${rcpErr.string}"
@@ -6965,7 +6974,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("CMD") class CMD(val cmdErr: CommandErrorType, val errContext: String): AgentErrorType()
   @Serializable @SerialName("CONN") class CONN(val connErr: ConnectionErrorType): AgentErrorType()
   @Serializable @SerialName("SMP") class SMP(val serverAddress: String, val smpErr: SMPErrorType): AgentErrorType()
-  // @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
+  @Serializable @SerialName("NTF") class NTF(val ntfErr: SMPErrorType): AgentErrorType()
   @Serializable @SerialName("XFTP") class XFTP(val xftpErr: XFTPErrorType): AgentErrorType()
   @Serializable @SerialName("PROXY") class PROXY(val proxyServer: String, val relayServer: String, val proxyErr: ProxyClientError): AgentErrorType()
   @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()

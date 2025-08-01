@@ -115,7 +115,11 @@ private fun ProtocolServerLayout(
   onDelete: () -> Unit,
 ) {
   ColumnWithScrollBar {
-    AppBarTitle(stringResource(if (serverProtocol == ServerProtocol.XFTP) MR.strings.xftp_server else MR.strings.smp_server))
+    AppBarTitle(stringResource(when (serverProtocol) {
+      ServerProtocol.NTF -> MR.strings.ntf_server
+      ServerProtocol.XFTP -> MR.strings.xftp_server
+      ServerProtocol.SMP -> MR.strings.smp_server
+    }))
 
     if (server.value.preset) {
       PresetServer(server, testing, testServer)

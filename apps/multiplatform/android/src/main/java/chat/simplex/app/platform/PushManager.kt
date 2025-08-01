@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.getUserServers
 import chat.simplex.common.platform.Log
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.networkAndServers.showAddServerDialog
 import chat.simplex.res.MR
@@ -39,10 +40,11 @@ object PushManager {
    * Else alert about missing service
    */
   suspend fun initUnifiedPush(context: Context, scope: CoroutineScope, onSuccess: () -> Unit) {
-    val userServers = getUserServers(null) ?: listOf()
+    val rh = chatModel.remoteHostId()
+    val userServers = getUserServers(rh) ?: listOf()
     if (!userServers.hasNtfServer()) {
       Log.d(TAG, "User doesn't have any NTF server")
-      showMissingNTFDialog(scope, userServers)
+      showMissingNTFDialog(scope, rh, userServers)
       // After coming back from the server view, users will have to click on "Instant" again
       return
     }
@@ -64,7 +66,7 @@ object PushManager {
           showSelectPushServiceDialog(context, distributors) {
             UnifiedPush.saveDistributor(context, it)
             register(context)
-            onSuccess
+            onSuccess()
           }
         }
       }
@@ -81,13 +83,13 @@ object PushManager {
    */
   private fun List<UserOperatorServers>.hasNtfServer(): Boolean {
     // TODO: check if ntf server has a VAPID key
-    return this.any { it.ntfServers.any() }
+    return this.any { it.ntfServers.any { s -> s.enabled } }
   }
 
   /**
    * Show a dialog to inform about missing NTF server
    */
-  private fun showMissingNTFDialog(scope: CoroutineScope, userServers: List<UserOperatorServers>) = AlertManager.shared.showAlert {
+  private fun showMissingNTFDialog(scope: CoroutineScope, rh: Long?, userServers: List<UserOperatorServers>) = AlertManager.shared.showAlert {
     AlertDialog(
       onDismissRequest = AlertManager.shared::hideAlert,
       title = {
@@ -109,7 +111,7 @@ object PushManager {
       confirmButton = {
         TextButton(onClick = {
           AlertManager.shared.hideAlert()
-          showAddServerDialog(scope, userServers)
+          showAddServerDialog(scope, rh, userServers)
         }) { Text(stringResource(MR.strings.smp_servers_add)) }
       },
       // Ignore
@@ -123,10 +125,10 @@ object PushManager {
   /**
    * Dialog to add a server, manually or with a QR code
    */
-  private fun showAddServerDialog(scope: CoroutineScope, userServers: List<UserOperatorServers>) {
+  private fun showAddServerDialog(scope: CoroutineScope, rh: Long?, userServers: List<UserOperatorServers>) {
     val userServersState = mutableStateOf(userServers)
     val serverErrors = mutableStateOf(listOf<UserServersError>())
-    showAddServerDialog(scope, userServersState, serverErrors, null)
+    showAddServerDialog(scope, userServersState, serverErrors, rh)
   }
 
   /**

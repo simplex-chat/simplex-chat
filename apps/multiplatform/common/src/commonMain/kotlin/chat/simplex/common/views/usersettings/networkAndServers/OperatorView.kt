@@ -101,27 +101,26 @@ fun navigateToProtocolView(
       userServers = userServers,
       serverErrors = serverErrors,
       onDelete = {
-        if (protocol == ServerProtocol.SMP) {
-          deleteSMPServer(userServers, operatorIndex, serverIndex)
-        } else {
-          deleteXFTPServer(userServers, operatorIndex, serverIndex)
+        when (protocol) {
+          ServerProtocol.NTF -> deleteNTFServer(userServers, operatorIndex, serverIndex)
+          ServerProtocol.SMP -> deleteSMPServer(userServers, operatorIndex, serverIndex)
+          ServerProtocol.XFTP -> deleteXFTPServer(userServers, operatorIndex, serverIndex)
         }
         close()
       },
       onUpdate = { updatedServer ->
         userServers.value = userServers.value.toMutableList().apply {
-          this[operatorIndex] = this[operatorIndex].copy(
-            smpServers = if (protocol == ServerProtocol.SMP) {
-              this[operatorIndex].smpServers.toMutableList().apply {
-                this[serverIndex] = updatedServer
-              }
-            } else this[operatorIndex].smpServers,
-            xftpServers = if (protocol == ServerProtocol.XFTP) {
-              this[operatorIndex].xftpServers.toMutableList().apply {
-                this[serverIndex] = updatedServer
-              }
-            } else this[operatorIndex].xftpServers
-          )
+          if (platform.supportsPushNotifications && protocol == ServerProtocol.NTF && updatedServer.enabled) {
+            // We keep a single ntf server, if the updatedServer is enabled, we disable all other ntf servers first
+            this.replaceAll { op ->
+              op.copy(ntfServers = op.ntfServers.map { server -> server.copy(enabled = false).also { s -> Log.d(TAG, "ntf: $s")} })
+            }
+          }
+          this[operatorIndex] = when (protocol) {
+            ServerProtocol.NTF -> this[operatorIndex].copy(ntfServers = this[operatorIndex].ntfServers.toMutableList().apply { this[serverIndex] = updatedServer })
+            ServerProtocol.SMP -> this[operatorIndex].copy(smpServers = this[operatorIndex].smpServers.toMutableList().apply { this[serverIndex] = updatedServer })
+            ServerProtocol.XFTP -> this[operatorIndex].copy(xftpServers = this[operatorIndex].xftpServers.toMutableList().apply { this[serverIndex] = updatedServer })
+          }
         }
       },
       close = close,

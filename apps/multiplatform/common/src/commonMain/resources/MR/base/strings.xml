@@ -2642,6 +2642,7 @@
   <string name="servers_info_starting_from">Starting from %s.</string>
   <string name="smp_server">SMP server</string>
   <string name="xftp_server">XFTP server</string>
+  <string name="ntf_server">NTF server</string>
   <string name="reconnect">Reconnect</string>
   <string name="attempts_label">attempts</string>
   <string name="sent_directly">Sent directly</string>
