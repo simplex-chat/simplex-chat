@@ -1467,6 +1467,16 @@ fun ComposeView(
           rhId = rhId,
           contactRequestId = chat.chatInfo.contact.contactRequestId
         )
+      } else if (
+        chat.chatInfo is ChatInfo.Direct
+        && chat.chatInfo.contact.nextAcceptContactRequest
+        && chat.chatInfo.contact.groupDirectInv != null
+      ) {
+        ComposeContextMemberContactActionsView(
+          rhId = rhId,
+          contact = chat.chatInfo.contact,
+          groupDirectInv = chat.chatInfo.contact.groupDirectInv
+        )
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
           AttachmentButton()

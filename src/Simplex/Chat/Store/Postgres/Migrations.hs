@@ -13,7 +13,9 @@ import Simplex.Chat.Store.Postgres.Migrations.M20250702_contact_requests_remove_
 import Simplex.Chat.Store.Postgres.Migrations.M20250704_groups_conn_link_prepared_connection
 import Simplex.Chat.Store.Postgres.Migrations.M20250709_profile_short_descr
 import Simplex.Chat.Store.Postgres.Migrations.M20250721_indexes
-import Simplex.Chat.Store.Postgres.Migrations.M20250730_chat_peer_type
+import Simplex.Chat.Store.Postgres.Migrations.M20250729_member_contact_requests
+import Simplex.Chat.Store.Postgres.Migrations.M20250801_via_group_link_uri
+import Simplex.Chat.Store.Postgres.Migrations.M20250802_chat_peer_type
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -27,7 +29,9 @@ schemaMigrations =
     ("20250704_groups_conn_link_prepared_connection", m20250704_groups_conn_link_prepared_connection, Just down_m20250704_groups_conn_link_prepared_connection),
     ("20250709_profile_short_descr", m20250709_profile_short_descr, Just down_m20250709_profile_short_descr),
     ("20250721_indexes", m20250721_indexes, Just down_m20250721_indexes),
-    ("20250730_chat_peer_type", m20250730_chat_peer_type, Just down_m20250730_chat_peer_type)
+    ("20250729_member_contact_requests", m20250729_member_contact_requests, Just down_m20250729_member_contact_requests),
+    ("20250801_via_group_link_uri", m20250801_via_group_link_uri, Just down_m20250801_via_group_link_uri),
+    ("20250802_chat_peer_type", m20250802_chat_peer_type, Just down_m20250802_chat_peer_type)
   ]
 
 -- | The list of migrations in ascending order by date

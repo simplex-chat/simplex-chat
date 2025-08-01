@@ -211,6 +211,9 @@ testMultiWordProfileNames :: HasCallStack => TestParams -> IO ()
 testMultiWordProfileNames =
   testChat3 aliceProfile' bobProfile' cathProfile' $
     \alice bob cath -> do
+      cath ##> "/set accept member contacts on"
+      cath <## "ok"
+
       alice ##> "/c"
       inv <- getInvitation alice
       bob ##> ("/c " <> inv)
@@ -2611,6 +2614,9 @@ testUpdateMultipleUserPrefs = testChat3 aliceProfile bobProfile cathProfile $
 testGroupPrefsDirectForRole :: HasCallStack => TestParams -> IO ()
 testGroupPrefsDirectForRole = testChat4 aliceProfile bobProfile cathProfile danProfile $
   \alice bob cath dan -> do
+    dan ##> "/set accept member contacts on"
+    dan <## "ok"
+
     createGroup3 "team" alice bob cath
     threadDelay 1000000
     alice ##> "/set direct #team on owner"

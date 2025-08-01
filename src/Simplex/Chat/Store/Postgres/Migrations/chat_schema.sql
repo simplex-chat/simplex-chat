@@ -303,7 +303,8 @@ CREATE TABLE test_chat_schema.connections (
     pq_rcv_enabled smallint,
     quota_err_counter bigint DEFAULT 0 NOT NULL,
     short_link_inv bytea,
-    via_short_link_contact bytea
+    via_short_link_contact bytea,
+    via_contact_uri bytea
 );
 
 
@@ -410,7 +411,12 @@ CREATE TABLE test_chat_schema.contacts (
     conn_short_link_to_connect bytea,
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
-    contact_request_id bigint
+    contact_request_id bigint,
+    grp_direct_inv_link bytea,
+    grp_direct_inv_from_group_id bigint,
+    grp_direct_inv_from_group_member_id bigint,
+    grp_direct_inv_from_member_conn_id bigint,
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -649,7 +655,8 @@ CREATE TABLE test_chat_schema.groups (
     conn_link_started_connection smallint DEFAULT 0 NOT NULL,
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
-    conn_link_prepared_connection smallint DEFAULT 0 NOT NULL
+    conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
+    via_group_link_uri bytea
 );
 
 
@@ -1127,7 +1134,8 @@ CREATE TABLE test_chat_schema.users (
     send_rcpts_small_groups smallint DEFAULT 0 NOT NULL,
     user_member_profile_updated_at timestamp with time zone,
     ui_themes text,
-    active_order bigint DEFAULT 0 NOT NULL
+    active_order bigint DEFAULT 0 NOT NULL,
+    auto_accept_member_contacts smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1809,6 +1817,18 @@ CREATE INDEX idx_contacts_contact_request_id ON test_chat_schema.contacts USING 
 
 
 
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_group_id);
+
+
+
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_group_member_id);
+
+
+
+CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_member_conn_id);
+
+
+
 CREATE INDEX idx_contacts_via_group ON test_chat_schema.contacts USING btree (via_group);
 
 
@@ -2342,6 +2362,21 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 ALTER TABLE ONLY test_chat_schema.contacts
     ADD CONSTRAINT contacts_contact_request_id_fkey FOREIGN KEY (contact_request_id) REFERENCES test_chat_schema.contact_requests(contact_request_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.contacts
+    ADD CONSTRAINT contacts_grp_direct_inv_from_group_id_fkey FOREIGN KEY (grp_direct_inv_from_group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.contacts
+    ADD CONSTRAINT contacts_grp_direct_inv_from_group_member_id_fkey FOREIGN KEY (grp_direct_inv_from_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
+
+
+
+ALTER TABLE ONLY test_chat_schema.contacts
+    ADD CONSTRAINT contacts_grp_direct_inv_from_member_conn_id_fkey FOREIGN KEY (grp_direct_inv_from_member_conn_id) REFERENCES test_chat_schema.connections(connection_id) ON DELETE SET NULL;
 
 
 

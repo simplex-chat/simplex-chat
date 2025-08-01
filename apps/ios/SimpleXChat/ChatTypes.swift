@@ -39,6 +39,7 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
     public var showNtfs: Bool
     public var sendRcptsContacts: Bool
     public var sendRcptsSmallGroups: Bool
+    public var autoAcceptMemberContacts: Bool
     public var viewPwdHash: UserPwdHash?
     public var uiThemes: ThemeModeOverrides?
 
@@ -65,7 +66,8 @@ public struct User: Identifiable, Decodable, UserLike, NamedChat, Hashable {
         activeOrder: 0,
         showNtfs: true,
         sendRcptsContacts: true,
-        sendRcptsSmallGroups: false
+        sendRcptsSmallGroups: false,
+        autoAcceptMemberContacts: false
     )
 }
 
@@ -1759,8 +1761,9 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     var chatTs: Date?
     public var preparedContact: PreparedContact?
     public var contactRequestId: Int64?
-    var contactGroupMemberId: Int64?
+    public var contactGroupMemberId: Int64?
     var contactGrpInvSent: Bool
+    public var groupDirectInv: GroupDirectInvitation?
     public var chatTags: [Int64]
     public var chatItemTTL: Int64?
     public var uiThemes: ThemeModeOverrides?
@@ -1774,7 +1777,11 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
     public var nextSendGrpInv: Bool { get { contactGroupMemberId != nil && !contactGrpInvSent } }
     public var nextConnectPrepared: Bool { active && preparedContact != nil && (activeConn == nil || activeConn?.connStatus == .prepared) }
     public var profileChangeProhibited: Bool { activeConn != nil }
-    public var nextAcceptContactRequest: Bool { active && contactRequestId != nil && (activeConn == nil || activeConn?.connStatus == .new) }
+    public var nextAcceptContactRequest: Bool {
+        active &&
+        (contactRequestId != nil || groupDirectInv != nil) &&
+        (activeConn == nil || activeConn?.connStatus == .new || activeConn?.connStatus == .prepared)
+    }
     public var sendMsgToConnect: Bool { nextSendGrpInv || nextConnectPrepared }
     public var displayName: String { localAlias == "" ? profile.displayName : localAlias }
     public var fullName: String { get { profile.fullName } }
@@ -1841,6 +1848,26 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
 public struct PreparedContact: Decodable, Hashable {
     public var connLinkToConnect: CreatedConnLink
     public var uiConnLinkType: ConnectionMode
+}
+
+public struct GroupDirectInvitation: Decodable, Hashable {
+    public var groupDirectInvLink: String
+    public var fromGroupId_: Int64?
+    public var fromGroupMemberId_: Int64?
+    public var fromGroupMemberConnId_: Int64?
+    public var groupDirectInvStartedConnection: Bool
+
+    public var memberRemoved: Bool {
+        fromGroupId_ == nil || fromGroupMemberId_ == nil || fromGroupMemberConnId_ == nil
+    }
+
+    public static let sampleData = GroupDirectInvitation(
+        groupDirectInvLink: "simplex_link",
+        fromGroupId_: 1,
+        fromGroupMemberId_: 1,
+        fromGroupMemberConnId_: 1,
+        groupDirectInvStartedConnection: false
+    )
 }
 
 public enum ConnectionMode: String, Decodable, Hashable {
@@ -2895,6 +2922,7 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
             switch rcvDirectEvent {
             case .contactDeleted: return false
             case .profileUpdated: return false
+            case .groupInvLinkReceived: return true
             }
         case .rcvGroupEvent(rcvGroupEvent: let rcvGroupEvent):
             switch rcvGroupEvent {
@@ -4702,11 +4730,14 @@ public struct E2EEInfo: Decodable, Hashable {
 public enum RcvDirectEvent: Decodable, Hashable {
     case contactDeleted
     case profileUpdated(fromProfile: Profile, toProfile: Profile)
+    case groupInvLinkReceived(groupProfile: Profile)
 
     var text: String {
         switch self {
         case .contactDeleted: return NSLocalizedString("deleted contact", comment: "rcv direct event chat item")
         case let .profileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
+        case let .groupInvLinkReceived(groupProfile):
+            return String.localizedStringWithFormat(NSLocalizedString("requested connection from group %@", comment: "rcv direct event chat item"), groupProfile.displayName)
         }
     }
 
@@ -4771,7 +4802,7 @@ public enum RcvGroupEvent: Decodable, Hashable {
         case .groupDeleted: return NSLocalizedString("deleted group", comment: "rcv group event chat item")
         case .groupUpdated: return NSLocalizedString("updated group profile", comment: "rcv group event chat item")
         case .invitedViaGroupLink: return NSLocalizedString("invited via your group link", comment: "rcv group event chat item")
-        case .memberCreatedContact: return NSLocalizedString("connected directly", comment: "rcv group event chat item")
+        case .memberCreatedContact: return NSLocalizedString("requested connection", comment: "rcv group event chat item")
         case let .memberProfileUpdated(fromProfile, toProfile): return profileUpdatedText(fromProfile, toProfile)
         case .newMemberPendingReview: return NSLocalizedString("New member wants to join the group.", comment: "rcv group event chat item")
         }

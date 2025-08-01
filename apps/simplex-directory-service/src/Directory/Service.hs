@@ -780,9 +780,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PCAll -> "_enabled_"
             Just PCNoImage -> "_enabled for profiles without image_"
       DCShowUpgradeGroupLink gId gName_ ->
-        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {localDisplayName = gName} _ -> do
+        (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \GroupInfo {groupId, localDisplayName = gName} _ -> do
           let groupRef = groupReference' gId gName
-          withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink gId) $
+          withGroupLinkResult groupRef (sendChatCmd cc $ APIGetGroupLink groupId) $
             \GroupLink {connLinkContact = gLink@(CCLink _ sLnk_), acceptMemberRole, shortLinkDataSet, shortLinkLargeDataSet = BoolDef slLargeDataSet} -> do
               let shouldBeUpgraded = isNothing sLnk_ || not shortLinkDataSet || not slLargeDataSet
               sendReply $ T.unlines $
@@ -792,29 +792,23 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 ]
                   <> ["The link is being upgraded..." | shouldBeUpgraded]
               when shouldBeUpgraded $ do
-                withGroupLinkResult groupRef (sendChatCmd cc $ APIAddGroupShortLink gId) $
-                  \GroupLink {connLinkContact = CCLink _ sLnk_'} ->
-                    sendComposedMessage cc ct Nothing $ MCText $ T.unlines $
-                      case (sLnk_, sLnk_') of
-                        (Just _, Just _) -> ["The group link is upgraded for: " <> groupRef, "No changes to group needed."]
-                        (Nothing, Just sLnk) ->
-                          [ "Please replace the old link in welcome message of your group " <> groupRef <> " with this link:",
-                            strEncodeTxt sLnk,
-                            "",
-                            "If this is the only change, the group will remain listed in directory without re-approval."
-                          ]
-                        (_, Nothing) ->
-                          ["The short link is not created for " <> groupRef, "Please report it to the developers."]
-            -- Left (ChatErrorStore (SEGroupLinkNotFound _)) ->
-            --   sendReply $ "The group " <> groupRef <> " has no public link."
-            -- Right r -> do
-            --   ts <- getCurrentTime
-            --   tz <- getCurrentTimeZone
-            --   let resp = T.pack $ serializeChatResponse (Nothing, Just user) (config cc) ts tz Nothing r
-            --   sendReply $ "Unexpected error:\n" <> resp
-            -- Left e -> do
-            --   let resp = T.pack $ serializeChatError True (config cc) e
-            --   sendReply $ "Unexpected error:\n" <> resp
+                let send = sendComposedMessage cc ct Nothing . MCText . T.unlines
+                withGroupLinkResult groupRef (sendChatCmd cc $ APIAddGroupShortLink groupId) $
+                  \GroupLink {connLinkContact = CCLink _ sLnk_'} -> case (sLnk_, sLnk_') of
+                    (Just _, Just _) ->
+                      send ["The group link is upgraded for: " <> groupRef, "No changes to group needed."]
+                    (Nothing, Just sLnk) ->
+                      sendComposedMessages cc (SRDirect $ contactId' ct)
+                        [ MCText $ T.unlines
+                            [ "Please replace the old link in welcome message of your group " <> groupRef,
+                              "If this is the only change, the group will remain listed in directory without re-approval.",
+                              "",
+                              "The new link:"
+                            ],
+                          MCText $ strEncodeTxt sLnk
+                        ]
+                    (_, Nothing) ->
+                      send ["The short link is not created for " <> groupRef, "Please report it to the developers."]
         where
           withGroupLinkResult groupRef a cb =
             a >>= \case

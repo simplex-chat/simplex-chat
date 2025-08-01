@@ -159,11 +159,11 @@ fun AppearanceScope.AppearanceLayout(
   }
 }
 
-private fun findEnabledIcon(): AppIcon = AppIcon.values().first { icon ->
+private fun findEnabledIcon(): AppIcon = AppIcon.values().firstOrNull { icon ->
   androidAppContext.packageManager.getComponentEnabledSetting(
     ComponentName(APPLICATION_ID, "chat.simplex.app.MainActivity_${icon.name.lowercase()}")
   ).let { it == COMPONENT_ENABLED_STATE_DEFAULT || it == COMPONENT_ENABLED_STATE_ENABLED }
-}
+} ?: AppIcon.DEFAULT
 
 @Preview
 @Composable

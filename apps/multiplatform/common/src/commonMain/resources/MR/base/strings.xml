@@ -732,6 +732,9 @@
   <string name="reject_contact_request">Reject contact request</string>
   <string name="the_sender_will_not_be_notified">The sender will NOT be notified.</string>
 
+  <!-- ComposeContextMemberContactActionsView.kt -->
+  <string name="member_is_deleted_cant_accept_request">Member is deleted - can\'t accept request</string>
+
   <!-- Clear Chat - ChatListNavLinkView.kt -->
   <string name="clear_chat_question">Clear chat?</string>
   <string name="clear_note_folder_question">Clear private notes?</string>
@@ -1395,6 +1398,7 @@
   <string name="empty_chat_profile_is_created">An empty chat profile with the provided name is created, and the app opens as usual.</string>
   <string name="if_you_enter_passcode_data_removed">If you enter this passcode when opening the app, all app data will be irreversibly removed!</string>
   <string name="set_passcode">Set passcode</string>
+  <string name="this_setting_is_for_your_current_profile">This setting is for your current profile</string>
   <string name="receipts_section_description">These settings are for your current profile</string>
   <string name="receipts_section_description_1">They can be overridden in contact and group settings.</string>
   <string name="receipts_section_contacts">Contacts</string>
@@ -1438,6 +1442,7 @@
   <string name="settings_section_title_chats">CHATS</string>
   <string name="settings_section_title_files">FILES</string>
   <string name="settings_section_title_delivery_receipts">SEND DELIVERY RECEIPTS TO</string>
+  <string name="settings_section_title_contact_requests_from_groups">CONTACT REQUESTS FROM GROUPS</string>
   <string name="settings_restart_app">Restart</string>
   <string name="settings_shutdown">Shutdown</string>
   <string name="settings_developer_tools">Developer tools</string>
@@ -1646,6 +1651,7 @@
 
   <!-- Direct event chat items -->
   <string name="rcv_direct_event_contact_deleted">deleted contact</string>
+  <string name="rcv_direct_event_group_inv_link_received">requested connection from group %1$s</string>
 
   <!-- Group event chat items -->
   <string name="rcv_group_event_member_added">invited %1$s</string>
@@ -1662,7 +1668,7 @@
   <string name="rcv_group_event_group_deleted">deleted group</string>
   <string name="rcv_group_event_updated_group_profile">updated group profile</string>
   <string name="rcv_group_event_invited_via_your_group_link">invited via your group link</string>
-  <string name="rcv_group_event_member_created_contact">connected directly</string>
+  <string name="rcv_group_event_member_created_contact">requested connection</string>
   <string name="rcv_group_event_new_member_pending_review">New member wants to join the group.</string>
   <string name="snd_group_event_changed_member_role">you changed role of %s to %s</string>
   <string name="snd_group_event_changed_role_for_yourself">you changed role for yourself to %s</string>

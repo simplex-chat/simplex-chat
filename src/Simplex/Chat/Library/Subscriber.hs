@@ -2269,7 +2269,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             dm <- encodeConnInfo $ XGrpAcpt membershipMemId
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
-              setViaGroupLinkHash db groupId connId
+              setViaGroupLinkUri db groupId connId
               createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
               updateGroupMemberStatusById db userId hostId GSMemAccepted
               updateGroupMemberStatus db userId membership GSMemAccepted
@@ -3065,7 +3065,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
 
     xGrpDirectInv :: GroupInfo -> GroupMember -> Connection -> ConnReqInvitation -> Maybe MsgContent -> RcvMessage -> UTCTime -> CM ()
-    xGrpDirectInv g m mConn connReq mContent_ msg brokerTs
+    xGrpDirectInv g@GroupInfo {groupId, groupProfile = gp} m mConn@Connection {connId = mConnId} connReq mContent_ msg brokerTs
       | not (groupFeatureMemberAllowed SGFDirectMessages m g) = messageError "x.grp.direct.inv: direct messages not allowed"
       | memberBlocked m = messageWarning "x.grp.direct.inv: member is blocked (ignoring)"
       | otherwise = do
@@ -3087,17 +3087,49 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       else createItems mCt m
                   else joinExistingContact subMode mCt
       where
-        joinExistingContact subMode mCt = do
-          connIds <- joinConn subMode
-          mCt' <- withStore $ \db -> updateMemberContactInvited db user connIds g mConn mCt subMode
-          createItems mCt' m
-          securityCodeChanged mCt'
-        createNewContact subMode = do
-          connIds <- joinConn subMode
-          -- [incognito] reuse membership incognito profile
-          (mCt', m') <- withStore' $ \db -> createMemberContactInvited db user connIds g m mConn subMode
-          createInternalChatItem user (CDDirectSnd mCt') CIChatBanner (Just epochStart)
-          createItems mCt' m'
+        groupDirectInv =
+          GroupDirectInvitation {
+            groupDirectInvLink = connReq,
+            fromGroupId_ = Just groupId,
+            fromGroupMemberId_ = Just (groupMemberId' m),
+            fromGroupMemberConnId_ = Just mConnId,
+            groupDirectInvStartedConnection = isTrue $ autoAcceptMemberContacts user
+          }
+        joinExistingContact subMode mCt@Contact {contactId = mContactId}
+          | isTrue (autoAcceptMemberContacts user) = do
+              (cmdId, acId) <- joinConn subMode
+              mCt' <- withStore $ \db -> do
+                updateMemberContactInvited db user mCt groupDirectInv
+                void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
+                getContact db vr user mContactId
+              securityCodeChanged mCt'
+              createItems mCt' m
+          | otherwise = do
+              mCt' <- withStore $ \db -> do
+                updateMemberContactInvited db user mCt groupDirectInv
+                getContact db vr user mContactId
+              securityCodeChanged mCt'
+              createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
+              createItems mCt' m
+        createNewContact subMode
+          | isTrue (autoAcceptMemberContacts user) = do
+              (cmdId, acId) <- joinConn subMode
+              -- [incognito] reuse membership incognito profile
+              (mCt, m') <- withStore $ \db -> do
+                (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
+                void $ liftIO $ createMemberContactConn db user acId (Just cmdId) g mConn ConnJoined mContactId subMode
+                mCt <- getContact db vr user mContactId
+                pure (mCt, m')
+              createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
+              createItems mCt m'
+          | otherwise = do
+              (mCt, m') <- withStore $ \db -> do
+                (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
+                mCt <- getContact db vr user mContactId
+                pure (mCt, m')
+              createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
+              createInternalChatItem user (CDDirectRcv mCt) (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
+              createItems mCt m'
         joinConn subMode = do
           -- [incognito] send membership incognito profile
           let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True

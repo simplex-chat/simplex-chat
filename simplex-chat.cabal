@@ -112,7 +112,9 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250704_groups_conn_link_prepared_connection
           Simplex.Chat.Store.Postgres.Migrations.M20250709_profile_short_descr
           Simplex.Chat.Store.Postgres.Migrations.M20250721_indexes
-          Simplex.Chat.Store.Postgres.Migrations.M20250730_chat_peer_type
+          Simplex.Chat.Store.Postgres.Migrations.M20250729_member_contact_requests
+          Simplex.Chat.Store.Postgres.Migrations.M20250801_via_group_link_uri
+          Simplex.Chat.Store.Postgres.Migrations.M20250802_chat_peer_type
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -250,7 +252,9 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
           Simplex.Chat.Store.SQLite.Migrations.M20250709_profile_short_descr
           Simplex.Chat.Store.SQLite.Migrations.M20250721_indexes
-          Simplex.Chat.Store.SQLite.Migrations.M20250730_chat_peer_type
+          Simplex.Chat.Store.SQLite.Migrations.M20250729_member_contact_requests
+          Simplex.Chat.Store.SQLite.Migrations.M20250801_via_group_link_uri
+          Simplex.Chat.Store.SQLite.Migrations.M20250802_chat_peer_type
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

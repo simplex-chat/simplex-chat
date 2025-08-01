@@ -274,17 +274,27 @@ testSuspendResume ps =
       superUser <## "The group remained listed in directory."
       -- upgrade link
       -- make it upgradeable first
-      superUser #> "@SimpleX-Directory /x /sql chat UPDATE user_contact_links SET short_link_data_set = 0"
-      superUser <# "SimpleX-Directory> > /x /sql chat UPDATE user_contact_links SET short_link_data_set = 0"
+      superUser #> "@SimpleX-Directory /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
+      superUser <# "SimpleX-Directory> > /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
       superUser <## ""
       bob #> "@SimpleX-Directory /link 1"
       bob <# "SimpleX-Directory> > /link 1"
       bob <## "      The link to join the group ID 1 (privacy):"
-      bob <##. "https://localhost/g#"
+      bob <##. "https://simplex.chat/contact#/"
       bob <## "New member role: member"
       bob <## "The link is being upgraded..."
-      bob <# "SimpleX-Directory> The group link is upgraded for: ID 1 (privacy)"
-      bob <## "No changes to group needed."
+      bob <# "SimpleX-Directory> Please replace the old link in welcome message of your group ID 1 (privacy)"
+      bob <## "If this is the only change, the group will remain listed in directory without re-approval."
+      bob <## ""
+      bob <## "The new link:"
+      gLink' <- dropStrPrefix "SimpleX-Directory> " . dropTime <$> getTermLine bob
+      bob ##> ("/set welcome #privacy Link to join the group privacy: " <> gLink')
+      bob <## "welcome message changed to:"
+      bob <## ("Link to join the group privacy: " <> gLink')
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated!"
+      bob <## "The group is listed in directory."
+      superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated - only link or whitespace changes."
+      superUser <## "The group remained listed in directory."
       -- send message to group owner
       superUser #> "@SimpleX-Directory /owner 1:privacy hello there"
       superUser <# "SimpleX-Directory> > /owner 1:privacy hello there"
