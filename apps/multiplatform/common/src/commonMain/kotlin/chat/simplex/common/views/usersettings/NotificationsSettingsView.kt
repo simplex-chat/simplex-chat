@@ -133,6 +133,15 @@ private fun notificationModes(): List<ValueTitleDesc<NotificationsMode>> {
       AnnotatedString(generalGetString(MR.strings.notifications_mode_service_desc)),
     )
   )
+  if (platform.supportsPushNotifications) {
+    res.add(
+      ValueTitleDesc(
+        NotificationsMode.INSTANT,
+        generalGetString(MR.strings.notifications_mode_instant),
+        AnnotatedString(generalGetString(MR.strings.notifications_mode_instant_desc))
+      )
+    )
+  }
   return res
 }
 
@@ -164,6 +173,10 @@ fun notificationPreviewModes(): List<ValueTitleDesc<NotificationPreviewMode>> {
 }
 
 fun changeNotificationsMode(mode: NotificationsMode, chatModel: ChatModel) {
-  chatModel.controller.appPrefs.notificationsMode.set(mode)
-  platform.androidNotificationsModeChanged(mode)
+  // the preference is updated in androidNotificationsModeChanged for Android
+  if (appPlatform.isAndroid) {
+    platform.androidNotificationsModeChanged(mode)
+  } else {
+    chatModel.controller.appPrefs.notificationsMode.set(mode)
+  }
 }

@@ -7729,7 +7729,7 @@ sealed class RemoteCtrlError {
 }
 
 enum class NotificationsMode() {
-  OFF, PERIODIC, SERVICE, /*INSTANT - for Firebase notifications */;
+  OFF, PERIODIC, SERVICE, INSTANT;
 
   companion object {
     val default: NotificationsMode = SERVICE
@@ -7956,6 +7956,7 @@ enum class AppSettingsNotificationMode {
   companion object {
     fun from(mode: NotificationsMode): AppSettingsNotificationMode =
       when (mode) {
+        NotificationsMode.INSTANT -> INSTANT
         NotificationsMode.SERVICE -> INSTANT
         NotificationsMode.PERIODIC -> PERIODIC
         NotificationsMode.OFF -> OFF

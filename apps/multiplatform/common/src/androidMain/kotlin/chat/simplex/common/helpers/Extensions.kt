@@ -9,7 +9,7 @@ val NotificationsMode.requiresIgnoringBatterySinceSdk: Int get() = when(this) {
   NotificationsMode.OFF -> Int.MAX_VALUE
   NotificationsMode.PERIODIC -> Build.VERSION_CODES.M
   NotificationsMode.SERVICE -> Build.VERSION_CODES.S
-  /*INSTANT -> Int.MAX_VALUE - for Firebase notifications */
+  NotificationsMode.INSTANT -> Int.MAX_VALUE
 }
 
 val NotificationsMode.requiresIgnoringBattery

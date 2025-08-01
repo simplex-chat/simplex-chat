@@ -148,6 +148,11 @@ dependencies {
     //Camera Permission
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
 
+    // Push notifications
+    implementation("org.unifiedpush.android:connector:3.0.10")
+    // Allow using Play Services if available
+    implementation("org.unifiedpush.android:embedded-fcm-distributor:3.0.0")
+
     //implementation("androidx.compose.material:material-icons-extended:$compose_version")
     //implementation("androidx.compose.ui:ui-util:$compose_version")
 

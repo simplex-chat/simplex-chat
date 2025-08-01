@@ -274,9 +274,11 @@
   <string name="notifications_mode_off">Runs when app is open</string>
   <string name="notifications_mode_periodic">Starts periodically</string>
   <string name="notifications_mode_service">Always on</string>
+  <string name="notifications_mode_instant">Instant</string>
   <string name="notifications_mode_off_desc">App can receive notifications only when it\'s running, no background service will be started</string>
   <string name="notifications_mode_periodic_desc">Checks new messages every 10 minutes for up to 1 minute</string>
   <string name="notifications_mode_service_desc">Background service is always running – notifications will be shown as soon as the messages are available.</string>
+  <string name="notifications_mode_instant_desc">Receive notifications instantly using an external push service.</string>
   <string name="notification_preview_mode_message">Message text</string>
   <string name="notification_preview_mode_contact">Contact name</string>
   <string name="notification_preview_mode_hidden">Hidden</string>
@@ -288,6 +290,9 @@
   <string name="notification_new_contact_request">New contact request</string>
   <string name="notification_contact_connected">Connected</string>
   <string name="error_showing_desktop_notification">Error showing notification, contact developers.</string>
+  <string name="warning_push_needs_push_service">You don\'t have any push service installed on your device.\n\nPlease installed one and try again.\n\nFor more information, visit\ </string>
+  <string name="select_push_service">Select Push Service</string>
+  <string name="select_push_service_intro">Multiple push services are installed on your system, please select the service you wish to use.</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>
