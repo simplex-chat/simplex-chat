@@ -2269,7 +2269,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             dm <- encodeConnInfo $ XGrpAcpt membershipMemId
             connIds <- joinAgentConnectionAsync user True connRequest dm subMode
             withStore' $ \db -> do
-              setViaGroupLinkHash db groupId connId
+              setViaGroupLinkUri db groupId connId
               createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
               updateGroupMemberStatusById db userId hostId GSMemAccepted
               updateGroupMemberStatus db userId membership GSMemAccepted

@@ -744,7 +744,7 @@ createGroupViaLink'
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
     void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId currentTs vr
-    liftIO $ setViaGroupLinkHash db groupId connId
+    liftIO $ setViaGroupLinkUri db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
       insertHost_ currentTs groupId = do
@@ -906,7 +906,7 @@ cleanupHostGroupLinkConn db user@User {userId} GroupInfo {groupId} = do
       DB.execute
         db
         [sql|
-          UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+          UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
           WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
             SELECT contact_id
             FROM group_members

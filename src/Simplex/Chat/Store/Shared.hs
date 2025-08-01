@@ -784,16 +784,22 @@ addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
 
-setViaGroupLinkHash :: DB.Connection -> GroupId -> Int64 -> IO ()
-setViaGroupLinkHash db groupId connId =
-  DB.execute
-    db
-    [sql|
-      UPDATE groups
-      SET via_group_link_uri_hash = (SELECT via_contact_uri_hash FROM connections WHERE connection_id = ?)
-      WHERE group_id = ?
-    |]
-    (connId, groupId)
+setViaGroupLinkUri :: DB.Connection -> GroupId -> Int64 -> IO ()
+setViaGroupLinkUri db groupId connId = do
+  r <-
+    DB.query
+      db
+      "SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?"
+      (Only connId) :: IO [(Maybe ConnReqContact, Maybe ConnReqUriHash)]
+  forM_ (listToMaybe r) $ \(viaContactUri, viaContactUriHash) ->
+    DB.execute
+      db
+      [sql|
+        UPDATE groups
+        SET via_group_link_uri = ?, via_group_link_uri_hash = ?
+        WHERE group_id = ?
+      |]
+      (viaContactUri, viaContactUriHash, groupId)
 
 deleteConnectionRecord :: DB.Connection -> User -> Int64 -> IO ()
 deleteConnectionRecord db User {userId} cId = do
