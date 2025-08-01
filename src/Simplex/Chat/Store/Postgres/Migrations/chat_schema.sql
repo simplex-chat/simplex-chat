@@ -303,7 +303,8 @@ CREATE TABLE test_chat_schema.connections (
     pq_rcv_enabled smallint,
     quota_err_counter bigint DEFAULT 0 NOT NULL,
     short_link_inv bytea,
-    via_short_link_contact bytea
+    via_short_link_contact bytea,
+    via_contact_uri bytea
 );
 
 
@@ -653,7 +654,8 @@ CREATE TABLE test_chat_schema.groups (
     conn_link_started_connection smallint DEFAULT 0 NOT NULL,
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
-    conn_link_prepared_connection smallint DEFAULT 0 NOT NULL
+    conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
+    via_group_link_uri bytea
 );
 
 

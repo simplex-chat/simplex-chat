@@ -373,7 +373,8 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatItemTTL = Nothing,
           uiThemes = Nothing,
           customData = Nothing,
-          membersRequireAttention = 0
+          membersRequireAttention = 0,
+          viaGroupLinkUri = Nothing
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -445,7 +446,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
                   customData = Nothing,
-                  membersRequireAttention = 0
+                  membersRequireAttention = 0,
+                  viaGroupLinkUri = Nothing
                 },
               groupMemberId
             )
@@ -744,7 +746,7 @@ createGroupViaLink'
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
     void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId currentTs vr
-    liftIO $ setViaGroupLinkHash db groupId connId
+    liftIO $ setViaGroupLinkUri db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
       insertHost_ currentTs groupId = do
@@ -906,7 +908,7 @@ cleanupHostGroupLinkConn db user@User {userId} GroupInfo {groupId} = do
       DB.execute
         db
         [sql|
-          UPDATE connections SET via_contact_uri_hash = NULL, xcontact_id = NULL
+          UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
           WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
             SELECT contact_id
             FROM group_members
@@ -954,7 +956,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
             g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
             mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
             mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.local_alias, pu.preferences,
             mu.created_at, mu.updated_at,
@@ -1911,7 +1913,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
             g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention,
+            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
