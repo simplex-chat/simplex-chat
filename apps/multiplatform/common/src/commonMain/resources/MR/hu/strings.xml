@@ -2406,7 +2406,7 @@
     <string name="connect_plan_open_chat">Csevegés megnyitása</string>
     <string name="connect_plan_open_new_chat">Új csevegés megnyitása</string>
     <string name="connect_plan_open_new_group">Új csoport megnyitása</string>
-    <string name="e2ee_info_e2ee"><![CDATA[Az üzenetek<b>végpontok közötti titkosítással</b> vannak védve.]]></string>
+    <string name="e2ee_info_e2ee"><![CDATA[Az üzenetek <b>végpontok közötti titkosítással</b> vannak védve.]]></string>
     <string name="error_rejecting_contact_request">Hiba történt a partnerkérés elutasításakor</string>
     <string name="error_preparing_contact">Hiba a csevegés megnyitásakor</string>
     <string name="error_preparing_group">Hiba a csoport megnyitásakor</string>
@@ -2424,7 +2424,7 @@
     <string name="compose_view_send_request">Kérés küldése</string>
     <string name="cant_send_message_request_is_sent">kérés elküldve</string>
     <string name="accept_contact_request">Partnerkérés elfogadása</string>
-    <string name="reject_contact_request">Elutasítás</string>
+    <string name="reject_contact_request">Partnerkérés elutasítása</string>
     <string name="the_sender_will_not_be_notified">A feladó NEM lesz értesítve.</string>
     <string name="context_user_picker_your_profile">Saját profil</string>
     <string name="sent_to_your_contact_after_connection">Elküldés a partnernek a kapcsolódást követően.</string>
