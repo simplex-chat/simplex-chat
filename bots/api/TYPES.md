@@ -2094,6 +2094,7 @@ MemberSupport:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
 - membersRequireAttention: int
+- viaGroupLinkUri: string?
 
 
 ---
