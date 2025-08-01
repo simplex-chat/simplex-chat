@@ -2633,7 +2633,7 @@ createMemberContactInvited
             ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (userId, memberLDN, memberContactProfileId, BI True, userPreferences, BI True)
-              :. (groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection)
+              :. (groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, BI groupDirectInvStartedConnection)
               :. (currentTs, currentTs, currentTs)
           )
         contactId <- insertedRowId db
@@ -2662,7 +2662,7 @@ updateMemberContactInvited db user Contact {contactId, activeConn = Just oldCont
               grp_direct_inv_link = ?, grp_direct_inv_from_group_id = ?, grp_direct_inv_from_group_member_id = ?, grp_direct_inv_from_member_conn_id = ?, grp_direct_inv_started_connection = ?
           WHERE contact_id = ?
         |]
-        (CSActive, groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, groupDirectInvStartedConnection, contactId)
+        (CSActive, groupDirectInvLink, fromGroupId_, fromGroupMemberId_, fromGroupMemberConnId_, BI groupDirectInvStartedConnection, contactId)
 
 resetMemberContactFields :: DB.Connection -> Contact -> IO Contact
 resetMemberContactFields db ct@Contact {contactId} = do
