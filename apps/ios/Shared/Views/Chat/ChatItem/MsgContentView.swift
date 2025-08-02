@@ -373,6 +373,7 @@ func messageText(
                     attrs[linkAttrKey] = NSURL(string: "tel:" + t.replacingOccurrences(of: " ", with: ""))
                     handleTaps = true
                 }
+            case .unknown: ()
             case .none: ()
             }
             res.append(NSAttributedString(string: t, attributes: attrs))
