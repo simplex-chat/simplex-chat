@@ -4352,6 +4352,7 @@ sealed class Format {
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
+  @Serializable @SerialName("unknown") class Unknown: Format()
 
   val style: SpanStyle @Composable get() = when (this) {
     is Bold -> SpanStyle(fontWeight = FontWeight.Bold)
@@ -4365,6 +4366,7 @@ sealed class Format {
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
     is Phone -> linkStyle
+    is Unknown -> SpanStyle()
   }
 
   val isSimplexLink = this is SimplexLink

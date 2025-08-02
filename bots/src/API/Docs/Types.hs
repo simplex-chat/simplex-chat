@@ -255,7 +255,7 @@ chatTypesDocsData =
     (sti @FileProtocol, (STEnum' $ consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
-    (sti @Format, STUnion, "", [], "", ""),
+    (sti @Format, STUnion, "", ["Unknown"], "", ""),
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
