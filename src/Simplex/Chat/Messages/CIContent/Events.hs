@@ -61,6 +61,7 @@ data SndConnEvent
 data RcvDirectEvent
   = RDEContactDeleted
   | RDEProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRContactUpdated
+  | RDEGroupInvLinkReceived {groupProfile :: GroupProfile}
   deriving (Show)
 
 -- platform-specific JSON encoding (used in API)

@@ -82,6 +82,7 @@ This file is generated automatically.
 - [FullPreferences](#fullpreferences)
 - [GroupChatScope](#groupchatscope)
 - [GroupChatScopeInfo](#groupchatscopeinfo)
+- [GroupDirectInvitation](#groupdirectinvitation)
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
@@ -1595,6 +1596,7 @@ Error:
 - contactRequestId: int64?
 - contactGroupMemberId: int64?
 - contactGrpInvSent: bool
+- groupDirectInv: [GroupDirectInvitation](#groupdirectinvitation)?
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
@@ -2034,6 +2036,18 @@ MemberSupport:
 
 ---
 
+## GroupDirectInvitation
+
+**Record type**:
+- groupDirectInvLink: string
+- fromGroupId_: int64?
+- fromGroupMemberId_: int64?
+- fromGroupMemberConnId_: int64?
+- groupDirectInvStartedConnection: bool
+
+
+---
+
 ## GroupFeature
 
 **Enum type**:
@@ -2080,6 +2094,7 @@ MemberSupport:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
 - membersRequireAttention: int
+- viaGroupLinkUri: string?
 
 
 ---
@@ -2809,6 +2824,10 @@ ProfileUpdated:
 - type: "profileUpdated"
 - fromProfile: [Profile](#profile)
 - toProfile: [Profile](#profile)
+
+GroupInvLinkReceived:
+- type: "groupInvLinkReceived"
+- groupProfile: [GroupProfile](#groupprofile)
 
 
 ---
@@ -3601,6 +3620,7 @@ Handshake:
 - showNtfs: bool
 - sendRcptsContacts: bool
 - sendRcptsSmallGroups: bool
+- autoAcceptMemberContacts: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 

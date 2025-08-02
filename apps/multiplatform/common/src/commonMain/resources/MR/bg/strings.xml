@@ -788,7 +788,7 @@
     <string name="mark_code_verified">Маркирай като проверено</string>
     <string name="is_not_verified">%s не е потвърдено</string>
     <string name="is_verified">%s е потвърдено</string>
-    <string name="rate_the_app">Оценете приложението</string>
+    <string name="rate_the_app">Оцени приложението</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Уверете се, че адресите на WebRTC ICE сървъра са в правилен формат, разделени на редове и не са дублирани.</string>
     <string name="network_and_servers">Мрежа и сървъри</string>
     <string name="network_settings_title">Разширени настройки</string>
@@ -1006,7 +1006,7 @@
     <string name="scan_code">Сканирай код</string>
     <string name="scan_code_from_contacts_app">Сканирайте кода за сигурност от приложението на вашия контакт.</string>
     <string name="security_code">Код за сигурност</string>
-    <string name="chat_with_the_founder">Изпращайте въпроси и идеи</string>
+    <string name="chat_with_the_founder">Изпрати въпроси и идеи</string>
     <string name="smp_save_servers_question">Запази сървърите\?</string>
     <string name="saved_ICE_servers_will_be_removed">Запазените WebRTC ICE сървъри ще бъдат премахнати.</string>
     <string name="save_servers_button">Запази</string>
@@ -1056,7 +1056,7 @@
     <string name="reset_verb">Нулиране</string>
     <string name="send_verb">Изпрати</string>
     <string name="add_contact_or_create_group">Започни нов чат</string>
-    <string name="send_us_an_email">Изпратете ни имейл</string>
+    <string name="send_us_an_email">Изпрати ни мейл</string>
     <string name="smp_servers_test_some_failed">Някои сървъри не минаха теста:</string>
     <string name="shutdown_alert_question">Изключване\?</string>
     <string name="secret_text">таен</string>
@@ -1083,7 +1083,7 @@
     <string name="revoke_file__action">Отзови файл</string>
     <string name="stop_snd_file__message">Изпращането на файла ще бъде спряно.</string>
     <string name="smp_servers_save">Запази сървърите</string>
-    <string name="send_live_message_desc">Изпратете съобщение на живо - то ще се актуализира за получателя(ите), докато го пишете</string>
+    <string name="send_live_message_desc">Изпрати съобщение на живо - то ще се актуализира за получателя(ите), докато го пишете</string>
     <string name="smp_servers_test_failed">Тестът на сървъра е неуспешен!</string>
     <string name="v4_2_security_assessment">Оценка на сигурността</string>
     <string name="share_file">Сподели файл…</string>
@@ -1532,7 +1532,7 @@
     <string name="tap_to_scan">Докосни за сканиране</string>
     <string name="keep_invitation_link">Запази</string>
     <string name="tap_to_paste_link">Докосни за поставяне на линк за връзка</string>
-    <string name="search_or_paste_simplex_link">Търсене или поставяне на SimpleX линк</string>
+    <string name="search_or_paste_simplex_link">Търси или постави SimpleX линк</string>
     <string name="start_chat_question">Стартирай чата?</string>
     <string name="chat_is_stopped_you_should_transfer_database">Чатът е спрян. Ако вече сте използвали тази база данни на друго устройство, трябва да я прехвърлите обратно, преди да стартирате чата отново.</string>
     <string name="remote_ctrl_error_bad_invitation">Настолното устройство има грешен код за връзка</string>
@@ -2065,7 +2065,7 @@
     <string name="action_button_add_members">Покани</string>
     <string name="icon_descr_sound_muted">Звукът е заглушен</string>
     <string name="appearance_app_toolbars">Панели на приложението</string>
-    <string name="cant_call_member_send_message_alert_text">Изпратете съобщение за да се активират обажданията.</string>
+    <string name="cant_call_member_send_message_alert_text">Изпрати съобщение за да се активират обажданията.</string>
     <string name="info_view_search_button">търсене</string>
     <string name="info_view_video_button">видео</string>
     <string name="contact_deleted">Контактът е изтрит!</string>
@@ -2290,9 +2290,9 @@
     <string name="chat_banner_accept_contact_request">Приеми заявка за контакт</string>
     <string name="rcv_group_event_member_accepted">%1$s приет</string>
     <string name="rcv_group_event_user_accepted">бяхте приети</string>
-    <string name="accept_pending_member_alert_title">Приемете член</string>
+    <string name="accept_pending_member_alert_title">Приеми член</string>
     <string name="compose_view_add_message">Добави съобщение</string>
-    <string name="add_short_link">Добави кратък линк</string>
+    <string name="add_short_link">Обнови адрес</string>
     <string name="member_criteria_all">всички</string>
     <string name="block_members_desc">Всички нови съобщения от тези членове ще бъдат скрити!</string>
     <string name="enable_sending_member_reports">Позволи докладването на съобщения на модераторите.</string>
@@ -2420,7 +2420,7 @@
     <string name="private_routing_timeout">Време за изчакване на поверително рутиране</string>
     <string name="network_option_protocol_timeout_background">Време за изчакване на протокола във фонов режим</string>
     <string name="network_option_tcp_connection_timeout_background">Времето на изчакване за установяване на TCP връзка във фонов режим</string>
-    <string name="share_profile_via_link_alert_text">Профилът ще бъде споделен с адреса.</string>
+    <string name="share_profile_via_link_alert_text">Адресът ще бъде кратък и вашият профил ще бъде споделен чрез него.</string>
     <string name="disable_sending_member_reports">Забранете докладването на съобщения на модератори.</string>
     <string name="reject_pending_member_button">Отхвърляне</string>
     <string name="reject_contact_request">Отхвърляне на заявка за контакт</string>
@@ -2453,15 +2453,15 @@
     <string name="v6_3_reports">Изпращане на лични доклади за нарушения</string>
     <string name="compose_view_send_request">Изпрати заявка</string>
     <string name="compose_view_send_request_without_message">Изпрати заявка без съобщение</string>
-    <string name="v6_4_support_chat_descr">Изпратете личната си обратна връзка до групи.</string>
+    <string name="v6_4_support_chat_descr">Изпрати личната си обратна връзка до групи.</string>
     <string name="sent_to_your_contact_after_connection">Изпратено до вашия контакт след осъществяване на връзка.</string>
     <string name="text_field_set_chat_placeholder">Задаване на име на чат…</string>
     <string name="set_member_admission">Задаване на достъп за членове</string>
     <string name="v6_3_set_message_expiration_in_chats">Задаване на срок на валидност на съобщенията в чатовете.</string>
     <string name="v6_4_1_welcome_contacts_descr">Задайте биография на профила и съобщение при посрещанее.</string>
-    <string name="share_group_profile_via_link">Споделяне на групов профил чрез линк</string>
-    <string name="share_profile_via_link_alert_confirm">Сподели профил</string>
-    <string name="share_profile_via_link">Сподели профил с адрес</string>
+    <string name="share_group_profile_via_link">Обнови групов линк?</string>
+    <string name="share_profile_via_link_alert_confirm">Обнови</string>
+    <string name="share_profile_via_link">Обнови адрес?</string>
     <string name="v6_4_1_short_address_share">Споделете адреса си</string>
     <string name="group_short_descr_field">Кратко описание:</string>
     <string name="short_link_button_text">Кратък линк</string>
@@ -2500,4 +2500,8 @@
     <string name="chat_banner_your_contact">Вашият контакт</string>
     <string name="chat_banner_your_group">Вашата група</string>
     <string name="context_user_picker_your_profile">Вашият профил</string>
+    <string name="share_old_address_alert_button">Сподели стар адрес</string>
+    <string name="share_old_link_alert_button">Сподели стар линк</string>
+    <string name="share_group_profile_via_link_alert_text">Линкът ще бъде кратък и профилът на групата ще бъде споделен чрез него.</string>
+    <string name="upgrade_group_link">Обнови групов линк</string>
 </resources>

@@ -130,26 +130,54 @@ struct ChatListNavLink: View {
                     }
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    if contact.nextAcceptContactRequest,
-                       let contactRequestId = contact.contactRequestId {
-                        Button {
-                            Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
-                        } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
-                            .tint(theme.colors.primary)
-                        if !ChatModel.shared.addressShortLinkDataSet {
+                    if contact.nextAcceptContactRequest {
+                        if let contactRequestId = contact.contactRequestId {
                             Button {
-                                Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
-                            } label: {
-                                SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                            } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
+                                .tint(theme.colors.primary)
+                            if !ChatModel.shared.addressShortLinkDataSet {
+                                Button {
+                                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                                } label: {
+                                    SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                                }
+                                .tint(.indigo)
                             }
-                            .tint(.indigo)
+                            Button {
+                                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequestId))
+                            } label: {
+                                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
+                            }
+                            .tint(.red)
+                        } else if let groupDirectInv = contact.groupDirectInv, !groupDirectInv.memberRemoved {
+                            Button {
+                                acceptMemberContactRequest(contact)
+                            } label: {
+                                Label("Accept", systemImage: "checkmark")
+                            }
+                            .tint(theme.colors.primary)
+                            Button {
+                                showRejectMemberContactRequestAlert(contact)
+                            } label: {
+                                Label("Reject", systemImage: "multiply")
+                            }
+                            .tint(.red)
+                        } else {
+                            Button {
+                                deleteContactDialog(
+                                    chat,
+                                    contact,
+                                    dismissToChatList: false,
+                                    showAlert: { alert = $0 },
+                                    showActionSheet: { actionSheet = $0 },
+                                    showSheetContent: { sheet = $0 }
+                                )
+                            } label: {
+                                deleteLabel
+                            }
+                            .tint(.red)
                         }
-                        Button {
-                            AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequestId))
-                        } label: {
-                            SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
-                        }
-                        .tint(.red)
                     } else {
                         tagChatButton(chat)
                         if !chat.chatItems.isEmpty {

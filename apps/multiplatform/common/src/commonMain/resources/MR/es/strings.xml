@@ -44,7 +44,7 @@
     <string name="accept">Aceptar</string>
     <string name="audio_call_no_encryption">llamada (sin cifrar)</string>
     <string name="icon_descr_audio_call">llamada</string>
-    <string name="settings_audio_video_calls">Llamadas y videollamadas</string>
+    <string name="settings_audio_video_calls">Llamadas y Videollamadas</string>
     <string name="icon_descr_audio_off">Audio desactivado</string>
     <string name="icon_descr_audio_on">Audio activado</string>
     <string name="integrity_msg_bad_id">ID de mensaje erróneo</string>
@@ -52,7 +52,7 @@
     <string name="users_delete_all_chats_deleted">Se eliminarán todos los chats y mensajes. ¡No puede deshacerse!</string>
     <string name="accept_feature">Aceptar</string>
     <string name="allow_to_send_disappearing">Se permiten mensajes temporales.</string>
-    <string name="keychain_is_storing_securely">Android Keystore se usará para almacenar la frase de contraseña de forma segura - permite que el servicio de notificación funcione.</string>
+    <string name="keychain_is_storing_securely">Android Keystore se usará para almacenar la frase de contraseña de forma segura - permite que el servicio de notificaciones funcione.</string>
     <string name="users_add">Añadir perfil</string>
     <string name="color_primary">Color</string>
     <string name="allow_your_contacts_irreversibly_delete">Permites a tus contactos eliminar irreversiblemente los mensajes enviados. (24 horas)</string>
@@ -108,7 +108,7 @@
     <string name="encrypted_audio_call">Llamada con cifrado de extremo a extremo</string>
     <string name="status_e2e_encrypted">cifrado de extremo a extremo</string>
     <string name="integrity_msg_duplicate">mensaje duplicado</string>
-    <string name="settings_developer_tools">Herramientas para desarrolladores</string>
+    <string name="settings_developer_tools">Herramientas de desarrollo</string>
     <string name="delete_files_and_media_for_all_users">Eliminar los archivos de todos los perfiles</string>
     <string name="delete_messages">Activar</string>
     <string name="database_encrypted">¡Base de datos cifrada!</string>
@@ -996,7 +996,7 @@
     <string name="file_will_be_received_when_contact_completes_uploading">El archivo se recibirá cuando el contacto termine de subirlo.</string>
     <string name="image_will_be_received_when_contact_completes_uploading">La imagen se recibirá cuando el contacto termine de subirla.</string>
     <string name="show_developer_options">Mostrar opciones para desarrolladores</string>
-    <string name="hide_dev_options">Ocultar:</string>
+    <string name="hide_dev_options">Oculta:</string>
     <string name="show_dev_options">Muestra:</string>
     <string name="delete_chat_profile">Eliminar perfil</string>
     <string name="profile_password">Contraseña del perfil</string>
@@ -1380,7 +1380,7 @@
 \n- confirmaciones de entrega (hasta 20 miembros).
 \n- mayor rapidez y estabilidad.</string>
     <string name="member_contact_send_direct_message">envia para conectar</string>
-    <string name="rcv_group_event_member_created_contact">conectado directamente</string>
+    <string name="rcv_group_event_member_created_contact">conexión solicitada</string>
     <string name="expand_verb">Expandir</string>
     <string name="encryption_renegotiation_error">Error de renegociación de cifrado</string>
     <string name="rcv_direct_event_contact_deleted">contacto eliminado</string>
@@ -2459,7 +2459,7 @@
     <string name="open_to_connect">Abrir para conectar</string>
     <string name="group_preview_open_to_join">Abrir para unirte</string>
     <string name="private_routing_timeout">Timeout enrutamiento privado</string>
-    <string name="share_profile_via_link_alert_text">La dirección será corta y tu perfil se compartirá mediante la dirección.</string>
+    <string name="share_profile_via_link_alert_text">La dirección pasará a ser corta y tu perfil será compartido mediante la dirección.</string>
     <string name="network_option_protocol_timeout_background">Timeout protocolo en segundo plano</string>
     <string name="reject_contact_request">Rechazar solicitud del contacto</string>
     <string name="v6_4_role_moderator_descr">Elimina mensajes y bloquea miembros.</string>
@@ -2500,7 +2500,7 @@
     <string name="v6_4_1_new_interface_languages">4 idiomas nuevos</string>
     <string name="v6_4_1_new_interface_languages_descr">Catalán, Indonesio, Rumano y Vietnamita - gracias a los colaboradores!</string>
     <string name="v6_4_1_short_address_create">Crea tu dirección</string>
-    <string name="v6_4_1_keep_chats_clean_descr">Activa por defecto los mensajes temporaes</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Activa por defecto los mensajes temporales</string>
     <string name="v6_4_1_keep_chats_clean">Mantén los chats limpios</string>
     <string name="v6_4_1_welcome_contacts_descr">Añade mensaje de bienvenida y biografía del perfil</string>
     <string name="v6_4_1_short_address_share">Comparte tu dirección</string>
@@ -2511,4 +2511,8 @@
     <string name="share_old_link_alert_button">Compartir enlace antiguo</string>
     <string name="share_group_profile_via_link_alert_text">El enlace será corto y el perfil del grupo se compartirá mediante el enlace.</string>
     <string name="upgrade_group_link">Actualizar enlace de grupo</string>
+    <string name="settings_section_title_contact_requests_from_groups">SOLICITUDES DE CONTACTO EN GRUPOS</string>
+    <string name="rcv_direct_event_group_inv_link_received">conexión solicitada desde el grupo %1$s</string>
+    <string name="this_setting_is_for_your_current_profile">Esta configuración se aplica al perfil actual</string>
+    <string name="member_is_deleted_cant_accept_request">Miembro eliminado, no puede aceptar solicitudes</string>
 </resources>

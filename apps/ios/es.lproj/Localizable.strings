@@ -723,7 +723,7 @@ swipe action */
 "attempts" = "intentos";
 
 /* No comment provided by engineer. */
-"Audio & video calls" = "Llamadas y videollamadas";
+"Audio & video calls" = "Llamadas y Videollamadas";
 
 /* No comment provided by engineer. */
 "Audio and video calls" = "Llamadas y videollamadas";
@@ -1274,9 +1274,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Connected desktop" = "Ordenador conectado";
-
-/* rcv group event chat item */
-"connected directly" = "conectado directamente";
 
 /* No comment provided by engineer. */
 "Connected servers" = "Servidores conectados";
@@ -2014,7 +2011,7 @@ chat item action */
 "Enable camera access" = "Permitir acceso a la cámara";
 
 /* No comment provided by engineer. */
-"Enable disappearing messages by default." = "Activa por defecto los mensajes temporaes.";
+"Enable disappearing messages by default." = "Activa por defecto los mensajes temporales.";
 
 /* No comment provided by engineer. */
 "Enable Flux in Network & servers settings for better metadata privacy." = "Habilitar Flux en la configuración de Red y servidores para mejorar la privacidad de los metadatos.";
@@ -2256,7 +2253,7 @@ chat item action */
 /* alert title */
 "Error deleting chat with member" = "Error al eliminar el chat con el miembro";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "¡Error al eliminar chat!";
 
 /* No comment provided by engineer. */
@@ -2769,7 +2766,7 @@ snd error text */
 "Hide profile" = "Ocultar perfil";
 
 /* No comment provided by engineer. */
-"Hide:" = "Ocultar:";
+"Hide:" = "Oculta:";
 
 /* No comment provided by engineer. */
 "History" = "Historial";
@@ -5293,7 +5290,7 @@ report reason */
 "Thanks to the users – contribute via Weblate!" = "¡Agradecimiento a los colaboradores! Puedes contribuir a través de Weblate";
 
 /* alert message */
-"The address will be short, and your profile will be shared via the address." = "La dirección será corta y tu perfil se compartirá mediante la dirección.";
+"The address will be short, and your profile will be shared via the address." = "La dirección pasará a ser corta y tu perfil será compartido mediante la dirección.";
 
 /* No comment provided by engineer. */
 "The app can notify you when you receive messages or contact requests - please open settings to enable." = "La aplicación puede notificarte cuando recibas mensajes o solicitudes de contacto: por favor, abre la configuración para activarlo.";

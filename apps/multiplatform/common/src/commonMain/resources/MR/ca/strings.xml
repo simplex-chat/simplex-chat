@@ -2400,7 +2400,7 @@
     <string name="delete_member_support_chat_alert_title">Suprimir el xat amb membre?</string>
     <string name="group_new_support_chats">%d xats amb membres</string>
     <string name="member_criteria_all">tots(es)</string>
-    <string name="add_short_link">Afegir enllaç curt</string>
+    <string name="add_short_link">Actualitzar l\'adreça</string>
     <string name="accept_contact_request">Acceptar la sol·licitud de contacte</string>
     <string name="compose_view_add_message">Afegir un missatge</string>
     <string name="context_user_picker_cant_change_profile_alert_title">No es pot canviar el perfil</string>
@@ -2419,16 +2419,16 @@
     <string name="open_to_accept">Obrir per acceptar</string>
     <string name="open_to_connect">Obrir per connectar</string>
     <string name="group_preview_open_to_join">Obrir per entrar</string>
-    <string name="share_profile_via_link_alert_text">El perfil es compartirà amb l\'adreça.</string>
+    <string name="share_profile_via_link_alert_text">L\'adreça serà curta i el vostre perfil es compartirà a través d\'ella.</string>
     <string name="reject_contact_request">Rebutjar la sol·licitud de contacte</string>
     <string name="cant_send_message_request_is_sent">sol·licitud enviada</string>
     <string name="compose_view_send_contact_request_alert_question">Enviar sol·licitud de contacte?</string>
     <string name="compose_view_send_request">Enviar sol·licitud</string>
     <string name="compose_view_send_request_without_message">Enviar sol·licitud sense missatge</string>
     <string name="sent_to_your_contact_after_connection">Enviat al contacte després de la connexió.</string>
-    <string name="share_group_profile_via_link">Compartir el perfil del grup mitjançant un enllaç</string>
-    <string name="share_profile_via_link_alert_confirm">Compartir el perfil</string>
-    <string name="share_profile_via_link">Compartir el perfil amb l\'adreça</string>
+    <string name="share_group_profile_via_link">Actualitzar l\'enllaç del grup?</string>
+    <string name="share_profile_via_link_alert_confirm">Actualitzar</string>
+    <string name="share_profile_via_link">Actualitzar l\'adreça?</string>
     <string name="the_sender_will_not_be_notified">L\'emissor(a) NO serà notificat(da).</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Per utilitzar un altre perfil després d\'un intent de connexió, suprimiu el xat i torneu a utilitzar l\'enllaç.</string>
     <string name="address_welcome_message">Missatge de benvinguda</string>
@@ -2473,4 +2473,8 @@
     <string name="v6_4_1_short_address_update">Actualitzar la vostra adreça</string>
     <string name="connect_use_incognito_profile">Utilitzar el perfil d\'incògnit</string>
     <string name="v6_4_1_welcome_contacts">Doneu la benvinguda als vostres contactes 👋</string>
+    <string name="share_old_address_alert_button">Compartir l\'adreça antiga</string>
+    <string name="share_old_link_alert_button">Compartir l\'enllaç antic</string>
+    <string name="share_group_profile_via_link_alert_text">L\'enllaç serà curt i el perfil del grup es compartirà a través d\'ell.</string>
+    <string name="upgrade_group_link">Actualitzar l\'enllaç del grup</string>
 </resources>

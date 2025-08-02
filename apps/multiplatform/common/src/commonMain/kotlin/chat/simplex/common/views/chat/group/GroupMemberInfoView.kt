@@ -34,7 +34,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chatlist.openLoadedChat
+import chat.simplex.common.views.chatlist.openDirectChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
@@ -57,6 +57,7 @@ fun GroupMemberInfoView(
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
+  val scope = rememberCoroutineScope()
 
   fun syncMemberConnection() {
     withBGApi {
@@ -86,12 +87,10 @@ fun GroupMemberInfoView(
       developerTools,
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
-      openDirectChat = {
-        withBGApi {
-          apiLoadMessages(chatModel.chatsContext, rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
-          if (chatModel.getContactChat(it) != null) {
-            closeAll()
-          }
+      openDirectChat = { contactId ->
+        scope.launch {
+          openDirectChat(rhId, contactId)
+          closeAll()
         }
       },
       createMemberContact = {
@@ -104,7 +103,7 @@ fun GroupMemberInfoView(
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.addChat(memberChat)
               }
-              openLoadedChat(memberChat)
+              openDirectChat(rhId, memberContact.contactId)
               closeAll()
               chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }

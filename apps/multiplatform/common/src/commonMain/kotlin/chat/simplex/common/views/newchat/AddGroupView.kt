@@ -25,6 +25,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.group.GroupLinkView
+import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
@@ -44,8 +45,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
         if (groupInfo != null) {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.updateGroup(rhId = rhId, groupInfo)
-            chatModel.chatsContext.chatItems.clearAndNotify()
-            chatModel.chatId.value = groupInfo.id
+            openGroupChat(rhId, groupInfo.groupId)
           }
           setGroupMembers(rhId, groupInfo, chatModel)
           closeAll.invoke()
