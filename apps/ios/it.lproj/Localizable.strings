@@ -1275,9 +1275,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connected desktop" = "Desktop connesso";
 
-/* rcv group event chat item */
-"connected directly" = "si è connesso/a direttamente";
-
 /* No comment provided by engineer. */
 "Connected servers" = "Server connessi";
 
@@ -2256,7 +2253,7 @@ chat item action */
 /* alert title */
 "Error deleting chat with member" = "Errore di eliminazione della chat con il membro";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Errore nell'eliminazione della chat!";
 
 /* No comment provided by engineer. */
