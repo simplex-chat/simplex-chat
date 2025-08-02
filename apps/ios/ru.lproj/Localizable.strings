@@ -1411,6 +1411,9 @@ set passcode view */
 "Contact preferences" = "Предпочтения контакта";
 
 /* No comment provided by engineer. */
+"Contact requests from groups" = "Запросы на соединение из групп";
+
+/* No comment provided by engineer. */
 "contact should accept…" = "контакт должен принять…";
 
 /* No comment provided by engineer. */
@@ -2368,6 +2371,9 @@ chat item action */
 "Error sending message" = "Ошибка при отправке сообщения";
 
 /* No comment provided by engineer. */
+"Error setting auto-accept" = "Ошибка при установке автоприёма запросов";
+
+/* No comment provided by engineer. */
 "Error setting delivery receipts!" = "Ошибка настроек отчётов о доставке!";
 
 /* No comment provided by engineer. */
@@ -3247,6 +3253,9 @@ snd error text */
 
 /* item status text */
 "Member inactive" = "Член неактивен";
+
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "Член группы удалён - невозможно принять запрос";
 
 /* chat feature */
 "Member reports" = "Сообщения о нарушениях";
@@ -4422,6 +4431,12 @@ swipe action */
 /* No comment provided by engineer. */
 "request to join rejected" = "запрос на вступление отклонён";
 
+/* rcv group event chat item */
+"requested connection" = "запрос на соединение";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "запрос на соединение из группы %@";
+
 /* chat list item title */
 "requested to connect" = "запрошено соединение";
 
@@ -5429,6 +5444,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Эта настройка применяется к сообщениям в Вашем текущем профиле чата **%@**.";
+
+/* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Эта настройка применяется к Вашему текущему профилю чата **%@**.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Время удаления устанавливается только для новых контактов.";
