@@ -37,7 +37,8 @@ CREATE TABLE users(
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
-  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  active_order INTEGER NOT NULL DEFAULT 0,
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -85,6 +86,11 @@ CREATE TABLE contacts(
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
   contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
+  grp_direct_inv_link BLOB,
+  grp_direct_inv_from_group_id INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
+  grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
+  grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -148,7 +154,8 @@ CREATE TABLE groups(
   conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
-  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0, -- received
+  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
+  via_group_link_uri BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -321,6 +328,7 @@ CREATE TABLE connections(
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
   short_link_inv BLOB,
   via_short_link_contact BLOB,
+  via_contact_uri BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -1084,4 +1092,13 @@ CREATE INDEX idx_chat_items_group_scope_stats_all ON chat_items(
   item_status,
   chat_item_id,
   user_mention
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON contacts(
+  grp_direct_inv_from_group_id
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON contacts(
+  grp_direct_inv_from_group_member_id
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON contacts(
+  grp_direct_inv_from_member_conn_id
 );

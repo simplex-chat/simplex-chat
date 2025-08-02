@@ -1,4 +1,5 @@
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE OverloadedLists #-}
 
 module API.Docs.Syntax.Types where
 
@@ -27,4 +28,6 @@ isConst = \case
 
 instance IsString Expr where fromString = Const
 
-instance Semigroup Expr where sconcat = Concat
+instance Semigroup Expr where
+  sconcat = Concat
+  x <> y = Concat [x, y]

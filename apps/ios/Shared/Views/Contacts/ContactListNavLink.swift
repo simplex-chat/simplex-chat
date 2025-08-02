@@ -81,14 +81,16 @@ struct ContactListNavLink: View {
                 ItemsModel.shared.loadOpenChat(contact.id)
             }
         } label: {
-            contactRequestPreview()
+            contactRequestPreview(color: contact.groupDirectInv?.memberRemoved == true ? theme.colors.secondary : theme.colors.primary)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             if let contactRequestId = contact.contactRequestId {
                 Button {
                     Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
-                } label: { Label("Accept", systemImage: "checkmark") }
-                    .tint(theme.colors.primary)
+                } label: {
+                    Label("Accept", systemImage: "checkmark")
+                }
+                .tint(theme.colors.primary)
                 if !ChatModel.shared.addressShortLinkDataSet {
                     Button {
                         Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
@@ -101,6 +103,33 @@ struct ContactListNavLink: View {
                     alert = SomeAlert(alert: rejectContactRequestAlert(contactRequestId), id: "rejectContactRequestAlert")
                 } label: {
                     Label("Reject", systemImage: "multiply")
+                }
+                .tint(.red)
+            } else if let groupDirectInv = contact.groupDirectInv, !groupDirectInv.memberRemoved {
+                Button {
+                    acceptMemberContactRequest(contact)
+                } label: {
+                    Label("Accept", systemImage: "checkmark")
+                }
+                .tint(theme.colors.primary)
+                Button {
+                    showRejectMemberContactRequestAlert(contact)
+                } label: {
+                    Label("Reject", systemImage: "multiply")
+                }
+                .tint(.red)
+            } else {
+                Button {
+                    deleteContactDialog(
+                        chat,
+                        contact,
+                        dismissToChatList: false,
+                        showAlert: { alert = $0 },
+                        showActionSheet: { actionSheet = $0 },
+                        showSheetContent: { sheet = $0 }
+                    )
+                } label: {
+                    Label("Delete", systemImage: "trash")
                 }
                 .tint(.red)
             }
@@ -254,7 +283,7 @@ struct ContactListNavLink: View {
         Button {
             showContactRequestDialog = true
         } label: {
-            contactRequestPreview()
+            contactRequestPreview(color: theme.colors.primary)
         }
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
@@ -285,12 +314,12 @@ struct ContactListNavLink: View {
         }
     }
 
-    func contactRequestPreview() -> some View {
+    func contactRequestPreview(color: Color) -> some View {
         HStack{
             ProfileImage(imageStr: chat.chatInfo.image, size: 30)
 
             Text(chat.chatInfo.chatViewName)
-                .foregroundColor(.accentColor)
+                .foregroundColor(color)
                 .lineLimit(1)
 
             Spacer()
@@ -299,7 +328,7 @@ struct ContactListNavLink: View {
                 .resizable()
                 .scaledToFill()
                 .frame(width: 14, height: 14)
-                .foregroundColor(.accentColor)
+                .foregroundColor(color)
         }
     }
 }

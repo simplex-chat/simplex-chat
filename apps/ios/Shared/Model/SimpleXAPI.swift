@@ -289,6 +289,10 @@ func apiSetUserGroupReceipts(_ userId: Int64, userMsgReceiptSettings: UserMsgRec
     try await sendCommandOkResp(.apiSetUserGroupReceipts(userId: userId, userMsgReceiptSettings: userMsgReceiptSettings))
 }
 
+func apiSetUserAutoAcceptMemberContacts(_ userId: Int64, enable: Bool) async throws {
+    try await sendCommandOkResp(.apiSetUserAutoAcceptMemberContacts(userId: userId, enable: enable))
+}
+
 func apiHideUser(_ userId: Int64, viewPwd: String) async throws -> User {
     try await setUserPrivacy_(.apiHideUser(userId: userId, viewPwd: viewPwd))
 }
@@ -1914,6 +1918,33 @@ func apiSendMemberContactInvitation(_ contactId: Int64, _ msg: MsgContent) async
     let r: ChatResponse2 = try await chatSendCmd(.apiSendMemberContactInvitation(contactId: contactId, msg: msg), bgDelay: msgDelay)
     if case let .newMemberContactSentInv(_, contact, _, _) = r { return contact }
     throw r.unexpected
+}
+
+func apiAcceptMemberContact(contactId: Int64) async -> Contact? {
+    let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiAcceptMemberContact(contactId: contactId))
+    if case let .result(.memberContactAccepted(_, contact)) = r { return contact }
+    if let r { AlertManager.shared.showAlert(apiConnectResponseAlert(r)) }
+    return nil
+}
+
+func acceptMemberContact(contactId: Int64, inProgress: Binding<Bool>? = nil) async {
+    await MainActor.run { inProgress?.wrappedValue = true }
+    if let contact = await apiAcceptMemberContact(contactId: contactId) {
+        await MainActor.run {
+            ChatModel.shared.updateContact(contact)
+            NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+            inProgress?.wrappedValue = false
+        }
+        if contact.sndReady {
+            DispatchQueue.main.async {
+                dismissAllSheets(animated: true) {
+                    ItemsModel.shared.loadOpenChat(contact.id)
+                }
+            }
+        }
+    } else {
+        await MainActor.run { inProgress?.wrappedValue = false }
+    }
 }
 
 func apiGetVersion() throws -> CoreVersionInfo {

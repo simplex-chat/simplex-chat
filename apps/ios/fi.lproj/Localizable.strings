@@ -1264,7 +1264,7 @@ swipe action */
 /* alert title */
 "Error deleting chat database" = "Virhe keskustelujen tietokannan poistamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Virhe keskutelun poistamisessa!";
 
 /* No comment provided by engineer. */

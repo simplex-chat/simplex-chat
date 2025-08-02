@@ -271,8 +271,14 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
 
 @Composable
 fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
-  if (contact.nextAcceptContactRequest && contact.contactRequestId != null) {
-    ContactRequestMenuItems(chat.remoteHostId, contactRequestId = contact.contactRequestId, chatModel, showMenu)
+  if (contact.nextAcceptContactRequest) {
+    if (contact.contactRequestId != null) {
+      ContactRequestMenuItems(chat.remoteHostId, contactRequestId = contact.contactRequestId, chatModel, showMenu)
+    } else if (contact.groupDirectInv != null && !contact.groupDirectInv.memberRemoved) {
+      MemberContactRequestMenuItems(chat.remoteHostId, contact, showMenu)
+    } else {
+      DeleteContactAction(chat, chatModel, showMenu)
+    }
   } else {
     if (contact.activeConn != null) {
       if (showMarkRead) {
@@ -539,6 +545,28 @@ fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: Chat
     painterResource(MR.images.ic_close),
     onClick = {
       rejectContactRequest(rhId, contactRequestId, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun MemberContactRequestMenuItems(rhId: Long?, contact: Contact, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
+  ItemAction(
+    stringResource(MR.strings.accept_contact_button),
+    painterResource(MR.images.ic_check),
+    color = MaterialTheme.colors.onBackground,
+    onClick = {
+      acceptMemberContact(rhId, contact.contactId, onSuccess)
+      showMenu.value = false
+    }
+  )
+  ItemAction(
+    stringResource(MR.strings.reject_contact_button),
+    painterResource(MR.images.ic_close),
+    onClick = {
+      showRejectMemberContactRequestAlert(rhId, contact)
       showMenu.value = false
     },
     color = Color.Red

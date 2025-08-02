@@ -1176,9 +1176,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connected desktop" = "Połączony komputer";
 
-/* rcv group event chat item */
-"connected directly" = "połącz bezpośrednio";
-
 /* No comment provided by engineer. */
 "Connected servers" = "Połączone serwery";
 
@@ -2025,7 +2022,7 @@ chat item action */
 /* alert title */
 "Error deleting chat database" = "Błąd usuwania bazy danych czatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Błąd usuwania czatu!";
 
 /* No comment provided by engineer. */

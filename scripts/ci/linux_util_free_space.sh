@@ -89,8 +89,7 @@ sudo rm -rf /opt/hostedtoolcache/PyPy || :
 # 376MB
 sudo rm -rf /opt/hostedtoolcache/node || :
 # Remove Web browser packages
-sudo apt purge -y \
-  firefox \
-  google-chrome-stable \
-  microsoft-edge-stable
+for pkg in firefox google-chrome-stable microsoft-edge-stable; do
+  sudo apt purge -y "$pkg" || echo "Failed or not installed: $pkg"
+done
 df -h

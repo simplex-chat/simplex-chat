@@ -59,7 +59,7 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        let r = messageText(welcomeText, parseSimpleXMarkdown(welcomeText), sender: nil, mentions: nil, userMemberId: nil, showSecrets: showSecrets, backgroundColor: UIColor(theme.colors.background))
+        let r = markdownText(welcomeText, showSecrets: showSecrets, backgroundColor: theme.colors.background)
         return msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
