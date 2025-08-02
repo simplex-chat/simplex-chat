@@ -359,10 +359,10 @@ swipe action */
 "Accept connection request?" = "Elfogadja a kapcsolódási kérést?";
 
 /* alert title */
-"Accept contact request" = "Partnerkérés elfogadása";
+"Accept contact request" = "Partneri kapcsolatkérés elfogadása";
 
 /* notification body */
-"Accept contact request from %@?" = "Elfogadja %@ partnerkérését?";
+"Accept contact request from %@?" = "Elfogadja %@ partneri kapcsolatkérését?";
 
 /* alert action
 swipe action */
@@ -660,7 +660,7 @@ swipe action */
 "App icon" = "Alkalmazásikon";
 
 /* No comment provided by engineer. */
-"App passcode" = "Alkalmazás jelkód";
+"App passcode" = "Alkalmazásjelkód";
 
 /* No comment provided by engineer. */
 "App passcode is replaced with self-destruct passcode." = "Az alkalmazásjelkód helyettesítve lesz egy önmegsemmisítő jelkóddal.";
@@ -756,7 +756,7 @@ swipe action */
 "Auto-accept" = "Automatikus elfogadás";
 
 /* No comment provided by engineer. */
-"Auto-accept contact requests" = "Partnerkérések automatikus elfogadása";
+"Auto-accept contact requests" = "Partneri kapcsolatkérések automatikus elfogadása";
 
 /* No comment provided by engineer. */
 "Auto-accept images" = "Képek automatikus elfogadása";
@@ -1274,9 +1274,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Connected desktop" = "Társított számítógép";
-
-/* rcv group event chat item */
-"connected directly" = "közvetlenül kapcsolódott";
 
 /* No comment provided by engineer. */
 "Connected servers" = "Kapcsolódott kiszolgálók";
@@ -2185,7 +2182,7 @@ chat item action */
 "Error accepting conditions" = "Hiba történt a feltételek elfogadásakor";
 
 /* No comment provided by engineer. */
-"Error accepting contact request" = "Hiba történt a partnerkérés elfogadásakor";
+"Error accepting contact request" = "Hiba történt a partneri kapcsolatkérés elfogadásakor";
 
 /* alert title */
 "Error accepting member" = "Hiba a tag befogadásakor";
@@ -2256,7 +2253,7 @@ chat item action */
 /* alert title */
 "Error deleting chat with member" = "Hiba a taggal való csevegés törlésekor";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Hiba történt a csevegés törlésekor!";
 
 /* No comment provided by engineer. */
@@ -2323,7 +2320,7 @@ chat item action */
 "Error registering for notifications" = "Hiba történt az értesítések regisztrálásakor";
 
 /* alert title */
-"Error rejecting contact request" = "Hiba történt a partnerkérés elutasításakor";
+"Error rejecting contact request" = "Hiba történt a partneri kapcsolatkérés elutasításakor";
 
 /* alert title */
 "Error removing member" = "Hiba történt a tag eltávolításakor";
@@ -3525,7 +3522,7 @@ snd error text */
 "New chat experience 🎉" = "Új csevegési élmény 🎉";
 
 /* notification */
-"New contact request" = "Új partnerkérés";
+"New contact request" = "Új partneri kapcsolatkérés";
 
 /* notification */
 "New contact:" = "Új kapcsolat:";
@@ -4309,7 +4306,7 @@ swipe action */
 "Reject (sender NOT notified)" = "Elutasítás (a feladó NEM kap értesítést)";
 
 /* alert title */
-"Reject contact request" = "Elutasítás";
+"Reject contact request" = "Partneri kapcsolatkérés elutasítása";
 
 /* alert title */
 "Reject member?" = "Elutasítja a tagot?";
@@ -4688,7 +4685,7 @@ chat item action */
 "Send a live message - it will update for the recipient(s) as you type it" = "Élő üzenet küldése – az üzenet a címzett(ek) számára valós időben frissül, ahogy Ön beírja az üzenetet";
 
 /* No comment provided by engineer. */
-"Send contact request?" = "Elküldi a partnerkérést?";
+"Send contact request?" = "Elküldi a partneri kapcsolatkérést?";
 
 /* No comment provided by engineer. */
 "Send delivery receipts to" = "A kézbesítési jelentéseket a következő címre kell küldeni";

@@ -1216,7 +1216,7 @@ swipe action */
 /* alert title */
 "Error deleting chat database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลแชท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "เกิดข้อผิดพลาดในการลบแชท!";
 
 /* No comment provided by engineer. */

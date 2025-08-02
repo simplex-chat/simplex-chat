@@ -283,6 +283,9 @@ time interval */
 time interval */
 "1 week" = "1 седмица";
 
+/* delete after time */
+"1 year" = "1 година";
+
 /* No comment provided by engineer. */
 "1-time link" = "Еднократен линк";
 
@@ -337,11 +340,20 @@ alert action
 swipe action */
 "Accept" = "Приеми";
 
+/* alert action */
+"Accept as member" = "Приеми като член";
+
+/* alert action */
+"Accept as observer" = "Приеми като наблюдател";
+
 /* No comment provided by engineer. */
 "Accept conditions" = "Приеми условията";
 
 /* No comment provided by engineer. */
 "Accept connection request?" = "Приемане на заявка за връзка?";
+
+/* alert title */
+"Accept contact request" = "Приеми заявка за контакт";
 
 /* notification body */
 "Accept contact request from %@?" = "Приемане на заявка за контакт от %@?";
@@ -1025,9 +1037,6 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Connected desktop" = "Свързано настолно устройство";
-
-/* rcv group event chat item */
-"connected directly" = "свързан директно";
 
 /* No comment provided by engineer. */
 "Connected to desktop" = "Свързан с настолно устройство";
@@ -1746,7 +1755,7 @@ chat item action */
 /* alert title */
 "Error deleting chat database" = "Грешка при изтриване на базата данни";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Грешка при изтриването на чата!";
 
 /* No comment provided by engineer. */

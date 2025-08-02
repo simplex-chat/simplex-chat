@@ -1215,9 +1215,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connected desktop" = "已连接的桌面";
 
-/* rcv group event chat item */
-"connected directly" = "已直连";
-
 /* No comment provided by engineer. */
 "Connected servers" = "已连接的服务器";
 
@@ -2154,7 +2151,7 @@ chat item action */
 /* alert title */
 "Error deleting chat database" = "删除聊天数据库错误";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "删除聊天错误！";
 
 /* No comment provided by engineer. */
