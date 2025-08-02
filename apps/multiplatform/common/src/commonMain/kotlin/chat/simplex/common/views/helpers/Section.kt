@@ -91,7 +91,7 @@ fun <T> SectionViewSelectable(
       }
     }
   }
-  SectionTextFooter(values.first { it.value == currentValue.value }.description)
+  SectionTextFooter(values.firstOrNull { it.value == currentValue.value }?.description ?: AnnotatedString(""))
 }
 
 @Composable
@@ -221,7 +221,7 @@ fun <T> SectionItemWithValue(
       horizontalArrangement = Arrangement.End
     ) {
       Text(
-        values.first { it.value == currentValue.value }.title + (if (label != null) " $label" else ""),
+        (values.firstOrNull { it.value == currentValue.value }?.title ?: "") + (if (label != null) " $label" else ""),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         color = MaterialTheme.colors.secondary

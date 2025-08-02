@@ -32,6 +32,8 @@ struct PrivacySettings: View {
     @State private var groupReceiptsReset = false
     @State private var groupReceiptsOverrides = 0
     @State private var groupReceiptsDialogue = false
+    @State private var autoAcceptMemberContacts = false
+    @State private var autoAcceptMemberContactsReset = false
     @State private var alert: PrivacySettingsViewAlert?
 
     enum PrivacySettingsViewAlert: Identifiable {
@@ -150,6 +152,18 @@ struct PrivacySettings: View {
                 }
 
                 Section {
+                    settingsRow("checkmark", color: theme.colors.secondary) {
+                        Toggle("Auto-accept", isOn: $autoAcceptMemberContacts)
+                    }
+                } header: {
+                    Text("Contact requests from groups")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("This setting is for your current profile **\(m.currentUser?.displayName ?? "")**.")
+                        .foregroundColor(theme.colors.secondary)
+                }
+
+                Section {
                     settingsRow("person", color: theme.colors.secondary) {
                         Toggle("Contacts", isOn: $contactReceipts)
                     }
@@ -207,6 +221,13 @@ struct PrivacySettings: View {
                 setOrAskSendReceiptsGroups(groupReceipts)
             }
         }
+        .onChange(of: autoAcceptMemberContacts) { _ in
+            if autoAcceptMemberContactsReset {
+                autoAcceptMemberContactsReset = false
+            } else {
+                setAutoAcceptGrpDirectInvs(autoAcceptMemberContacts)
+            }
+        }
         .onAppear {
             if let u = m.currentUser {
                 if contactReceipts != u.sendRcptsContacts {
@@ -216,6 +237,10 @@ struct PrivacySettings: View {
                 if groupReceipts != u.sendRcptsSmallGroups {
                     groupReceiptsReset = true
                     groupReceipts = u.sendRcptsSmallGroups
+                }
+                if autoAcceptMemberContacts != u.autoAcceptMemberContacts {
+                    autoAcceptMemberContactsReset = true
+                    autoAcceptMemberContacts = u.autoAcceptMemberContacts
                 }
             }
         }
@@ -333,6 +358,23 @@ struct PrivacySettings: View {
         }
     }
 
+    private func setAutoAcceptGrpDirectInvs(_ enable: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    try await apiSetUserAutoAcceptMemberContacts(currentUser.userId, enable: enable)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.autoAcceptMemberContacts = enable
+                        m.updateUser(updatedUser)
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting auto-accept for direct invitations from groups!", error: "Error: \(responseError(error))")
+            }
+        }
+    }
+
     private func simplexLockRow(_ value: LocalizedStringKey) -> some View {
         HStack {
             Text("SimpleX Lock")
@@ -445,7 +487,7 @@ struct SimplexLockView: View {
                         Toggle("Allow sharing", isOn: $allowShareExtension)
                     }
                 }
-                
+
                 if performLA && laMode == .passcode {
                     Section(header: Text("Self-destruct passcode").foregroundColor(theme.colors.secondary)) {
                         Toggle(isOn: $selfDestruct) {

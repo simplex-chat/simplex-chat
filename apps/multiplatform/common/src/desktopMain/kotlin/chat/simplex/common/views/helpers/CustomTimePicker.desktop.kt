@@ -31,6 +31,7 @@ actual fun CustomTimePicker(
     mutableStateOf(res)
   }
   val values = remember(unit.value) {
+    // TODO replace with firstOrNull
     val limit = timeUnitsLimits.first { it.timeUnit == unit.value }
     val res = ArrayList<Pair<Int, String>>()
     for (i in limit.minValue..limit.maxValue) {

@@ -167,7 +167,7 @@ struct ChatPreviewView: View {
             let color =
                 deleting
                 ? theme.colors.secondary
-                : contact.nextAcceptContactRequest || contact.sendMsgToConnect
+                : (contact.nextAcceptContactRequest && !(contact.groupDirectInv?.memberRemoved ?? false)) || contact.sendMsgToConnect
                 ? theme.colors.primary
                 : !contact.sndReady
                 ? theme.colors.secondary

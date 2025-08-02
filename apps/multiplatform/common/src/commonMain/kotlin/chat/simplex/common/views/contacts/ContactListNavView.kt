@@ -73,14 +73,25 @@ fun ContactListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>, showDel
                 },
                 dropdownMenuItems = {
                     tryOrShowError("${chat.id}ContactListNavLinkDropdown", error = {}) {
-                        if (contactType == ContactType.CONTACT_WITH_REQUEST && chat.chatInfo.contact.contactRequestId != null) {
-                            ContactRequestMenuItems(
-                                rhId = chat.remoteHostId,
-                                contactRequestId = chat.chatInfo.contact.contactRequestId,
-                                chatModel = chatModel,
-                                showMenu = showMenu,
-                                onSuccess = { onRequestAccepted(it) }
-                            )
+                        if (contactType == ContactType.CONTACT_WITH_REQUEST) {
+                            if (chat.chatInfo.contact.contactRequestId != null) {
+                                ContactRequestMenuItems(
+                                    rhId = chat.remoteHostId,
+                                    contactRequestId = chat.chatInfo.contact.contactRequestId,
+                                    chatModel = chatModel,
+                                    showMenu = showMenu,
+                                    onSuccess = { onRequestAccepted(it) }
+                                )
+                            } else if (chat.chatInfo.contact.groupDirectInv != null && !chat.chatInfo.contact.groupDirectInv.memberRemoved) {
+                                MemberContactRequestMenuItems(
+                                    rhId = chat.remoteHostId,
+                                    contact = chat.chatInfo.contact,
+                                    showMenu = showMenu,
+                                    onSuccess = { onRequestAccepted(it) }
+                                )
+                            } else {
+                                DeleteContactAction(chat, chatModel, showMenu)
+                            }
                         } else {
                             DeleteContactAction(chat, chatModel, showMenu)
                         }

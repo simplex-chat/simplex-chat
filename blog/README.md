@@ -1,5 +1,21 @@
 # Blog
 
+Jul 29, 2025 [SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
+
+What's new in v6.4.1:
+
+- welcome your contacts: set your profile bio and welcome message.
+- protect your communities from spam and abuse:
+  - review new members ("knocking"),
+  - moderator role to delegate message moderation to trusted members,
+  - receive direct feedback from your group members.
+- set default time to delete messages for new contacts.
+- improved app integrity: Linux app builds are now reproducible.
+
+Also, we added 3 new interface languages to Android and desktop apps, thanks to our users: Indonesian, Romanian and Vietnamese.
+
+---
+
 Jul 3, 2025 [SimpleX network: new experience of connecting with people &mdash; available in SimpleX Chat v6.4-beta.4](./20250703-simplex-network-protocol-extension-for-securely-connecting-people.md)
 
 Now you can start talking to your contacts much faster, as soon as you scan the link. This technical post covers the technology that enabled this new user experience &mdash; short links and associated data of messaging queues.

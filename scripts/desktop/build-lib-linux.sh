@@ -7,7 +7,7 @@ function readlink() {
 }
 
 OS=linux
-ARCH=${1:-`uname -a | rev | cut -d' ' -f2 | rev`}
+ARCH="$(uname -m)"
 GHC_VERSION=8.10.7
 
 if [ "$ARCH" == "aarch64" ]; then

@@ -770,6 +770,8 @@ private fun connectingText(chatInfo: ChatInfo): String? {
       ) {
         if (chatInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
           generalGetString(MR.strings.contact_should_accept)
+        } else if (chatInfo.contact.contactGroupMemberId != null) {
+          generalGetString(MR.strings.contact_should_accept)
         } else {
           generalGetString(MR.strings.contact_connection_pending)
         }
