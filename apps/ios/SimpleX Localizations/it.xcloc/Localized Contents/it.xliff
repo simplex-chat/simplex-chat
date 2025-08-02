@@ -2085,8 +2085,9 @@ Questo è il tuo link una tantum!</target>
         <target>Preferenze del contatto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests from groups" xml:space="preserve">
+      <trans-unit id="Contact requests from groups" xml:space="preserve" approved="no">
         <source>Contact requests from groups</source>
+        <target state="translated">Richieste di contatto dai gruppi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3529,8 +3530,9 @@ chat item action</note>
         <target>Errore nell'invio del messaggio</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting auto-accept" xml:space="preserve">
+      <trans-unit id="Error setting auto-accept" xml:space="preserve" approved="no">
         <source>Error setting auto-accept</source>
+        <target state="translated">Errore impostando l'accettazione automatica</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -4870,8 +4872,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Membro inattivo</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve">
+      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve" approved="no">
         <source>Member is deleted - can't accept request</source>
+        <target state="translated">Il membro è eliminato - impossibile accettare la richiesta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -8236,8 +8239,9 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
         <target>Questa impostazione si applica ai messaggi del profilo di chat attuale **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve" approved="no">
         <source>This setting is for your current profile **%@**.</source>
+        <target state="translated">Questa impostazione è per il tuo profilo attuale **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
@@ -10313,12 +10317,14 @@ time to disappear</note>
         <target>richiesta di entrare rifiutata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="requested connection" xml:space="preserve">
+      <trans-unit id="requested connection" xml:space="preserve" approved="no">
         <source>requested connection</source>
+        <target state="translated">connessione richiesta</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested connection from group %@" xml:space="preserve">
+      <trans-unit id="requested connection from group %@" xml:space="preserve" approved="no">
         <source>requested connection from group %@</source>
+        <target state="translated">connessione richiesta dal gruppo %@</target>
         <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
