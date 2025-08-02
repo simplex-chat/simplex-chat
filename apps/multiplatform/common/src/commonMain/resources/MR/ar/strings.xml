@@ -1365,7 +1365,7 @@
     <string name="v5_3_simpler_incognito_mode">وضع التخفي اصبح أسهل</string>
     <string name="v5_3_simpler_incognito_mode_descr">فعّل وضع التخفي عند الاتصال.</string>
     <string name="member_contact_send_direct_message">أرسل لاتصال</string>
-    <string name="rcv_group_event_member_created_contact">متصل مباشرةً</string>
+    <string name="rcv_group_event_member_created_contact">طُلب اتصال</string>
     <string name="connect_plan_already_connecting">جارٍ الاتصال بالفعل!</string>
     <string name="v5_4_better_groups">مجموعات أفضل</string>
     <string name="rcv_group_and_other_events">و%d أحداث أخرى</string>
@@ -2496,4 +2496,8 @@
     <string name="share_old_link_alert_button">شارك الرابط القديم</string>
     <string name="share_group_profile_via_link_alert_text">سيكون الرابط قصيراً، وسيتم مشاركة الملف التعريفي للمجموعة عبر الرابط.</string>
     <string name="upgrade_group_link">رقِّ رابط المجموعة</string>
+    <string name="settings_section_title_contact_requests_from_groups">طلبات الاتصال من المجموعات</string>
+    <string name="member_is_deleted_cant_accept_request">حُذف العضو - لا يمكن قبول الطلب</string>
+    <string name="rcv_direct_event_group_inv_link_received">طُلب اتصال من المجموعة %1$s</string>
+    <string name="this_setting_is_for_your_current_profile">هذا الإعداد لملف تعريفك الحالي</string>
 </resources>

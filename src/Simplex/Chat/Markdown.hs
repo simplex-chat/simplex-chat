@@ -54,6 +54,7 @@ data Format
   | Mention {memberName :: Text}
   | Email
   | Phone
+  | Unknown {json :: J.Value}
   deriving (Eq, Show)
 
 mentionedNames :: MarkdownList -> [Text]
@@ -310,6 +311,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Command _ -> t
     Email -> t
     Phone -> t
+    Unknown _ -> t
     where
       around c = c `T.cons` t `T.snoc` c
       color c = case colorStr c of
@@ -352,7 +354,10 @@ viewName s = if T.any isSpace s || maybe False (isPunctuation . snd) (T.unsnoc s
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "XL") ''SimplexLinkType)
 
-$(JQ.deriveJSON (sumTypeJSON fstToLower) ''Format)
+$(JQ.deriveToJSON (sumTypeJSON fstToLower) ''Format)
+
+instance FromJSON Format where
+  parseJSON v = $(JQ.mkParseJSON (sumTypeJSON fstToLower) ''Format) v <|> pure (Unknown v)
 
 $(JQ.deriveJSON defaultJSON ''FormattedText)
 

@@ -1248,6 +1248,7 @@ fun ComposeView(
         SimpleButtonIconEnded(
           text = stringResource(MR.strings.compose_view_connect),
           icon = painterResource(icon),
+          style = MaterialTheme.typography.body2,
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
           disabled = composeState.value.inProgress,
           click = { withApi { sendRequest() } }

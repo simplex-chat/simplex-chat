@@ -588,12 +588,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Accept contact request" xml:space="preserve">
         <source>Accept contact request</source>
-        <target>Partnerkérés elfogadása</target>
+        <target>Partneri kapcsolatkérés elfogadása</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
         <source>Accept contact request from %@?</source>
-        <target>Elfogadja %@ partnerkérését?</target>
+        <target>Elfogadja %@ partneri kapcsolatkérését?</target>
         <note>notification body</note>
       </trans-unit>
       <trans-unit id="Accept incognito" xml:space="preserve">
@@ -1029,7 +1029,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="App passcode" xml:space="preserve">
         <source>App passcode</source>
-        <target>Alkalmazás jelkód</target>
+        <target>Alkalmazásjelkód</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App passcode is replaced with self-destruct passcode." xml:space="preserve">
@@ -1169,7 +1169,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Auto-accept contact requests" xml:space="preserve">
         <source>Auto-accept contact requests</source>
-        <target>Partnerkérések automatikus elfogadása</target>
+        <target>Partneri kapcsolatkérések automatikus elfogadása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Auto-accept images" xml:space="preserve">
@@ -2083,6 +2083,10 @@ Ez a saját egyszer használható meghívója!</target>
       <trans-unit id="Contact preferences" xml:space="preserve">
         <source>Contact preferences</source>
         <target>Partnerbeállítások</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Contact requests from groups" xml:space="preserve">
+        <source>Contact requests from groups</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3217,7 +3221,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error accepting contact request" xml:space="preserve">
         <source>Error accepting contact request</source>
-        <target>Hiba történt a partnerkérés elfogadásakor</target>
+        <target>Hiba történt a partneri kapcsolatkérés elfogadásakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error accepting member" xml:space="preserve">
@@ -3338,7 +3342,7 @@ chat item action</note>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
         <source>Error deleting chat!</source>
         <target>Hiba történt a csevegés törlésekor!</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting connection" xml:space="preserve">
         <source>Error deleting connection</source>
@@ -3447,7 +3451,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error rejecting contact request" xml:space="preserve">
         <source>Error rejecting contact request</source>
-        <target>Hiba történt a partnerkérés elutasításakor</target>
+        <target>Hiba történt a partneri kapcsolatkérés elutasításakor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error removing member" xml:space="preserve">
@@ -3523,6 +3527,10 @@ chat item action</note>
       <trans-unit id="Error sending message" xml:space="preserve">
         <source>Error sending message</source>
         <target>Hiba történt az üzenet elküldésekor</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Error setting auto-accept" xml:space="preserve">
+        <source>Error setting auto-accept</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -4862,6 +4870,10 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Inaktív tag</target>
         <note>item status text</note>
       </trans-unit>
+      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve">
+        <source>Member is deleted - can't accept request</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
         <source>Member reports</source>
         <target>Tagok jelentései</target>
@@ -5289,7 +5301,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="New contact request" xml:space="preserve">
         <source>New contact request</source>
-        <target>Új partnerkérés</target>
+        <target>Új partneri kapcsolatkérés</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New contact:" xml:space="preserve">
@@ -6484,7 +6496,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Reject contact request" xml:space="preserve">
         <source>Reject contact request</source>
-        <target>Elutasítás</target>
+        <target>Partneri kapcsolatkérés elutasítása</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Reject member?" xml:space="preserve">
@@ -7025,7 +7037,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Send contact request?" xml:space="preserve">
         <source>Send contact request?</source>
-        <target>Elküldi a partnerkérést?</target>
+        <target>Elküldi a partneri kapcsolatkérést?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send delivery receipts to" xml:space="preserve">
@@ -8222,6 +8234,10 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
       <trans-unit id="This setting applies to messages in your current chat profile **%@**." xml:space="preserve">
         <source>This setting applies to messages in your current chat profile **%@**.</source>
         <target>Ez a beállítás csak az Ön jelenlegi **%@** nevű csevegési profiljában lévő üzenetekre vonatkozik.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
+        <source>This setting is for your current profile **%@**.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
@@ -9708,11 +9724,6 @@ marked deleted chat item preview text</note>
         <target>kapcsolódott</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connected directly" xml:space="preserve">
-        <source>connected directly</source>
-        <target>közvetlenül kapcsolódott</target>
-        <note>rcv group event chat item</note>
-      </trans-unit>
       <trans-unit id="connecting" xml:space="preserve">
         <source>connecting</source>
         <target>kapcsolódás</target>
@@ -10301,6 +10312,14 @@ time to disappear</note>
         <source>request to join rejected</source>
         <target>csatlakozási kérés elutasítva</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="requested connection" xml:space="preserve">
+        <source>requested connection</source>
+        <note>rcv group event chat item</note>
+      </trans-unit>
+      <trans-unit id="requested connection from group %@" xml:space="preserve">
+        <source>requested connection from group %@</source>
+        <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
         <source>requested to connect</source>
