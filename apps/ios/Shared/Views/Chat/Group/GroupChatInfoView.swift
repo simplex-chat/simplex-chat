@@ -34,6 +34,7 @@ struct GroupChatInfoView: View {
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+    @State private var showSecrets: Set<Int> = []
 
     enum GroupChatInfoViewAlert: Identifiable {
         case deleteGroupAlert
@@ -253,10 +254,11 @@ struct GroupChatInfoView: View {
                     .padding(.bottom, 2)
             }
             if let descr = cInfo.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
-                Text(descr)
-                    .font(.subheadline)
+                let r = markdownText(descr, textStyle: .subheadline, showSecrets: showSecrets, backgroundColor: theme.colors.background)
+                msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets, centered: true, smallFont: true)
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity, alignment: .center)

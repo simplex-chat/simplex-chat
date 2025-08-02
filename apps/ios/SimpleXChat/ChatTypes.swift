@@ -4449,6 +4449,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case mention(memberName: String)
     case email
     case phone
+    case unknown
 
     public var isSimplexLink: Bool {
         get {
