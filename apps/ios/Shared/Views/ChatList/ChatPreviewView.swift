@@ -274,7 +274,7 @@ struct ChatPreviewView: View {
 
     private func messageDraft(_ draft: ComposeState) -> (Text, Bool) {
         let msg = draft.message
-        let r = messageText(msg, parseSimpleXMarkdown(msg), sender: nil, preview: true, mentions: draft.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(theme.colors.background))
+        let r = markdownText(msg, preview: true, mentions: draft.mentions, backgroundColor: theme.colors.background)
         return (image("rectangle.and.pencil.and.ellipsis", color: theme.colors.primary)
                     + attachment()
                     + Text(AttributedString(r.string)),

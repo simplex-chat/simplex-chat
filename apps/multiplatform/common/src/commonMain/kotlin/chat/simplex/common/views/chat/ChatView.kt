@@ -1853,16 +1853,16 @@ fun BoxScope.ChatItemsList(
 
         val descr = chatInfo.shortDescr?.trim()
         if (descr != null && descr != "") {
-          Text(
+          MarkdownText(
             descr,
-            style = MaterialTheme.typography.body2,
-            color = MaterialTheme.colors.onBackground,
-            textAlign = TextAlign.Center,
+            parseToMarkdown(descr),
+            toggleSecrets = true,
+            style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
             maxLines = 4,
             overflow = TextOverflow.Ellipsis,
-            lineHeight = 21.sp,
-            modifier = Modifier
-              .padding(top = DEFAULT_PADDING_HALF)
+            uriHandler = LocalUriHandler.current,
+            modifier = Modifier.padding(top = DEFAULT_PADDING_HALF),
+            linkMode = linkMode
           )
         }
 
@@ -1871,6 +1871,7 @@ fun BoxScope.ChatItemsList(
           Text(
             contextStr,
             style = MaterialTheme.typography.body2,
+            textAlign = TextAlign.Center,
             color = MaterialTheme.colors.secondary,
             modifier = Modifier.padding(top = DEFAULT_PADDING)
           )

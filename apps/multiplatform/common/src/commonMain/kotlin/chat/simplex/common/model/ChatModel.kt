@@ -4320,7 +4320,6 @@ sealed class MsgChatLink {
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
-  // TODO make it dependent on simplexLinkMode preference
   fun link(mode: SimplexLinkMode): String? = when (format) {
     is Format.Uri -> if (text.startsWith("http://", ignoreCase = true) || text.startsWith("https://", ignoreCase = true)) text else "https://$text"
     is Format.SimplexLink -> if (mode == SimplexLinkMode.BROWSER) text else format.simplexUri
@@ -4329,7 +4328,6 @@ class FormattedText(val text: String, val format: Format? = null) {
     else -> null
   }
 
-  // TODO make it dependent on simplexLinkMode preference
   fun viewText(mode: SimplexLinkMode): String =
     if (format is Format.SimplexLink && mode == SimplexLinkMode.DESCRIPTION) simplexLinkText(format.linkType, format.smpHosts) else text
 

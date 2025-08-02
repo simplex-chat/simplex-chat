@@ -120,13 +120,14 @@ struct MsgContentView: View {
     }
 }
 
-func msgTextResultView(_ r: MsgTextResult, _ t: Text, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+func msgTextResultView(_ r: MsgTextResult, _ t: Text, showSecrets: Binding<Set<Int>>? = nil, centered: Bool = false, smallFont: Bool = false) -> some View {
     t.if(r.hasSecrets, transform: hiddenSecretsView)
-        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets)) }
+        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, centered: centered, smallFont: smallFont)) }
 }
 
+// smallFont parameter is used to pad height, otherwise CTFrameGetLines fails to see them as lines - it's needed if font is not .body
 @inline(__always)
-private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil, centered: Bool, smallFont: Bool) -> some View {
     return GeometryReader { g in
         Rectangle()
             .fill(Color.clear)
@@ -135,17 +136,29 @@ private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<In
                 let t = event.translation
                 if t.width * t.width + t.height * t.height > 100 { return }
                 let framesetter = CTFramesetterCreateWithAttributedString(s as CFAttributedString)
-                let path = CGPath(rect: CGRect(origin: .zero, size: g.size), transform: nil)
+                let paddedSize = smallFont ? CGSize(width: g.size.width, height: g.size.height + 1.0) : g.size
+                let path = CGPath(rect: CGRect(origin: .zero, size: paddedSize), transform: nil)
                 let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, s.length), path, nil)
                 let point = CGPoint(x: event.location.x, y: g.size.height - event.location.y) // Flip y for UIKit
                 var index: CFIndex?
                 if let lines = CTFrameGetLines(frame) as? [CTLine] {
                     var origins = [CGPoint](repeating: .zero, count: lines.count)
                     CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), &origins)
+                    var maxWidth: CGFloat = 0
+                    if centered {
+                        for line in lines {
+                            let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+                            if bounds.width > maxWidth {
+                                maxWidth = bounds.width
+                            }
+                        }
+                    }
                     for i in 0 ..< lines.count {
                         let bounds = CTLineGetBoundsWithOptions(lines[i], .useOpticalBounds)
-                        if bounds.offsetBy(dx: origins[i].x, dy: origins[i].y).contains(point) {
-                            index = CTLineGetStringIndexForPosition(lines[i], point)
+                        let offsetX = centered ? (maxWidth - bounds.width) / 2 : 0
+                        if bounds.offsetBy(dx: origins[i].x + offsetX, dy: origins[i].y).contains(point) {
+                            let relativePoint = centered ? CGPoint(x: point.x - origins[i].x - offsetX, y: point.y - origins[i].y) : point
+                            index = CTLineGetStringIndexForPosition(lines[i], relativePoint)
                             break
                         }
                     }
@@ -206,6 +219,31 @@ private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
+
+@inline(__always)
+func markdownText(
+    _ s: String,
+    textStyle: UIFont.TextStyle = .body,
+    sender: String? = nil,
+    preview: Bool = false,
+    mentions: [String: CIMention]? = nil,
+    userMemberId: String? = nil,
+    showSecrets: Set<Int>? = nil,
+    backgroundColor: Color
+) -> MsgTextResult {
+    messageText(
+        s,
+        parseSimpleXMarkdown(s),
+        textStyle: textStyle,
+        sender: sender,
+        preview: preview,
+        mentions: mentions,
+        userMemberId: userMemberId,
+        showSecrets: showSecrets,
+        backgroundColor: UIColor(backgroundColor)
+    )
+}
+
 
 func messageText(
     _ text: String,
