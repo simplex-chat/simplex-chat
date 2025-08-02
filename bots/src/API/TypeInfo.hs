@@ -170,6 +170,7 @@ toTypeInfo tr =
       "FormatColor" -> ST "Color" []
       "CustomData" -> ST "JSONObject" []
       "KeyMap" -> ST "JSONObject" []
+      "Value" -> ST "JSONObject" []
       "CIQDirection" -> ST "CIDirection" []
       "SendRef" -> ST "ChatRef" []
       t
