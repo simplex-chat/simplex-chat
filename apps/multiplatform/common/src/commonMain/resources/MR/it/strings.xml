@@ -1380,7 +1380,7 @@
     <string name="error_creating_member_contact">Errore di creazione del contatto</string>
     <string name="compose_send_direct_message_to_connect">Invia messaggio diretto per connetterti</string>
     <string name="member_contact_send_direct_message">invia per connettere</string>
-    <string name="rcv_group_event_member_created_contact">si è connesso/a direttamente</string>
+    <string name="rcv_group_event_member_created_contact">connessione richiesta</string>
     <string name="expand_verb">Espandi</string>
     <string name="connect_plan_repeat_connection_request">Ripetere la richiesta di connessione?</string>
     <string name="rcv_direct_event_contact_deleted">contatto eliminato</string>
@@ -2515,4 +2515,8 @@
     <string name="share_old_link_alert_button">Condividi il link vecchio</string>
     <string name="share_group_profile_via_link_alert_text">Il link sarà breve e il profilo del gruppo verrà condiviso attraverso il link.</string>
     <string name="upgrade_group_link">Aggiorna il link del gruppo</string>
+    <string name="settings_section_title_contact_requests_from_groups">RICHIESTE DI CONTATTO DAI GRUPPI</string>
+    <string name="member_is_deleted_cant_accept_request">Il membro è eliminato - impossibile accettare la richiesta</string>
+    <string name="rcv_direct_event_group_inv_link_received">connessione richiesta dal gruppo %1$s</string>
+    <string name="this_setting_is_for_your_current_profile">Questa impostazione è per il tuo profilo attuale</string>
 </resources>
