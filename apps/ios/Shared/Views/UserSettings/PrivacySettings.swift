@@ -370,7 +370,7 @@ struct PrivacySettings: View {
                     }
                 }
             } catch let error {
-                alert = .error(title: "Error setting auto-accept for direct invitations from groups!", error: "Error: \(responseError(error))")
+                alert = .error(title: "Error setting auto-accept", error: "Error: \(responseError(error))")
             }
         }
     }

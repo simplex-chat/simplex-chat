@@ -860,7 +860,7 @@ object ChatController {
   suspend fun apiSetUserAutoAcceptMemberContacts(u: User, enable: Boolean) {
     val r = sendCmd(u.remoteHostId, CC.ApiSetUserAutoAcceptMemberContacts(u.userId, enable))
     if (r.result is CR.CmdOk) return
-    throw Exception("failed to set auto-accept for direct invitations from groups ${r.responseType} ${r.details}")
+    throw Exception("failed to set auto-accept ${r.responseType} ${r.details}")
   }
 
   suspend fun apiHideUser(u: User, viewPwd: String): User =
