@@ -1454,7 +1454,7 @@
     <string name="v5_3_simpler_incognito_mode_descr">Inkognito beim Verbinden einschalten.</string>
     <string name="v5_3_discover_join_groups_descr">- Verbindung mit dem Directory-Service (BETA)!\n- Empfangsbestätigungen (für bis zu 20 Mitglieder).\n- Schneller und stabiler.</string>
     <string name="member_contact_send_direct_message">Zum Verbinden senden</string>
-    <string name="rcv_group_event_member_created_contact">Direkt miteinander verbunden</string>
+    <string name="rcv_group_event_member_created_contact">Angefragte Verbindung</string>
     <string name="expand_verb">Erweitern</string>
     <string name="connect_plan_repeat_connection_request">Verbindungsanfrage wiederholen?</string>
     <string name="rcv_direct_event_contact_deleted">Gelöschter Kontakt</string>
@@ -2586,4 +2586,8 @@
     <string name="share_old_link_alert_button">Alten Link teilen</string>
     <string name="share_group_profile_via_link_alert_text">Der Link wird gekürzt sein, und das Gruppen-Profil wird über den Link geteilt.</string>
     <string name="upgrade_group_link">Gruppen-Link aktualisieren</string>
+    <string name="settings_section_title_contact_requests_from_groups">KONTAKTANFRAGEN VON GRUPPEN</string>
+    <string name="member_is_deleted_cant_accept_request">Mitglied ist gelöscht - Anfrage kann nicht angenommen werden</string>
+    <string name="rcv_direct_event_group_inv_link_received">Angefragte Verbindung von Gruppe %1$s</string>
+    <string name="this_setting_is_for_your_current_profile">Diese Einstellung gilt für Ihr aktuelles Profil</string>
 </resources>

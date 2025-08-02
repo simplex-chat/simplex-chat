@@ -132,6 +132,7 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
+    autoAcceptMemberContacts :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
     uiThemes :: Maybe UIThemeEntityOverrides
   }
@@ -191,8 +192,14 @@ data Contact = Contact
     chatTs :: Maybe UTCTime,
     preparedContact :: Maybe PreparedContact,
     contactRequestId :: Maybe Int64,
+    -- contactGroupMemberId + contactGrpInvSent are used in conjunction for making connection request
+    -- to a group member via direct message feature
     contactGroupMemberId :: Maybe GroupMemberId,
     contactGrpInvSent :: Bool,
+    -- groupDirectInv is used for accepting connection request made via direct message feature by a group member
+    -- when auto-accept is disabled - this is the opposite side of contactGroupMemberId + contactGrpInvSent
+    -- (there is no hidden meaning in naming inconsistency)
+    groupDirectInv :: Maybe GroupDirectInvitation,
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
@@ -209,6 +216,15 @@ data PreparedContact = PreparedContact
     uiConnLinkType :: ConnectionMode,
     welcomeSharedMsgId :: Maybe SharedMsgId,
     requestSharedMsgId :: Maybe SharedMsgId
+  }
+  deriving (Eq, Show)
+
+data GroupDirectInvitation = GroupDirectInvitation
+  { groupDirectInvLink :: ConnReqInvitation,
+    fromGroupId_ :: Maybe GroupId,
+    fromGroupMemberId_ :: Maybe GroupMemberId,
+    fromGroupMemberConnId_ :: Maybe Int64,
+    groupDirectInvStartedConnection :: Bool
   }
   deriving (Eq, Show)
 
@@ -470,7 +486,8 @@ data GroupInfo = GroupInfo
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
-    membersRequireAttention :: Int
+    membersRequireAttention :: Int,
+    viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
 
@@ -1589,6 +1606,9 @@ data Connection = Connection
   }
   deriving (Eq, Show)
 
+dbConnId :: Connection -> Int64
+dbConnId Connection {connId} = connId
+
 connReady :: Connection -> Bool
 connReady Connection {connStatus} = connStatus == ConnReady || connStatus == ConnSndReady
 
@@ -1965,8 +1985,8 @@ instance ToJSON ChatVersionRange where
 
 -- This type is needed for backward compatibility of new remote controller with old remote host.
 -- See CONTRIBUTING.md
-newtype BoolDef = BoolDef Bool
-  deriving newtype (Show, ToJSON)
+newtype BoolDef = BoolDef {isTrue :: Bool}
+  deriving newtype (Eq, Show, ToJSON)
 
 instance FromJSON BoolDef where
   parseJSON v = BoolDef <$> parseJSON v
@@ -2071,6 +2091,8 @@ $(JQ.deriveJSON defaultJSON ''XFTPSndFile)
 $(JQ.deriveJSON defaultJSON ''FileTransferMeta)
 
 $(JQ.deriveJSON defaultJSON ''PreparedContact)
+
+$(JQ.deriveJSON defaultJSON ''GroupDirectInvitation)
 
 $(JQ.deriveJSON defaultJSON ''LocalFileMeta)
 

@@ -1275,9 +1275,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connected desktop" = "Bilgisayara bağlandı";
 
-/* rcv group event chat item */
-"connected directly" = "doğrudan bağlandı";
-
 /* No comment provided by engineer. */
 "Connected servers" = "Bağlı sunucular";
 
@@ -2250,7 +2247,7 @@ chat item action */
 /* alert title */
 "Error deleting chat with member" = "Üye ile sohbet silme hatası";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Sohbet silinirken hata oluştu!";
 
 /* No comment provided by engineer. */

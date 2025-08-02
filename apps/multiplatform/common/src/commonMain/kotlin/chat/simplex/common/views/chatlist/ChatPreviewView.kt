@@ -144,7 +144,7 @@ fun ChatPreviewView(
           }
           val color = if (deleting)
             MaterialTheme.colors.secondary
-          else if (cInfo.contact.nextAcceptContactRequest || cInfo.contact.sendMsgToConnect) {
+          else if ((cInfo.contact.nextAcceptContactRequest && cInfo.contact.groupDirectInv?.memberRemoved != true) || cInfo.contact.sendMsgToConnect) {
             MaterialTheme.colors.primary
           } else if (!cInfo.contact.sndReady) {
             MaterialTheme.colors.secondary

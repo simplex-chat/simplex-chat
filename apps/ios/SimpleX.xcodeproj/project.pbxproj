@@ -189,6 +189,7 @@
 		64E972072881BB22008DBC02 /* CIGroupInvitationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */; };
 		64EEB0F72C353F1C00972D62 /* ServersSummaryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64EEB0F62C353F1C00972D62 /* ServersSummaryView.swift */; };
 		64F1CC3B28B39D8600CD1FB1 /* IncognitoHelp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */; };
+		64FC8F9D2E3B6DEF0068F384 /* ContextMemberContactActionsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 64FC8F9C2E3B6DEF0068F384 /* ContextMemberContactActionsView.swift */; };
 		8C01E9C12C8EFC33008A4B0A /* objc.m in Sources */ = {isa = PBXBuildFile; fileRef = 8C01E9C02C8EFC33008A4B0A /* objc.m */; };
 		8C01E9C22C8EFF8F008A4B0A /* objc.h in Headers */ = {isa = PBXBuildFile; fileRef = 8C01E9BF2C8EFBB6008A4B0A /* objc.h */; };
 		8C69FE7D2B8C7D2700267E38 /* AppSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */; };
@@ -555,6 +556,7 @@
 		64E972062881BB22008DBC02 /* CIGroupInvitationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CIGroupInvitationView.swift; sourceTree = "<group>"; };
 		64EEB0F62C353F1C00972D62 /* ServersSummaryView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServersSummaryView.swift; sourceTree = "<group>"; };
 		64F1CC3A28B39D8600CD1FB1 /* IncognitoHelp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IncognitoHelp.swift; sourceTree = "<group>"; };
+		64FC8F9C2E3B6DEF0068F384 /* ContextMemberContactActionsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContextMemberContactActionsView.swift; sourceTree = "<group>"; };
 		8C01E9BF2C8EFBB6008A4B0A /* objc.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = objc.h; sourceTree = "<group>"; };
 		8C01E9C02C8EFC33008A4B0A /* objc.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = objc.m; sourceTree = "<group>"; };
 		8C69FE7C2B8C7D2700267E38 /* AppSettings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppSettings.swift; sourceTree = "<group>"; };
@@ -1090,6 +1092,7 @@
 				64A77A012DC4AD6100FDEF2F /* ContextPendingMemberActionsView.swift */,
 				64E5E3622DF71A4E00A4D530 /* ContextContactRequestActionsView.swift */,
 				64E5E3662DFC16A900A4D530 /* ContextProfilePickerView.swift */,
+				64FC8F9C2E3B6DEF0068F384 /* ContextMemberContactActionsView.swift */,
 			);
 			path = ComposeMessage;
 			sourceTree = "<group>";
@@ -1521,6 +1524,7 @@
 				5CB9250D27A9432000ACCCDD /* ChatListNavLink.swift in Sources */,
 				649BCDA0280460FD00C3A862 /* ComposeImageView.swift in Sources */,
 				5CA059ED279559F40002BEB4 /* ContentView.swift in Sources */,
+				64FC8F9D2E3B6DEF0068F384 /* ContextMemberContactActionsView.swift in Sources */,
 				5C05DF532840AA1D00C683F9 /* CallSettings.swift in Sources */,
 				640417CD2B29B8C200CCB412 /* NewChatMenuButton.swift in Sources */,
 				5CFE0921282EEAF60002594B /* ZoomableScrollView.swift in Sources */,

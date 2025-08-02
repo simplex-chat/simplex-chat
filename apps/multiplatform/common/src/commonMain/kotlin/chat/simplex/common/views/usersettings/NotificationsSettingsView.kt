@@ -62,7 +62,7 @@ fun NotificationsSettingsLayout(
       if (appPlatform == AppPlatform.ANDROID) {
         SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notifications_mode_title), { showPage(CurrentPage.NOTIFICATIONS_MODE) }) {
           Text(
-            modes.first { it.value == notificationsMode.value }.title,
+            modes.firstOrNull { it.value == notificationsMode.value }?.title ?: "",
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             color = MaterialTheme.colors.secondary
@@ -71,7 +71,7 @@ fun NotificationsSettingsLayout(
       }
       SettingsActionItemWithContent(null, stringResource(MR.strings.settings_notification_preview_mode_title), { showPage(CurrentPage.NOTIFICATION_PREVIEW_MODE) }) {
         Text(
-          previewModes.first { it.value == notificationPreviewMode.value }.title,
+          previewModes.firstOrNull { it.value == notificationPreviewMode.value }?.title ?: "",
           maxLines = 1,
           overflow = TextOverflow.Ellipsis,
           color = MaterialTheme.colors.secondary
