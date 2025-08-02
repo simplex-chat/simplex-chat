@@ -23,6 +23,7 @@ markdownTests = do
   textWithEmail
   textWithPhone
   textWithMentions
+  textWithCommands
   multilineMarkdownList
 
 infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>
@@ -286,6 +287,29 @@ textWithMentions = describe "text with mentions" do
     "hello @ alice!" <==> "hello @ alice!"
     "hello @bob @ alice!" <==> "hello " <> mention "bob" "@bob" <> " @ alice!"
     "hello @bob @" <==> "hello " <> mention "bob" "@bob" <> " @"
+
+command :: Text -> Text -> Markdown
+command = Markdown . Just . Command
+
+textWithCommands :: Spec
+textWithCommands = describe "text with commands" do
+  it "correct markdown" do
+    "/start" <==> command "start" "/start"
+    "send /help" <==> "send " <> command "help" "/help"
+    "send /help !" <==> "send " <> command "help" "/help" <> " !"
+    "send /help!" <==> "send " <> command "help" "/help" <> "!"
+    "send /help..." <==> "send " <> command "help" "/help" <> "..."
+    "send /'filter 1'" <==> "send " <> command "filter 1" "/'filter 1'"
+    "/'filter 1'" <==> command "filter 1" "/'filter 1'"
+    "send /'filter 1'." <==> "send " <> command "filter 1" "/'filter 1'" <> "."
+    "send /'filter 1.'!" <==> "send " <> command "filter 1." "/'filter 1.'" <> "!"
+  it "ignored as markdown" $ do
+    "send /'filter 1" <==> "send /'filter 1"
+    "send /help /'filter 1" <==> "send " <> command "help" "/help" <> " /'filter 1"
+    "send / help!" <==> "send / help!"
+    "send /help / filter" <==> "send " <> command "help" "/help" <> " / filter"
+    "send /help /" <==> "send " <> command "help" "/help" <> " /"
+    "send /he?lp" <==> "send /he?lp"
 
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri

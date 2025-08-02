@@ -24,7 +24,7 @@ import Simplex.Chat.Core
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Simplex.Chat.Types.Shared (GroupMemberRole (..))
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -75,7 +75,7 @@ directoryServiceTests = do
     it "should accept some incorrect spellings" testCaptcha
 
 directoryProfile :: Profile
-directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing}
+directoryProfile = Profile {displayName = "SimpleX-Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
 
 mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> DirectoryOpts
 mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =

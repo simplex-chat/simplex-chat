@@ -19,7 +19,8 @@ CREATE TABLE contact_profiles(
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   preferences TEXT,
   contact_link BLOB,
-  short_descr TEXT
+  short_descr TEXT,
+  chat_peer_type TEXT
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,

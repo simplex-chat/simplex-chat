@@ -32,6 +32,7 @@ This file is generated automatically.
 - [CIReactionCount](#cireactioncount)
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
+- [ChatBotCommand](#chatbotcommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
 - [ChatErrorType](#chaterrortype)
@@ -39,6 +40,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
 - [ChatStats](#chatstats)
@@ -855,6 +857,20 @@ Invalid:
 
 ---
 
+## ChatBotCommand
+
+**Discriminated union type**:
+
+Command:
+- type: "command"
+- keyword: string
+- label: string
+- params: string?
+- hidden: bool?
+
+
+---
+
 ## ChatDeleteMode
 
 **Discriminated union type**:
@@ -1207,6 +1223,7 @@ Exception:
 - "reactions"
 - "voice"
 - "calls"
+- "sessions"
 
 
 ---
@@ -1261,6 +1278,15 @@ Message deletion result.
 **Record type**:
 - deletedChatItem: [AChatItem](#achatitem)
 - toChatItem: [AChatItem](#achatitem)?
+
+
+---
+
+## ChatPeerType
+
+**Enum type**:
+- "human"
+- "bot"
 
 
 ---
@@ -1688,6 +1714,7 @@ User:
 - reactions: [ContactUserPreference](#contactuserpreference)
 - voice: [ContactUserPreference](#contactuserpreference)
 - calls: [ContactUserPreference](#contactuserpreference)
+- sessions: [ContactUserPreference](#contactuserpreference)
 
 
 ---
@@ -1950,6 +1977,10 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+Command:
+- type: "command"
+- commandStr: string
+
 Mention:
 - type: "mention"
 - memberName: string
@@ -1984,6 +2015,8 @@ Phone:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
+- sessions: [RoleGroupPreference](#rolegrouppreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]
 
 
 ---
@@ -1996,6 +2029,8 @@ Phone:
 - reactions: [SimplePreference](#simplepreference)
 - voice: [SimplePreference](#simplepreference)
 - calls: [SimplePreference](#simplepreference)
+- sessions: [SimplePreference](#simplepreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]
 
 
 ---
@@ -2060,6 +2095,7 @@ MemberSupport:
 - "simplexLinks"
 - "reports"
 - "history"
+- "sessions"
 
 
 ---
@@ -2265,6 +2301,8 @@ Known:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)?
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
+- sessions: [RoleGroupPreference](#rolegrouppreference)?
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2414,6 +2452,7 @@ Unknown:
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
+- peerType: [ChatPeerType](#chatpeertype)?
 - localAlias: string
 
 
@@ -2640,6 +2679,8 @@ Unknown:
 - reactions: [SimplePreference](#simplepreference)?
 - voice: [SimplePreference](#simplepreference)?
 - calls: [SimplePreference](#simplepreference)?
+- sessions: [SimplePreference](#simplepreference)?
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2676,6 +2717,7 @@ Unknown:
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
+- peerType: [ChatPeerType](#chatpeertype)?
 
 
 ---
