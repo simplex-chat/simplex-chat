@@ -372,7 +372,7 @@
     <string name="smp_servers_check_address">Проверьте адрес сервера и попробуйте снова.</string>
     <string name="smp_servers_delete_server">Удалить сервер</string>
     <string name="install_simplex_chat_for_terminal">SimpleX Chat для терминала</string>
-    <string name="star_on_github">Поставить звёздочку в GitHub</string>
+    <string name="star_on_github">Поставить звёздочку на GitHub</string>
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
     <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные SimpleX Chat?</string>
