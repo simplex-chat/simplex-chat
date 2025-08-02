@@ -41,6 +41,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.chat.group.ChatTTLOption
+import chat.simplex.common.views.chat.item.MarkdownText
 import chat.simplex.common.views.chatlist.updateChatSettings
 import chat.simplex.common.views.newchat.*
 import chat.simplex.res.MR
@@ -759,16 +760,16 @@ fun ChatInfoDescription(c: NamedChat, displayName: String, copyNameToClipboard: 
   }
   val descr = c.shortDescr?.trim()
   if (descr != null && descr != "") {
-    val copyDescr = { copyNameToClipboard(descr) }
-    Text(
+    MarkdownText(
       descr,
-      style = MaterialTheme.typography.body2,
-      color = MaterialTheme.colors.onBackground,
-      textAlign = TextAlign.Center,
+      parseToMarkdown(descr),
+      toggleSecrets = true,
+      style = MaterialTheme.typography.body2.copy(color = MaterialTheme.colors.onBackground, lineHeight = 21.sp, textAlign = TextAlign.Center),
       maxLines = 4,
       overflow = TextOverflow.Ellipsis,
-      lineHeight = 21.sp,
-      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF).combinedClickable(onClick = copyDescr, onLongClick = copyDescr).onRightClick(copyDescr)
+      uriHandler = LocalUriHandler.current,
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF),
+      linkMode = chatModel.simplexLinkMode.value
     )
   }
 }
