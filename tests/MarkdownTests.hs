@@ -301,6 +301,7 @@ textWithCommands = describe "text with commands" do
     "send /help..." <==> "send " <> command "help" "/help" <> "..."
     "send /'filter 1'" <==> "send " <> command "filter 1" "/'filter 1'"
     "/'filter 1'" <==> command "filter 1" "/'filter 1'"
+    "/filter 1" <==> command "filter" "/filter" <> " 1" -- this is parsed as full command by parseMaybeMarkdownList
     "send /'filter 1'." <==> "send " <> command "filter 1" "/'filter 1'" <> "."
     "send /'filter 1.'!" <==> "send " <> command "filter 1." "/'filter 1.'" <> "!"
   it "ignored as markdown" $ do
@@ -313,6 +314,9 @@ textWithCommands = describe "text with commands" do
 
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri
+
+command' :: Text -> Text -> FormattedText
+command' = FormattedText . Just . Command
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
@@ -329,3 +333,6 @@ multilineMarkdownList = describe "multiline markdown" do
         [ FormattedText (simplexLinkFormat XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
           "\ntext"
         ]
+  it "command markdown" do
+    "/link 1" <<==>> [command' "link 1" "/link 1"]
+    " /link 1" <<==>> [command' "link 1" " /link 1"]

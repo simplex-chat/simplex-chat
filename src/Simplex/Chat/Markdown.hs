@@ -135,11 +135,21 @@ unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
-parseMaybeMarkdownList s
-  | all (isNothing . format) ml = Nothing
-  | otherwise = Just . reverse $ foldl' acc [] ml
+parseMaybeMarkdownList s = case ls of
+  [] -> Nothing
+  [l]
+    | T.null cmd -> Nothing
+    | isCmd -> Just [FormattedText (Just $ Command cmd) l]
+    where
+      (isCmd, cmd) = case T.uncons $ T.dropWhile (== ' ') l of
+        Just (c, rest) -> (c == '/', rest)
+        Nothing -> (False, "")
+  _
+    | all (isNothing . format) ml -> Nothing
+    | otherwise -> Just . reverse $ foldl' acc [] ml
   where
-    ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
+    ls = T.lines s
+    ml = intercalate ["\n"] $ map (markdownToList . parseMarkdown) ls
     acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
