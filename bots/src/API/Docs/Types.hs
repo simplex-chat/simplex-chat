@@ -207,8 +207,7 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
-    (sti @ChatBotCommand, STRecord, "", [""], "", ""),
-    (sti @ChatBotMenuCommand, STUnion1, "CBC", ["CBCMenu"], "", ""),
+    (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
@@ -396,7 +395,6 @@ deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
 deriving instance Generic ChatBotCommand
-deriving instance Generic ChatBotMenuCommand
 deriving instance Generic ChatDeleteMode
 deriving instance Generic ChatError
 deriving instance Generic ChatErrorType
