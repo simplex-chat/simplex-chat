@@ -115,7 +115,8 @@ public struct Profile: Codable, NamedChat, Hashable {
         shortDescr: String? = nil,
         image: String? = nil,
         contactLink: String? = nil,
-        preferences: Preferences? = nil
+        preferences: Preferences? = nil,
+        peerType: ChatPeerType? = nil
     ) {
         self.displayName = displayName
         self.fullName = fullName
@@ -131,6 +132,7 @@ public struct Profile: Codable, NamedChat, Hashable {
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
+    public var peerType: ChatPeerType?
     public var localAlias: String { get { "" } }
 
     var profileViewName: String {
@@ -152,6 +154,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         image: String? = nil,
         contactLink: String? = nil,
         preferences: Preferences? = nil,
+        peerType: ChatPeerType? = nil,
         localAlias: String
     ) {
         self.profileId = profileId
@@ -161,6 +164,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
         self.image = image
         self.contactLink = contactLink
         self.preferences = preferences
+        self.peerType = peerType
         self.localAlias = localAlias
     }
 
@@ -171,6 +175,7 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     public var image: String?
     public var contactLink: String?
     public var preferences: Preferences?
+    public var peerType: ChatPeerType?
     public var localAlias: String
 
     var profileViewName: String {
@@ -188,6 +193,11 @@ public struct LocalProfile: Codable, NamedChat, Hashable {
     )
 }
 
+public enum ChatPeerType: String, Codable {
+    case human
+    case bot
+}
+
 public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias: String) -> LocalProfile {
     LocalProfile(
         profileId: profileId,
@@ -197,6 +207,7 @@ public func toLocalProfile (_ profileId: Int64, _ profile: Profile, _ localAlias
         image: profile.image,
         contactLink: profile.contactLink,
         preferences: profile.preferences,
+        peerType: profile.peerType,
         localAlias: localAlias
     )
 }
@@ -208,7 +219,8 @@ public func fromLocalProfile (_ profile: LocalProfile) -> Profile {
         shortDescr: profile.shortDescr,
         image: profile.image,
         contactLink: profile.contactLink,
-        preferences: profile.preferences
+        preferences: profile.preferences,
+        peerType: profile.peerType
     )
 }
 
@@ -249,20 +261,26 @@ public struct FullPreferences: Decodable, Equatable, Hashable {
     public var fullDelete: SimplePreference
     public var reactions: SimplePreference
     public var voice: SimplePreference
+    public var files: SimplePreference
     public var calls: SimplePreference
+    public var commands: [ChatBotMenuCommand]
 
     public init(
         timedMessages: TimedMessagesPreference,
         fullDelete: SimplePreference,
         reactions: SimplePreference,
         voice: SimplePreference,
-        calls: SimplePreference
+        files: SimplePreference,
+        calls: SimplePreference,
+        commands: [ChatBotMenuCommand]
     ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.reactions = reactions
         self.voice = voice
+        self.files = files
         self.calls = calls
+        self.commands = commands
     }
 
     public static let sampleData = FullPreferences(
@@ -270,7 +288,9 @@ public struct FullPreferences: Decodable, Equatable, Hashable {
         fullDelete: SimplePreference(allow: .no),
         reactions: SimplePreference(allow: .yes),
         voice: SimplePreference(allow: .yes),
-        calls: SimplePreference(allow: .yes)
+        files: SimplePreference(allow: .always),
+        calls: SimplePreference(allow: .yes),
+        commands: []
     )
 }
 
@@ -279,20 +299,26 @@ public struct Preferences: Codable, Hashable {
     public var fullDelete: SimplePreference?
     public var reactions: SimplePreference?
     public var voice: SimplePreference?
+    public var files: SimplePreference?
     public var calls: SimplePreference?
+    public var commands: [ChatBotMenuCommand]?
 
     public init(
         timedMessages: TimedMessagesPreference?,
         fullDelete: SimplePreference?,
         reactions: SimplePreference?,
         voice: SimplePreference?,
-        calls: SimplePreference?
+        files: SimplePreference?,
+        calls: SimplePreference?,
+        commands: [ChatBotMenuCommand]?
     ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.reactions = reactions
         self.voice = voice
+        self.files = files
         self.calls = calls
+        self.commands = commands
     }
 
     func copy(
@@ -300,14 +326,18 @@ public struct Preferences: Codable, Hashable {
         fullDelete: SimplePreference? = nil,
         reactions: SimplePreference? = nil,
         voice: SimplePreference? = nil,
-        calls: SimplePreference? = nil
+        files: SimplePreference? = nil,
+        calls: SimplePreference? = nil,
+        commands: [ChatBotMenuCommand]? = nil
     ) -> Preferences {
         Preferences(
             timedMessages: timedMessages ?? self.timedMessages,
             fullDelete: fullDelete ?? self.fullDelete,
             reactions: reactions ?? self.reactions,
             voice: voice ?? self.voice,
-            calls: calls ?? self.calls
+            files: files ?? self.files,
+            calls: calls ?? self.calls,
+            commands: commands ?? self.commands
         )
     }
 
@@ -317,6 +347,7 @@ public struct Preferences: Codable, Hashable {
         case .fullDelete: return copy(fullDelete: SimplePreference(allow: allowed))
         case .reactions: return copy(reactions: SimplePreference(allow: allowed))
         case .voice: return copy(voice: SimplePreference(allow: allowed))
+        case .files: return copy(voice: SimplePreference(allow: allowed))
         case .calls: return copy(calls: SimplePreference(allow: allowed))
         }
     }
@@ -326,8 +357,66 @@ public struct Preferences: Codable, Hashable {
         fullDelete: SimplePreference(allow: .no),
         reactions: SimplePreference(allow: .yes),
         voice: SimplePreference(allow: .yes),
-        calls: SimplePreference(allow: .yes)
+        files: SimplePreference(allow: .always),
+        calls: SimplePreference(allow: .yes),
+        commands: nil
     )
+}
+
+public indirect enum ChatBotMenuCommand: Hashable {
+    case command(command: ChatBotCommand, hidden: Bool?)
+    case menu(label: String, commands: [ChatBotMenuCommand])
+
+    enum CodingKeys: String, CodingKey {
+        case type
+        case command
+        case hidden
+        case label
+        case commands
+    }
+}
+
+extension ChatBotMenuCommand: Decodable {
+    public init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try container.decode(String.self, forKey: CodingKeys.type)
+        switch type {
+        case "command":
+            let command = try container.decode(ChatBotCommand.self, forKey: CodingKeys.command)
+            let hidden = container.contains(CodingKeys.hidden)
+                            ? try container.decode((Bool?).self, forKey: CodingKeys.hidden)
+                            : nil
+            self = .command(command: command, hidden: hidden)
+        case "menu":
+            let label = try container.decode(String.self, forKey: CodingKeys.label)
+            let commands = try container.decode(([ChatBotMenuCommand]).self, forKey: CodingKeys.commands)
+            self = .menu(label: label, commands: commands)
+        default:
+            throw DecodingError.dataCorruptedError(forKey: CodingKeys.type, in: container, debugDescription: "Unsupported command type: \(type)")
+        }
+    }
+}
+
+extension ChatBotMenuCommand: Encodable {
+    public func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        switch self {
+        case let .command(command, hidden):
+            try container.encode("command", forKey: .type)
+            try container.encode(command, forKey: .command)
+            try container.encode(hidden, forKey: .hidden)
+        case let .menu(label, commands):
+            try container.encode("menu", forKey: .type)
+            try container.encode(label, forKey: .label)
+            try container.encode(commands, forKey: .commands)
+        }
+    }
+}
+
+public struct ChatBotCommand: Codable, Hashable {
+    public var keyword: String
+    public var label: String
+    public var params: String?
 }
 
 public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> Preferences {
@@ -336,7 +425,9 @@ public func fullPreferencesToPreferences(_ fullPreferences: FullPreferences) -> 
         fullDelete: fullPreferences.fullDelete,
         reactions: fullPreferences.reactions,
         voice: fullPreferences.voice,
-        calls: fullPreferences.calls
+        files: fullPreferences.files,
+        calls: fullPreferences.calls,
+        commands: fullPreferences.commands
     )
 }
 
@@ -346,7 +437,9 @@ public func contactUserPreferencesToPreferences(_ contactUserPreferences: Contac
         fullDelete: contactUserPreferences.fullDelete.userPreference.preference,
         reactions: contactUserPreferences.reactions.userPreference.preference,
         voice: contactUserPreferences.voice.userPreference.preference,
-        calls: contactUserPreferences.calls.userPreference.preference
+        files: contactUserPreferences.files.userPreference.preference,
+        calls: contactUserPreferences.calls.userPreference.preference,
+        commands: []
     )
 }
 
@@ -484,6 +577,7 @@ public struct ContactUserPreferences: Decodable, Hashable {
     public var fullDelete: ContactUserPreference<SimplePreference>
     public var reactions: ContactUserPreference<SimplePreference>
     public var voice: ContactUserPreference<SimplePreference>
+    public var files: ContactUserPreference<SimplePreference>
     public var calls: ContactUserPreference<SimplePreference>
 
     public init(
@@ -491,12 +585,14 @@ public struct ContactUserPreferences: Decodable, Hashable {
         fullDelete: ContactUserPreference<SimplePreference>,
         reactions: ContactUserPreference<SimplePreference>,
         voice: ContactUserPreference<SimplePreference>,
+        files: ContactUserPreference<SimplePreference>,
         calls: ContactUserPreference<SimplePreference>
     ) {
         self.timedMessages = timedMessages
         self.fullDelete = fullDelete
         self.reactions = reactions
         self.voice = voice
+        self.files = files
         self.calls = calls
     }
 
@@ -517,6 +613,11 @@ public struct ContactUserPreferences: Decodable, Hashable {
             contactPreference: SimplePreference(allow: .yes)
         ),
         voice: ContactUserPreference<SimplePreference>(
+            enabled: FeatureEnabled(forUser: true, forContact: true),
+            userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
+            contactPreference: SimplePreference(allow: .yes)
+        ),
+        files: ContactUserPreference<SimplePreference>(
             enabled: FeatureEnabled(forUser: true, forContact: true),
             userPreference: ContactUserPref<SimplePreference>.user(preference: SimplePreference(allow: .yes)),
             contactPreference: SimplePreference(allow: .yes)
@@ -598,6 +699,7 @@ public enum ChatFeature: String, Decodable, Feature, Hashable {
     case fullDelete
     case reactions
     case voice
+    case files
     case calls
 
     public var id: Self { self }
@@ -624,6 +726,7 @@ public enum ChatFeature: String, Decodable, Feature, Hashable {
         case .fullDelete: return NSLocalizedString("Delete for everyone", comment: "chat feature")
         case .reactions: return NSLocalizedString("Message reactions", comment: "chat feature")
         case .voice: return NSLocalizedString("Voice messages", comment: "chat feature")
+        case .files: return NSLocalizedString("Files and media", comment: "chat feature")
         case .calls: return NSLocalizedString("Audio/video calls", comment: "chat feature")
         }
     }
@@ -634,6 +737,7 @@ public enum ChatFeature: String, Decodable, Feature, Hashable {
         case .fullDelete: return "trash.slash"
         case .reactions: return "face.smiling"
         case .voice: return "mic"
+        case .files: return "doc"
         case .calls: return "phone"
         }
     }
@@ -644,6 +748,7 @@ public enum ChatFeature: String, Decodable, Feature, Hashable {
         case .fullDelete: return "trash.slash.fill"
         case .reactions: return "face.smiling.fill"
         case .voice: return "mic.fill"
+        case .files: return "doc.fill"
         case .calls: return "phone.fill"
         }
     }
@@ -680,6 +785,12 @@ public enum ChatFeature: String, Decodable, Feature, Hashable {
             case .always: return "Allow your contacts to send voice messages."
             case .yes: return "Allow voice messages only if your contact allows them."
             case .no: return "Prohibit sending voice messages."
+            }
+        case .files:
+            switch allowed {
+            case .always: return "Allow your contacts to send files and media."
+            case .yes: return "Allow files and media only if your contact allows them."
+            case .no: return "Prohibit sending files and media."
             }
         case .calls:
             switch allowed {
@@ -724,6 +835,14 @@ public enum ChatFeature: String, Decodable, Feature, Hashable {
                     : enabled.forContact
                     ? "Only your contact can send voice messages."
                     : "Voice messages are prohibited in this chat."
+        case .files:
+            return enabled.forUser && enabled.forContact
+                    ? "Both you and your contact can send files and media."
+                    : enabled.forUser
+                    ? "Only you can send files and media."
+                    : enabled.forContact
+                    ? "Only your contact can send files and media."
+                    : "Files and media are prohibited in this chat."
         case .calls:
             return enabled.forUser && enabled.forContact
                     ? "Both you and your contact can make calls."
@@ -957,6 +1076,7 @@ public struct ContactFeaturesAllowed: Equatable, Hashable {
     public var fullDelete: ContactFeatureAllowed
     public var reactions: ContactFeatureAllowed
     public var voice: ContactFeatureAllowed
+    public var files: ContactFeatureAllowed
     public var calls: ContactFeatureAllowed
 
     public init(
@@ -965,6 +1085,7 @@ public struct ContactFeaturesAllowed: Equatable, Hashable {
         fullDelete: ContactFeatureAllowed,
         reactions: ContactFeatureAllowed,
         voice: ContactFeatureAllowed,
+        files: ContactFeatureAllowed,
         calls: ContactFeatureAllowed
     ) {
         self.timedMessagesAllowed = timedMessagesAllowed
@@ -972,6 +1093,7 @@ public struct ContactFeaturesAllowed: Equatable, Hashable {
         self.fullDelete = fullDelete
         self.reactions = reactions
         self.voice = voice
+        self.files = files
         self.calls = calls
     }
 
@@ -981,6 +1103,7 @@ public struct ContactFeaturesAllowed: Equatable, Hashable {
         fullDelete: ContactFeatureAllowed.userDefault(.no),
         reactions: ContactFeatureAllowed.userDefault(.yes),
         voice: ContactFeatureAllowed.userDefault(.yes),
+        files: ContactFeatureAllowed.userDefault(.always),
         calls: ContactFeatureAllowed.userDefault(.yes)
     )
 }
@@ -994,6 +1117,7 @@ public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactU
         fullDelete: contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
         reactions: contactUserPrefToFeatureAllowed(contactUserPreferences.reactions),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
+        files: contactUserPrefToFeatureAllowed(contactUserPreferences.files),
         calls: contactUserPrefToFeatureAllowed(contactUserPreferences.calls)
     )
 }
@@ -1016,7 +1140,9 @@ public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeatu
         fullDelete: contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
         reactions: contactFeatureAllowedToPref(contactFeaturesAllowed.reactions),
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
-        calls: contactFeatureAllowedToPref(contactFeaturesAllowed.calls)
+        files: contactFeatureAllowedToPref(contactFeaturesAllowed.files),
+        calls: contactFeatureAllowedToPref(contactFeaturesAllowed.calls),
+        commands: nil
     )
 }
 
@@ -1057,6 +1183,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
     public var simplexLinks: RoleGroupPreference
     public var reports: GroupPreference
     public var history: GroupPreference
+    public var commands: [ChatBotMenuCommand]
 
     public init(
         timedMessages: TimedMessagesGroupPreference,
@@ -1067,7 +1194,8 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         files: RoleGroupPreference,
         simplexLinks: RoleGroupPreference,
         reports: GroupPreference,
-        history: GroupPreference
+        history: GroupPreference,
+        commands: [ChatBotMenuCommand]
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
@@ -1078,6 +1206,7 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         self.simplexLinks = simplexLinks
         self.reports = reports
         self.history = history
+        self.commands = commands
     }
 
     public static let sampleData = FullGroupPreferences(
@@ -1089,7 +1218,8 @@ public struct FullGroupPreferences: Decodable, Equatable, Hashable {
         files: RoleGroupPreference(enable: .on, role: nil),
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
         reports: GroupPreference(enable: .on),
-        history: GroupPreference(enable: .on)
+        history: GroupPreference(enable: .on),
+        commands: []
     )
 }
 
@@ -1103,6 +1233,7 @@ public struct GroupPreferences: Codable, Hashable {
     public var simplexLinks: RoleGroupPreference?
     public var reports: GroupPreference?
     public var history: GroupPreference?
+    public var commands: [ChatBotMenuCommand]?
 
     public init(
         timedMessages: TimedMessagesGroupPreference? = nil,
@@ -1113,7 +1244,8 @@ public struct GroupPreferences: Codable, Hashable {
         files: RoleGroupPreference? = nil,
         simplexLinks: RoleGroupPreference? = nil,
         reports: GroupPreference? = nil,
-        history: GroupPreference? = nil
+        history: GroupPreference? = nil,
+        commands: [ChatBotMenuCommand]? = nil
     ) {
         self.timedMessages = timedMessages
         self.directMessages = directMessages
@@ -1124,6 +1256,7 @@ public struct GroupPreferences: Codable, Hashable {
         self.simplexLinks = simplexLinks
         self.reports = reports
         self.history = history
+        self.commands = commands
     }
 
     public static let sampleData = GroupPreferences(
@@ -1135,7 +1268,8 @@ public struct GroupPreferences: Codable, Hashable {
         files: RoleGroupPreference(enable: .on, role: nil),
         simplexLinks: RoleGroupPreference(enable: .on, role: nil),
         reports: GroupPreference(enable: .on),
-        history: GroupPreference(enable: .on)
+        history: GroupPreference(enable: .on),
+        commands: nil
     )
 }
 
@@ -1149,7 +1283,8 @@ public func toGroupPreferences(_ fullPreferences: FullGroupPreferences) -> Group
         files: fullPreferences.files,
         simplexLinks: fullPreferences.simplexLinks,
         reports: fullPreferences.reports,
-        history: fullPreferences.history
+        history: fullPreferences.history,
+        commands: fullPreferences.commands
     )
 }
 
@@ -1502,6 +1637,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             case .fullDelete: return cups.fullDelete.enabled.forUser
             case .reactions: return cups.reactions.enabled.forUser
             case .voice: return cups.voice.enabled.forUser
+            case .files: return cups.files.enabled.forUser
             case .calls: return cups.calls.enabled.forUser
             }
         case let .group(groupInfo, _):
@@ -1511,11 +1647,13 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
             case .fullDelete: return prefs.fullDelete.on
             case .reactions: return prefs.reactions.on
             case .voice: return prefs.voice.on(for: groupInfo.membership)
+            case .files: return prefs.files.on(for: groupInfo.membership)
             case .calls: return false
             }
         case .local:
             switch feature {
             case .voice: return true
+            case .files: return true
             default: return false
             }
         default: return false
@@ -1617,6 +1755,25 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var hasMentions: Bool {
         if case .group = self { true } else { false }
+    }
+
+    public var useCommands: Bool {
+        switch self {
+        case let .direct(c): c.profile.peerType == .bot
+        case let .group(g, _): (g.groupProfile.groupPreferences?.commands?.count ?? 0) > 0
+        default: false
+        }
+    }
+
+    public var menuCommands: [ChatBotMenuCommand]? {
+        switch self {
+        case let .direct(c):
+            c.profile.peerType == .bot
+            ? c.profile.preferences?.commands
+            : nil
+        case let .group(g, _): g.groupProfile.groupPreferences?.commands
+        default: nil
+        }
     }
 
     public var chatTags: [Int64]? {
@@ -1813,6 +1970,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         case .fullDelete: return mergedPreferences.fullDelete.contactPreference.allow != .no
         case .reactions: return mergedPreferences.reactions.contactPreference.allow != .no
         case .voice: return mergedPreferences.voice.contactPreference.allow != .no
+        case .files: return mergedPreferences.files.contactPreference.allow != .no
         case .calls: return mergedPreferences.calls.contactPreference.allow != .no
         }
     }
@@ -1823,6 +1981,7 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         case .fullDelete: return mergedPreferences.fullDelete.userPreference.preference.allow != .no
         case .reactions: return mergedPreferences.reactions.userPreference.preference.allow != .no
         case .voice: return mergedPreferences.voice.userPreference.preference.allow != .no
+        case .files: return mergedPreferences.files.userPreference.preference.allow != .no
         case .calls: return mergedPreferences.calls.userPreference.preference.allow != .no
         }
     }
@@ -4446,6 +4605,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case colored(color: FormatColor)
     case uri
     case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case command(commandStr: String)
     case mention(memberName: String)
     case email
     case phone

@@ -323,6 +323,7 @@ struct ComposeView: View {
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     @Binding var composeState: ComposeState
+    @Binding var showCommandsMenu: Bool
     @Binding var keyboardVisible: Bool
     @Binding var keyboardHiddenDate: Date
     @Binding var selectedRange: NSRange
@@ -429,7 +430,7 @@ struct ComposeView: View {
                 contextSendMessageToConnect("Send direct message to connect")
                 Divider()
                 HStack (alignment: .center) {
-                    attachmentButton().disabled(true)
+                    attachementAndCommandsButtons().disabled(true)
                     sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
                 }
                 .padding(.horizontal, 12)
@@ -457,7 +458,7 @@ struct ComposeView: View {
                 ContextMemberContactActionsView(contact: ct, groupDirectInv: groupDirectInv)
             } else {
                 HStack (alignment: .center) {
-                    attachmentButton()
+                    attachementAndCommandsButtons()
                     sendMessageView(disableSendButton)
                 }
                 .padding(.horizontal, 12)
@@ -703,6 +704,31 @@ struct ComposeView: View {
         }
     }
 
+    @ViewBuilder private func attachementAndCommandsButtons() -> some View {
+        if chat.chatInfo.useCommands {
+            commandsButton()
+        }
+        if chat.chatInfo.contact?.profile.peerType != .bot || chat.chatInfo.featureEnabled(.files) {
+            attachmentButton()
+        }
+    }
+
+    private func commandsButton() -> some View {
+        Button {
+            showCommandsMenu.toggle()
+        } label: {
+            Text(verbatim: "//")
+                .font(.title3)
+                .italic()
+//                .padding(.horizontal, 2)
+                .contentShape(Rectangle())
+//            Image(systemName: "chevron.left.forwardslash.chevron.right").resizable()
+        }
+        .disabled(!chat.chatInfo.sendMsgEnabled || (chat.chatInfo.menuCommands?.isEmpty ?? true))
+        .frame(width: 25, height: 25)
+        .tint(theme.colors.primary)
+    }
+
     @ViewBuilder private func attachmentButton() -> some View {
         let b = Button {
             showChooseSource = true
@@ -714,12 +740,11 @@ struct ComposeView: View {
             .frame(width: 25, height: 25)
             .tint(theme.colors.primary)
         if im.secondaryIMFilter == nil,
-           case let .group(g, _) = chat.chatInfo,
-           !g.fullGroupPreferences.files.on(for: g.membership) {
+           !chat.chatInfo.featureEnabled(.files) {
             b.disabled(true).onTapGesture {
                 AlertManager.shared.showAlertMsg(
                     title: "Files and media prohibited!",
-                    message: "Only group owners can enable files and media."
+                    message: chat.chatInfo.groupInfo == nil ? nil : "Only group owners can enable files and media."
                 )
             }
         } else {
@@ -1502,6 +1527,7 @@ struct ComposeView_Previews: PreviewProvider {
                 chat: chat,
                 im: im,
                 composeState: $composeState,
+                showCommandsMenu: Binding.constant(false),
                 keyboardVisible: Binding.constant(true),
                 keyboardHiddenDate: Binding.constant(Date.now),
                 selectedRange: $selectedRange
@@ -1511,6 +1537,7 @@ struct ComposeView_Previews: PreviewProvider {
                 chat: chat,
                 im: im,
                 composeState: $composeState,
+                showCommandsMenu: Binding.constant(false),
                 keyboardVisible: Binding.constant(true),
                 keyboardHiddenDate: Binding.constant(Date.now),
                 selectedRange: $selectedRange

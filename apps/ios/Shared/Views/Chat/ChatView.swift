@@ -59,6 +59,7 @@ struct ChatView: View {
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var animatedScrollingInProgress: Bool = false
     @State private var showUserSupportChatSheet = false
+    @State private var showCommandsMenu = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
@@ -108,6 +109,8 @@ struct ChatView: View {
                     }
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(im: im, groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
+                    } else if let menuCommands = chat.chatInfo.menuCommands {
+                        CommandsMenuView(chat: chat, menuCommands: menuCommands, composeState: $composeState, selectedRange: $selectedRange, showCommandsMenu: $showCommandsMenu)
                     }
                     FloatingButtons(im: im, theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, animatedScrollingInProgress: $animatedScrollingInProgress, listState: scrollView.listState, model: floatingButtonModel, reloadItems: {
                             mergedItems.boxedValue = MergedItems.create(im, revealedItems)
@@ -135,6 +138,7 @@ struct ChatView: View {
                         chat: chat,
                         im: im,
                         composeState: $composeState,
+                        showCommandsMenu: $showCommandsMenu,
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
                         selectedRange: $selectedRange,
@@ -923,6 +927,8 @@ struct ChatView: View {
                     }
                 } else if contact.nextAcceptContactRequest {
                     "Accept contact request"
+                } else if case .bot = contact.profile.peerType {
+                    "Bot"
                 } else {
                     "Your contact"
                 }
