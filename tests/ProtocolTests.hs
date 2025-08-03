@@ -98,7 +98,7 @@ s #==# msg = do
   s ==# msg
 
 testChatPreferences :: Maybe Preferences
-testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
+testChatPreferences = Just Preferences {voice = Just VoicePreference {allow = FAYes}, files = Nothing, fullDelete = Nothing, timedMessages = Nothing, calls = Nothing, reactions = Just ReactionsPreference {allow = FAYes}, sessions = Nothing, commands = Nothing}
 
 testGroupPreferences :: Maybe GroupPreferences
 testGroupPreferences = Just GroupPreferences {timedMessages = Nothing, directMessages = Nothing, reactions = Just ReactionsGroupPreference {enable = FEOn}, voice = Just VoiceGroupPreference {enable = FEOn, role = Nothing}, files = Nothing, fullDelete = Nothing, simplexLinks = Nothing, history = Nothing, reports = Nothing, sessions = Nothing, commands = Nothing}

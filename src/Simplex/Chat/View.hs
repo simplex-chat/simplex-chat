@@ -607,8 +607,8 @@ viewUsersList us =
    in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
-    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr}, activeUser, showNtfs, viewPwdHash} count)
-      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, peerType}, activeUser, showNtfs, viewPwdHash} count)
+      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr <> bot
       | otherwise = Nothing
       where
         infoStr = if null info then "" else " (" <> mconcat (intersperse ", " info) <> ")"
@@ -617,6 +617,9 @@ viewUsersList us =
             <> [highlight' "hidden" | isJust viewPwdHash]
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
+        bot = case peerType of
+          Just CPTBot -> " (bot)"
+          _ -> ""
 
 viewGroupSubscribed :: GroupName -> [StyledString]
 viewGroupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
@@ -1429,11 +1432,15 @@ viewContactAndMemberAssociated ct g m ct' =
   ]
 
 viewUserProfile :: Profile -> [StyledString]
-viewUserProfile Profile {displayName, fullName, shortDescr} =
-  [ "user profile: " <> ttyFullName displayName fullName shortDescr,
+viewUserProfile Profile {displayName, fullName, shortDescr, peerType} =
+  [ "user profile: " <> ttyFullName displayName fullName shortDescr <> bot,
     "use " <> highlight' "/p <name> [<bio>]" <> " to change it",
     "(the updated profile will be sent to all your contacts)"
   ]
+  where
+    bot = case peerType of
+      Just CPTBot -> " (bot)"
+      _ -> ""
 
 viewUserPrivacy :: User -> User -> [StyledString]
 viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', showNtfs, viewPwdHash} =

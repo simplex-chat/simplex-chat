@@ -4376,6 +4376,7 @@ chatCommandP =
       "/unblock #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
+      "/create bot " *> (CreateActiveUser <$> newBotUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
@@ -4806,6 +4807,14 @@ chatCommandP =
     newUserP = do
       (cName, shortDescr) <- profileNameDescr
       let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
+      pure NewUser {profile, pastTimestamp = False}
+    newBotUserP = do
+      files_ <- optional $ "files=" *> onOffP <* A.space
+      (cName, shortDescr) <- profileNameDescr
+      let preferences = case files_ of
+            Just True -> Nothing
+            _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences}
       pure NewUser {profile, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

@@ -44,6 +44,7 @@ data ChatFeature
   | CFFullDelete
   | CFReactions
   | CFVoice
+  | CFFiles
   | CFCalls
   | CFSessions
   deriving (Show)
@@ -53,6 +54,7 @@ data SChatFeature (f :: ChatFeature) where
   SCFFullDelete :: SChatFeature 'CFFullDelete
   SCFReactions :: SChatFeature 'CFReactions
   SCFVoice :: SChatFeature 'CFVoice
+  SCFFiles :: SChatFeature 'CFFiles
   SCFCalls :: SChatFeature 'CFCalls
   SCFSessions :: SChatFeature 'CFSessions
 
@@ -68,6 +70,7 @@ chatFeatureNameText = \case
   CFFullDelete -> "Full deletion"
   CFReactions -> "Message reactions"
   CFVoice -> "Voice messages"
+  CFFiles -> "Files and media"
   CFCalls -> "Audio/video calls"
   CFSessions -> "Chat sessions"
 
@@ -80,15 +83,18 @@ allChatFeatures =
     ACF SCFFullDelete,
     ACF SCFReactions,
     ACF SCFVoice,
+    -- ACF SCFFiles, -- not showing in the UI
     ACF SCFCalls
+    -- ACF SCFSessions -- not showing in the UI
   ]
 
 chatPrefSel :: SChatFeature f -> Preferences -> Maybe (FeaturePreference f)
-chatPrefSel f Preferences {timedMessages, fullDelete, reactions, voice, calls, sessions} = case f of
+chatPrefSel f Preferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions} = case f of
   SCFTimedMessages -> timedMessages
   SCFFullDelete -> fullDelete
   SCFReactions -> reactions
   SCFVoice -> voice
+  SCFFiles -> files
   SCFCalls -> calls
   SCFSessions -> sessions
 
@@ -98,6 +104,7 @@ chatFeature = \case
   SCFFullDelete -> CFFullDelete
   SCFReactions -> CFReactions
   SCFVoice -> CFVoice
+  SCFFiles -> CFFiles
   SCFCalls -> CFCalls
   SCFSessions -> CFSessions
 
@@ -111,11 +118,12 @@ instance PreferenceI (Maybe Preferences) where
   getPreference f prefs = fromMaybe (getPreference f defaultChatPrefs) (chatPrefSel f =<< prefs)
 
 instance PreferenceI FullPreferences where
-  getPreference f FullPreferences {timedMessages, fullDelete, reactions, voice, calls, sessions} = case f of
+  getPreference f FullPreferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions} = case f of
     SCFTimedMessages -> timedMessages
     SCFFullDelete -> fullDelete
     SCFReactions -> reactions
     SCFVoice -> voice
+    SCFFiles -> files
     SCFCalls -> calls
     SCFSessions -> sessions
   {-# INLINE getPreference #-}
@@ -137,6 +145,7 @@ setPreference_ f pref_ prefs =
     SCFFullDelete -> prefs {fullDelete = pref_}
     SCFReactions -> prefs {reactions = pref_}
     SCFVoice -> prefs {voice = pref_}
+    SCFFiles -> prefs {files = pref_}
     SCFCalls -> prefs {calls = pref_}
     SCFSessions -> prefs {sessions = pref_}
 
@@ -146,6 +155,7 @@ data Preferences = Preferences
     fullDelete :: Maybe FullDeletePreference,
     reactions :: Maybe ReactionsPreference,
     voice :: Maybe VoicePreference,
+    files :: Maybe FilesPreference,
     calls :: Maybe CallsPreference,
     sessions :: Maybe SessionsPreference,
     commands :: Maybe [ChatBotCommand]
@@ -359,6 +369,7 @@ data FullPreferences = FullPreferences
     fullDelete :: FullDeletePreference,
     reactions :: ReactionsPreference,
     voice :: VoicePreference,
+    files :: FilesPreference,
     calls :: CallsPreference,
     sessions :: SessionsPreference,
     commands :: ListDef ChatBotCommand
@@ -396,6 +407,7 @@ data ContactUserPreferences = ContactUserPreferences
     fullDelete :: ContactUserPreference FullDeletePreference,
     reactions :: ContactUserPreference ReactionsPreference,
     voice :: ContactUserPreference VoicePreference,
+    files :: ContactUserPreference FilesPreference,
     calls :: ContactUserPreference CallsPreference,
     sessions :: ContactUserPreference SessionsPreference
   }
@@ -412,12 +424,13 @@ data ContactUserPref p = CUPContact {preference :: p} | CUPUser {preference :: p
   deriving (Eq, Show)
 
 toChatPrefs :: FullPreferences -> Preferences
-toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, calls, sessions, commands = ListDef cmds} =
+toChatPrefs FullPreferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions, commands = ListDef cmds} =
   Preferences
     { timedMessages = Just timedMessages,
       fullDelete = Just fullDelete,
       reactions = Just reactions,
       voice = Just voice,
+      files = Just files,
       calls = Just calls,
       sessions = Just sessions,
       commands = Just cmds
@@ -430,13 +443,14 @@ defaultChatPrefs =
       fullDelete = FullDeletePreference {allow = FANo},
       reactions = ReactionsPreference {allow = FAYes},
       voice = VoicePreference {allow = FAYes},
+      files = FilesPreference {allow = FAAlways},
       calls = CallsPreference {allow = FAYes},
       sessions = SessionsPreference {allow = FANo},
       commands = ListDef []
     }
 
 emptyChatPrefs :: Preferences
-emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing
+emptyChatPrefs = Preferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 defaultGroupPrefs :: FullGroupPreferences
 defaultGroupPrefs =
@@ -458,12 +472,13 @@ emptyGroupPrefs :: GroupPreferences
 emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
-businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, sessions} =
+businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions} =
   defaultBusinessGroupPrefs
     { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages},
       fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete, role = Nothing},
       reactions = Just ReactionsGroupPreference {enable = maybe FEOn enableFeature reactions},
       voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing},
+      files = Just FilesGroupPreference {enable = maybe FEOff enableFeature files, role = Nothing},
       sessions = Just SessionsGroupPreference {enable = maybe FEOff enableFeature sessions, role = Nothing}
     }
   where
@@ -503,6 +518,9 @@ data ReactionsPreference = ReactionsPreference {allow :: FeatureAllowed}
 data VoicePreference = VoicePreference {allow :: FeatureAllowed}
   deriving (Eq, Show)
 
+data FilesPreference = FilesPreference {allow :: FeatureAllowed}
+  deriving (Eq, Show)
+
 data CallsPreference = CallsPreference {allow :: FeatureAllowed}
   deriving (Eq, Show)
 
@@ -525,6 +543,9 @@ instance HasField "allow" ReactionsPreference FeatureAllowed where
 
 instance HasField "allow" VoicePreference FeatureAllowed where
   hasField p@VoicePreference {allow} = (\a -> p {allow = a}, allow)
+
+instance HasField "allow" FilesPreference FeatureAllowed where
+  hasField p@FilesPreference {allow} = (\a -> p {allow = a}, allow)
 
 instance HasField "allow" CallsPreference FeatureAllowed where
   hasField p@CallsPreference {allow} = (\a -> p {allow = a}, allow)
@@ -550,6 +571,11 @@ instance FeatureI 'CFReactions where
 instance FeatureI 'CFVoice where
   type FeaturePreference 'CFVoice = VoicePreference
   sFeature = SCFVoice
+  prefParam _ = Nothing
+
+instance FeatureI 'CFFiles where
+  type FeaturePreference 'CFFiles = FilesPreference
+  sFeature = SCFFiles
   prefParam _ = Nothing
 
 instance FeatureI 'CFCalls where
@@ -860,6 +886,7 @@ mergePreferences contactPrefs userPreferences canFallbackToUserTTL =
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
+      files = pref SCFFiles,
       calls = pref SCFCalls,
       sessions = pref SCFSessions,
       commands = ListDef $ fromMaybe [] $ (contactPrefs >>= commands_) <|> (userPreferences >>= commands_)
@@ -886,6 +913,7 @@ fullPreferences' userPreferences =
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
+      files = pref SCFFiles,
       calls = pref SCFCalls,
       sessions = pref SCFSessions,
       commands = ListDef $ fromMaybe [] $ userPreferences >>= commands_
@@ -991,11 +1019,12 @@ preferenceState pref =
    in (allow, param)
 
 getContactUserPreference :: SChatFeature f -> ContactUserPreferences -> ContactUserPreference (FeaturePreference f)
-getContactUserPreference f ContactUserPreferences {timedMessages, fullDelete, reactions, voice, calls, sessions} = case f of
+getContactUserPreference f ContactUserPreferences {timedMessages, fullDelete, reactions, voice, files, calls, sessions} = case f of
   SCFTimedMessages -> timedMessages
   SCFFullDelete -> fullDelete
   SCFReactions -> reactions
   SCFVoice -> voice
+  SCFFiles -> files
   SCFCalls -> calls
   SCFSessions -> sessions
 
@@ -1010,6 +1039,12 @@ $(J.deriveJSON defaultJSON ''FullDeletePreference)
 $(J.deriveJSON defaultJSON ''ReactionsPreference)
 
 $(J.deriveJSON defaultJSON ''VoicePreference)
+
+$(J.deriveToJSON defaultJSON ''FilesPreference)
+
+instance FromJSON FilesPreference where
+  parseJSON v = $(J.mkParseJSON defaultJSON ''FilesPreference) v
+  omittedField = Just FilesPreference {allow = FAAlways}
 
 $(J.deriveJSON defaultJSON ''CallsPreference)
 

@@ -642,15 +642,15 @@ updateContactProfile_ db userId profileId profile = do
   updateContactProfile_' db userId profileId profile currentTs
 
 updateContactProfile_' :: DB.Connection -> UserId -> ProfileId -> Profile -> UTCTime -> IO ()
-updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences} updatedAt = do
+updateContactProfile_' db userId profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} updatedAt = do
   DB.execute
     db
     [sql|
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     |]
-    (displayName, fullName, shortDescr, image, contactLink, preferences, updatedAt, userId, profileId)
+    (displayName, fullName, shortDescr, image, contactLink, preferences, peerType, updatedAt, userId, profileId)
 
 -- update only member profile fields (when member doesn't have associated contact - we can reset contactLink and prefs)
 updateMemberContactProfileReset_ :: DB.Connection -> UserId -> ProfileId -> Profile -> IO ()

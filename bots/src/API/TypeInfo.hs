@@ -210,6 +210,7 @@ toTypeInfo tr =
       ]
     simplePrefTypes =
       [ "CallsPreference",
+        "FilesPreference",
         "FullDeletePreference",
         "ReactionsPreference",
         "SessionsPreference",

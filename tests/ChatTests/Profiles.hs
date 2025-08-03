@@ -19,7 +19,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
-import Simplex.Chat.Options
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))

@@ -49,6 +49,7 @@ mkBotOpts ps publishers =
 #endif
 
           },
+      botDisplayName = "broadcast_bot",
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

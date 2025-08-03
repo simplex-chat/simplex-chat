@@ -616,6 +616,7 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
+      files = pref SCFFiles,
       calls = pref SCFCalls,
       sessions = pref SCFSessions
     }

@@ -1222,6 +1222,7 @@ Exception:
 - "fullDelete"
 - "reactions"
 - "voice"
+- "files"
 - "calls"
 - "sessions"
 
@@ -1713,6 +1714,7 @@ User:
 - fullDelete: [ContactUserPreference](#contactuserpreference)
 - reactions: [ContactUserPreference](#contactuserpreference)
 - voice: [ContactUserPreference](#contactuserpreference)
+- files: [ContactUserPreference](#contactuserpreference)
 - calls: [ContactUserPreference](#contactuserpreference)
 - sessions: [ContactUserPreference](#contactuserpreference)
 
@@ -2028,6 +2030,7 @@ Phone:
 - fullDelete: [SimplePreference](#simplepreference)
 - reactions: [SimplePreference](#simplepreference)
 - voice: [SimplePreference](#simplepreference)
+- files: [SimplePreference](#simplepreference)
 - calls: [SimplePreference](#simplepreference)
 - sessions: [SimplePreference](#simplepreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
@@ -2678,6 +2681,7 @@ Unknown:
 - fullDelete: [SimplePreference](#simplepreference)?
 - reactions: [SimplePreference](#simplepreference)?
 - voice: [SimplePreference](#simplepreference)?
+- files: [SimplePreference](#simplepreference)?
 - calls: [SimplePreference](#simplepreference)?
 - sessions: [SimplePreference](#simplepreference)?
 - commands: [[ChatBotCommand](#chatbotcommand)]?
