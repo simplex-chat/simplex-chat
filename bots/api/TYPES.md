@@ -33,6 +33,7 @@ This file is generated automatically.
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
 - [ChatBotCommand](#chatbotcommand)
+- [ChatBotMenuCommand](#chatbotmenucommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
 - [ChatErrorType](#chaterrortype)
@@ -859,13 +860,21 @@ Invalid:
 
 ## ChatBotCommand
 
+**Record type**:
+- keyword: string
+- label: string
+- params: string?
+
+
+---
+
+## ChatBotMenuCommand
+
 **Discriminated union type**:
 
 Command:
 - type: "command"
-- keyword: string
-- label: string
-- params: string?
+- command: [ChatBotCommand](#chatbotcommand)
 - hidden: bool?
 
 
@@ -2018,7 +2027,7 @@ Phone:
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
 - sessions: [RoleGroupPreference](#rolegrouppreference)
-- commands: [[ChatBotCommand](#chatbotcommand)]
+- commands: [[ChatBotMenuCommand](#chatbotmenucommand)]
 
 
 ---
@@ -2033,7 +2042,7 @@ Phone:
 - files: [SimplePreference](#simplepreference)
 - calls: [SimplePreference](#simplepreference)
 - sessions: [SimplePreference](#simplepreference)
-- commands: [[ChatBotCommand](#chatbotcommand)]
+- commands: [[ChatBotMenuCommand](#chatbotmenucommand)]
 
 
 ---
@@ -2305,7 +2314,7 @@ Known:
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
 - sessions: [RoleGroupPreference](#rolegrouppreference)?
-- commands: [[ChatBotCommand](#chatbotcommand)]?
+- commands: [[ChatBotMenuCommand](#chatbotmenucommand)]?
 
 
 ---
@@ -2684,7 +2693,7 @@ Unknown:
 - files: [SimplePreference](#simplepreference)?
 - calls: [SimplePreference](#simplepreference)?
 - sessions: [SimplePreference](#simplepreference)?
-- commands: [[ChatBotCommand](#chatbotcommand)]?
+- commands: [[ChatBotMenuCommand](#chatbotmenucommand)]?
 
 
 ---

@@ -158,11 +158,11 @@ data Preferences = Preferences
     files :: Maybe FilesPreference,
     calls :: Maybe CallsPreference,
     sessions :: Maybe SessionsPreference,
-    commands :: Maybe [ChatBotCommand]
+    commands :: Maybe [ChatBotMenuCommand]
   }
   deriving (Eq, Show)
 
-class HasCommands p where commands_ :: p -> Maybe [ChatBotCommand]
+class HasCommands p where commands_ :: p -> Maybe [ChatBotMenuCommand]
 
 instance HasCommands Preferences where commands_ Preferences {commands} = commands
 
@@ -304,23 +304,28 @@ data GroupPreferences = GroupPreferences
     reports :: Maybe ReportsGroupPreference,
     history :: Maybe HistoryGroupPreference,
     sessions :: Maybe SessionsGroupPreference,
-    commands :: Maybe [ChatBotCommand]
+    commands :: Maybe [ChatBotMenuCommand]
   }
   deriving (Eq, Show)
 
 instance HasCommands GroupPreferences where commands_ GroupPreferences {commands} = commands
 
-data ChatBotCommand
+data ChatBotMenuCommand
   = CBCCommand
-      { keyword :: Text, -- "/order"
-        label :: Text, -- Information about order
-        params :: Maybe Text, -- "<order number>", command is sent on selection if params is absent
+      { command :: ChatBotCommand,
         hidden :: Maybe Bool
       }
   | CBCMenu
       { label :: Text, -- Orders
-        commands :: [ChatBotCommand]
+        commands :: [ChatBotMenuCommand]
       }
+  deriving (Eq, Show)
+
+data ChatBotCommand = ChatBotCommand
+  { keyword :: Text, -- "order"
+    label :: Text, -- Information about order
+    params :: Maybe Text -- "<order number>", command is sent on selection if params is absent
+  }
   deriving (Eq, Show)
 
 setGroupPreference :: forall f. GroupFeatureNoRoleI f => SGroupFeature f -> GroupFeatureEnabled -> Maybe GroupPreferences -> GroupPreferences
@@ -372,7 +377,7 @@ data FullPreferences = FullPreferences
     files :: FilesPreference,
     calls :: CallsPreference,
     sessions :: SessionsPreference,
-    commands :: ListDef ChatBotCommand
+    commands :: ListDef ChatBotMenuCommand
   }
   deriving (Eq, Show)
 
@@ -397,7 +402,7 @@ data FullGroupPreferences = FullGroupPreferences
     reports :: ReportsGroupPreference,
     history :: HistoryGroupPreference,
     sessions :: SessionsGroupPreference,
-    commands :: ListDef ChatBotCommand
+    commands :: ListDef ChatBotMenuCommand
   }
   deriving (Eq, Show)
 
@@ -1054,7 +1059,9 @@ instance FromJSON SessionsPreference where
   parseJSON v = $(J.mkParseJSON defaultJSON ''SessionsPreference) v
   omittedField = Just SessionsPreference {allow = FANo}
 
-$(J.deriveJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotCommand)
+$(J.deriveJSON defaultJSON ''ChatBotCommand)
+
+$(J.deriveJSON (taggedObjectJSON $ dropPrefix "CBC") ''ChatBotMenuCommand)
 
 $(J.deriveJSON defaultJSON ''Preferences)
 

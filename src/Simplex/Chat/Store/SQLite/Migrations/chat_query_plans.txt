@@ -4462,7 +4462,7 @@ SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE contact_profiles
-      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, updated_at = ?
+      SET display_name = ?, full_name = ?, short_descr = ?, image = ?, contact_link = ?, preferences = ?, chat_peer_type = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
     
 Plan:
