@@ -16,7 +16,6 @@ struct CommandsMenuView: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @ObservedObject var chat: Chat
-    @State var menuCommands: [ChatBotMenuCommand]
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
     @Binding var showCommandsMenu: Bool
@@ -63,9 +62,9 @@ struct CommandsMenuView: View {
         .onChange(of: composeState.message) { message in
             let msg = message.trimmingCharacters(in: .whitespaces)
             if msg == "/" {
-                currentCommands = menuCommands
+                currentCommands = chat.chatInfo.menuCommands
             } else if msg.first == "/" {
-                currentCommands = filterShownCommands(menuCommands, msg.dropFirst())
+                currentCommands = filterShownCommands(chat.chatInfo.menuCommands, msg.dropFirst())
             } else {
                 showCommandsMenu = false
                 currentCommands = []
@@ -73,7 +72,7 @@ struct CommandsMenuView: View {
             menuTreeBackPath = []
         }
         .onChange(of: showCommandsMenu) { show in
-            currentCommands = show ? menuCommands : []
+            currentCommands = show ? chat.chatInfo.menuCommands : []
             menuTreeBackPath = []
         }
     }
@@ -100,12 +99,12 @@ struct CommandsMenuView: View {
     @ViewBuilder
     private func commandRow(_ command: ChatBotMenuCommand) -> some View {
         switch command {
-        case let .command(cmd, _):
+        case let .command(keyword, label, params, _):
             HStack {
-                Text(cmd.label)
+                Text(label)
                     .lineLimit(1)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                Text("/" + cmd.keyword)
+                Text("/" + keyword)
                     .font(.subheadline)
                     .lineLimit(1)
                     .foregroundColor(theme.colors.secondary)
@@ -117,12 +116,12 @@ struct CommandsMenuView: View {
             .frame(maxHeight: COMMAND_ROW_SIZE)
             .contentShape(Rectangle())
             .onTapGesture {
-                if let params = cmd.params {
-                    composeState.message = "/\(cmd.keyword) \(params)"
+                if let params {
+                    composeState.message = "/\(keyword) \(params)"
                     selectedRange = NSRange(location: composeState.message.count, length: 0)
                 } else {
                     composeState.message = ""
-                    sendBotCommand(chat, "/\(cmd.keyword)")
+                    sendBotCommand(chat, "/\(keyword)")
                 }
                 showCommandsMenu = false
                 currentCommands = []
@@ -152,8 +151,8 @@ struct CommandsMenuView: View {
         var cmds: [ChatBotMenuCommand] = []
         for command in commands {
             switch command {
-            case let .command(cmd, hidden):
-                if hidden != true && cmd.keyword.starts(with: msg) {
+            case let .command(keyword, _, _, hidden):
+                if hidden != true && keyword.starts(with: msg) {
                     cmds.append(command)
                 }
             case let .menu(_, innerCmds):

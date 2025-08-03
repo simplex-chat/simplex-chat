@@ -364,51 +364,54 @@ public struct Preferences: Codable, Hashable {
 }
 
 public indirect enum ChatBotMenuCommand: Hashable {
-    case command(command: ChatBotCommand, hidden: Bool?)
+    case command(keyword: String, label: String, params: String?, hidden: Bool?)
     case menu(label: String, commands: [ChatBotMenuCommand])
 
     enum CodingKeys: String, CodingKey {
         case type
-        case command
-        case hidden
+        case keyword
         case label
+        case params
+        case hidden
         case commands
     }
 }
 
 extension ChatBotMenuCommand: Decodable {
     public init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        let type = try container.decode(String.self, forKey: CodingKeys.type)
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let type = try c.decode(String.self, forKey: CodingKeys.type)
         switch type {
         case "command":
-            let command = try container.decode(ChatBotCommand.self, forKey: CodingKeys.command)
-            let hidden = container.contains(CodingKeys.hidden)
-                            ? try container.decode((Bool?).self, forKey: CodingKeys.hidden)
-                            : nil
-            self = .command(command: command, hidden: hidden)
+            let keyword = try c.decode(String.self, forKey: CodingKeys.keyword)
+            let label = try c.decode(String.self, forKey: CodingKeys.label)
+            let params = c.contains(CodingKeys.params) ? try c.decode((String?).self, forKey: CodingKeys.params) : nil
+            let hidden = c.contains(CodingKeys.hidden) ? try c.decode((Bool?).self, forKey: CodingKeys.hidden) : nil
+            self = .command(keyword: keyword, label: label, params: params, hidden: hidden)
         case "menu":
-            let label = try container.decode(String.self, forKey: CodingKeys.label)
-            let commands = try container.decode(([ChatBotMenuCommand]).self, forKey: CodingKeys.commands)
+            let label = try c.decode(String.self, forKey: CodingKeys.label)
+            let commands = try c.decode(([ChatBotMenuCommand]).self, forKey: CodingKeys.commands)
             self = .menu(label: label, commands: commands)
         default:
-            throw DecodingError.dataCorruptedError(forKey: CodingKeys.type, in: container, debugDescription: "Unsupported command type: \(type)")
+            throw DecodingError.dataCorruptedError(forKey: CodingKeys.type, in: c, debugDescription: "Unsupported command type: \(type)")
         }
     }
 }
 
 extension ChatBotMenuCommand: Encodable {
     public func encode(to encoder: Encoder) throws {
-        var container = encoder.container(keyedBy: CodingKeys.self)
+        var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .command(command, hidden):
-            try container.encode("command", forKey: .type)
-            try container.encode(command, forKey: .command)
-            try container.encode(hidden, forKey: .hidden)
+        case let .command(keyword, label, params, hidden):
+            try c.encode("command", forKey: .type)
+            try c.encode(keyword, forKey: .keyword)
+            try c.encode(label, forKey: .label)
+            if let params { try c.encode(params, forKey: .params) }
+            if let hidden { try c.encode(hidden, forKey: .hidden) }
         case let .menu(label, commands):
-            try container.encode("menu", forKey: .type)
-            try container.encode(label, forKey: .label)
-            try container.encode(commands, forKey: .commands)
+            try c.encode("menu", forKey: .type)
+            try c.encode(label, forKey: .label)
+            try c.encode(commands, forKey: .commands)
         }
     }
 }
@@ -1765,14 +1768,14 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
-    public var menuCommands: [ChatBotMenuCommand]? {
+    public var menuCommands: [ChatBotMenuCommand] {
         switch self {
         case let .direct(c):
             c.profile.peerType == .bot
-            ? c.profile.preferences?.commands
-            : nil
-        case let .group(g, _): g.groupProfile.groupPreferences?.commands
-        default: nil
+            ? c.profile.preferences?.commands ?? []
+            : []
+        case let .group(g, _): g.groupProfile.groupPreferences?.commands ?? []
+        default: []
         }
     }
 

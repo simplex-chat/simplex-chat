@@ -720,11 +720,9 @@ struct ComposeView: View {
             Text(verbatim: "//")
                 .font(.title3)
                 .italic()
-//                .padding(.horizontal, 2)
                 .contentShape(Rectangle())
-//            Image(systemName: "chevron.left.forwardslash.chevron.right").resizable()
         }
-        .disabled(!chat.chatInfo.sendMsgEnabled || (chat.chatInfo.menuCommands?.isEmpty ?? true))
+        .disabled(!chat.chatInfo.sendMsgEnabled || chat.chatInfo.menuCommands.isEmpty)
         .frame(width: 25, height: 25)
         .tint(theme.colors.primary)
     }
