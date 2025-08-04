@@ -1,33 +1,124 @@
 # Transfer data from SQLite to Postgres database
 
-1. \* Decrypt SQLite database if it is encrypted.
+1. Decrypt SQLite database if it is encrypted.
 
-   ```sh
-   sqlcipher encrypted_simplex_v1_agent.db
-   ```
+   - Agent:
 
-   ```sql
-   PRAGMA key = 'password';
-   ATTACH DATABASE 'simplex_v1_agent.db' AS plaintext KEY '';
-   SELECT sqlcipher_export('plaintext');
-   DETACH DATABASE plaintext;
-   ```
+      Open sqlite db:
 
-   Repeat for `simplex_v1_chat.db`.
+      ```sh
+      sqlcipher simplex_v1_agent.db
+      ```
+
+      Set your db password:
+
+      ```sql
+      PRAGMA key = '<your_password>';
+      ```
+
+      Check if db was successfully decrypted:
+
+      ```sh
+      SELECT count(*) FROM sqlite_master;
+      ```
+
+      Attach new empty db:
+
+      ```sh
+      ATTACH DATABASE 'simplex_v1_agent_plaintext.db' AS plaintext KEY '';
+      ```
+
+      Export opened db to attached db as plaintext:
+
+      ```sh
+      SELECT sqlcipher_export('plaintext');
+      ```
+
+      Deattach the plaintext db:
+
+      ```sh
+      DETACH DATABASE plaintext;
+      ```
+
+   - Chat:
+
+      Open sqlite db:
+
+      ```sh
+      sqlcipher simplex_v1_chat.db
+      ```
+
+      Set your db password:
+
+      ```sql
+      PRAGMA key = '<your_password>';
+      ```
+
+      Check if db was successfully decrypted:
+
+      ```sh
+      SELECT count(*) FROM sqlite_master;
+      ```
+
+      Attach new empty db:
+
+      ```sh
+      ATTACH DATABASE 'simplex_v1_chat_plaintext.db' AS plaintext KEY '';
+      ```
+
+      Export opened db to attached db as plaintext:
+
+      ```sh
+      SELECT sqlcipher_export('plaintext');
+      ```
+
+      Deattach the plaintext db:
+
+      ```sh
+      DETACH DATABASE plaintext;
+      ```
 
 2. Prepare Postgres database.
 
-   - Create Postgres database. In shell:
+   1. Connect to PostgreSQL databse:
 
       ```sh
-      createdb -O simplex simplex_v1
+      psql -U postgres -h localhost
       ```
 
-      Or via query.
+   2. Create user with password:
 
-   - Build `simplex-chat` executable with `client_postgres` flag and run it to initialize new chat database.
+      ```sh
+      CREATE USER simplex WITH ENCRYPTED PASSWORD '123123';
+      ```
 
-      This should create `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas in `simplex_v1` database, with `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
+   3. Create database:
+
+      ```sh
+      CREATE DATABASE simplex_v1;
+      ```
+
+   4. Assign permissions:
+
+      ```sh
+      GRANT ALL PRIVILEGES ON DATABASE simplex_v1 TO simplex;
+      ```
+
+3. Prepare database:
+
+   Build CLI with PostgreSQL support:
+
+   ```sh
+   cabal build -fclient_postgres exe:simplex-chat
+   ```
+
+   Execute CLI:
+
+   ```sh
+   ./simplex-chat -d "postgresql://simplex:123123@localhost:5432/simplex_v1" --create-schema
+   ```
+
+   This should create `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas in `simplex_v1` database, with `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
 
 3. Load data from decrypted SQLite databases to Postgres database via pgloader.
 
