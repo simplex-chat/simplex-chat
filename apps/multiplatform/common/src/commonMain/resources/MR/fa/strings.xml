@@ -11,12 +11,12 @@
     <string name="abort_switch_receiving_address">لغو تغییر نشانی</string>
     <string name="abort_switch_receiving_address_question">تغییر نشانی را لغو می‌کنید؟</string>
     <string name="about_simplex">درباره سیمپل‌اکس(SimpleX)</string>
-    <string name="connect_via_contact_link">به وسیله نشانی مخاطب متصل می‌شوید؟</string>
-    <string name="connect_via_invitation_link">به وسیله لینک یک بار مصرف متصل می‌شوید؟</string>
-    <string name="connect_use_new_incognito_profile">از پروفایل ناشناس جدید استفاده کن</string>
+    <string name="connect_via_contact_link">با نشانی مخاطب ارتباط برقرار شود؟</string>
+    <string name="connect_via_invitation_link">با لینک یک بار مصرف ارتباط برقرار شود؟</string>
+    <string name="connect_use_new_incognito_profile">استفاده از پروفایل ناشناس جدید</string>
     <string name="opening_database">در حال باز کردن پایگاه داده…</string>
     <string name="profile_will_be_sent_to_contact_sending_link">پروفایل شما به مخاطبی که این لینک را از او دریافت کردید، فرستاده خواهد شد.</string>
-    <string name="connect_via_link_incognito">متصل شدن به صورت ناشناس</string>
+    <string name="connect_via_link_incognito">اتصال ناشناس</string>
     <string name="non_content_uri_alert_text">شما یک مسیر نامعتبر فایل به اشتراک گذاشتید. موضوع را به توسعه‌دهندگان برنامه گزارش دهید.</string>
     <string name="receiving_files_not_yet_supported">هنوز از دریافت فایل پشتیبانی نمی‌شود</string>
     <string name="invalid_message_format">قالب پیام نامعتبر</string>
@@ -30,7 +30,7 @@
     <string name="server_connecting">در حال اتصال</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_group_link">به گروه می‌پیوندید؟</string>
-    <string name="connect_use_current_profile">از پروفایل کنونی استفاده کن</string>
+    <string name="connect_use_current_profile">استفاده از پروفایل کنونی</string>
     <string name="you_will_join_group">به تمام اعضای گروه متصل خواهید شد.</string>
     <string name="connect_via_link_verb">متصل شدن</string>
     <string name="non_content_uri_alert_title">مسیر نامعتبر فایل</string>
