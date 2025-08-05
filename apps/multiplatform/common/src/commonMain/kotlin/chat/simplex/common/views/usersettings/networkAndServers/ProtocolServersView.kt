@@ -148,37 +148,40 @@ fun YourServersViewLayout(
       }
     }
 
-    if (userServers.value[operatorIndex].ntfServers.any { !it.deleted }) {
-      SectionDividerSpaced()
-      SectionView(generalGetString(MR.strings.notif_servers).uppercase()) {
-        userServers.value[operatorIndex].ntfServers.forEachIndexed { i, server ->
-          if (server.deleted) return@forEachIndexed
-          SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.NTF) }) {
-            ProtocolServerViewLink(
-              srv = server,
-              serverProtocol = ServerProtocol.NTF,
-              duplicateHosts = duplicateHosts
-            )
+    if (platform.supportsPushNotifications) {
+      if (userServers.value[operatorIndex].ntfServers.any { !it.deleted }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.notif_servers).uppercase()) {
+          userServers.value[operatorIndex].ntfServers.forEachIndexed { i, server ->
+            if (server.deleted) return@forEachIndexed
+            SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.NTF) }) {
+              ProtocolServerViewLink(
+                srv = server,
+                serverProtocol = ServerProtocol.NTF,
+                duplicateHosts = duplicateHosts
+              )
+            }
           }
         }
-      }
-      val ntfErr = globalNTFServersError(serverErrors.value)
-      if (ntfErr != null) {
-        SectionCustomFooter {
-          ServersErrorFooter(ntfErr)
+        val ntfErr = globalNTFServersError(serverErrors.value)
+        if (ntfErr != null) {
+          SectionCustomFooter {
+            ServersErrorFooter(ntfErr)
+          }
+        } else {
+          SectionTextFooter(generalGetString(MR.strings.ntf_servers_per_user))
         }
-      } else {
-        SectionTextFooter(generalGetString(MR.strings.ntf_servers_per_user))
       }
     }
 
     if (
-      userServers.value[operatorIndex].ntfServers.any { !it.deleted } ||
+      userServers.value[operatorIndex].ntfServers.any { !it.deleted } && platform.supportsPushNotifications ||
       userServers.value[operatorIndex].smpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].xftpServers.any { !it.deleted }
       ) {
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
     }
+
 
     SectionView {
       SettingsActionItem(
