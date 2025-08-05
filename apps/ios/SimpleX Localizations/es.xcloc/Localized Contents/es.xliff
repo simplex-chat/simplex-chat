@@ -1674,9 +1674,9 @@ set passcode view</note>
         <target>En el nuevo dispositivo selecciona _Migrar desde otro dispositivo_ y escanéa el código QR.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Choose file" xml:space="preserve">
+      <trans-unit id="Choose file" xml:space="preserve" approved="no">
         <source>Choose file</source>
-        <target>Elije archivo</target>
+        <target state="translated">Elegir archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Choose from library" xml:space="preserve">
@@ -8204,9 +8204,9 @@ Puede ocurrir por algún bug o cuando la conexión está comprometida.</target>
         <target>Nombre del dispositivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve">
+      <trans-unit id="This display name is invalid. Please choose another name." xml:space="preserve" approved="no">
         <source>This display name is invalid. Please choose another name.</source>
-        <target>Éste nombre mostrado no es válido. Por favor, elije otro nombre.</target>
+        <target state="translated">Éste nombre mostrado no es válido. Por favor, elige otro nombre.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This group has over %lld members, delivery receipts are not sent." xml:space="preserve">
