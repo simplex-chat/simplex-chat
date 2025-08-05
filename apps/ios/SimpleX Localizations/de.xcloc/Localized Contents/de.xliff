@@ -1634,9 +1634,9 @@ set passcode view</note>
         <target>Chat mit einem Mitglied</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Chat with members before they join." xml:space="preserve">
+      <trans-unit id="Chat with members before they join." xml:space="preserve" approved="no">
         <source>Chat with members before they join.</source>
-        <target>Chat mit Mitgliedern bevor sie beitreten.</target>
+        <target state="translated">Mit Mitgliedern chatten bevor sie beitreten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Chats" xml:space="preserve">
@@ -2085,8 +2085,9 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Kontakt-Präferenzen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests from groups" xml:space="preserve">
+      <trans-unit id="Contact requests from groups" xml:space="preserve" approved="no">
         <source>Contact requests from groups</source>
+        <target state="translated">KONTAKTANFRAGEN VON GRUPPEN</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3019,9 +3020,9 @@ chat item action</note>
         <target>Kamera-Zugriff aktivieren</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
         <source>Enable disappearing messages by default.</source>
-        <target>Verschwindende Nachrichten per Voreinstellung aktiviert.</target>
+        <target state="translated">Verschwindende Nachrichten sind per Voreinstellung aktiviert.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
@@ -3529,8 +3530,9 @@ chat item action</note>
         <target>Fehler beim Senden der Nachricht</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting auto-accept" xml:space="preserve">
+      <trans-unit id="Error setting auto-accept" xml:space="preserve" approved="no">
         <source>Error setting auto-accept</source>
+        <target state="translated">Fehler bei der Einstellung des automatischen Akzeptierens</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -4660,9 +4662,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Nicht genutzte Einladung behalten?</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Keep your chats clean" xml:space="preserve">
+      <trans-unit id="Keep your chats clean" xml:space="preserve" approved="no">
         <source>Keep your chats clean</source>
-        <target>Halten Sie Ihre Chats übersichtlich</target>
+        <target state="translated">Ihre Chats übersichtlich halten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -4870,8 +4872,9 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Mitglied inaktiv</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve">
+      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve" approved="no">
         <source>Member is deleted - can't accept request</source>
+        <target state="translated">Mitglied ist gelöscht - Anfrage kann nicht angenommen werden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -7375,9 +7378,9 @@ chat item action</note>
         <target>Passwort für den Export festlegen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve" approved="no">
         <source>Set profile bio and welcome message.</source>
-        <target>Geben Sie eine Profil-Biografie und eine Begrüßungsmeldung ein.</target>
+        <target state="translated">Sie können eine Profil-Biografie und eine Begrüßungsmeldung eingeben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
@@ -8236,8 +8239,9 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target>Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
+      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve" approved="no">
         <source>This setting is for your current profile **%@**.</source>
+        <target state="translated">Diese Einstellung gilt für Ihr aktuelles Profil **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
@@ -10313,12 +10317,14 @@ time to disappear</note>
         <target>Beitrittsanfrage abgelehnt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="requested connection" xml:space="preserve">
+      <trans-unit id="requested connection" xml:space="preserve" approved="no">
         <source>requested connection</source>
+        <target state="translated">Angefragte Verbindung</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested connection from group %@" xml:space="preserve">
+      <trans-unit id="requested connection from group %@" xml:space="preserve" approved="no">
         <source>requested connection from group %@</source>
+        <target state="translated">Angefragte Verbindung von Gruppe %@</target>
         <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">
