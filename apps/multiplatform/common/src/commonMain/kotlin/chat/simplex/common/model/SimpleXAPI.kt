@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.ChatController.getNetCfg
 import chat.simplex.common.model.ChatController.setNetCfg
 import chat.simplex.common.model.ChatModel.changingActiveUserMutex
+import chat.simplex.common.model.GroupFeature.Files
 import chat.simplex.common.model.MsgContent.MCUnknown
 import chat.simplex.common.model.SMPProxyFallback.AllowProtected
 import chat.simplex.common.model.SMPProxyMode.Always
@@ -2643,8 +2644,6 @@ object ChatController {
               if (cItem.isActiveReport) {
                 chatModel.chatsContext.increaseGroupReportsCounter(rhId, cInfo.id)
               }
-            }
-            withContext(Dispatchers.Main) {
               chatModel.secondaryChatsContext.value?.addChatItem(rhId, cInfo, cItem)
             }
           } else if (cItem.isRcvNew && cInfo.ntfsEnabled(cItem)) {
@@ -4881,14 +4880,18 @@ data class FullChatPreferences(
   val fullDelete: SimpleChatPreference,
   val reactions: SimpleChatPreference,
   val voice: SimpleChatPreference,
+  val files: SimpleChatPreference,
   val calls: SimpleChatPreference,
+  val commands: List<ChatBotCommand>
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
     timedMessages = timedMessages,
     fullDelete = fullDelete,
     reactions = reactions,
     voice = voice,
-    calls = calls
+    files = files,
+    calls = calls,
+    commands = commands,
   )
 
   companion object {
@@ -4897,7 +4900,9 @@ data class FullChatPreferences(
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
       reactions = SimpleChatPreference(allow = FeatureAllowed.YES),
       voice = SimpleChatPreference(allow = FeatureAllowed.YES),
+      files = SimpleChatPreference(allow = FeatureAllowed.YES),
       calls = SimpleChatPreference(allow = FeatureAllowed.YES),
+      commands = listOf(),
     )
   }
 }
@@ -4908,7 +4913,9 @@ data class ChatPreferences(
   val fullDelete: SimpleChatPreference?,
   val reactions: SimpleChatPreference?,
   val voice: SimpleChatPreference?,
+  val files: SimpleChatPreference?,
   val calls: SimpleChatPreference?,
+  val commands: List<ChatBotCommand>?,
 ) {
   fun setAllowed(feature: ChatFeature, allowed: FeatureAllowed = FeatureAllowed.YES, param: Int? = null): ChatPreferences =
     when (feature) {
@@ -4916,6 +4923,7 @@ data class ChatPreferences(
       ChatFeature.FullDelete -> this.copy(fullDelete = SimpleChatPreference(allow = allowed))
       ChatFeature.Reactions -> this.copy(reactions = SimpleChatPreference(allow = allowed))
       ChatFeature.Voice -> this.copy(voice = SimpleChatPreference(allow = allowed))
+      ChatFeature.Files -> this.copy(files = SimpleChatPreference(allow = allowed))
       ChatFeature.Calls -> this.copy(calls = SimpleChatPreference(allow = allowed))
     }
 
@@ -4925,7 +4933,9 @@ data class ChatPreferences(
       fullDelete = SimpleChatPreference(allow = FeatureAllowed.NO),
       reactions = SimpleChatPreference(allow = FeatureAllowed.YES),
       voice = SimpleChatPreference(allow = FeatureAllowed.YES),
+      files = SimpleChatPreference(allow = FeatureAllowed.YES),
       calls = SimpleChatPreference(allow = FeatureAllowed.YES),
+      commands = null,
     )
   }
 }
@@ -4951,6 +4961,12 @@ data class TimedMessagesPreference(
     val profileLevelTTLValues: List<Int?>
       get() = listOf(7 * 86400, 30 * 86400, 3 * 30 * 86400, null)
   }
+}
+
+@Serializable
+sealed class ChatBotCommand {
+  @Serializable @SerialName("command") class Command(val keyword: String, val label: String, val params: String?, val hidden: Boolean?): ChatBotCommand()
+  @Serializable @SerialName("menu") class Menu(val label: String, val commands: List<ChatBotCommand>): ChatBotCommand()
 }
 
 @Serializable
@@ -5203,14 +5219,18 @@ data class ContactUserPreferences(
   val fullDelete: ContactUserPreference,
   val reactions: ContactUserPreference,
   val voice: ContactUserPreference,
+  val files: ContactUserPreference,
   val calls: ContactUserPreference,
+  val commands: List<ChatBotCommand>?,
 ) {
   fun toPreferences(): ChatPreferences = ChatPreferences(
     timedMessages = timedMessages.userPreference.pref,
     fullDelete = fullDelete.userPreference.pref,
     reactions = reactions.userPreference.pref,
     voice = voice.userPreference.pref,
-    calls = calls.userPreference.pref
+    files = files.userPreference.pref,
+    calls = calls.userPreference.pref,
+    commands = commands,
   )
 
   companion object {
@@ -5235,11 +5255,17 @@ data class ContactUserPreferences(
         userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
         contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
       ),
+      files = ContactUserPreference(
+        enabled = FeatureEnabled(forUser = true, forContact = true),
+        userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
+        contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
+      ),
       calls = ContactUserPreference(
         enabled = FeatureEnabled(forUser = true, forContact = true),
         userPreference = ContactUserPref.User(preference = SimpleChatPreference(allow = FeatureAllowed.YES)),
         contactPreference = SimpleChatPreference(allow = FeatureAllowed.YES)
       ),
+      commands = null,
     )
   }
 }
@@ -5329,6 +5355,7 @@ enum class ChatFeature: Feature {
   @SerialName("fullDelete") FullDelete,
   @SerialName("reactions") Reactions,
   @SerialName("voice") Voice,
+  @SerialName("files") Files,
   @SerialName("calls") Calls;
 
   val asymmetric: Boolean get() = when (this) {
@@ -5348,6 +5375,7 @@ enum class ChatFeature: Feature {
       FullDelete -> generalGetString(MR.strings.full_deletion)
       Reactions -> generalGetString(MR.strings.message_reactions)
       Voice -> generalGetString(MR.strings.voice_messages)
+      Files -> generalGetString(MR.strings.files_and_media)
       Calls -> generalGetString(MR.strings.audio_video_calls)
     }
 
@@ -5357,6 +5385,7 @@ enum class ChatFeature: Feature {
       FullDelete -> painterResource(MR.images.ic_delete_forever)
       Reactions -> painterResource(MR.images.ic_add_reaction)
       Voice -> painterResource(MR.images.ic_keyboard_voice)
+      Files -> painterResource(MR.images.ic_draft)
       Calls -> painterResource(MR.images.ic_call)
     }
 
@@ -5366,6 +5395,7 @@ enum class ChatFeature: Feature {
       FullDelete -> painterResource(MR.images.ic_delete_forever_filled)
       Reactions -> painterResource(MR.images.ic_add_reaction_filled)
       Voice -> painterResource(MR.images.ic_keyboard_voice_filled)
+      Files -> painterResource(MR.images.ic_draft_filled)
       Calls -> painterResource(MR.images.ic_call_filled)
   }
 
@@ -5386,10 +5416,15 @@ enum class ChatFeature: Feature {
         FeatureAllowed.YES -> generalGetString(MR.strings.allow_message_reactions_only_if)
         FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_message_reactions)
       }
-        Voice -> when (allowed) {
+      Voice -> when (allowed) {
         FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_to_send_voice_messages)
         FeatureAllowed.YES -> generalGetString(MR.strings.allow_voice_messages_only_if)
         FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_sending_voice_messages)
+      }
+      Files -> when (allowed) {
+        FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_to_send_files_and_media)
+        FeatureAllowed.YES -> generalGetString(MR.strings.allow_files_and_media_only_if)
+        FeatureAllowed.NO -> generalGetString(MR.strings.prohibit_sending_files_and_media)
       }
       Calls -> when (allowed) {
         FeatureAllowed.ALWAYS -> generalGetString(MR.strings.allow_your_contacts_to_call)
@@ -5423,6 +5458,12 @@ enum class ChatFeature: Feature {
         enabled.forUser -> generalGetString(MR.strings.only_you_can_send_voice)
         enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_send_voice)
         else -> generalGetString(MR.strings.voice_prohibited_in_this_chat)
+      }
+      Files -> when {
+        enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contact_can_send_files)
+        enabled.forUser -> generalGetString(MR.strings.only_you_can_send_files)
+        enabled.forContact -> generalGetString(MR.strings.only_your_contact_can_send_files)
+        else -> generalGetString(MR.strings.files_prohibited_in_this_chat)
       }
       Calls -> when {
         enabled.forUser && enabled.forContact -> generalGetString(MR.strings.both_you_and_your_contact_can_make_calls)
@@ -5618,7 +5659,9 @@ data class ContactFeaturesAllowed(
   val fullDelete: ContactFeatureAllowed,
   val reactions: ContactFeatureAllowed,
   val voice: ContactFeatureAllowed,
+  val files: ContactFeatureAllowed,
   val calls: ContactFeatureAllowed,
+  val commands: List<ChatBotCommand>?,
 ) {
   companion object {
     val sampleData = ContactFeaturesAllowed(
@@ -5627,7 +5670,9 @@ data class ContactFeaturesAllowed(
       fullDelete = ContactFeatureAllowed.UserDefault(FeatureAllowed.NO),
       reactions = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
       voice = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
+      files = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
       calls = ContactFeatureAllowed.UserDefault(FeatureAllowed.YES),
+      commands = null,
     )
   }
 }
@@ -5641,7 +5686,9 @@ fun contactUserPrefsToFeaturesAllowed(contactUserPreferences: ContactUserPrefere
     fullDelete = contactUserPrefToFeatureAllowed(contactUserPreferences.fullDelete),
     reactions = contactUserPrefToFeatureAllowed(contactUserPreferences.reactions),
     voice = contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
+    files = contactUserPrefToFeatureAllowed(contactUserPreferences.files),
     calls = contactUserPrefToFeatureAllowed(contactUserPreferences.calls),
+    commands = contactUserPreferences.commands,
   )
 }
 
@@ -5661,7 +5708,9 @@ fun contactFeaturesAllowedToPrefs(contactFeaturesAllowed: ContactFeaturesAllowed
     fullDelete = contactFeatureAllowedToPref(contactFeaturesAllowed.fullDelete),
     reactions = contactFeatureAllowedToPref(contactFeaturesAllowed.reactions),
     voice = contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
+    files = contactFeatureAllowedToPref(contactFeaturesAllowed.files),
     calls = contactFeatureAllowedToPref(contactFeaturesAllowed.calls),
+    commands = contactFeaturesAllowed.commands,
   )
 
 fun contactFeatureAllowedToPref(contactFeatureAllowed: ContactFeatureAllowed): SimpleChatPreference? =
@@ -5697,6 +5746,7 @@ data class FullGroupPreferences(
   val simplexLinks: RoleGroupPreference,
   val reports: GroupPreference,
   val history: GroupPreference,
+  val commands: List<ChatBotCommand>,
 ) {
   fun toGroupPreferences(): GroupPreferences =
     GroupPreferences(
@@ -5709,6 +5759,7 @@ data class FullGroupPreferences(
       simplexLinks = simplexLinks,
       reports = reports,
       history = history,
+      commands = commands,
     )
 
   companion object {
@@ -5722,6 +5773,7 @@ data class FullGroupPreferences(
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
+      commands = listOf()
     )
   }
 }
@@ -5737,6 +5789,7 @@ data class GroupPreferences(
   val simplexLinks: RoleGroupPreference? = null,
   val reports: GroupPreference? = null,
   val history: GroupPreference? = null,
+  val commands: List<ChatBotCommand>? = null
 ) {
   companion object {
     val sampleData = GroupPreferences(
@@ -5749,6 +5802,7 @@ data class GroupPreferences(
       simplexLinks = RoleGroupPreference(GroupFeatureEnabled.ON, role = null),
       reports = GroupPreference(GroupFeatureEnabled.ON),
       history = GroupPreference(GroupFeatureEnabled.ON),
+      commands = null,
     )
   }
 }

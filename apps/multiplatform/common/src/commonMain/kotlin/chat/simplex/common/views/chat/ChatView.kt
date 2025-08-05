@@ -102,19 +102,21 @@ fun ChatView(
   val chat = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }
   // They have their own iterator inside for a reason to prevent crash "Reading a state that was created after the snapshot..."
   val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
-  val activeChatInfo = remember { derivedStateOf {
-    var chatInfo = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatInfo
+  val activeChat = remember { derivedStateOf {
+    var chat = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }
+    val chatInfo = chat?.chatInfo
     if (
       chatsCtx.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
+      && chat != null
       && chatInfo is ChatInfo.Group
     ) {
       val scopeInfo = chatsCtx.secondaryContextFilter.groupScopeInfo
-      chatInfo = chatInfo.copy(groupChatScope = scopeInfo)
+      chat = chat.copy(chatInfo = chatInfo.copy(groupChatScope = scopeInfo))
     }
-    chatInfo
+    chat
   } }
   val user = chatModel.currentUser.value
-  val chatInfo = activeChatInfo.value
+  val chatInfo = activeChat.value?.chatInfo
   if (chat == null || chatInfo == null || user == null) {
     LaunchedEffect(Unit) {
       chatModel.chatId.value = null
@@ -214,7 +216,7 @@ fun ChatView(
           ChatLayout(
             chatsCtx = chatsCtx,
             remoteHostId = remoteHostId,
-            chatInfo = activeChatInfo,
+            chat = activeChat,
             unreadCount,
             composeState,
             composeView = { focusRequester ->
@@ -347,7 +349,7 @@ fun ChatView(
                 ModalManager.end.showCustomModal { close ->
                   val appBar = remember { mutableStateOf(null as @Composable (BoxScope.() -> Unit)?) }
                   ModalView(close, appBar = appBar.value) {
-                    val chatInfo = remember { activeChatInfo }.value
+                    val chatInfo = remember { activeChat }.value?.chatInfo
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
                       var code: String? by remember { mutableStateOf(preloadedCode) }
@@ -377,7 +379,7 @@ fun ChatView(
                       }
                     }
                     LaunchedEffect(Unit) {
-                      snapshotFlow { activeChatInfo.value?.id }
+                      snapshotFlow { activeChat.value?.id }
                         .drop(1)
                         .collect {
                           appBar.value = null
@@ -389,37 +391,37 @@ fun ChatView(
               }
             },
             showReports = {
-              val info = activeChatInfo.value ?: return@ChatLayout
+              val cInfo = activeChat.value?.chatInfo ?: return@ChatLayout
               if (ModalManager.end.hasModalsOpen()) {
                 ModalManager.end.closeModals()
                 return@ChatLayout
               }
               hideKeyboard(view)
               scope.launch {
-                showGroupReportsView(staleChatId, scrollToItemId, info)
+                showGroupReportsView(staleChatId, scrollToItemId, cInfo)
               }
             },
             showSupportChats = {
-              val info = activeChatInfo.value ?: return@ChatLayout
+              val cInfo = activeChat.value?.chatInfo ?: return@ChatLayout
               if (ModalManager.end.hasModalsOpen()) {
                 ModalManager.end.closeModals()
                 return@ChatLayout
               }
               hideKeyboard(view)
               scope.launch {
-                if (info is ChatInfo.Group && info.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+                if (cInfo is ChatInfo.Group && cInfo.groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
                   ModalManager.end.showCustomModal { close ->
                     MemberSupportView(
                       chatRh,
                       chat,
-                      info.groupInfo,
+                      cInfo.groupInfo,
                       scrollToItemId,
                       close
                     )
                   }
-                } else if (info is ChatInfo.Group) {
+                } else if (cInfo is ChatInfo.Group) {
                   val scopeInfo = GroupChatScopeInfo.MemberSupport(groupMember_ = null)
-                  val supportChatInfo = ChatInfo.Group(info.groupInfo, groupChatScope = scopeInfo)
+                  val supportChatInfo = ChatInfo.Group(cInfo.groupInfo, groupChatScope = scopeInfo)
                   scope.launch {
                     showMemberSupportChatView(
                       chatModel.chatId,
@@ -807,7 +809,7 @@ fun startChatCall(remoteHostId: Long?, chatInfo: ChatInfo, media: CallMediaType)
 fun ChatLayout(
   chatsCtx: ChatModel.ChatsContext,
   remoteHostId: State<Long?>,
-  chatInfo: State<ChatInfo?>,
+  chat: State<Chat?>,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   composeView: (@Composable (FocusRequester?) -> Unit),
@@ -856,6 +858,7 @@ fun ChatLayout(
   showViaProxy: Boolean,
   showSearch: MutableState<Boolean>
 ) {
+  val chatInfo = remember { derivedStateOf { chat.value?.chatInfo } }
   val scope = rememberCoroutineScope()
   val attachmentDisabled = remember { derivedStateOf { composeState.value.attachmentDisabled } }
   Box(
@@ -886,19 +889,20 @@ fun ChatLayout(
       val composeViewHeight = remember { mutableStateOf(0.dp) }
       Box(Modifier.fillMaxSize().chatViewBackgroundModifier(MaterialTheme.colors, MaterialTheme.wallpaper, LocalAppBarHandler.current?.backgroundGraphicsLayerSize, LocalAppBarHandler.current?.backgroundGraphicsLayer, drawWallpaper = chatsCtx.secondaryContextFilter == null)) {
         val remoteHostId = remember { remoteHostId }.value
-        val chatInfo = remember { chatInfo }.value
+        val chat = remember { chat }.value
+        val chatInfo = chat?.chatInfo
         val oneHandUI = remember { appPrefs.oneHandUI.state }
         val chatBottomBar = remember { appPrefs.chatBottomBar.state }
         val composeViewFocusRequester = remember { if (appPlatform.isDesktop) FocusRequester() else null }
         AdaptingBottomPaddingLayout(Modifier, CHAT_COMPOSE_LAYOUT_ID, composeViewHeight) {
-          if (chatInfo != null) {
+          if (chat != null) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
               // disables scrolling to top of chat item on click inside the bubble
               CompositionLocalProvider(LocalBringIntoViewSpec provides object : BringIntoViewSpec {
                 override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float = 0f
               }) {
                 ChatItemsList(
-                  chatsCtx, remoteHostId, chatInfo, unreadCount, composeState, composeViewHeight, searchValue,
+                  chatsCtx, remoteHostId, chat, unreadCount, composeState, composeViewHeight, searchValue,
                   useLinkPreviews, linkMode, scrollToItemId, selectedChatItems, showMemberInfo, showChatInfo = info, loadMessages, deleteMessage, deleteMessages, archiveReports,
                   receiveFile, cancelFile, joinGroup, acceptCall, acceptFeature, openDirectChat, forwardItem,
                   updateContactStats, updateMemberStats, syncContactConnection, syncMemberConnection, findModelChat, findModelMember,
@@ -1362,7 +1366,7 @@ private var reportsListState: LazyListState? = null
 fun BoxScope.ChatItemsList(
   chatsCtx: ChatModel.ChatsContext,
   remoteHostId: Long?,
-  chatInfo: ChatInfo,
+  chat: Chat,
   unreadCount: State<Int>,
   composeState: MutableState<ComposeState>,
   composeViewHeight: State<Dp>,
@@ -1399,6 +1403,7 @@ fun BoxScope.ChatItemsList(
   developerTools: Boolean,
   showViaProxy: Boolean
 ) {
+  val chatInfo = chat.chatInfo
   val loadingTopItems = remember { mutableStateOf(false) }
   val loadingBottomItems = remember { mutableStateOf(false) }
   // just for changing local var here based on request
@@ -1561,7 +1566,7 @@ fun BoxScope.ChatItemsList(
                 highlightedItems.value = setOf()
               }
           }
-          ChatItemView(chatsCtx, remoteHostId, chatInfo, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
+          ChatItemView(chatsCtx, remoteHostId, chat, cItem, composeState, provider, useLinkPreviews = useLinkPreviews, linkMode = linkMode, revealed = revealed, highlighted = highlighted, hoveredItemId = hoveredItemId, range = range, searchIsNotBlank = searchValueIsNotBlank, fillMaxWidth = fillMaxWidth, selectedChatItems = selectedChatItems, selectChatItem = { selectUnselectChatItem(true, cItem, revealed, selectedChatItems, reversedChatItems) }, deleteMessage = deleteMessage, deleteMessages = deleteMessages, archiveReports = archiveReports, receiveFile = receiveFile, cancelFile = cancelFile, joinGroup = joinGroup, acceptCall = acceptCall, acceptFeature = acceptFeature, openDirectChat = openDirectChat, forwardItem = forwardItem, updateContactStats = updateContactStats, updateMemberStats = updateMemberStats, syncContactConnection = syncContactConnection, syncMemberConnection = syncMemberConnection, findModelChat = findModelChat, findModelMember = findModelMember, scrollToItem = scrollToItem, scrollToItemId = scrollToItemId, scrollToQuotedItemFromItem = scrollToQuotedItemFromItem, setReaction = setReaction, showItemDetails = showItemDetails, reveal = reveal, showMemberInfo = showMemberInfo, showChatInfo = showChatInfo, developerTools = developerTools, showViaProxy = showViaProxy, itemSeparation = itemSeparation, showTimestamp = itemSeparation.timestamp)
         }
       }
 
@@ -3304,7 +3309,7 @@ fun PreviewChatLayout() {
     ChatLayout(
       chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       remoteHostId = remember { mutableStateOf(null) },
-      chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
+      chat = remember { mutableStateOf(Chat.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = { _ -> },
@@ -3383,7 +3388,7 @@ fun PreviewGroupChatLayout() {
     ChatLayout(
       chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       remoteHostId = remember { mutableStateOf(null) },
-      chatInfo = remember { mutableStateOf(ChatInfo.Direct.sampleData) },
+      chat = remember { mutableStateOf(Chat.sampleData) },
       unreadCount = unreadCount,
       composeState = remember { mutableStateOf(ComposeState(useLinkPreviews = true)) },
       composeView = { _ -> },

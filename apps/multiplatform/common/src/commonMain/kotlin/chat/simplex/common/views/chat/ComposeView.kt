@@ -483,7 +483,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
-          chatsCtx.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+          chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -1280,7 +1280,7 @@ fun ComposeView(
         )
         Text(
           text,
-          style = MaterialTheme.typography.caption,
+          style = MaterialTheme.typography.body2,
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
