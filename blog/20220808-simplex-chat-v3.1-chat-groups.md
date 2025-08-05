@@ -46,7 +46,7 @@ Other group improvements we will add soon:
 
 <img src="./images/20220808-tor1.png" width="330"> &nbsp; <img src="./images/20220808-tor2.png" width="330">
 
-SimpleX protocols are focussed on protecting application-level meta-data – they don't have any user identifiers used by all other messaging platforms, instead relying on pairwise connection identifiers.
+SimpleX protocols are focused on protecting application-level meta-data – they don't have any user identifiers used by all other messaging platforms, instead relying on pairwise connection identifiers.
 
 But there are scenarios when users need to protect their IP addresses from the servers and any network observers – this is best done by using Tor to access any network services.
 

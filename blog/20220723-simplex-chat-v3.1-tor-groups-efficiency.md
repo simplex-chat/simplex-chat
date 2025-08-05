@@ -23,7 +23,7 @@ permalink: "/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html"
 
 <img src="./images/20220723-tor.jpg" width="480">
 
-While SMP protocol is focussed on protecting application-level meta-data by using pairwise connection identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.
+While SMP protocol is focused on protecting application-level meta-data by using pairwise connection identifiers instead of user identifiers (that are used by all other messaging platforms), there are scenarios when it is important for the users to protect their IP addresses from the servers - quite a few users have been somewhat disappointed that we didn't add it earlier.
 
 This release of terminal app supports accessing the servers via Tor, but the servers themselves are still available on their usual addresses. We are planning to add .onion addresses (v3 hidden service) to all messaging servers we provide, and the users who self-host the servers will also be able to have dual servers addresses - so that one party in the conversation can access the servers via .onion address without necessarily requiring that the other party uses Tor as well.
 
