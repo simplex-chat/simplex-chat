@@ -353,8 +353,10 @@ data ChatCommand
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
+  | APIVerifySavedToken ByteString
   | APICheckToken DeviceToken
   | APIDeleteToken DeviceToken
+  | APIDeleteSavedToken
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember GroupId ContactId GroupMemberRole
