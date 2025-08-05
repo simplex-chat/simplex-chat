@@ -2283,7 +2283,7 @@
     <string name="connect_plan_you_are_already_connecting_to_vName"><![CDATA[Vă conectați deja la <b>%1$s</b>.]]></string>
     <string name="non_content_uri_alert_text">Ai partajat o cale de fișier nevalidă. Raportează problema dezvoltatorilor aplicației.</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 mobil: atinge <b>Deschide în aplicația mobilă</b>, apoi atinge <b>Conectare</b> în aplicație.]]></string>
-    <string name="add_short_link">Adaugă link scurt</string>
+    <string name="add_short_link">Actualizează adresa</string>
     <string name="onboarding_conditions_configure_server_operators">Configurați operatorii serverului</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Condițiile vor fi acceptate pentru operatorii activați după 30 de zile.</string>
     <string name="call_desktop_permission_denied_chrome">Faceți clic pe butonul de informații de lângă câmpul de adresă pentru a permite utilizarea microfonului.</string>
@@ -2295,10 +2295,10 @@
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Poți partaja un link sau un cod QR - oricine se va putea alătura grupului. Nu vei pierde membrii grupului dacă îl ștergi ulterior.</string>
     <string name="block_members_for_all_question">Blocați membrii pentru toți?</string>
     <string name="info_row_chat">Chat</string>
-    <string name="operators_conditions_accepted_for"><![CDATA[Condițiile sunt acceptate pentru operatorul(ii): <b>%s</b>.]]></string>
+    <string name="operators_conditions_accepted_for"><![CDATA[Condițiile au fost acceptate pentru operatorul: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_on">Condiții acceptate pe: %s.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Condițiile vor fi acceptate automat pentru operatorii activați pe: %s.</string>
-    <string name="operator_conditions_accepted_for_some"><![CDATA[Condițiile sunt deja acceptate pentru următorii operatori: <b>%s</b>.]]></string>
+    <string name="operator_conditions_accepted_for_some"><![CDATA[Condițiile au fost acceptate pentru operatorul: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Aceste condiții se vor aplica și pentru: <b>%s</b>.]]></string>
     <string name="operators_conditions_will_also_apply"><![CDATA[Aceste condiții se vor aplica și pentru: <b>%s</b>.]]></string>
     <string name="operator_conditions_of_use">Condiții de utilizare</string>
@@ -2443,4 +2443,6 @@
     <string name="error_preparing_contact">Eroare la deschiderea conversației</string>
     <string name="error_preparing_group">Eroare la deschiderea grupului</string>
     <string name="v6_4_message_delivery_descr">Mai puțin trafic pe rețelele mobile.</string>
+    <string name="share_profile_via_link_alert_text">Adresa va fi scurtă, iar profilul tău va fi partajat prin intermediul acestei adrese.</string>
+    <string name="share_profile_via_link_alert_confirm">Actualizează</string>
 </resources>
