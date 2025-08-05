@@ -1389,9 +1389,11 @@ processChatCommand vr nm = \case
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a nm token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a nm token nonce code) >> ok_
+  APIVerifySavedToken code -> withUser $ \_ -> withAgent (\a -> verifySavedNtfToken a nm code) >> ok_
   APICheckToken token -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> checkNtfToken a nm token)
   APIDeleteToken token -> withUser $ \_ -> withAgent (`deleteNtfToken` token) >> ok_
+  APIDeleteSavedToken -> withUser $ \_ -> withAgent deleteSavedNtfToken >> ok_
   APIGetNtfConns nonce encNtfInfo -> withUser $ \_ -> do
     ntfInfos <- withAgent $ \a -> getNotificationConns a nonce encNtfInfo
     (errs, ntfMsgs) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (getMsgConn db) (L.toList ntfInfos))
@@ -4552,8 +4554,10 @@ chatCommandP =
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),
+      "/_ntf verify " *> (APIVerifySavedToken <$> strP),
       "/_ntf check " *> (APICheckToken <$> strP),
       "/_ntf delete " *> (APIDeleteToken <$> strP),
+      "/_ntf delete saved" $> APIDeleteSavedToken,
       "/_ntf conns " *> (APIGetNtfConns <$> strP <* A.space <*> strP),
       "/_ntf conn messages " *> (APIGetConnNtfMessages <$> connMsgsP),
       "/_add #" *> (APIAddMember <$> A.decimal <* A.space <*> A.decimal <*> memberRole),
