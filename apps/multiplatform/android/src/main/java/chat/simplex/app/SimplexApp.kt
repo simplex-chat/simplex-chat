@@ -20,6 +20,7 @@ import androidx.work.*
 import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.app.platform.PushManager
 import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
@@ -270,6 +271,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
         if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           SimplexService.showBackgroundServiceNoticeIfNeeded()
+          PushManager.initStart(context)
           if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
             withBGApi {
               platform.androidServiceStart()

@@ -62,6 +62,20 @@ object PushManager {
     }
   }
 
+  /**
+   * Register to UnifiedPush distributor if any is already used
+   *
+   * To run when the app starts; call [chat.simplex.app.PushService.onUnregistered]
+   * if the distributor is uninstalled
+   */
+  fun initStart(context: Context) {
+    Log.d(TAG, "Init UnifiedPush during app startup")
+    //TODO: limit to once a day to reduce registrations to ntf server ?
+    UnifiedPush.getAckDistributor(context)?.let {
+      register(context)
+    }
+  }
+
   private fun register(context: Context) {
     // TODO: add VAPID
     UnifiedPush.register(context)
