@@ -20,8 +20,8 @@ struct CommandsMenuView: View {
     @Binding var selectedRange: NSRange
     @Binding var showCommandsMenu: Bool
 
-    @State private var currentCommands: [ChatBotMenuCommand] = []
-    @State private var menuTreeBackPath: [(label: String, commands: [ChatBotMenuCommand])] = []
+    @State private var currentCommands: [ChatBotCommand] = []
+    @State private var menuTreeBackPath: [(label: String, commands: [ChatBotCommand])] = []
     @State private var keywordWidth: CGFloat = 0
 
     var body: some View {
@@ -77,7 +77,7 @@ struct CommandsMenuView: View {
         }
     }
 
-    private func menuLabelRow(_ prev: (label: String, commands: [ChatBotMenuCommand])) -> some View {
+    private func menuLabelRow(_ prev: (label: String, commands: [ChatBotCommand])) -> some View {
         HStack {
             Image(systemName: "chevron.left")
                 .foregroundColor(theme.colors.secondary)
@@ -97,7 +97,7 @@ struct CommandsMenuView: View {
     }
 
     @ViewBuilder
-    private func commandRow(_ command: ChatBotMenuCommand) -> some View {
+    private func commandRow(_ command: ChatBotCommand) -> some View {
         switch command {
         case let .command(keyword, label, params, _):
             HStack {
@@ -147,8 +147,8 @@ struct CommandsMenuView: View {
         }
     }
 
-    private func filterShownCommands(_ commands: [ChatBotMenuCommand], _ msg: String.SubSequence) -> [ChatBotMenuCommand] {
-        var cmds: [ChatBotMenuCommand] = []
+    private func filterShownCommands(_ commands: [ChatBotCommand], _ msg: String.SubSequence) -> [ChatBotCommand] {
+        var cmds: [ChatBotCommand] = []
         for command in commands {
             switch command {
             case let .command(keyword, _, _, hidden):

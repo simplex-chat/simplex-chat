@@ -409,7 +409,8 @@ data ContactUserPreferences = ContactUserPreferences
     voice :: ContactUserPreference VoicePreference,
     files :: ContactUserPreference FilesPreference,
     calls :: ContactUserPreference CallsPreference,
-    sessions :: ContactUserPreference SessionsPreference
+    sessions :: ContactUserPreference SessionsPreference,
+    commands :: Maybe [ChatBotCommand]
   }
   deriving (Eq, Show)
 

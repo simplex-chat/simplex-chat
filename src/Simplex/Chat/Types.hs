@@ -618,7 +618,8 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
       voice = pref SCFVoice,
       files = pref SCFFiles,
       calls = pref SCFCalls,
-      sessions = pref SCFSessions
+      sessions = pref SCFSessions,
+      commands = contactPreferences >>= commands_
     }
   where
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
