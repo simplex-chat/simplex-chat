@@ -39,7 +39,7 @@ Available in v5.1</source>
       </trans-unit>
       <trans-unit id=" (can be copied)" xml:space="preserve" approved="no">
         <source> (can be copied)</source>
-        <target state="translated"> .(pode ser copiado)</target>
+        <target state="translated"> (pode ser copiado)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
