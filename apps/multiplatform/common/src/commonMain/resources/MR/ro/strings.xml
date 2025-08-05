@@ -359,7 +359,7 @@
     <string name="always_use_relay">Folosește mereu releu</string>
     <string name="chat_theme_apply_to_mode">Aplică pentru</string>
     <string name="add_contact_or_create_group">Începe o nouă conversație</string>
-    <string name="star_on_github">Stea pe GitHub</string>
+    <string name="star_on_github">Acordă o stea pe GitHub</string>
     <string name="conn_event_disabled_pq">criptare standard end-to-end</string>
     <string name="notifications_mode_periodic">Pornește periodic</string>
     <string name="network_smp_proxy_mode_always">Mereu</string>
