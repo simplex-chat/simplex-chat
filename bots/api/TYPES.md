@@ -82,6 +82,7 @@ This file is generated automatically.
 - [FormattedText](#formattedtext)
 - [FullGroupPreferences](#fullgrouppreferences)
 - [FullPreferences](#fullpreferences)
+- [Group](#group)
 - [GroupChatScope](#groupchatscope)
 - [GroupChatScopeInfo](#groupchatscopeinfo)
 - [GroupDirectInvitation](#groupdirectinvitation)
@@ -866,7 +867,6 @@ Command:
 - keyword: string
 - label: string
 - params: string?
-- hidden: bool?
 
 Menu:
 - type: "menu"
@@ -1722,6 +1722,7 @@ User:
 - files: [ContactUserPreference](#contactuserpreference)
 - calls: [ContactUserPreference](#contactuserpreference)
 - sessions: [ContactUserPreference](#contactuserpreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2039,6 +2040,15 @@ Phone:
 - calls: [SimplePreference](#simplepreference)
 - sessions: [SimplePreference](#simplepreference)
 - commands: [[ChatBotCommand](#chatbotcommand)]
+
+
+---
+
+## Group
+
+**Record type**:
+- groupInfo: [GroupInfo](#groupinfo)
+- members: [[GroupMember](#groupmember)]
 
 
 ---

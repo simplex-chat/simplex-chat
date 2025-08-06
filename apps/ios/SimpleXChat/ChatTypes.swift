@@ -364,7 +364,7 @@ public struct Preferences: Codable, Hashable {
 }
 
 public indirect enum ChatBotCommand: Hashable {
-    case command(keyword: String, label: String, params: String?, hidden: Bool?)
+    case command(keyword: String, label: String, params: String?)
     case menu(label: String, commands: [ChatBotCommand])
 
     enum CodingKeys: String, CodingKey {
@@ -386,8 +386,7 @@ extension ChatBotCommand: Decodable {
             let keyword = try c.decode(String.self, forKey: CodingKeys.keyword)
             let label = try c.decode(String.self, forKey: CodingKeys.label)
             let params = c.contains(CodingKeys.params) ? try c.decode((String?).self, forKey: CodingKeys.params) : nil
-            let hidden = c.contains(CodingKeys.hidden) ? try c.decode((Bool?).self, forKey: CodingKeys.hidden) : nil
-            self = .command(keyword: keyword, label: label, params: params, hidden: hidden)
+            self = .command(keyword: keyword, label: label, params: params)
         case "menu":
             let label = try c.decode(String.self, forKey: CodingKeys.label)
             let commands = try c.decode(([ChatBotCommand]).self, forKey: CodingKeys.commands)
@@ -402,12 +401,11 @@ extension ChatBotCommand: Encodable {
     public func encode(to encoder: Encoder) throws {
         var c = encoder.container(keyedBy: CodingKeys.self)
         switch self {
-        case let .command(keyword, label, params, hidden):
+        case let .command(keyword, label, params):
             try c.encode("command", forKey: .type)
             try c.encode(keyword, forKey: .keyword)
             try c.encode(label, forKey: .label)
             if let params { try c.encode(params, forKey: .params) }
-            if let hidden { try c.encode(hidden, forKey: .hidden) }
         case let .menu(label, commands):
             try c.encode("menu", forKey: .type)
             try c.encode(label, forKey: .label)

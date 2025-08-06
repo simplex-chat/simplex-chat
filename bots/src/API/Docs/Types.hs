@@ -261,6 +261,7 @@ chatTypesDocsData =
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
+    (sti @Group, STRecord, "", [], "", ""),
     (sti @GroupChatScope, STUnion1, "GCS", [], "(_support" <> Optional "" (":" <> Param "$0") "groupMemberId_" <> ")", ""),
     (sti @GroupChatScopeInfo, STUnion1, "GCSI", [], "", ""),
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
@@ -358,7 +359,6 @@ chatTypesDocsData =
     -- (sti @ChatName, STRecord, "", [], "", ""),
     -- (sti @ChatPagination, STRecord, "CP", [], "", ""),
     -- (sti @ConnectionStats, STRecord, "", [], "", ""),
-    -- (sti @Group, STRecord, "", [], "", ""),
     -- (sti @GroupSndStatus, STUnion, "GSS", [], "", ""),
     -- (sti @MemberDeliveryStatus, STRecord, "", [], "", ""),
     -- (sti @MemberReaction, STRecord, "", [], "", ""),
@@ -448,6 +448,7 @@ deriving instance Generic Format
 deriving instance Generic FormattedText
 deriving instance Generic FullGroupPreferences
 deriving instance Generic FullPreferences
+deriving instance Generic Group
 deriving instance Generic GroupChatScope
 deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature

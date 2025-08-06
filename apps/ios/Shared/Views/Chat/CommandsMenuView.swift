@@ -99,7 +99,7 @@ struct CommandsMenuView: View {
     private func commandRow(_ command: ChatBotCommand) -> some View {
         Divider()
         switch command {
-        case let .command(keyword, label, params, _):
+        case let .command(keyword, label, params):
             HStack {
                 Text(label)
                     .lineLimit(1)
@@ -149,8 +149,8 @@ struct CommandsMenuView: View {
         var cmds: [ChatBotCommand] = []
         for command in commands {
             switch command {
-            case let .command(keyword, _, _, hidden):
-                if hidden != true && keyword.starts(with: msg) {
+            case let .command(keyword, _, _):
+                if keyword.starts(with: msg) {
                     cmds.append(command)
                 }
             case let .menu(_, innerCmds):

@@ -51,7 +51,7 @@ fun CommandsMenuView(
     for (cmd in commands) {
       when (cmd) {
         is ChatBotCommand.Command ->
-          if (cmd.hidden != true && cmd.keyword.startsWith(msg)) {
+          if (cmd.keyword.startsWith(msg)) {
             cmds.add(cmd)
           }
         is ChatBotCommand.Menu ->

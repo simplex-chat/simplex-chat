@@ -699,7 +699,6 @@ showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
   cc <## "use /p <name> [<bio>] to change it"
-  cc <## "(the updated profile will be sent to all your contacts)"
 
 connectUsersNoShortLink :: HasCallStack => TestCC -> TestCC -> IO ()
 connectUsersNoShortLink cc1 cc2 = connectUsers_ cc1 cc2 True

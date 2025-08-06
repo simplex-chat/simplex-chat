@@ -153,7 +153,6 @@ testUpdateProfile =
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
-      alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
         [ alice <## "user bio removed (your 2 contacts are notified)",
@@ -2789,7 +2788,6 @@ testSetUITheme =
     userInfo a name = do
       a <## ("user profile: " <> name)
       a <## "use /p <name> [<bio>] to change it"
-      a <## "(the updated profile will be sent to all your contacts)"
     contactInfo a = do
       a <## "contact ID: 2"
       a <## "receiving messages via: localhost"
