@@ -190,8 +190,9 @@
         <target>%d 秒</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%d seconds(s)" xml:space="preserve">
+      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
         <source>%d seconds(s)</source>
+        <target state="translated">%d 秒</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="%d skipped message(s)" xml:space="preserve">
@@ -204,9 +205,9 @@
         <target>%d 週</target>
         <note>time interval</note>
       </trans-unit>
-      <trans-unit id="%lld" xml:space="preserve">
+      <trans-unit id="%lld" xml:space="preserve" approved="no">
         <source>%lld</source>
-        <target/>
+        <target state="needs-translation">%lld</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
@@ -463,8 +464,9 @@ time interval</note>
         <note>delete after time
 time interval</note>
       </trans-unit>
-      <trans-unit id="1 year" xml:space="preserve">
+      <trans-unit id="1 year" xml:space="preserve" approved="no">
         <source>1 year</source>
+        <target state="translated">1年</target>
         <note>delete after time</note>
       </trans-unit>
       <trans-unit id="1-time link" xml:space="preserve">
@@ -546,12 +548,14 @@ time interval</note>
         <target>SimpleX Chat について</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="About operators" xml:space="preserve">
+      <trans-unit id="About operators" xml:space="preserve" approved="no">
         <source>About operators</source>
+        <target state="translated">オペレーターについて</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accent" xml:space="preserve">
+      <trans-unit id="Accent" xml:space="preserve" approved="no">
         <source>Accent</source>
+        <target state="needs-translation">アクセント</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept" xml:space="preserve">
@@ -562,16 +566,19 @@ accept incoming call via notification
 alert action
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept as member" xml:space="preserve">
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
         <source>Accept as member</source>
+        <target state="translated">メンバーとして承認する</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept as observer" xml:space="preserve">
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
         <source>Accept as observer</source>
+        <target state="translated">オブザーバーとして承認する</target>
         <note>alert action</note>
       </trans-unit>
-      <trans-unit id="Accept conditions" xml:space="preserve">
+      <trans-unit id="Accept conditions" xml:space="preserve" approved="no">
         <source>Accept conditions</source>
+        <target state="translated">条件に同意する</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Accept connection request?" xml:space="preserve">
@@ -579,8 +586,9 @@ swipe action</note>
         <target>接続要求を承認？</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Accept contact request" xml:space="preserve">
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
         <source>Accept contact request</source>
+        <target state="translated">連絡先リクエストを受け入れる</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Accept contact request from %@?" xml:space="preserve">
@@ -594,12 +602,14 @@ swipe action</note>
         <note>alert action
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Accept member" xml:space="preserve">
+      <trans-unit id="Accept member" xml:space="preserve" approved="no">
         <source>Accept member</source>
+        <target state="translated">メンバーを承認する</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Accepted conditions" xml:space="preserve">
+      <trans-unit id="Accepted conditions" xml:space="preserve" approved="no">
         <source>Accepted conditions</source>
+        <target state="translated">承諾された条件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledged" xml:space="preserve">
