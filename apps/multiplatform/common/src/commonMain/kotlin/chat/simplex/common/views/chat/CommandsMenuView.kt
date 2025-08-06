@@ -29,9 +29,8 @@ import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import kotlinx.coroutines.launch
 
-// TODO
-private val COMMAND_MENU_ROW_SIZE = 40.dp
-private val MAX_COMMAND_MENU_HEIGHT = COMMAND_MENU_ROW_SIZE * 7 - 8.dp
+private val COMMAND_MENU_ROW_SIZE = 48.dp
+private val MAX_COMMAND_MENU_HEIGHT = COMMAND_MENU_ROW_SIZE * 6 - 8.dp
 
 @Composable
 fun CommandsMenuView(
@@ -123,7 +122,7 @@ fun CommandsMenuView(
         },
       contentAlignment = Alignment.Center
     ) {
-      Row(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
         Icon(
           painterResource(MR.images.ic_arrow_back_ios_new),
           contentDescription = null,
@@ -132,6 +131,7 @@ fun CommandsMenuView(
         Spacer(Modifier.width(DEFAULT_PADDING_HALF))
         Text(
           text = prev.first,
+          style = MaterialTheme.typography.body2,
           textAlign = TextAlign.Center,
           fontWeight = FontWeight.Medium,
           maxLines = 1,
@@ -162,9 +162,10 @@ fun CommandsMenuView(
             },
           contentAlignment = Alignment.Center
         ) {
-          Row(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
             Text(
               text = cmd.label,
+              style = MaterialTheme.typography.body1,
               maxLines = 1,
               modifier = Modifier.weight(1f),
               textAlign = TextAlign.Start,
@@ -191,9 +192,10 @@ fun CommandsMenuView(
             },
           contentAlignment = Alignment.Center
         ) {
-          Row(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+          Row(Modifier.padding(horizontal = DEFAULT_PADDING), verticalAlignment = Alignment.CenterVertically) {
             Text(
               text = cmd.label,
+              style = MaterialTheme.typography.body1,
               fontWeight = FontWeight.Medium,
               maxLines = 1,
               modifier = Modifier.weight(1f),
@@ -228,10 +230,13 @@ fun CommandsMenuView(
     ) {
       itemsIndexed(currentCommands.value, key = { i, cmd -> "$i ${cmd.hashCode()}" }) { i, command ->
         if (i == 0) {
-          Divider()
           val prev = menuTreeBackPath.value.lastOrNull()
-          if (prev != null) { MenuLabelRow(prev) }
+          if (prev != null) {
+            Divider()
+            MenuLabelRow(prev)
+          }
         }
+        Divider()
         Box(Modifier.fillMaxWidth()) { CommandRow(command) }
       }
     }

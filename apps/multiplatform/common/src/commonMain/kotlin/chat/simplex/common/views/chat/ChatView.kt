@@ -771,9 +771,7 @@ private fun connectingText(chatInfo: ChatInfo): String? {
         && !chatInfo.contact.sendMsgToConnect
         && !chatInfo.contact.nextAcceptContactRequest
       ) {
-        if (chatInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
-          generalGetString(MR.strings.contact_should_accept)
-        } else if (chatInfo.contact.contactGroupMemberId != null) {
+        if ((chatInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con && !chatInfo.contact.isBot) || chatInfo.contact.contactGroupMemberId != null) {
           generalGetString(MR.strings.contact_should_accept)
         } else {
           generalGetString(MR.strings.contact_connection_pending)
@@ -1781,11 +1779,11 @@ fun BoxScope.ChatItemsList(
           if (contact.nextConnectPrepared && preparedLinkType != null) {
             when (preparedLinkType) {
               ConnectionMode.Inv -> generalGetString(MR.strings.chat_banner_connect_to_chat)
-              ConnectionMode.Con -> generalGetString(MR.strings.chat_banner_send_request_to_connect)
+              ConnectionMode.Con -> generalGetString(if (contact.isBot) MR.strings.chat_banner_connect_to_use_bot else MR.strings.chat_banner_send_request_to_connect)
             }
           } else if (contact.nextAcceptContactRequest) {
             generalGetString(MR.strings.chat_banner_accept_contact_request)
-          } else if (contact.profile.peerType == ChatPeerType.Bot) {
+          } else if (contact.isBot) {
             generalGetString(MR.strings.chat_banner_bot)
           } else {
             generalGetString(MR.strings.chat_banner_your_contact)

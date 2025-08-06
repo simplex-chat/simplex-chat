@@ -1633,6 +1633,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val sendMsgEnabled get() = userCantSendReason == null
 
+  val sndReady: Boolean get() =
+      when(this) {
+        is Direct -> contact.sndReady
+        is Group ->
+          groupInfo.membership.memberActive
+              && (groupChatScope != null || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole != GroupMemberRole.Observer))
+        is Local -> true
+        is ContactRequest -> false
+        is ContactConnection -> false
+        is InvalidJSON -> false
+      }
+
   fun groupChatScope(): GroupChatScope? = when (this) {
     is Group -> groupChatScope?.toChatScope()
     else -> null
@@ -1677,17 +1689,17 @@ sealed class ChatInfo: SomeChat, NamedChat {
   val hasMentions: Boolean get() = this is Group
 
   val useCommands: Boolean get() = when(this) {
-    is Direct -> contact.profile.peerType == ChatPeerType.Bot
+    is Direct -> contact.isBot
     is Group -> groupInfo.groupProfile.groupPreferences?.commands?.isNotEmpty() ?: false
     else -> false
   }
 
   val menuCommands: List<ChatBotCommand> get() = when(this) {
     is Direct ->
-      if (contact.profile.peerType == ChatPeerType.Bot) contact.profile.preferences?.commands ?: listOf()
-      else listOf()
-    is Group -> groupInfo.groupProfile.groupPreferences?.commands ?: listOf()
-    else -> listOf()
+      if (contact.isBot) contact.profile.preferences?.commands ?: emptyList()
+      else emptyList()
+    is Group -> groupInfo.groupProfile.groupPreferences?.commands ?: emptyList()
+    else -> emptyList()
   }
 
   val contactCard: Boolean
@@ -1790,7 +1802,6 @@ data class Contact(
     return profile.chatViewName.lowercase().contains(s) || profile.displayName.lowercase().contains(s) || profile.fullName.lowercase().contains(s)
   }
 
-
   val directOrUsed: Boolean get() =
     if (activeConn != null) {
       (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
@@ -1798,14 +1809,16 @@ data class Contact(
       true
     }
 
-  val isContactCard: Boolean =
+  val isContactCard: Boolean get() =
     (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
 
-  val contactConnIncognito =
+  val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
+
+  val contactConnIncognito: Boolean get() =
     activeConn?.customUserProfileId != null
 
-  val chatIconName: ImageResource
-    get() = if (profile.peerType == ChatPeerType.Bot) MR.images.ic_cube else MR.images.ic_account_circle_filled
+  val chatIconName: ImageResource get() =
+    if (isBot) MR.images.ic_cube else MR.images.ic_account_circle_filled
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO

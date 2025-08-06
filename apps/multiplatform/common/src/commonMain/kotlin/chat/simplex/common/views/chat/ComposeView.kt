@@ -1485,11 +1485,19 @@ fun ComposeView(
               connect = { withApi { sendConnectPreparedContact() } }
             )
           ConnectionMode.Con ->
-            SendContactRequestView(
-              disableSendButton = disableSendButton,
-              icon = MR.images.ic_person_add_filled,
-              sendRequest = { showSendConnectPreparedContactAlert() }
-            )
+            if (chat.chatInfo.contact.isBot) {
+              ConnectButtonView(
+                text = stringResource(MR.strings.compose_view_connect),
+                icon = MR.images.ic_bolt_filled,
+                connect = { withApi { sendConnectPreparedContact() } }
+              )
+            } else {
+              SendContactRequestView(
+                disableSendButton = disableSendButton,
+                icon = MR.images.ic_person_add_filled,
+                sendRequest = { showSendConnectPreparedContactAlert() }
+              )
+            }
         }
       } else if (
         chat.chatInfo is ChatInfo.Direct

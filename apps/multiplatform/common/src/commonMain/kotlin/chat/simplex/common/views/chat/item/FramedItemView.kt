@@ -373,7 +373,7 @@ fun CIMarkdownText(
     val text = if (ci.meta.isLive) ci.content.msgContent?.text ?: ci.text else ci.text
     MarkdownText(
       text, if (text.isEmpty()) emptyList() else ci.formattedText, toggleSecrets = true,
-      sendCommandMsg = if (chatInfo.useCommands) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
+      sendCommandMsg = if (chatInfo.useCommands && chat.chatInfo.sndReady) { { msg -> sendCommandMsg(chatsCtx, chat, msg) } } else null,
       meta = ci.meta, chatTTL = chatTTL, linkMode = linkMode,
       mentions = ci.mentions, userMemberId = when {
         chatInfo is ChatInfo.Group -> chatInfo.groupInfo.membership.memberId
@@ -385,23 +385,27 @@ fun CIMarkdownText(
 }
 
 fun sendCommandMsg(chatsCtx: ChatModel.ChatsContext, chat: Chat, msg: String) {
-  withLongRunningApi(slow = 60_000) {
-    val cInfo = chat.chatInfo
-    val chatItems =
-      chatModel.controller.apiSendMessages(
-        rh = chat.remoteHostId,
-        type = cInfo.chatType,
-        id = cInfo.apiId,
-        scope = cInfo.groupChatScope(),
-        composedMessages = listOf(ComposedMessage(fileSource = null, quotedItemId = null, msgContent = MsgContent.MCText(msg), mentions = emptyMap()))
-      )
-    if (!chatItems.isNullOrEmpty()) {
-      chatItems.forEach { aChatItem ->
-        withContext(Dispatchers.Main) {
-          chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
+  if (chat.chatInfo.sndReady) {
+    withLongRunningApi(slow = 60_000) {
+      val cInfo = chat.chatInfo
+      val chatItems =
+        chatModel.controller.apiSendMessages(
+          rh = chat.remoteHostId,
+          type = cInfo.chatType,
+          id = cInfo.apiId,
+          scope = cInfo.groupChatScope(),
+          composedMessages = listOf(ComposedMessage(fileSource = null, quotedItemId = null, msgContent = MsgContent.MCText(msg), mentions = emptyMap()))
+        )
+      if (!chatItems.isNullOrEmpty()) {
+        chatItems.forEach { aChatItem ->
+          withContext(Dispatchers.Main) {
+            chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
+          }
         }
       }
     }
+  } else {
+    AlertManager.shared.showAlertMsg(MR.strings.cant_send_message_alert_title, MR.strings.cant_send_commands_alert_text)
   }
 }
 
