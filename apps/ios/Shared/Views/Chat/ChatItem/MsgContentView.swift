@@ -101,7 +101,7 @@ struct MsgContentView: View {
             mentions: mentions,
             userMemberId: userMemberId,
             showSecrets: showSecrets,
-            commands: chat.chatInfo.useCommands,
+            commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
             backgroundColor: containerBackground,
             prefix: prefix
         )
@@ -115,7 +115,7 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendBotCommand(chat, cmd) })
+        return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) })
     }
 
     @inline(__always)

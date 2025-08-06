@@ -411,18 +411,7 @@ struct ComposeView: View {
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {
-                    Button(action: connectPreparedGroup) {
-                        ZStack(alignment: .trailing) {
-                            Label("Join group", systemImage: "person.2.fill")
-                                .frame(maxWidth: .infinity)
-                            if composeState.progressByTimeout {
-                                ProgressView()
-                                    .padding()
-                            }
-                        }
-                    }
-                    .frame(height: 60)
-                    .disabled(composeState.inProgress)
+                    connectButtonView("Join group", icon: "person.2.fill", connect: connectPreparedGroup)
                 } else {
                     sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
                 }
@@ -434,23 +423,18 @@ struct ComposeView: View {
                     sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
                 }
                 .padding(.horizontal, 12)
-            } else if contact?.nextConnectPrepared == true, let linkType = contact?.preparedContact?.uiConnLinkType {
+            } else if let contact,
+                      contact.nextConnectPrepared == true,
+                      let linkType = contact.preparedContact?.uiConnLinkType {
                 switch linkType {
                 case .inv:
-                    Button(action: sendConnectPreparedContact) {
-                        ZStack(alignment: .trailing) {
-                            Label("Connect", systemImage: "person.fill.badge.plus")
-                                .frame(maxWidth: .infinity)
-                            if composeState.progressByTimeout {
-                                ProgressView()
-                                    .padding()
-                            }
-                        }
-                    }
-                    .frame(height: 60)
-                    .disabled(composeState.inProgress)
+                    connectButtonView("Connect", icon: "person.fill.badge.plus", connect: sendConnectPreparedContact)
                 case .con:
-                    sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                    if contact.isBot {
+                        connectButtonView("Connect", icon: "bolt.fill", connect: sendConnectPreparedContact)
+                    } else {
+                        sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                    }
                 }
             } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
                 ContextContactRequestActionsView(contactRequestId: crId)
@@ -636,6 +620,21 @@ struct ComposeView: View {
         }
     }
 
+    private func connectButtonView(_ label: LocalizedStringKey, icon: String, connect: @escaping () -> Void) -> some View {
+        Button(action: connect) {
+            ZStack(alignment: .trailing) {
+                Label(label, systemImage: icon)
+                    .frame(maxWidth: .infinity)
+                if composeState.progressByTimeout {
+                    ProgressView()
+                        .padding()
+                }
+            }
+        }
+        .frame(height: 60)
+        .disabled(composeState.inProgress)
+    }
+
     private func sendContactRequestView(_ disableSendButton: Bool, icon: String, sendRequest: @escaping () -> Void) -> some View {
         HStack (alignment: .center) {
             sendMessageView(
@@ -773,7 +772,6 @@ struct ComposeView: View {
         }
     }
 
-    // TODO [short links] different messages for business
     private func sendConnectPreparedContactRequest() {
         hideKeyboard()
         let empty = composeState.whitespaceOnly
@@ -1510,37 +1508,5 @@ struct ComposeView: View {
         prevLinkUrl = nil
         pendingLinkUrl = nil
         cancelledLinks = []
-    }
-}
-
-struct ComposeView_Previews: PreviewProvider {
-    static var previews: some View {
-        let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-        let im = ItemsModel.shared
-        @State var composeState = ComposeState(message: "hello")
-        @State var selectedRange = NSRange()
-
-        return Group {
-            ComposeView(
-                chat: chat,
-                im: im,
-                composeState: $composeState,
-                showCommandsMenu: Binding.constant(false),
-                keyboardVisible: Binding.constant(true),
-                keyboardHiddenDate: Binding.constant(Date.now),
-                selectedRange: $selectedRange
-            )
-            .environmentObject(ChatModel())
-            ComposeView(
-                chat: chat,
-                im: im,
-                composeState: $composeState,
-                showCommandsMenu: Binding.constant(false),
-                keyboardVisible: Binding.constant(true),
-                keyboardHiddenDate: Binding.constant(Date.now),
-                selectedRange: $selectedRange
-            )
-            .environmentObject(ChatModel())
-        }
     }
 }

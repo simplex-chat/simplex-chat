@@ -924,7 +924,7 @@ struct ChatView: View {
                     case .inv:
                         "Tap Connect to chat"
                     case .con:
-                        "Tap Connect to send request"
+                        contact.isBot ? "Tap Connect to use bot" : "Tap Connect to send request"
                     }
                 } else if contact.nextAcceptContactRequest {
                     "Accept contact request"
@@ -963,9 +963,7 @@ struct ChatView: View {
         switch (chat.chatInfo) {
         case let .direct(contact):
             if !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
-                contact.preparedContact?.uiConnLinkType == .con
-                ? "contact should accept…"
-                : contact.contactGroupMemberId != nil
+                (contact.preparedContact?.uiConnLinkType == .con && !contact.isBot) || contact.contactGroupMemberId != nil
                 ? "contact should accept…"
                 : "connecting…"
             } else {

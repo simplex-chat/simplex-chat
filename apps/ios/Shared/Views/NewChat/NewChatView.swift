@@ -1039,7 +1039,11 @@ private func showPrepareContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contactShortLinkData.profile.image,
-                iconName: contactShortLinkData.business ? "briefcase.circle.fill" : "person.crop.circle.fill",
+                iconName: contactShortLinkData.business
+                            ? "briefcase.circle.fill"
+                            : contactShortLinkData.profile.peerType == .bot
+                            ? "cube.fill"
+                            : "person.crop.circle.fill",
                 size: alertProfileImageSize
             ),
         theme: theme,
@@ -1112,7 +1116,7 @@ private func showOpenKnownContactAlert(
         profileImage:
             ProfileImage(
                 imageStr: contact.profile.image,
-                iconName: "person.crop.circle.fill",
+                iconName: contact.chatIconName,
                 size: alertProfileImageSize
             ),
         theme: theme,
@@ -1138,7 +1142,7 @@ private func showOpenKnownGroupAlert(
         profileImage:
             ProfileImage(
                 imageStr: groupInfo.groupProfile.image,
-                iconName: groupInfo.businessChat == nil ? "person.2.circle.fill" : "briefcase.circle.fill",
+                iconName: groupInfo.chatIconName,
                 size: alertProfileImageSize
             ),
         theme: theme,

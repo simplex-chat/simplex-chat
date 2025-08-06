@@ -9,8 +9,8 @@
 import SwiftUI
 import SimpleXChat
 
-let COMMAND_ROW_SIZE: CGFloat = 40
-let MAX_VISIBLE_COMMAND_ROWS: CGFloat = 6.8
+let COMMAND_ROW_SIZE: CGFloat = 48
+let MAX_VISIBLE_COMMAND_ROWS: CGFloat = 5.8
 
 struct CommandsMenuView: View {
     @EnvironmentObject var m: ChatModel
@@ -36,18 +36,17 @@ struct CommandsMenuView: View {
                     }
                 VStack(spacing: 0) {
                     Spacer()
-                    Divider()
                     let cmdsCount = currentCommands.count + (menuTreeBackPath.isEmpty ? 0 : 1)
                     let scroll = ScrollView {
                         VStack(spacing: 0) {
                             if let prev = menuTreeBackPath.last {
+                                Divider()
                                 menuLabelRow(prev)
                             }
                             ForEach(currentCommands, id: \.self, content: commandRow)
                         }
-                        .padding(.top)
                     }
-                    .frame(maxWidth: .infinity, maxHeight: COMMAND_ROW_SIZE * min(MAX_VISIBLE_COMMAND_ROWS, CGFloat(cmdsCount)) + 16)
+                    .frame(maxWidth: .infinity, maxHeight: COMMAND_ROW_SIZE * min(MAX_VISIBLE_COMMAND_ROWS, CGFloat(cmdsCount)))
                     .background(theme.colors.background)
 
                     if #available(iOS 16.0, *) {
@@ -86,8 +85,8 @@ struct CommandsMenuView: View {
                 .frame(maxWidth: .infinity)
         }
         .padding(.horizontal)
-        .padding(.bottom)
-        .frame(maxWidth: .infinity, maxHeight: COMMAND_ROW_SIZE, alignment: .leading)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .frame(height: COMMAND_ROW_SIZE, alignment: .center)
         .contentShape(Rectangle())
         .onTapGesture {
             if !menuTreeBackPath.isEmpty {
@@ -98,6 +97,7 @@ struct CommandsMenuView: View {
 
     @ViewBuilder
     private func commandRow(_ command: ChatBotCommand) -> some View {
+        Divider()
         switch command {
         case let .command(keyword, label, params, _):
             HStack {
@@ -112,8 +112,7 @@ struct CommandsMenuView: View {
                     .overlay(DetermineWidth())
             }
             .padding(.horizontal)
-            .padding(.bottom)
-            .frame(maxHeight: COMMAND_ROW_SIZE)
+            .frame(height: COMMAND_ROW_SIZE, alignment: .center)
             .contentShape(Rectangle())
             .onTapGesture {
                 if let params {
@@ -121,7 +120,7 @@ struct CommandsMenuView: View {
                     selectedRange = NSRange(location: composeState.message.count, length: 0)
                 } else {
                     composeState.message = ""
-                    sendBotCommand(chat, "/\(keyword)")
+                    sendCommandMsg(chat, "/\(keyword)")
                 }
                 showCommandsMenu = false
                 currentCommands = []
@@ -137,8 +136,7 @@ struct CommandsMenuView: View {
                     .foregroundColor(theme.colors.secondary)
             }
             .padding(.horizontal)
-            .padding(.bottom)
-            .frame(maxHeight: COMMAND_ROW_SIZE)
+            .frame(height: COMMAND_ROW_SIZE, alignment: .center)
             .contentShape(Rectangle())
             .onTapGesture {
                 menuTreeBackPath.append((label: label, commands: currentCommands))
@@ -163,19 +161,27 @@ struct CommandsMenuView: View {
     }
 }
 
-func sendBotCommand(_ chat: Chat, _ cmd: String) {
-    Task {
-        if let chatItems = await apiSendMessages(
-            type: chat.chatInfo.chatType,
-            id: chat.chatInfo.apiId,
-            scope: nil,
-            composedMessages: [ComposedMessage(msgContent: .text(cmd))]
-        ) {
-            await MainActor.run {
-                for ci in chatItems {
-                    ChatModel.shared.addChatItem(chat.chatInfo, ci)
+func sendCommandMsg(_ chat: Chat, _ cmd: String) {
+    if chat.chatInfo.sndReady {
+        Task {
+            if let chatItems = await apiSendMessages(
+                type: chat.chatInfo.chatType,
+                id: chat.chatInfo.apiId,
+                scope: chat.chatInfo.groupChatScope(),
+                composedMessages: [ComposedMessage(msgContent: .text(cmd))]
+            ) {
+                await MainActor.run {
+                    for ci in chatItems {
+                        ChatModel.shared.addChatItem(chat.chatInfo, ci)
+                    }
                 }
             }
         }
+    } else {
+        showAlert(
+            NSLocalizedString("You can't send messages!", comment: "alert title"),
+            message: NSLocalizedString("To send commands you must be connected.", comment: "alert message"),
+            actions: { [okAlertAction] }
+        )
     }
 }

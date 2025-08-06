@@ -1509,6 +1509,19 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
         }
     }
 
+    public var sndReady: Bool {
+        switch self {
+        case let .direct(contact): contact.sndReady
+        case let .group(groupInfo, groupScope):
+            groupInfo.membership.memberActive
+                && (groupScope != nil || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole != .observer))
+        case .local: true
+        case .contactRequest: false
+        case .contactConnection: false
+        case .invalidJSON: false
+        }
+    }
+
     public var chatDeleted: Bool {
         get {
             switch self {
@@ -1768,7 +1781,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var useCommands: Bool {
         switch self {
-        case let .direct(c): c.profile.peerType == .bot
+        case let .direct(c): c.isBot
         case let .group(g, _): (g.groupProfile.groupPreferences?.commands?.count ?? 0) > 0
         default: false
         }
@@ -1776,10 +1789,7 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
 
     public var menuCommands: [ChatBotCommand] {
         switch self {
-        case let .direct(c):
-            c.profile.peerType == .bot
-            ? c.profile.preferences?.commands ?? []
-            : []
+        case let .direct(c): c.isBot ? c.profile.preferences?.commands ?? [] : []
         case let .group(g, _): g.groupProfile.groupPreferences?.commands ?? []
         default: []
         }
@@ -1969,8 +1979,17 @@ public struct Contact: Identifiable, Decodable, NamedChat, Hashable {
         (activeConn == nil || activeConn?.connStatus == .prepared) && profile.contactLink != nil && active && preparedContact == nil && contactRequestId == nil
     }
 
+    @inline(__always)
+    public var isBot: Bool {
+        profile.peerType == .bot
+    }
+
     public var contactConnIncognito: Bool {
         activeConn?.customUserProfileId != nil
+    }
+
+    public var chatIconName: String {
+        isBot ? "cube.fill" : "person.crop.circle.fill"
     }
 
     public func allowsFeature(_ feature: ChatFeature) -> Bool {
