@@ -520,7 +520,7 @@
     <string name="connect_plan_connect_to_yourself">Te conectezi la tine?</string>
     <string name="migrate_from_device_check_connection_and_try_again">Verifică conexiunea la internet și încearcă din nou</string>
     <string name="settings_section_title_chat_colors">Culori conversație</string>
-    <string name="settings_section_title_chat_theme">Temă pentru chat</string>
+    <string name="settings_section_title_chat_theme">Tema conversației</string>
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bun pentru baterie</b>. Aplicația verifică mesajele la fiecare 10 minute. Pot fi pierdute apeluri sau mesaje urgente.]]></string>
     <string name="theme_black">Negru</string>
     <string name="block_for_all_question">Blocați membrul pentru toți?</string>
@@ -2259,7 +2259,7 @@
     <string name="change_automatic_deletion_question">Schimbați ștergerea automată a mesajelor?</string>
     <string name="address_or_1_time_link">Adresă sau link unic?</string>
     <string name="network_session_mode_session">Sesiune de aplicație</string>
-    <string name="contact_list_header_title">Contactele dvs.</string>
+    <string name="contact_list_header_title">Contactele tale</string>
     <string name="network_proxy_auth_mode_username_password">Datele tale de conectare pot fi trimise necriptat.</string>
     <string name="business_address">Adresă de afaceri</string>
     <string name="add_your_team_members_to_conversations">Adăugați membrii echipei dvs. la conversații.</string>
@@ -2445,4 +2445,7 @@
     <string name="v6_4_message_delivery_descr">Mai puțin trafic pe rețelele mobile.</string>
     <string name="share_profile_via_link_alert_text">Adresa va fi scurtă, iar profilul tău va fi partajat prin intermediul acestei adrese.</string>
     <string name="share_profile_via_link_alert_confirm">Actualizează</string>
+    <string name="v6_4_1_short_address">Adresă SimpleX scurtă</string>
+    <string name="chat_banner_connect_to_chat">Atinge Conectare pentru a începe conversația</string>
+    <string name="v6_4_1_short_address_create">Creează-ți adresa</string>
 </resources>
