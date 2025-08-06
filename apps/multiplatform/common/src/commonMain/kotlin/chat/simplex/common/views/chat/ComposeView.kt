@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextDecoration
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -1065,6 +1067,23 @@ fun ComposeView(
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   @Composable
+  fun CommandsButton() {
+    val commandsEnabled = chat.chatInfo.sendMsgEnabled && chat.chatInfo.menuCommands.isNotEmpty()
+    IconButton(
+      onClick = { showCommandsMenu.value = !showCommandsMenu.value },
+      Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
+      enabled = commandsEnabled
+    ) {
+      Box(
+        modifier = Modifier.size(28.dp).clip(CircleShape),
+        contentAlignment = Alignment.Center
+      ) {
+        Text("//", style = MaterialTheme.typography.h3.copy(fontStyle = FontStyle.Italic, color = if (commandsEnabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary))
+      }
+    }
+  }
+
+  @Composable
   fun AttachmentButton() {
     val isGroupAndProhibitedFiles =
       chatsCtx.secondaryContextFilter == null
@@ -1098,6 +1117,19 @@ fun ComposeView(
           .size(28.dp)
           .clip(CircleShape)
       )
+    }
+  }
+
+  @Composable
+  fun AttachmentAndCommandsButtons() {
+    val cInfo = chat.chatInfo
+    Row {
+      if (cInfo.useCommands) {
+        CommandsButton()
+      }
+      if (cInfo !is ChatInfo.Direct || cInfo.contact.profile.peerType != ChatPeerType.Bot || cInfo.featureEnabled(ChatFeature.Files)) {
+        AttachmentButton()
+      }
     }
   }
 
@@ -1433,7 +1465,7 @@ fun ComposeView(
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
           Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-            AttachmentButton()
+            AttachmentAndCommandsButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
               sendToConnect = { withApi { sendMemberContactInvitation() } }
@@ -1480,7 +1512,7 @@ fun ComposeView(
         )
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-          AttachmentButton()
+          AttachmentAndCommandsButtons()
           SendMsgView_(disableSendButton = disableSendButton)
         }
       }

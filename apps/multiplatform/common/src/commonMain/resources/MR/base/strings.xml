@@ -491,6 +491,7 @@
   <string name="chat_banner_send_request_to_connect">Tap Connect to send request</string>
   <string name="chat_banner_accept_contact_request">Accept contact request</string>
   <string name="chat_banner_your_contact">Your contact</string>
+  <string name="chat_banner_bot">Bot</string>
   <string name="chat_banner_join_group">Tap Join group</string>
   <string name="chat_banner_your_group">Your group</string>
   <string name="chat_banner_group">Group</string>

@@ -40,7 +40,6 @@ fun CommandsMenuView(
   composeState: MutableState<ComposeState>,
   showCommandsMenu: MutableState<Boolean>
 ) {
-  val isVisible = remember { mutableStateOf(false) }
   val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
   val offsetY = remember { Animatable(maxHeightInPx) }
   val scope = rememberCoroutineScope()
@@ -63,22 +62,10 @@ fun CommandsMenuView(
     return cmds
   }
 
-  fun messageChanged(message: String) {
-    val msg = message.trim()
-    if (msg == "/") {
-      currentCommands.value = chat.chatInfo.menuCommands
-    } else if (msg.startsWith("/")) {
-      currentCommands.value = filterShownCommands(chat.chatInfo.menuCommands, msg.drop(1))
-    } else {
-      showCommandsMenu.value = false
-      currentCommands.value = emptyList()
-    }
-    menuTreeBackPath.value = emptyList()
-    isVisible.value = currentCommands.value.isNotEmpty()
-  }
-
   suspend fun closeCommandsMenu() {
-    isVisible.value = false
+    showCommandsMenu.value = false
+    currentCommands.value = emptyList()
+    menuTreeBackPath.value = emptyList()
     if (offsetY.value != 0f) {
       return
     }
@@ -88,8 +75,20 @@ fun CommandsMenuView(
     )
   }
 
-  LaunchedEffect(isVisible.value) {
-    if (isVisible.value) {
+  fun messageChanged(message: String) {
+    val msg = message.trim()
+    menuTreeBackPath.value = emptyList()
+    if (msg == "/") {
+      currentCommands.value = chat.chatInfo.menuCommands
+    } else if (msg.startsWith("/")) {
+      currentCommands.value = filterShownCommands(chat.chatInfo.menuCommands, msg.drop(1))
+    } else {
+      scope.launch { closeCommandsMenu() }
+    }
+  }
+
+  LaunchedEffect(currentCommands.value.isNotEmpty()) {
+    if (currentCommands.value.isNotEmpty()) {
       offsetY.animateTo(
         targetValue = 0f,
         animationSpec = commandMenuAnimSpec()
@@ -99,6 +98,15 @@ fun CommandsMenuView(
 
   LaunchedEffect(composeState.value.message) {
     messageChanged(composeState.value.message.text)
+  }
+
+  LaunchedEffect(showCommandsMenu.value) {
+    if (showCommandsMenu.value) {
+      currentCommands.value = chat.chatInfo.menuCommands
+      menuTreeBackPath.value = emptyList()
+    } else {
+      closeCommandsMenu()
+    }
   }
 
   @Composable
@@ -121,6 +129,7 @@ fun CommandsMenuView(
           contentDescription = null,
           tint = MaterialTheme.colors.secondary
         )
+        Spacer(Modifier.width(DEFAULT_PADDING_HALF))
         Text(
           text = prev.first,
           textAlign = TextAlign.Center,
@@ -149,9 +158,7 @@ fun CommandsMenuView(
                 composeState.value = ComposeState(message = ComposeMessage(), useLinkPreviews = true)
                 sendCommandMsg(chatsCtx, chat,"/${cmd.keyword}")
               }
-              showCommandsMenu.value = false
-              currentCommands.value = emptyList()
-              menuTreeBackPath.value = emptyList()
+              scope.launch { closeCommandsMenu() }
             },
           contentAlignment = Alignment.Center
         ) {
@@ -161,13 +168,14 @@ fun CommandsMenuView(
               maxLines = 1,
               modifier = Modifier.weight(1f),
               textAlign = TextAlign.Start,
+              overflow = TextOverflow.Ellipsis
             )
+            Spacer(Modifier.width(DEFAULT_PADDING_HALF))
             Text(
               text = "/${cmd.keyword}",
               style = MaterialTheme.typography.body2,
               maxLines = 1,
-              color = MaterialTheme.colors.secondary,
-              overflow = TextOverflow.Ellipsis
+              color = MaterialTheme.colors.secondary
             )
           }
         }
@@ -191,6 +199,7 @@ fun CommandsMenuView(
               modifier = Modifier.weight(1f),
               overflow = TextOverflow.Ellipsis
             )
+            Spacer(Modifier.width(DEFAULT_PADDING_HALF))
             Icon(
               painterResource(MR.images.ic_chevron_right),
               contentDescription = null,

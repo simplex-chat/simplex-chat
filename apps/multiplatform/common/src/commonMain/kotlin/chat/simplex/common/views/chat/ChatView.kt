@@ -1785,6 +1785,8 @@ fun BoxScope.ChatItemsList(
             }
           } else if (contact.nextAcceptContactRequest) {
             generalGetString(MR.strings.chat_banner_accept_contact_request)
+          } else if (contact.profile.peerType == ChatPeerType.Bot) {
+            generalGetString(MR.strings.chat_banner_bot)
           } else {
             generalGetString(MR.strings.chat_banner_your_contact)
           }

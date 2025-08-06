@@ -430,7 +430,7 @@ struct ComposeView: View {
                 contextSendMessageToConnect("Send direct message to connect")
                 Divider()
                 HStack (alignment: .center) {
-                    attachementAndCommandsButtons().disabled(true)
+                    attachmentAndCommandsButtons().disabled(true)
                     sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
                 }
                 .padding(.horizontal, 12)
@@ -458,7 +458,7 @@ struct ComposeView: View {
                 ContextMemberContactActionsView(contact: ct, groupDirectInv: groupDirectInv)
             } else {
                 HStack (alignment: .center) {
-                    attachementAndCommandsButtons()
+                    attachmentAndCommandsButtons()
                     sendMessageView(disableSendButton)
                 }
                 .padding(.horizontal, 12)
@@ -704,7 +704,7 @@ struct ComposeView: View {
         }
     }
 
-    @ViewBuilder private func attachementAndCommandsButtons() -> some View {
+    @ViewBuilder private func attachmentAndCommandsButtons() -> some View {
         if chat.chatInfo.useCommands {
             commandsButton()
         }

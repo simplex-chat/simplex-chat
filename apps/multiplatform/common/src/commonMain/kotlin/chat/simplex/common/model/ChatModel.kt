@@ -1804,6 +1804,9 @@ data class Contact(
   val contactConnIncognito =
     activeConn?.customUserProfileId != null
 
+  val chatIconName: ImageResource
+    get() = if (profile.peerType == ChatPeerType.Bot) MR.images.ic_cube else MR.images.ic_account_circle_filled
+
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.contactPreference.allow != FeatureAllowed.NO

@@ -27,6 +27,7 @@ struct ProfileImage: View {
             Image(systemName: iconName)
                 .resizable()
                 .foregroundColor(c)
+                .scaledToFit()
                 .frame(width: size, height: size)
                 .background(
                     Circle()
