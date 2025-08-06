@@ -1463,7 +1463,7 @@
     <string name="compose_send_direct_message_to_connect">Послать прямое сообщение контакту</string>
     <string name="error_sending_message_contact_invitation">Ошибка отправки приглашения</string>
     <string name="member_contact_send_direct_message">Отправьте сообщение чтобы соединиться</string>
-    <string name="rcv_group_event_member_created_contact">соединен напрямую</string>
+    <string name="rcv_group_event_member_created_contact">запрос на соединение</string>
     <string name="expand_verb">Раскрыть</string>
     <string name="v5_4_block_group_members">Блокируйте членов группы</string>
     <string name="connect_plan_repeat_connection_request">Повторить запрос на соединение?</string>
