@@ -293,6 +293,10 @@
   <string name="warning_push_needs_push_service">You don\'t have any push service installed on your device.\n\nPlease installed one and try again.\n\nFor more information, visit\ </string>
   <string name="select_push_service">Select Push Service</string>
   <string name="select_push_service_intro">Multiple push services are installed on your system, please select the service you wish to use.</string>
+  <string name="unifiedpush_unregistered">SimpleX is no longer registered with your UnifiedPush distributor. The distributor may have been uninstalled or been logged out. You should reset your notifications settings.</string>
+  <string name="unifiedpush_registration_failed_network">Registration with your UnifiedPush distributor failed due to a network issue. Please try again when your network is back.</string>
+  <string name="unifiedpush_registration_failed_action">Registration with your UnifiedPush distributor failed due to a missing requirement from your distributor.</string>
+  <string name="unifiedpush_registration_failed_unknown">Registration with your UnifiedPush distributor failed due to an unknown issue. This could be a missing requirement from your distributor.</string>
 
   <!-- local authentication notice - SimpleXAPI.kt -->
   <string name="la_notice_title_simplex_lock">SimpleX Lock</string>

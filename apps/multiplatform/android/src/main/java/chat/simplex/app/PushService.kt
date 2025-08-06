@@ -3,6 +3,9 @@ package chat.simplex.app
 import chat.simplex.common.model.CC
 import chat.simplex.common.platform.Log
 import chat.simplex.common.platform.chatModel
+import chat.simplex.common.platform.ntfManager
+import chat.simplex.common.views.helpers.generalGetString
+import chat.simplex.res.MR
 import kotlinx.coroutines.*
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
@@ -58,12 +61,22 @@ class PushService: PushService() {
 
   override fun onRegistrationFailed(reason: FailedReason, instance: String) {
     Log.d(TAG, "onRegistrationFailed: $reason")
-    // TODO: notification to inform about failed registration
+    val title = generalGetString(MR.strings.icon_descr_instant_notifications)
+    val text = when (reason) {
+      FailedReason.NETWORK -> generalGetString(MR.strings.unifiedpush_registration_failed_network)
+      FailedReason.VAPID_REQUIRED, // Should not happen, VAPID will be required
+      FailedReason.INTERNAL_ERROR -> generalGetString(MR.strings.unifiedpush_registration_failed_unknown)
+      FailedReason.ACTION_REQUIRED -> generalGetString(MR.strings.unifiedpush_registration_failed_action)
+
+    }
+    ntfManager.showMessage(title, text)
   }
 
   override fun onUnregistered(instance: String) {
     Log.d(TAG, "onUnregistered")
-    // TODO: notification to inform about unregistration
+    val title = generalGetString(MR.strings.icon_descr_instant_notifications)
+    val text = generalGetString(MR.strings.unifiedpush_unregistered)
+    ntfManager.showMessage(title, text)
     CoroutineScope(Dispatchers.Default).launch {
       chatModel.controller.sendCmd(
         null,
