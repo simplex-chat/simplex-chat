@@ -14,8 +14,9 @@
 ## Why create a bot
 
 You can implement SimpleX Chat for these and many other scenarios:
-- customer support - both as a single- and a multi-agent support chat (using SimpleX Chat [business address]() feature),
+- customer support - both as a single- and a multi-agent support chat (using SimpleX Chat [business address](https://simplex.chat/docs/business.html) feature),
 - information search and retrieval bots, with or without LLM integration,
+- moderation bots, to moderate your group and communities.
 - broadcast bot, when messages from your trusted users are forwarded to all connected contacts - e.g., see our SimpleX Status bot in the app ([source code](../apps/simplex-broadcast-bot/)),
 - feedback bot, when messages from connected contacts are forwarded to a preset list of your trusted users,
 - P2P trading bots, connecting buyers and sellers,
@@ -42,7 +43,7 @@ To distinguish SimpleX user profile as a bot, set its `peerType` property to `"b
 
 ### Configure bot commands
 
-Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letter, but commands can use any letters, digits and underscores. Commands can have parameters.
+Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letters, but commands can use any letters, digits and underscores. Commands can have parameters.
 
 All commands in messages will be highlighted in the chats with the bot, and when users tap them, they will be instantly sent. If the message has a single line and starts from `/` character, the whole message will be highlighted. Otherwise, if command is included as part of the message, it will be highlighted until the first space after `/` character: e.g., `/list` command in Directory service shows user's groups.
 
