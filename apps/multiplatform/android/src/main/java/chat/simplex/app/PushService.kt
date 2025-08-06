@@ -37,10 +37,7 @@ class PushService: PushService() {
     when {
       pn.verification != null -> onVerification(pn.verification)
     }
-    // TODO: Start same job than the periodic service ?
-    // Receiving the push notif is enough to wake the app and fetch msgs
-    // But it may not be enough when the phone is in doze, or with some
-    // vendors
+    MessagesFetcherWorker.scheduleWork(200, 0)
   }
 
   override fun onNewEndpoint(endpoint: PushEndpoint, instance: String) {
