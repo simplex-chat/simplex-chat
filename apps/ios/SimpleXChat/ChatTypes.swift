@@ -1123,7 +1123,7 @@ public func contactUserPrefsToFeaturesAllowed(_ contactUserPreferences: ContactU
         reactions: contactUserPrefToFeatureAllowed(contactUserPreferences.reactions),
         voice: contactUserPrefToFeatureAllowed(contactUserPreferences.voice),
         files: contactUserPrefToFeatureAllowed(contactUserPreferences.files),
-        calls: contactUserPrefToFeatureAllowed(contactUserPreferences.calls)
+        calls: contactUserPrefToFeatureAllowed(contactUserPreferences.calls),
         commands: contactUserPreferences.commands
     )
 }
@@ -1148,7 +1148,7 @@ public func contactFeaturesAllowedToPrefs(_ contactFeaturesAllowed: ContactFeatu
         voice: contactFeatureAllowedToPref(contactFeaturesAllowed.voice),
         files: contactFeatureAllowedToPref(contactFeaturesAllowed.files),
         calls: contactFeatureAllowedToPref(contactFeaturesAllowed.calls),
-        commands: contactFeatureAllowedToPref.commands
+        commands: contactFeaturesAllowed.commands
     )
 }
 

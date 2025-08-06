@@ -140,6 +140,7 @@ fun ChatView(
     val attachmentBottomSheetState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
     val scope = rememberCoroutineScope()
     val selectedChatItems = rememberSaveable { mutableStateOf(null as Set<Long>?) }
+    val showCommandsMenu = rememberSaveable { mutableStateOf(false) }
     if (appPlatform.isAndroid) {
       DisposableEffect(Unit) {
         onDispose {
@@ -188,7 +189,6 @@ fun ChatView(
         chatsCtx.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.chatStats?.unreadCount ?: 0
       }
     }
-    val reportsCount = reportsCount(chatInfo.id)
     val clipboard = LocalClipboardManager.current
     CompositionLocalProvider(
       LocalAppBarHandler provides rememberAppBarHandler(chatInfo.id, keyboardCoversBar = false),
@@ -239,7 +239,7 @@ fun ChatView(
                     )
                   }
                   ComposeView(
-                    rhId = remoteHostId.value, chatModel, chatsCtx, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, attachmentOption,
+                    rhId = remoteHostId.value, chatModel, chatsCtx, Chat(remoteHostId = chatRh, chatInfo = chatInfo, chatItems = emptyList()), composeState, showCommandsMenu, attachmentOption,
                     showChooseAttachment = { scope.launch { attachmentBottomSheetState.show() } },
                     focusRequester = focusRequester
                   )
@@ -725,7 +725,8 @@ fun ChatView(
             onComposed,
             developerTools = chatModel.controller.appPrefs.developerTools.get(),
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
-            showSearch = showSearch
+            showSearch = showSearch,
+            showCommandsMenu = showCommandsMenu
           )
         }
       }
@@ -856,7 +857,8 @@ fun ChatLayout(
   onComposed: suspend (chatId: String) -> Unit,
   developerTools: Boolean,
   showViaProxy: Boolean,
-  showSearch: MutableState<Boolean>
+  showSearch: MutableState<Boolean>,
+  showCommandsMenu: MutableState<Boolean>
 ) {
   val chatInfo = remember { derivedStateOf { chat.value?.chatInfo } }
   val scope = rememberCoroutineScope()
@@ -922,6 +924,11 @@ fun ChatLayout(
                     composeViewFocusRequester = composeViewFocusRequester,
                     chatInfo = chatInfo,
                   )
+                }
+              }
+              if (chatInfo != null && chatInfo.menuCommands.isNotEmpty()) {
+                Column(Modifier.align(Alignment.BottomStart).padding(bottom = composeViewHeight.value)) {
+                  CommandsMenuView(chatsCtx, chat, composeState, showCommandsMenu)
                 }
               }
             }
@@ -3356,7 +3363,8 @@ fun PreviewChatLayout() {
       onComposed = {},
       developerTools = false,
       showViaProxy = false,
-      showSearch =  remember { mutableStateOf(false) }
+      showSearch = remember { mutableStateOf(false) },
+      showCommandsMenu = remember { mutableStateOf(false) }
     )
   }
 }
@@ -3435,7 +3443,8 @@ fun PreviewGroupChatLayout() {
       onComposed = {},
       developerTools = false,
       showViaProxy = false,
-      showSearch =  remember { mutableStateOf(false) }
+      showSearch = remember { mutableStateOf(false) },
+      showCommandsMenu = remember { mutableStateOf(false) }
     )
   }
 }

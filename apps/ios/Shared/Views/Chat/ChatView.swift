@@ -109,7 +109,8 @@ struct ChatView: View {
                     }
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(im: im, groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
-                    } else if !chat.chatInfo.menuCommands.isEmpty {
+                    }
+                    if !chat.chatInfo.menuCommands.isEmpty {
                         CommandsMenuView(chat: chat, composeState: $composeState, selectedRange: $selectedRange, showCommandsMenu: $showCommandsMenu)
                     }
                     FloatingButtons(im: im, theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, animatedScrollingInProgress: $animatedScrollingInProgress, listState: scrollView.listState, model: floatingButtonModel, reloadItems: {

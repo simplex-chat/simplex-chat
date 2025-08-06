@@ -345,6 +345,7 @@ fun ComposeView(
   chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
   composeState: MutableState<ComposeState>,
+  showCommandsMenu: MutableState<Boolean>,
   attachmentOption: MutableState<AttachmentOption?>,
   showChooseAttachment: () -> Unit,
   focusRequester: FocusRequester?,
@@ -593,7 +594,6 @@ fun ComposeView(
   }
 
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
-    val cInfo = chat.chatInfo
     val cs = composeState.value
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null

@@ -1,0 +1,230 @@
+package chat.simplex.common.views.chat
+
+import androidx.compose.animation.core.Animatable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.material.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.dp
+import chat.simplex.common.model.*
+import chat.simplex.common.platform.*
+import chat.simplex.common.ui.theme.DEFAULT_PADDING
+import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
+import chat.simplex.common.views.chat.group.*
+import chat.simplex.common.views.chat.item.sendCommandMsg
+import chat.simplex.common.views.helpers.commandMenuAnimSpec
+import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
+import kotlinx.coroutines.launch
+
+// TODO
+private val COMMAND_MENU_ROW_SIZE = 40.dp
+private val MAX_COMMAND_MENU_HEIGHT = COMMAND_MENU_ROW_SIZE * 7 - 8.dp
+
+@Composable
+fun CommandsMenuView(
+  chatsCtx: ChatModel.ChatsContext,
+  chat: Chat,
+  composeState: MutableState<ComposeState>,
+  showCommandsMenu: MutableState<Boolean>
+) {
+  val isVisible = remember { mutableStateOf(false) }
+  val maxHeightInPx = with(LocalDensity.current) { windowHeight().toPx() }
+  val offsetY = remember { Animatable(maxHeightInPx) }
+  val scope = rememberCoroutineScope()
+
+  val currentCommands = remember { mutableStateOf<List<ChatBotCommand>>(emptyList()) }
+  val menuTreeBackPath = remember { mutableStateOf<List<Pair<String, List<ChatBotCommand>>>>(emptyList()) }
+
+  fun filterShownCommands(commands: List<ChatBotCommand>, msg: CharSequence): List<ChatBotCommand> {
+    val cmds = mutableListOf<ChatBotCommand>()
+    for (cmd in commands) {
+      when (cmd) {
+        is ChatBotCommand.Command ->
+          if (cmd.hidden != true && cmd.keyword.startsWith(msg)) {
+            cmds.add(cmd)
+          }
+        is ChatBotCommand.Menu ->
+          cmds.addAll(filterShownCommands(cmd.commands, msg))
+      }
+    }
+    return cmds
+  }
+
+  fun messageChanged(message: String) {
+    val msg = message.trim()
+    if (msg == "/") {
+      currentCommands.value = chat.chatInfo.menuCommands
+    } else if (msg.startsWith("/")) {
+      currentCommands.value = filterShownCommands(chat.chatInfo.menuCommands, msg.drop(1))
+    } else {
+      showCommandsMenu.value = false
+      currentCommands.value = emptyList()
+    }
+    menuTreeBackPath.value = emptyList()
+    isVisible.value = currentCommands.value.isNotEmpty()
+  }
+
+  suspend fun closeCommandsMenu() {
+    isVisible.value = false
+    if (offsetY.value != 0f) {
+      return
+    }
+    offsetY.animateTo(
+      targetValue = maxHeightInPx,
+      animationSpec = commandMenuAnimSpec()
+    )
+  }
+
+  LaunchedEffect(isVisible.value) {
+    if (isVisible.value) {
+      offsetY.animateTo(
+        targetValue = 0f,
+        animationSpec = commandMenuAnimSpec()
+      )
+    }
+  }
+
+  LaunchedEffect(composeState.value.message) {
+    messageChanged(composeState.value.message.text)
+  }
+
+  @Composable
+  fun MenuLabelRow(prev: Pair<String, List<ChatBotCommand>>) {
+    Box(
+      modifier = Modifier
+        .fillMaxWidth()
+        .height(COMMAND_MENU_ROW_SIZE)
+        .clickable {
+          if (menuTreeBackPath.value.isNotEmpty()) {
+            currentCommands.value = menuTreeBackPath.value.last().second
+            menuTreeBackPath.value = menuTreeBackPath.value.dropLast(1)
+          }
+        },
+      contentAlignment = Alignment.Center
+    ) {
+      Row(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+        Icon(
+          painterResource(MR.images.ic_arrow_back_ios_new),
+          contentDescription = null,
+          tint = MaterialTheme.colors.secondary
+        )
+        Text(
+          text = prev.first,
+          textAlign = TextAlign.Center,
+          fontWeight = FontWeight.Medium,
+          maxLines = 1,
+          modifier = Modifier.weight(1f),
+          overflow = TextOverflow.Ellipsis
+        )
+      }
+    }
+  }
+
+  @Composable
+  fun CommandRow(cmd: ChatBotCommand) {
+    when (cmd) {
+      is ChatBotCommand.Command -> {
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(COMMAND_MENU_ROW_SIZE)
+            .clickable {
+              if (cmd.params != null) {
+                val msg = "/${cmd.keyword} ${cmd.params}"
+                composeState.value = ComposeState(message = ComposeMessage(msg, TextRange(msg.length)), useLinkPreviews = true)
+              } else {
+                composeState.value = ComposeState(message = ComposeMessage(), useLinkPreviews = true)
+                sendCommandMsg(chatsCtx, chat,"/${cmd.keyword}")
+              }
+              showCommandsMenu.value = false
+              currentCommands.value = emptyList()
+              menuTreeBackPath.value = emptyList()
+            },
+          contentAlignment = Alignment.Center
+        ) {
+          Row(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            Text(
+              text = cmd.label,
+              maxLines = 1,
+              modifier = Modifier.weight(1f),
+              textAlign = TextAlign.Start,
+            )
+            Text(
+              text = "/${cmd.keyword}",
+              style = MaterialTheme.typography.body2,
+              maxLines = 1,
+              color = MaterialTheme.colors.secondary,
+              overflow = TextOverflow.Ellipsis
+            )
+          }
+        }
+      }
+      is ChatBotCommand.Menu ->
+        Box(
+          modifier = Modifier
+            .fillMaxWidth()
+            .height(COMMAND_MENU_ROW_SIZE)
+            .clickable {
+              menuTreeBackPath.value += Pair(cmd.label, currentCommands.value)
+              currentCommands.value = cmd.commands
+            },
+          contentAlignment = Alignment.Center
+        ) {
+          Row(Modifier.padding(horizontal = DEFAULT_PADDING)) {
+            Text(
+              text = cmd.label,
+              fontWeight = FontWeight.Medium,
+              maxLines = 1,
+              modifier = Modifier.weight(1f),
+              overflow = TextOverflow.Ellipsis
+            )
+            Icon(
+              painterResource(MR.images.ic_chevron_right),
+              contentDescription = null,
+              tint = MaterialTheme.colors.secondary
+            )
+          }
+        }
+    }
+  }
+
+  Box(
+    modifier = Modifier
+      .fillMaxSize()
+      .offset { IntOffset(0, offsetY.value.toInt()) }
+      .clickable(indication = null, interactionSource = remember { MutableInteractionSource() }) {
+        scope.launch { closeCommandsMenu() }
+      },
+    contentAlignment = Alignment.BottomStart
+  ) {
+    LazyColumnWithScrollBarNoAppBar(
+      Modifier
+        .heightIn(max = MAX_COMMAND_MENU_HEIGHT)
+        .background(MaterialTheme.colors.surface),
+      maxHeight = remember { mutableStateOf(MAX_COMMAND_MENU_HEIGHT) },
+      containerAlignment = Alignment.BottomEnd
+    ) {
+      itemsIndexed(currentCommands.value, key = { i, cmd -> "$i ${cmd.hashCode()}" }) { i, command ->
+        if (i == 0) {
+          Divider()
+          val prev = menuTreeBackPath.value.lastOrNull()
+          if (prev != null) { MenuLabelRow(prev) }
+        }
+        Box(Modifier.fillMaxWidth()) { CommandRow(command) }
+      }
+    }
+  }
+}

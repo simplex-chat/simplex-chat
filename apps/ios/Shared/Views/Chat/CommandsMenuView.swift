@@ -26,7 +26,7 @@ struct CommandsMenuView: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            if showCommandsMenu || !currentCommands.isEmpty {
+            if !currentCommands.isEmpty {
                 Color.white.opacity(0.01)
                     .edgesIgnoringSafeArea(.all)
                     .onTapGesture {

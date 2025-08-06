@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.AnnotatedString.Range
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -215,49 +216,41 @@ fun MarkdownText (
             }
           },
           onClick = { offset ->
+            val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
+              annotatedText.getStringAnnotations(tag, start = offset, end = offset).firstOrNull()?.let(f)
+            }
             if (hasLinks && uriHandler != null) {
-              annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                  try {
-                    uriHandler.openUri(annotation.item)
-                  } catch (e: Exception) {
-                    // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
-                    // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
-                    Log.e(TAG, "Open url: ${e.stackTraceToString()}")
-                  }
+              withAnnotation("URL") { a ->
+                try {
+                  uriHandler.openUri(a.item)
+                } catch (e: Exception) {
+                  // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
+                  // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
+                  Log.e(TAG, "Open url: ${e.stackTraceToString()}")
                 }
-              annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                  uriHandler.openVerifiedSimplexUri(annotation.item)
-                }
+              }
+              withAnnotation("SIMPLEX_URL") { a -> uriHandler.openVerifiedSimplexUri(a.item) }
             } else if (hasSecrets) {
-              annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                  val key = annotation.item
-                  showSecrets[key] = !(showSecrets[key] ?: false)
-                }
+              withAnnotation("SECRET") { a ->
+                val key = a.item
+                showSecrets[key] = !(showSecrets[key] ?: false)
+              }
             } else if (hasCommands && sendCommandMsg != null) {
-              annotatedText.getStringAnnotations(tag = "COMMAND", start = offset, end = offset)
-                .firstOrNull()?.let { annotation ->
-                  sendCommandMsg("/${annotation.item}")
-                }
+              withAnnotation("COMMAND") { a -> sendCommandMsg("/${a.item}") }
             }
           },
           onHover = { offset ->
-            icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let {
+            val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
+            icon.value =
+              if (hasAnnotation("URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
                 PointerIcon.Hand
-              } ?: annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
-              .firstOrNull()?.let {
-                PointerIcon.Hand
-              } ?: annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-              .firstOrNull()?.let {
-                PointerIcon.Hand
-              } ?: PointerIcon.Default
+              } else {
+                PointerIcon.Default
+              }
           },
           shouldConsumeEvent = { offset ->
-            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
-            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset).any()
+            annotatedText.hasStringAnnotations(tag = "URL", start = offset, end = offset)
+                || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
           }
         )
       } else {
