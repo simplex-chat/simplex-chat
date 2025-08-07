@@ -38,7 +38,7 @@ git -C "${tempdir}" clone "${repo}.git" &&\
 for os in '22.04' '24.04'; do
 	os_url="$(printf '%s' "${os}" | tr '.' '_')"
 
-	cli_name="simplex-chat-ubuntu-${os_url}-x86-64"
+	cli_name="simplex-chat-ubuntu-${os_url}-x86_64"
 	deb_name="simplex-desktop-ubuntu-${os_url}-x86_64.deb"
 	appimage_name="simplex-desktop-x86_64.AppImage"
 
@@ -89,7 +89,7 @@ for os in '22.04' '24.04'; do
 
 	# Copy deb
 	docker cp \
-		"${container_name}":/project/apps/multiplatform/release/main/deb/simplex_amd64.deb \
+		"${container_name}":/project/apps/multiplatform/release/main/deb/simplex_x86_64.deb \
 		"${init_dir}/${TAG}-${repo_name}/from-source/${deb_name}"
 
 	# Download prebuilt deb package
