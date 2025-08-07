@@ -20,6 +20,7 @@ markdownTests = do
   secretText
   textColor
   textWithUri
+  textWithHyperlink
   textWithEmail
   textWithPhone
   textWithMentions
@@ -169,14 +170,17 @@ textColor = describe "text color (red)" do
       <==> "snippet: " <> markdown Snippet "this is !1 red text!"
 
 uri :: Text -> Markdown
-uri = Markdown $ Just Uri
+uri = Markdown $ Just $ Uri Nothing
+
+sanitized :: Text -> Text -> Markdown
+sanitized = Markdown . Just . Uri . Just
 
 simplexLink :: SimplexLinkType -> Text -> NonEmpty Text -> Text -> Markdown
-simplexLink linkType uriText smpHosts t = Markdown (simplexLinkFormat linkType uriText smpHosts) t
+simplexLink linkType uriText smpHosts t = Markdown (simplexLinkFormat linkType uriText smpHosts Nothing) t
 
-simplexLinkFormat :: SimplexLinkType -> Text -> NonEmpty Text -> Maybe Format
-simplexLinkFormat linkType uriText smpHosts = case strDecode $ encodeUtf8 uriText of
-  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts, showText = Nothing}
+simplexLinkFormat :: SimplexLinkType -> Text -> NonEmpty Text -> Maybe Text -> Maybe Format
+simplexLinkFormat linkType uriText smpHosts showText = case strDecode $ encodeUtf8 uriText of
+  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts, showText}
   Left e -> error e
 
 textWithUri :: Spec
@@ -200,6 +204,16 @@ textWithUri = describe "text with Uri" do
     "example.academy" <==> uri "example.academy"
     "this is example.com" <==> "this is " <> uri "example.com"
     "x.com" <==> uri "x.com"
+    "https://example.com/?ref=123" <==> sanitized "https://example.com/" "https://example.com/?ref=123"
+    "https://example.com/?ref=123#anchor" <==> sanitized "https://example.com/#anchor" "https://example.com/?ref=123#anchor"
+    "https://example.com/#anchor?ref=123" <==> uri "https://example.com/#anchor?ref=123"
+    "https://duckduckgo.com/?q=search+string" <==> uri "https://duckduckgo.com/?q=search+string"
+    "https://duckduckgo.com/?t=h_&q=search+string&ia=web" <==> sanitized "https://duckduckgo.com/?q=search%20string" "https://duckduckgo.com/?t=h_&q=search+string&ia=web"
+    "https://example.com/page?ref=123" <==> sanitized "https://example.com/page" "https://example.com/page?ref=123"
+    "https://example.com/page?ref=123#anchor" <==> sanitized "https://example.com/page#anchor" "https://example.com/page?ref=123#anchor"
+    "https://example.com/page#anchor?ref=123" <==> uri "https://example.com/page#anchor?ref=123"
+    "https://duckduckgo.com?q=search+string" <==> uri "https://duckduckgo.com?q=search+string"
+    "https://duckduckgo.com/?t=h_&q=search+string&ia=web" <==> sanitized "https://duckduckgo.com/?q=search%20string" "https://duckduckgo.com/?t=h_&q=search+string&ia=web"
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
@@ -221,6 +235,32 @@ textWithUri = describe "text with Uri" do
     let gr = "/contact#/?v=2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D"
     ("https://simplex.chat" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
     ("simplex:" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("simplex:" <> gr)
+
+weblink :: Text -> Text -> Text -> Markdown
+weblink t u = Markdown $ Just WebLink {showText = Just t, linkUri = u, sanitizedUri = Nothing}
+
+sanitizedWebLink :: Text -> Text -> Text -> Text -> Markdown
+sanitizedWebLink t u u' = Markdown $ Just WebLink {showText = Just t, linkUri = u, sanitizedUri = Just u'}
+
+textWithHyperlink :: Spec
+textWithHyperlink = describe "text with WebLink without link text" do
+  let addr = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+      addr' = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
+  it "correct markdown" do
+    "[click here](https://example.com)" <==> weblink "click here" "https://example.com" "[click here](https://example.com)"
+    "For details [click here](https://example.com)" <==> "For details " <> weblink "click here" "https://example.com" "[click here](https://example.com)"
+    "[example.com](https://example.com)" <==> weblink "example.com" "https://example.com" "[example.com](https://example.com)"
+    "[example.com/page](https://example.com/page)" <==> weblink "example.com/page" "https://example.com/page" "[example.com/page](https://example.com/page)"
+    ("[Connect to me](" <> addr <> ")") <==> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] (Just "Connect to me")) ("[Connect to me](" <> addr <> ")")
+    "[click here](https://example.com?ref=another.site)" <==> sanitizedWebLink "click here" "https://example.com?ref=another.site" "https://example.com" "[click here](https://example.com?ref=another.site)"
+    "[click here](https://example.com/page?ref=another.site)" <==> sanitizedWebLink "click here" "https://example.com/page?ref=another.site" "https://example.com/page" "[click here](https://example.com/page?ref=another.site)"
+  it "potentially spoofed link" do
+    "[https://example.com](https://another.com)" <==> "[https://example.com](https://another.com)"
+    "[example.com/page](https://another.com/page)" <==> "[example.com/page](https://another.com/page)"
+    ("[Connect.to.me](" <> addr <> ")") <==> Markdown Nothing ("[Connect.to.me](" <> addr <> ")")
+  it "ignored as markdown" do
+    "[click here](example.com)" <==> "[click here](example.com)"
+    "[click here](https://example.com )" <==> "[click here](https://example.com )"
 
 email :: Text -> Markdown
 email = Markdown $ Just Email
@@ -313,7 +353,7 @@ textWithCommands = describe "text with commands" do
     "send /he?lp" <==> "send /he?lp"
 
 uri' :: Text -> FormattedText
-uri' = FormattedText $ Just Uri
+uri' = FormattedText $ Just $ Uri Nothing
 
 command' :: Text -> Text -> FormattedText
 command' = FormattedText . Just . Command
@@ -330,7 +370,7 @@ multilineMarkdownList = describe "multiline markdown" do
   it "multiline with simplex link" do
     ("https://simplex.chat" <> inv <> "\ntext")
       <<==>>
-        [ FormattedText (simplexLinkFormat XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
+        [ FormattedText (simplexLinkFormat XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] Nothing) ("https://simplex.chat" <> inv),
           "\ntext"
         ]
   it "command markdown" do

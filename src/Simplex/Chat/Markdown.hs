@@ -33,7 +33,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
@@ -52,10 +52,10 @@ data Format
   | Snippet
   | Secret
   | Colored {color :: FormatColor}
-  | Uri
+  | Uri {sanitizedUri :: Maybe Text}
   -- showText is Nothing when the link text is the same as URI.
   -- sanitizedUri is Nothing when original URI is already sanitized.
-  | WebLink {scheme :: Text, linkUri :: Text, sanitizedUri :: Maybe Text, showText :: Maybe Text}
+  | WebLink {linkUri :: Text, sanitizedUri :: Maybe Text, showText :: Maybe Text}
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text, showText :: Maybe Text}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
@@ -65,7 +65,7 @@ data Format
   deriving (Eq, Show)
 
 -- only short links are allowed with alternative text, as the user will preview the link before connecting.
-data SimplexOrWebLink = SOWSimplex AConnShortLink | SOWWeb U.URI
+data SimplexOrWebLink = SOWSimplex AConnectionLink | SOWWeb U.URI
 
 parseLinkUri :: Text -> Either String SimplexOrWebLink
 parseLinkUri t = case strDecode s of
@@ -249,26 +249,25 @@ markdownP = mconcat <$> A.many' fragmentP
           res = markdown (format str) (pfx `T.cons` origStr)
       pure $ if T.null punct then res else res :|: unmarked punct
     sowLinkP = do
-      t <- A.char '[' *> A.takeWhile1 (/= ']') <* A.char ']'
-      linkUri <- A.char '(' *> A.takeWhile1 (/= ')') <* A.char ')'
-      sowLink <- either fail pure $ parseLinkUri linkUri
+      t <- '[' `inParens` ']'
+      link <- '(' `inParens` ')'
+      sowLink <- if isUri link then either fail pure $ parseLinkUri link else fail "not uri"
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
       f <- case sowLink of
-        SOWSimplex (ACSL m sLnk)
-          | hasPunct -> fail "punctuation in link text"
-          | otherwise -> pure $ simplexUriFormat (Just t) $ ACL m (CLShort sLnk)
-        SOWWeb uri@U.URI {uriScheme = U.Scheme sch, uriQuery = U.Query originalQS} -> do
+        SOWSimplex lnk@(ACL _ cLink) -> case cLink of
+          CLFull _ -> fail "full SimpleX link in hyperlink"
+          CLShort _
+            | hasPunct -> fail "punctuation in hyperlink text"
+            | otherwise -> pure $ simplexUriFormat (Just t) lnk
+        SOWWeb uri -> do
           showText <-
             if
-              | t == linkUri -> pure Nothing
-              | hasPunct && ("https://" <> t) /= linkUri -> fail "punctuation in link text"
+              | t == link -> pure Nothing
+              | hasPunct && ("https://" <> t) /= link -> fail "punctuation in hyperlink text"
               | otherwise -> pure $ Just t
-          let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
-              sanitizedUri
-                | length sanitizedQS == length originalQS = Nothing
-                | otherwise = Just $ safeDecodeUtf8 $ U.serializeURIRef' uri {U.uriQuery = U.Query sanitizedQS}
-          pure WebLink {scheme = safeDecodeUtf8 sch, linkUri, sanitizedUri, showText}
-      pure $ markdown f $ T.concat ["[", t, "](", linkUri, ")"]
+          pure WebLink {linkUri = link, sanitizedUri = sanitized uri, showText}
+      pure $ markdown f $ T.concat ["[", t, "](", link, ")"]
+    inParens open close = A.char open *> A.takeWhile1 (/= close) <* A.char close
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red
@@ -298,8 +297,10 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s' = res $ uriMarkdown s'
-      | isDomain s' = res $ markdown Uri s'
+      | isUri s' = case parseLinkUri s' of
+          Right link -> res $ uriMarkdown s' link
+          Left _ -> unmarked s
+      | isDomain s' = res $ markdown Uri {sanitizedUri = Nothing} s'
       | isEmail s' = res $ markdown Email s'
       | otherwise = unmarked s
       where
@@ -310,9 +311,15 @@ markdownP = mconcat <$> A.many' fragmentP
       '/' -> False
       ')' -> False
       c -> isPunctuation c
-    uriMarkdown s = case strDecode $ encodeUtf8 s of
-      Right cLink -> markdown (simplexUriFormat Nothing cLink) s
-      _ -> markdown Uri s
+    uriMarkdown s = \case
+      SOWSimplex cLink -> markdown (simplexUriFormat Nothing cLink) s
+      SOWWeb uri -> markdown Uri {sanitizedUri = sanitized uri} s
+    sanitized :: U.URIRef U.Absolute ->  Maybe Text
+    sanitized uri@U.URI {uriQuery = U.Query originalQS} =
+      let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
+       in if length sanitizedQS == length originalQS
+            then Nothing
+            else Just $ safeDecodeUtf8 $ U.serializeURIRef' uri {U.uriQuery = U.Query sanitizedQS}
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
     isDomain s = case T.splitOn "." s of
@@ -360,7 +367,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Snippet -> around '`'
     Secret -> around '#'
     Colored (FormatColor c) -> color c
-    Uri -> t
+    Uri {} -> t
     WebLink {} -> t
     SimplexLink {} -> t
     Mention _ -> t
