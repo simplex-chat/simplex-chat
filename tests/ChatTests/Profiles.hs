@@ -963,27 +963,27 @@ testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile al
           cath <## "use @business <message> to send messages"
           cath <# "#alisa business> hey"
       ]
-    biz ##> "/set voice #alisa on"
+    biz ##> "/set delete #alisa on"
     biz <## "updated group preferences:"
-    biz <## "Voice messages: on"
+    biz <## "Full deletion: on"
     concurrentlyN_
       [ do
           alice <## "business_1 updated group #business:"
           alice <## "updated group preferences:"
-          alice <## "Voice messages: on",
+          alice <## "Full deletion: on",
         do
           bob <## "business_1 updated group #business:"
           bob <## "updated group preferences:"
-          bob <## "Voice messages: on",
+          bob <## "Full deletion: on",
         do
           cath <## "business updated group #alisa:"
           cath <## "updated group preferences:"
-          cath <## "Voice messages: on"
+          cath <## "Full deletion: on"
       ]
-    biz #$> ("/_get chat #1 count=1", chat, [(1, "Voice messages: on")])
-    alice #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
-    bob #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
-    cath #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+    biz #$> ("/_get chat #1 count=1", chat, [(1, "Full deletion: on")])
+    alice #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
+    bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
+    cath #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
 
 testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
