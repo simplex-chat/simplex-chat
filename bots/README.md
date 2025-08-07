@@ -78,6 +78,12 @@ This syntax allows creating nested menus of commands with and without parameters
 
 Configuring commands for specific contacts can be done with [APISetContactPrefs](./api/COMMANDS.md#apisetcontactprefs) command.
 
+### Bots and business addresses
+
+A useful scenario would be when bot is used to accept requests to bot's business address, so that a new business chat is created for every connecting user, and then invites other people from the business, as appropriate.
+
+Business chat is a special group chat under the hood, but the connected customer sees business avatar, and all users that bot would add to the group later see customer' avatar. This chat will inherits preferences from the bot profile, so if you want to allow customers to send files, you need to allow them in the bot. And if bot has any commands configured, they will also be available to customers in the menu.
+
 ## How to create a bot
 
 [SimpleX Chat CLI](../docs/CLI.md) can be run as a local WebSockets server on any port:
