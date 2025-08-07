@@ -147,6 +147,7 @@ chatGroupTests = do
     it "share incognito profile" testMemberContactIncognito
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
+    it "manually accept contact with group member" testMemberContactAccept
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
@@ -437,6 +438,9 @@ testNewGroupIncognito :: HasCallStack => TestParams -> IO ()
 testNewGroupIncognito =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
+      bob ##> "/set accept member contacts on"
+      bob <## "ok"
+
       connectUsers alice bob
 
       -- alice creates group with incognito membership
@@ -846,6 +850,9 @@ testGroupDeleteInvitedContact :: HasCallStack => TestParams -> IO ()
 testGroupDeleteInvitedContact =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
+      bob ##> "/set accept member contacts on"
+      bob <## "ok"
+
       connectUsers alice bob
       alice ##> "/g team"
       alice <## "group #team is created"
@@ -4144,6 +4151,11 @@ testMemberContactMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      bob ##> "/set accept member contacts on"
+      bob <## "ok"
+      cath ##> "/set accept member contacts on"
+      cath <## "ok"
+
       createGroup3 "team" alice bob cath
 
       -- alice and bob delete contacts, connect
@@ -4211,6 +4223,9 @@ testMemberContactNoMessage :: HasCallStack => TestParams -> IO ()
 testMemberContactNoMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      cath ##> "/set accept member contacts on"
+      cath <## "ok"
+
       createGroup3 "team" alice bob cath
 
       -- bob and cath connect
@@ -4245,6 +4260,9 @@ testMemberContactProhibitedRepeatInv :: HasCallStack => TestParams -> IO ()
 testMemberContactProhibitedRepeatInv =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      cath ##> "/set accept member contacts on"
+      cath <## "ok"
+
       createGroup3 "team" alice bob cath
 
       bob ##> "/_create member contact #1 3"
@@ -4273,6 +4291,9 @@ testMemberContactInvitedConnectionReplaced ps = do
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChat ps "bob" bobProfile $ \bob -> do
       withNewTestChat ps "cath" cathProfile $ \cath -> do
+        bob ##> "/set accept member contacts on"
+        bob <## "ok"
+
         createGroup3 "team" alice bob cath
 
         alice ##> "/d bob"
@@ -4343,6 +4364,9 @@ testMemberContactIncognito :: HasCallStack => TestParams -> IO ()
 testMemberContactIncognito =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      cath ##> "/set accept member contacts on"
+      cath <## "ok"
+
       -- create group, bob joins incognito
       threadDelay 100000
       alice ##> "/g team"
@@ -4433,6 +4457,9 @@ testMemberContactProfileUpdate :: HasCallStack => TestParams -> IO ()
 testMemberContactProfileUpdate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
+      cath ##> "/set accept member contacts on"
+      cath <## "ok"
+
       createGroup3 "team" alice bob cath
 
       bob ##> "/p rob Rob"
@@ -4501,6 +4528,9 @@ testRecreateMemberContactManyGroups :: HasCallStack => TestParams -> IO ()
 testRecreateMemberContactManyGroups =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
+      bob ##> "/set accept member contacts on"
+      bob <## "ok"
+
       connectUsers alice bob
       createGroup2' "team" alice (bob, GRAdmin) False
       createGroup2' "club" alice (bob, GRAdmin) False
@@ -4569,6 +4599,46 @@ testRecreateMemberContactManyGroups =
       bob ##> "@#club alice 4"
       bob <# "@alice 4"
       alice <# "bob> 4"
+
+testMemberContactAccept :: HasCallStack => TestParams -> IO ()
+testMemberContactAccept =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      -- bob and cath connect
+      bob ##> "/_create member contact #1 3"
+      bob <## "contact for member #team cath is created"
+
+      bob ##> "/_invite member contact @3"
+      bob <## "sent invitation to connect directly to member #team cath"
+      cath <## "#team bob requests to create direct contact with you"
+      cath <## "to accept: /accept_member_contact @bob"
+      cath <## "to reject: /delete @bob (the sender will NOT be notified)"
+
+      cath #$> ("/_get chat @3 count=1", chat, [(0, "requested connection from group team")])
+
+      cath ##> "/accept_member_contact @bob"
+      cath <## "contact bob is accepted, starting connection"
+      concurrently_
+        (bob <## "cath (Catherine): contact is connected")
+        (cath <## "bob (Bob): contact is connected")
+
+      bob <##> cath
+
+      -- if group is deleted, bob and cath keep contact with each other
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group",
+          do
+            bob <## "#team: alice deleted the group"
+            bob <## "use /d #team to delete the local copy of the group",
+          do
+            cath <## "#team: alice deleted the group"
+            cath <## "use /d #team to delete the local copy of the group"
+        ]
+
+      bob <##> cath
 
 testGroupMsgForward :: HasCallStack => TestParams -> IO ()
 testGroupMsgForward =

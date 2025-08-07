@@ -746,9 +746,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "connected" = "připojeno";
 
-/* rcv group event chat item */
-"connected directly" = "připojeno přímo";
-
 /* No comment provided by engineer. */
 "connecting" = "připojování";
 
@@ -1354,7 +1351,7 @@ swipe action */
 /* alert title */
 "Error deleting chat database" = "Chyba při mazání databáze chatu";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Chyba při mazání chatu!";
 
 /* No comment provided by engineer. */

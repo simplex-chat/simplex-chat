@@ -255,7 +255,7 @@ chatTypesDocsData =
     (sti @FileProtocol, (STEnum' $ consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
-    (sti @Format, STUnion, "", [], "", ""),
+    (sti @Format, STUnion, "", ["Unknown"], "", ""),
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
@@ -302,6 +302,7 @@ chatTypesDocsData =
     (sti @PrefEnabled, STRecord, "", [], "", ""),
     (sti @Preferences, STRecord, "", [], "", ""),
     (sti @PreparedContact, STRecord, "", [], "", ""),
+    (sti @GroupDirectInvitation, STRecord, "", [], "", ""),
     (sti @PreparedGroup, STRecord, "", [], "", ""),
     (sti @Profile, STRecord, "", [], "", ""),
     (sti @ProxyClientError, STUnion, "Proxy", [], "", ""),
@@ -492,6 +493,7 @@ deriving instance Generic PendingContactConnection
 deriving instance Generic PrefEnabled
 deriving instance Generic Preferences
 deriving instance Generic PreparedContact
+deriving instance Generic GroupDirectInvitation
 deriving instance Generic PreparedGroup
 deriving instance Generic Profile
 deriving instance Generic ProxyClientError

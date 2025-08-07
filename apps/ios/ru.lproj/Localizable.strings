@@ -1275,9 +1275,6 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connected desktop" = "Подключенный компьютер";
 
-/* rcv group event chat item */
-"connected directly" = "соединен(а) напрямую";
-
 /* No comment provided by engineer. */
 "Connected servers" = "Подключенные серверы";
 
@@ -1412,6 +1409,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Предпочтения контакта";
+
+/* No comment provided by engineer. */
+"Contact requests from groups" = "Запросы на соединение из групп";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "контакт должен принять…";
@@ -2256,7 +2256,7 @@ chat item action */
 /* alert title */
 "Error deleting chat with member" = "Ошибка при удалении чата с членом группы";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Ошибка при удалении чата!";
 
 /* No comment provided by engineer. */
@@ -2369,6 +2369,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error sending message" = "Ошибка при отправке сообщения";
+
+/* No comment provided by engineer. */
+"Error setting auto-accept" = "Ошибка при установке автоприёма запросов";
 
 /* No comment provided by engineer. */
 "Error setting delivery receipts!" = "Ошибка настроек отчётов о доставке!";
@@ -3250,6 +3253,9 @@ snd error text */
 
 /* item status text */
 "Member inactive" = "Член неактивен";
+
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "Член группы удалён - невозможно принять запрос";
 
 /* chat feature */
 "Member reports" = "Сообщения о нарушениях";
@@ -4425,6 +4431,12 @@ swipe action */
 /* No comment provided by engineer. */
 "request to join rejected" = "запрос на вступление отклонён";
 
+/* rcv group event chat item */
+"requested connection" = "запрос на соединение";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "запрос на соединение из группы %@";
+
 /* chat list item title */
 "requested to connect" = "запрошено соединение";
 
@@ -5432,6 +5444,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Эта настройка применяется к сообщениям в Вашем текущем профиле чата **%@**.";
+
+/* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Эта настройка применяется к Вашему текущему профилю чата **%@**.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Время удаления устанавливается только для новых контактов.";

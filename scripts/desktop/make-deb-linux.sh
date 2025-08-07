@@ -1,5 +1,7 @@
 #!/usr/bin/env sh
 
+ARCH="$(uname -m)"
+
 scripts/desktop/build-lib-linux.sh
 cd apps/multiplatform
 ./gradlew packageDeb
@@ -39,6 +41,6 @@ rm -f ./extracted/opt/*imple*/lib/app/*skiko-awt-runtime-linux*
 sed -i -e '/skiko-awt-runtime-linux/d' ./extracted/opt/*imple*/lib/app/simplex.cfg
 find ./extracted/ -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
-dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_amd64.deb
+dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_${ARCH}.deb
 
-strip-nondeterminism ./release/main/deb/simplex_amd64.deb
+strip-nondeterminism ./release/main/deb/simplex_${ARCH}.deb

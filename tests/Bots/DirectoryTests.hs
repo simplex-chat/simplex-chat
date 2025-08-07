@@ -253,8 +253,49 @@ testSuspendResume ps =
       superUser #> "@SimpleX-Directory /link 1:privacy"
       superUser <# "SimpleX-Directory> > /link 1:privacy"
       superUser <## "      The link to join the group ID 1 (privacy):"
-      superUser <##. "https://simplex.chat/contact"
+      superUser <##. "https://localhost/g#"
       superUser <## "New member role: member"
+      -- get and change the link to the equivalent - should not ask to re-approve
+      bob #> "@SimpleX-Directory /link 1"
+      bob <# "SimpleX-Directory> > /link 1"
+      bob <## "      The link to join the group ID 1 (privacy):"
+      gLink <- getTermLine bob
+      gLink `shouldStartWith` "https://localhost/g#"
+      bob <## "New member role: member"
+      bob ##> "/show welcome #privacy"
+      bob <## "Welcome message:"
+      bob <## ("Link to join the group privacy: " <> gLink)
+      bob ##> ("/set welcome #privacy Link to join the group privacy: " <> gLink <> "?same_link=true")
+      bob <## "welcome message changed to:"
+      bob <## ("Link to join the group privacy: " <> gLink <> "?same_link=true")
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated!"
+      bob <## "The group is listed in directory."
+      superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated - only link or whitespace changes."
+      superUser <## "The group remained listed in directory."
+      -- upgrade link
+      -- make it upgradeable first
+      superUser #> "@SimpleX-Directory /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
+      superUser <# "SimpleX-Directory> > /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
+      superUser <## ""
+      bob #> "@SimpleX-Directory /link 1"
+      bob <# "SimpleX-Directory> > /link 1"
+      bob <## "      The link to join the group ID 1 (privacy):"
+      bob <##. "https://simplex.chat/contact#/"
+      bob <## "New member role: member"
+      bob <## "The link is being upgraded..."
+      bob <# "SimpleX-Directory> Please replace the old link in welcome message of your group ID 1 (privacy)"
+      bob <## "If this is the only change, the group will remain listed in directory without re-approval."
+      bob <## ""
+      bob <## "The new link:"
+      gLink' <- dropStrPrefix "SimpleX-Directory> " . dropTime <$> getTermLine bob
+      bob ##> ("/set welcome #privacy Link to join the group privacy: " <> gLink')
+      bob <## "welcome message changed to:"
+      bob <## ("Link to join the group privacy: " <> gLink')
+      bob <# "SimpleX-Directory> The group ID 1 (privacy) is updated!"
+      bob <## "The group is listed in directory."
+      superUser <# "SimpleX-Directory> The group ID 1 (privacy) is updated - only link or whitespace changes."
+      superUser <## "The group remained listed in directory."
+      -- send message to group owner
       superUser #> "@SimpleX-Directory /owner 1:privacy hello there"
       superUser <# "SimpleX-Directory> > /owner 1:privacy hello there"
       superUser <## "      Forwarded to @bob, the owner of the group ID 1 (privacy)"
@@ -324,7 +365,7 @@ testSetRole ps =
         cath <## "connection request sent!"
         cath <## "#privacy: joining the group..."
         cath <## "#privacy: you joined the group"
-        cath <#. "#privacy SimpleX-Directory> Link to join the group privacy: https://simplex.chat/"
+        cath <#. "#privacy SimpleX-Directory> Link to join the group privacy: https://localhost/g#"
         cath <## "#privacy: member bob (Bob) is connected"
         bob <## "#privacy: SimpleX-Directory added cath (Catherine) to the group (connecting...)"
         bob <## "#privacy: new member cath is connected"

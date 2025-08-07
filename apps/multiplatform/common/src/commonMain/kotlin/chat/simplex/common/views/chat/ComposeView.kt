@@ -1248,6 +1248,7 @@ fun ComposeView(
         SimpleButtonIconEnded(
           text = stringResource(MR.strings.compose_view_connect),
           icon = painterResource(icon),
+          style = MaterialTheme.typography.body2,
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary,
           disabled = composeState.value.inProgress,
           click = { withApi { sendRequest() } }
@@ -1466,6 +1467,16 @@ fun ComposeView(
         ComposeContextContactRequestActionsView(
           rhId = rhId,
           contactRequestId = chat.chatInfo.contact.contactRequestId
+        )
+      } else if (
+        chat.chatInfo is ChatInfo.Direct
+        && chat.chatInfo.contact.nextAcceptContactRequest
+        && chat.chatInfo.contact.groupDirectInv != null
+      ) {
+        ComposeContextMemberContactActionsView(
+          rhId = rhId,
+          contact = chat.chatInfo.contact,
+          groupDirectInv = chat.chatInfo.contact.groupDirectInv
         )
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {

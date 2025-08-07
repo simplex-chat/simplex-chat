@@ -1333,6 +1333,7 @@
     <string name="no_history">Нет истории</string>
     <string name="receipts_contacts_override_enabled">Отправка отчётов о доставке включена для %d контактов.</string>
     <string name="sending_delivery_receipts_will_be_enabled_all_profiles">Отправка отчётов о доставке будет включена для всех контактов во всех видимых профилях чата.</string>
+    <string name="this_setting_is_for_your_current_profile">Установка для Вашего активного профиля</string>
     <string name="receipts_section_description">Установки для Вашего активного профиля</string>
     <string name="receipts_contacts_override_disabled">Отправка отчётов о доставке выключена для %d контактов.</string>
     <string name="sync_connection_force_desc">Шифрование работает, и новое соглашение не требуется. Это может привести к ошибкам соединения!</string>
@@ -1359,6 +1360,7 @@
     <string name="receipts_contacts_enable_keep_overrides">Включить (кроме исключений)</string>
     <string name="receipts_contacts_title_enable">Выключить отчёты о доставке\?</string>
     <string name="settings_section_title_delivery_receipts">ОТПРАВКА ОТЧЁТОВ О ДОСТАВКЕ</string>
+    <string name="settings_section_title_contact_requests_from_groups">ЗАПРОСЫ НА СОЕДИНЕНИЕ ИЗ ГРУПП</string>
     <string name="conn_event_ratchet_sync_agreed">шифрование согласовано</string>
     <string name="snd_conn_event_ratchet_sync_agreed">шифрование согласовано для %s</string>
     <string name="conn_event_ratchet_sync_ok">шифрование работает</string>
@@ -1467,6 +1469,7 @@
     <string name="connect_plan_repeat_connection_request">Повторить запрос на соединение?</string>
     <string name="encryption_renegotiation_error">Ошибка нового соглашения о шифровании</string>
     <string name="rcv_direct_event_contact_deleted">удалил(а) контакт</string>
+    <string name="rcv_direct_event_group_inv_link_received">запрос на соединение из группы %1$s</string>
     <string name="error_alert_title">Ошибка</string>
     <string name="v5_4_incognito_groups_descr">Создайте группу, используя случайный профиль.</string>
     <string name="create_group_button">Создать группу</string>
@@ -2561,6 +2564,7 @@
     <string name="group_short_descr_field">Цель:</string>
     <string name="network_option_tcp_connection_timeout_background">Фоновый таймаут TCP-соединения</string>
     <string name="the_sender_will_not_be_notified">Отправитель не будет уведомлён.</string>
+    <string name="member_is_deleted_cant_accept_request">Член группы удалён - невозможно принять запрос</string>
     <string name="context_user_picker_cant_change_profile_alert_message">Чтобы использовать другой профиль после попытки соединения, удалите чат и используйте ссылку снова.</string>
     <string name="address_welcome_message">Приветственное сообщение</string>
     <string name="short_descr">О Вас:</string>
