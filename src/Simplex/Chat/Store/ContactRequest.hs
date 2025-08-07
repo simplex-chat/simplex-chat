@@ -204,8 +204,7 @@ createOrUpdateContactRequest
               ct <- getContact db vr user contactId
               pure $ RSCurrentRequest Nothing ucr (Just $ REContact ct)
             createBusinessChat = do
-              let Profile {preferences = userPreferences} = userProfileInGroup user Nothing
-                  groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs userPreferences
+              let groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs $ preferences' user
               (gInfo@GroupInfo {groupId}, clientMember) <-
                 createBusinessRequestGroup db vr gVar user cReqChatVRange profile profileId ldn groupPreferences
               liftIO $

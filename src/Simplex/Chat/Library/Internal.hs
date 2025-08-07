@@ -1010,7 +1010,7 @@ acceptBusinessJoinRequestAsync
   clientMember@GroupMember {groupMemberId, memberId}
   UserContactRequest {agentInvitationId = AgentInvId cReqInvId, cReqChatVRange, xContactId} = do
     vr <- chatVersionRange
-    let userProfile@Profile {displayName, preferences} = userProfileInGroup user Nothing
+    let userProfile@Profile {displayName, preferences} = fromLocalProfile $ profile' user
         -- TODO [short links] take groupPreferences from group info
         groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
         msg =

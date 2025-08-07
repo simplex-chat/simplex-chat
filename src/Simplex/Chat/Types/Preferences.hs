@@ -472,14 +472,15 @@ emptyGroupPrefs :: GroupPreferences
 emptyGroupPrefs = GroupPreferences Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing Nothing
 
 businessGroupPrefs :: Preferences -> GroupPreferences
-businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions} =
+businessGroupPrefs Preferences {timedMessages, fullDelete, reactions, voice, files, sessions, commands} =
   defaultBusinessGroupPrefs
     { timedMessages = Just TimedMessagesGroupPreference {enable = maybe FEOff enableFeature timedMessages, ttl = maybe Nothing prefParam timedMessages},
       fullDelete = Just FullDeleteGroupPreference {enable = maybe FEOff enableFeature fullDelete, role = Nothing},
       reactions = Just ReactionsGroupPreference {enable = maybe FEOn enableFeature reactions},
       voice = Just VoiceGroupPreference {enable = maybe FEOff enableFeature voice, role = Nothing},
       files = Just FilesGroupPreference {enable = maybe FEOff enableFeature files, role = Nothing},
-      sessions = Just SessionsGroupPreference {enable = maybe FEOff enableFeature sessions, role = Nothing}
+      sessions = Just SessionsGroupPreference {enable = maybe FEOff enableFeature sessions, role = Nothing},
+      commands
     }
   where
     enableFeature :: FeatureI f => FeaturePreference f -> GroupFeatureEnabled
