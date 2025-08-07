@@ -176,7 +176,7 @@ simplexLink linkType uriText smpHosts t = Markdown (simplexLinkFormat linkType u
 
 simplexLinkFormat :: SimplexLinkType -> Text -> NonEmpty Text -> Maybe Format
 simplexLinkFormat linkType uriText smpHosts = case strDecode $ encodeUtf8 uriText of
-  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts}
+  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts, showText = Nothing}
   Left e -> error e
 
 textWithUri :: Spec

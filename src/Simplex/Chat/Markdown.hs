@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -17,6 +19,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
@@ -30,13 +33,14 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
+import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionLink (..), ConnReqUriData (..), ConnShortLink (..), ConnectionLink (..), ConnectionRequestUri (..), ContactConnType (..), SMPQueue (..), simplexConnReqUri, simplexShortLink)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
 import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
+import qualified URI.ByteString as U
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -49,13 +53,32 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  -- showText is Nothing when the link text is the same as URI.
+  -- sanitizedUri is Nothing when original URI is already sanitized.
+  | WebLink {scheme :: Text, linkUri :: Text, sanitizedUri :: Maybe Text, showText :: Maybe Text}
+  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text, showText :: Maybe Text}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
   | Unknown {json :: J.Value}
   deriving (Eq, Show)
+
+-- only short links are allowed with alternative text, as the user will preview the link before connecting.
+data SimplexOrWebLink = SOWSimplex AConnShortLink | SOWWeb U.URI
+
+parseLinkUri :: Text -> Either String SimplexOrWebLink
+parseLinkUri t = case strDecode s of
+  Right sLnk -> Right $ SOWSimplex sLnk
+  Left _ -> case U.parseURI U.laxURIParserOptions s of
+    Right uri@U.URI {uriAuthority} -> case uriAuthority of
+      Just U.Authority {authorityHost = U.Host h}
+        | B.elem '.' h -> Right $ SOWWeb uri
+        | otherwise -> Left "Invalid URI host"
+      Nothing -> Left "No URI host"
+    Left e -> Left $ "Invalid URI: " <> show e
+  where
+    s = encodeUtf8 t
 
 mentionedNames :: MarkdownList -> [Text]
 mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
@@ -187,6 +210,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '!' -> coloredP <|> wordP
           '@' -> mentionP <|> wordP
           '/' -> commandP <|> wordP
+          '[' -> sowLinkP <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -224,6 +248,27 @@ markdownP = mconcat <$> A.many' fragmentP
       let origStr = if c == '\'' then '\'' `T.cons` str `T.snoc` '\'' else str
           res = markdown (format str) (pfx `T.cons` origStr)
       pure $ if T.null punct then res else res :|: unmarked punct
+    sowLinkP = do
+      t <- A.char '[' *> A.takeWhile1 (/= ']') <* A.char ']'
+      linkUri <- A.char '(' *> A.takeWhile1 (/= ')') <* A.char ')'
+      sowLink <- either fail pure $ parseLinkUri linkUri
+      let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
+      f <- case sowLink of
+        SOWSimplex (ACSL m sLnk)
+          | hasPunct -> fail "punctuation in link text"
+          | otherwise -> pure $ simplexUriFormat (Just t) $ ACL m (CLShort sLnk)
+        SOWWeb uri@U.URI {uriScheme = U.Scheme sch, uriQuery = U.Query originalQS} -> do
+          showText <-
+            if
+              | t == linkUri -> pure Nothing
+              | hasPunct && ("https://" <> t) /= linkUri -> fail "punctuation in link text"
+              | otherwise -> pure $ Just t
+          let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
+              sanitizedUri
+                | length sanitizedQS == length originalQS = Nothing
+                | otherwise = Just $ safeDecodeUtf8 $ U.serializeURIRef' uri {U.uriQuery = U.Query sanitizedQS}
+          pure WebLink {scheme = safeDecodeUtf8 sch, linkUri, sanitizedUri, showText}
+      pure $ markdown f $ T.concat ["[", t, "](", linkUri, ")"]
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red
@@ -266,7 +311,7 @@ markdownP = mconcat <$> A.many' fragmentP
       ')' -> False
       c -> isPunctuation c
     uriMarkdown s = case strDecode $ encodeUtf8 s of
-      Right cLink -> markdown (simplexUriFormat cLink) s
+      Right cLink -> markdown (simplexUriFormat Nothing cLink) s
       _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
@@ -281,11 +326,11 @@ markdownP = mconcat <$> A.many' fragmentP
             && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
-    simplexUriFormat :: AConnectionLink -> Format
-    simplexUriFormat = \case
+    simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
+    simplexUriFormat showText = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink (linkType' crData) cLink $ uriHosts crData
-        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink $ uriHosts crData
+        CRContactUri crData -> SimplexLink (linkType' crData) cLink (uriHosts crData) showText
+        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink (uriHosts crData) showText
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
@@ -293,8 +338,8 @@ markdownP = mconcat <$> A.many' fragmentP
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
       ACL m (CLShort sLnk) -> case sLnk of
-        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink $ uriHosts srv
-        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink $ uriHosts srv
+        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink (uriHosts srv) showText
+        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink (uriHosts srv) showText
         where
           cLink = ACL m $ CLShort $ simplexShortLink sLnk
           uriHosts srv = L.map strEncodeText $ host srv
@@ -316,6 +361,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Secret -> around '#'
     Colored (FormatColor c) -> color c
     Uri -> t
+    WebLink {} -> t
     SimplexLink {} -> t
     Mention _ -> t
     Command _ -> t
