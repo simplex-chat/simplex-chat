@@ -2799,6 +2799,11 @@ processChatCommand vr nm = \case
           fileStatus <- withFastStore $ \db -> getFileTransferProgress db user fileId
           pure $ CRFileTransferStatus user fileStatus
   ShowProfile -> withUser $ \user@User {profile} -> pure $ CRUserProfile user (fromLocalProfile profile)
+  SetBotCommands commands -> withUser $ \user@User {profile} -> do
+    let LocalProfile {preferences} = profile
+        prefs = Just (fromMaybe emptyChatPrefs preferences :: Preferences) {commands = Just commands}
+        p = (fromLocalProfile profile :: Profile) {preferences = prefs, peerType = Just CPTBot}
+    updateProfile user p
   UpdateProfile displayName shortDescr -> withUser $ \user@User {profile} -> do
     let p = (fromLocalProfile profile :: Profile) {displayName, shortDescr, fullName = ""}
     updateProfile user p
@@ -4376,6 +4381,7 @@ chatCommandP =
       "/unblock #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
       "/create user " *> (CreateActiveUser <$> newUserP),
+      "/create bot " *> (CreateActiveUser <$> newBotUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
@@ -4690,10 +4696,14 @@ chatCommandP =
       "/show profile image" $> ShowProfileImage,
       ("/profile " <|> "/p ") *> (uncurry UpdateProfile <$> profileNameDescr),
       ("/profile" <|> "/p") $> ShowProfile,
+      "/set bot commands " *> (SetBotCommands <$> botCommandsP),
+      "/delete bot commands" $> SetBotCommands [],
       "/set voice #" *> (SetGroupFeatureRole (AGFR SGFVoice) <$> displayNameP <*> _strP <*> optional memberRole),
       "/set voice @" *> (SetContactFeature (ACF SCFVoice) <$> displayNameP <*> optional (A.space *> strP)),
       "/set voice " *> (SetUserFeature (ACF SCFVoice) <$> strP),
       "/set files #" *> (SetGroupFeatureRole (AGFR SGFFiles) <$> displayNameP <*> _strP <*> optional memberRole),
+      "/set files @" *> (SetContactFeature (ACF SCFFiles) <$> displayNameP <*> optional (A.space *> strP)),
+      "/set files " *> (SetUserFeature (ACF SCFFiles) <$> strP),
       "/set history #" *> (SetGroupFeature (AGFNR SGFHistory) <$> displayNameP <*> (A.space *> strP)),
       "/set reactions #" *> (SetGroupFeature (AGFNR SGFReactions) <$> displayNameP <*> (A.space *> strP)),
       "/set calls @" *> (SetContactFeature (ACF SCFCalls) <$> displayNameP <*> optional (A.space *> strP)),
@@ -4803,9 +4813,33 @@ chatCommandP =
       pure UserMsgReceiptSettings {enable, clearOverrides}
     onOffP = ("on" $> True) <|> ("off" $> False)
     profileNameDescr = (,) <$> displayNameP <*> shortDescrP
+    -- 'Help with bot':'link <ID>','Menu of commands':[...]
+    botCommandsP :: Parser [ChatBotCommand]
+    botCommandsP = commandP `A.sepBy'` A.char ','
+      where
+        commandP = do
+          label <- safeDecodeUtf8 <$> ((quoted <|> A.takeTill (== ':')) <* A.char ':')
+          when (T.null label) $ fail "empty command label"
+          A.peekChar' >>= \case
+            '{' -> A.char '{' *> (CBCMenu label <$> botCommandsP) <* A.char '}'
+            _ -> do
+              cmd <- safeDecodeUtf8 <$> (optional (A.char '/') *> (quoted <|> A.takeTill (A.inClass ":,}")))
+              (keyword, params) <- case T.words cmd of
+                [] -> fail "empty command"
+                k : ws -> pure (k, if null ws then Nothing else Just $ T.unwords ws)
+              pure CBCCommand {label, keyword, params}
+        quoted = A.char '\'' *> A.takeTill (== '\'') <* A.char '\''
     newUserP = do
       (cName, shortDescr) <- profileNameDescr
-      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, preferences = Nothing}
+      let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
+      pure NewUser {profile, pastTimestamp = False}
+    newBotUserP = do
+      files_ <- optional $ "files=" *> onOffP <* A.space
+      (cName, shortDescr) <- profileNameDescr
+      let preferences = case files_ of
+            Just True -> Nothing
+            _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
+          profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences}
       pure NewUser {profile, pastTimestamp = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString

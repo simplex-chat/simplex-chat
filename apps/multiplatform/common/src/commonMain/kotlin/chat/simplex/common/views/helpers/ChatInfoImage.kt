@@ -33,6 +33,7 @@ fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme
     when (chatInfo) {
       is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
       is ChatInfo.Local -> MR.images.ic_folder_filled
+      is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
   ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)

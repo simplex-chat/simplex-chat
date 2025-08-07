@@ -65,7 +65,7 @@ data class ChatItemReactionMenuItem (
 fun ChatItemView(
   chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
-  cInfo: ChatInfo,
+  chat: Chat,
   cItem: ChatItem,
   composeState: MutableState<ComposeState>,
   imageProvider: (() -> ImageGalleryProvider)? = null,
@@ -109,6 +109,7 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
 ) {
+  val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
@@ -327,7 +328,7 @@ fun ChatItemView(
           ) {
             @Composable
             fun framedItemView() {
-              FramedItemView(chatsCtx, cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem)
+              FramedItemView(chatsCtx, chat, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem)
             }
 
             fun deleteMessageQuestionText(): String {
@@ -1449,7 +1450,7 @@ fun PreviewChatItemView(
   ChatItemView(
     chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
-    ChatInfo.Direct.sampleData,
+    Chat.sampleData,
     chatItem,
     useLinkPreviews = true,
     linkMode = SimplexLinkMode.DESCRIPTION,
@@ -1500,7 +1501,7 @@ fun PreviewChatItemViewDeletedContent() {
     ChatItemView(
       chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       rhId = null,
-      ChatInfo.Direct.sampleData,
+      Chat.sampleData,
       ChatItem.getDeletedContentSampleData(),
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,

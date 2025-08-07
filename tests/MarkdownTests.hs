@@ -23,6 +23,7 @@ markdownTests = do
   textWithEmail
   textWithPhone
   textWithMentions
+  textWithCommands
   multilineMarkdownList
 
 infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>
@@ -287,8 +288,35 @@ textWithMentions = describe "text with mentions" do
     "hello @bob @ alice!" <==> "hello " <> mention "bob" "@bob" <> " @ alice!"
     "hello @bob @" <==> "hello " <> mention "bob" "@bob" <> " @"
 
+command :: Text -> Text -> Markdown
+command = Markdown . Just . Command
+
+textWithCommands :: Spec
+textWithCommands = describe "text with commands" do
+  it "correct markdown" do
+    "/start" <==> command "start" "/start"
+    "send /help" <==> "send " <> command "help" "/help"
+    "send /help !" <==> "send " <> command "help" "/help" <> " !"
+    "send /help!" <==> "send " <> command "help" "/help" <> "!"
+    "send /help..." <==> "send " <> command "help" "/help" <> "..."
+    "send /'filter 1'" <==> "send " <> command "filter 1" "/'filter 1'"
+    "/'filter 1'" <==> command "filter 1" "/'filter 1'"
+    "/filter 1" <==> command "filter" "/filter" <> " 1" -- this is parsed as full command by parseMaybeMarkdownList
+    "send /'filter 1'." <==> "send " <> command "filter 1" "/'filter 1'" <> "."
+    "send /'filter 1.'!" <==> "send " <> command "filter 1." "/'filter 1.'" <> "!"
+  it "ignored as markdown" $ do
+    "send /'filter 1" <==> "send /'filter 1"
+    "send /help /'filter 1" <==> "send " <> command "help" "/help" <> " /'filter 1"
+    "send / help!" <==> "send / help!"
+    "send /help / filter" <==> "send " <> command "help" "/help" <> " / filter"
+    "send /help /" <==> "send " <> command "help" "/help" <> " /"
+    "send /he?lp" <==> "send /he?lp"
+
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri
+
+command' :: Text -> Text -> FormattedText
+command' = FormattedText . Just . Command
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
@@ -305,3 +333,6 @@ multilineMarkdownList = describe "multiline markdown" do
         [ FormattedText (simplexLinkFormat XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
           "\ntext"
         ]
+  it "command markdown" do
+    "/link 1" <<==>> [command' "link 1" "/link 1"]
+    " /link 1" <<==>> [command' "link 1" " /link 1"]

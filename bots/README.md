@@ -1,6 +1,8 @@
 # SimpleX Chat bot API
 
 - [Why create a bot](#why-create-a-bot)
+- [What is SimpleX bot](#what-is-simplex-bot)
+- [How to configure bot profile](#how-to-configure-bot-profile)
 - [How to create a bot](#how-to-create-a-bot)
 - [Sending commands](#sending-commands)
 - [Processing events](#processing-events)
@@ -12,8 +14,9 @@
 ## Why create a bot
 
 You can implement SimpleX Chat for these and many other scenarios:
-- customer support - both as a single- and a multi-agent support chat (using SimpleX Chat [business address]() feature),
+- customer support - both as a single- and a multi-agent support chat (using SimpleX Chat [business address](https://simplex.chat/docs/business.html) feature),
 - information search and retrieval bots, with or without LLM integration,
+- moderation bots, to moderate your group and communities.
 - broadcast bot, when messages from your trusted users are forwarded to all connected contacts - e.g., see our SimpleX Status bot in the app ([source code](../apps/simplex-broadcast-bot/)),
 - feedback bot, when messages from connected contacts are forwarded to a preset list of your trusted users,
 - P2P trading bots, connecting buyers and sellers,
@@ -21,6 +24,65 @@ You can implement SimpleX Chat for these and many other scenarios:
 
 We will share all useful bots you create in the bottom of this page - please submit a PR to add it.
 
+
+## What is SimpleX bot
+
+SimpleX bot is a participant of SimpleX network. Theoretically, bot can do everything that a usual SimpleX Chat user can do – send and receive messages and files, connect to addresses and join groups, etc. But to be useful, a bot should distinguish itself as a bot, and to provide an interface for the users to interact with it.
+
+## How to configure bot profile
+
+Starting from v6.4.3, SimpleX Chat apps support bot configuration to distinguish bots, to highlight commands in messages, and to show command menus.
+
+### Set up bot profile
+
+To distinguish SimpleX user profile as a bot, set its `peerType` property to `"bot"`. It can be done in one of these ways:
+- using CLI options `--create-bot-display-name` and `create-bot-allow-files` when first starting CLI to create bot profile,
+- using command `/create bot [files=on] <name>[ <bio>]` (if name contains spaces, it must be in single quotes), when creating additional bot profiles in the same database,
+- by configuring bot commands that the users will see in the UI when they type `/` character or tap `//` button with `/set bot commands ...` CLI command (see syntax below),
+- by using [APIUpdateProfile](./api/COMMANDS.md#apiupdateprofile) bot command to set `peerType` and configure bot commands at the same time.
+
+### Configure bot commands
+
+Bot commands are messages that start from `/` character. Normally, they would consist of lowercase latin letters, but commands can use any letters, digits and underscores. Commands can have parameters.
+
+All commands in messages will be highlighted in the chats with the bot, and when users tap them, they will be instantly sent. If the message has a single line and starts from `/` character, the whole message will be highlighted. Otherwise, if command is included as part of the message, it will be highlighted until the first space after `/` character: e.g., `/list` command in Directory service shows user's groups.
+
+*Please note*: commands in messages will be highlighted based purely on `/` character, regardless of whether they are supported by the bot or included in bot configuration. It allows bots to have "hidden" commands that bot would support, but that won't be shown in the menu. But it may also lead to mistakes if bot sends incorrect commands in the instructions to the users.
+
+Bots can also send highlighted commands with parameters. To do that, bots should surround both command and its parameters in single quotes: e.g., `/'role 2'`. Quotes won't show in the apps UI, and if the user taps this command, it will be sent as `/role 2`.
+
+Configured bot commands will be be offered to the users as a menu, and for quick lookup as the user types.
+
+Bot commands configuration is a property in `preferences` object in bot profile received by the user. These preferences can be configured both on the bot user profile level, to offer the same commands to all connected users, and as overrides for specific contacts, to offer different commands to different bot contacts.
+
+Configuring commands in bot user can be done either with [APIUpdateProfile](./api/COMMANDS.md#apiupdateprofile) or with `/set bot commands` CLI command:
+
+```
+/set bot commands <commands>
+```
+
+where:
+
+```
+commands = <commandOrMenu>[,<commandOrMenu>...]
+commandOrMenu = command | menu
+command = '<label>':/'<keyword>[ <params>]'
+menu = '<label>':{<commands>}
+```
+
+This syntax allows creating nested menus of commands with and without parameters. You must enclose parameter names with the characters `<` and `>`. Currently, users have to edit command templates to set actual parameters, but in the future there will be UI support to fill in parameters based on this syntax. For example, some of SimpleX Directory service commands could be configured with this command:
+
+```
+/set bot commands 'How to use bot':/help,'Show your groups':/list,'Your group settings':{'Set default role':/'role <ID>','Set anti-spam filter':/'filter <ID>'}
+```
+
+Configuring commands for specific contacts can be done with [APISetContactPrefs](./api/COMMANDS.md#apisetcontactprefs) command.
+
+### Bots and business addresses
+
+A useful scenario would be when bot is used to accept requests to bot's business address, so that a new business chat is created for every connecting user, and then invites other people from the business, as appropriate.
+
+Business chat is a special group chat under the hood, but the connected customer sees business avatar, and all users that bot would add to the group later see customer' avatar. This chat will inherits preferences from the bot profile, so if you want to allow customers to send files, you need to allow them in the bot. And if bot has any commands configured, they will also be available to customers in the menu.
 
 ## How to create a bot
 

@@ -17,7 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextDecoration
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
@@ -345,6 +347,7 @@ fun ComposeView(
   chatsCtx: ChatModel.ChatsContext,
   chat: Chat,
   composeState: MutableState<ComposeState>,
+  showCommandsMenu: MutableState<Boolean>,
   attachmentOption: MutableState<AttachmentOption?>,
   showChooseAttachment: () -> Unit,
   focusRequester: FocusRequester?,
@@ -483,7 +486,7 @@ fun ComposeView(
     if (!chatItems.isNullOrEmpty()) {
       chatItems.forEach { aChatItem ->
         withContext(Dispatchers.Main) {
-          chatsCtx.addChatItem(chat.remoteHostId, cInfo, aChatItem.chatItem)
+          chatsCtx.addChatItem(chat.remoteHostId, aChatItem.chatInfo, aChatItem.chatItem)
         }
       }
       return chatItems.first().chatItem
@@ -593,7 +596,6 @@ fun ComposeView(
   }
 
   suspend fun sendMessageAsync(text: String?, live: Boolean, ttl: Int?): List<ChatItem>? {
-    val cInfo = chat.chatInfo
     val cs = composeState.value
     var sent: List<ChatItem>?
     var lastMessageFailedToSend: ComposeState? = null
@@ -1065,6 +1067,22 @@ fun ComposeView(
   val nextSendGrpInv = rememberUpdatedState(chat.nextSendGrpInv)
 
   @Composable
+  fun CommandsButton() {
+    val commandsEnabled = chat.chatInfo.sendMsgEnabled && chat.chatInfo.menuCommands.isNotEmpty()
+    IconButton(
+      onClick = { showCommandsMenu.value = !showCommandsMenu.value },
+      enabled = commandsEnabled
+    ) {
+      Box(
+        modifier = Modifier.size(28.dp).clip(CircleShape),
+        contentAlignment = Alignment.Center
+      ) {
+        Text("//", style = MaterialTheme.typography.h3.copy(fontStyle = FontStyle.Italic, color = if (commandsEnabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary))
+      }
+    }
+  }
+
+  @Composable
   fun AttachmentButton() {
     val isGroupAndProhibitedFiles =
       chatsCtx.secondaryContextFilter == null
@@ -1087,7 +1105,6 @@ fun ComposeView(
           && !nextSendGrpInv.value
     IconButton(
       attachmentClicked,
-      Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
       enabled = attachmentEnabled
     ) {
       Icon(
@@ -1098,6 +1115,24 @@ fun ComposeView(
           .size(28.dp)
           .clip(CircleShape)
       )
+    }
+  }
+
+  @Composable
+  fun AttachmentAndCommandsButtons() {
+    val cInfo = chat.chatInfo
+    Row(
+      Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
+      horizontalArrangement = Arrangement.spacedBy((-8).dp)
+    ) {
+      val msg = composeState.value.message.text.trim()
+      val showAttachment = cInfo !is ChatInfo.Direct || cInfo.contact.profile.peerType != ChatPeerType.Bot || cInfo.featureEnabled(ChatFeature.Files)
+      if (cInfo.useCommands && (!showAttachment || msg.isEmpty() || msg.startsWith("/"))) {
+        CommandsButton()
+      }
+      if (showAttachment) {
+        AttachmentButton()
+      }
     }
   }
 
@@ -1280,7 +1315,7 @@ fun ComposeView(
         )
         Text(
           text,
-          style = MaterialTheme.typography.caption,
+          style = MaterialTheme.typography.body2,
           color = if (composeState.value.inProgress) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
         )
       }
@@ -1433,7 +1468,7 @@ fun ComposeView(
           ContextSendMessageToConnect(generalGetString(MR.strings.compose_send_direct_message_to_connect))
           Divider()
           Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-            AttachmentButton()
+            AttachmentAndCommandsButtons()
             SendMsgView_(
               disableSendButton = disableSendButton,
               sendToConnect = { withApi { sendMemberContactInvitation() } }
@@ -1453,11 +1488,19 @@ fun ComposeView(
               connect = { withApi { sendConnectPreparedContact() } }
             )
           ConnectionMode.Con ->
-            SendContactRequestView(
-              disableSendButton = disableSendButton,
-              icon = MR.images.ic_person_add_filled,
-              sendRequest = { showSendConnectPreparedContactAlert() }
-            )
+            if (chat.chatInfo.contact.isBot) {
+              ConnectButtonView(
+                text = stringResource(MR.strings.compose_view_connect),
+                icon = MR.images.ic_bolt_filled,
+                connect = { withApi { sendConnectPreparedContact() } }
+              )
+            } else {
+              SendContactRequestView(
+                disableSendButton = disableSendButton,
+                icon = MR.images.ic_person_add_filled,
+                sendRequest = { showSendConnectPreparedContactAlert() }
+              )
+            }
         }
       } else if (
         chat.chatInfo is ChatInfo.Direct
@@ -1480,7 +1523,7 @@ fun ComposeView(
         )
       } else {
         Row(Modifier.padding(end = 8.dp), verticalAlignment = Alignment.Bottom) {
-          AttachmentButton()
+          AttachmentAndCommandsButtons()
           SendMsgView_(disableSendButton = disableSendButton)
         }
       }

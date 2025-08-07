@@ -78,7 +78,7 @@ businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
-mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, preferences = defaultPrefs}
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
 it :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
 it name test =
@@ -699,7 +699,6 @@ showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
   cc <## "use /p <name> [<bio>] to change it"
-  cc <## "(the updated profile will be sent to all your contacts)"
 
 connectUsersNoShortLink :: HasCallStack => TestCC -> TestCC -> IO ()
 connectUsersNoShortLink cc1 cc2 = connectUsers_ cc1 cc2 True

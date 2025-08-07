@@ -244,6 +244,7 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
+      createBot = Nothing,
       maintenance = True
     }
 
