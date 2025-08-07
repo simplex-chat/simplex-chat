@@ -50,6 +50,7 @@ data Format
   | Colored {color :: FormatColor}
   | Uri
   | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
@@ -134,11 +135,21 @@ unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
-parseMaybeMarkdownList s
-  | all (isNothing . format) ml = Nothing
-  | otherwise = Just . reverse $ foldl' acc [] ml
+parseMaybeMarkdownList s = case ls of
+  [] -> Nothing
+  [l]
+    | T.null cmd -> Nothing
+    | isCmd -> Just [FormattedText (Just $ Command cmd) l]
+    where
+      (isCmd, cmd) = case T.uncons $ T.dropWhile (== ' ') l of
+        Just (c, rest) -> (c == '/', rest)
+        Nothing -> (False, "")
+  _
+    | all (isNothing . format) ml -> Nothing
+    | otherwise -> Just . reverse $ foldl' acc [] ml
   where
-    ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
+    ls = T.lines s
+    ml = intercalate ["\n"] $ map (markdownToList . parseMarkdown) ls
     acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
@@ -175,6 +186,7 @@ markdownP = mconcat <$> A.many' fragmentP
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
           '@' -> mentionP <|> wordP
+          '/' -> commandP <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -204,12 +216,14 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
-    mentionP = do
-      c <- A.char '@' *> A.peekChar'
-      (name, punct) <- displayNameTextP_
-      let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
-          mention = markdown (Mention name) ('@' `T.cons` sName)
-      pure $ if T.null punct then mention else mention :|: unmarked punct
+    mentionP = prefixedStringP '@' displayNameTextP_ Mention
+    commandP = prefixedStringP '/' commandTextP Command
+    prefixedStringP pfx parser format = do
+      c <- A.char pfx *> A.peekChar'
+      (str, punct) <- parser
+      let origStr = if c == '\'' then '\'' `T.cons` str `T.snoc` '\'' else str
+          res = markdown (format str) (pfx `T.cons` origStr)
+      pure $ if T.null punct then res else res :|: unmarked punct
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red
@@ -304,6 +318,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Uri -> t
     SimplexLink {} -> t
     Mention _ -> t
+    Command _ -> t
     Email -> t
     Phone -> t
     Unknown _ -> t
@@ -335,6 +350,13 @@ displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill 
     splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
+
+commandTextP :: Parser (Text, Text)
+commandTextP = do
+  (cmd, punct) <- displayNameTextP_
+  case T.words cmd of
+    (keyword : _) | T.all (\c -> isAlpha c || isDigit c || c == '_') keyword -> pure (cmd, punct)
+    _ -> fail "invalid command keyword"
 
 -- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text

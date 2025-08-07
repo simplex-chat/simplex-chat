@@ -28,6 +28,9 @@ This file is generated automatically.
 - [APIBlockMembersForAll](#apiblockmembersforall)
 - [APIRemoveMembers](#apiremovemembers)
 - [APILeaveGroup](#apileavegroup)
+- [APIListMembers](#apilistmembers)
+- [APINewGroup](#apinewgroup)
+- [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
 - [APICreateGroupLink](#apicreategrouplink)
@@ -54,6 +57,7 @@ This file is generated automatically.
 - [APISetActiveUser](#apisetactiveuser)
 - [APIDeleteUser](#apideleteuser)
 - [APIUpdateProfile](#apiupdateprofile)
+- [APISetContactPrefs](#apisetcontactprefs)
 
 ---
 
@@ -795,6 +799,110 @@ LeftMemberUser: User left group.
 ---
 
 
+### APIListMembers
+
+Get group members.
+
+*Network usage*: no.
+
+**Parameters**:
+- groupId: int64
+
+**Syntax**:
+
+```
+/_members #<groupId>
+```
+
+```javascript
+'/_members #' + groupId // JavaScript
+```
+
+```python
+'/_members #' + str(groupId) # Python
+```
+
+**Response**:
+
+GroupMembers: Group members.
+- type: "groupMembers"
+- user: [User](./TYPES.md#user)
+- group: [Group](./TYPES.md#group)
+
+---
+
+
+### APINewGroup
+
+Create group.
+
+*Network usage*: no.
+
+**Parameters**:
+- userId: int64
+- incognito: bool
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
+
+**Syntax**:
+
+```
+/_group <userId>[ incognito=on] <json(groupProfile)>
+```
+
+```javascript
+'/_group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + JSON.stringify(groupProfile) // JavaScript
+```
+
+```python
+'/_group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + json.dumps(groupProfile) # Python
+```
+
+**Response**:
+
+GroupCreated: Group created.
+- type: "groupCreated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+---
+
+
+### APIUpdateGroupProfile
+
+Update group profile.
+
+*Network usage*: background.
+
+**Parameters**:
+- groupId: int64
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
+
+**Syntax**:
+
+```
+/_group_profile #<groupId> <json(groupProfile)>
+```
+
+```javascript
+'/_group_profile #' + groupId + ' ' + JSON.stringify(groupProfile) // JavaScript
+```
+
+```python
+'/_group_profile #' + str(groupId) + ' ' + json.dumps(groupProfile) # Python
+```
+
+**Response**:
+
+GroupUpdated: Group updated.
+- type: "groupUpdated"
+- user: [User](./TYPES.md#user)
+- fromGroup: [GroupInfo](./TYPES.md#groupinfo)
+- toGroup: [GroupInfo](./TYPES.md#groupinfo)
+- member_: [GroupMember](./TYPES.md#groupmember)?
+
+---
+
+
 ## Group link commands
 
 These commands can be used by bots that manage multiple public groups
@@ -1128,7 +1236,7 @@ ContactRequestRejected: Contact request rejected.
 
 ## Chat commands
 
-Commands to list and delete coversations.
+Commands to list and delete conversations.
 
 
 ### APIListContacts
@@ -1428,5 +1536,40 @@ UserProfileUpdated: User profile updated.
 - fromProfile: [Profile](./TYPES.md#profile)
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+---
+
+
+### APISetContactPrefs
+
+Configure chat preference overrides for the contact.
+
+*Network usage*: background.
+
+**Parameters**:
+- contactId: int64
+- preferences: [Preferences](./TYPES.md#preferences)
+
+**Syntax**:
+
+```
+/_set prefs @<contactId> <json(preferences)>
+```
+
+```javascript
+'/_set prefs @' + contactId + ' ' + JSON.stringify(preferences) // JavaScript
+```
+
+```python
+'/_set prefs @' + str(contactId) + ' ' + json.dumps(preferences) # Python
+```
+
+**Response**:
+
+ContactPrefsUpdated: Contact preferences updated.
+- type: "contactPrefsUpdated"
+- user: [User](./TYPES.md#user)
+- fromContact: [Contact](./TYPES.md#contact)
+- toContact: [Contact](./TYPES.md#contact)
 
 ---

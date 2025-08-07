@@ -59,6 +59,7 @@ struct ChatView: View {
     @State private var ignoreLoadingRequests: Int64? = nil
     @State private var animatedScrollingInProgress: Bool = false
     @State private var showUserSupportChatSheet = false
+    @State private var showCommandsMenu = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
@@ -109,6 +110,9 @@ struct ChatView: View {
                     if let groupInfo = chat.chatInfo.groupInfo, !composeState.message.isEmpty {
                         GroupMentionsView(im: im, groupInfo: groupInfo, composeState: $composeState, selectedRange: $selectedRange, keyboardVisible: $keyboardVisible)
                     }
+                    if !chat.chatInfo.menuCommands.isEmpty {
+                        CommandsMenuView(chat: chat, composeState: $composeState, selectedRange: $selectedRange, showCommandsMenu: $showCommandsMenu)
+                    }
                     FloatingButtons(im: im, theme: theme, scrollView: scrollView, chat: chat, loadingMoreItems: $loadingMoreItems, loadingTopItems: $loadingTopItems, requestedTopScroll: $requestedTopScroll, loadingBottomItems: $loadingBottomItems, requestedBottomScroll: $requestedBottomScroll, animatedScrollingInProgress: $animatedScrollingInProgress, listState: scrollView.listState, model: floatingButtonModel, reloadItems: {
                             mergedItems.boxedValue = MergedItems.create(im, revealedItems)
                             scrollView.updateItems(mergedItems.boxedValue.items)
@@ -135,6 +139,7 @@ struct ChatView: View {
                         chat: chat,
                         im: im,
                         composeState: $composeState,
+                        showCommandsMenu: $showCommandsMenu,
                         keyboardVisible: $keyboardVisible,
                         keyboardHiddenDate: $keyboardHiddenDate,
                         selectedRange: $selectedRange,
@@ -919,10 +924,12 @@ struct ChatView: View {
                     case .inv:
                         "Tap Connect to chat"
                     case .con:
-                        "Tap Connect to send request"
+                        contact.isBot ? "Tap Connect to use bot" : "Tap Connect to send request"
                     }
                 } else if contact.nextAcceptContactRequest {
                     "Accept contact request"
+                } else if case .bot = contact.profile.peerType {
+                    "Bot"
                 } else {
                     "Your contact"
                 }
@@ -956,9 +963,7 @@ struct ChatView: View {
         switch (chat.chatInfo) {
         case let .direct(contact):
             if !contact.sndReady && contact.active && !contact.sendMsgToConnect && !contact.nextAcceptContactRequest {
-                contact.preparedContact?.uiConnLinkType == .con
-                ? "contact should accept…"
-                : contact.contactGroupMemberId != nil
+                (contact.preparedContact?.uiConnLinkType == .con && !contact.isBot) || contact.contactGroupMemberId != nil
                 ? "contact should accept…"
                 : "connecting…"
             } else {

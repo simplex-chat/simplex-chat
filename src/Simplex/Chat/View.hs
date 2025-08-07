@@ -19,7 +19,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
-import Data.Char (toUpper)
+import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
@@ -607,8 +607,8 @@ viewUsersList us =
    in if null ss then ["no users"] else ss
   where
     ldn (UserInfo User {localDisplayName = n} _) = T.toLower n
-    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr}, activeUser, showNtfs, viewPwdHash} count)
-      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr
+    userInfo (UserInfo User {localDisplayName = n, profile = LocalProfile {fullName, shortDescr, peerType}, activeUser, showNtfs, viewPwdHash} count)
+      | activeUser || isNothing viewPwdHash = Just $ ttyFullName n fullName shortDescr <> infoStr <> bot
       | otherwise = Nothing
       where
         infoStr = if null info then "" else " (" <> mconcat (intersperse ", " info) <> ")"
@@ -617,6 +617,9 @@ viewUsersList us =
             <> [highlight' "hidden" | isJust viewPwdHash]
             <> ["muted" | not showNtfs]
             <> [plain ("unread: " <> show count) | count /= 0]
+        bot = case peerType of
+          Just CPTBot -> " (bot)"
+          _ -> ""
 
 viewGroupSubscribed :: GroupName -> [StyledString]
 viewGroupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
@@ -1429,11 +1432,24 @@ viewContactAndMemberAssociated ct g m ct' =
   ]
 
 viewUserProfile :: Profile -> [StyledString]
-viewUserProfile Profile {displayName, fullName, shortDescr} =
-  [ "user profile: " <> ttyFullName displayName fullName shortDescr,
-    "use " <> highlight' "/p <name> [<bio>]" <> " to change it",
-    "(the updated profile will be sent to all your contacts)"
+viewUserProfile Profile {displayName, fullName, shortDescr, peerType, preferences} =
+  [ "user profile: " <> ttyFullName displayName fullName shortDescr <> bot,
+    "use " <> highlight' "/p <name> [<bio>]" <> " to change it"
   ]
+    ++ viewCommands
+  where
+    viewCommands = case preferences of
+      Just Preferences {commands = Just cmds} | peerType == Just CPTBot && not (null cmds) ->
+        ("Bot commands:" : concatMap (viewCommand "") cmds)
+          ++ ["use " <> highlight' "/set bot commands ..." <> " or " <> highlight' "/delete bot commands"]
+      _ -> []
+    viewCommand indent = \case
+      CBCCommand {label, keyword, params} ->
+        [plain $ indent <> quoted label <> ":/" <> quoted (keyword <> maybe "" (" " <>) params)]
+      CBCMenu {label, commands} ->
+        (plain (indent <> quoted label <> ":{") : concatMap (viewCommand $ "  " <> indent) commands) ++ [plain $ indent <> "}"]
+    quoted s = if T.any isSpace s then "'" <> s <> "'" else s
+    bot = if peerType == Just CPTBot then " (bot)" else ""
 
 viewUserPrivacy :: User -> User -> [StyledString]
 viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', showNtfs, viewPwdHash} =

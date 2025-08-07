@@ -323,6 +323,7 @@ struct ComposeView: View {
     @ObservedObject var chat: Chat
     @ObservedObject var im: ItemsModel
     @Binding var composeState: ComposeState
+    @Binding var showCommandsMenu: Bool
     @Binding var keyboardVisible: Bool
     @Binding var keyboardHiddenDate: Date
     @Binding var selectedRange: NSRange
@@ -410,18 +411,7 @@ struct ComposeView: View {
 
             if chat.chatInfo.groupInfo?.nextConnectPrepared == true {
                 if chat.chatInfo.groupInfo?.businessChat == nil {
-                    Button(action: connectPreparedGroup) {
-                        ZStack(alignment: .trailing) {
-                            Label("Join group", systemImage: "person.2.fill")
-                                .frame(maxWidth: .infinity)
-                            if composeState.progressByTimeout {
-                                ProgressView()
-                                    .padding()
-                            }
-                        }
-                    }
-                    .frame(height: 60)
-                    .disabled(composeState.inProgress)
+                    connectButtonView("Join group", icon: "person.2.fill", connect: connectPreparedGroup)
                 } else {
                     sendContactRequestView(disableSendButton, icon: "briefcase.fill", sendRequest: connectPreparedGroup)
                 }
@@ -429,27 +419,22 @@ struct ComposeView: View {
                 contextSendMessageToConnect("Send direct message to connect")
                 Divider()
                 HStack (alignment: .center) {
-                    attachmentButton().disabled(true)
+                    attachmentAndCommandsButtons().disabled(true)
                     sendMessageView(disableSendButton, sendToConnect: sendMemberContactInvitation)
                 }
                 .padding(.horizontal, 12)
-            } else if contact?.nextConnectPrepared == true, let linkType = contact?.preparedContact?.uiConnLinkType {
+            } else if let contact,
+                      contact.nextConnectPrepared == true,
+                      let linkType = contact.preparedContact?.uiConnLinkType {
                 switch linkType {
                 case .inv:
-                    Button(action: sendConnectPreparedContact) {
-                        ZStack(alignment: .trailing) {
-                            Label("Connect", systemImage: "person.fill.badge.plus")
-                                .frame(maxWidth: .infinity)
-                            if composeState.progressByTimeout {
-                                ProgressView()
-                                    .padding()
-                            }
-                        }
-                    }
-                    .frame(height: 60)
-                    .disabled(composeState.inProgress)
+                    connectButtonView("Connect", icon: "person.fill.badge.plus", connect: sendConnectPreparedContact)
                 case .con:
-                    sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                    if contact.isBot {
+                        connectButtonView("Connect", icon: "bolt.fill", connect: sendConnectPreparedContact)
+                    } else {
+                        sendContactRequestView(disableSendButton, icon: "person.fill.badge.plus", sendRequest: sendConnectPreparedContactRequest)
+                    }
                 }
             } else if contact?.nextAcceptContactRequest == true, let crId = contact?.contactRequestId {
                 ContextContactRequestActionsView(contactRequestId: crId)
@@ -457,7 +442,7 @@ struct ComposeView: View {
                 ContextMemberContactActionsView(contact: ct, groupDirectInv: groupDirectInv)
             } else {
                 HStack (alignment: .center) {
-                    attachmentButton()
+                    attachmentAndCommandsButtons()
                     sendMessageView(disableSendButton)
                 }
                 .padding(.horizontal, 12)
@@ -635,6 +620,21 @@ struct ComposeView: View {
         }
     }
 
+    private func connectButtonView(_ label: LocalizedStringKey, icon: String, connect: @escaping () -> Void) -> some View {
+        Button(action: connect) {
+            ZStack(alignment: .trailing) {
+                Label(label, systemImage: icon)
+                    .frame(maxWidth: .infinity)
+                if composeState.progressByTimeout {
+                    ProgressView()
+                        .padding()
+                }
+            }
+        }
+        .frame(height: 60)
+        .disabled(composeState.inProgress)
+    }
+
     private func sendContactRequestView(_ disableSendButton: Bool, icon: String, sendRequest: @escaping () -> Void) -> some View {
         HStack (alignment: .center) {
             sendMessageView(
@@ -703,6 +703,35 @@ struct ComposeView: View {
         }
     }
 
+    @ViewBuilder private func attachmentAndCommandsButtons() -> some View {
+        let msg = composeState.message.trimmingCharacters(in: .whitespaces)
+        let showAttachment = chat.chatInfo.contact?.profile.peerType != .bot || chat.chatInfo.featureEnabled(.files)
+        let showCommands = chat.chatInfo.useCommands && (!showAttachment || msg.isEmpty || msg.starts(with: "/"))
+        if showCommands {
+            commandsButton()
+        }
+        if showAttachment {
+            attachmentButton()
+                .padding(.trailing, 3)
+                .if(showCommands) { v in v.padding(.leading, 3) }
+        }
+    }
+
+    private func commandsButton() -> some View {
+        Button {
+            showCommandsMenu.toggle()
+        } label: {
+            Text(verbatim: "//")
+                .font(.title3)
+                .italic()
+                .contentShape(Rectangle())
+        }
+        .disabled(!chat.chatInfo.sendMsgEnabled || chat.chatInfo.menuCommands.isEmpty)
+        .frame(width: 25, height: 25)
+        .tint(theme.colors.primary)
+        .padding(.bottom, 2)
+    }
+
     @ViewBuilder private func attachmentButton() -> some View {
         let b = Button {
             showChooseSource = true
@@ -714,12 +743,11 @@ struct ComposeView: View {
             .frame(width: 25, height: 25)
             .tint(theme.colors.primary)
         if im.secondaryIMFilter == nil,
-           case let .group(g, _) = chat.chatInfo,
-           !g.fullGroupPreferences.files.on(for: g.membership) {
+           !chat.chatInfo.featureEnabled(.files) {
             b.disabled(true).onTapGesture {
                 AlertManager.shared.showAlertMsg(
                     title: "Files and media prohibited!",
-                    message: "Only group owners can enable files and media."
+                    message: chat.chatInfo.groupInfo == nil ? nil : "Only group owners can enable files and media."
                 )
             }
         } else {
@@ -750,7 +778,6 @@ struct ComposeView: View {
         }
     }
 
-    // TODO [short links] different messages for business
     private func sendConnectPreparedContactRequest() {
         hideKeyboard()
         let empty = composeState.whitespaceOnly
@@ -1487,35 +1514,5 @@ struct ComposeView: View {
         prevLinkUrl = nil
         pendingLinkUrl = nil
         cancelledLinks = []
-    }
-}
-
-struct ComposeView_Previews: PreviewProvider {
-    static var previews: some View {
-        let chat = Chat(chatInfo: ChatInfo.sampleData.direct, chatItems: [])
-        let im = ItemsModel.shared
-        @State var composeState = ComposeState(message: "hello")
-        @State var selectedRange = NSRange()
-
-        return Group {
-            ComposeView(
-                chat: chat,
-                im: im,
-                composeState: $composeState,
-                keyboardVisible: Binding.constant(true),
-                keyboardHiddenDate: Binding.constant(Date.now),
-                selectedRange: $selectedRange
-            )
-            .environmentObject(ChatModel())
-            ComposeView(
-                chat: chat,
-                im: im,
-                composeState: $composeState,
-                keyboardVisible: Binding.constant(true),
-                keyboardHiddenDate: Binding.constant(Date.now),
-                selectedRange: $selectedRange
-            )
-            .environmentObject(ChatModel())
-        }
     }
 }

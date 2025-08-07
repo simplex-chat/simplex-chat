@@ -142,11 +142,8 @@ toTypeInfo tr =
       args = typeRepArgs tr
       name = tyConName tc
    in case name of
-        "List" -> case args of
-          [elemTr]
-            | elemTr == typeRep (Proxy @Char) -> TIType (ST TString [])
-            | otherwise -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = False}
-          _ -> TIType (simpleType tr)
+        "List" -> listType args
+        "ListDef" -> listType args
         "NonEmpty" -> case args of
           [elemTr] -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = True}
           _ -> TIType (simpleType tr)
@@ -158,6 +155,11 @@ toTypeInfo tr =
           _ -> TIType (simpleType tr)
         _ -> TIType (simpleType tr)
   where
+    listType = \case
+      [elemTr]
+        | elemTr == typeRep (Proxy @Char) -> TIType (ST TString [])
+        | otherwise -> TIArray {elemType = toTypeInfo elemTr, nonEmpty = False}
+      _ -> TIType (simpleType tr)
     simpleType tr' = primitiveToLower $ case tyConName (typeRepTyCon tr') of
       "AgentUserId" -> ST TInt64 []
       "Integer" -> ST TInt64 []
@@ -208,8 +210,10 @@ toTypeInfo tr =
       ]
     simplePrefTypes =
       [ "CallsPreference",
+        "FilesPreference",
         "FullDeletePreference",
         "ReactionsPreference",
+        "SessionsPreference",
         "VoicePreference"
       ]
     groupPrefTypes =
@@ -222,5 +226,6 @@ toTypeInfo tr =
       [ "DirectMessagesGroupPreference",
         "VoiceGroupPreference",
         "FilesGroupPreference",
+        "SessionsGroupPreference",
         "SimplexLinksGroupPreference"
       ]

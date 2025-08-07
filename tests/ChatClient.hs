@@ -117,6 +117,7 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
+      createBot = Nothing,
       maintenance = False
     }
 
