@@ -768,20 +768,15 @@ object ChatController {
       val rStr = if (rhId == null) chatSendCmdRetry(ctrl, c, retryNum) else chatSendRemoteCmdRetry(ctrl, rhId.toInt(), c, retryNum)
       // coroutine was cancelled already, no need to process response (helps with apiListMembers - very heavy query in large groups)
       interruptIfCancelled()
-      try {
-        val r = json.decodeFromString<API>(rStr)
-        if (log) {
-          Log.d(TAG, "sendCmd response type ${r.responseType}")
-          if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) {
-            Log.d(TAG, "sendCmd response json $rStr")
-          }
-          chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
+      val r = json.decodeFromString<API>(rStr)
+      if (log) {
+        Log.d(TAG, "sendCmd response type ${r.responseType}")
+        if (r is API.Result && (r.res is CR.Response || r.res is CR.Invalid)) {
+          Log.d(TAG, "sendCmd response json $rStr")
         }
-        r
-      } catch(e: Throwable) {
-        AlertManager.shared.showAlertMsg(title = "JSON error", text = "$rStr\n$e", confirmText = "Ok", shareText = true)
-        throw e
+        chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
       }
+      r
     }
   }
 
