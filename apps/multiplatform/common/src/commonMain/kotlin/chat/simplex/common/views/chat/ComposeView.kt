@@ -1071,7 +1071,6 @@ fun ComposeView(
     val commandsEnabled = chat.chatInfo.sendMsgEnabled && chat.chatInfo.menuCommands.isNotEmpty()
     IconButton(
       onClick = { showCommandsMenu.value = !showCommandsMenu.value },
-      Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
       enabled = commandsEnabled
     ) {
       Box(
@@ -1106,7 +1105,6 @@ fun ComposeView(
           && !nextSendGrpInv.value
     IconButton(
       attachmentClicked,
-      Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
       enabled = attachmentEnabled
     ) {
       Icon(
@@ -1123,11 +1121,16 @@ fun ComposeView(
   @Composable
   fun AttachmentAndCommandsButtons() {
     val cInfo = chat.chatInfo
-    Row {
-      if (cInfo.useCommands) {
+    Row(
+      Modifier.padding(start = 3.dp, end = 1.dp, bottom = if (appPlatform.isAndroid) 2.sp.toDp() else 5.sp.toDp() * fontSizeSqrtMultiplier),
+      horizontalArrangement = Arrangement.spacedBy((-8).dp)
+    ) {
+      val msg = composeState.value.message.text.trim()
+      val showAttachment = cInfo !is ChatInfo.Direct || cInfo.contact.profile.peerType != ChatPeerType.Bot || cInfo.featureEnabled(ChatFeature.Files)
+      if (cInfo.useCommands && (!showAttachment || msg.isEmpty() || msg.startsWith("/"))) {
         CommandsButton()
       }
-      if (cInfo !is ChatInfo.Direct || cInfo.contact.profile.peerType != ChatPeerType.Bot || cInfo.featureEnabled(ChatFeature.Files)) {
+      if (showAttachment) {
         AttachmentButton()
       }
     }

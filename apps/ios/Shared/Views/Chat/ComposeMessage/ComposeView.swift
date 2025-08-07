@@ -704,11 +704,16 @@ struct ComposeView: View {
     }
 
     @ViewBuilder private func attachmentAndCommandsButtons() -> some View {
-        if chat.chatInfo.useCommands {
+        let msg = composeState.message.trimmingCharacters(in: .whitespaces)
+        let showAttachment = chat.chatInfo.contact?.profile.peerType != .bot || chat.chatInfo.featureEnabled(.files)
+        let showCommands = chat.chatInfo.useCommands && (!showAttachment || msg.isEmpty || msg.starts(with: "/"))
+        if showCommands {
             commandsButton()
         }
-        if chat.chatInfo.contact?.profile.peerType != .bot || chat.chatInfo.featureEnabled(.files) {
+        if showAttachment {
             attachmentButton()
+                .padding(.trailing, 3)
+                .if(showCommands) { v in v.padding(.leading, 3) }
         }
     }
 
@@ -724,6 +729,7 @@ struct ComposeView: View {
         .disabled(!chat.chatInfo.sendMsgEnabled || chat.chatInfo.menuCommands.isEmpty)
         .frame(width: 25, height: 25)
         .tint(theme.colors.primary)
+        .padding(.bottom, 2)
     }
 
     @ViewBuilder private func attachmentButton() -> some View {
