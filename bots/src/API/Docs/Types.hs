@@ -207,11 +207,13 @@ chatTypesDocsData =
     (sti @BrokerErrorType, STUnion, "", [], "", ""),
     (sti @BusinessChatInfo, STRecord, "", [], "", ""),
     (sti @BusinessChatType, STEnum, "BC", [], "", ""),
+    (sti @ChatBotCommand, STUnion, "CBC", [], "", ""),
     (sti @ChatDeleteMode, STUnion, "CDM", [], Param "type" <> Choice "self" [("messages", "")] (OnOffParam "notify" "notify" (Just True)), ""),
     (sti @ChatError, STUnion, "Chat", ["ChatErrorDatabase", "ChatErrorRemoteHost", "ChatErrorRemoteCtrl"], "", ""),
     (sti @ChatErrorType, STUnion, "CE", ["CEContactNotFound", "CEServerProtocol", "CECallState", "CEInvalidChatMessage"], "", ""),
     (sti @ChatFeature, STEnum, "CF", [], "", ""),
     (sti @ChatItemDeletion, STRecord, "", [], "", "Message deletion result."),
+    (sti @ChatPeerType, STEnum, "CPT", [], "", ""),
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
@@ -259,6 +261,7 @@ chatTypesDocsData =
     (sti @FormattedText, STRecord, "", [], "", ""),
     (sti @FullGroupPreferences, STRecord, "", [], "", ""),
     (sti @FullPreferences, STRecord, "", [], "", ""),
+    (sti @Group, STRecord, "", [], "", ""),
     (sti @GroupChatScope, STUnion1, "GCS", [], "(_support" <> Optional "" (":" <> Param "$0") "groupMemberId_" <> ")", ""),
     (sti @GroupChatScopeInfo, STUnion1, "GCSI", [], "", ""),
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
@@ -356,7 +359,6 @@ chatTypesDocsData =
     -- (sti @ChatName, STRecord, "", [], "", ""),
     -- (sti @ChatPagination, STRecord, "CP", [], "", ""),
     -- (sti @ConnectionStats, STRecord, "", [], "", ""),
-    -- (sti @Group, STRecord, "", [], "", ""),
     -- (sti @GroupSndStatus, STUnion, "GSS", [], "", ""),
     -- (sti @MemberDeliveryStatus, STRecord, "", [], "", ""),
     -- (sti @MemberReaction, STRecord, "", [], "", ""),
@@ -392,11 +394,13 @@ deriving instance Generic BlockingReason
 deriving instance Generic BrokerErrorType
 deriving instance Generic BusinessChatInfo
 deriving instance Generic BusinessChatType
+deriving instance Generic ChatBotCommand
 deriving instance Generic ChatDeleteMode
 deriving instance Generic ChatError
 deriving instance Generic ChatErrorType
 deriving instance Generic ChatFeature
 deriving instance Generic ChatItemDeletion
+deriving instance Generic ChatPeerType
 deriving instance Generic ChatRef
 deriving instance Generic ChatSettings
 deriving instance Generic ChatStats
@@ -444,6 +448,7 @@ deriving instance Generic Format
 deriving instance Generic FormattedText
 deriving instance Generic FullGroupPreferences
 deriving instance Generic FullPreferences
+deriving instance Generic Group
 deriving instance Generic GroupChatScope
 deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature

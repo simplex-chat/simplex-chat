@@ -93,7 +93,18 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func msgContentView() -> some View {
-        let r = messageText(text, formattedText, textStyle: textStyle, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: containerBackground, prefix: prefix)
+        let r = messageText(
+            text,
+            formattedText,
+            textStyle: textStyle,
+            sender: sender,
+            mentions: mentions,
+            userMemberId: userMemberId,
+            showSecrets: showSecrets,
+            commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
+            backgroundColor: containerBackground,
+            prefix: prefix
+        )
         let s = r.string
         let t: Text
         if let mt = meta {
@@ -104,7 +115,7 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        return msgTextResultView(r, t, showSecrets: $showSecrets)
+        return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) })
     }
 
     @inline(__always)
@@ -120,14 +131,27 @@ struct MsgContentView: View {
     }
 }
 
-func msgTextResultView(_ r: MsgTextResult, _ t: Text, showSecrets: Binding<Set<Int>>? = nil, centered: Bool = false, smallFont: Bool = false) -> some View {
+func msgTextResultView(
+    _ r: MsgTextResult,
+    _ t: Text,
+    showSecrets: Binding<Set<Int>>? = nil,
+    sendCommand: ((String) -> Void)? = nil,
+    centered: Bool = false,
+    smallFont: Bool = false
+) -> some View {
     t.if(r.hasSecrets, transform: hiddenSecretsView)
-        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, centered: centered, smallFont: smallFont)) }
+        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, sendCommand: sendCommand, centered: centered, smallFont: smallFont)) }
 }
 
 // smallFont parameter is used to pad height, otherwise CTFrameGetLines fails to see them as lines - it's needed if font is not .body
 @inline(__always)
-private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil, centered: Bool, smallFont: Bool) -> some View {
+private func handleTextTaps(
+    _ s: NSAttributedString,
+    showSecrets: Binding<Set<Int>>? = nil,
+    sendCommand: ((String) -> Void)? = nil,
+    centered: Bool,
+    smallFont: Bool
+) -> some View {
     return GeometryReader { g in
         Rectangle()
             .fill(Color.clear)
@@ -187,6 +211,8 @@ private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<In
                     } else {
                         showSecrets.wrappedValue.insert(i)
                     }
+                } else if let sendCommand, let cmd = attrs[commandAttrKey] as? String {
+                    sendCommand(cmd)
                 }
                 stop.pointee = true
             }
@@ -218,6 +244,8 @@ private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
 
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
+private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
+
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
 
 @inline(__always)
@@ -240,6 +268,7 @@ func markdownText(
         mentions: mentions,
         userMemberId: userMemberId,
         showSecrets: showSecrets,
+        commands: false,
         backgroundColor: UIColor(backgroundColor)
     )
 }
@@ -254,6 +283,7 @@ func messageText(
     mentions: [String: CIMention]?,
     userMemberId: String?,
     showSecrets: Set<Int>?,
+    commands: Bool = false,
     backgroundColor: UIColor,
     prefix: NSAttributedString? = nil
 ) -> MsgTextResult {
@@ -342,6 +372,15 @@ func messageText(
                 }
                 if case .description = privacySimplexLinkModeDefault.get() {
                     t = simplexLinkText(linkType, smpHosts)
+                }
+            case let .command(cmdStr):
+                snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
+                attrs[.font] = snippet
+                t = "/" + cmdStr
+                if !preview && commands {
+                    attrs[.foregroundColor] = uiLinkColor
+                    attrs[commandAttrKey] = t
+                    handleTaps = true
                 }
             case let .mention(memberName):
                 if let m = mentions?[memberName] {

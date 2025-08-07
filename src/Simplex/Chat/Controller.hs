@@ -530,6 +530,7 @@ data ChatCommand
   | CancelFile {fileId :: FileTransferId}
   | FileStatus FileTransferId
   | ShowProfile -- UserId (not used in UI)
+  | SetBotCommands [ChatBotCommand]
   | UpdateProfile ContactName (Maybe Text) -- UserId (not used in UI)
   | UpdateProfileImage (Maybe ImageData) -- UserId (not used in UI)
   | ShowProfileImage

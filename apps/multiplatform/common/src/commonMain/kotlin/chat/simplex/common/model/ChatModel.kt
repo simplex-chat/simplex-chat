@@ -1633,6 +1633,18 @@ sealed class ChatInfo: SomeChat, NamedChat {
 
   val sendMsgEnabled get() = userCantSendReason == null
 
+  val sndReady: Boolean get() =
+      when(this) {
+        is Direct -> contact.sndReady
+        is Group ->
+          groupInfo.membership.memberActive
+              && (groupChatScope != null || (!groupInfo.membership.memberPending && groupInfo.membership.memberRole != GroupMemberRole.Observer))
+        is Local -> true
+        is ContactRequest -> false
+        is ContactConnection -> false
+        is InvalidJSON -> false
+      }
+
   fun groupChatScope(): GroupChatScope? = when (this) {
     is Group -> groupChatScope?.toChatScope()
     else -> null
@@ -1675,6 +1687,20 @@ sealed class ChatInfo: SomeChat, NamedChat {
   val nextNtfMode: MsgFilter? get() = this.chatSettings?.enableNtfs?.nextMode(mentions = this.hasMentions)
 
   val hasMentions: Boolean get() = this is Group
+
+  val useCommands: Boolean get() = when(this) {
+    is Direct -> contact.isBot
+    is Group -> groupInfo.groupProfile.groupPreferences?.commands?.isNotEmpty() ?: false
+    else -> false
+  }
+
+  val menuCommands: List<ChatBotCommand> get() = when(this) {
+    is Direct ->
+      if (contact.isBot) contact.profile.preferences?.commands ?: emptyList()
+      else emptyList()
+    is Group -> groupInfo.groupProfile.groupPreferences?.commands ?: emptyList()
+    else -> emptyList()
+  }
 
   val contactCard: Boolean
     get() = when (this) {
@@ -1759,6 +1785,7 @@ data class Contact(
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.enabled.forUser
     ChatFeature.Reactions -> mergedPreferences.reactions.enabled.forUser
     ChatFeature.Voice -> mergedPreferences.voice.enabled.forUser
+    ChatFeature.Files -> mergedPreferences.files.enabled.forUser
     ChatFeature.Calls -> mergedPreferences.calls.enabled.forUser
   }
   override val timedMessagesTTL: Int? get() = with(mergedPreferences.timedMessages) { if (enabled.forUser) userPreference.pref.ttl else null }
@@ -1775,7 +1802,6 @@ data class Contact(
     return profile.chatViewName.lowercase().contains(s) || profile.displayName.lowercase().contains(s) || profile.fullName.lowercase().contains(s)
   }
 
-
   val directOrUsed: Boolean get() =
     if (activeConn != null) {
       (activeConn.connLevel == 0 && !activeConn.viaGroupLink) || contactUsed
@@ -1783,16 +1809,22 @@ data class Contact(
       true
     }
 
-  val isContactCard: Boolean =
+  val isContactCard: Boolean get() =
     (activeConn == null || activeConn.connStatus == ConnStatus.Prepared) && profile.contactLink != null && active && preparedContact == null && contactRequestId == null
 
-  val contactConnIncognito =
+  val isBot: Boolean get() = profile.peerType == ChatPeerType.Bot
+
+  val contactConnIncognito: Boolean get() =
     activeConn?.customUserProfileId != null
+
+  val chatIconName: ImageResource get() =
+    if (isBot) MR.images.ic_cube else MR.images.ic_account_circle_filled
 
   fun allowsFeature(feature: ChatFeature): Boolean = when (feature) {
     ChatFeature.TimedMessages -> mergedPreferences.timedMessages.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.Voice -> mergedPreferences.voice.contactPreference.allow != FeatureAllowed.NO
+    ChatFeature.Files -> mergedPreferences.files.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.Reactions -> mergedPreferences.reactions.contactPreference.allow != FeatureAllowed.NO
     ChatFeature.Calls -> mergedPreferences.calls.contactPreference.allow != FeatureAllowed.NO
   }
@@ -1802,6 +1834,7 @@ data class Contact(
     ChatFeature.FullDelete -> mergedPreferences.fullDelete.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Reactions -> mergedPreferences.reactions.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Voice -> mergedPreferences.voice.userPreference.pref.allow != FeatureAllowed.NO
+    ChatFeature.Files -> mergedPreferences.files.userPreference.pref.allow != FeatureAllowed.NO
     ChatFeature.Calls -> mergedPreferences.calls.userPreference.pref.allow != FeatureAllowed.NO
   }
 
@@ -1931,14 +1964,15 @@ data class Profile(
   override val image: String? = null,
   override val localAlias : String = "",
   val contactLink: String? = null,
-  val preferences: ChatPreferences? = null
+  val preferences: ChatPreferences? = null,
+  val peerType: ChatPeerType? = null
 ): NamedChat {
   val profileViewName: String
     get() {
       return if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)"
     }
 
-  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences)
+  fun toLocalProfile(profileId: Long): LocalProfile = LocalProfile(profileId, displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType)
 
   companion object {
     val sampleData = Profile(
@@ -1958,11 +1992,12 @@ data class LocalProfile(
   override val image: String? = null,
   override val localAlias: String,
   val contactLink: String? = null,
-  val preferences: ChatPreferences? = null
+  val preferences: ChatPreferences? = null,
+  val peerType: ChatPeerType? = null
 ): NamedChat {
   val profileViewName: String = localAlias.ifEmpty { if (fullName == "" || displayName == fullName) displayName else "$displayName ($fullName)" }
 
-  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences)
+  fun toProfile(): Profile = Profile(displayName, fullName, shortDescr, image, localAlias, contactLink, preferences, peerType)
 
   companion object {
     val sampleData = LocalProfile(
@@ -1974,6 +2009,12 @@ data class LocalProfile(
       localAlias = ""
     )
   }
+}
+
+@Serializable
+enum class ChatPeerType {
+  @SerialName("human") Human,
+  @SerialName("bot") Bot
 }
 
 @Serializable
@@ -2030,6 +2071,7 @@ data class GroupInfo (
     ChatFeature.FullDelete -> fullGroupPreferences.fullDelete.on
     ChatFeature.Reactions -> fullGroupPreferences.reactions.on
     ChatFeature.Voice -> fullGroupPreferences.voice.on(membership)
+    ChatFeature.Files -> fullGroupPreferences.files.on(membership)
     ChatFeature.Calls -> false
   }
   override val timedMessagesTTL: Int? get() = with(fullGroupPreferences.timedMessages) { if (on) ttl else null }
@@ -2484,7 +2526,14 @@ class NoteFolder(
   override val nextConnectPrepared get() = false
   override val profileChangeProhibited get() = false
   override val incognito get() = false
-  override fun featureEnabled(feature: ChatFeature) = feature == ChatFeature.Voice
+  override fun featureEnabled(feature: ChatFeature) = when (feature) {
+    ChatFeature.TimedMessages -> false
+    ChatFeature.FullDelete -> false
+    ChatFeature.Reactions -> false
+    ChatFeature.Voice -> true
+    ChatFeature.Files -> true
+    ChatFeature.Calls -> false
+  }
   override val timedMessagesTTL: Int? get() = null
   override val displayName get() = generalGetString(MR.strings.note_folder_local_display_name)
   override val fullName get() = ""
@@ -4349,6 +4398,7 @@ sealed class Format {
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
   @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
+  @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
   @Serializable @SerialName("phone") class Phone: Format()
@@ -4363,6 +4413,7 @@ sealed class Format {
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
     is SimplexLink -> linkStyle
+    is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)
     is Email -> linkStyle
     is Phone -> linkStyle

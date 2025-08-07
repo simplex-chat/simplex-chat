@@ -616,7 +616,10 @@ contactUserPreferences user userPreferences contactPreferences connectedIncognit
       fullDelete = pref SCFFullDelete,
       reactions = pref SCFReactions,
       voice = pref SCFVoice,
-      calls = pref SCFCalls
+      files = pref SCFFiles,
+      calls = pref SCFCalls,
+      sessions = pref SCFSessions,
+      commands = contactPreferences >>= commands_
     }
   where
     pref :: FeatureI f => SChatFeature f -> ContactUserPreference (FeaturePreference f)
@@ -642,7 +645,8 @@ data Profile = Profile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
-    preferences :: Maybe Preferences
+    preferences :: Maybe Preferences,
+    peerType :: Maybe ChatPeerType
     -- fields that should not be read into this data type to prevent sending them as part of profile to contacts:
     -- - contact_profile_id
     -- - incognito
@@ -650,9 +654,32 @@ data Profile = Profile
   }
   deriving (Eq, Show)
 
+data ChatPeerType = CPTHuman | CPTBot
+  deriving (Eq, Show)
+
+instance FromJSON ChatPeerType where
+  parseJSON = textParseJSON "ChatPeerType"
+
+instance ToJSON ChatPeerType where
+  toJSON = J.String . textEncode
+  toEncoding = JE.text . textEncode
+
+instance FromField ChatPeerType where fromField = fromTextField_ textDecode
+
+instance ToField ChatPeerType where toField = toField . textEncode
+
+instance TextEncoding ChatPeerType where
+  textDecode = \case
+    "human" -> Just CPTHuman
+    "bot" -> Just CPTBot
+    _ -> Nothing
+  textEncode = \case
+    CPTHuman -> "human"
+    CPTBot -> "bot"
+
 profileFromName :: ContactName -> Profile
 profileFromName displayName =
-  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing}
+  Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = Nothing, peerType = Nothing}
 
 -- check if profiles match ignoring preferences
 profilesMatch :: LocalProfile -> LocalProfile -> Bool
@@ -662,8 +689,8 @@ profilesMatch
     n1 == n2 && fn1 == fn2 && i1 == i2
 
 redactedMemberProfile :: Profile -> Profile
-redactedMemberProfile Profile {displayName, fullName, shortDescr, image} =
-  Profile {displayName, fullName, shortDescr, image, contactLink = Nothing, preferences = Nothing}
+redactedMemberProfile Profile {displayName, fullName, shortDescr, image, peerType} =
+  Profile {displayName, fullName, shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType}
 
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
@@ -700,6 +727,7 @@ data LocalProfile = LocalProfile
     image :: Maybe ImageData,
     contactLink :: Maybe ConnLinkContact,
     preferences :: Maybe Preferences,
+    peerType :: Maybe ChatPeerType,
     localAlias :: LocalAlias
   }
   deriving (Eq, Show)
@@ -708,12 +736,12 @@ localProfileId :: LocalProfile -> ProfileId
 localProfileId LocalProfile {profileId} = profileId
 
 toLocalProfile :: ProfileId -> Profile -> LocalAlias -> LocalProfile
-toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences} localAlias =
-  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, localAlias}
+toLocalProfile profileId Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} localAlias =
+  LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, preferences, peerType, localAlias}
 
 fromLocalProfile :: LocalProfile -> Profile
-fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences} =
-  Profile {displayName, fullName, shortDescr, image, contactLink, preferences}
+fromLocalProfile LocalProfile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType} =
+  Profile {displayName, fullName, shortDescr, image, contactLink, preferences, peerType}
 
 data GroupProfile = GroupProfile
   { displayName :: GroupName,

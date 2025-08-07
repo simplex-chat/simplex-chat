@@ -19,7 +19,7 @@ import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
-import Simplex.Chat.Options
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
 import Simplex.Chat.Protocol (currentChatVersion)
 import Simplex.Chat.Store.Shared (createContact)
 import Simplex.Chat.Types (ConnStatus (..), Profile (..), GroupRejectionReason (..))
@@ -153,7 +153,6 @@ testUpdateProfile =
       alice ##> "/p"
       alice <## "user profile: alice (Alice)"
       alice <## "use /p <name> [<bio>] to change it"
-      alice <## "(the updated profile will be sent to all your contacts)"
       alice ##> "/p alice"
       concurrentlyN_
         [ alice <## "user bio removed (your 2 contacts are notified)",
@@ -281,7 +280,7 @@ testMultiWordProfileNames =
     aliceProfile' = baseProfile {displayName = "Alice Jones"}
     bobProfile' = baseProfile {displayName = "Bob James"}
     cathProfile' = baseProfile {displayName = "Cath Johnson"}
-    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+    baseProfile = Profile {displayName = "", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
 testUserContactLink :: HasCallStack => TestParams -> IO ()
 testUserContactLink =
@@ -964,27 +963,27 @@ testBusinessUpdateProfiles = testChatCfg4 testCfgNoShortLinks businessProfile al
           cath <## "use @business <message> to send messages"
           cath <# "#alisa business> hey"
       ]
-    biz ##> "/set voice #alisa on"
+    biz ##> "/set delete #alisa on"
     biz <## "updated group preferences:"
-    biz <## "Voice messages: on"
+    biz <## "Full deletion: on"
     concurrentlyN_
       [ do
           alice <## "business_1 updated group #business:"
           alice <## "updated group preferences:"
-          alice <## "Voice messages: on",
+          alice <## "Full deletion: on",
         do
           bob <## "business_1 updated group #business:"
           bob <## "updated group preferences:"
-          bob <## "Voice messages: on",
+          bob <## "Full deletion: on",
         do
           cath <## "business updated group #alisa:"
           cath <## "updated group preferences:"
-          cath <## "Voice messages: on"
+          cath <## "Full deletion: on"
       ]
-    biz #$> ("/_get chat #1 count=1", chat, [(1, "Voice messages: on")])
-    alice #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
-    bob #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
-    cath #$> ("/_get chat #1 count=1", chat, [(0, "Voice messages: on")])
+    biz #$> ("/_get chat #1 count=1", chat, [(1, "Full deletion: on")])
+    alice #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
+    bob #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
+    cath #$> ("/_get chat #1 count=1", chat, [(0, "Full deletion: on")])
 
 testPlanAddressOkKnown :: HasCallStack => TestParams -> IO ()
 testPlanAddressOkKnown =
@@ -2789,7 +2788,6 @@ testSetUITheme =
     userInfo a name = do
       a <## ("user profile: " <> name)
       a <## "use /p <name> [<bio>] to change it"
-      a <## "(the updated profile will be sent to all your contacts)"
     contactInfo a = do
       a <## "contact ID: 2"
       a <## "receiving messages via: localhost"

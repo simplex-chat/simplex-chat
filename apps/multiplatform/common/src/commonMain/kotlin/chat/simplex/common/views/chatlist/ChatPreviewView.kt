@@ -176,12 +176,14 @@ fun ChatPreviewView(
       is ChatInfo.Direct ->
         if (cInfo.contact.isContactCard) {
           stringResource(MR.strings.contact_tap_to_connect) to MaterialTheme.colors.primary
+        } else if (cInfo.contact.isBot && cInfo.contact.nextConnectPrepared) {
+          stringResource(MR.strings.open_to_use_bot) to Color.Unspecified
         } else if (cInfo.contact.sendMsgToConnect) {
           stringResource(MR.strings.open_to_connect) to Color.Unspecified
         } else if (cInfo.contact.nextAcceptContactRequest) {
           stringResource(MR.strings.open_to_accept) to Color.Unspecified
         } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null && cInfo.contact.active) {
-          if (cInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
+          if ((cInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con && !cInfo.contact.isBot) || cInfo.contact.contactGroupMemberId != null) {
             stringResource(MR.strings.contact_should_accept) to Color.Unspecified
           } else {
             stringResource(MR.strings.contact_connection_pending) to Color.Unspecified

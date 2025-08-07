@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.*
 import androidx.compose.ui.platform.*
 import androidx.compose.ui.text.*
+import androidx.compose.ui.text.AnnotatedString.Range
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,6 +62,7 @@ fun MarkdownText (
   mentions: Map<String, CIMention>? = null,
   userMemberId: String? = null,
   toggleSecrets: Boolean,
+  sendCommandMsg: ((String) -> Unit)? = null,
   style: TextStyle = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface, lineHeight = 22.sp),
   maxLines: Int = Int.MAX_VALUE,
   overflow: TextOverflow = TextOverflow.Clip,
@@ -134,7 +136,9 @@ fun MarkdownText (
       }
       Text(annotatedText, style = style, modifier = modifier, maxLines = maxLines, overflow = overflow, inlineContent = inlineContent?.second ?: mapOf())
     } else {
-      var hasAnnotations = false
+      var hasLinks = false
+      var hasSecrets = false
+      var hasCommands = false
       val annotatedText = buildAnnotatedString {
         inlineContent?.first?.invoke(this)
         appendSender(this, sender, senderBold)
@@ -143,7 +147,7 @@ fun MarkdownText (
           if (ft.format == null) append(ft.text)
           else if (toggleSecrets && ft.format is Format.Secret) {
             val ftStyle = ft.format.style
-            hasAnnotations = true
+            hasSecrets = true
             val key = i.toString()
             withAnnotation(tag = "SECRET", annotation = key) {
               if (showSecrets[key] == true) append(ft.text) else withStyle(ftStyle) { append(ft.text) }
@@ -168,10 +172,21 @@ fun MarkdownText (
             } else {
               append(ft.text)
             }
+          } else if (ft.format is Format.Command) {
+            if (sendCommandMsg == null) {
+              append(ft.text)
+            } else {
+              hasCommands = true
+              val ftStyle = ft.format.style
+              val cmd = ft.format.commandStr
+              withAnnotation(tag = "COMMAND", annotation = cmd) {
+                withStyle(ftStyle) { append("/$cmd") }
+              }
+            }
           } else {
             val link = ft.link(linkMode)
             if (link != null) {
-              hasAnnotations = true
+              hasLinks = true
               val ftStyle = ft.format.style
               withAnnotation(tag = if (ft.format is Format.SimplexLink) "SIMPLEX_URL" else "URL", annotation = link) {
                 withStyle(ftStyle) { append(ft.viewText(linkMode)) }
@@ -189,51 +204,53 @@ fun MarkdownText (
           withStyle(reserveTimestampStyle) { append("\n" + metaText) }
         else */if (meta != null) withStyle(reserveTimestampStyle) { append(reserve) }
       }
-      if (hasAnnotations && uriHandler != null) {
+      if ((hasLinks && uriHandler != null) || hasSecrets || (hasCommands && sendCommandMsg != null)) {
         val icon = remember { mutableStateOf(PointerIcon.Default) }
         ClickableText(annotatedText, style = style, modifier = modifier.pointerHoverIcon(icon.value), maxLines = maxLines, overflow = overflow,
           onLongClick = { offset ->
-            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
-            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
+            if (hasLinks) {
+              annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
+              annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
+                .firstOrNull()?.let { annotation -> onLinkLongClick(annotation.item) }
+            }
           },
           onClick = { offset ->
-            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation ->
+            val withAnnotation: (String, (Range<String>) -> Unit) -> Unit = { tag, f ->
+              annotatedText.getStringAnnotations(tag, start = offset, end = offset).firstOrNull()?.let(f)
+            }
+            if (hasLinks && uriHandler != null) {
+              withAnnotation("URL") { a ->
                 try {
-                  uriHandler.openUri(annotation.item)
+                  uriHandler.openUri(a.item)
                 } catch (e: Exception) {
                   // It can happen, for example, when you click on a text 0.00001 but don't have any app that can catch
                   // `tel:` scheme in url installed on a device (no phone app or contacts, maybe)
                   Log.e(TAG, "Open url: ${e.stackTraceToString()}")
                 }
               }
-            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
-              .firstOrNull()?.let { annotation ->
-                uriHandler.openVerifiedSimplexUri(annotation.item)
-              }
-            annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-              .firstOrNull()?.let { annotation ->
-                val key = annotation.item
+              withAnnotation("SIMPLEX_URL") { a -> uriHandler.openVerifiedSimplexUri(a.item) }
+            } else if (hasSecrets) {
+              withAnnotation("SECRET") { a ->
+                val key = a.item
                 showSecrets[key] = !(showSecrets[key] ?: false)
               }
+            } else if (hasCommands && sendCommandMsg != null) {
+              withAnnotation("COMMAND") { a -> sendCommandMsg("/${a.item}") }
+            }
           },
           onHover = { offset ->
-            icon.value = annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset)
-              .firstOrNull()?.let {
+            val hasAnnotation: (String) -> Boolean = { tag -> annotatedText.hasStringAnnotations(tag, start = offset, end = offset) }
+            icon.value =
+              if (hasAnnotation("URL") || hasAnnotation("SIMPLEX_URL") || hasAnnotation("SECRET") || hasAnnotation("COMMAND")) {
                 PointerIcon.Hand
-              } ?: annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
-              .firstOrNull()?.let {
-                PointerIcon.Hand
-              } ?: annotatedText.getStringAnnotations(tag = "SECRET", start = offset, end = offset)
-              .firstOrNull()?.let {
-                PointerIcon.Hand
-              } ?: PointerIcon.Default
+              } else {
+                PointerIcon.Default
+              }
           },
           shouldConsumeEvent = { offset ->
-            annotatedText.getStringAnnotations(tag = "URL", start = offset, end = offset).any()
-            annotatedText.getStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset).any()
+            annotatedText.hasStringAnnotations(tag = "URL", start = offset, end = offset)
+                || annotatedText.hasStringAnnotations(tag = "SIMPLEX_URL", start = offset, end = offset)
           }
         )
       } else {

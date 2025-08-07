@@ -32,6 +32,7 @@ This file is generated automatically.
 - [CIReactionCount](#cireactioncount)
 - [CIStatus](#cistatus)
 - [CITimed](#citimed)
+- [ChatBotCommand](#chatbotcommand)
 - [ChatDeleteMode](#chatdeletemode)
 - [ChatError](#chaterror)
 - [ChatErrorType](#chaterrortype)
@@ -39,6 +40,7 @@ This file is generated automatically.
 - [ChatInfo](#chatinfo)
 - [ChatItem](#chatitem)
 - [ChatItemDeletion](#chatitemdeletion)
+- [ChatPeerType](#chatpeertype)
 - [ChatRef](#chatref)
 - [ChatSettings](#chatsettings)
 - [ChatStats](#chatstats)
@@ -80,6 +82,7 @@ This file is generated automatically.
 - [FormattedText](#formattedtext)
 - [FullGroupPreferences](#fullgrouppreferences)
 - [FullPreferences](#fullpreferences)
+- [Group](#group)
 - [GroupChatScope](#groupchatscope)
 - [GroupChatScopeInfo](#groupchatscopeinfo)
 - [GroupDirectInvitation](#groupdirectinvitation)
@@ -855,6 +858,24 @@ Invalid:
 
 ---
 
+## ChatBotCommand
+
+**Discriminated union type**:
+
+Command:
+- type: "command"
+- keyword: string
+- label: string
+- params: string?
+
+Menu:
+- type: "menu"
+- label: string
+- commands: [[ChatBotCommand](#chatbotcommand)]
+
+
+---
+
 ## ChatDeleteMode
 
 **Discriminated union type**:
@@ -1206,7 +1227,9 @@ Exception:
 - "fullDelete"
 - "reactions"
 - "voice"
+- "files"
 - "calls"
+- "sessions"
 
 
 ---
@@ -1261,6 +1284,15 @@ Message deletion result.
 **Record type**:
 - deletedChatItem: [AChatItem](#achatitem)
 - toChatItem: [AChatItem](#achatitem)?
+
+
+---
+
+## ChatPeerType
+
+**Enum type**:
+- "human"
+- "bot"
 
 
 ---
@@ -1687,7 +1719,10 @@ User:
 - fullDelete: [ContactUserPreference](#contactuserpreference)
 - reactions: [ContactUserPreference](#contactuserpreference)
 - voice: [ContactUserPreference](#contactuserpreference)
+- files: [ContactUserPreference](#contactuserpreference)
 - calls: [ContactUserPreference](#contactuserpreference)
+- sessions: [ContactUserPreference](#contactuserpreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -1950,6 +1985,10 @@ SimplexLink:
 - simplexUri: string
 - smpHosts: [string]
 
+Command:
+- type: "command"
+- commandStr: string
+
 Mention:
 - type: "mention"
 - memberName: string
@@ -1984,6 +2023,8 @@ Phone:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)
 - reports: [GroupPreference](#grouppreference)
 - history: [GroupPreference](#grouppreference)
+- sessions: [RoleGroupPreference](#rolegrouppreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]
 
 
 ---
@@ -1995,7 +2036,19 @@ Phone:
 - fullDelete: [SimplePreference](#simplepreference)
 - reactions: [SimplePreference](#simplepreference)
 - voice: [SimplePreference](#simplepreference)
+- files: [SimplePreference](#simplepreference)
 - calls: [SimplePreference](#simplepreference)
+- sessions: [SimplePreference](#simplepreference)
+- commands: [[ChatBotCommand](#chatbotcommand)]
+
+
+---
+
+## Group
+
+**Record type**:
+- groupInfo: [GroupInfo](#groupinfo)
+- members: [[GroupMember](#groupmember)]
 
 
 ---
@@ -2060,6 +2113,7 @@ MemberSupport:
 - "simplexLinks"
 - "reports"
 - "history"
+- "sessions"
 
 
 ---
@@ -2265,6 +2319,8 @@ Known:
 - simplexLinks: [RoleGroupPreference](#rolegrouppreference)?
 - reports: [GroupPreference](#grouppreference)?
 - history: [GroupPreference](#grouppreference)?
+- sessions: [RoleGroupPreference](#rolegrouppreference)?
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2414,6 +2470,7 @@ Unknown:
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
+- peerType: [ChatPeerType](#chatpeertype)?
 - localAlias: string
 
 
@@ -2639,7 +2696,10 @@ Unknown:
 - fullDelete: [SimplePreference](#simplepreference)?
 - reactions: [SimplePreference](#simplepreference)?
 - voice: [SimplePreference](#simplepreference)?
+- files: [SimplePreference](#simplepreference)?
 - calls: [SimplePreference](#simplepreference)?
+- sessions: [SimplePreference](#simplepreference)?
+- commands: [[ChatBotCommand](#chatbotcommand)]?
 
 
 ---
@@ -2676,6 +2736,7 @@ Unknown:
 - image: string?
 - contactLink: string?
 - preferences: [Preferences](#preferences)?
+- peerType: [ChatPeerType](#chatpeertype)?
 
 
 ---
