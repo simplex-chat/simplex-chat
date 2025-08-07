@@ -135,7 +135,7 @@
     <string name="migrate_to_device_apply_onion">Aplică</string>
     <string name="create_profile">Creează profil</string>
     <string name="create_another_profile_button">Creează profil</string>
-    <string name="v4_2_auto_accept_contact_requests">Acceptă automat cererile de contactare</string>
+    <string name="v4_2_auto_accept_contact_requests">Acceptare automată a cererilor de contact</string>
     <string name="custom_time_picker_custom">personalizat</string>
     <string name="maximum_supported_file_size">În prezent dimensiunea maximă pentru fișiere este %1$s.</string>
     <string name="create_simplex_address">Creează adresă SimpleX</string>
@@ -600,7 +600,7 @@
     <string name="icon_descr_close_button">Buton de închidere</string>
     <string name="clear_verification">Ștergeți verificarea</string>
     <string name="configure_ICE_servers">Configurare servere ICE</string>
-    <string name="rcv_group_event_member_created_contact">conectat direct</string>
+    <string name="rcv_group_event_member_created_contact">conexiune solicitată</string>
     <string name="group_member_status_announced">se conectează (anunțat)</string>
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b>Cel mai bun pentru baterie.</b> Veți primi notificări doar când aplicația rulează (FĂRĂ servicii de fundal).]]></string>
     <string name="icon_descr_call_connecting">Se conectează apelul</string>
@@ -1580,7 +1580,7 @@
     <string name="export_theme">Exportă tema</string>
     <string name="import_theme">Importați tema</string>
     <string name="import_theme_error">Eroare la importul temei</string>
-    <string name="error_accepting_contact_request">Eroare la acceptarea solicitării de contact</string>
+    <string name="error_accepting_contact_request">Eroare la acceptarea cererii de contact</string>
     <string name="smp_server_test_download_file">Descărcați fișierul</string>
     <string name="error_deleting_contact">Eroare la ștergerea contactului</string>
     <string name="error_creating_address">Eroare la crearea adresei</string>
@@ -2448,4 +2448,6 @@
     <string name="v6_4_1_short_address">Adresă SimpleX scurtă</string>
     <string name="chat_banner_connect_to_chat">Atinge Conectare pentru a începe conversația</string>
     <string name="v6_4_1_short_address_create">Creează-ți adresa</string>
+    <string name="chat_banner_accept_contact_request">Acceptă cererea de contact</string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Vei putea trimite mesaje <b>doar după ce cererea ta este acceptată</b>.]]></string>
 </resources>
