@@ -3363,7 +3363,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "K formátování zpráv můžete použít markdown:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Nemůžete posílat zprávy!";
 
 /* chat item text */

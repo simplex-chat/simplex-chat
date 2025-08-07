@@ -5898,7 +5898,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "U kunt uw rapporten bekijken in Chat met beheerders.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Je kunt geen berichten versturen!";
 
 /* chat item text */

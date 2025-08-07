@@ -2101,9 +2101,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Partnerbeállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests from groups" xml:space="preserve" approved="no">
+      <trans-unit id="Contact requests from groups" xml:space="preserve">
         <source>Contact requests from groups</source>
-        <target state="translated">Partneri kapcsolatkérések a csoportokból</target>
+        <target>Partneri kapcsolatkérések a csoportokból</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3546,9 +3546,9 @@ chat item action</note>
         <target>Hiba történt az üzenet elküldésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error setting auto-accept" xml:space="preserve" approved="no">
+      <trans-unit id="Error setting auto-accept" xml:space="preserve">
         <source>Error setting auto-accept</source>
-        <target state="translated">Hiba az automatikus elfogadás beállításakor</target>
+        <target>Hiba az automatikus elfogadás beállításakor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -4892,9 +4892,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Inaktív tag</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve" approved="no">
+      <trans-unit id="Member is deleted - can't accept request" xml:space="preserve">
         <source>Member is deleted - can't accept request</source>
-        <target state="translated">A tag törölve lett – nem lehet elfogadni a kérést</target>
+        <target>A tag törölve lett – nem lehet elfogadni a kérést</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -8275,9 +8275,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>Ez a beállítás csak az Ön jelenlegi **%@** nevű csevegési profiljában lévő üzenetekre vonatkozik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve" approved="no">
+      <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
         <source>This setting is for your current profile **%@**.</source>
-        <target state="translated">Ez a beállítás csak a jelenlegi **%@** nevű csevegési profiljára vonatkozik.</target>
+        <target>Ez a beállítás csak a jelenlegi **%@** nevű csevegési profiljára vonatkozik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
@@ -10179,9 +10179,9 @@ pref value</note>
         <target>moderált</target>
         <note>moderated chat item</note>
       </trans-unit>
-      <trans-unit id="moderated by %@" xml:space="preserve" approved="no">
+      <trans-unit id="moderated by %@" xml:space="preserve">
         <source>moderated by %@</source>
-        <target state="translated">%@ moderálta ezt az üzenetet</target>
+        <target>%@ moderálta ezt az üzenetet</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="moderator" xml:space="preserve">
@@ -10357,14 +10357,14 @@ time to disappear</note>
         <target>csatlakozási kérés elutasítva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="requested connection" xml:space="preserve" approved="no">
+      <trans-unit id="requested connection" xml:space="preserve">
         <source>requested connection</source>
-        <target state="translated">partneri kapcsolatot kért</target>
+        <target>partneri kapcsolatot kért</target>
         <note>rcv group event chat item</note>
       </trans-unit>
-      <trans-unit id="requested connection from group %@" xml:space="preserve" approved="no">
+      <trans-unit id="requested connection from group %@" xml:space="preserve">
         <source>requested connection from group %@</source>
-        <target state="translated">a(z) %@ nevű csoportból partneri kapcsolatot kért</target>
+        <target>a(z) %@ nevű csoportból partneri kapcsolatot kért</target>
         <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">

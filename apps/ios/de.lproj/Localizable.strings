@@ -1087,7 +1087,7 @@ set passcode view */
 "Chat with member" = "Chat mit einem Mitglied";
 
 /* No comment provided by engineer. */
-"Chat with members before they join." = "Chat mit Mitgliedern bevor sie beitreten.";
+"Chat with members before they join." = "Mit Mitgliedern chatten bevor sie beitreten.";
 
 /* No comment provided by engineer. */
 "Chats" = "Chats";
@@ -1409,6 +1409,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Kontakt-Präferenzen";
+
+/* No comment provided by engineer. */
+"Contact requests from groups" = "KONTAKTANFRAGEN VON GRUPPEN";
 
 /* No comment provided by engineer. */
 "contact should accept…" = "Kontakt sollte akzeptieren…";
@@ -2011,7 +2014,7 @@ chat item action */
 "Enable camera access" = "Kamera-Zugriff aktivieren";
 
 /* No comment provided by engineer. */
-"Enable disappearing messages by default." = "Verschwindende Nachrichten per Voreinstellung aktiviert.";
+"Enable disappearing messages by default." = "Verschwindende Nachrichten sind per Voreinstellung aktiviert.";
 
 /* No comment provided by engineer. */
 "Enable Flux in Network & servers settings for better metadata privacy." = "Für einen besseren Metadatenschutz Flux in den Netzwerk- und Servereinstellungen aktivieren.";
@@ -2366,6 +2369,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Error sending message" = "Fehler beim Senden der Nachricht";
+
+/* No comment provided by engineer. */
+"Error setting auto-accept" = "Fehler bei der Einstellung des automatischen Akzeptierens";
 
 /* No comment provided by engineer. */
 "Error setting delivery receipts!" = "Fehler beim Setzen von Empfangsbestätigungen!";
@@ -3105,7 +3111,7 @@ snd error text */
 "Keep unused invitation?" = "Nicht genutzte Einladung behalten?";
 
 /* No comment provided by engineer. */
-"Keep your chats clean" = "Halten Sie Ihre Chats übersichtlich";
+"Keep your chats clean" = "Ihre Chats übersichtlich halten";
 
 /* No comment provided by engineer. */
 "Keep your connections" = "Ihre Verbindungen beibehalten";
@@ -3247,6 +3253,9 @@ snd error text */
 
 /* item status text */
 "Member inactive" = "Mitglied inaktiv";
+
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "Mitglied ist gelöscht - Anfrage kann nicht angenommen werden";
 
 /* chat feature */
 "Member reports" = "Mitglieder-Meldungen";
@@ -4422,6 +4431,12 @@ swipe action */
 /* No comment provided by engineer. */
 "request to join rejected" = "Beitrittsanfrage abgelehnt";
 
+/* rcv group event chat item */
+"requested connection" = "Angefragte Verbindung";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "Angefragte Verbindung von Gruppe %@";
+
 /* chat list item title */
 "requested to connect" = "Zur Verbindung aufgefordert";
 
@@ -4898,7 +4913,7 @@ chat item action */
 "Set passphrase to export" = "Passwort für den Export festlegen";
 
 /* No comment provided by engineer. */
-"Set profile bio and welcome message." = "Geben Sie eine Profil-Biografie und eine Begrüßungsmeldung ein.";
+"Set profile bio and welcome message." = "Sie können eine Profil-Biografie und eine Begrüßungsmeldung eingeben.";
 
 /* No comment provided by engineer. */
 "Set the message shown to new members!" = "Definieren Sie eine Begrüßungsmeldung, die neuen Mitgliedern angezeigt wird!";
@@ -5429,6 +5444,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Diese Einstellung gilt für Nachrichten in Ihrem aktuellen Chat-Profil **%@**.";
+
+/* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Diese Einstellung gilt für Ihr aktuelles Profil **%@**.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Die Zeit bis zum Verschwinden wird nur für neue Kontakte eingestellt.";
@@ -6090,7 +6108,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "Sie können Ihre Meldungen im Chat mit den Administratoren sehen.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Sie können keine Nachrichten versenden!";
 
 /* chat item text */

@@ -5156,7 +5156,7 @@ chat item action */
 /* alert message */
 "You can view invitation link again in connection details." = "Możesz zobaczyć link zaproszenia ponownie w szczegółach połączenia.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Nie możesz wysyłać wiadomości!";
 
 /* chat item text */

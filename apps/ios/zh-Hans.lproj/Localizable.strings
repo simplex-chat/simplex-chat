@@ -5507,7 +5507,7 @@ chat item action */
 /* alert message */
 "You can view invitation link again in connection details." = "您可以在连接详情中再次查看邀请链接。";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "您无法发送消息！";
 
 /* chat item text */

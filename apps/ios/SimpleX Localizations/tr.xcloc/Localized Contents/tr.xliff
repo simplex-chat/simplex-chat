@@ -2101,9 +2101,9 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Kişi tercihleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Contact requests from groups" xml:space="preserve" approved="no">
+      <trans-unit id="Contact requests from groups" xml:space="preserve">
         <source>Contact requests from groups</source>
-        <target state="translated">Gruplardan gelen iletişim talepleri</target>
+        <target>Gruplardan gelen iletişim talepleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -2221,9 +2221,9 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
         <target>Sıra oluştur</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Create your address" xml:space="preserve" approved="no">
+      <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
-        <target state="translated">Adresinizi oluşturun</target>
+        <target>Adresinizi oluşturun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -3036,9 +3036,9 @@ chat item action</note>
         <target>Kamera erişimini etkinleştir</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
         <source>Enable disappearing messages by default.</source>
-        <target state="translated">Varsayılan olarak kaybolan mesajları etkinleştirin.</target>
+        <target>Varsayılan olarak kaybolan mesajları etkinleştirin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">
