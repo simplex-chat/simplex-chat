@@ -2596,4 +2596,15 @@
     <string name="chat_banner_your_business_contact">Ваш бизнес контакт</string>
     <string name="chat_banner_your_contact">Ваш контакт</string>
     <string name="chat_banner_your_group">Ваша группа</string>
+    <string name="allow_files_and_media_only_if">Разрешайте файлы и медиа только в том случае, если ваш контакт это разрешает.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Разрешите вашим контактам отправлять файлы.</string>
+    <string name="chat_banner_bot">бот</string>
+    <string name="both_you_and_your_contact_can_send_files">Вы и ваш собеседник можете отправлять файлы.</string>
+    <string name="files_prohibited_in_this_chat">Файлы в этом чате запрещены.</string>
+    <string name="only_you_can_send_files">Только вы можете отправлять файлы.</string>
+    <string name="only_your_contact_can_send_files">Только ваш контакт может отправлять файлы.</string>
+    <string name="open_to_use_bot">Открыть для использования бота</string>
+    <string name="prohibit_sending_files_and_media">Запретить отправку файлов.</string>
+    <string name="chat_banner_connect_to_use_bot">Нажмите «Подключиться», чтобы использовать бота.</string>
+    <string name="cant_send_commands_alert_text">Для отправки команд вы должны быть подключены.</string>
 </resources>
