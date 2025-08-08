@@ -107,7 +107,7 @@
     <string name="block_member_button">Letiltás</string>
     <string name="v5_2_more_things">Néhány további dolog</string>
     <string name="authentication_cancelled">Hitelesítés visszavonva</string>
-    <string name="allow_to_send_files">A fájlok- és a médiatartalmak küldése engedélyezve van.</string>
+    <string name="allow_to_send_files">A fájl- és médiatartalmak küldése engedélyezve van.</string>
     <string name="users_delete_all_chats_deleted">Az összes csevegés és üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="icon_descr_audio_call">hanghívás</string>
     <string name="bold_text">félkövér</string>
@@ -298,7 +298,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing">cím módosítása…</string>
     <string name="display_name_connecting">kapcsolódás…</string>
     <string name="icon_descr_call_connecting">Hívás kapcsolása</string>
-    <string name="delete_files_and_media_question">Törli a fájl- és a médiatartalmakat?</string>
+    <string name="delete_files_and_media_question">Törli a fájl- és médiatartalmakat?</string>
     <string name="group_member_status_complete">befejezett</string>
     <string name="chat_database_section">CSEVEGÉSI ADATBÁZIS</string>
     <string name="change_self_destruct_passcode">Önmegsemmisítő jelkód módosítása</string>
@@ -463,7 +463,7 @@
     <string name="error_encrypting_database">Hiba történt az adatbázis titkosításakor</string>
     <string name="error_deleting_group">Hiba történt a csoport törlésekor</string>
     <string name="exit_without_saving">Kilépés mentés nélkül</string>
-    <string name="v5_3_encrypt_local_files">A tárolt fájlok- és a médiatartalmak titkosítása</string>
+    <string name="v5_3_encrypt_local_files">Tárolt fájl- és médiatartalmak titkosítása</string>
     <string name="error_setting_address">Hiba történt a cím beállításakor</string>
     <string name="group_invitation_expired">A csoportmeghívó lejárt</string>
     <string name="error_saving_ICE_servers">Hiba történt az ICE-kiszolgálók mentésekor</string>
@@ -616,7 +616,7 @@
     <string name="image_saved">Kép mentve a galériába</string>
     <string name="hide_notification">Elrejtés</string>
     <string name="la_immediately">Azonnal</string>
-    <string name="files_and_media_prohibited">A fájlok- és a médiatartalmak küldése le van tiltva!</string>
+    <string name="files_and_media_prohibited">A fájl- és médiatartalmak küldése le van tiltva!</string>
     <string name="hide_profile">Profil elrejtése</string>
     <string name="how_to_use_your_servers">Hogyan használja a saját kiszolgálóit</string>
     <string name="v5_2_favourites_filter">Csevegési üzenetek gyorsabb megtalálása</string>
@@ -656,7 +656,7 @@
     <string name="service_notifications_disabled">Az azonnali értesítések le vannak tiltva!</string>
     <string name="service_notifications">Azonnali értesítések!</string>
     <string name="image_descr">Kép</string>
-    <string name="files_are_prohibited_in_group">A fájlok- és a médiatartalmak küldése le van tiltva.</string>
+    <string name="files_are_prohibited_in_group">A fájl- és médiatartalmak küldése le van tiltva.</string>
     <string name="how_it_works">Hogyan működik</string>
     <string name="hide_dev_options">Elrejtve:</string>
     <string name="error_creating_member_contact">Hiba történt a partnerrel történő kapcsolat létrehozásában</string>
@@ -774,7 +774,7 @@
     <string name="no_filtered_chats">Nincsenek szűrt csevegések</string>
     <string name="invalid_data">érvénytelen adat</string>
     <string name="ensure_ICE_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott WebRTC ICE-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
-    <string name="only_owners_can_enable_files_and_media">Csak a csoport tulajdonosai engedélyezhetik a fájlok- és a médiatartalmak küldését.</string>
+    <string name="only_owners_can_enable_files_and_media">Csak a csoport tulajdonosai engedélyezhetik a fájl- és médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">Fájl betöltése…</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó partner</string>
     <string name="v4_5_message_draft">Üzenetvázlat</string>
@@ -1195,7 +1195,7 @@
     <string name="la_lock_mode">Zárolási mód</string>
     <string name="revoke_file__action">Fájl visszavonása</string>
     <string name="xftp_servers">XFTP-kiszolgálók</string>
-    <string name="prohibit_sending_files">A fájlok- és a médiatartalmak küldése le van tiltva.</string>
+    <string name="prohibit_sending_files">A fájl- és médiatartalmak küldése le van tiltva.</string>
     <string name="share_file">Fájl megosztása…</string>
     <string name="save_verb">Mentés</string>
     <string name="call_connection_via_relay">egy továbbítókiszolgálón keresztül</string>
@@ -1691,7 +1691,7 @@
     <string name="voice_messages_not_allowed">A hangüzenetek küldése le van tiltva</string>
     <string name="simplex_links_are_prohibited_in_group">A SimpleX-hivatkozások küldése le van tiltva.</string>
     <string name="prohibit_sending_simplex_links">A SimpleX-hivatkozások küldése le van tiltva</string>
-    <string name="files_and_media_not_allowed">A fájlok- és médiatartalmak nincsenek engedélyezve</string>
+    <string name="files_and_media_not_allowed">A fájl- és médiatartalmak nincsenek engedélyezve</string>
     <string name="allow_to_send_simplex_links">A SimpleX-hivatkozások küldése engedélyezve van.</string>
     <string name="feature_enabled_for">Számukra engedélyezve</string>
     <string name="saved_description">mentett</string>
@@ -2483,4 +2483,15 @@
     <string name="member_is_deleted_cant_accept_request">A tag törölve lett – nem lehet elfogadni a kérést</string>
     <string name="rcv_direct_event_group_inv_link_received">a(z) %1$s nevű csoportból partneri kapcsolatot kért</string>
     <string name="this_setting_is_for_your_current_profile">Ez a beállítás a jelenlegi profiljára vonatkozik</string>
+    <string name="open_to_use_bot">Megnyitás a bot használatához</string>
+    <string name="chat_banner_connect_to_use_bot">Koppintson a „Kapcsolódás” gombra a bot használatához</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="cant_send_commands_alert_text">A parancsok küldéséhez kapcsolódva kell lennie.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">A fájl- és médiatartalmak küldése engedélyezve van a partnerei számára.</string>
+    <string name="allow_files_and_media_only_if">A fájl- és médiatartalmak küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
+    <string name="prohibit_sending_files_and_media">A fájl- és médiatartalmak küldése le van tiltva.</string>
+    <string name="both_you_and_your_contact_can_send_files">Mindkét fél küldhet fájl- és médiatartalmakat.</string>
+    <string name="only_you_can_send_files">Csak Ön tud fájl- és médiatartalmakat küldeni.</string>
+    <string name="only_your_contact_can_send_files">Csak a partnere küldhet fájl- és médiatartalmakat.</string>
+    <string name="files_prohibited_in_this_chat">A fájl- és médiatartalmak küldése le van tiltva ebben a csevegésben.</string>
 </resources>
