@@ -14,11 +14,11 @@ struct PrivacySettings: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = true
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
-    @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
@@ -75,7 +75,11 @@ struct PrivacySettings: View {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
                             .onChange(of: useLinkPreviews) { linkPreviews in
                                 privacyLinkPreviewsGroupDefault.set(linkPreviews)
+                                privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
                             }
+                    }
+                    settingsRow("link", color: theme.colors.secondary) {
+                        Toggle("Remove link tracking", isOn: $privacySanitizeLinks)
                     }
                     settingsRow("message", color: theme.colors.secondary) {
                         Toggle("Show last messages", isOn: $showChatPreviews)
@@ -88,19 +92,6 @@ struct PrivacySettings: View {
                             m.draft = nil
                             m.draftChatId = nil
                         }
-                    }
-                    settingsRow("link", color: theme.colors.secondary) {
-                        Picker("SimpleX links", selection: $simplexLinkMode) {
-                            ForEach(
-                                SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
-                            ) { mode in
-                                Text(mode.text)
-                            }
-                        }
-                    }
-                    .frame(height: 36)
-                    .onChange(of: simplexLinkMode) { mode in
-                        privacySimplexLinkModeDefault.set(mode)
                     }
                 } header: {
                     Text("Chats")

@@ -4611,6 +4611,11 @@ public struct FormattedText: Decodable, Hashable {
     public var text: String
     public var format: Format?
 
+    public init(text: String, format: Format? = nil) {
+        self.text = text
+        self.format = format
+    }
+
     public static func plain(_ text: String) -> [FormattedText] {
         text.isEmpty
         ? []
@@ -4619,6 +4624,14 @@ public struct FormattedText: Decodable, Hashable {
 
     public var isSecret: Bool {
         if case .secret = format { true } else { false }
+    }
+
+    public var linkUri: String? {
+        switch format {
+        case .uri: text
+        case let .webLink(_, linkUri: uri): uri
+        default: nil
+        }
     }
 }
 
@@ -4630,7 +4643,8 @@ public enum Format: Decodable, Equatable, Hashable {
     case secret
     case colored(color: FormatColor)
     case uri
-    case simplexLink(linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
+    case webLink(showText: String?, linkUri: String)
+    case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case command(commandStr: String)
     case mention(memberName: String)
     case email
@@ -4748,14 +4762,14 @@ extension ReportReason: Decodable {
 
 // Struct to use with simplex API
 public struct LinkPreview: Codable, Equatable, Hashable {
-    public init(uri: URL, title: String, description: String = "", image: String) {
+    public init(uri: String, title: String, description: String = "", image: String) {
         self.uri = uri
         self.title = title
         self.description = description
         self.image = image
     }
 
-    public var uri: URL
+    public var uri: String
     public var title: String
     // TODO remove once optional in haskell
     public var description: String = ""

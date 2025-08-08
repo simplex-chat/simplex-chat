@@ -187,23 +187,25 @@ private func handleTextTaps(
                         }
                     }
                 }
-                if let index, let (url, browser) = attributedStringLink(s, for: index) {
+                if let index, let (uri, browser) = attributedStringLink(s, for: index) {
                     if browser {
-                        openBrowserAlert(uri: url)
-                    } else {
+                        openBrowserAlert(uri: uri)
+                    } else if let url = URL(string: uri) {
                         UIApplication.shared.open(url)
+                    } else {
+                        showInvalidLinkAlert(uri)
                     }
                 }
             })
     }
 
-    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (URL, Bool)? {
-        var linkURL: URL?
+    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (String, Bool)? {
+        var linkURL: String?
         var browser: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let url = attrs[linkAttrKey] as? NSURL {
-                    linkURL = url.absoluteURL
+                if let url = attrs[linkAttrKey] as? String {
+                    linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
                 } else if let showSecrets, let i = attrs[secretAttrKey] as? Int {
                     if showSecrets.wrappedValue.contains(i) {
@@ -360,18 +362,29 @@ func messageText(
                     let link = s.hasPrefix("http://") || s.hasPrefix("https://")
                                 ? t
                                 : "https://" + t
-                    attrs[linkAttrKey] = NSURL(string: link)
+                    attrs[linkAttrKey] = link
                     attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
-            case let .simplexLink(linkType, simplexUri, smpHosts):
+            case let .webLink(text, uri):
                 attrs = linkAttrs()
+                t = text ?? uri
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: simplexUri)
+                    attrs[linkAttrKey] = uri
+                    attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
-                if case .description = privacySimplexLinkModeDefault.get() {
-                    t = simplexLinkText(linkType, smpHosts)
+            case let .simplexLink(text, linkType, simplexUri, smpHosts):
+                attrs = linkAttrs()
+                if !preview {
+                    attrs[linkAttrKey] = simplexUri
+                    handleTaps = true
+                }
+                if let s = text ?? (privacySimplexLinkModeDefault.get() == .description ? linkType.description : nil) {
+                    res.append(NSAttributedString(string: s + " ", attributes: attrs))
+                    italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
+                    attrs[.font] = italic
+                    t = viaHost(smpHosts)
                 }
             case let .command(cmdStr):
                 snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
@@ -403,13 +416,13 @@ func messageText(
             case .email:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: "mailto:" + ft.text)
+                    attrs[linkAttrKey] = "mailto:" + ft.text
                     handleTaps = true
                 }
             case .phone:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: "tel:" + t.replacingOccurrences(of: " ", with: ""))
+                    attrs[linkAttrKey] = "tel:" + t.replacingOccurrences(of: " ", with: "")
                     handleTaps = true
                 }
             case .unknown: ()
@@ -439,7 +452,11 @@ private func mentionText(_ name: String) -> String {
 }
 
 func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
-    linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
+    linkType.description + " " + viaHost(smpHosts)
+}
+
+func viaHost(_ smpHosts: [String]) -> String {
+    "(via \(smpHosts.first ?? "?"))"
 }
 
 struct MsgContentView_Previews: PreviewProvider {
