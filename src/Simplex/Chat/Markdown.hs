@@ -273,22 +273,22 @@ markdownP = mconcat <$> A.many' fragmentP
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
     wordP :: Parser Markdown
-    wordP = wordMD =<< A.takeTill (== ' ')
-    wordMD :: Text -> Parser Markdown
+    wordP = wordMD <$> A.takeTill (== ' ')
+    wordMD :: Text -> Markdown
     wordMD s
-      | T.null s = pure $ unmarked s
+      | T.null s = unmarked s
       | isUri s' = case strDecode $ encodeUtf8 s of
           Right cLink -> res $ markdown (simplexUriFormat Nothing cLink) s'
           Left _ -> case parseUri $ encodeUtf8 s' of
             Right _ -> res $ markdown Uri s'
-            Left e -> fail $ "not uri: " <> T.unpack e
+            Left _ -> unmarked s
       | isDomain s' = res $ markdown Uri s'
       | isEmail s' = res $ markdown Email s'
-      | otherwise = pure $ unmarked s
+      | otherwise = unmarked s
       where
         punct = T.takeWhileEnd isPunctuation' s
         s' = T.dropWhileEnd isPunctuation' s
-        res md' = pure $ if T.null punct then md' else md' :|: unmarked punct
+        res md' = if T.null punct then md' else md' :|: unmarked punct
     isPunctuation' = \case
       '/' -> False
       ')' -> False
