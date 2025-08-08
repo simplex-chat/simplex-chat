@@ -16,8 +16,8 @@
     <string name="all_group_members_will_remain_connected">Todos los miembros del grupo permanecerán conectados.</string>
     <string name="allow_irreversible_message_deletion_only_if">Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también lo permite. (24 horas)</string>
     <string name="keychain_allows_to_receive_ntfs">Android Keystore se usará para almacenar la frase de contraseña de forma segura después de cambiarla o reiniciar la aplicación - permitirá recibir notificaciones.</string>
-    <string name="allow_your_contacts_to_send_disappearing_messages">Permites a tus contactos enviar mensajes temporales</string>
-    <string name="allow_your_contacts_to_send_voice_messages">Permites a tus contactos enviar mensajes de voz.</string>
+    <string name="allow_your_contacts_to_send_disappearing_messages">Permites que tus contactos envien mensajes temporales.</string>
+    <string name="allow_your_contacts_to_send_voice_messages">Permites que tus contactos envien mensajes de voz.</string>
     <string name="chat_preferences_always">siempre</string>
     <string name="notifications_mode_off_desc">La aplicación sólo puede recibir notificaciones cuando se está ejecutando. No se iniciará ningún servicio en segundo plano.</string>
     <string name="settings_section_title_icon">ICONO DE LA APLICACIÓN</string>
@@ -55,7 +55,7 @@
     <string name="keychain_is_storing_securely">Android Keystore se usará para almacenar la frase de contraseña de forma segura - permite que el servicio de notificaciones funcione.</string>
     <string name="users_add">Añadir perfil</string>
     <string name="color_primary">Color</string>
-    <string name="allow_your_contacts_irreversibly_delete">Permites a tus contactos eliminar irreversiblemente los mensajes enviados. (24 horas)</string>
+    <string name="allow_your_contacts_irreversibly_delete">Permites que tus contactos eliminan irreversiblemente los mensajes enviados. (24 horas)</string>
     <string name="allow_voice_messages_only_if">Se permiten los mensajes de voz pero sólo si tu contacto también los permite.</string>
     <string name="allow_direct_messages">Se permiten mensajes directos entre miembros.</string>
     <string name="allow_to_delete_messages">Se permite la eliminación irreversible de mensajes. (24 horas)</string>
@@ -1081,7 +1081,7 @@
     <string name="stop_rcv_file__title">¿Dejar de recibir el archivo\?</string>
     <string name="stop_snd_file__title">¿Dejar de enviar el archivo\?</string>
     <string name="allow_calls_only_if">Se permiten las llamadas pero sólo si tu contacto también las permite.</string>
-    <string name="allow_your_contacts_to_call">Permites que tus contactos puedan llamarte.</string>
+    <string name="allow_your_contacts_to_call">Permites que tus contactos te llamen.</string>
     <string name="audio_video_calls">Llamadas y videollamadas</string>
     <string name="calls_prohibited_with_this_contact">Las llamadas y videollamadas no están permitidas.</string>
     <string name="available_in_v51">"
@@ -1211,7 +1211,7 @@
     <string name="info_row_updated_at">Registro actualiz</string>
     <string name="send_disappearing_message_30_seconds">30 segundos</string>
     <string name="send_disappearing_message_5_minutes">5 minutos</string>
-    <string name="allow_your_contacts_adding_message_reactions">Permitir que tus contactos añadan reacciones a los mensajes.</string>
+    <string name="allow_your_contacts_adding_message_reactions">Permites que tus contactos añadan reacciones a los mensajes.</string>
     <string name="info_row_deleted_at">Eliminado</string>
     <string name="allow_message_reactions_only_if">Se permiten las reacciones a los mensajes pero sólo si tu contacto también las permite.</string>
     <string name="v5_1_custom_themes">Temas personalizados</string>
@@ -2456,7 +2456,7 @@
     <string name="connect_plan_open_new_chat">Abrir chat nuevo</string>
     <string name="connect_plan_open_new_group">Abrir grupo nuevo</string>
     <string name="open_to_accept">Abrir para aceptar</string>
-    <string name="open_to_connect">Abrir para conectar</string>
+    <string name="open_to_connect">Abre para conectar</string>
     <string name="group_preview_open_to_join">Abre para unirte</string>
     <string name="private_routing_timeout">Timeout enrutamiento privado</string>
     <string name="share_profile_via_link_alert_text">La dirección pasará a ser corta y tu perfil será compartido mediante la dirección.</string>
@@ -2515,4 +2515,15 @@
     <string name="rcv_direct_event_group_inv_link_received">conexión solicitada desde el grupo %1$s</string>
     <string name="this_setting_is_for_your_current_profile">Esta configuración se aplica al perfil actual</string>
     <string name="member_is_deleted_cant_accept_request">Miembro eliminado, no puede aceptar solicitudes</string>
+    <string name="allow_files_and_media_only_if">Se permiten archivos y multimedia pero sólo si tu contacto también los permite.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Permes que tus contactos envíen archivos y multimedia.</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="both_you_and_your_contact_can_send_files">Tanto tú como tu contacto podéis enviar archivos y multimedia.</string>
+    <string name="files_prohibited_in_this_chat">Los archivos y multimedia no están permitidos en este chat.</string>
+    <string name="only_you_can_send_files">Sólo tú puedes enviar archivos y multimedia.</string>
+    <string name="only_your_contact_can_send_files">Sólo tu contacto puede enviar archivos y multimedia.</string>
+    <string name="open_to_use_bot">Abre para usar el bot</string>
+    <string name="prohibit_sending_files_and_media">Archivos y multimedia no permitidos.</string>
+    <string name="chat_banner_connect_to_use_bot">Pulsa Conectar para usar el bot</string>
+    <string name="cant_send_commands_alert_text">Para enviar comandos debes estar conectado.</string>
 </resources>
