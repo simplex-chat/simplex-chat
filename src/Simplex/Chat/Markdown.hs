@@ -37,7 +37,7 @@ import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (.
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
 import qualified URI.ByteString as U
@@ -52,33 +52,15 @@ data Format
   | Snippet
   | Secret
   | Colored {color :: FormatColor}
-  | Uri {sanitizedUri :: Maybe Text}
-  -- showText is Nothing when the link text is the same as URI.
-  -- sanitizedUri is Nothing when original URI is already sanitized.
-  | WebLink {linkUri :: Text, sanitizedUri :: Maybe Text, showText :: Maybe Text}
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text, showText :: Maybe Text}
+  | Uri
+  | WebLink {showText :: Maybe Text, linkUri :: Text} -- showText is Nothing when the link text is the same as URI.
+  | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
   | Unknown {json :: J.Value}
   deriving (Eq, Show)
-
--- only short links are allowed with alternative text, as the user will preview the link before connecting.
-data SimplexOrWebLink = SOWSimplex AConnectionLink | SOWWeb U.URI
-
-parseLinkUri :: Text -> Either String SimplexOrWebLink
-parseLinkUri t = case strDecode s of
-  Right sLnk -> Right $ SOWSimplex sLnk
-  Left _ -> case U.parseURI U.laxURIParserOptions s of
-    Right uri@U.URI {uriAuthority} -> case uriAuthority of
-      Just U.Authority {authorityHost = U.Host h}
-        | B.elem '.' h -> Right $ SOWWeb uri
-        | otherwise -> Left "Invalid URI host"
-      Nothing -> Left "No URI host"
-    Left e -> Left $ "Invalid URI: " <> show e
-  where
-    s = encodeUtf8 t
 
 mentionedNames :: MarkdownList -> [Text]
 mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
@@ -250,23 +232,21 @@ markdownP = mconcat <$> A.many' fragmentP
       pure $ if T.null punct then res else res :|: unmarked punct
     sowLinkP = do
       t <- '[' `inParens` ']'
-      link <- '(' `inParens` ')'
-      sowLink <- if isUri link then either fail pure $ parseLinkUri link else fail "not uri"
+      l <- '(' `inParens` ')'
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
-      f <- case sowLink of
-        SOWSimplex lnk@(ACL _ cLink) -> case cLink of
+      showText <-
+        if
+          | t == l -> pure Nothing
+          | hasPunct && ("https://" <> t) /= l -> fail "punctuation in hyperlink text"
+          | otherwise -> pure $ Just t
+      f <- case strDecode $ encodeUtf8 l of
+        Right lnk@(ACL _ cLink) -> case cLink of
+          CLShort _ -> pure $ simplexUriFormat showText lnk
           CLFull _ -> fail "full SimpleX link in hyperlink"
-          CLShort _
-            | hasPunct -> fail "punctuation in hyperlink text"
-            | otherwise -> pure $ simplexUriFormat (Just t) lnk
-        SOWWeb uri -> do
-          showText <-
-            if
-              | t == link -> pure Nothing
-              | hasPunct && ("https://" <> t) /= link -> fail "punctuation in hyperlink text"
-              | otherwise -> pure $ Just t
-          pure WebLink {linkUri = link, sanitizedUri = sanitized uri, showText}
-      pure $ markdown f $ T.concat ["[", t, "](", link, ")"]
+        Left _ -> case parseUri $ encodeUtf8 l of
+          Right _ -> pure $ WebLink showText l
+          Left e -> fail $ "not uri: " <> T.unpack e
+      pure $ markdown f $ T.concat ["[", t, "](", l, ")"]
     inParens open close = A.char open *> A.takeWhile1 (/= close) <* A.char close
     colorP =
       A.anyChar >>= \case
@@ -293,33 +273,26 @@ markdownP = mconcat <$> A.many' fragmentP
     conc4 s1 s2 s3 s4 = s1 <> s2 <> s3 <> s4
     phoneSep = " " <|> "-" <|> "." <|> ""
     wordP :: Parser Markdown
-    wordP = wordMD <$> A.takeTill (== ' ')
-    wordMD :: Text -> Markdown
+    wordP = wordMD =<< A.takeTill (== ' ')
+    wordMD :: Text -> Parser Markdown
     wordMD s
-      | T.null s = unmarked s
-      | isUri s' = case parseLinkUri s' of
-          Right link -> res $ uriMarkdown s' link
-          Left _ -> unmarked s
-      | isDomain s' = res $ markdown Uri {sanitizedUri = Nothing} s'
+      | T.null s = pure $ unmarked s
+      | isUri s' = case strDecode $ encodeUtf8 s of
+          Right cLink -> res $ markdown (simplexUriFormat Nothing cLink) s'
+          Left _ -> case parseUri $ encodeUtf8 s' of
+            Right _ -> res $ markdown Uri s'
+            Left e -> fail $ "not uri: " <> T.unpack e
+      | isDomain s' = res $ markdown Uri s'
       | isEmail s' = res $ markdown Email s'
-      | otherwise = unmarked s
+      | otherwise = pure $ unmarked s
       where
         punct = T.takeWhileEnd isPunctuation' s
         s' = T.dropWhileEnd isPunctuation' s
-        res md' = if T.null punct then md' else md' :|: unmarked punct
+        res md' = pure $ if T.null punct then md' else md' :|: unmarked punct
     isPunctuation' = \case
       '/' -> False
       ')' -> False
       c -> isPunctuation c
-    uriMarkdown s = \case
-      SOWSimplex cLink -> markdown (simplexUriFormat Nothing cLink) s
-      SOWWeb uri -> markdown Uri {sanitizedUri = sanitized uri} s
-    sanitized :: U.URIRef U.Absolute ->  Maybe Text
-    sanitized uri@U.URI {uriQuery = U.Query originalQS} =
-      let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
-       in if length sanitizedQS == length originalQS
-            then Nothing
-            else Just $ safeDecodeUtf8 $ U.serializeURIRef' uri {U.uriQuery = U.Query sanitizedQS}
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
     isDomain s = case T.splitOn "." s of
@@ -336,8 +309,8 @@ markdownP = mconcat <$> A.many' fragmentP
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
     simplexUriFormat showText = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink (linkType' crData) cLink (uriHosts crData) showText
-        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink (uriHosts crData) showText
+        CRContactUri crData -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
+        CRInvitationUri crData _ -> SimplexLink showText XLInvitation cLink $ uriHosts crData
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
@@ -345,8 +318,8 @@ markdownP = mconcat <$> A.many' fragmentP
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
       ACL m (CLShort sLnk) -> case sLnk of
-        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink (uriHosts srv) showText
-        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink (uriHosts srv) showText
+        CSLContact _ ct srv _ -> SimplexLink showText (linkType' ct) cLink $ uriHosts srv
+        CSLInvitation _ srv _ _ -> SimplexLink showText XLInvitation cLink $ uriHosts srv
         where
           cLink = ACL m $ CLShort $ simplexShortLink sLnk
           uriHosts srv = L.map strEncodeText $ host srv
@@ -356,6 +329,24 @@ markdownP = mconcat <$> A.many' fragmentP
             CCTContact -> XLContact
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
+
+parseUri :: B.ByteString -> Either Text U.URI
+parseUri s = case U.parseURI U.laxURIParserOptions s of
+  Left e -> Left $ "Invalid URI: " <> tshow e
+  Right uri@U.URI {uriScheme = U.Scheme sch, uriAuthority}
+    | sch /= "http" && sch /= "https" -> Left $ "Unsupported URI scheme: " <> safeDecodeUtf8 sch
+    | otherwise -> case uriAuthority of
+        Nothing -> Left "No URI host"
+        Just U.Authority {authorityHost = U.Host h}
+          | '.' `B.notElem` h -> Left $ "Invalid URI host: " <> safeDecodeUtf8 h
+          | otherwise -> Right uri
+
+sanitizeUri :: U.URI -> Maybe U.URI
+sanitizeUri uri@U.URI {uriQuery = U.Query originalQS} =
+  let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
+   in if length sanitizedQS == length originalQS
+        then Nothing
+        else Just $ uri {U.uriQuery = U.Query sanitizedQS}
 
 markdownText :: FormattedText -> Text
 markdownText (FormattedText f_ t) = case f_ of
@@ -367,7 +358,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Snippet -> around '`'
     Secret -> around '#'
     Colored (FormatColor c) -> color c
-    Uri {} -> t
+    Uri -> t
     WebLink {} -> t
     SimplexLink {} -> t
     Mention _ -> t

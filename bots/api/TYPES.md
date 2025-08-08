@@ -1978,20 +1978,18 @@ Colored:
 
 Uri:
 - type: "uri"
-- sanitizedUri: string?
 
 WebLink:
 - type: "webLink"
-- linkUri: string
-- sanitizedUri: string?
 - showText: string?
+- linkUri: string
 
 SimplexLink:
 - type: "simplexLink"
+- showText: string?
 - linkType: [SimplexLinkType](#simplexlinktype)
 - simplexUri: string
 - smpHosts: [string]
-- showText: string?
 
 Command:
 - type: "command"
