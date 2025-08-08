@@ -54,7 +54,7 @@ Or you can show the QR code if you are meeting in person.
 
 It is safe to share this link over any communication channel, it contains only public keys and can only be used once.
 
-If you wish to share your invite link more publicly, where you need the link to be re-usable, for example on social media, you should use your SimpleX address instead of 1-time invite links, you can find it by tapping on your avatar -> Your SimpleX address.
+If you wish to share your link more publicly, where you need the link to be re-usable, for example on social media, you should use your SimpleX address instead of 1-time links, you can find it by tapping on your avatar -> Your SimpleX address.
 
 ### I have nobody to chat with! Where can I find any groups?
 
