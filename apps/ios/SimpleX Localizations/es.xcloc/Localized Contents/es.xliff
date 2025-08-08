@@ -867,8 +867,9 @@ swipe action</note>
         <target>Permitir versión anterior</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow files and media only if your contact allows them.</source>
+        <target state="translated">Se permiten archivos y multimedia pero sólo si tu contacto también los permite.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -936,33 +937,34 @@ swipe action</note>
         <target>¿Permites los mensajes de voz?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve">
+      <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve" approved="no">
         <source>Allow your contacts adding message reactions.</source>
-        <target>Permitir que tus contactos añadan reacciones a los mensajes.</target>
+        <target state="translated">Permites que tus contactos añadan reacciones a los mensajes.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to call you." xml:space="preserve">
+      <trans-unit id="Allow your contacts to call you." xml:space="preserve" approved="no">
         <source>Allow your contacts to call you.</source>
-        <target>Permites que tus contactos puedan llamarte.</target>
+        <target state="translated">Permites que tus contactos te llamen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve">
+      <trans-unit id="Allow your contacts to irreversibly delete sent messages. (24 hours)" xml:space="preserve" approved="no">
         <source>Allow your contacts to irreversibly delete sent messages. (24 hours)</source>
-        <target>Permites a tus contactos eliminar irreversiblemente los mensajes enviados. (24 horas)</target>
+        <target state="translated">Permites que tus contactos eliminan irreversiblemente los mensajes enviados. (24 horas)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send disappearing messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send disappearing messages.</source>
-        <target>Permites a tus contactos enviar mensajes temporales.</target>
+        <target state="translated">Permites que tus contactos envien mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve" approved="no">
         <source>Allow your contacts to send files and media.</source>
+        <target state="translated">Permes que tus contactos envíen archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve" approved="no">
         <source>Allow your contacts to send voice messages.</source>
-        <target>Permites a tus contactos enviar mensajes de voz.</target>
+        <target state="translated">Permites que tus contactos envien mensajes de voz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Already connected?" xml:space="preserve">
@@ -1320,8 +1322,9 @@ swipe action</note>
         <target>Difuminar multimedia</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bot" xml:space="preserve">
+      <trans-unit id="Bot" xml:space="preserve" approved="no">
         <source>Bot</source>
+        <target state="translated">Bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1344,8 +1347,9 @@ swipe action</note>
         <target>Tanto tú como tu contacto podéis enviar mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send files and media." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send files and media." xml:space="preserve" approved="no">
         <source>Both you and your contact can send files and media.</source>
+        <target state="translated">Tanto tú como tu contacto podéis enviar archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
@@ -3816,8 +3820,9 @@ snd error text</note>
         <target>Archivos y multimedia</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Files and media are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Files and media are prohibited in this chat.</source>
+        <target state="translated">Los archivos y multimedia no están permitidos en este chat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media are prohibited." xml:space="preserve">
@@ -5711,8 +5716,9 @@ Requiere activación de la VPN.</target>
         <target>Sólo tú puedes enviar mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send files and media." xml:space="preserve">
+      <trans-unit id="Only you can send files and media." xml:space="preserve" approved="no">
         <source>Only you can send files and media.</source>
+        <target state="translated">Sólo tú puedes enviar archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
@@ -5740,8 +5746,9 @@ Requiere activación de la VPN.</target>
         <target>Sólo tu contacto puede enviar mensajes temporales.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send files and media." xml:space="preserve">
+      <trans-unit id="Only your contact can send files and media." xml:space="preserve" approved="no">
         <source>Only your contact can send files and media.</source>
+        <target state="translated">Sólo tu contacto puede enviar archivos y multimedia.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
@@ -5827,8 +5834,9 @@ Requiere activación de la VPN.</target>
         <target>Abre para unirte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open to use bot" xml:space="preserve">
+      <trans-unit id="Open to use bot" xml:space="preserve" approved="no">
         <source>Open to use bot</source>
+        <target state="translated">Abre para usar el bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
@@ -7965,8 +7973,9 @@ report reason</note>
         <target>Pulsa Conectar para enviar solicitud</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to use bot" xml:space="preserve">
+      <trans-unit id="Tap Connect to use bot" xml:space="preserve" approved="no">
         <source>Tap Connect to use bot</source>
+        <target state="translated">Pulsa Conectar para usar el bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -8383,8 +8392,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Para enviar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To send commands you must be connected." xml:space="preserve">
+      <trans-unit id="To send commands you must be connected." xml:space="preserve" approved="no">
         <source>To send commands you must be connected.</source>
+        <target state="translated">Para enviar comandos debes estar conectado.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
