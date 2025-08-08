@@ -867,8 +867,9 @@ swipe action</note>
         <target>Visszafejlesztés engedélyezése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
+      <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve" approved="no">
         <source>Allow files and media only if your contact allows them.</source>
+        <target state="translated">A fájl- és médiatartalmak küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -916,9 +917,9 @@ swipe action</note>
         <target>A SimpleX-hivatkozások küldése engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow to send files and media." xml:space="preserve">
+      <trans-unit id="Allow to send files and media." xml:space="preserve" approved="no">
         <source>Allow to send files and media.</source>
-        <target>A fájlok- és a médiatartalmak küldése engedélyezve van.</target>
+        <target state="translated">A fájl- és médiatartalmak küldése engedélyezve van.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow to send voice messages." xml:space="preserve">
@@ -956,8 +957,9 @@ swipe action</note>
         <target>Az eltűnő üzenetek küldésének engedélyezése a partnerei számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
+      <trans-unit id="Allow your contacts to send files and media." xml:space="preserve" approved="no">
         <source>Allow your contacts to send files and media.</source>
+        <target state="translated">A fájl- és médiatartalmak küldése engedélyezve van a partnerei számára.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -1320,8 +1322,9 @@ swipe action</note>
         <target>Médiatartalom elhomályosítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bot" xml:space="preserve">
+      <trans-unit id="Bot" xml:space="preserve" approved="no">
         <source>Bot</source>
+        <target state="translated">Bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1344,8 +1347,9 @@ swipe action</note>
         <target>Mindkét fél küldhet eltűnő üzeneteket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Both you and your contact can send files and media." xml:space="preserve">
+      <trans-unit id="Both you and your contact can send files and media." xml:space="preserve" approved="no">
         <source>Both you and your contact can send files and media.</source>
+        <target state="translated">Mindkét fél küldhet fájl- és médiatartalmakat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
@@ -2520,9 +2524,9 @@ swipe action</note>
         <target>Fájl törlése</target>
         <note>server test step</note>
       </trans-unit>
-      <trans-unit id="Delete files and media?" xml:space="preserve">
+      <trans-unit id="Delete files and media?" xml:space="preserve" approved="no">
         <source>Delete files and media?</source>
-        <target>Törli a fájl- és a médiatartalmakat?</target>
+        <target state="translated">Törli a fájl- és médiatartalmakat?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete files for all chat profiles" xml:space="preserve">
@@ -3110,9 +3114,9 @@ chat item action</note>
         <target>Helyi fájlok titkosítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve">
+      <trans-unit id="Encrypt stored files &amp; media" xml:space="preserve" approved="no">
         <source>Encrypt stored files &amp; media</source>
-        <target>A tárolt fájlok- és a médiatartalmak titkosítása</target>
+        <target state="translated">Tárolt fájl- és médiatartalmak titkosítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypted database" xml:space="preserve">
@@ -3816,23 +3820,24 @@ snd error text</note>
         <target>Fájlok és médiatartalmak</target>
         <note>chat feature</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited in this chat." xml:space="preserve">
+      <trans-unit id="Files and media are prohibited in this chat." xml:space="preserve" approved="no">
         <source>Files and media are prohibited in this chat.</source>
+        <target state="translated">A fájl- és médiatartalmak küldése le van tiltva ebben a csevegésben.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media are prohibited." xml:space="preserve">
+      <trans-unit id="Files and media are prohibited." xml:space="preserve" approved="no">
         <source>Files and media are prohibited.</source>
-        <target>A fájlok- és a médiatartalmak küldése le van tiltva.</target>
+        <target state="translated">A fájl- és médiatartalmak küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media not allowed" xml:space="preserve">
+      <trans-unit id="Files and media not allowed" xml:space="preserve" approved="no">
         <source>Files and media not allowed</source>
-        <target>A fájlok- és médiatartalmak nincsenek engedélyezve</target>
+        <target state="translated">A fájl- és médiatartalmak nincsenek engedélyezve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Files and media prohibited!" xml:space="preserve">
+      <trans-unit id="Files and media prohibited!" xml:space="preserve" approved="no">
         <source>Files and media prohibited!</source>
-        <target>A fájlok- és a médiatartalmak küldése le van tiltva!</target>
+        <target state="translated">A fájl- és médiatartalmak küldése le van tiltva!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Filter unread and favorite chats." xml:space="preserve">
@@ -5671,9 +5676,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak a csoport tulajdonosai módosíthatják a csoportbeállításokat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only group owners can enable files and media." xml:space="preserve">
+      <trans-unit id="Only group owners can enable files and media." xml:space="preserve" approved="no">
         <source>Only group owners can enable files and media.</source>
-        <target>Csak a csoport tulajdonosai engedélyezhetik a fájlok- és a médiatartalmak küldését.</target>
+        <target state="translated">Csak a csoport tulajdonosai engedélyezhetik a fájl- és médiatartalmak küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only group owners can enable voice messages." xml:space="preserve">
@@ -5711,8 +5716,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak Ön tud eltűnő üzeneteket küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only you can send files and media." xml:space="preserve">
+      <trans-unit id="Only you can send files and media." xml:space="preserve" approved="no">
         <source>Only you can send files and media.</source>
+        <target state="translated">Csak Ön tud fájl- és médiatartalmakat küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
@@ -5740,8 +5746,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak a partnere tud eltűnő üzeneteket küldeni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only your contact can send files and media." xml:space="preserve">
+      <trans-unit id="Only your contact can send files and media." xml:space="preserve" approved="no">
         <source>Only your contact can send files and media.</source>
+        <target state="translated">Csak a partnere küldhet fájl- és médiatartalmakat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
@@ -5827,8 +5834,9 @@ VPN engedélyezése szükséges.</target>
         <target>Megnyitás a csatlakozáshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open to use bot" xml:space="preserve">
+      <trans-unit id="Open to use bot" xml:space="preserve" approved="no">
         <source>Open to use bot</source>
+        <target state="translated">Megnyitás a bot használatához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
@@ -6267,9 +6275,9 @@ Hiba: %@</target>
         <target>Az eltűnő üzenetek küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Prohibit sending files and media." xml:space="preserve">
+      <trans-unit id="Prohibit sending files and media." xml:space="preserve" approved="no">
         <source>Prohibit sending files and media.</source>
-        <target>A fájlok- és a médiatartalmak küldése le van tiltva.</target>
+        <target state="translated">A fájl- és médiatartalmak küldése le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Prohibit sending voice messages." xml:space="preserve">
@@ -7965,8 +7973,9 @@ report reason</note>
         <target>Koppintson a „Kapcsolódás” gombra a kérés elküldéséhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to use bot" xml:space="preserve">
+      <trans-unit id="Tap Connect to use bot" xml:space="preserve" approved="no">
         <source>Tap Connect to use bot</source>
+        <target state="translated">Koppintson a „Kapcsolódás” gombra a bot használatához</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -8383,8 +8392,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>A küldéshez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To send commands you must be connected." xml:space="preserve">
+      <trans-unit id="To send commands you must be connected." xml:space="preserve" approved="no">
         <source>To send commands you must be connected.</source>
+        <target state="translated">A parancsok küldéséhez kapcsolódva kell lennie.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -8552,9 +8562,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>Ismeretlen kiszolgálók!</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve">
+      <trans-unit id="Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." xml:space="preserve" approved="no">
         <source>Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions.</source>
-        <target>Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakítások elkerülése érdekében.</target>
+        <target state="translated">Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakadások elkerülése érdekében.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.&#10;To connect, please ask your contact to create another connection link and check that you have a stable network connection." xml:space="preserve">
@@ -8759,9 +8769,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Társítás számítógéppel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Use iOS call interface" xml:space="preserve">
+      <trans-unit id="Use iOS call interface" xml:space="preserve" approved="no">
         <source>Use iOS call interface</source>
-        <target>Az iOS hívási felületét használata</target>
+        <target state="translated">iOS hívási felület használata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use incognito profile" xml:space="preserve">
