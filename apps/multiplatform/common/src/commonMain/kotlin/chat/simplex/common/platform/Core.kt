@@ -28,6 +28,7 @@ external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
+external fun chatParseUri(str: String): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
 external fun chatJsonLength(str: String): Int

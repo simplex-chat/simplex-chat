@@ -356,16 +356,21 @@ fun ComposeView(
   fun isSimplexLink(link: String): Boolean =
     link.startsWith("https://simplex.chat", true) || link.startsWith("http://simplex.chat", true)
 
-  fun getSimplexLink(parsedMsg: List<FormattedText>?): Pair<String?, Boolean> {
+  fun getMessageLinks(parsedMsg: List<FormattedText>?): Pair<String?, Boolean> {
     if (parsedMsg == null) return null to false
-    val link = parsedMsg.firstOrNull { ft -> ft.format is Format.Uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text) }
     val simplexLink = parsedMsg.any { ft -> ft.format is Format.SimplexLink }
-    return link?.text to simplexLink
+    for (ft in parsedMsg) {
+      val link = ft.linkUri
+      if (link != null && !cancelledLinks.contains(link) && !isSimplexLink(link)) {
+        return link to simplexLink
+      }
+    }
+    return null to simplexLink
   }
 
   val linkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   // default value parsed because of draft
-  val hasSimplexLink = rememberSaveable { mutableStateOf(getSimplexLink(parseToMarkdown(composeState.value.message.text)).second) }
+  val hasSimplexLink = rememberSaveable { mutableStateOf(getMessageLinks(parseToMarkdown(composeState.value.message.text)).second) }
   val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
@@ -382,6 +387,7 @@ fun ComposeView(
         if (wait != null) delay(wait)
         val lp = getLinkPreview(url)
         if (lp != null && pendingLinkUrl.value == url) {
+          chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) // to avoid showing alert to current users, show alert in v6.5
           composeState.value = composeState.value.copy(preview = ComposePreview.CLinkPreview(lp))
           pendingLinkUrl.value = null
         } else if (pendingLinkUrl.value == url) {
@@ -394,7 +400,7 @@ fun ComposeView(
 
   fun showLinkPreview(parsedMessage: List<FormattedText>?) {
     prevLinkUrl.value = linkUrl.value
-    val linkParsed = getSimplexLink(parsedMessage)
+    val linkParsed = getMessageLinks(parsedMessage)
     linkUrl.value = linkParsed.first
     hasSimplexLink.value = linkParsed.second
     val url = linkUrl.value
@@ -501,7 +507,7 @@ fun ComposeView(
     return when (val composePreview = composeState.value.preview) {
       is ComposePreview.CLinkPreview -> {
         val parsedMsg = parseToMarkdown(msgText)
-        val url = getSimplexLink(parsedMsg).first
+        val url = getMessageLinks(parsedMsg).first
         val lp = composePreview.linkPreview
         if (lp != null && url == lp.uri) {
           MsgContent.MCLink(msgText, preview = lp)
@@ -861,9 +867,52 @@ fun ComposeView(
     }
   }
 
+  fun sanitizeMessage(parsedMsg: List<FormattedText>): Triple<String, List<FormattedText>, Int?> {
+    var pos = 0
+    var updatedMsg = ""
+    var sanitizedPos: Int? = null
+    val updatedParsedMsg = parsedMsg.map { ft ->
+      var updated = ft
+      when(ft.format) {
+        is Format.Uri -> {
+          val sanitized = parseSanitizeUri(ft.text)?.uriInfo?.sanitized
+          if (sanitized != null) {
+            updated = FormattedText(text = sanitized, format = Format.Uri())
+            pos += updated.text.count()
+            sanitizedPos = pos
+          }
+        }
+        is Format.WebLink -> {
+          val sanitized = parseSanitizeUri(ft.format.linkUri)?.uriInfo?.sanitized
+          if (sanitized != null) {
+            updated = FormattedText(text = "[${ft.format.showText ?: sanitized}]($sanitized)", format = Format.WebLink(showText = ft.format.showText, linkUri = sanitized))
+            pos += updated.text.count()
+            sanitizedPos = pos
+          }
+        }
+        else ->
+          pos += ft.text.count()
+      }
+      updatedMsg += updated.text
+      updated
+    }
+    return Triple(updatedMsg, updatedParsedMsg, sanitizedPos)
+  }
+
   fun onMessageChange(s: ComposeMessage) {
-    val parsedMessage = parseToMarkdown(s.text)
-    composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage ?: FormattedText.plain(s.text))
+    var parsedMessage = parseToMarkdown(s.text)
+    if (chatModel.controller.appPrefs.privacySanitizeLinks.state.value && parsedMessage != null) {
+      val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(parsedMessage)
+      if (sanitizedPos == null) {
+        composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage)
+      } else {
+        val message = if (sanitizedPos < s.selection.start) s.copy(text = updatedMsg) else ComposeMessage(updatedMsg, TextRange(sanitizedPos, sanitizedPos))
+        composeState.value = composeState.value.copy(message = message, parsedMessage = updatedParsedMsg)
+        parsedMessage = updatedParsedMsg
+      }
+    } else {
+      composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage ?: FormattedText.plain(s.text))
+    }
     if (isShortEmoji(s.text)) {
       textStyle.value = if (s.text.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
     } else {
@@ -876,7 +925,7 @@ fun ComposeView(
           hasSimplexLink.value = false
         }
       } else if (s.text.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)) {
-        hasSimplexLink.value = getSimplexLink(parsedMessage).second
+        hasSimplexLink.value = getMessageLinks(parsedMessage).second
       } else {
         hasSimplexLink.value = false
       }

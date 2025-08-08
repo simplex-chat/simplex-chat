@@ -4369,19 +4369,12 @@ sealed class MsgChatLink {
 
 @Serializable
 class FormattedText(val text: String, val format: Format? = null) {
-  fun link(mode: SimplexLinkMode): String? = when (format) {
-    is Format.Uri -> if (text.startsWith("http://", ignoreCase = true) || text.startsWith("https://", ignoreCase = true)) text else "https://$text"
-    is Format.SimplexLink -> if (mode == SimplexLinkMode.BROWSER) text else format.simplexUri
-    is Format.Email -> "mailto:$text"
-    is Format.Phone -> "tel:$text"
-    else -> null
-  }
-
-  fun viewText(mode: SimplexLinkMode): String =
-    if (format is Format.SimplexLink && mode == SimplexLinkMode.DESCRIPTION) simplexLinkText(format.linkType, format.smpHosts) else text
-
-  fun simplexLinkText(linkType: SimplexLinkType, smpHosts: List<String>): String =
-    "${linkType.description} (${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
+  val linkUri: String? get() =
+    when (format) {
+      is Format.Uri -> text
+      is Format.WebLink -> format.linkUri
+      else -> null
+    }
 
   companion object {
     fun plain(text: String): List<FormattedText> = if (text.isEmpty()) emptyList() else listOf(FormattedText(text))
@@ -4397,7 +4390,13 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
-  @Serializable @SerialName("simplexLink") class SimplexLink(val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format()
+  @Serializable @SerialName("webLink") class WebLink(val showText: String?, val linkUri: String): Format()
+  @Serializable @SerialName("simplexLink") class SimplexLink(val showText: String?, val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format() {
+    val simplexLinkText: String get() =
+      "${linkType.description} $viaHosts"
+    val viaHosts: String get() =
+      "(${String.format(generalGetString(MR.strings.simplex_link_connection), smpHosts.firstOrNull() ?: "?")})"
+  }
   @Serializable @SerialName("command") class Command(val commandStr: String): Format()
   @Serializable @SerialName("mention") class Mention(val memberName: String): Format()
   @Serializable @SerialName("email") class Email: Format()
@@ -4412,6 +4411,7 @@ sealed class Format {
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
+    is WebLink -> linkStyle
     is SimplexLink -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)

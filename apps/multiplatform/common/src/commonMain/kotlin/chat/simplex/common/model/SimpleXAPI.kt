@@ -104,6 +104,9 @@ class AppPreferences {
   val privacyProtectScreen = mkBoolPreference(SHARED_PREFS_PRIVACY_PROTECT_SCREEN, true)
   val privacyAcceptImages = mkBoolPreference(SHARED_PREFS_PRIVACY_ACCEPT_IMAGES, true)
   val privacyLinkPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS, true)
+  val privacyLinkPreviewsShowAlert = mkBoolPreference(SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT, true)
+  val privacySanitizeLinks = mkBoolPreference(SHARED_PREFS_PRIVACY_SANITIZE_LINKS, true)
+  // TODO remove
   val privacyChatListOpenLinks = mkEnumPreference(SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS, PrivacyChatListOpenLinksMode.ASK) { PrivacyChatListOpenLinksMode.values().firstOrNull { it.name == this } }
   val simplexLinkMode: SharedPreference<SimplexLinkMode> = mkSafeEnumPreference(SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE, SimplexLinkMode.default)
   val privacyShowChatPreviews = mkBoolPreference(SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS, true)
@@ -369,7 +372,9 @@ class AppPreferences {
     private const val SHARED_PREFS_PRIVACY_ACCEPT_IMAGES = "PrivacyAcceptImages"
     private const val SHARED_PREFS_PRIVACY_TRANSFER_IMAGES_INLINE = "PrivacyTransferImagesInline"
     private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS = "PrivacyLinkPreviews"
-    private const val SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS = "ChatListOpenLinks"
+    private const val SHARED_PREFS_PRIVACY_LINK_PREVIEWS_SHOW_ALERT = "PrivacyLinkPreviewsShowAlert"
+    private const val SHARED_PREFS_PRIVACY_SANITIZE_LINKS = "PrivacySanitizeLinks"
+    private const val SHARED_PREFS_PRIVACY_CHAT_LIST_OPEN_LINKS = "ChatListOpenLinks" // TODO remove
     private const val SHARED_PREFS_PRIVACY_SIMPLEX_LINK_MODE = "PrivacySimplexLinkMode"
     private const val SHARED_PREFS_PRIVACY_SHOW_CHAT_PREVIEWS = "PrivacyShowChatPreviews"
     private const val SHARED_PREFS_PRIVACY_SAVE_LAST_DRAFT = "PrivacySaveLastDraft"
@@ -4628,6 +4633,19 @@ data class ParsedServerAddress (
   var serverAddress: ServerAddress?,
   var parseError: String
 )
+
+fun parseSanitizeUri(s: String): ParsedUri? {
+  val parsed = chatParseUri(s)
+  return runCatching { json.decodeFromString(ParsedUri.serializer(), parsed) }
+    .onFailure { Log.d(TAG, "parseSanitizeUri decode error: $it") }
+    .getOrNull()
+}
+
+@Serializable
+data class ParsedUri(val uriInfo: UriInfo?, val parseError: String)
+
+@Serializable
+data class UriInfo(val scheme: String, val sanitized: String?)
 
 @Serializable
 data class NetCfg(

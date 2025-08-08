@@ -484,7 +484,7 @@ struct ComposeView: View {
                     hasSimplexLink = false
                 }
             } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
-                (_, hasSimplexLink) = getWebLink(parsedMsg)
+                (_, hasSimplexLink) = getMessageLinks(parsedMsg)
             } else {
                 hasSimplexLink = false
             }
@@ -865,7 +865,7 @@ struct ComposeView: View {
         switch (composeState.preview) {
         case let .linkPreview(linkPreview: linkPreview):
             if let parsedMsg = parseSimpleXMarkdown(msgText),
-               let url = getWebLink(parsedMsg).url,
+               let url = getMessageLinks(parsedMsg).url,
                let linkPreview = linkPreview,
                url == linkPreview.uri {
                 return .link(text: msgText, preview: linkPreview)
@@ -1468,7 +1468,7 @@ struct ComposeView: View {
 
     private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
-        (linkUrl, hasSimplexLink) = getWebLink(parsedMsg)
+        (linkUrl, hasSimplexLink) = getMessageLinks(parsedMsg)
         if let url = linkUrl {
             if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -1485,17 +1485,15 @@ struct ComposeView: View {
         }
     }
 
-    private func getWebLink(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
+    private func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
         guard let parsedMsg else { return (nil, false) }
-        var url: String? = nil
+        let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
         for ft in parsedMsg {
             if let link = ft.linkUri, !cancelledLinks.contains(link) && !isSimplexLink(link) {
-                url = link
-                break
+                return (link, simplexLink)
             }
         }
-        let hasSimplexLink = parsedMsgHasSimplexLink(parsedMsg)
-        return (url, hasSimplexLink)
+        return (nil, simplexLink)
     }
 
     private func isSimplexLink(_ link: String) -> Bool {

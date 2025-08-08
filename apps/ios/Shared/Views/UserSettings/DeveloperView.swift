@@ -52,19 +52,6 @@ struct DeveloperView: View {
                 
                 if developerTools {
                     Section {
-                        settingsRow("link", color: theme.colors.secondary) {
-                            Picker("SimpleX links", selection: $simplexLinkMode) {
-                                ForEach(
-                                    SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
-                                ) { mode in
-                                    Text(mode.text)
-                                }
-                            }
-                        }
-                        .frame(height: 36)
-                        .onChange(of: simplexLinkMode) { mode in
-                            privacySimplexLinkModeDefault.set(mode)
-                        }
                         settingsRow("internaldrive", color: theme.colors.secondary) {
                             Toggle("Confirm database upgrades", isOn: $confirmDatabaseUpgrades)
                         }
@@ -77,6 +64,21 @@ struct DeveloperView: View {
                         }
                     } header: {
                         Text("Developer options")
+                    }
+                }
+                Section("Deprecated options") {
+                    settingsRow("link", color: theme.colors.secondary) {
+                        Picker("SimpleX links", selection: $simplexLinkMode) {
+                            ForEach(
+                                SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
+                            ) { mode in
+                                Text(mode.text)
+                            }
+                        }
+                    }
+                    .frame(height: 36)
+                    .onChange(of: simplexLinkMode) { mode in
+                        privacySimplexLinkModeDefault.set(mode)
                     }
                 }
             }

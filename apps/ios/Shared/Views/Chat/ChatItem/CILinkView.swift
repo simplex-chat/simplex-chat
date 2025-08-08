@@ -50,7 +50,7 @@ func openBrowserAlert(uri: String) {
         let uriStr = url.uri.absoluteString
         showAlert(
             NSLocalizedString("Open link?", comment: "alert title"),
-            message: String(uriStr.prefix(160) + (uriStr.count > 160 ? "…" : "")),
+            message: uriStr.count > 160 ? "\(uriStr.prefix(160))…" : uriStr,
             actions: {
                 if let sanitizedUri = url.sanitizedUri {
                     [
@@ -84,7 +84,7 @@ func openBrowserAlert(uri: String) {
 }
 
 func showInvalidLinkAlert(_ uri: String, error: String? = nil) {
-    let message = if let error {
+    let message = if let error, !error.isEmpty {
         error + "\n" + uri
     } else {
         uri

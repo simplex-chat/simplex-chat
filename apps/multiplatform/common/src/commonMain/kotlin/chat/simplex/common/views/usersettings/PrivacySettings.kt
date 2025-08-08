@@ -56,16 +56,22 @@ fun PrivacySettingsView(
   setPerformLA: (Boolean) -> Unit
 ) {
   ColumnWithScrollBar {
-    val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
-      ChatListLinksOptions(appPrefs.privacyChatListOpenLinks.state, onSelected = {
-        appPrefs.privacyChatListOpenLinks.set(it)
-      })
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_travel_explore),
+        stringResource(MR.strings.send_link_previews),
+        chatModel.controller.appPrefs.privacyLinkPreviews,
+        onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
+      )
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_link),
+        stringResource(MR.strings.sanitize_links_toggle),
+        chatModel.controller.appPrefs.privacySanitizeLinks
+      )
       SettingsPreferenceItem(
         painterResource(MR.images.ic_chat_bubble),
         stringResource(MR.strings.privacy_show_last_messages),
@@ -84,10 +90,6 @@ fun PrivacySettingsView(
             chatModel.draftChatId.value = null
           }
         })
-      SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
-        simplexLinkMode.set(it)
-        chatModel.simplexLinkMode.value = it
-      })
     }
     SectionDividerSpaced()
 
@@ -218,27 +220,7 @@ fun PrivacySettingsView(
 }
 
 @Composable
-private fun ChatListLinksOptions(state: State<PrivacyChatListOpenLinksMode>, onSelected: (PrivacyChatListOpenLinksMode) -> Unit) {
-  val values = remember {
-    PrivacyChatListOpenLinksMode.entries.map {
-      when (it) {
-        PrivacyChatListOpenLinksMode.YES -> it to generalGetString(MR.strings.privacy_chat_list_open_links_yes)
-        PrivacyChatListOpenLinksMode.NO -> it to generalGetString(MR.strings.privacy_chat_list_open_links_no)
-        PrivacyChatListOpenLinksMode.ASK -> it to generalGetString(MR.strings.privacy_chat_list_open_links_ask)
-      }
-    }
-  }
-  ExposedDropDownSettingRow(
-    generalGetString(MR.strings.privacy_chat_list_open_links),
-    values,
-    state,
-    icon = painterResource(MR.images.ic_open_in_new),
-    onSelected = onSelected
-  )
-}
-
-@Composable
-private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
+fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
   val modeValues = listOf(SimplexLinkMode.DESCRIPTION, SimplexLinkMode.FULL)
   val pickerValues = modeValues + if (modeValues.contains(simplexLinkModeState.value)) emptyList() else listOf(simplexLinkModeState.value)
   val values = remember {

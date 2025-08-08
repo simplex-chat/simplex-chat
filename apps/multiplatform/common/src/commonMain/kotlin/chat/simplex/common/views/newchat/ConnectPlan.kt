@@ -63,7 +63,7 @@ private suspend fun planAndConnectTask(
     val (connectionLink, connectionPlan) = result
     val link = strHasSingleSimplexLink(shortOrFullLink.trim())
     val linkText = if (link?.format is Format.SimplexLink)
-      "<br><br><u>${link.simplexLinkText(link.format.linkType, link.format.smpHosts)}</u>"
+      "<br><br><u>${link.format.simplexLinkText}</u>"
     else
       ""
     when (connectionPlan) {

@@ -4629,7 +4629,7 @@ public struct FormattedText: Decodable, Hashable {
     public var linkUri: String? {
         switch format {
         case .uri: text
-        case let .webLink(_, linkUri: uri): uri
+        case let .webLink(_, linkUri): linkUri
         default: nil
         }
     }
