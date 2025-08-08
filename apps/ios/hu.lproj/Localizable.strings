@@ -1411,6 +1411,9 @@ set passcode view */
 "Contact preferences" = "Partnerbeállítások";
 
 /* No comment provided by engineer. */
+"Contact requests from groups" = "Partneri kapcsolatkérések a csoportokból";
+
+/* No comment provided by engineer. */
 "contact should accept…" = "a partnernek el kell fogadnia…";
 
 /* No comment provided by engineer. */
@@ -2368,6 +2371,9 @@ chat item action */
 "Error sending message" = "Hiba történt az üzenet elküldésekor";
 
 /* No comment provided by engineer. */
+"Error setting auto-accept" = "Hiba az automatikus elfogadás beállításakor";
+
+/* No comment provided by engineer. */
 "Error setting delivery receipts!" = "Hiba történt a kézbesítési jelentések beállításakor!";
 
 /* No comment provided by engineer. */
@@ -3248,6 +3254,9 @@ snd error text */
 /* item status text */
 "Member inactive" = "Inaktív tag";
 
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "A tag törölve lett – nem lehet elfogadni a kérést";
+
 /* chat feature */
 "Member reports" = "Tagok jelentései";
 
@@ -3447,7 +3456,7 @@ snd error text */
 "Moderated at: %@" = "Moderálva: %@";
 
 /* marked deleted chat item preview text */
-"moderated by %@" = "moderálva lett %@ által";
+"moderated by %@" = "%@ moderálta ezt az üzenetet";
 
 /* member role */
 "moderator" = "moderátor";
@@ -4421,6 +4430,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "request to join rejected" = "csatlakozási kérés elutasítva";
+
+/* rcv group event chat item */
+"requested connection" = "partneri kapcsolatot kért";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "a(z) %@ nevű csoportból partneri kapcsolatot kért";
 
 /* chat list item title */
 "requested to connect" = "függőben lévő kapcsolat";
@@ -5431,6 +5446,9 @@ report reason */
 "This setting applies to messages in your current chat profile **%@**." = "Ez a beállítás csak az Ön jelenlegi **%@** nevű csevegési profiljában lévő üzenetekre vonatkozik.";
 
 /* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Ez a beállítás csak a jelenlegi **%@** nevű csevegési profiljára vonatkozik.";
+
+/* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Az üzeneteltűnési idő csak az új partnerekre vonatkozik.";
 
 /* No comment provided by engineer. */
@@ -6090,7 +6108,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "A jelentéseket megtekintheti a „Csevegés az adminisztrátorokkal” menüben.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Nem lehet üzeneteket küldeni!";
 
 /* chat item text */

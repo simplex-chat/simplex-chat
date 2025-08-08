@@ -2103,6 +2103,7 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
       </trans-unit>
       <trans-unit id="Contact requests from groups" xml:space="preserve">
         <source>Contact requests from groups</source>
+        <target>Gruplardan gelen iletişim talepleri</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -2222,6 +2223,7 @@ Bu senin kendi tek kullanımlık bağlantın!</target>
       </trans-unit>
       <trans-unit id="Create your address" xml:space="preserve">
         <source>Create your address</source>
+        <target>Adresinizi oluşturun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create your profile" xml:space="preserve">
@@ -3036,6 +3038,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable disappearing messages by default." xml:space="preserve">
         <source>Enable disappearing messages by default.</source>
+        <target>Varsayılan olarak kaybolan mesajları etkinleştirin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable for all" xml:space="preserve">

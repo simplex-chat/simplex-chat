@@ -178,14 +178,14 @@
 /* time interval */
 "%d sec" = "%d 秒";
 
+/* delete after time */
+"%d seconds(s)" = "%d 秒";
+
 /* integrity error chat item */
 "%d skipped message(s)" = "%d 件のスキップされたメッセージ";
 
 /* time interval */
 "%d weeks" = "%d 週";
-
-/* No comment provided by engineer. */
-"%lld" = "";
 
 /* No comment provided by engineer. */
 "%lld %@" = "%lld %@";
@@ -283,6 +283,9 @@ time interval */
 time interval */
 "1 week" = "1週間";
 
+/* delete after time */
+"1 year" = "1年";
+
 /* No comment provided by engineer. */
 "1-time link" = "使い捨てリンク";
 
@@ -323,6 +326,9 @@ time interval */
 "Abort changing address?" = "アドレス変更を中止しますか？";
 
 /* No comment provided by engineer. */
+"About operators" = "オペレーターについて";
+
+/* No comment provided by engineer. */
 "About SimpleX Chat" = "SimpleX Chat について";
 
 /* No comment provided by engineer. */
@@ -334,8 +340,20 @@ alert action
 swipe action */
 "Accept" = "承諾";
 
+/* alert action */
+"Accept as member" = "メンバーとして承認する";
+
+/* alert action */
+"Accept as observer" = "オブザーバーとして承認する";
+
+/* No comment provided by engineer. */
+"Accept conditions" = "条件に同意する";
+
 /* No comment provided by engineer. */
 "Accept connection request?" = "接続要求を承認？";
+
+/* alert title */
+"Accept contact request" = "連絡先リクエストを受け入れる";
 
 /* notification body */
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
@@ -344,8 +362,14 @@ swipe action */
 swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
+/* alert title */
+"Accept member" = "メンバーを承認する";
+
 /* call status */
 "accepted call" = "受けた通話";
+
+/* No comment provided by engineer. */
+"Accepted conditions" = "承諾された条件";
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。";
@@ -3459,7 +3483,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "メッセージの書式にmarkdownを使用することができます：";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "メッセージを送信できませんでした！";
 
 /* chat item text */

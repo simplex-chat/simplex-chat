@@ -1411,6 +1411,9 @@ set passcode view */
 "Contact preferences" = "Kişi tercihleri";
 
 /* No comment provided by engineer. */
+"Contact requests from groups" = "Gruplardan gelen iletişim talepleri";
+
+/* No comment provided by engineer. */
 "contact should accept…" = "kişi kabul etmeli…";
 
 /* No comment provided by engineer. */
@@ -1481,6 +1484,9 @@ set passcode view */
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "SimpleX adresi oluştur";
+
+/* No comment provided by engineer. */
+"Create your address" = "Adresinizi oluşturun";
 
 /* No comment provided by engineer. */
 "Create your profile" = "Profilini oluştur";
@@ -2006,6 +2012,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Enable camera access" = "Kamera erişimini etkinleştir";
+
+/* No comment provided by engineer. */
+"Enable disappearing messages by default." = "Varsayılan olarak kaybolan mesajları etkinleştirin.";
 
 /* No comment provided by engineer. */
 "Enable Flux in Network & servers settings for better metadata privacy." = "Daha iyi meta veri gizliliği için Ağ & sunucu ayarlarında Flux'u etkinleştirin.";
@@ -6033,7 +6042,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "Raporlarınızı Yöneticilerle Sohbet bölümünde görüntüleyebilirsiniz.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Mesajlar gönderemezsiniz!";
 
 /* chat item text */

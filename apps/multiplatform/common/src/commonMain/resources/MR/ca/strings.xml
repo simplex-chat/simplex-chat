@@ -524,7 +524,7 @@
     <string name="confirm_new_passphrase">Confirmeu el nou mot de pas…</string>
     <string name="change_database_passphrase_question">Voleu canviar la frase de pas per a la base de dades?</string>
     <string name="rcv_group_event_member_connected">connectat</string>
-    <string name="rcv_group_event_member_created_contact">connectat directament</string>
+    <string name="rcv_group_event_member_created_contact">connexió sol·licitada</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">canviant d\'adreça per %s…</string>
     <string name="group_member_status_connected">connectat</string>
     <string name="group_member_status_complete">complet</string>
@@ -2477,4 +2477,8 @@
     <string name="share_old_link_alert_button">Compartir l\'enllaç antic</string>
     <string name="share_group_profile_via_link_alert_text">L\'enllaç serà curt i el perfil del grup es compartirà a través d\'ell.</string>
     <string name="upgrade_group_link">Actualitzar l\'enllaç del grup</string>
+    <string name="settings_section_title_contact_requests_from_groups">SOL·LICITUDS DE CONTACTE DE GRUPS</string>
+    <string name="member_is_deleted_cant_accept_request">Membre eliminat(da); no es pot acceptar la sol·licitud.</string>
+    <string name="rcv_direct_event_group_inv_link_received">connexió sol·licitada del grup %1$s</string>
+    <string name="this_setting_is_for_your_current_profile">Aquesta configuració és per al perfil actual</string>
 </resources>

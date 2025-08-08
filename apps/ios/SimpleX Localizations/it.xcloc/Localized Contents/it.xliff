@@ -2103,6 +2103,7 @@ Questo è il tuo link una tantum!</target>
       </trans-unit>
       <trans-unit id="Contact requests from groups" xml:space="preserve">
         <source>Contact requests from groups</source>
+        <target>Richieste di contatto dai gruppi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Contact will be deleted - this cannot be undone!" xml:space="preserve">
@@ -3547,6 +3548,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error setting auto-accept" xml:space="preserve">
         <source>Error setting auto-accept</source>
+        <target>Errore impostando l'accettazione automatica</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -4892,6 +4894,7 @@ Questo è il tuo link per il gruppo %@!</target>
       </trans-unit>
       <trans-unit id="Member is deleted - can't accept request" xml:space="preserve">
         <source>Member is deleted - can't accept request</source>
+        <target>Il membro è eliminato - impossibile accettare la richiesta</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -8274,6 +8277,7 @@ Può accadere a causa di qualche bug o quando la connessione è compromessa.</ta
       </trans-unit>
       <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
         <source>This setting is for your current profile **%@**.</source>
+        <target>Questa impostazione è per il tuo profilo attuale **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
@@ -10355,10 +10359,12 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="requested connection" xml:space="preserve">
         <source>requested connection</source>
+        <target>connessione richiesta</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="requested connection from group %@" xml:space="preserve">
         <source>requested connection from group %@</source>
+        <target>connessione richiesta dal gruppo %@</target>
         <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">

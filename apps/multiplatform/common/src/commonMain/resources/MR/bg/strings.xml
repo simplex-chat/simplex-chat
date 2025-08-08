@@ -1201,8 +1201,8 @@
     <string name="you_will_be_connected_when_your_connection_request_is_accepted">Ще бъдете свързани, когато заявката ви за връзка бъде приета, моля, изчакайте или проверете по-късно!</string>
     <string name="you_will_be_connected_when_your_contacts_device_is_online">Ще бъдете свързани, когато устройството на вашия контакт е онлайн, моля, изчакайте или проверете по-късно!</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Няма да загубите контактите си, ако по-късно изтриете адреса си.</string>
-    <string name="your_settings">Вашите настройки</string>
-    <string name="your_simplex_contact_address">Вашият адрес в SimpleX</string>
+    <string name="your_settings">Настройки</string>
+    <string name="your_simplex_contact_address">SimpleX адрес</string>
     <string name="smp_servers_use_server_for_new_conn">Използвай за нови връзки</string>
     <string name="your_XFTP_servers">Вашите XFTP сървъри</string>
     <string name="use_simplex_chat_servers__question">Използвай сървърите на SimpleX Chat\?</string>
@@ -1260,7 +1260,7 @@
     <string name="you_control_your_chat">Вие контролирате своя чат!</string>
     <string name="wrong_passphrase_title">Грешна парола!</string>
     <string name="voice_messages">Гласови съобщения</string>
-    <string name="your_preferences">Вашите настройки</string>
+    <string name="your_preferences">Настройки</string>
     <string name="whats_new">Какво е новото</string>
     <string name="v4_3_irreversible_message_deletion_desc">Вашите контакти могат да позволят пълното изтриване на съобщението.</string>
     <string name="update_database_passphrase">Актуализирай паролата на базата данни</string>
@@ -1376,7 +1376,7 @@
     <string name="error_creating_member_contact">Грешка при създаване на контакт с член</string>
     <string name="compose_send_direct_message_to_connect">Изпрати лично съобщение за свързване</string>
     <string name="member_contact_send_direct_message">изпрати за свързване</string>
-    <string name="rcv_group_event_member_created_contact">свързан директно</string>
+    <string name="rcv_group_event_member_created_contact">заявка за връзка</string>
     <string name="expand_verb">Разшири</string>
     <string name="v5_4_block_group_members">Блокиране на членове на групата</string>
     <string name="connect_plan_repeat_connection_request">Изпрати отново заявката за свързване?</string>
@@ -2171,7 +2171,7 @@
     <string name="view_updated_conditions">Вижте актуализираните условия</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Xiaomi устройства </b>: моля, активирайте Autostart в системните настройки, за да работят известията.]]></string>
     <string name="message_deleted_or_not_received_error_title">Няма съобщение</string>
-    <string name="or_to_share_privately">Или да се сподели лично</string>
+    <string name="or_to_share_privately">Или сподели лично</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Всички съобщения и файлове се изпращат <b>криптирани от край до край</b>, с постквантова сигурност в директните съобщения.]]></string>
     <string name="onboarding_notifications_mode_off_desc_short">Без фонова услуга</string>
     <string name="onboarding_notifications_mode_periodic_desc_short">Проверявай за съобщения на всеки 10 минути</string>
@@ -2504,4 +2504,8 @@
     <string name="share_old_link_alert_button">Сподели стар линк</string>
     <string name="share_group_profile_via_link_alert_text">Линкът ще бъде кратък и профилът на групата ще бъде споделен чрез него.</string>
     <string name="upgrade_group_link">Обнови групов линк</string>
+    <string name="settings_section_title_contact_requests_from_groups">ЗАЯВКИ ЗА КОНТАКТ ОТ ГРУПИ</string>
+    <string name="member_is_deleted_cant_accept_request">Членът е изтрит - не може да се приеме заявката</string>
+    <string name="rcv_direct_event_group_inv_link_received">заявка за връзка от група %1$s</string>
+    <string name="this_setting_is_for_your_current_profile">Тази настройка е за текущия профил</string>
 </resources>

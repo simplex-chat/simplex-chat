@@ -5540,7 +5540,7 @@ chat item action */
 /* alert message */
 "You can view invitation link again in connection details." = "Vous pouvez à nouveau consulter le lien d'invitation dans les détails de la connexion.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Vous ne pouvez pas envoyer de messages !";
 
 /* chat item text */

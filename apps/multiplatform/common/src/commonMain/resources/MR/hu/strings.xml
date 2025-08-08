@@ -193,7 +193,7 @@
     <string name="connect_button">Kapcsolódás</string>
     <string name="connect_via_member_address_alert_title">Közvetlenül kapcsolódik?</string>
     <string name="smp_server_test_connect">Kapcsolódás</string>
-    <string name="rcv_group_event_member_created_contact">partnerkapcsolatot kért</string>
+    <string name="rcv_group_event_member_created_contact">partneri kapcsolatot kért</string>
     <string name="connection_local_display_name">kapcsolat %1$d</string>
     <string name="status_contact_has_e2e_encryption">a partner e2e titkosítással rendelkezik</string>
     <string name="v5_4_incognito_groups_descr">Csoport létrehozása véletlenszerű profillal.</string>
@@ -846,7 +846,7 @@
     <string name="settings_section_title_messages">ÜZENETEK ÉS FÁJLOK</string>
     <string name="group_member_role_member">tag</string>
     <string name="make_private_connection">Privát kapcsolat létrehozása</string>
-    <string name="moderated_item_description">moderálva lett %s által</string>
+    <string name="moderated_item_description">%s moderálta ezt az üzenetet</string>
     <string name="import_theme_error_desc">Győződjön meg arról, hogy a fájl helyes YAML-szintaxist tartalmaz. Exportálja a témát, hogy legyen egy példa a témafájl szerkezetére.</string>
     <string name="italic_text">dőlt</string>
     <string name="non_content_uri_alert_title">Érvénytelen a fájl elérési útvonala</string>
@@ -2481,6 +2481,6 @@
     <string name="share_old_link_alert_button">Régi hivatkozás megosztása</string>
     <string name="settings_section_title_contact_requests_from_groups">PARTNERI KAPCSOLATKÉRÉSEK A CSOPORTOKBÓL</string>
     <string name="member_is_deleted_cant_accept_request">A tag törölve lett – nem lehet elfogadni a kérést</string>
-    <string name="rcv_direct_event_group_inv_link_received">a(z) %1$s nevű csoportból partnerkapcsolatot kért</string>
+    <string name="rcv_direct_event_group_inv_link_received">a(z) %1$s nevű csoportból partneri kapcsolatot kért</string>
     <string name="this_setting_is_for_your_current_profile">Ez a beállítás a jelenlegi profiljára vonatkozik</string>
 </resources>

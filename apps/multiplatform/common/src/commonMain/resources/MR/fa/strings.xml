@@ -11,12 +11,12 @@
     <string name="abort_switch_receiving_address">لغو تغییر نشانی</string>
     <string name="abort_switch_receiving_address_question">تغییر نشانی را لغو می‌کنید؟</string>
     <string name="about_simplex">درباره سیمپل‌اکس(SimpleX)</string>
-    <string name="connect_via_contact_link">به وسیله نشانی مخاطب متصل می‌شوید؟</string>
-    <string name="connect_via_invitation_link">به وسیله لینک یک بار مصرف متصل می‌شوید؟</string>
-    <string name="connect_use_new_incognito_profile">از پروفایل ناشناس جدید استفاده کن</string>
+    <string name="connect_via_contact_link">با نشانی مخاطب ارتباط برقرار شود؟</string>
+    <string name="connect_via_invitation_link">با لینک یک بار مصرف ارتباط برقرار شود؟</string>
+    <string name="connect_use_new_incognito_profile">استفاده از پروفایل ناشناس جدید</string>
     <string name="opening_database">در حال باز کردن پایگاه داده…</string>
     <string name="profile_will_be_sent_to_contact_sending_link">پروفایل شما به مخاطبی که این لینک را از او دریافت کردید، فرستاده خواهد شد.</string>
-    <string name="connect_via_link_incognito">متصل شدن به صورت ناشناس</string>
+    <string name="connect_via_link_incognito">اتصال ناشناس</string>
     <string name="non_content_uri_alert_text">شما یک مسیر نامعتبر فایل به اشتراک گذاشتید. موضوع را به توسعه‌دهندگان برنامه گزارش دهید.</string>
     <string name="receiving_files_not_yet_supported">هنوز از دریافت فایل پشتیبانی نمی‌شود</string>
     <string name="invalid_message_format">قالب پیام نامعتبر</string>
@@ -30,7 +30,7 @@
     <string name="server_connecting">در حال اتصال</string>
     <string name="thousand_abbreviation">k</string>
     <string name="connect_via_group_link">به گروه می‌پیوندید؟</string>
-    <string name="connect_use_current_profile">از پروفایل کنونی استفاده کن</string>
+    <string name="connect_use_current_profile">استفاده از پروفایل کنونی</string>
     <string name="you_will_join_group">به تمام اعضای گروه متصل خواهید شد.</string>
     <string name="connect_via_link_verb">متصل شدن</string>
     <string name="non_content_uri_alert_title">مسیر نامعتبر فایل</string>
@@ -1001,14 +1001,14 @@
     <string name="past_member_vName">عضو پیشین %1$s</string>
     <string name="icon_descr_expand_role">بسط دادن انتخاب نقش</string>
     <string name="database_passphrase_will_be_updated">عبارت عبور رمزنگاری پایگاه داده به‌روز خواهد شد.</string>
-    <string name="rcv_group_event_member_created_contact">مستقیما متصل شد</string>
+    <string name="rcv_group_event_member_created_contact">درخواست اتصال کرد</string>
     <string name="rcv_group_event_1_member_connected">%s متصل شد</string>
     <string name="joining_group">پیوستن به گروه</string>
     <string name="update_database">به‌روزرسانی</string>
     <string name="confirm_new_passphrase">تایید عبارت عبور جدید…</string>
     <string name="encrypt_database_question">پایگاه داده رمزنگاری شود؟</string>
     <string name="incompatible_database_version">نسخه پایگاه داده ناسازگار</string>
-    <string name="rcv_group_event_updated_group_profile">پروفایل گروه به‌روز شد</string>
+    <string name="rcv_group_event_updated_group_profile">پروفایل گروه به‌روز شده</string>
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">شما نشانی را برای %s تغییر دادید</string>
     <string name="snd_conn_event_switch_queue_phase_completed">شما نشانی را تغییر دادید</string>
     <string name="conn_event_ratchet_sync_allowed">تجدید مذاکره رمزنگاری مجاز است</string>
@@ -2320,7 +2320,7 @@
     <string name="settings_section_title_chat_database">پایگاه داده چت</string>
     <string name="duplicates_label">تکراری‌ها</string>
     <string name="edit_chat_list_menu_action">تغییر</string>
-    <string name="v6_2_network_decentralization_enable_flux">Flux را در تنظیمات شبکه و سرورها فعال کنید تا حریم خصوصی متاداده بهتر شود.</string>
+    <string name="v6_2_network_decentralization_enable_flux">Flux را در تنظیمات شبکه و سرورها فعال کنید تا حریم خصوصی فراداده بهتر شود.</string>
     <string name="debug_logs">فعال کردن لاگ‌ها</string>
     <string name="encryption_renegotiation_in_progress">مذاکره مجدد رمزنگاری در حال انجام است.</string>
     <string name="servers_info_modal_error_title">خطا</string>
@@ -2352,7 +2352,7 @@
     <string name="sync_connection_question">اتصال اصلاح شود؟</string>
     <string name="appearance_font_size">اندازه فونت</string>
     <string name="report_archive_for_all_moderators">برای همه مدیران</string>
-    <string name="v6_2_network_decentralization_enable_flux_reason">برای بهبود حریم خصوصی متاداده.</string>
+    <string name="v6_2_network_decentralization_enable_flux_reason">برای بهبود حریم خصوصی فراداده.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">به عنوان مثال، اگر مخاطب شما پیام‌ها را از طریق یک سرور چت SimpleX دریافت کند، برنامه شما آن‌ها را از طریق یک سرور Flux تحویل خواهد داد.</string>
     <string name="report_archive_for_me">برای من</string>
     <string name="operator_use_for_messages_private_routing">برای مسیریابی خصوصی</string>
@@ -2508,4 +2508,8 @@
     <string name="v6_4_1_short_address_share">آدرس خود را به اشتراک بگذارید</string>
     <string name="v6_4_1_new_interface_languages">۴ زبان جدید رابط کاربری</string>
     <string name="v6_4_1_new_interface_languages_descr">کاتالان، اندونزیایی، رومانیایی و ویتنامی - با تشکر از کاربران ما!</string>
+    <string name="member_is_deleted_cant_accept_request">عضو حذف شده است - نمی‌توان درخواست را قبول کرد</string>
+    <string name="this_setting_is_for_your_current_profile">این تنظیمات برای پروفایل فعلی شماست</string>
+    <string name="settings_section_title_contact_requests_from_groups">درخواست‌های تماس از گروه‌ها</string>
+    <string name="rcv_direct_event_group_inv_link_received">درخواست اتصال از گروه %1$s</string>
 </resources>
