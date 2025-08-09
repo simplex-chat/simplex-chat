@@ -2684,8 +2684,9 @@ swipe action</note>
         <target>Kézbesítési jelentések!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Deprecated options" xml:space="preserve">
+      <trans-unit id="Deprecated options" xml:space="preserve" approved="no">
         <source>Deprecated options</source>
+        <target state="translated">Elavult beállítások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -5781,8 +5782,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csevegési konzol megnyitása</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open clean link" xml:space="preserve">
+      <trans-unit id="Open clean link" xml:space="preserve" approved="no">
         <source>Open clean link</source>
+        <target state="translated">Tiszta hivatkozás megnyitása</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open conditions" xml:space="preserve">
@@ -5790,8 +5792,9 @@ VPN engedélyezése szükséges.</target>
         <target>Feltételek megnyitása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Open full link" xml:space="preserve">
+      <trans-unit id="Open full link" xml:space="preserve" approved="no">
         <source>Open full link</source>
+        <target state="translated">Teljes hivatkozás megnyitása</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open group" xml:space="preserve">
@@ -6584,8 +6587,9 @@ swipe action</note>
         <target>Kép eltávolítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove link tracking" xml:space="preserve">
+      <trans-unit id="Remove link tracking" xml:space="preserve" approved="no">
         <source>Remove link tracking</source>
+        <target state="translated">Hivatkozáskövetés eltávolítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
