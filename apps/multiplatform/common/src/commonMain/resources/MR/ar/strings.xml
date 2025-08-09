@@ -110,7 +110,7 @@
     <string name="color_primary_variant">لون إضافي ثانوي</string>
     <string name="available_in_v51">"
 \nمتوفر في v5.1"</string>
-    <string name="calls_prohibited_with_this_contact">مكالمات الصوت/الفيديو محظورة.</string>
+    <string name="calls_prohibited_with_this_contact">مكالمات الصوت/الفيديو ممنوعة.</string>
     <string name="v4_5_transport_isolation_descr">عن طريق ملف تعريف الدردشة (افتراضي) أو عن طريق الاتصال (تجريبي).</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b> يمكن تعطيله عبر الإعدادات</b> - سيستمر عرض الإشعارات أثناء تشغيل التطبيق.]]></string>
     <string name="settings_audio_video_calls">مكالمات الصوت والفيديو</string>
@@ -620,7 +620,7 @@
     <string name="ttl_week">%d أسبوع</string>
     <string name="display_name_cannot_contain_whitespace">لا يمكن أن يحتوي اسم العرض على مسافة فارغة.</string>
     <string name="encrypted_video_call">مكالمة فيديو مُعمّاة بين الطريفين</string>
-    <string name="direct_messages_are_prohibited_in_group">الرسائل المباشرة بين الأعضاء ممنوعة في هذه المجموعة.</string>
+    <string name="direct_messages_are_prohibited_in_group">يُمنع إرسال الرسائل المباشرة بين الأعضاء في هذه المجموعة.</string>
     <string name="ttl_hour">%d ساعة</string>
     <string name="ttl_h">%d ساعة</string>
     <string name="ttl_hours">%d ساعات</string>
@@ -1436,7 +1436,7 @@
     <string name="group_members_n">%s و%s و%d عضو</string>
     <string name="this_device">هذا الجهاز</string>
     <string name="moderated_items_description">%1$d من الرسائل أُشرف عليها بواسطة %2$s</string>
-    <string name="unblock_member_button">إلغاء حظر العضو</string>
+    <string name="unblock_member_button">ألغِ حظر العضو</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[جوّال <b>%s</b> قُطع اتصاله]]></string>
     <string name="waiting_for_desktop">في انتظار سطح المكتب…</string>
     <string name="v5_4_better_groups_descr">انضمام أسرع ورسائل أكثر موثوقية.</string>
@@ -1472,7 +1472,7 @@
     <string name="connect_plan_this_is_your_link_for_group_vName"><![CDATA[هذا هو الرابط الخاص بك للمجموعة <b>%1$s</b>!]]></string>
     <string name="verify_code_with_desktop">تحقق من الرمز مع سطح المكتب</string>
     <string name="scan_qr_code_from_desktop">مسح رمز QR من سطح المكتب</string>
-    <string name="unblock_member_confirmation">إلغاء الحظر</string>
+    <string name="unblock_member_confirmation">ألغِ الحظر</string>
     <string name="v5_4_more_things_descr">- إشعار اختياريًا جهات الاتصال المحذوفة.\n- أسماء الملفات التعريفية بمسافات.\n- و اكثر!</string>
     <string name="non_content_uri_alert_title">مسار الملف غير صالح</string>
     <string name="connect_plan_you_have_already_requested_connection_via_this_address">لقد طلبت بالفعل الاتصال عبر هذا العنوان!</string>
@@ -1585,11 +1585,11 @@
     <string name="share_text_created_at">أُنشئ في: %s</string>
     <string name="saved_message_title">رسالة محفوظة</string>
     <string name="unblock_for_all_question">إلغاء حظر العضو للجميع؟</string>
-    <string name="unblock_for_all">إلغاء الحظر للجميع</string>
+    <string name="unblock_for_all">ألغِ الحظر للجميع</string>
     <string name="error_blocking_member_for_all">حدث خطأ أثناء حظر العضو للجميع</string>
     <string name="blocked_by_admin_items_description">حُظرت %d رسالة من قبل المُدير</string>
     <string name="rcv_group_event_member_blocked">محظور %s</string>
-    <string name="rcv_group_event_member_unblocked">أُلغيت حظر %s</string>
+    <string name="rcv_group_event_member_unblocked">أُلغيَ حظر %s</string>
     <string name="snd_group_event_member_blocked">حظرت %s</string>
     <string name="snd_group_event_member_unblocked">أُلغيت حظر %s</string>
     <string name="member_info_member_blocked">محظور</string>
@@ -1705,7 +1705,7 @@
     <string name="prohibit_sending_simplex_links">امنع إرسال روابط SimpleX</string>
     <string name="feature_roles_all_members">كل الأعضاء</string>
     <string name="group_members_can_send_simplex_links">يمكن للأعضاء إرسال روابط SimpleX.</string>
-    <string name="simplex_links_are_prohibited_in_group">روابط SimpleX محظورة.</string>
+    <string name="simplex_links_are_prohibited_in_group">روابط SimpleX ممنوعة.</string>
     <string name="feature_roles_admins">المُدراء</string>
     <string name="feature_enabled_for">مفعّل لـ</string>
     <string name="feature_roles_owners">المالكون</string>
@@ -2193,7 +2193,7 @@
     <string name="button_add_team_members">أضف أعضاء الفريق</string>
     <string name="button_add_friends">أضف أصدقاء</string>
     <string name="add_your_team_members_to_conversations">أضف أعضاء فريقك إلى المحادثات.</string>
-    <string name="direct_messages_are_prohibited_in_chat">يُحظر إرسال الرسائل المباشرة بين الأعضاء في هذه الدردشة.</string>
+    <string name="direct_messages_are_prohibited_in_chat">يُمنع إرسال الرسائل المباشرة بين الأعضاء في هذه الدردشة.</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>أجهزة Xiaomi</b>: يُرجى تفعيل التشغيل التلقائي (Autostart) في إعدادات النظام لكي تعمل الإشعارات.]]></string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[يتم إرسال جميع الرسائل والملفات <b>مُعمَّاة بين الطرفين</b>، مع أمان ما بعد الكم في الرسائل المباشرة.]]></string>
     <string name="onboarding_notifications_mode_periodic_desc_short">تحقق من الرسائل كل 10 دقائق</string>
@@ -2500,4 +2500,15 @@
     <string name="member_is_deleted_cant_accept_request">حُذف العضو - لا يمكن قبول الطلب</string>
     <string name="rcv_direct_event_group_inv_link_received">طُلب اتصال من المجموعة %1$s</string>
     <string name="this_setting_is_for_your_current_profile">هذا الإعداد لملف تعريفك الحالي</string>
+    <string name="allow_files_and_media_only_if">اسمح بالملفات والوسائط فقط إذا سمح جهة اتصالك بذلك.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">اسمح لجهات اتصالك بإرسال الملفات والوسائط.</string>
+    <string name="chat_banner_bot">بوت</string>
+    <string name="both_you_and_your_contact_can_send_files">يمكنك أنت وجهة اتصالك إرسال الملفات والوسائط.</string>
+    <string name="files_prohibited_in_this_chat">يُمنع إرسال الملفات والوسائط في هذه الدردشة.</string>
+    <string name="only_you_can_send_files">يمكنك أنت فقط إرسال الملفات والوسائط.</string>
+    <string name="only_your_contact_can_send_files">يمكن لجهة اتصالك فقط إرسال الملفات والوسائط.</string>
+    <string name="open_to_use_bot">افتح لاستخدام البوت</string>
+    <string name="prohibit_sending_files_and_media">امنع إرسال الملفات والوسائط.</string>
+    <string name="chat_banner_connect_to_use_bot">انقر على \"اتصل\" لاستخدام البوت</string>
+    <string name="cant_send_commands_alert_text">لإرسال الأوامر يجب أن تكون متصلاً.</string>
 </resources>
