@@ -1979,8 +1979,14 @@ Colored:
 Uri:
 - type: "uri"
 
+HyperLink:
+- type: "hyperLink"
+- showText: string?
+- linkUri: string
+
 SimplexLink:
 - type: "simplexLink"
+- showText: string?
 - linkType: [SimplexLinkType](#simplexlinktype)
 - simplexUri: string
 - smpHosts: [string]

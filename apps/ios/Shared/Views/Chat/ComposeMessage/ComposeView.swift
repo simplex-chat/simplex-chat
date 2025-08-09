@@ -329,10 +329,10 @@ struct ComposeView: View {
     @Binding var selectedRange: NSRange
     var disabledText: LocalizedStringKey? = nil
 
-    @State var linkUrl: URL? = nil
+    @State var linkUrl: String? = nil
     @State var hasSimplexLink: Bool = false
-    @State var prevLinkUrl: URL? = nil
-    @State var pendingLinkUrl: URL? = nil
+    @State var prevLinkUrl: String? = nil
+    @State var pendingLinkUrl: String? = nil
     @State var cancelledLinks: Set<String> = []
 
     @Environment(\.colorScheme) private var colorScheme
@@ -353,6 +353,8 @@ struct ComposeView: View {
     @UserDefault(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     @AppStorage(GROUP_DEFAULT_INCOGNITO, store: groupDefaults) private var incognitoDefault = false
+    @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = true
+    @State private var updatingCompose = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -454,8 +456,26 @@ struct ComposeView: View {
                 .ignoresSafeArea(.all, edges: .bottom)
         }
         .onChange(of: composeState.message) { msg in
-            let parsedMsg = parseSimpleXMarkdown(msg)
-            composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
+            if updatingCompose {
+                updatingCompose = false
+                return
+            }
+            var parsedMsg = parseSimpleXMarkdown(msg)
+            if privacySanitizeLinks, let parsed = parsedMsg {
+                let r = sanitizeMessage(parsed)
+                if let sanitizedPos = r.sanitizedPos {
+                    updatingCompose = true
+                    composeState = composeState.copy(message: r.message, parsedMessage: r.parsedMsg)
+                    if sanitizedPos < selectedRange.location {
+                        selectedRange = NSRange(location: sanitizedPos, length: 0)
+                    }
+                    parsedMsg = r.parsedMsg
+                } else {
+                    composeState = composeState.copy(parsedMessage: parsedMsg)
+                }
+            } else {
+                composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
+            }
             if composeState.linkPreviewAllowed {
                 if msg.count > 0 {
                     showLinkPreview(parsedMsg)
@@ -464,7 +484,7 @@ struct ComposeView: View {
                     hasSimplexLink = false
                 }
             } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
-                (_, hasSimplexLink) = getSimplexLink(parsedMsg)
+                (_, hasSimplexLink) = getMessageLinks(parsedMsg)
             } else {
                 hasSimplexLink = false
             }
@@ -845,7 +865,7 @@ struct ComposeView: View {
         switch (composeState.preview) {
         case let .linkPreview(linkPreview: linkPreview):
             if let parsedMsg = parseSimpleXMarkdown(msgText),
-               let url = getSimplexLink(parsedMsg).url,
+               let url = getMessageLinks(parsedMsg).url,
                let linkPreview = linkPreview,
                url == linkPreview.uri {
                 return .link(text: msgText, preview: linkPreview)
@@ -1448,7 +1468,7 @@ struct ComposeView: View {
 
     private func showLinkPreview(_ parsedMsg: [FormattedText]?) {
         prevLinkUrl = linkUrl
-        (linkUrl, hasSimplexLink) = getSimplexLink(parsedMsg)
+        (linkUrl, hasSimplexLink) = getMessageLinks(parsedMsg)
         if let url = linkUrl {
             if url != composeState.linkPreview?.uri && url != pendingLinkUrl {
                 pendingLinkUrl = url
@@ -1465,39 +1485,38 @@ struct ComposeView: View {
         }
     }
 
-    private func getSimplexLink(_ parsedMsg: [FormattedText]?) -> (url: URL?, hasSimplexLink: Bool) {
+    private func getMessageLinks(_ parsedMsg: [FormattedText]?) -> (url: String?, hasSimplexLink: Bool) {
         guard let parsedMsg else { return (nil, false) }
-        let url: URL? = if let uri = parsedMsg.first(where: { ft in
-            ft.format == .uri && !cancelledLinks.contains(ft.text) && !isSimplexLink(ft.text)
-        }) {
-            URL(string: uri.text)
-        } else {
-            nil
-        }
         let simplexLink = parsedMsgHasSimplexLink(parsedMsg)
-        return (url, simplexLink)
+        for ft in parsedMsg {
+            if let link = ft.linkUri, !cancelledLinks.contains(link) && !isSimplexLink(link) {
+                return (link, simplexLink)
+            }
+        }
+        return (nil, simplexLink)
     }
 
     private func isSimplexLink(_ link: String) -> Bool {
-        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat")
+        link.starts(with: "https://simplex.chat") || link.starts(with: "http://simplex.chat") || link.starts(with: "simplex:/")
     }
 
     private func cancelLinkPreview() {
-        if let pendingLink = pendingLinkUrl?.absoluteString {
+        if let pendingLink = pendingLinkUrl {
             cancelledLinks.insert(pendingLink)
         }
-        if let uri = composeState.linkPreview?.uri.absoluteString {
+        if let uri = composeState.linkPreview?.uri {
             cancelledLinks.insert(uri)
         }
         pendingLinkUrl = nil
         composeState = composeState.copy(preview: .noPreview)
     }
 
-    private func loadLinkPreview(_ url: URL) {
-        if pendingLinkUrl == url {
+    private func loadLinkPreview(_ urlStr: String) {
+        if pendingLinkUrl == urlStr, let url = URL(string: urlStr) {
             composeState = composeState.copy(preview: .linkPreview(linkPreview: nil))
             getLinkPreview(url: url) { linkPreview in
-                if let linkPreview, pendingLinkUrl == url {
+                if let linkPreview, pendingLinkUrl == urlStr {
+                    privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
                     composeState = composeState.copy(preview: .linkPreview(linkPreview: linkPreview))
                 } else {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -1515,4 +1534,33 @@ struct ComposeView: View {
         pendingLinkUrl = nil
         cancelledLinks = []
     }
+}
+
+func sanitizeMessage(_ parsedMsg: [FormattedText]) -> (message: String, parsedMsg: [FormattedText], sanitizedPos: Int?) {
+    var pos: Int = 0
+    var updatedMsg = ""
+    var sanitizedPos: Int? = nil
+    let updatedParsedMsg = parsedMsg.map { ft in
+        var updated = ft
+        switch ft.format {
+        case .uri:
+            if let sanitized = parseSanitizeUri(ft.text)?.uriInfo?.sanitized {
+                updated = FormattedText(text: sanitized, format: .uri)
+                pos += updated.text.count
+                sanitizedPos = pos
+            }
+        case let .hyperLink(text, uri):
+            if let sanitized = parseSanitizeUri(uri)?.uriInfo?.sanitized {
+                let updatedText = if let text { "[\(text)](\(sanitized))" } else { sanitized }
+                updated = FormattedText(text: updatedText, format: .hyperLink(showText: text, linkUri: sanitized))
+                pos += updated.text.count
+                sanitizedPos = pos
+            }
+        default:
+            pos += ft.text.count
+        }
+        updatedMsg += updated.text
+        return updated
+    }
+    return (message: updatedMsg, parsedMsg: updatedParsedMsg, sanitizedPos: sanitizedPos)
 }

@@ -1072,6 +1072,7 @@
   <string name="debug_logs">Enable logs</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
   <string name="developer_options_section">Developer options</string>
+  <string name="deprecated_options_section">Deprecated options</string>
   <string name="show_internal_errors">Show internal errors</string>
   <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
@@ -1368,6 +1369,7 @@
   <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
   <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
   <string name="full_backup">App data backup</string>
@@ -1434,6 +1436,8 @@
   <string name="privacy_chat_list_open_links_ask">Ask</string>
   <string name="privacy_chat_list_open_web_link_question">Open web link?</string>
   <string name="privacy_chat_list_open_web_link">Open link</string>
+  <string name="privacy_chat_list_open_full_web_link">Open full link</string>
+  <string name="privacy_chat_list_open_clean_web_link">Open clean link</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>

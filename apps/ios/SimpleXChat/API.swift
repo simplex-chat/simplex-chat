@@ -186,6 +186,30 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
+public func parseSanitizeUri(_ s: String) -> ParsedUri? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_parse_uri(&c) {
+         if let d = dataFromCString(cjson) {
+            do {
+                return try jsonDecoder.decode(ParsedUri.self, from: d)
+            } catch {
+                logger.error("parseSanitizeUri jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+public struct ParsedUri: Decodable {
+    public var uriInfo: UriInfo?
+    public var parseError: String
+}
+
+public struct UriInfo: Decodable {
+    public var scheme: String
+    public var sanitized: String?
+}
+
 @inline(__always)
 public func fromCString(_ c: UnsafeMutablePointer<CChar>) -> String {
     let s = String.init(cString: c)
