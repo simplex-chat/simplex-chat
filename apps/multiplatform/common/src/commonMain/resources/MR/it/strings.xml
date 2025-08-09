@@ -2519,4 +2519,19 @@
     <string name="member_is_deleted_cant_accept_request">Il membro è eliminato - impossibile accettare la richiesta</string>
     <string name="rcv_direct_event_group_inv_link_received">connessione richiesta dal gruppo %1$s</string>
     <string name="this_setting_is_for_your_current_profile">Questa impostazione è per il tuo profilo attuale</string>
+    <string name="allow_files_and_media_only_if">Consenti file e contenuti multimediali solo se il tuo contatto li consente.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Consenti ai tuoi contatti di inviare file e contenuti multimediali.</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="both_you_and_your_contact_can_send_files">Sia tu che il tuo contatto potete inviare file e contenuti multimediali.</string>
+    <string name="files_prohibited_in_this_chat">File e contenuti multimediali sono vietati in questa chat.</string>
+    <string name="only_you_can_send_files">Solo tu puoi inviare file e contenuti multimediali.</string>
+    <string name="only_your_contact_can_send_files">Solo il tuo contatto può inviare file e contenuti multimediali.</string>
+    <string name="open_to_use_bot">Apri per usare il bot</string>
+    <string name="prohibit_sending_files_and_media">Proibisci l\'invio di file e contenuti multimediali.</string>
+    <string name="chat_banner_connect_to_use_bot">Tocca Connetti per usare il bot</string>
+    <string name="cant_send_commands_alert_text">Per inviare comandi devi essere connesso/a.</string>
+    <string name="deprecated_options_section">Opzioni deprecate</string>
+    <string name="privacy_chat_list_open_clean_web_link">Apri link pulito</string>
+    <string name="privacy_chat_list_open_full_web_link">Apri link completo</string>
+    <string name="sanitize_links_toggle">Rimuovi il tracciamento del link</string>
 </resources>
