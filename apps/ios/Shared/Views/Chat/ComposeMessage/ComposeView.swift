@@ -45,7 +45,7 @@ struct ComposeState {
     var voiceMessageRecordingState: VoiceMessageRecordingState
     var inProgress = false
     var progressByTimeout = false
-    var useLinkPreviews: Bool = UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS)
+    var useLinkPreviews = true
     var mentions: MentionedMembers = [:]
 
     init(
@@ -476,17 +476,20 @@ struct ComposeView: View {
             } else {
                 composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
             }
-            if composeState.linkPreviewAllowed {
-                if msg.count > 0 {
+            if composeState.linkPreviewAllowed && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS) {
+                if !msg.isEmpty {
                     showLinkPreview(parsedMsg)
                 } else {
                     resetLinkPreview()
                     hasSimplexLink = false
+                    composeState = composeState.copy(preview: .noPreview)
                 }
-            } else if msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) {
-                (_, hasSimplexLink) = getMessageLinks(parsedMsg)
             } else {
-                hasSimplexLink = false
+                resetLinkPreview()
+                hasSimplexLink = !msg.isEmpty && !chat.groupFeatureEnabled(.simplexLinks) && getMessageLinks(parsedMsg).hasSimplexLink
+                if composeState.linkPreviewAllowed {
+                    composeState = composeState.copy(preview: .noPreview)
+                }
             }
         }
         .onChange(of: chat.chatInfo.sendMsgEnabled) { sendEnabled in
