@@ -2607,4 +2607,8 @@
     <string name="prohibit_sending_files_and_media">Запретить отправку файлов.</string>
     <string name="chat_banner_connect_to_use_bot">Нажмите «Подключиться», чтобы использовать бота.</string>
     <string name="cant_send_commands_alert_text">Для отправки команд вы должны быть подключены.</string>
+    <string name="deprecated_options_section">Удалённые настройки</string>
+    <string name="privacy_chat_list_open_clean_web_link">Открыть очищенную ссылку</string>
+    <string name="privacy_chat_list_open_full_web_link">Открыть полную ссылку</string>
+    <string name="sanitize_links_toggle">Удалять параметры отслеживания</string>
 </resources>
