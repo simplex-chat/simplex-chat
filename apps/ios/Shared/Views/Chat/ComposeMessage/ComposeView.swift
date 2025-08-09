@@ -477,7 +477,7 @@ struct ComposeView: View {
                 composeState = composeState.copy(parsedMessage: parsedMsg ?? FormattedText.plain(msg))
             }
             if composeState.linkPreviewAllowed && UserDefaults.standard.bool(forKey: DEFAULT_PRIVACY_LINK_PREVIEWS) {
-                if msg.count > 0 {
+                if !msg.isEmpty {
                     showLinkPreview(parsedMsg)
                 } else {
                     resetLinkPreview()
@@ -486,7 +486,7 @@ struct ComposeView: View {
                 }
             } else {
                 resetLinkPreview()
-                hasSimplexLink = msg.count > 0 && !chat.groupFeatureEnabled(.simplexLinks) && getMessageLinks(parsedMsg).hasSimplexLink
+                hasSimplexLink = !msg.isEmpty && !chat.groupFeatureEnabled(.simplexLinks) && getMessageLinks(parsedMsg).hasSimplexLink
                 if composeState.linkPreviewAllowed {
                     composeState = composeState.copy(preview: .noPreview)
                 }
