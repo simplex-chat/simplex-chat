@@ -4372,7 +4372,7 @@ class FormattedText(val text: String, val format: Format? = null) {
   val linkUri: String? get() =
     when (format) {
       is Format.Uri -> text
-      is Format.WebLink -> format.linkUri
+      is Format.HyperLink -> format.linkUri
       else -> null
     }
 
@@ -4390,7 +4390,7 @@ sealed class Format {
   @Serializable @SerialName("secret") class Secret: Format()
   @Serializable @SerialName("colored") class Colored(val color: FormatColor): Format()
   @Serializable @SerialName("uri") class Uri: Format()
-  @Serializable @SerialName("webLink") class WebLink(val showText: String?, val linkUri: String): Format()
+  @Serializable @SerialName("hyperLink") class HyperLink(val showText: String?, val linkUri: String): Format()
   @Serializable @SerialName("simplexLink") class SimplexLink(val showText: String?, val linkType: SimplexLinkType, val simplexUri: String, val smpHosts: List<String>): Format() {
     val simplexLinkText: String get() =
       "${linkType.description} $viaHosts"
@@ -4411,7 +4411,7 @@ sealed class Format {
     is Secret -> SpanStyle(color = Color.Transparent, background = SecretColor)
     is Colored -> SpanStyle(color = this.color.uiColor)
     is Uri -> linkStyle
-    is WebLink -> linkStyle
+    is HyperLink -> linkStyle
     is SimplexLink -> linkStyle
     is Command -> SpanStyle(color = MaterialTheme.colors.primary, fontFamily = FontFamily.Monospace)
     is Mention -> SpanStyle(fontWeight = FontWeight.Medium)

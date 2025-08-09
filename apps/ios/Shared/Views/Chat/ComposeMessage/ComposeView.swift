@@ -1549,9 +1549,10 @@ func sanitizeMessage(_ parsedMsg: [FormattedText]) -> (message: String, parsedMs
                 pos += updated.text.count
                 sanitizedPos = pos
             }
-        case let .webLink(text, uri):
+        case let .hyperLink(text, uri):
             if let sanitized = parseSanitizeUri(uri)?.uriInfo?.sanitized {
-                updated = FormattedText(text: "[\(text ?? sanitized)](\(sanitized))", format: .webLink(showText: text, linkUri: sanitized))
+                let updatedText = if let text { "[\(text)](\(sanitized))" } else { sanitized }
+                updated = FormattedText(text: updatedText, format: .hyperLink(showText: text, linkUri: sanitized))
                 pos += updated.text.count
                 sanitizedPos = pos
             }

@@ -4629,7 +4629,7 @@ public struct FormattedText: Decodable, Hashable {
     public var linkUri: String? {
         switch format {
         case .uri: text
-        case let .webLink(_, linkUri): linkUri
+        case let .hyperLink(_, linkUri): linkUri
         default: nil
         }
     }
@@ -4643,7 +4643,7 @@ public enum Format: Decodable, Equatable, Hashable {
     case secret
     case colored(color: FormatColor)
     case uri
-    case webLink(showText: String?, linkUri: String)
+    case hyperLink(showText: String?, linkUri: String)
     case simplexLink(showText: String?, linkType: SimplexLinkType, simplexUri: String, smpHosts: [String])
     case command(commandStr: String)
     case mention(memberName: String)

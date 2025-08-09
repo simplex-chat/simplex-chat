@@ -25,7 +25,6 @@ import chat.simplex.common.ui.theme.CurrentColors
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.*
 import kotlinx.coroutines.*
-import java.util.Locale
 
 val reserveTimestampStyle = SpanStyle(color = Color.Transparent)
 val boldFont = SpanStyle(fontWeight = FontWeight.Medium)
@@ -201,17 +200,17 @@ fun MarkdownText (
             is Format.Uri -> {
               hasLinks = true
               val ftStyle = Format.linkStyle
-              val s = ft.text.lowercase(Locale.getDefault())
+              val s = ft.text
               val link = if (s.startsWith("http://") || s.startsWith("https://")) s else "https://$s"
               withAnnotation(tag = "WEB_URL", annotation = link) {
                 withStyle(ftStyle) { append(ft.text) }
               }
             }
-            is Format.WebLink -> {
+            is Format.HyperLink -> {
               hasLinks = true
               val ftStyle = Format.linkStyle
               withAnnotation(tag = "WEB_URL", annotation = ft.format.linkUri) {
-                withStyle(ftStyle) { append(ft.format.showText ?: ft.format.linkUri) }
+                withStyle(ftStyle) { append(ft.format.showText ?: ft.text) }
               }
             }
             is Format.SimplexLink -> {

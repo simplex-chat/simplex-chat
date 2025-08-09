@@ -358,17 +358,16 @@ func messageText(
             case .uri:
                 attrs = linkAttrs()
                 if !preview {
-                    let s = t.lowercased()
-                    let link = s.hasPrefix("http://") || s.hasPrefix("https://")
+                    let link = t.hasPrefix("http://") || t.hasPrefix("https://")
                                 ? t
                                 : "https://" + t
                     attrs[linkAttrKey] = link
                     attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
-            case let .webLink(text, uri):
+            case let .hyperLink(text, uri):
                 attrs = linkAttrs()
-                t = text ?? uri
+                if let text { t = text }
                 if !preview {
                     attrs[linkAttrKey] = uri
                     attrs[webLinkAttrKey] = true
