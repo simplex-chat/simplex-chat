@@ -176,12 +176,14 @@ fun ChatPreviewView(
       is ChatInfo.Direct ->
         if (cInfo.contact.isContactCard) {
           stringResource(MR.strings.contact_tap_to_connect) to MaterialTheme.colors.primary
+        } else if (cInfo.contact.isBot && cInfo.contact.nextConnectPrepared) {
+          stringResource(MR.strings.open_to_use_bot) to Color.Unspecified
         } else if (cInfo.contact.sendMsgToConnect) {
           stringResource(MR.strings.open_to_connect) to Color.Unspecified
         } else if (cInfo.contact.nextAcceptContactRequest) {
           stringResource(MR.strings.open_to_accept) to Color.Unspecified
         } else if (!cInfo.contact.sndReady && cInfo.contact.activeConn != null && cInfo.contact.active) {
-          if (cInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con) {
+          if ((cInfo.contact.preparedContact?.uiConnLinkType == ConnectionMode.Con && !cInfo.contact.isBot) || cInfo.contact.contactGroupMemberId != null) {
             stringResource(MR.strings.contact_should_accept) to Color.Unspecified
           } else {
             stringResource(MR.strings.contact_connection_pending) to Color.Unspecified
@@ -296,37 +298,9 @@ fun ChatPreviewView(
     val uriHandler = LocalUriHandler.current
     when (mc) {
       is MsgContent.MCLink -> SmallContentPreview {
-        val linkClicksEnabled = remember { appPrefs.privacyChatListOpenLinks.state }.value != PrivacyChatListOpenLinksMode.NO
-        IconButton({
-          when (appPrefs.privacyChatListOpenLinks.get()) {
-            PrivacyChatListOpenLinksMode.YES -> uriHandler.openUriCatching(mc.preview.uri)
-            PrivacyChatListOpenLinksMode.NO -> defaultClickAction()
-            PrivacyChatListOpenLinksMode.ASK -> AlertManager.shared.showAlertDialogButtonsColumn(
-              title = generalGetString(MR.strings.privacy_chat_list_open_web_link_question),
-              text = mc.preview.uri,
-              buttons = {
-                Column {
-                  if (chatModel.chatId.value != chat.id) {
-                    SectionItemView({
-                      AlertManager.shared.hideAlert()
-                      defaultClickAction()
-                    }) {
-                      Text(stringResource(MR.strings.open_chat), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-                    }
-                  }
-                  SectionItemView({
-                    AlertManager.shared.hideAlert()
-                    uriHandler.openUriCatching(mc.preview.uri)
-                  }
-                  ) {
-                    Text(stringResource(MR.strings.privacy_chat_list_open_web_link), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-                  }
-                }
-              }
-            )
-          }
-        },
-          if (linkClicksEnabled) Modifier.desktopPointerHoverIconHand() else Modifier,
+        IconButton(
+          { openBrowserAlert(mc.preview.uri, uriHandler) },
+          Modifier.desktopPointerHoverIconHand(),
         ) {
           Image(base64ToBitmap(mc.preview.image), null, contentScale = ContentScale.Crop)
         }

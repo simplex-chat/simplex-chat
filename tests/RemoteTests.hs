@@ -449,7 +449,6 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
   desktop ##> "/create user desk_bottom"
   desktop <## "user profile: desk_bottom"
   desktop <## "use /p <name> [<bio>] to change it"
-  desktop <## "(the updated profile will be sent to all your contacts)"
   desktop ##> "/users"
   desktop <## "alice_desktop (Alice Desktop)"
   desktop <## "desk_bottom (active)"
@@ -462,7 +461,6 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
   desktop ##> "/create user alt_alice"
   desktop <## "user profile: alt_alice"
   desktop <## "use /p <name> [<bio>] to change it"
-  desktop <## "(the updated profile will be sent to all your contacts)"
 
   desktop ##> "/users"
   desktop <## "alice (Alice)"
@@ -471,7 +469,6 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
   desktop ##> "/user"
   desktop <## "user profile: alt_alice"
   desktop <## "use /p <name> [<bio>] to change it"
-  desktop <## "(the updated profile will be sent to all your contacts)"
 
   bob #> "@alice hi"
   (desktop, "[user: alice] ") ^<# "bob> hi"
@@ -484,7 +481,6 @@ multipleProfilesTest = testChat4 aliceProfile aliceDesktopProfile bobProfile cat
   desktop ##> "/user"
   desktop <## "user profile: desk_bottom"
   desktop <## "use /p <name> [<bio>] to change it"
-  desktop <## "(the updated profile will be sent to all your contacts)"
 
   bob #> "@alice hey"
   (desktop, "[remote: 1, user: alice] ") ^<# "bob> hey"

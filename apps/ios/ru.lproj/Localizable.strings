@@ -6108,7 +6108,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "Вы можете найти Ваши жалобы в Чате с админами.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Вы не можете отправлять сообщения!";
 
 /* chat item text */

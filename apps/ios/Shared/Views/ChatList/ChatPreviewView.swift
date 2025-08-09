@@ -351,12 +351,14 @@ struct ChatPreviewView: View {
             if contact.isContactCard {
                 Text("Tap to Connect")
                     .foregroundColor(theme.colors.primary)
+            } else if contact.isBot && contact.nextConnectPrepared {
+                Text("Open to use bot")
             } else if contact.sendMsgToConnect {
                 Text("Open to connect")
             } else if contact.nextAcceptContactRequest {
                 Text("Open to accept")
             } else if !contact.sndReady && contact.activeConn != nil && contact.active {
-                contact.preparedContact?.uiConnLinkType == .con
+                (contact.preparedContact?.uiConnLinkType == .con && !contact.isBot) || contact.contactGroupMemberId != nil
                 ? Text("contact should accept…")
                 : Text("connecting…")
             } else {

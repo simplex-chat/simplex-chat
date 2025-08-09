@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
@@ -25,6 +26,7 @@ import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Data.Word (Word8)
 import Foreign.C.String
 import Foreign.C.Types (CInt (..))
@@ -35,7 +37,7 @@ import GHC.IO.Encoding (setFileSystemEncoding, setForeignEncoding, setLocaleEnco
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
-import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList)
+import Simplex.Chat.Markdown (ParsedMarkdown (..), parseMaybeMarkdownList, parseUri, sanitizeUri)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -56,6 +58,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..)
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
 import System.Timeout (timeout)
+import qualified URI.ByteString as U
 #if !defined(dbPostgres)
 import Data.ByteArray (ScrubbedBytes)
 import Database.SQLite.Simple (SQLError (..))
@@ -80,6 +83,20 @@ data APIResult r
 eitherToResult :: Maybe RemoteHostId -> Either ChatError r -> APIResult r
 eitherToResult rhId = either (APIError rhId) (APIResult rhId)
 {-# INLINE eitherToResult #-}
+
+data ParsedUri = ParsedUri
+  { uriInfo :: Maybe UriInfo,
+    parseError :: Text
+  }
+
+data UriInfo = UriInfo
+  { scheme :: Text,
+    sanitized :: Maybe Text
+  }
+
+$(JQ.deriveJSON defaultJSON ''UriInfo)
+
+$(JQ.deriveJSON defaultJSON ''ParsedUri)
 
 $(pure [])
 
@@ -110,6 +127,8 @@ foreign export ccall "chat_recv_msg_wait" cChatRecvMsgWait :: StablePtr ChatCont
 foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO CJSONString
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
+
+foreign export ccall "chat_parse_uri" cChatParseUri :: CString -> IO CJSONString
 
 foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
@@ -200,6 +219,10 @@ cChatParseMarkdown s = newCStringFromLazyBS . chatParseMarkdown =<< B.packCStrin
 cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCStringFromLazyBS . chatParseServer =<< B.packCString s
 
+-- | parse web URI - returns ParsedUri JSON
+cChatParseUri :: CString -> IO CJSONString
+cChatParseUri s = newCStringFromLazyBS . chatParseUri =<< B.packCString s
+
 cChatPasswordHash :: CString -> CString -> IO CString
 cChatPasswordHash cPwd cSalt = do
   pwd <- B.packCString cPwd
@@ -244,6 +267,7 @@ mobileChatOpts dbOptions =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
+      createBot = Nothing,
       maintenance = True
     }
 
@@ -292,6 +316,7 @@ chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
           DB.ErrorNotADatabase -> Left $ DBMErrorNotADatabase errDbStr
           _ -> dbError e
 #endif
+        dbError :: Show e => e -> Either DBMigrationResult DBStore
         dbError e = Left . DBMErrorSQL errDbStr $ show e
 
 chatCloseStore :: ChatController -> IO String
@@ -340,6 +365,14 @@ chatParseServer = J.encode . toServerAddress . strDecode
       Left e -> ParsedServerAddress Nothing e
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode
+
+chatParseUri :: ByteString -> JSONByteString
+chatParseUri s = J.encode $ case parseUri s of
+  Left e -> ParsedUri Nothing e
+  Right uri@U.URI {uriScheme = U.Scheme sch} ->
+    let sanitized = safeDecodeUtf8 . U.serializeURIRef' <$> sanitizeUri uri
+        uriInfo = UriInfo {scheme = safeDecodeUtf8 sch, sanitized}
+     in ParsedUri (Just uriInfo) ""
 
 chatPasswordHash :: ByteString -> ByteString -> ByteString
 chatPasswordHash pwd salt = either (const "") passwordHash salt'

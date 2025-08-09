@@ -449,6 +449,7 @@
   <string name="no_chats_found">No chats found</string>
   <string name="contact_tap_to_connect">Tap to Connect</string>
   <string name="open_to_connect">Open to connect</string>
+  <string name="open_to_use_bot">Open to use bot</string>
   <string name="open_to_accept">Open to accept</string>
   <string name="contact_should_accept">contact should accept…</string>
   <string name="connect_with_contact_name_question">Connect with %1$s?</string>
@@ -489,8 +490,10 @@
   <!-- ChatBannerView -->
   <string name="chat_banner_connect_to_chat">Tap Connect to chat</string>
   <string name="chat_banner_send_request_to_connect">Tap Connect to send request</string>
+  <string name="chat_banner_connect_to_use_bot">Tap Connect to use bot</string>
   <string name="chat_banner_accept_contact_request">Accept contact request</string>
   <string name="chat_banner_your_contact">Your contact</string>
+  <string name="chat_banner_bot">Bot</string>
   <string name="chat_banner_join_group">Tap Join group</string>
   <string name="chat_banner_your_group">Your group</string>
   <string name="chat_banner_group">Group</string>
@@ -562,6 +565,7 @@
   <string name="you_are_observer">you are observer</string>
   <string name="reviewed_by_admins">reviewed by admins</string>
   <string name="cant_send_message_member_has_old_version">member has old version</string>
+  <string name="cant_send_commands_alert_text">To send commands you must be connected.</string>
 
   <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
   <string name="image_descr">Image</string>
@@ -1068,6 +1072,7 @@
   <string name="debug_logs">Enable logs</string>
   <string name="developer_options">Database IDs and Transport isolation option.</string>
   <string name="developer_options_section">Developer options</string>
+  <string name="deprecated_options_section">Deprecated options</string>
   <string name="show_internal_errors">Show internal errors</string>
   <string name="show_slow_api_calls">Show slow API calls</string>
   <string name="shutdown_alert_question">Shutdown?</string>
@@ -1364,6 +1369,7 @@
   <string name="app_will_ask_to_confirm_unknown_file_servers">The app will ask to confirm downloads from unknown file servers (except .onion or when SOCKS proxy is enabled).</string>
   <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Without Tor or VPN, your IP address will be visible to file servers.</string>
   <string name="send_link_previews">Send link previews</string>
+  <string name="sanitize_links_toggle">Remove link tracking</string>
   <string name="privacy_show_last_messages">Show last messages</string>
   <string name="privacy_message_draft">Message draft</string>
   <string name="full_backup">App data backup</string>
@@ -1430,6 +1436,8 @@
   <string name="privacy_chat_list_open_links_ask">Ask</string>
   <string name="privacy_chat_list_open_web_link_question">Open web link?</string>
   <string name="privacy_chat_list_open_web_link">Open link</string>
+  <string name="privacy_chat_list_open_full_web_link">Open full link</string>
+  <string name="privacy_chat_list_open_clean_web_link">Open clean link</string>
 
   <!-- Settings sections -->
   <string name="settings_section_title_you">YOU</string>
@@ -2157,6 +2165,9 @@
   <string name="allow_your_contacts_to_send_voice_messages">Allow your contacts to send voice messages.</string>
   <string name="allow_voice_messages_only_if">Allow voice messages only if your contact allows them.</string>
   <string name="prohibit_sending_voice_messages">Prohibit sending voice messages.</string>
+  <string name="allow_your_contacts_to_send_files_and_media">Allow your contacts to send files and media.</string>
+  <string name="allow_files_and_media_only_if">Allow files and media only if your contact allows them.</string>
+  <string name="prohibit_sending_files_and_media">Prohibit sending files and media.</string>
   <string name="allow_your_contacts_adding_message_reactions">Allow your contacts adding message reactions.</string>
   <string name="allow_message_reactions_only_if">Allow message reactions only if your contact allows them.</string>
   <string name="prohibit_message_reactions">Prohibit message reactions.</string>
@@ -2175,6 +2186,10 @@
   <string name="only_you_can_send_voice">Only you can send voice messages.</string>
   <string name="only_your_contact_can_send_voice">Only your contact can send voice messages.</string>
   <string name="voice_prohibited_in_this_chat">Voice messages are prohibited in this chat.</string>
+  <string name="both_you_and_your_contact_can_send_files">Both you and your contact can send files and media.</string>
+  <string name="only_you_can_send_files">Only you can send files and media.</string>
+  <string name="only_your_contact_can_send_files">Only your contact can send files and media.</string>
+  <string name="files_prohibited_in_this_chat">Files and media are prohibited in this chat.</string>
   <string name="both_you_and_your_contact_can_add_message_reactions">Both you and your contact can add message reactions.</string>
   <string name="only_you_can_add_message_reactions">Only you can add message reactions.</string>
   <string name="only_your_contact_can_add_message_reactions">Only your contact can add message reactions.</string>

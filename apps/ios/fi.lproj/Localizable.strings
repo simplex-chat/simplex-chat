@@ -3258,7 +3258,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Voit käyttää markdownia viestien muotoiluun:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Et voi lähettää viestejä!";
 
 /* chat item text */

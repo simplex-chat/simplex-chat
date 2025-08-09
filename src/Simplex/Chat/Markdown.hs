@@ -1,6 +1,8 @@
 {-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE MultiWayIf #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -12,11 +14,13 @@
 module Simplex.Chat.Markdown where
 
 import Control.Applicative (optional, (<|>))
+import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
@@ -34,9 +38,10 @@ import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnReqUriData (.
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, sumTypeJSON)
 import Simplex.Messaging.Protocol (ProtocolServer (..))
-import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8)
+import Simplex.Messaging.Util (decodeJSON, safeDecodeUtf8, tshow)
 import System.Console.ANSI.Types
 import qualified Text.Email.Validate as Email
+import qualified URI.ByteString as U
 
 data Markdown = Markdown (Maybe Format) Text | Markdown :|: Markdown
   deriving (Eq, Show)
@@ -49,7 +54,10 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | SimplexLink {linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  -- showText is Nothing for the usual Uri without text
+  | HyperLink {showText :: Maybe Text, linkUri :: Text}
+  | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
+  | Command {commandStr :: Text}
   | Mention {memberName :: Text}
   | Email
   | Phone
@@ -134,11 +142,21 @@ unmarked :: Text -> Markdown
 unmarked = Markdown Nothing
 
 parseMaybeMarkdownList :: Text -> Maybe MarkdownList
-parseMaybeMarkdownList s
-  | all (isNothing . format) ml = Nothing
-  | otherwise = Just . reverse $ foldl' acc [] ml
+parseMaybeMarkdownList s = case ls of
+  [] -> Nothing
+  [l]
+    | T.null cmd -> Nothing
+    | isCmd -> Just [FormattedText (Just $ Command cmd) l]
+    where
+      (isCmd, cmd) = case T.uncons $ T.dropWhile (== ' ') l of
+        Just (c, rest) -> (c == '/', rest)
+        Nothing -> (False, "")
+  _
+    | all (isNothing . format) ml -> Nothing
+    | otherwise -> Just . reverse $ foldl' acc [] ml
   where
-    ml = intercalate ["\n"] . map (markdownToList . parseMarkdown) $ T.lines s
+    ls = T.lines s
+    ml = intercalate ["\n"] $ map (markdownToList . parseMarkdown) ls
     acc [] m = [m]
     acc ms@(FormattedText f t : ms') ft@(FormattedText f' t')
       | f == f' = FormattedText f (t <> t') : ms'
@@ -175,6 +193,8 @@ markdownP = mconcat <$> A.many' fragmentP
           '#' -> A.char '#' *> secretP
           '!' -> coloredP <|> wordP
           '@' -> mentionP <|> wordP
+          '/' -> commandP <|> wordP
+          '[' -> sowLinkP <|> wordP
           _
             | isDigit c -> phoneP <|> wordP
             | otherwise -> wordP
@@ -204,12 +224,28 @@ markdownP = mconcat <$> A.many' fragmentP
       if T.null s || T.last s == ' '
         then fail "not colored"
         else pure $ markdown (colored clr) s
-    mentionP = do
-      c <- A.char '@' *> A.peekChar'
-      (name, punct) <- displayNameTextP_
-      let sName = if c == '\'' then '\'' `T.cons` name `T.snoc` '\'' else name
-          mention = markdown (Mention name) ('@' `T.cons` sName)
-      pure $ if T.null punct then mention else mention :|: unmarked punct
+    mentionP = prefixedStringP '@' displayNameTextP_ Mention
+    commandP = prefixedStringP '/' commandTextP Command
+    prefixedStringP pfx parser format = do
+      c <- A.char pfx *> A.peekChar'
+      (str, punct) <- parser
+      let origStr = if c == '\'' then '\'' `T.cons` str `T.snoc` '\'' else str
+          res = markdown (format str) (pfx `T.cons` origStr)
+      pure $ if T.null punct then res else res :|: unmarked punct
+    sowLinkP = do
+      t <- '[' `inParens` ']'
+      l <- '(' `inParens` ')'
+      let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
+      when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
+      f <- case strDecode $ encodeUtf8 l of
+        Right lnk@(ACL _ cLink) -> case cLink of
+          CLShort _ -> pure $ simplexUriFormat (Just t) lnk
+          CLFull _ -> fail "full SimpleX link in hyperlink"
+        Left _ -> case parseUri $ encodeUtf8 l of
+          Right _ -> pure $ HyperLink (Just t) l
+          Left e -> fail $ "not uri: " <> T.unpack e
+      pure $ markdown f $ T.concat ["[", t, "](", l, ")"]
+    inParens open close = A.char open *> A.takeWhile1 (/= close) <* A.char close
     colorP =
       A.anyChar >>= \case
         'r' -> optional "ed" $> Red
@@ -239,7 +275,11 @@ markdownP = mconcat <$> A.many' fragmentP
     wordMD :: Text -> Markdown
     wordMD s
       | T.null s = unmarked s
-      | isUri s' = res $ uriMarkdown s'
+      | isUri s' = case strDecode $ encodeUtf8 s of
+          Right cLink -> res $ markdown (simplexUriFormat Nothing cLink) s'
+          Left _ -> case parseUri $ encodeUtf8 s' of
+            Right _ -> res $ markdown Uri s'
+            Left _ -> unmarked s
       | isDomain s' = res $ markdown Uri s'
       | isEmail s' = res $ markdown Email s'
       | otherwise = unmarked s
@@ -251,9 +291,6 @@ markdownP = mconcat <$> A.many' fragmentP
       '/' -> False
       ')' -> False
       c -> isPunctuation c
-    uriMarkdown s = case strDecode $ encodeUtf8 s of
-      Right cLink -> markdown (simplexUriFormat cLink) s
-      _ -> markdown Uri s
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
     isDomain s = case T.splitOn "." s of
@@ -267,11 +304,11 @@ markdownP = mconcat <$> A.many' fragmentP
             && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
-    simplexUriFormat :: AConnectionLink -> Format
-    simplexUriFormat = \case
+    simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
+    simplexUriFormat showText = \case
       ACL m (CLFull cReq) -> case cReq of
-        CRContactUri crData -> SimplexLink (linkType' crData) cLink $ uriHosts crData
-        CRInvitationUri crData _ -> SimplexLink XLInvitation cLink $ uriHosts crData
+        CRContactUri crData -> SimplexLink showText (linkType' crData) cLink $ uriHosts crData
+        CRInvitationUri crData _ -> SimplexLink showText XLInvitation cLink $ uriHosts crData
         where
           cLink = ACL m $ CLFull $ simplexConnReqUri cReq
           uriHosts ConnReqUriData {crSmpQueues} = L.map strEncodeText $ sconcat $ L.map (host . qServer) crSmpQueues
@@ -279,8 +316,8 @@ markdownP = mconcat <$> A.many' fragmentP
             Just (CRDataGroup _) -> XLGroup
             Nothing -> XLContact
       ACL m (CLShort sLnk) -> case sLnk of
-        CSLContact _ ct srv _ -> SimplexLink (linkType' ct) cLink $ uriHosts srv
-        CSLInvitation _ srv _ _ -> SimplexLink XLInvitation cLink $ uriHosts srv
+        CSLContact _ ct srv _ -> SimplexLink showText (linkType' ct) cLink $ uriHosts srv
+        CSLInvitation _ srv _ _ -> SimplexLink showText XLInvitation cLink $ uriHosts srv
         where
           cLink = ACL m $ CLShort $ simplexShortLink sLnk
           uriHosts srv = L.map strEncodeText $ host srv
@@ -290,6 +327,24 @@ markdownP = mconcat <$> A.many' fragmentP
             CCTContact -> XLContact
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
+
+parseUri :: B.ByteString -> Either Text U.URI
+parseUri s = case U.parseURI U.laxURIParserOptions s of
+  Left e -> Left $ "Invalid URI: " <> tshow e
+  Right uri@U.URI {uriScheme = U.Scheme sch, uriAuthority}
+    | sch /= "http" && sch /= "https" -> Left $ "Unsupported URI scheme: " <> safeDecodeUtf8 sch
+    | otherwise -> case uriAuthority of
+        Nothing -> Left "No URI host"
+        Just U.Authority {authorityHost = U.Host h}
+          | '.' `B.notElem` h -> Left $ "Invalid URI host: " <> safeDecodeUtf8 h
+          | otherwise -> Right uri
+
+sanitizeUri :: U.URI -> Maybe U.URI
+sanitizeUri uri@U.URI {uriQuery = U.Query originalQS} =
+  let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
+   in if length sanitizedQS == length originalQS
+        then Nothing
+        else Just $ uri {U.uriQuery = U.Query sanitizedQS}
 
 markdownText :: FormattedText -> Text
 markdownText (FormattedText f_ t) = case f_ of
@@ -302,8 +357,10 @@ markdownText (FormattedText f_ t) = case f_ of
     Secret -> around '#'
     Colored (FormatColor c) -> color c
     Uri -> t
+    HyperLink {} -> t
     SimplexLink {} -> t
     Mention _ -> t
+    Command _ -> t
     Email -> t
     Phone -> t
     Unknown _ -> t
@@ -335,6 +392,13 @@ displayNameTextP_ = (,"") <$> quoted '\'' <|> splitPunctuation <$> takeNameTill 
     splitPunctuation s = (T.dropWhileEnd isPunctuation s, T.takeWhileEnd isPunctuation s)
     quoted c = A.char c *> takeNameTill (== c) <* A.char c
     refChar c = c > ' ' && c /= '#' && c /= '@' && c /= '\''
+
+commandTextP :: Parser (Text, Text)
+commandTextP = do
+  (cmd, punct) <- displayNameTextP_
+  case T.words cmd of
+    (keyword : _) | T.all (\c -> isAlpha c || isDigit c || c == '_') keyword -> pure (cmd, punct)
+    _ -> fail "invalid command keyword"
 
 -- quotes names that contain spaces or end on punctuation
 viewName :: Text -> Text

@@ -63,7 +63,7 @@ private suspend fun planAndConnectTask(
     val (connectionLink, connectionPlan) = result
     val link = strHasSingleSimplexLink(shortOrFullLink.trim())
     val linkText = if (link?.format is Format.SimplexLink)
-      "<br><br><u>${link.simplexLinkText(link.format.linkType, link.format.smpHosts)}</u>"
+      "<br><br><u>${link.format.simplexLinkText}</u>"
     else
       ""
     when (connectionPlan) {
@@ -390,7 +390,7 @@ private fun showOpenKnownContactAlert(chatModel: ChatModel, rhId: Long?, close: 
       ProfileImage(
         size = alertProfileImageSize,
         image = contact.profile.image,
-        icon = MR.images.ic_account_circle_filled
+        icon = contact.chatIconName
       )
     },
     confirmText = generalGetString(if (contact.nextConnectPrepared) MR.strings.connect_plan_open_new_chat else MR.strings.connect_plan_open_chat),
@@ -474,7 +474,7 @@ private fun showOpenKnownGroupAlert(chatModel: ChatModel, rhId: Long?, close: ((
       ProfileImage(
         size = alertProfileImageSize,
         image = groupInfo.groupProfile.image,
-        icon = if (groupInfo.businessChat == null) MR.images.ic_supervised_user_circle_filled else MR.images.ic_work_filled_padded
+        icon = groupInfo.chatIconName
       )
     },
     confirmText = generalGetString(
@@ -515,7 +515,10 @@ fun showPrepareContactAlert(
       ProfileImage(
         size = alertProfileImageSize,
         image = contactShortLinkData.profile.image,
-        icon = if (contactShortLinkData.business) MR.images.ic_work_filled_padded else MR.images.ic_account_circle_filled
+        icon =
+          if (contactShortLinkData.business) MR.images.ic_work_filled_padded
+          else if (contactShortLinkData.profile.peerType == ChatPeerType.Bot) MR.images.ic_cube
+          else MR.images.ic_account_circle_filled
       )
     },
     confirmText = generalGetString(MR.strings.connect_plan_open_new_chat),

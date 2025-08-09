@@ -2502,4 +2502,5 @@
     <string name="bio_too_large">Biyografi çok uzun</string>
     <string name="group_descr_too_large">Açıklama çok büyük</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Kaybolma süresi yalnızca yeni kişiler için ayarlanır.</string>
+    <string name="connect_use_incognito_profile">Gizli profil kullan</string>
 </resources>

@@ -114,10 +114,10 @@ chatCommandsDocsData =
         ("APIMembersRole", [], "Set members role. Requires Admin role.", ["CRMembersRoleUser"], [], Just UNBackground, "/_member role #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> " " <> Param "memberRole"),
         ("APIBlockMembersForAll", [], "Block members. Requires Moderator role.", ["CRMembersBlockedForAllUser"], [], Just UNBackground, "/_block #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "blocked" "blocked" Nothing),
         ("APIRemoveMembers", [], "Remove members. Requires Admin role.", ["CRUserDeletedMembers", "CRChatCmdError"], ["CEGroupMemberNotFound"], Just UNBackground, "/_remove #" <> Param "groupId" <> " " <> Join ',' "groupMemberIds" <> OnOffParam "messages" "withMessages" (Just False)),
-        ("APILeaveGroup", [], "Leave group.", ["CRLeftMemberUser"], [], Just UNBackground, "/_leave #" <> Param "groupId")
-        -- ("APIListMembers", [], "Get group members.", ["CRGroupMembers"], [], Nothing, ""),
-        -- ("APINewGroup", [], "Create group.", ["CRGroupCreated"], [], Nothing, ""),
-        -- ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated"], [], Just UNBackground, [])
+        ("APILeaveGroup", [], "Leave group.", ["CRLeftMemberUser"], [], Just UNBackground, "/_leave #" <> Param "groupId"),
+        ("APIListMembers", [], "Get group members.", ["CRGroupMembers"], [], Nothing, "/_members #" <> Param "groupId"),
+        ("APINewGroup", [], "Create group.", ["CRGroupCreated"], [], Nothing, "/_group " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False) <> " " <> Json "groupProfile"),
+        ("APIUpdateGroupProfile", [], "Update group profile.", ["CRGroupUpdated"], [], Just UNBackground, "/_group_profile #" <> Param "groupId" <> " " <> Json "groupProfile")
       ]
     ),
     ( "Group link commands",
@@ -138,7 +138,7 @@ chatCommandsDocsData =
       ]
     ),
     ( "Chat commands",
-      "Commands to list and delete coversations.",
+      "Commands to list and delete conversations.",
       [ ("APIListContacts", [], "Get contacts.", ["CRContactsList"], [], Nothing, "/_contacts " <> Param "userId"),
         ("APIListGroups", [], "Get groups.", ["CRGroupsList"], [], Nothing, "/_groups " <> Param "userId" <> Optional "" (" @" <> Param "$0") "contactId_" <> Optional "" (" " <> Param "$0") "search"),
         ("APIDeleteChat", [], "Delete chat.", ["CRContactDeleted", "CRContactConnectionDeleted", "CRGroupDeletedUser"], [], Just UNBackground, "/_delete " <> Param "chatRef" <> " " <> Param "chatDeleteMode")
@@ -174,7 +174,8 @@ chatCommandsDocsData =
         ("ListUsers", [], "Get all user profiles", ["CRUsersList"], [], Nothing, "/users"),
         ("APISetActiveUser", [], "Set active user profile", ["CRActiveUser"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"),
-        ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile")
+        ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile"),
+        ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
       ]
     )
   ]
@@ -251,6 +252,7 @@ cliCommands =
     "SendMessageQuote",
     "SetActiveUser",
     "SetAddressSettings",
+    "SetBotCommands",
     "SetChatTTL",
     "SetContactFeature",
     "SetContactTimedMessages",
@@ -359,9 +361,7 @@ undocumentedCommands =
     "APIGroupMemberQueueInfo",
     "APIHideUser",
     "APIImportArchive",
-    "APIListMembers",
     "APIMuteUser",
-    "APINewGroup",
     "APIPlanForwardChatItems",
     "APIPrepareContact",
     "APIPrepareGroup",
@@ -384,7 +384,6 @@ undocumentedCommands =
     "APISetConnectionAlias",
     "APISetConnectionIncognito",
     "APISetContactAlias",
-    "APISetContactPrefs",
     "APISetEncryptLocalFiles",
     "APISetGroupAlias",
     "APISetMemberSettings",
@@ -408,7 +407,6 @@ undocumentedCommands =
     "APIUnhideUser",
     "APIUnmuteUser",
     "APIUpdateChatTag",
-    "APIUpdateGroupProfile",
     "APIUploadStandaloneFile",
     "APIUserRead",
     "APIValidateServers",

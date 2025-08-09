@@ -6090,7 +6090,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "Ви можете переглянути свої звіти у чаті з адміністраторами.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Ви не можете надсилати повідомлення!";
 
 /* chat item text */

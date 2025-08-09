@@ -12,6 +12,7 @@ EXPORTS
     chat_recv_msg_wait
     chat_parse_markdown
     chat_parse_server
+    chat_parse_uri
     chat_password_hash
     chat_valid_name
     chat_json_length

@@ -1411,6 +1411,9 @@ set passcode view */
 "Contact preferences" = "Preferenze del contatto";
 
 /* No comment provided by engineer. */
+"Contact requests from groups" = "Richieste di contatto dai gruppi";
+
+/* No comment provided by engineer. */
 "contact should accept…" = "il contatto dovrebbe accettare…";
 
 /* No comment provided by engineer. */
@@ -2368,6 +2371,9 @@ chat item action */
 "Error sending message" = "Errore nell'invio del messaggio";
 
 /* No comment provided by engineer. */
+"Error setting auto-accept" = "Errore impostando l'accettazione automatica";
+
+/* No comment provided by engineer. */
 "Error setting delivery receipts!" = "Errore nell'impostazione delle ricevute di consegna!";
 
 /* No comment provided by engineer. */
@@ -3247,6 +3253,9 @@ snd error text */
 
 /* item status text */
 "Member inactive" = "Membro inattivo";
+
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "Il membro è eliminato - impossibile accettare la richiesta";
 
 /* chat feature */
 "Member reports" = "Segnalazioni dei membri";
@@ -4422,6 +4431,12 @@ swipe action */
 /* No comment provided by engineer. */
 "request to join rejected" = "richiesta di entrare rifiutata";
 
+/* rcv group event chat item */
+"requested connection" = "connessione richiesta";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "connessione richiesta dal gruppo %@";
+
 /* chat list item title */
 "requested to connect" = "richiesto di connettersi";
 
@@ -5431,6 +5446,9 @@ report reason */
 "This setting applies to messages in your current chat profile **%@**." = "Questa impostazione si applica ai messaggi del profilo di chat attuale **%@**.";
 
 /* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Questa impostazione è per il tuo profilo attuale **%@**.";
+
+/* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Il tempo di scomparsa è impostato solo per i contatti nuovi.";
 
 /* No comment provided by engineer. */
@@ -6090,7 +6108,7 @@ report reason */
 /* alert message */
 "You can view your reports in Chat with admins." = "Puoi vedere le tue segnalazioni nella chat con gli amministratori.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Non puoi inviare messaggi!";
 
 /* chat item text */

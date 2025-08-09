@@ -390,7 +390,7 @@ enum SharedContent {
         switch self {
         case let .image(preview, _): .image(text: comment, image: preview)
         case let .movie(preview, duration, _): .video(text: comment, image: preview, duration: duration)
-        case let .url(preview): .link(text: preview.uri.absoluteString + (comment == "" ? "" : "\n" + comment), preview: preview)
+        case let .url(preview): .link(text: preview.uri + (comment == "" ? "" : "\n" + comment), preview: preview)
         case .text: .text(comment)
         case .data: .file(comment)
         }
@@ -464,12 +464,13 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
         // Prepare Link message
         case .url:
             if let url = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? URL {
-                let content: SharedContent =
-                    if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
-                        .url(preview: linkPreview)
-                    } else {
-                        .text(string: url.absoluteString)
-                    }
+                let content: SharedContent
+                if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
+                    privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
+                    content = .url(preview: linkPreview)
+                } else {
+                    content = .text(string: url.absoluteString)
+                }
                 return .success(content)
             } else { return .failure(ErrorAlert("Error preparing message")) }
 

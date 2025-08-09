@@ -4301,7 +4301,7 @@ chat item action */
 /* alert message */
 "You can view invitation link again in connection details." = "Можете да видите отново линкът за покана в подробностите за връзката.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Не може да изпращате съобщения!";
 
 /* chat item text */

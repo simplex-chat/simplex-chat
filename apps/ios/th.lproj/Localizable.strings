@@ -3168,7 +3168,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "คุณไม่สามารถส่งข้อความได้!";
 
 /* chat item text */

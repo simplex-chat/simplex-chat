@@ -552,13 +552,13 @@ swipe action */
 "Allow calls?" = "¿Permitir llamadas?";
 
 /* No comment provided by engineer. */
-"Allow disappearing messages only if your contact allows it to you." = "Se permiten los mensajes temporales pero sólo si tu contacto también los permite para tí.";
+"Allow disappearing messages only if your contact allows it to you." = "Se permiten los mensajes temporales pero sólo si tu contacto también los permite.";
 
 /* No comment provided by engineer. */
 "Allow downgrade" = "Permitir versión anterior";
 
 /* No comment provided by engineer. */
-"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también la permite para tí. (24 horas)";
+"Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también lo permite. (24 horas)";
 
 /* No comment provided by engineer. */
 "Allow message reactions only if your contact allows them." = "Se permiten las reacciones a los mensajes pero sólo si tu contacto también las permite.";
@@ -1081,7 +1081,7 @@ set passcode view */
 "Chat will be deleted for you - this cannot be undone!" = "El chat será eliminado para tí. ¡No puede deshacerse!";
 
 /* chat toolbar */
-"Chat with admins" = "Chatea con los administradores";
+"Chat with admins" = "Chatea con administradores";
 
 /* No comment provided by engineer. */
 "Chat with member" = "Chat con miembro";
@@ -1111,7 +1111,7 @@ set passcode view */
 "Choose _Migrate from another device_ on the new device and scan QR code." = "En el nuevo dispositivo selecciona _Migrar desde otro dispositivo_ y escanéa el código QR.";
 
 /* No comment provided by engineer. */
-"Choose file" = "Elije archivo";
+"Choose file" = "Elegir archivo";
 
 /* No comment provided by engineer. */
 "Choose from library" = "Elige de la biblioteca";
@@ -1405,13 +1405,16 @@ set passcode view */
 "Contact name" = "Contacto";
 
 /* No comment provided by engineer. */
-"contact not ready" = "el contacto no está listo";
+"contact not ready" = "en espera de ser aceptado";
 
 /* No comment provided by engineer. */
 "Contact preferences" = "Preferencias de contacto";
 
 /* No comment provided by engineer. */
-"contact should accept…" = "el contacto debe aceptar…";
+"Contact requests from groups" = "Solicitudes de contacto en grupo";
+
+/* No comment provided by engineer. */
+"contact should accept…" = "el contacto debe aceptarte…";
 
 /* No comment provided by engineer. */
 "Contact will be deleted - this cannot be undone!" = "El contacto será eliminado. ¡No puede deshacerse!";
@@ -2368,6 +2371,9 @@ chat item action */
 "Error sending message" = "Error al enviar mensaje";
 
 /* No comment provided by engineer. */
+"Error setting auto-accept" = "Error al configurar auto aceptar";
+
+/* No comment provided by engineer. */
 "Error setting delivery receipts!" = "¡Error al configurar confirmaciones de entrega!";
 
 /* No comment provided by engineer. */
@@ -3072,19 +3078,19 @@ snd error text */
 "Japanese interface" = "Interfáz en japonés";
 
 /* swipe action */
-"Join" = "Unirte";
+"Join" = "Unirme";
 
 /* No comment provided by engineer. */
-"Join as %@" = "unirte como %@";
+"Join as %@" = "Unirme como %@";
 
 /* new chat sheet title */
-"Join group" = "Unirte al grupo";
+"Join group" = "Unirme al grupo";
 
 /* No comment provided by engineer. */
 "Join group conversations" = "Unirse a la conversación del grupo";
 
 /* No comment provided by engineer. */
-"Join incognito" = "Unirte en modo incógnito";
+"Join incognito" = "Unirme en modo incógnito";
 
 /* new chat action */
 "Join your group?\nThis is your link for group %@!" = "¿Unirse a tu grupo?\n¡Este es tu enlace para el grupo %@!";
@@ -3248,11 +3254,14 @@ snd error text */
 /* item status text */
 "Member inactive" = "Miembro inactivo";
 
+/* No comment provided by engineer. */
+"Member is deleted - can't accept request" = "Miembro eliminado, no puede aceptar solicitudes";
+
 /* chat feature */
 "Member reports" = "Informes de miembros";
 
 /* No comment provided by engineer. */
-"Member role will be changed to \"%@\". All chat members will be notified." = "El rol del miembro cambiará a \"%@\" y todos serán notificados.";
+"Member role will be changed to \"%@\". All chat members will be notified." = "El rol del miembro cambiará a \"%@\". Se notificará en el chat.";
 
 /* No comment provided by engineer. */
 "Member role will be changed to \"%@\". All group members will be notified." = "El rol del miembro cambiará a \"%@\" y se notificará al grupo.";
@@ -3372,7 +3381,7 @@ snd error text */
 "Messages are protected by **end-to-end encryption**." = "Los mensajes están protegidos mediante **cifrado de extremo a extremo**.";
 
 /* No comment provided by engineer. */
-"Messages from %@ will be shown!" = "¡Los mensajes de %@ serán mostrados!";
+"Messages from %@ will be shown!" = "¡Los mensajes nuevos de %@ serán mostrados!";
 
 /* alert message */
 "Messages in this chat will never be deleted." = "Los mensajes de esta conversación nunca se eliminan.";
@@ -3591,7 +3600,7 @@ snd error text */
 "No chats in list %@" = "Sin chats en la lista %@";
 
 /* No comment provided by engineer. */
-"No chats with members" = "Sin chats con miembros";
+"No chats with members" = "Sin chats";
 
 /* No comment provided by engineer. */
 "No contacts selected" = "Ningún contacto seleccionado";
@@ -3848,7 +3857,7 @@ new chat action */
 "Open to connect" = "Abrir para conectar";
 
 /* No comment provided by engineer. */
-"Open to join" = "Abrir para unirte";
+"Open to join" = "Abre para unirte";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Iniciando aplicación…";
@@ -4421,6 +4430,12 @@ swipe action */
 
 /* No comment provided by engineer. */
 "request to join rejected" = "petición para unirse rechazada";
+
+/* rcv group event chat item */
+"requested connection" = "conexión solicitada";
+
+/* rcv direct event chat item */
+"requested connection from group %@" = "conexión solicitada desde el grupo %@";
 
 /* chat list item title */
 "requested to connect" = "solicitado para conectar";
@@ -5013,7 +5028,7 @@ chat item action */
 "SimpleX address and 1-time links are safe to share via any messenger." = "Compartir enlaces de un solo uso y direcciones SimpleX es seguro a través de cualquier medio.";
 
 /* No comment provided by engineer. */
-"SimpleX address or 1-time link?" = "¿Dirección SimpleX o enlace de un uso?";
+"SimpleX address or 1-time link?" = "¿Dirección SimpleX o enlace de un solo uso?";
 
 /* alert title */
 "SimpleX address settings" = "Auto aceptar configuración";
@@ -5221,7 +5236,7 @@ report reason */
 "Tap Create SimpleX address in the menu to create it later." = "Pulsa Crear dirección SimpleX en el menú para crearla más tarde.";
 
 /* No comment provided by engineer. */
-"Tap Join group" = "Pulsa Unirte al grupo";
+"Tap Join group" = "Pulsa Unirme al grupo";
 
 /* No comment provided by engineer. */
 "Tap to activate profile." = "Pulsa sobre un perfil para activarlo.";
@@ -5236,7 +5251,7 @@ report reason */
 "Tap to join incognito" = "Pulsa para unirte en modo incógnito";
 
 /* No comment provided by engineer. */
-"Tap to paste link" = "Pulsa para pegar el enlacePulsa para pegar enlace";
+"Tap to paste link" = "Pulsa aquí para pegar el enlace";
 
 /* No comment provided by engineer. */
 "Tap to scan" = "Pulsa para escanear";
@@ -5410,7 +5425,7 @@ report reason */
 "This device name" = "Nombre del dispositivo";
 
 /* No comment provided by engineer. */
-"This display name is invalid. Please choose another name." = "Éste nombre mostrado no es válido. Por favor, elije otro nombre.";
+"This display name is invalid. Please choose another name." = "Éste nombre mostrado no es válido. Por favor, elige otro nombre.";
 
 /* No comment provided by engineer. */
 "This group has over %lld members, delivery receipts are not sent." = "Este grupo tiene más de %lld miembros, no se enviarán confirmaciones de entrega.";
@@ -5429,6 +5444,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "This setting applies to messages in your current chat profile **%@**." = "Esta configuración se aplica a los mensajes del perfil actual **%@**.";
+
+/* No comment provided by engineer. */
+"This setting is for your current profile **%@**." = "Esta configuración se aplica al perfil actual **%@**.";
 
 /* No comment provided by engineer. */
 "Time to disappear is set only for new contacts." = "Mensajes temporales activados sólo para los contactos nuevos.";
@@ -5542,7 +5560,7 @@ report reason */
 "Unblock member" = "Desbloquear miembro";
 
 /* No comment provided by engineer. */
-"Unblock member for all?" = "¿Desbloquear el miembro para todos?";
+"Unblock member for all?" = "¿Desbloquear al miembro para todos?";
 
 /* No comment provided by engineer. */
 "Unblock member?" = "¿Desbloquear miembro?";
@@ -6088,9 +6106,9 @@ report reason */
 "You can view invitation link again in connection details." = "Puedes ver el enlace de invitación de nuevo en los detalles de la conexión.";
 
 /* alert message */
-"You can view your reports in Chat with admins." = "Puedes ver tus informes en Chat con los administradores.";
+"You can view your reports in Chat with admins." = "Puedes ver tus informes en Chat con administradores.";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "¡No puedes enviar mensajes!";
 
 /* chat item text */
@@ -6187,10 +6205,10 @@ report reason */
 "You will still receive calls and notifications from muted profiles when they are active." = "Seguirás recibiendo llamadas y notificaciones de los perfiles silenciados cuando estén activos.";
 
 /* No comment provided by engineer. */
-"You will stop receiving messages from this chat. Chat history will be preserved." = "Dejarás de recibir mensajes de este chat. El historial del chat se conserva.";
+"You will stop receiving messages from this chat. Chat history will be preserved." = "Dejarás de recibir mensajes del chat. El historial del chat se conserva.";
 
 /* No comment provided by engineer. */
-"You will stop receiving messages from this group. Chat history will be preserved." = "Dejarás de recibir mensajes de este grupo. El historial del chat se conservará.";
+"You will stop receiving messages from this group. Chat history will be preserved." = "Dejarás de recibir mensajes del grupo. El historial del chat se conservará.";
 
 /* No comment provided by engineer. */
 "You won't lose your contacts if you later delete your address." = "Si lo eliminas más tarde tus contactos no se perderán.";

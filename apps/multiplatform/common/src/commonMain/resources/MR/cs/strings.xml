@@ -2432,4 +2432,22 @@
     <string name="connect_plan_open_chat">Otevřít chat</string>
     <string name="connect_plan_open_new_chat">Otevřít nový chat</string>
     <string name="connect_plan_open_new_group">Otevřít novou skupinu</string>
+    <string name="compose_view_connect">Připojit</string>
+    <string name="v6_4_connect_faster">Připojte se rychleji! 🚀</string>
+    <string name="settings_section_title_contact_requests_from_groups">POŽADAVKY NA PŘIPOJENÍ ZE SKUPIN</string>
+    <string name="contact_should_accept">kontakt by měl přijmout…</string>
+    <string name="v6_4_1_short_address_create">Vytvořit vaši adresu</string>
+    <string name="group_descr_too_large">Popis příliš dlouhý</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Povolení mizících zpráv ve výchozím nastavení.</string>
+    <string name="error_changing_user">Chyba změny profilu</string>
+    <string name="error_preparing_contact">Chyba otevření chatu</string>
+    <string name="error_preparing_group">Chyba otevření skupiny</string>
+    <string name="error_rejecting_contact_request">Chyba odmítnutí žádosti o kontakt</string>
+    <string name="chat_banner_group">Skupina</string>
+    <string name="compose_view_join_group">Připojit ke skupině</string>
+    <string name="v6_4_1_keep_chats_clean">Udržujte chat čistý</string>
+    <string name="v6_4_message_delivery_descr">Méně provozu na mobilních sítích.</string>
+    <string name="loading_profile">Načítání profilu…</string>
+    <string name="member_is_deleted_cant_accept_request">Člen je smazán - nemůže přijmout žádost</string>
+    <string name="v6_4_role_moderator">Nová skupinová role: Moderátor</string>
 </resources>

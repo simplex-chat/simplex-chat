@@ -381,7 +381,7 @@ struct ContactsListSearchBar: View {
             } else {
                 if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
                     searchFocussed = false
-                    if case let .simplexLink(linkType, _, smpHosts) = link.format {
+                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
                         ignoreSearchTextChange = true
                         searchText = simplexLinkText(linkType, smpHosts)
                     }

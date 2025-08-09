@@ -519,10 +519,8 @@ private fun ContactsSearchBar(
             // if SimpleX link is pasted, show connection dialogue
             hideKeyboard(view)
             if (link.format is Format.SimplexLink) {
-              val linkText =
-                link.simplexLinkText(link.format.linkType, link.format.smpHosts)
-              searchText.value =
-                searchText.value.copy(linkText, selection = TextRange.Zero)
+              val linkText = link.format.simplexLinkText
+              searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
             }
             searchShowingSimplexLink.value = true
             searchChatFilteredBySimplexLink.value = null
