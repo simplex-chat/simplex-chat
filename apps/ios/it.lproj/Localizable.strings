@@ -558,6 +558,9 @@ swipe action */
 "Allow downgrade" = "Consenti downgrade";
 
 /* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "Consenti file e contenuti multimediali solo se il tuo contatto li consente.";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Consenti l'eliminazione irreversibile dei messaggi solo se il contatto la consente a te. (24 ore)";
 
 /* No comment provided by engineer. */
@@ -607,6 +610,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Permetti ai tuoi contatti di inviare messaggi a tempo.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "Consenti ai tuoi contatti di inviare file e contenuti multimediali.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Permetti ai tuoi contatti di inviare messaggi vocali.";
@@ -862,6 +868,9 @@ marked deleted chat item preview text */
 "bold" = "grassetto";
 
 /* No comment provided by engineer. */
+"Bot" = "Bot";
+
+/* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Sia tu che il tuo contatto potete aggiungere reazioni ai messaggi.";
 
 /* No comment provided by engineer. */
@@ -872,6 +881,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Sia tu che il tuo contatto potete inviare messaggi a tempo.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Sia tu che il tuo contatto potete inviare file e contenuti multimediali.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sia tu che il tuo contatto potete inviare messaggi vocali.";
@@ -1791,6 +1803,9 @@ swipe action */
 "Delivery receipts!" = "Ricevute di consegna!";
 
 /* No comment provided by engineer. */
+"Deprecated options" = "Opzioni deprecate";
+
+/* No comment provided by engineer. */
 "Description" = "Descrizione";
 
 /* alert title */
@@ -2532,6 +2547,9 @@ snd error text */
 "Files and media" = "File e multimediali";
 
 /* No comment provided by engineer. */
+"Files and media are prohibited in this chat." = "File e contenuti multimediali sono vietati in questa chat.";
+
+/* No comment provided by engineer. */
 "Files and media are prohibited." = "File e contenuti multimediali sono vietati in questo gruppo.";
 
 /* No comment provided by engineer. */
@@ -2981,7 +2999,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "Nome da mostrare non valido!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Link non valido";
 
 /* No comment provided by engineer. */
@@ -3800,6 +3818,9 @@ new chat action */
 "Only you can send disappearing messages." = "Solo tu puoi inviare messaggi a tempo.";
 
 /* No comment provided by engineer. */
+"Only you can send files and media." = "Solo tu puoi inviare file e contenuti multimediali.";
+
+/* No comment provided by engineer. */
 "Only you can send voice messages." = "Solo tu puoi inviare messaggi vocali.";
 
 /* No comment provided by engineer. */
@@ -3813,6 +3834,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Solo il tuo contatto può inviare messaggi a tempo.";
+
+/* No comment provided by engineer. */
+"Only your contact can send files and media." = "Solo il tuo contatto può inviare file e contenuti multimediali.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Solo il tuo contatto può inviare messaggi vocali.";
@@ -3829,8 +3853,14 @@ new chat action */
 /* authentication reason */
 "Open chat console" = "Apri la console della chat";
 
+/* alert action */
+"Open clean link" = "Apri link pulito";
+
 /* No comment provided by engineer. */
 "Open conditions" = "Apri le condizioni";
+
+/* alert action */
+"Open full link" = "Apri link completo";
 
 /* new chat action */
 "Open group" = "Apri gruppo";
@@ -3858,6 +3888,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Open to join" = "Apri per entrare";
+
+/* No comment provided by engineer. */
+"Open to use bot" = "Apri per usare il bot";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Apertura dell'app…";
@@ -4340,6 +4373,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove image" = "Rimuovi immagine";
+
+/* No comment provided by engineer. */
+"Remove link tracking" = "Rimuovi il tracciamento del link";
 
 /* No comment provided by engineer. */
 "Remove member" = "Rimuovi membro";
@@ -5233,6 +5269,9 @@ report reason */
 "Tap Connect to send request" = "Tocca Connetti per inviare la richiesta";
 
 /* No comment provided by engineer. */
+"Tap Connect to use bot" = "Tocca Connetti per usare il bot";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Tocca Crea indirizzo SimpleX nel menu per crearlo più tardi.";
 
 /* No comment provided by engineer. */
@@ -5498,6 +5537,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "To send" = "Per inviare";
+
+/* alert message */
+"To send commands you must be connected." = "Per inviare comandi devi essere connesso/a.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Per supportare le notifiche push istantanee, il database della chat deve essere migrato.";
