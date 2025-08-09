@@ -428,7 +428,7 @@
     <string name="v4_6_reduced_battery_usage">مزيد من تقليل استخدام البطارية</string>
     <string name="info_row_group">المجموعة</string>
     <string name="for_everybody">للجميع</string>
-    <string name="file_not_found">لم يتم العثور على الملف</string>
+    <string name="file_not_found">لم يُعثر على الملف</string>
     <string name="from_gallery_button">من المعرض</string>
     <string name="v4_4_french_interface">الواجهة الفرنسية</string>
     <string name="settings_section_title_help">المساعدة</string>
@@ -798,7 +798,7 @@
     <string name="opening_database">جارِ فتح قاعدة البيانات…</string>
     <string name="only_your_contact_can_send_voice">جهة اتصالك فقط يمكنها إرسال رسائل صوتية.</string>
     <string name="paste_button">ألصق</string>
-    <string name="restore_passphrase_not_found_desc">لم يتم العثور على عبارة المرور في Keystore، يُرجى إدخالها يدويًا. ربما حدث هذا إذا استعدت بيانات التطبيق باستخدام أداة النسخ الاحتياطي. إذا لم يكن الأمر كذلك، يُرجى التواصل مع المطورين.</string>
+    <string name="restore_passphrase_not_found_desc">لم يُعثر على عبارة المرور في Keystore، يُرجى إدخالها يدويًا. ربما حدث هذا إذا استعدت بيانات التطبيق باستخدام أداة النسخ الاحتياطي. إذا لم يكن الأمر كذلك، يُرجى التواصل مع المطورين.</string>
     <string name="open_chat">افتح الدردشة</string>
     <string name="simplex_link_mode_browser_warning">قد يؤدي فتح الرابط في المتصفح إلى تقليل خصوصية الاتصال وأمانه. ستظهر روابط SimpleX غير الموثوقة باللون الأحمر.</string>
     <string name="only_you_can_add_message_reactions">أنت فقط يمكنك إضافة ردود الفعل على الرسالة.</string>
@@ -1828,7 +1828,7 @@
     <string name="file_error">خطأ في الملف</string>
     <string name="temporary_file_error">خطأ في الملف مؤقت</string>
     <string name="info_row_message_status">حالة الرسالة</string>
-    <string name="file_error_no_file">لم يتم العثور على الملف - على الأرجح حُذف الملف أو إلغاؤه.</string>
+    <string name="file_error_no_file">لم يُعثر على الملف - على الأرجح حُذف الملف أو أُلغيَ.</string>
     <string name="info_row_file_status">حالة الملف</string>
     <string name="share_text_file_status">حالة الملف: %s</string>
     <string name="share_text_message_status">حالة الرسالة: %s</string>
@@ -2241,7 +2241,7 @@
     <string name="no_chats">لا دردشات</string>
     <string name="no_chats_in_list">لا توجد محادثات في القائمة %s.</string>
     <string name="no_unread_chats">لا توجد محادثات غير مقروءة</string>
-    <string name="no_chats_found">لم يتم العثور على أي محادثات</string>
+    <string name="no_chats_found">لم يُعثر على أي محادثات</string>
     <string name="chat_list_favorites">المفضلات</string>
     <string name="chat_list_add_list">أضف القائمة</string>
     <string name="chat_list_all">الكل</string>
