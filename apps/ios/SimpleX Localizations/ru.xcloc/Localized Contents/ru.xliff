@@ -869,6 +869,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
         <source>Allow files and media only if your contact allows them.</source>
+        <target>Разрешить файлы и медиа, только если их разрешает Ваш контакт.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -958,6 +959,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
         <source>Allow your contacts to send files and media.</source>
+        <target>Разрешить Вашим контактам отправлять файлы и медиа.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -1322,6 +1324,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Bot" xml:space="preserve">
         <source>Bot</source>
+        <target>Бот</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1346,6 +1349,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send files and media." xml:space="preserve">
         <source>Both you and your contact can send files and media.</source>
+        <target>Вы и Ваш контакт можете отправлять файлы и медиа.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
@@ -2682,6 +2686,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Deprecated options" xml:space="preserve">
         <source>Deprecated options</source>
+        <target>Удалённые настройки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -3818,6 +3823,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Files and media are prohibited in this chat." xml:space="preserve">
         <source>Files and media are prohibited in this chat.</source>
+        <target>Файлы и медиа запрещены в этом чате.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media are prohibited." xml:space="preserve">
@@ -5712,6 +5718,7 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Only you can send files and media." xml:space="preserve">
         <source>Only you can send files and media.</source>
+        <target>Только Вы можете отправлять файлы и медиа.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
@@ -5741,6 +5748,7 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Only your contact can send files and media." xml:space="preserve">
         <source>Only your contact can send files and media.</source>
+        <target>Только Ваш контакт может отправлять файлы и медиа.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
@@ -5775,6 +5783,7 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Open clean link" xml:space="preserve">
         <source>Open clean link</source>
+        <target>Открыть очищенную ссылку</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open conditions" xml:space="preserve">
@@ -5784,6 +5793,7 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Open full link" xml:space="preserve">
         <source>Open full link</source>
+        <target>Открыть полную ссылку</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open group" xml:space="preserve">
@@ -5828,6 +5838,7 @@ Requires compatible VPN.</source>
       </trans-unit>
       <trans-unit id="Open to use bot" xml:space="preserve">
         <source>Open to use bot</source>
+        <target>Откройте чтобы использовать бот</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
@@ -6577,6 +6588,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove link tracking" xml:space="preserve">
         <source>Remove link tracking</source>
+        <target>Удалять параметры отслеживания</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
@@ -7966,6 +7978,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Tap Connect to use bot" xml:space="preserve">
         <source>Tap Connect to use bot</source>
+        <target>Нажмите Соединиться, чтобы использовать бот.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -8384,6 +8397,7 @@ You will be prompted to complete authentication before this feature is enabled.<
       </trans-unit>
       <trans-unit id="To send commands you must be connected." xml:space="preserve">
         <source>To send commands you must be connected.</source>
+        <target>Вы должны быть соединены, чтобы отправлять команды.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">

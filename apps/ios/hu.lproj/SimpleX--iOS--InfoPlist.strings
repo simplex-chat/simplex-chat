@@ -14,5 +14,5 @@
 "NSMicrophoneUsageDescription" = "A SimpleXnek mikrofon-hozzáférésre van szüksége hang- és videohívásokhoz, valamint hangüzenetek rögzítéséhez.";
 
 /* Privacy - Photo Library Additions Usage Description */
-"NSPhotoLibraryAddUsageDescription" = "A SimpleXnek galéria-hozzáférésre van szüksége a rögzített és fogadott média mentéséhez";
+"NSPhotoLibraryAddUsageDescription" = "A SimpleXnek hozzáférésre van szüksége a galériához a rögzített és fogadott média mentéséhez";
 

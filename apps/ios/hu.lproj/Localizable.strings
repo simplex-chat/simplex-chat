@@ -435,7 +435,7 @@ swipe action */
 "Add your team members to the conversations." = "Adja hozzá a munkatársait a beszélgetésekhez.";
 
 /* No comment provided by engineer. */
-"Added media & file servers" = "Hozzáadott média- és fájlkiszolgálók";
+"Added media & file servers" = "Hozzáadott fájl- és médiakiszolgálók";
 
 /* No comment provided by engineer. */
 "Added message servers" = "Hozzáadott üzenetkiszolgálók";
@@ -558,6 +558,9 @@ swipe action */
 "Allow downgrade" = "Visszafejlesztés engedélyezése";
 
 /* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "A fájlok és a médiatartalmak küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi. (24 óra)";
 
 /* No comment provided by engineer. */
@@ -582,7 +585,7 @@ swipe action */
 "Allow to report messsages to moderators." = "Az üzenetek jelentése a moderátorok felé engedélyezve van.";
 
 /* No comment provided by engineer. */
-"Allow to send files and media." = "A fájlok- és a médiatartalmak küldése engedélyezve van.";
+"Allow to send files and media." = "A fájlok és a médiatartalmak küldése engedélyezve van.";
 
 /* No comment provided by engineer. */
 "Allow to send SimpleX links." = "A SimpleX-hivatkozások küldése engedélyezve van.";
@@ -607,6 +610,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Az eltűnő üzenetek küldésének engedélyezése a partnerei számára.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "A fájlok és a médiatartalmak küldése engedélyezve van a partnerei számára.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "A hangüzenetek küldése engedélyezve van a partnerei számára.";
@@ -862,6 +868,9 @@ marked deleted chat item preview text */
 "bold" = "félkövér";
 
 /* No comment provided by engineer. */
+"Bot" = "Bot";
+
+/* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Mindkét fél hozzáadhat az üzenetekhez reakciókat.";
 
 /* No comment provided by engineer. */
@@ -872,6 +881,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Mindkét fél küldhet eltűnő üzeneteket.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Mindkét fél küldhet fájlokat és médiatartalmakat.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Mindkét fél küldhet hangüzeneteket.";
@@ -1686,7 +1698,7 @@ swipe action */
 "Delete file" = "Fájl törlése";
 
 /* No comment provided by engineer. */
-"Delete files and media?" = "Törli a fájl- és a médiatartalmakat?";
+"Delete files and media?" = "Törli a fájlokat és a médiatartalmakat?";
 
 /* No comment provided by engineer. */
 "Delete files for all chat profiles" = "Fájlok törlése az összes csevegési profilból";
@@ -1789,6 +1801,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Delivery receipts!" = "Kézbesítési jelentések!";
+
+/* No comment provided by engineer. */
+"Deprecated options" = "Elavult beállítások";
 
 /* No comment provided by engineer. */
 "Description" = "Leírás";
@@ -2074,7 +2089,7 @@ chat item action */
 "Encrypt local files" = "Helyi fájlok titkosítása";
 
 /* No comment provided by engineer. */
-"Encrypt stored files & media" = "A tárolt fájlok- és a médiatartalmak titkosítása";
+"Encrypt stored files & media" = "Tárolt fájlok és médiatartalmak titkosítása";
 
 /* No comment provided by engineer. */
 "Encrypted database" = "Titkosított adatbázis";
@@ -2532,13 +2547,16 @@ snd error text */
 "Files and media" = "Fájlok és médiatartalmak";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited." = "A fájlok- és a médiatartalmak küldése le van tiltva.";
+"Files and media are prohibited in this chat." = "A fájlok és a médiatartalmak küldése le van tiltva ebben a csevegésben.";
 
 /* No comment provided by engineer. */
-"Files and media not allowed" = "A fájlok- és médiatartalmak nincsenek engedélyezve";
+"Files and media are prohibited." = "A fájlok és a médiatartalmak küldése le van tiltva.";
 
 /* No comment provided by engineer. */
-"Files and media prohibited!" = "A fájlok- és a médiatartalmak küldése le van tiltva!";
+"Files and media not allowed" = "A fájlok és a médiatartalmak nincsenek engedélyezve";
+
+/* No comment provided by engineer. */
+"Files and media prohibited!" = "A fájlok és a médiatartalmak küldése le van tiltva!";
 
 /* No comment provided by engineer. */
 "Filter unread and favorite chats." = "Olvasatlan és kedvenc csevegésekre való szűrés.";
@@ -2981,7 +2999,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "Érvénytelen megjelenítendő név!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Érvénytelen hivatkozás";
 
 /* No comment provided by engineer. */
@@ -3228,7 +3246,7 @@ snd error text */
 "Max 30 seconds, received instantly." = "Max. 30 másodperc, azonnal érkezett.";
 
 /* No comment provided by engineer. */
-"Media & file servers" = "Média- és fájlkiszolgálók";
+"Media & file servers" = "Fájl- és médiakiszolgálók";
 
 /* blur media */
 "Medium" = "Közepes";
@@ -3633,7 +3651,7 @@ snd error text */
 "No info, try to reload" = "Nincs információ, próbálja meg újratölteni";
 
 /* servers error */
-"No media & file servers." = "Nincsenek média- és fájlkiszolgálók.";
+"No media & file servers." = "Nincsenek fájl- és médiakiszolgálók.";
 
 /* No comment provided by engineer. */
 "No message" = "Nincs üzenet";
@@ -3776,7 +3794,7 @@ new chat action */
 "Only group owners can change group preferences." = "Csak a csoport tulajdonosai módosíthatják a csoportbeállításokat.";
 
 /* No comment provided by engineer. */
-"Only group owners can enable files and media." = "Csak a csoport tulajdonosai engedélyezhetik a fájlok- és a médiatartalmak küldését.";
+"Only group owners can enable files and media." = "Csak a csoport tulajdonosai engedélyezhetik a fájlok és a médiatartalmak küldését.";
 
 /* No comment provided by engineer. */
 "Only group owners can enable voice messages." = "Csak a csoport tulajdonosai engedélyezhetik a hangüzenetek küldését.";
@@ -3800,6 +3818,9 @@ new chat action */
 "Only you can send disappearing messages." = "Csak Ön tud eltűnő üzeneteket küldeni.";
 
 /* No comment provided by engineer. */
+"Only you can send files and media." = "Csak Ön küldhet fájlokat és médiatartalmakat.";
+
+/* No comment provided by engineer. */
 "Only you can send voice messages." = "Csak Ön tud hangüzeneteket küldeni.";
 
 /* No comment provided by engineer. */
@@ -3813,6 +3834,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Csak a partnere tud eltűnő üzeneteket küldeni.";
+
+/* No comment provided by engineer. */
+"Only your contact can send files and media." = "Csak a partnere küldhet fájlokat és a médiatartalmakat.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Csak a partnere tud hangüzeneteket küldeni.";
@@ -3829,8 +3853,14 @@ new chat action */
 /* authentication reason */
 "Open chat console" = "Csevegési konzol megnyitása";
 
+/* alert action */
+"Open clean link" = "Tiszta hivatkozás megnyitása";
+
 /* No comment provided by engineer. */
 "Open conditions" = "Feltételek megnyitása";
+
+/* alert action */
+"Open full link" = "Teljes hivatkozás megnyitása";
 
 /* new chat action */
 "Open group" = "Csoport megnyitása";
@@ -3858,6 +3888,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Open to join" = "Megnyitás a csatlakozáshoz";
+
+/* No comment provided by engineer. */
+"Open to use bot" = "Megnyitás a bot használatához";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Az alkalmazás megnyitása…";
@@ -4139,7 +4172,7 @@ new chat action */
 "Prohibit sending disappearing messages." = "Az eltűnő üzenetek küldése le van tiltva.";
 
 /* No comment provided by engineer. */
-"Prohibit sending files and media." = "A fájlok- és a médiatartalmak küldése le van tiltva.";
+"Prohibit sending files and media." = "A fájlok és a médiatartalmak küldése le van tiltva.";
 
 /* No comment provided by engineer. */
 "Prohibit sending SimpleX links." = "A SimpleX-hivatkozások küldése le van tiltva.";
@@ -4340,6 +4373,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove image" = "Kép eltávolítása";
+
+/* No comment provided by engineer. */
+"Remove link tracking" = "Hivatkozáskövetés eltávolítása";
 
 /* No comment provided by engineer. */
 "Remove member" = "Eltávolítás";
@@ -5233,6 +5269,9 @@ report reason */
 "Tap Connect to send request" = "Koppintson a „Kapcsolódás” gombra a kérés elküldéséhez";
 
 /* No comment provided by engineer. */
+"Tap Connect to use bot" = "Koppintson a „Kapcsolódás” gombra a bot használatához";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Koppintson a SimpleX-cím létrehozása menüpontra a későbbi létrehozáshoz.";
 
 /* No comment provided by engineer. */
@@ -5499,6 +5538,9 @@ report reason */
 /* No comment provided by engineer. */
 "To send" = "A küldéshez";
 
+/* alert message */
+"To send commands you must be connected." = "A parancsok küldéséhez kapcsolódva kell lennie.";
+
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Az azonnali push-értesítések támogatásához a csevegési adatbázis átköltöztetése szükséges.";
 
@@ -5611,7 +5653,7 @@ report reason */
 "unknown status" = "ismeretlen állapot";
 
 /* No comment provided by engineer. */
-"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakítások elkerülése érdekében.";
+"Unless you use iOS call interface, enable Do Not Disturb mode to avoid interruptions." = "Hacsak nem az iOS hívási felületét használja, engedélyezze a Ne zavarjanak módot a megszakadások elkerülése érdekében.";
 
 /* No comment provided by engineer. */
 "Unless your contact deleted the connection or this link was already used, it might be a bug - please report it.\nTo connect, please ask your contact to create another connection link and check that you have a stable network connection." = "Hacsak a partnere nem törölte a kapcsolatot, vagy ez a hivatkozás már használatban volt egyszer, lehet hogy ez egy hiba – jelentse a problémát.\nA kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.";
@@ -5659,7 +5701,7 @@ report reason */
 "Updated conditions" = "Frissített feltételek";
 
 /* rcv group event chat item */
-"updated group profile" = "frissítette a csoport profilját";
+"updated group profile" = "frissítette a csoportprofilt";
 
 /* profile update event chat item */
 "updated profile" = "frissítette a profilját";
@@ -5734,7 +5776,7 @@ report reason */
 "Use incognito profile" = "Inkognitóprofil használata";
 
 /* No comment provided by engineer. */
-"Use iOS call interface" = "Az iOS hívási felületét használata";
+"Use iOS call interface" = "iOS hívási felület használata";
 
 /* new chat action */
 "Use new incognito profile" = "Új inkognitóprofil használata";

@@ -876,7 +876,7 @@
     <string name="allow_to_delete_messages">Разрешить необратимо удалять отправленные сообщения. (24 часа)</string>
     <string name="prohibit_message_deletion">Запретить необратимое удаление сообщений.</string>
     <string name="allow_to_send_voice">Разрешить отправлять голосовые сообщения.</string>
-    <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщений.</string>
+    <string name="prohibit_sending_voice">Запретить отправлять голосовые сообщения.</string>
     <string name="group_members_can_send_dms">Члены могут посылать прямые сообщения.</string>
     <string name="direct_messages_are_prohibited_in_group">Прямые сообщения между членами группы запрещены.</string>
     <string name="group_members_can_delete">Члены могут необратимо удалять отправленные сообщения. (24 часа)</string>
@@ -1393,7 +1393,7 @@
     <string name="no_filtered_chats">Нет отфильтрованных разговоров</string>
     <string name="sync_connection_force_confirm">Пересогласовать</string>
     <string name="sync_connection_force_question">Пересогласовать шифрование\?</string>
-    <string name="prohibit_sending_files">Запретить слать файлы и медиа.</string>
+    <string name="prohibit_sending_files">Запретить посылать файлы и медиа.</string>
     <string name="connect_via_link_incognito">Соединиться Инкогнито </string>
     <string name="turn_off_battery_optimization_button">Разрешить</string>
     <string name="turn_off_system_restriction_button">Открыть настройки приложения</string>
@@ -2596,4 +2596,19 @@
     <string name="chat_banner_your_business_contact">Ваш бизнес контакт</string>
     <string name="chat_banner_your_contact">Ваш контакт</string>
     <string name="chat_banner_your_group">Ваша группа</string>
+    <string name="allow_files_and_media_only_if">Разрешить файлы и медиа, только если их разрешает Ваш контакт.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Разрешить Вашим контактам отправлять файлы и медиа.</string>
+    <string name="chat_banner_bot">Бот</string>
+    <string name="both_you_and_your_contact_can_send_files">Вы и Ваш контакт можете отправлять файлы и медиа.</string>
+    <string name="files_prohibited_in_this_chat">Файлы и медиа запрещены в этом чате.</string>
+    <string name="only_you_can_send_files">Только Вы можете отправлять файлы и медиа.</string>
+    <string name="only_your_contact_can_send_files">Только Ваш контакт может отправлять файлы и медиа.</string>
+    <string name="open_to_use_bot">Откройте чтобы использовать бот</string>
+    <string name="prohibit_sending_files_and_media">Запретить отправлять файлы и медиа.</string>
+    <string name="chat_banner_connect_to_use_bot">Нажмите Соединиться, чтобы использовать бот.</string>
+    <string name="cant_send_commands_alert_text">Вы должны быть соединены, чтобы отправлять команды.</string>
+    <string name="deprecated_options_section">Удалённые настройки</string>
+    <string name="privacy_chat_list_open_clean_web_link">Открыть очищенную ссылку</string>
+    <string name="privacy_chat_list_open_full_web_link">Открыть полную ссылку</string>
+    <string name="sanitize_links_toggle">Удалять параметры отслеживания</string>
 </resources>
