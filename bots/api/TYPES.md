@@ -1979,8 +1979,8 @@ Colored:
 Uri:
 - type: "uri"
 
-WebLink:
-- type: "webLink"
+HyperLink:
+- type: "hyperLink"
 - showText: string?
 - linkUri: string
 

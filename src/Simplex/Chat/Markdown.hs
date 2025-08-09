@@ -14,6 +14,7 @@
 module Simplex.Chat.Markdown where
 
 import Control.Applicative (optional, (<|>))
+import Control.Monad
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
@@ -53,7 +54,8 @@ data Format
   | Secret
   | Colored {color :: FormatColor}
   | Uri
-  | WebLink {showText :: Maybe Text, linkUri :: Text} -- showText is Nothing when the link text is the same as URI.
+  -- showText is Nothing for the usual Uri without text
+  | HyperLink {showText :: Maybe Text, linkUri :: Text}
   | SimplexLink {showText :: Maybe Text, linkType :: SimplexLinkType, simplexUri :: AConnectionLink, smpHosts :: NonEmpty Text}
   | Command {commandStr :: Text}
   | Mention {memberName :: Text}
@@ -234,17 +236,13 @@ markdownP = mconcat <$> A.many' fragmentP
       t <- '[' `inParens` ']'
       l <- '(' `inParens` ')'
       let hasPunct = T.any (\c -> isPunctuation c && c /= '-' && c /= '_') t
-      showText <-
-        if
-          | t == l -> pure Nothing
-          | hasPunct && ("https://" <> t) /= l -> fail "punctuation in hyperlink text"
-          | otherwise -> pure $ Just t
+      when (hasPunct && t /= l && ("https://" <> t) /= l) $ fail "punctuation in hyperlink text"
       f <- case strDecode $ encodeUtf8 l of
         Right lnk@(ACL _ cLink) -> case cLink of
-          CLShort _ -> pure $ simplexUriFormat showText lnk
+          CLShort _ -> pure $ simplexUriFormat (Just t) lnk
           CLFull _ -> fail "full SimpleX link in hyperlink"
         Left _ -> case parseUri $ encodeUtf8 l of
-          Right _ -> pure $ WebLink showText l
+          Right _ -> pure $ HyperLink (Just t) l
           Left e -> fail $ "not uri: " <> T.unpack e
       pure $ markdown f $ T.concat ["[", t, "](", l, ")"]
     inParens open close = A.char open *> A.takeWhile1 (/= close) <* A.char close
@@ -359,7 +357,7 @@ markdownText (FormattedText f_ t) = case f_ of
     Secret -> around '#'
     Colored (FormatColor c) -> color c
     Uri -> t
-    WebLink {} -> t
+    HyperLink {} -> t
     SimplexLink {} -> t
     Mention _ -> t
     Command _ -> t

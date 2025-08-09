@@ -224,18 +224,18 @@ textWithUri = describe "text with Uri" do
     ("https://simplex.chat" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
     ("simplex:" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("simplex:" <> gr)
 
-weblink :: Text -> Text -> Text -> Markdown
-weblink t u = Markdown $ Just WebLink {showText = Just t, linkUri = u}
+web :: Text -> Text -> Text -> Markdown
+web t u = Markdown $ Just HyperLink {showText = Just t, linkUri = u}
 
 textWithHyperlink :: Spec
-textWithHyperlink = describe "text with WebLink without link text" do
+textWithHyperlink = describe "text with HyperLink without link text" do
   let addr = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
       addr' = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
   it "correct markdown" do
-    "[click here](https://example.com)" <==> weblink "click here" "https://example.com" "[click here](https://example.com)"
-    "For details [click here](https://example.com)" <==> "For details " <> weblink "click here" "https://example.com" "[click here](https://example.com)"
-    "[example.com](https://example.com)" <==> weblink "example.com" "https://example.com" "[example.com](https://example.com)"
-    "[example.com/page](https://example.com/page)" <==> weblink "example.com/page" "https://example.com/page" "[example.com/page](https://example.com/page)"
+    "[click here](https://example.com)" <==> web "click here" "https://example.com" "[click here](https://example.com)"
+    "For details [click here](https://example.com)" <==> "For details " <> web "click here" "https://example.com" "[click here](https://example.com)"
+    "[example.com](https://example.com)" <==> web "example.com" "https://example.com" "[example.com](https://example.com)"
+    "[example.com/page](https://example.com/page)" <==> web "example.com/page" "https://example.com/page" "[example.com/page](https://example.com/page)"
     ("[Connect to me](" <> addr <> ")") <==> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] (Just "Connect to me")) ("[Connect to me](" <> addr <> ")")
   it "potentially spoofed link" do
     "[https://example.com](https://another.com)" <==> "[https://example.com](https://another.com)"
