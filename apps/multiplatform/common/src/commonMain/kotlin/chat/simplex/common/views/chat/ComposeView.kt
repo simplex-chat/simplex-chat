@@ -373,7 +373,7 @@ fun ComposeView(
   val hasSimplexLink = rememberSaveable { mutableStateOf(getMessageLinks(parseToMarkdown(composeState.value.message.text)).second) }
   val prevLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
   val pendingLinkUrl = rememberSaveable { mutableStateOf<String?>(null) }
-  val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+  val useLinkPreviews = true
   val saveLastDraft = chatModel.controller.appPrefs.privacySaveLastDraft.get()
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember(MaterialTheme.colors.isLight) { mutableStateOf(smallFont) }
@@ -902,7 +902,7 @@ fun ComposeView(
 
   fun onMessageChange(s: ComposeMessage) {
     var parsedMessage = parseToMarkdown(s.text)
-    if (chatModel.controller.appPrefs.privacySanitizeLinks.state.value && parsedMessage != null) {
+    if (chatModel.controller.appPrefs.privacySanitizeLinks.get() && parsedMessage != null) {
       val (updatedMsg, updatedParsedMsg, sanitizedPos) = sanitizeMessage(parsedMessage)
       if (sanitizedPos == null) {
         composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage)
@@ -918,17 +918,18 @@ fun ComposeView(
       textStyle.value = if (s.text.codePoints().count() < 4) largeEmojiFont else mediumEmojiFont
     } else {
       textStyle.value = smallFont
-      if (composeState.value.linkPreviewAllowed) {
+      if (composeState.value.linkPreviewAllowed && chatModel.controller.appPrefs.privacyLinkPreviews.get()) {
         if (s.text.isNotEmpty()) {
           showLinkPreview(parsedMessage)
         } else {
           resetLinkPreview()
           hasSimplexLink.value = false
+          composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
         }
-      } else if (s.text.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks)) {
-        hasSimplexLink.value = getMessageLinks(parsedMessage).second
       } else {
-        hasSimplexLink.value = false
+        resetLinkPreview()
+        hasSimplexLink.value = s.text.isNotEmpty() && !chat.groupFeatureEnabled(GroupFeature.SimplexLinks) && getMessageLinks(parsedMessage).second
+        if (composeState.value.linkPreviewAllowed) composeState.value = composeState.value.copy(preview = ComposePreview.NoPreview)
       }
     }
   }
