@@ -2819,7 +2819,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "Nom d'affichage invalide !";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Lien invalide";
 
 /* No comment provided by engineer. */

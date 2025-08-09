@@ -2975,7 +2975,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "Неправильне ім'я користувача!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Невірне посилання";
 
 /* No comment provided by engineer. */

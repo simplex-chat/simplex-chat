@@ -2978,7 +2978,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "Geçersiz görünen ad!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Geçersiz bağlantı";
 
 /* No comment provided by engineer. */

@@ -2503,4 +2503,15 @@
     <string name="this_setting_is_for_your_current_profile">此设置用于当前个人资料</string>
     <string name="settings_section_title_contact_requests_from_groups">来自群的联络请求</string>
     <string name="member_is_deleted_cant_accept_request">成员被删除——无法接受请求</string>
+    <string name="allow_files_and_media_only_if">只有你的联系人允许的情况下才允许文件和媒体。</string>
+    <string name="allow_your_contacts_to_send_files_and_media">允许你的联系人发送文件和媒体。</string>
+    <string name="chat_banner_bot">机器人</string>
+    <string name="both_you_and_your_contact_can_send_files">你和你的联系人都可发送文件和媒体。</string>
+    <string name="files_prohibited_in_this_chat">此聊天禁止文件和媒体。</string>
+    <string name="only_you_can_send_files">只有你可以发送文件和媒体。</string>
+    <string name="only_your_contact_can_send_files">只有你的联系人可以发送文件和媒体。</string>
+    <string name="open_to_use_bot">打开来使用机器人</string>
+    <string name="prohibit_sending_files_and_media">禁止发送文件和媒体。</string>
+    <string name="chat_banner_connect_to_use_bot">轻按“连接”使用机器人</string>
+    <string name="cant_send_commands_alert_text">你必须已连接才能发送命令。</string>
 </resources>

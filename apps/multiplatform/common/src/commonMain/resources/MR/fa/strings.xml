@@ -2512,4 +2512,19 @@
     <string name="this_setting_is_for_your_current_profile">این تنظیمات برای پروفایل فعلی شماست</string>
     <string name="settings_section_title_contact_requests_from_groups">درخواست‌های تماس از گروه‌ها</string>
     <string name="rcv_direct_event_group_inv_link_received">درخواست اتصال از گروه %1$s</string>
+    <string name="open_to_use_bot">برای استفاده از ربات باز کنید</string>
+    <string name="chat_banner_connect_to_use_bot">برای استفاده از ربات، روی اتصال ضربه بزنید</string>
+    <string name="chat_banner_bot">ربات</string>
+    <string name="cant_send_commands_alert_text">برای ارسال دستورات، باید متصل باشید.</string>
+    <string name="deprecated_options_section">گزینه‌های منسوخ شده</string>
+    <string name="sanitize_links_toggle">حذف ردیابی لینک</string>
+    <string name="privacy_chat_list_open_full_web_link">باز کردن لینک کامل</string>
+    <string name="privacy_chat_list_open_clean_web_link">باز کردن لینک تمیز</string>
+    <string name="allow_your_contacts_to_send_files_and_media">اجازه دهید مخاطبین شما فایل‌ها و رسانه‌ها را ارسال کنند.</string>
+    <string name="allow_files_and_media_only_if">فقط در صورتی که مخاطب شما اجازه دهد، فایل‌ها و رسانه‌ها را مجاز کنید.</string>
+    <string name="prohibit_sending_files_and_media">ارسال فایل‌ها و رسانه‌ها را ممنوع کنید.</string>
+    <string name="both_you_and_your_contact_can_send_files">هم شما و هم مخاطب شما می‌توانید فایل‌ها و رسانه‌ها را ارسال کنید.</string>
+    <string name="only_you_can_send_files">فقط شما می‌توانید فایل و رسانه ارسال کنید.</string>
+    <string name="only_your_contact_can_send_files">فقط مخاطب شما می‌تواند فایل‌ها و رسانه‌ها را ارسال کند.</string>
+    <string name="files_prohibited_in_this_chat">ارسال فایل‌ها و رسانه‌ها در این چت ممنوع است.</string>
 </resources>

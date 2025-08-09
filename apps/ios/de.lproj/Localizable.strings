@@ -359,7 +359,7 @@ swipe action */
 "Accept connection request?" = "Kontaktanfrage annehmen?";
 
 /* alert title */
-"Accept contact request" = "Kontaktanfrage akzeptieren";
+"Accept contact request" = "Kontaktanfrage annehmen";
 
 /* notification body */
 "Accept contact request from %@?" = "Die Kontaktanfrage von %@ annehmen?";
@@ -369,10 +369,10 @@ swipe action */
 "Accept incognito" = "Inkognito akzeptieren";
 
 /* alert title */
-"Accept member" = "Mitglied übernehmen";
+"Accept member" = "Mitglied annehmen";
 
 /* rcv group event chat item */
-"accepted %@" = "%@ übernommen";
+"accepted %@" = "%@ angenommen";
 
 /* call status */
 "accepted call" = "Anruf angenommen";
@@ -384,7 +384,7 @@ swipe action */
 "accepted invitation" = "Einladung angenommen";
 
 /* rcv group event chat item */
-"accepted you" = "hat Sie übernommen";
+"accepted you" = "hat Sie angenommen";
 
 /* No comment provided by engineer. */
 "Acknowledged" = "Bestätigt";
@@ -558,6 +558,9 @@ swipe action */
 "Allow downgrade" = "Herabstufung erlauben";
 
 /* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "Erlauben Sie Dateien und Medien nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Erlauben Sie das unwiederbringliche Löschen von Nachrichten nur dann, wenn es Ihnen Ihr Kontakt ebenfalls erlaubt. (24 Stunden)";
 
 /* No comment provided by engineer. */
@@ -607,6 +610,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Erlauben Sie Ihren Kontakten das Senden von verschwindenden Nachrichten.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "Erlauben Sie Ihren Kontakten Dateien und Medien zu senden.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Erlauben Sie Ihren Kontakten Sprachnachrichten zu senden.";
@@ -862,6 +868,9 @@ marked deleted chat item preview text */
 "bold" = "fett";
 
 /* No comment provided by engineer. */
+"Bot" = "Bot";
+
+/* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Sowohl Sie, als auch Ihr Kontakt können Reaktionen auf Nachrichten geben.";
 
 /* No comment provided by engineer. */
@@ -872,6 +881,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Ihr Kontakt und Sie können beide verschwindende Nachrichten senden.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Sowohl Sie, als auch Ihr Kontakt können Dateien und Medien senden.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Sowohl Ihr Kontakt, als auch Sie können Sprachnachrichten senden.";
@@ -1414,7 +1426,7 @@ set passcode view */
 "Contact requests from groups" = "KONTAKTANFRAGEN VON GRUPPEN";
 
 /* No comment provided by engineer. */
-"contact should accept…" = "Kontakt sollte akzeptieren…";
+"contact should accept…" = "Kontakt sollte annehmen…";
 
 /* No comment provided by engineer. */
 "Contact will be deleted - this cannot be undone!" = "Kontakt wird gelöscht. Dies kann nicht rückgängig gemacht werden!";
@@ -1789,6 +1801,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Delivery receipts!" = "Empfangsbestätigungen!";
+
+/* No comment provided by engineer. */
+"Deprecated options" = "Veraltete Optionen";
 
 /* No comment provided by engineer. */
 "Description" = "Beschreibung";
@@ -2188,7 +2203,7 @@ chat item action */
 "Error accepting contact request" = "Fehler beim Annehmen der Kontaktanfrage";
 
 /* alert title */
-"Error accepting member" = "Fehler beim Übernehmen des Mitglieds";
+"Error accepting member" = "Fehler beim Annehmen des Mitglieds";
 
 /* No comment provided by engineer. */
 "Error adding member(s)" = "Fehler beim Hinzufügen von Mitgliedern";
@@ -2530,6 +2545,9 @@ snd error text */
 
 /* chat feature */
 "Files and media" = "Dateien und Medien";
+
+/* No comment provided by engineer. */
+"Files and media are prohibited in this chat." = "In diesem Chat sind Dateien und Medien nicht erlaubt.";
 
 /* No comment provided by engineer. */
 "Files and media are prohibited." = "In dieser Gruppe sind Dateien und Medien nicht erlaubt.";
@@ -2981,7 +2999,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "Ungültiger Anzeigename!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Ungültiger Link";
 
 /* No comment provided by engineer. */
@@ -3276,7 +3294,7 @@ snd error text */
 "Member will be removed from group - this cannot be undone!" = "Das Mitglied wird aus der Gruppe entfernt. Dies kann nicht rückgängig gemacht werden!";
 
 /* alert message */
-"Member will join the group, accept member?" = "Mitglied wird der Gruppe beitreten. Übernehmen?";
+"Member will join the group, accept member?" = "Mitglied wird der Gruppe beitreten. Annehmen?";
 
 /* No comment provided by engineer. */
 "Members can add message reactions." = "Gruppenmitglieder können eine Reaktion auf Nachrichten geben.";
@@ -3800,6 +3818,9 @@ new chat action */
 "Only you can send disappearing messages." = "Nur Sie können verschwindende Nachrichten senden.";
 
 /* No comment provided by engineer. */
+"Only you can send files and media." = "Nur Sie können Dateien und Medien senden.";
+
+/* No comment provided by engineer. */
 "Only you can send voice messages." = "Nur Sie können Sprachnachrichten versenden.";
 
 /* No comment provided by engineer. */
@@ -3813,6 +3834,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Nur Ihr Kontakt kann verschwindende Nachrichten senden.";
+
+/* No comment provided by engineer. */
+"Only your contact can send files and media." = "Nur Ihr Kontakt kann Dateien und Medien senden.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Nur Ihr Kontakt kann Sprachnachrichten versenden.";
@@ -3829,8 +3853,14 @@ new chat action */
 /* authentication reason */
 "Open chat console" = "Chat-Konsole öffnen";
 
+/* alert action */
+"Open clean link" = "Geklärten Link öffnen";
+
 /* No comment provided by engineer. */
 "Open conditions" = "Nutzungsbedingungen öffnen";
+
+/* alert action */
+"Open full link" = "Vollständigen Link öffnen";
 
 /* new chat action */
 "Open group" = "Gruppe öffnen";
@@ -3858,6 +3888,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Open to join" = "Zum Beitreten öffnen";
+
+/* No comment provided by engineer. */
+"Open to use bot" = "Bot für die Nutzung erlaubt";
 
 /* No comment provided by engineer. */
 "Opening app…" = "App wird geöffnet…";
@@ -4342,6 +4375,9 @@ swipe action */
 "Remove image" = "Bild entfernen";
 
 /* No comment provided by engineer. */
+"Remove link tracking" = "Link-Tracking entfernen";
+
+/* No comment provided by engineer. */
 "Remove member" = "Mitglied entfernen";
 
 /* No comment provided by engineer. */
@@ -4637,7 +4673,7 @@ chat item action */
 "Search" = "Suche";
 
 /* No comment provided by engineer. */
-"Search bar accepts invitation links." = "In der Suchleiste werden nun auch Einladungslinks akzeptiert.";
+"Search bar accepts invitation links." = "In der Suchleiste werden nun auch Einladungslinks angenommen.";
 
 /* No comment provided by engineer. */
 "Search or paste SimpleX link" = "Suchen oder SimpleX-Link einfügen";
@@ -5233,6 +5269,9 @@ report reason */
 "Tap Connect to send request" = "Verbinden tippen, um die Anfrage zu senden";
 
 /* No comment provided by engineer. */
+"Tap Connect to use bot" = "Verbinden tippen, um den Bot zu nutzen.";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Tippen Sie im Menü auf SimpleX-Adresse erstellen, um sie später zu erstellen.";
 
 /* No comment provided by engineer. */
@@ -5498,6 +5537,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "To send" = "Für das Senden";
+
+/* alert message */
+"To send commands you must be connected." = "Um Befehle senden zu können, müssen Sie verbunden sein.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Um sofortige Push-Benachrichtigungen zu unterstützen, muss die Chat-Datenbank migriert werden.";
@@ -5995,10 +6037,10 @@ report reason */
 "You **must not** use the same database on two devices." = "Sie dürfen die selbe Datenbank **nicht** auf zwei Geräten nutzen.";
 
 /* No comment provided by engineer. */
-"You accepted connection" = "Sie haben die Verbindung akzeptiert";
+"You accepted connection" = "Sie haben die Verbindung angenommen";
 
 /* snd group event chat item */
-"you accepted this member" = "Sie haben dieses Mitglied übernommen";
+"you accepted this member" = "Sie haben dieses Mitglied angenommen";
 
 /* No comment provided by engineer. */
 "You allow" = "Sie erlauben";
@@ -6184,7 +6226,7 @@ report reason */
 "you unblocked %@" = "Sie haben %@ freigegeben";
 
 /* No comment provided by engineer. */
-"You will be able to send messages **only after your request is accepted**." = "Sie können erst dann Nachrichten versenden, **sobald Ihre Anfrage akzeptiert wurde**.";
+"You will be able to send messages **only after your request is accepted**." = "Sie können erst dann Nachrichten versenden, **sobald Ihre Anfrage angenommen wurde**.";
 
 /* No comment provided by engineer. */
 "You will be connected to group when the group host's device is online, please wait or check later!" = "Sie werden mit der Gruppe verbunden, sobald das Endgerät des Gruppen-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!";
@@ -6193,7 +6235,7 @@ report reason */
 "You will be connected when group link host's device is online, please wait or check later!" = "Sie werden verbunden, sobald das Endgerät des Gruppenlink-Hosts online ist. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
-"You will be connected when your connection request is accepted, please wait or check later!" = "Sie werden verbunden, sobald Ihre Verbindungsanfrage akzeptiert wird. Bitte warten oder schauen Sie später nochmal nach!";
+"You will be connected when your connection request is accepted, please wait or check later!" = "Sie werden verbunden, sobald Ihre Verbindungsanfrage angenommen wird. Bitte warten oder schauen Sie später nochmal nach!";
 
 /* No comment provided by engineer. */
 "You will be connected when your contact's device is online, please wait or check later!" = "Sie werden verbunden, sobald das Endgerät Ihres Kontakts online ist. Bitte warten oder schauen Sie später nochmal nach!";

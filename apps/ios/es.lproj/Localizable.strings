@@ -558,6 +558,9 @@ swipe action */
 "Allow downgrade" = "Permitir versión anterior";
 
 /* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "Se permiten archivos y multimedia pero sólo si tu contacto también los permite.";
+
+/* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Se permite la eliminación irreversible de mensajes pero sólo si tu contacto también lo permite. (24 horas)";
 
 /* No comment provided by engineer. */
@@ -597,19 +600,22 @@ swipe action */
 "Allow voice messages?" = "¿Permites los mensajes de voz?";
 
 /* No comment provided by engineer. */
-"Allow your contacts adding message reactions." = "Permitir que tus contactos añadan reacciones a los mensajes.";
+"Allow your contacts adding message reactions." = "Permites que tus contactos añadan reacciones a los mensajes.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to call you." = "Permites que tus contactos puedan llamarte.";
+"Allow your contacts to call you." = "Permites que tus contactos te llamen.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Permites a tus contactos eliminar irreversiblemente los mensajes enviados. (24 horas)";
+"Allow your contacts to irreversibly delete sent messages. (24 hours)" = "Permites que tus contactos eliminan irreversiblemente los mensajes enviados. (24 horas)";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send disappearing messages." = "Permites a tus contactos enviar mensajes temporales.";
+"Allow your contacts to send disappearing messages." = "Permites que tus contactos envien mensajes temporales.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send voice messages." = "Permites a tus contactos enviar mensajes de voz.";
+"Allow your contacts to send files and media." = "Permes que tus contactos envíen archivos y multimedia.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send voice messages." = "Permites que tus contactos envien mensajes de voz.";
 
 /* No comment provided by engineer. */
 "Already connected?" = "¿Ya está conectado?";
@@ -862,6 +868,9 @@ marked deleted chat item preview text */
 "bold" = "negrita";
 
 /* No comment provided by engineer. */
+"Bot" = "Bot";
+
+/* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "Tanto tú como tu contacto podéis añadir reacciones a los mensajes.";
 
 /* No comment provided by engineer. */
@@ -872,6 +881,9 @@ marked deleted chat item preview text */
 
 /* No comment provided by engineer. */
 "Both you and your contact can send disappearing messages." = "Tanto tú como tu contacto podéis enviar mensajes temporales.";
+
+/* No comment provided by engineer. */
+"Both you and your contact can send files and media." = "Tanto tú como tu contacto podéis enviar archivos y multimedia.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Tanto tú como tu contacto podéis enviar mensajes de voz.";
@@ -2532,6 +2544,9 @@ snd error text */
 "Files and media" = "Archivos y multimedia";
 
 /* No comment provided by engineer. */
+"Files and media are prohibited in this chat." = "Los archivos y multimedia no están permitidos en este chat.";
+
+/* No comment provided by engineer. */
 "Files and media are prohibited." = "Los archivos y multimedia no están permitidos en este grupo.";
 
 /* No comment provided by engineer. */
@@ -2981,7 +2996,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Invalid display name!" = "¡Nombre mostrado no válido!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Invalid link" = "Enlace no válido";
 
 /* No comment provided by engineer. */
@@ -3800,6 +3815,9 @@ new chat action */
 "Only you can send disappearing messages." = "Sólo tú puedes enviar mensajes temporales.";
 
 /* No comment provided by engineer. */
+"Only you can send files and media." = "Sólo tú puedes enviar archivos y multimedia.";
+
+/* No comment provided by engineer. */
 "Only you can send voice messages." = "Sólo tú puedes enviar mensajes de voz.";
 
 /* No comment provided by engineer. */
@@ -3813,6 +3831,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Only your contact can send disappearing messages." = "Sólo tu contacto puede enviar mensajes temporales.";
+
+/* No comment provided by engineer. */
+"Only your contact can send files and media." = "Sólo tu contacto puede enviar archivos y multimedia.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Sólo tu contacto puede enviar mensajes de voz.";
@@ -3858,6 +3879,9 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Open to join" = "Abre para unirte";
+
+/* No comment provided by engineer. */
+"Open to use bot" = "Abre para usar el bot";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Iniciando aplicación…";
@@ -5233,6 +5257,9 @@ report reason */
 "Tap Connect to send request" = "Pulsa Conectar para enviar solicitud";
 
 /* No comment provided by engineer. */
+"Tap Connect to use bot" = "Pulsa Conectar para usar el bot";
+
+/* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Pulsa Crear dirección SimpleX en el menú para crearla más tarde.";
 
 /* No comment provided by engineer. */
@@ -5498,6 +5525,9 @@ report reason */
 
 /* No comment provided by engineer. */
 "To send" = "Para enviar";
+
+/* alert message */
+"To send commands you must be connected." = "Para enviar comandos debes estar conectado.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Para permitir las notificaciones automáticas instantáneas, la base de datos se debe migrar.";

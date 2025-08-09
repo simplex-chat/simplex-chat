@@ -2481,4 +2481,15 @@
     <string name="member_is_deleted_cant_accept_request">Membre eliminat(da); no es pot acceptar la sol·licitud.</string>
     <string name="rcv_direct_event_group_inv_link_received">connexió sol·licitada del grup %1$s</string>
     <string name="this_setting_is_for_your_current_profile">Aquesta configuració és per al perfil actual</string>
+    <string name="allow_files_and_media_only_if">Permetre fitxers i contingut multimèdia només si el vostre contacte ho permet.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Permetre que els contactes enviïn fitxers i contingut multimèdia.</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="both_you_and_your_contact_can_send_files">Tant vos com el vostre contacte podeu enviar fitxers i contingut multimèdia.</string>
+    <string name="files_prohibited_in_this_chat">Els fitxers i els continguts multimèdia estan prohibits en aquest xat.</string>
+    <string name="only_you_can_send_files">Només vos podeu enviar fitxers i contingut multimèdia.</string>
+    <string name="only_your_contact_can_send_files">Només el contacte pot enviar fitxers i contingut multimèdia.</string>
+    <string name="open_to_use_bot">Obrir per utilitzar el bot</string>
+    <string name="prohibit_sending_files_and_media">Prohibir l\'enviament de fitxers i contingut multimèdia.</string>
+    <string name="chat_banner_connect_to_use_bot">Toqueu Connectar per utilitzar el bot</string>
+    <string name="cant_send_commands_alert_text">Per enviar ordres heu d\'estar connectat(da).</string>
 </resources>
