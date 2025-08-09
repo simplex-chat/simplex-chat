@@ -164,7 +164,7 @@
 "%d file(s) were not downloaded." = "%d файлов не было загружено.";
 
 /* time interval */
-"%d hours" = "%d часов.";
+"%d hours" = "%d час.";
 
 /* alert title */
 "%d messages not forwarded" = "%d сообщений не переслано";
@@ -558,7 +558,7 @@ swipe action */
 "Allow downgrade" = "Разрешить прямую доставку";
 
 /* No comment provided by engineer. */
-"Allow files and media only if your contact allows them." = "Разрешайте файлы и мультимедиа только в том случае, если это разрешено вашим контактом.";
+"Allow files and media only if your contact allows them." = "Разрешить файлы и медиа, только если их разрешает Ваш контакт.";
 
 /* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Разрешить необратимое удаление сообщений, только если Ваш контакт разрешает это Вам. (24 часа)";
@@ -612,7 +612,7 @@ swipe action */
 "Allow your contacts to send disappearing messages." = "Разрешить Вашим контактам отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
-"Allow your contacts to send files and media." = "Разрешите вашим контактам отправлять файлы и мультимедиа.";
+"Allow your contacts to send files and media." = "Разрешить Вашим контактам отправлять файлы и медиа.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Разрешить Вашим контактам отправлять голосовые сообщения.";
@@ -868,7 +868,7 @@ marked deleted chat item preview text */
 "bold" = "жирный";
 
 /* No comment provided by engineer. */
-"Bot" = "бот";
+"Bot" = "Бот";
 
 /* No comment provided by engineer. */
 "Both you and your contact can add message reactions." = "И Вы, и Ваш контакт можете добавлять реакции на сообщения.";
@@ -883,7 +883,7 @@ marked deleted chat item preview text */
 "Both you and your contact can send disappearing messages." = "Вы и Ваш контакт можете отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
-"Both you and your contact can send files and media." = "И вы, и ваш контакт можете отправлять файлы и мультимедиа.";
+"Both you and your contact can send files and media." = "Вы и Ваш контакт можете отправлять файлы и медиа.";
 
 /* No comment provided by engineer. */
 "Both you and your contact can send voice messages." = "Вы и Ваш контакт можете отправлять голосовые сообщения.";
@@ -2547,7 +2547,7 @@ snd error text */
 "Files and media" = "Файлы и медиа";
 
 /* No comment provided by engineer. */
-"Files and media are prohibited in this chat." = "Файлы и мультимедиа в этом чате запрещены.";
+"Files and media are prohibited in this chat." = "Файлы и медиа запрещены в этом чате.";
 
 /* No comment provided by engineer. */
 "Files and media are prohibited." = "Файлы и медиа запрещены в этой группе.";
@@ -3818,7 +3818,7 @@ new chat action */
 "Only you can send disappearing messages." = "Только Вы можете отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
-"Only you can send files and media." = "Только вы можете отправлять файлы и мультимедиа.";
+"Only you can send files and media." = "Только Вы можете отправлять файлы и медиа.";
 
 /* No comment provided by engineer. */
 "Only you can send voice messages." = "Только Вы можете отправлять голосовые сообщения.";
@@ -3836,7 +3836,7 @@ new chat action */
 "Only your contact can send disappearing messages." = "Только Ваш контакт может отправлять исчезающие сообщения.";
 
 /* No comment provided by engineer. */
-"Only your contact can send files and media." = "Только ваш контакт может отправлять файлы и мультимедиа.";
+"Only your contact can send files and media." = "Только Ваш контакт может отправлять файлы и медиа.";
 
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Только Ваш контакт может отправлять голосовые сообщения.";
@@ -3890,7 +3890,7 @@ new chat action */
 "Open to join" = "Откройте чтобы вступить";
 
 /* No comment provided by engineer. */
-"Open to use bot" = "Открытый для использования бота";
+"Open to use bot" = "Откройте чтобы использовать бот";
 
 /* No comment provided by engineer. */
 "Opening app…" = "Приложение отрывается…";
@@ -5269,7 +5269,7 @@ report reason */
 "Tap Connect to send request" = "Нажмите Соединиться, чтобы отправить запрос";
 
 /* No comment provided by engineer. */
-"Tap Connect to use bot" = "Нажмите Подключиться, чтобы использовать бота";
+"Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот.";
 
 /* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.";
@@ -5539,7 +5539,7 @@ report reason */
 "To send" = "Для оправки";
 
 /* alert message */
-"To send commands you must be connected." = "Для отправки команд вы должны быть подключены.";
+"To send commands you must be connected." = "Вы должны быть соединены, чтобы отправлять команды.";
 
 /* No comment provided by engineer. */
 "To support instant push notifications the chat database has to be migrated." = "Для поддержки мгновенный доставки уведомлений данные чата должны быть перемещены.";
