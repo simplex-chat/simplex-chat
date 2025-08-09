@@ -46,6 +46,16 @@ revision: 23.04.2024
 
 ## How to use it
 
+### How do I add contacts?
+
+Tap on pencil button in right corner, then tap on "Create 1-time link"
+Share the link with the person you want to add you. The other person has to paste the link in the app's search bar.
+Or you can show the QR code if you are meeting in person.
+
+It is safe to share this link over any communication channel, it contains only public keys and can only be used once.
+
+If you wish to share your link more publicly, where you need the link to be re-usable, for example on social media, you should use your SimpleX address instead of 1-time links, you can find it by tapping on your avatar -> Your SimpleX address.
+
 ### I have nobody to chat with! Where can I find any groups?
 
 Please check our [Groups Directory](./DIRECTORY.md) in the first place. You might find some interesting groups and meet even more interesting people.
@@ -250,6 +260,19 @@ You can resolve it by deleting the app's database: (WARNING: this results in del
 - on Windows, delete folder `C:\AppData\Roaming\SimpleX`, you can find it by pressing Windows key + R and entering `%appdata%`.
 - on Linux/Mac, delete directories `~/.local/share/simplex` and `~/.config/simplex`, where `~` represents your home directory (/home/user)
 - on Flatpak, delete directory `~/.var/app/chat.simplex.simplex`.
+
+### My mobile app does not connect to desktop app
+
+1. Check that both devices are connected to the same networks (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).
+2. If you use VPN on mobile, allow connections to local network in you VPN settings (or disable VPN). 
+3. Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port desktop app is using to accept connections, by default it uses a random port every time.
+4. Check that your WiFi router allows connections between devices (e.g., it may have an option for "device isolation", or similar).
+5. If you see an error "certificate expired", please check that your device clocks are syncronized within a few seconds.
+6. If iOS app fails to connect and shows an error containing "no route", check that local network connections are allowed for the app in system settings.
+
+Also see this post: https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol
+
+If none of the suggestions work for you, you can create a separate profile on each device and create a small group inviting both of your device profiles and your contact.
 
 ## Privacy and security
 
