@@ -2530,4 +2530,8 @@
     <string name="prohibit_sending_files_and_media">Proibisci l\'invio di file e contenuti multimediali.</string>
     <string name="chat_banner_connect_to_use_bot">Tocca Connetti per usare il bot</string>
     <string name="cant_send_commands_alert_text">Per inviare comandi devi essere connesso/a.</string>
+    <string name="deprecated_options_section">Opzioni deprecate</string>
+    <string name="privacy_chat_list_open_clean_web_link">Apri link pulito</string>
+    <string name="privacy_chat_list_open_full_web_link">Apri link completo</string>
+    <string name="sanitize_links_toggle">Rimuovi il tracciamento del link</string>
 </resources>
