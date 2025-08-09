@@ -124,7 +124,7 @@ fun ChatView(
     }
   } else {
     val searchText = rememberSaveable { mutableStateOf("") }
-    val useLinkPreviews = chatModel.controller.appPrefs.privacyLinkPreviews.get()
+    val useLinkPreviews = true
     val composeState = rememberSaveable(saver = ComposeState.saver()) {
       val draft = chatModel.draft.value
       val sharedContent = chatModel.sharedContent.value
