@@ -2494,4 +2494,8 @@
     <string name="only_you_can_send_files">Csak Ön küldhet fájlokat és médiatartalmakat.</string>
     <string name="only_your_contact_can_send_files">Csak a partnere küldhet fájlokat és médiatartalmakat.</string>
     <string name="files_prohibited_in_this_chat">A fájlok és a médiatartalmak küldése le van tiltva ebben a csevegésben.</string>
+    <string name="deprecated_options_section">Elavult beállítások</string>
+    <string name="privacy_chat_list_open_clean_web_link">Tiszta hivatkozás megnyitása</string>
+    <string name="privacy_chat_list_open_full_web_link">Teljes hivatkozás megnyitása</string>
+    <string name="sanitize_links_toggle">Hivatkozáskövetés eltávolítása</string>
 </resources>
