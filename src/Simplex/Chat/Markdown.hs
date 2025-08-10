@@ -363,9 +363,10 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
     qsWhitelist :: [(ByteString -> Bool, [ByteString])]
     qsWhitelist =
       [ (const True, ["q", "search"]),
-        ((== "youtube.com"), ["v", "t"]),
-        ((== "youtu.be"), ["t"])
+        (dom "youtube.com", ["v", "t"]),
+        (dom "youtu.be", ["t"])
       ]
+    dom d h = d == h || (('.' `B.cons` d) `B.isSuffixOf` h)
     qsBlacklist :: [ByteString -> Bool]
     qsBlacklist =
       [ (B.any (== '_')),

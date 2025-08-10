@@ -374,7 +374,9 @@ testSanitizeUri = describe "sanitizeUri" $ do
     "https://example.com/page?q=query" `sanitized` Nothing
     "https://example.com/page?ref=123&q=query" `sanitized` Just "https://example.com/page?q=query"
     "https://youtube.com/watch?v=abc&t=123" `sanitized` Nothing
-    "https://youtube.com/watch?ref=456&v=abc&t=123" `sanitized` Just "https://youtube.com/watch?v=abc&t=123"
+    "https://www.youtube.com/watch?v=abc" `sanitized` Nothing
+    "https://www.youtube.com/watch?v=abc&t=123" `sanitized` Nothing
+    "https://www.youtube.com/watch?ref=456&v=abc&t=123" `sanitized` Just "https://www.youtube.com/watch?v=abc&t=123"
   it "should only allow whitelisted parameters if path contains IDs" $ do
     "https://example.com/page/a123?name=abc" `sanitized` Just "https://example.com/page/a123"
     "https://youtu.be/a123?si=456" `sanitized` Just "https://youtu.be/a123"
