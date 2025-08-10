@@ -11,8 +11,10 @@ import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
 import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
 import Test.Hspec
+import qualified URI.ByteString as U
 
 markdownTests :: Spec
 markdownTests = do
@@ -26,6 +28,7 @@ markdownTests = do
   textWithMentions
   textWithCommands
   multilineMarkdownList
+  testSanitizeUri
 
 infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>
 
@@ -359,3 +362,23 @@ multilineMarkdownList = describe "multiline markdown" do
   it "command markdown" do
     "/link 1" <<==>> [command' "link 1" "/link 1"]
     " /link 1" <<==>> [command' "link 1" " /link 1"]
+
+testSanitizeUri :: Spec
+testSanitizeUri = describe "sanitizeUri" $ do
+  it "should allow the first parameter and whitelisted parameters on pages without IDs" $ do
+    "https://example.com/page?ref=123" `sanitized` Just "https://example.com/page"
+    "https://example.com/page?name" `sanitized` Nothing
+    "https://example.com/page?name=abc" `sanitized` Nothing
+    "https://example.com/page?name=abc&ref=123" `sanitized` Just "https://example.com/page?name=abc"
+    "https://example.com/page?search=query" `sanitized` Nothing
+    "https://example.com/page?q=query" `sanitized` Nothing
+    "https://example.com/page?ref=123&q=query" `sanitized` Just "https://example.com/page?q=query"
+    "https://youtube.com/watch?v=abc&t=123" `sanitized` Nothing
+    "https://youtube.com/watch?ref=456&v=abc&t=123" `sanitized` Just "https://youtube.com/watch?v=abc&t=123"
+  it "should only allow whitelisted parameters if path contains IDs" $ do
+    "https://example.com/page/a123?name=abc" `sanitized` Just "https://example.com/page/a123"
+    "https://youtu.be/a123?si=456" `sanitized` Just "https://youtu.be/a123"
+    "https://youtu.be/a123?t=456" `sanitized` Nothing
+    "https://youtu.be/a123?si=456&t=789" `sanitized` Just "https://youtu.be/a123?t=789"
+  where
+    s `sanitized` res = (U.serializeURIRef' <$$> (sanitizeUri <$> parseUri s)) `shouldBe` Right res
