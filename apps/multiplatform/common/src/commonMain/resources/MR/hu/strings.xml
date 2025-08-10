@@ -2497,5 +2497,5 @@
     <string name="deprecated_options_section">Elavult beállítások</string>
     <string name="privacy_chat_list_open_clean_web_link">Tiszta hivatkozás megnyitása</string>
     <string name="privacy_chat_list_open_full_web_link">Teljes hivatkozás megnyitása</string>
-    <string name="sanitize_links_toggle">Hivatkozáskövetés eltávolítása</string>
+    <string name="sanitize_links_toggle">Nyomonkövetési paraméterek eltávolítása a hivatkozásokból</string>
 </resources>
