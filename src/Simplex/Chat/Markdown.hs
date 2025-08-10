@@ -22,7 +22,7 @@ import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Char (isAlpha, isAscii, isAsciiLower, isDigit, isPunctuation, isSpace)
+import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
 import Data.Functor (($>))
 import Data.List (foldl', intercalate)
@@ -359,21 +359,7 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
     isBlacklisted p = any ($ p) qsBlacklist
     isWhitelisted p = any (\(f, ps) -> f host && p `elem` ps) qsWhitelist
     host = maybe "" (\U.Authority {authorityHost = U.Host h} -> h) uriAuthority
-    isNamePath :: Bool
-    isNamePath = all isName $ B.split '/' uriPath
-    isName :: ByteString -> Bool
-    isName s = B.null s || (validSeparators && B.all validChar s && validSegments)
-      where
-        validChar c = isAsciiLower c || c == separator
-        validSegment seg = not (B.null seg) && B.all isAsciiLower seg
-        validSeparators = underscores == 0 || hyphens == 0
-        separator = if underscores > 0 then '_' else '-'
-        validSegments = case B.split separator s of
-          [] -> True
-          [seg] -> B.all isAsciiLower seg
-          f : rest -> B.all isAsciiLower f && B.all isAsciiLower (last rest) && all validSegment (init rest)
-        underscores = B.count '_' s
-        hyphens = B.count '-' s
+    isNamePath = B.all (\c -> (c >= 'a' && c <= 'z') || c == '_' || c == '-' || c == '/') uriPath
     qsWhitelist :: [(ByteString -> Bool, [ByteString])]
     qsWhitelist =
       [ (const True, ["q", "search"]),
@@ -382,7 +368,8 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
       ]
     qsBlacklist :: [ByteString -> Bool]
     qsBlacklist =
-      [ ("ad" `B.isPrefixOf`),
+      [ (B.any (== '_')),
+        ("ad" `B.isPrefixOf`),
         ("af" `B.isPrefixOf`),
         ("dc" `B.isPrefixOf`),
         ("fb" `B.isPrefixOf`),
@@ -391,7 +378,6 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
         ("ref" `B.isPrefixOf`),
         ("si" `B.isPrefixOf`),
         ("tw" `B.isPrefixOf`),
-        ("_" `B.isInfixOf`),
         ("camp" `B.isInfixOf`),
         ("cmp" `B.isInfixOf`),
         ("dev" `B.isInfixOf`),
