@@ -379,14 +379,14 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
         ("ref" `B.isPrefixOf`),
         ("si" `B.isPrefixOf`),
         ("tw" `B.isPrefixOf`),
+        ("utm" `B.isPrefixOf`),
         ("camp" `B.isInfixOf`),
         ("cmp" `B.isInfixOf`),
         ("dev" `B.isInfixOf`),
         ("id" `B.isInfixOf`),
         ("prom" `B.isInfixOf`),
         ("source" `B.isInfixOf`),
-        ("src" `B.isInfixOf`),
-        ("utm" `B.isPrefixOf`)
+        ("src" `B.isInfixOf`)
       ]
 
 markdownText :: FormattedText -> Text
