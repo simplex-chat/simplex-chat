@@ -917,6 +917,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div><h1 id="frequently-asked-questions" tabindex="-1">Frequently Asked Questions</h1>
 <p><a href="#how-to-use-it">How to use it</a></p>
 <ul>
+<li><a href="#how-do-i-add-contacts">How do I add contacts?</a></li>
 <li><a href="#i-have-nobody-to-chat-with-where-can-i-find-any-groups">I have nobody to chat with! Where can I find any groups?</a></li>
 <li><a href="#what-is-database-what-can-i-do-with-it">What is database? What can I do with it?</a></li>
 <li><a href="#can-i-send-files-over-simplex">Can I send files over SimpleX? </a></li>
@@ -940,6 +941,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#audio-or-video-calls-without-e2e-encryption">Audio or video calls without e2e encryption</a></li>
 <li><a href="#i-clicked-the-link-to-connect-but-could-not-connect">I clicked the link to connect, but could not connect</a></li>
 <li><a href="#i-do-not-know-my-database-passphrase">I do not know my database passphrase</a></li>
+<li><a href="#my-mobile-app-does-not-connect-to-desktop-app">My mobile app does not connect to desktop app</a></li>
 </ul>
 <p><a href="#privacy-and-security">Privacy and security</a></p>
 <ul>
@@ -958,6 +960,11 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#what-will-be-the-business-model">What will be the business model?</a></li>
 </ul>
 <h2 id="how-to-use-it" tabindex="-1">How to use it</h2>
+<h3 id="how-do-i-connect-to-people" tabindex="-1">How do I connect to people?</h3>
+<p>Tap &quot;pencil&quot; button in the right corner, then &quot;Create 1-time link&quot;. Share the link with the person you want to connect to. Your contact has to paste the link in the app's search bar. The link will can also be opened via the browser, once the app is installed.</p>
+<p>Alternatively, you can show the QR code when meeting in person or in a video call.</p>
+<p>It is safe to share this link over any communication channel, it contains only public keys and can only be used once.</p>
+<p>If you want to share your address publicly, so that many people can connect to you, use your SimpleX address instead of 1-time links. Tap your profile image/avatar, then Your SimpleX address. Once you create the address, you can share it in social media profiles, email signature, etc. See <a href="/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses">the comparison of SimpleX address with 1-time links</a>.</p>
 <h3 id="i-have-nobody-to-chat-with-where-can-i-find-any-groups" tabindex="-1">I have nobody to chat with! Where can I find any groups?</h3>
 <p>Please check our <a href="/docs/directory.html">Groups Directory</a> in the first place. You might find some interesting groups and meet even more interesting people.</p>
 <h3 id="what-is-database-what-can-i-do-with-it" tabindex="-1">What is database? What can I do with it?</h3>
@@ -1101,6 +1108,17 @@ If interested, please read more: <a href="/docs/guide/making-connections.html">A
 <li>on Linux/Mac, delete directories <code>~/.local/share/simplex</code> and <code>~/.config/simplex</code>, where <code>~</code> represents your home directory (/home/user)</li>
 <li>on Flatpak, delete directory <code>~/.var/app/chat.simplex.simplex</code>.</li>
 </ul>
+<h3 id="my-mobile-app-does-not-connect-to-desktop-app" tabindex="-1">My mobile app does not connect to desktop app</h3>
+<ol>
+<li>Check that both devices are connected to the same network (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).</li>
+<li>If you use VPN on mobile, allow connections to local network in you VPN settings, or disable VPN.</li>
+<li>Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port in desktop app to accept connections, by default it uses a random port every time.</li>
+<li>Check that your WiFi router allows connections between devices (e.g., it may have an option for &quot;device isolation&quot;, or similar).</li>
+<li>If you see an error &quot;certificate expired&quot;, please check that your device clocks are synchronized within a few seconds.</li>
+<li>If iOS app fails to connect and shows an error containing &quot;no route&quot;, check that local network connections are allowed for the app in system settings.</li>
+</ol>
+<p>Also see this post: <a href="https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol">https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol</a></p>
+<p>If none of the suggestions work for you, you can create a separate profile on each device and create a small group inviting both of your device profiles and your contact.</p>
 <h2 id="privacy-and-security" tabindex="-1">Privacy and security</h2>
 <h3 id="does-simplex-support-post-quantum-cryptography" tabindex="-1">Does SimpleX support post quantum cryptography?</h3>
 <p>Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in <a href="/blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.html">this post</a>.</p>
