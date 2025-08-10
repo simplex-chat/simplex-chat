@@ -391,7 +391,7 @@ fun openBrowserAlert(uri: String, uriHandler: UriHandler) {
             AlertManager.shared.hideAlert()
             safeOpenUri(uri, uriHandler)
           }) {
-            Text(generalGetString(MR.strings.privacy_chat_list_open_full_web_link), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.error)
+            Text(generalGetString(MR.strings.privacy_chat_list_open_full_web_link), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
           }
           SectionItemView({
             AlertManager.shared.hideAlert()

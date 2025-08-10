@@ -57,7 +57,7 @@ func openBrowserAlert(uri: String) {
                         cancelAlertAction,
                         UIAlertAction(
                             title: NSLocalizedString("Open full link", comment: "alert action"),
-                            style: .destructive,
+                            style: .default,
                             handler: { _ in UIApplication.shared.open(url.uri) }
                         ),
                         UIAlertAction(

@@ -20,6 +20,7 @@ import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.Attoparsec.Text (Parser)
 import qualified Data.Attoparsec.Text as A
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Char (isAlpha, isAscii, isDigit, isPunctuation, isSpace)
 import Data.Either (fromRight)
@@ -328,7 +329,7 @@ markdownP = mconcat <$> A.many' fragmentP
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
 
-parseUri :: B.ByteString -> Either Text U.URI
+parseUri :: ByteString -> Either Text U.URI
 parseUri s = case U.parseURI U.laxURIParserOptions s of
   Left e -> Left $ "Invalid URI: " <> tshow e
   Right uri@U.URI {uriScheme = U.Scheme sch, uriAuthority}
@@ -339,12 +340,54 @@ parseUri s = case U.parseURI U.laxURIParserOptions s of
           | '.' `B.notElem` h -> Left $ "Invalid URI host: " <> safeDecodeUtf8 h
           | otherwise -> Right uri
 
+-- the heuristic for removing tracking parameters is the following:
+-- 1) if the URI path looks like page name* rather than an identifier, allow the first parameter, as long as it is not blacklisted,
+-- 2) also allow whitelisted parameters,
+-- 3) remove all other parameters.
+-- *page name: lowercase latin in snake-case or hyphen-case, allowing for sinlge leading or trailing hyphen or underscore.
 sanitizeUri :: U.URI -> Maybe U.URI
-sanitizeUri uri@U.URI {uriQuery = U.Query originalQS} =
-  let sanitizedQS = filter (\(p, _) -> p == "q" || p == "search") originalQS
+sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
+  let sanitizedQS
+        | isNamePath = case originalQS of
+            p : ps -> (if isBlacklisted (fst p) then id else (p :)) $ filter (isWhitelisted . fst) ps
+            [] -> []
+        | otherwise = filter (isWhitelisted . fst) originalQS
    in if length sanitizedQS == length originalQS
         then Nothing
         else Just $ uri {U.uriQuery = U.Query sanitizedQS}
+  where
+    isBlacklisted p = any ($ p) qsBlacklist
+    isWhitelisted p = any (\(f, ps) -> f host && p `elem` ps) qsWhitelist
+    host = maybe "" (\U.Authority {authorityHost = U.Host h} -> h) uriAuthority
+    isNamePath = B.all (\c -> (c >= 'a' && c <= 'z') || c == '_' || c == '-' || c == '/') uriPath
+    qsWhitelist :: [(ByteString -> Bool, [ByteString])]
+    qsWhitelist =
+      [ (const True, ["q", "search"]),
+        (dom "youtube.com", ["v", "t"]),
+        (dom "youtu.be", ["t"])
+      ]
+    dom d h = d == h || (('.' `B.cons` d) `B.isSuffixOf` h)
+    qsBlacklist :: [ByteString -> Bool]
+    qsBlacklist =
+      [ (B.any (== '_')),
+        ("ad" `B.isPrefixOf`),
+        ("af" `B.isPrefixOf`),
+        ("dc" `B.isPrefixOf`),
+        ("fb" `B.isPrefixOf`),
+        ("gc" `B.isPrefixOf`),
+        ("li" `B.isPrefixOf`),
+        ("ref" `B.isPrefixOf`),
+        ("si" `B.isPrefixOf`),
+        ("tw" `B.isPrefixOf`),
+        ("utm" `B.isPrefixOf`),
+        ("camp" `B.isInfixOf`),
+        ("cmp" `B.isInfixOf`),
+        ("dev" `B.isInfixOf`),
+        ("id" `B.isInfixOf`),
+        ("prom" `B.isInfixOf`),
+        ("source" `B.isInfixOf`),
+        ("src" `B.isInfixOf`)
+      ]
 
 markdownText :: FormattedText -> Text
 markdownText (FormattedText f_ t) = case f_ of
