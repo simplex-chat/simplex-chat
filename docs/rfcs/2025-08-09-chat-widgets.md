@@ -131,10 +131,10 @@ Inline buttons widget:
         ("Menu" (event ":menu")) # invisible message
         ("Help" (send "/help")) # visible message
       ) # a row of 3 buttons
-      ( ("Site" (url "https://example.com))
-        ("Call" (phone "+447777777777"))
-        ("Email" (email "info@example.com"))
-        ("Connect" (simplex "https://smp5.simplex.im/a#abcd))
+      ( ("Site" (link "https://example.com))
+        ("Call" (link "+447777777777"))
+        ("Email" (link "info@example.com"))
+        ("Connect" (link "https://smp5.simplex.im/a#abcd))
         ("Copy" (copy "text to copy))
       ) # a row of 5 buttons
     )
@@ -145,19 +145,19 @@ Poll widget:
 
 ```lisp
 ( Activity
-    # Poll is a predefined widget function, would fail if state does not match options
-    # Its receive function updates counts
+    # Poll is a predefined widget function.
+    # Note that the question and the poll options are part of the widget function,
+    # so they cannot be changed via events.
+    # Its receive function updates counts.
     ( Poll
         "Do you agree?" # could be NIL, to put question in widget's message text
-        (yes "Yes")
-        (no "No")
+        "Yes"
+        "No"
     )
 
-    # widget state is poll counts, questions could not be changed
-    ( (yes 0)
-      (no 0)
-    )
-    # but we probably can just default missing keys to 0s,
+    # initial widget state is poll counts, questions could not be changed
+    (0 0)
+    # but we probably can just default missing counts to 0s,
     # so the initial state would be just () or NIL
     # Or we could even use variable arguments to allow omitting empty list as the initial state.
 )
@@ -167,3 +167,31 @@ If we can achieve that these functions (ButtonGrid, Poll) can be implemented in 
 and can be used in more advanced scenarios.
 
 Also, given that widgets that use predefined functions can be very concise, as shown in above examples, they can be attached not only to text messages, but to images, videos and link previews.
+
+Even `Activity` itself doesn't need to be part of widget message, we can treat widget code as the list of parameters passed to activity, so the poll would be as simple as:
+
+```lisp
+((Poll "Do you agree?" "Yes" "No")) # the second absent parameter is interpreted as empty initial state
+```
+
+and the button grid as:
+
+```lisp
+( ButtonGrid
+  ( ( ("Reply" (reply "message"))
+      ("Menu" (event ":menu"))
+      ("Help" (send "/help"))
+    )
+    ( ("Site" (link "https://example.com))
+      ("Call" (link "+447777777777"))
+      ("Email" (link "info@example.com"))
+      ("Connect" (link "https://smp5.simplex.im/a#abcd))
+      ("Copy" (copy "text to copy))
+    )
+  )
+)
+```
+
+with the buttons definitions (the second parameter) being the initial state, that allows to have them fully replaced via bot's message.
+
+This is somehow similar to PicoLisp design itself where three core types are derived from a single root type - cell, here we have two distinct UX problems - bot UI and user activities, such as polls, - implemented via the same underlying abstraction.
