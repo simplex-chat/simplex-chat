@@ -6587,9 +6587,9 @@ swipe action</note>
         <target>Kép eltávolítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Remove link tracking" xml:space="preserve">
+      <trans-unit id="Remove link tracking" xml:space="preserve" approved="no">
         <source>Remove link tracking</source>
-        <target>Hivatkozáskövetés eltávolítása</target>
+        <target state="translated">Nyomonkövetési paraméterek eltávolítása a hivatkozásokból</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
