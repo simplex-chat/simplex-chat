@@ -2511,4 +2511,8 @@
     <string name="prohibit_sending_files_and_media">امنع إرسال الملفات والوسائط.</string>
     <string name="chat_banner_connect_to_use_bot">انقر على \"اتصل\" لاستخدام البوت</string>
     <string name="cant_send_commands_alert_text">لإرسال الأوامر يجب أن تكون متصلاً.</string>
+    <string name="deprecated_options_section">خيارات مهملة</string>
+    <string name="privacy_chat_list_open_clean_web_link">افتح الرابط النظيف</string>
+    <string name="privacy_chat_list_open_full_web_link">افتح الرابط الكامل</string>
+    <string name="sanitize_links_toggle">أزل تتبع الروابط</string>
 </resources>
