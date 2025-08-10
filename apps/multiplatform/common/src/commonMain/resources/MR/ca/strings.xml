@@ -2492,4 +2492,8 @@
     <string name="prohibit_sending_files_and_media">Prohibir l\'enviament de fitxers i contingut multimèdia.</string>
     <string name="chat_banner_connect_to_use_bot">Toqueu Connectar per utilitzar el bot</string>
     <string name="cant_send_commands_alert_text">Per enviar ordres heu d\'estar connectat(da).</string>
+    <string name="privacy_chat_list_open_clean_web_link">Obrir enllaç net</string>
+    <string name="privacy_chat_list_open_full_web_link">Obrir enllaç complet</string>
+    <string name="sanitize_links_toggle">Eliminar el seguiment de l\'enllaç</string>
+    <string name="deprecated_options_section">Opcions obsoletes</string>
 </resources>
