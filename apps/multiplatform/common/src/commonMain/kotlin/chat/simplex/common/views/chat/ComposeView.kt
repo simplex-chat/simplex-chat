@@ -43,6 +43,7 @@ import kotlinx.serialization.encoding.Encoder
 import java.io.File
 import java.net.URI
 import java.nio.file.Files
+import kotlin.math.min
 
 const val MAX_NUMBER_OF_MENTIONS = 3
 
@@ -907,7 +908,8 @@ fun ComposeView(
       if (sanitizedPos == null) {
         composeState.value = composeState.value.copy(message = s, parsedMessage = parsedMessage)
       } else {
-        val message = if (sanitizedPos < s.selection.start) s.copy(text = updatedMsg) else ComposeMessage(updatedMsg, TextRange(sanitizedPos, sanitizedPos))
+        val pos = min(updatedMsg.count(), if (sanitizedPos < s.selection.start) s.selection.start else sanitizedPos)
+        val message = s.copy(text = updatedMsg, selection = TextRange(pos))
         composeState.value = composeState.value.copy(message = message, parsedMessage = updatedParsedMsg)
         parsedMessage = updatedParsedMsg
       }
