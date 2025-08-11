@@ -1,78 +1,78 @@
-# Transfer data from SQLite to Postgres database
+## Transfer data from SQLite to Postgres database
 
 1. Decrypt SQLite database if it is encrypted.
 
-   - Agent:
+   1. Agent:
 
-      Open sqlite db:
+      1. Open sqlite db:
 
       ```sh
       sqlcipher simplex_v1_agent.db
       ```
 
-      Set your db password:
+      2. Set your db password:
 
       ```sql
       PRAGMA key = '<your_password>';
       ```
 
-      Check if db was successfully decrypted:
+      3. Check if db was successfully decrypted:
 
       ```sh
       SELECT count(*) FROM sqlite_master;
       ```
 
-      Attach new empty db:
+      4. Attach new empty db:
 
       ```sh
       ATTACH DATABASE 'simplex_v1_agent_plaintext.db' AS plaintext KEY '';
       ```
 
-      Export opened db to attached db as plaintext:
+      5. Export opened db to attached db as plaintext:
 
       ```sh
       SELECT sqlcipher_export('plaintext');
       ```
 
-      Deattach the plaintext db:
+      6. Deattach the plaintext db:
 
       ```sh
       DETACH DATABASE plaintext;
       ```
 
-   - Chat:
+   2. Chat:
 
-      Open sqlite db:
+      1. Open sqlite db:
 
       ```sh
       sqlcipher simplex_v1_chat.db
       ```
 
-      Set your db password:
+      2. Set your db password:
 
       ```sql
       PRAGMA key = '<your_password>';
       ```
 
-      Check if db was successfully decrypted:
+      3. Check if db was successfully decrypted:
 
       ```sh
       SELECT count(*) FROM sqlite_master;
       ```
 
-      Attach new empty db:
+      4. Attach new empty db:
 
       ```sh
       ATTACH DATABASE 'simplex_v1_chat_plaintext.db' AS plaintext KEY '';
       ```
 
-      Export opened db to attached db as plaintext:
+      5. Export opened db to attached db as plaintext:
 
       ```sh
       SELECT sqlcipher_export('plaintext');
       ```
 
-      Deattach the plaintext db:
+      6. Deattach the plaintext db:
 
       ```sh
       DETACH DATABASE plaintext;
@@ -106,17 +106,27 @@
 
 3. Prepare database:
 
-   Build CLI with PostgreSQL support:
+   You should build the CLI binary from the same `TAG` as the desktop.
 
-   ```sh
-   cabal build -fclient_postgres exe:simplex-chat
-   ```
+   1. Build CLI with PostgreSQL support:
 
-   Execute CLI:
+      ```sh
+      cabal build -fclient_postgres exe:simplex-chat
+      ```
 
-   ```sh
-   ./simplex-chat -d "postgresql://simplex:123123@localhost:5432/simplex_v1" --create-schema
-   ```
+      And rename it to:
+
+      ```sh
+      mv simplex-chat simplex-chat-pg
+      ```
+
+   2. Execute CLI:
+
+      ```sh
+      ./simplex-chat-pg -d "postgresql://simplex:123123@localhost:5432/simplex_v1" --create-schema
+      ```
+
+      Press `Ctrl+C` when CLI ask for a display name.
 
    This should create `simplex_v1_agent_schema` and `simplex_v1_chat_schema` schemas in `simplex_v1` database, with `migrations` tables populated. Some tables would have initialization data - it will be truncated via pgloader command in next step.
 
@@ -125,63 +135,152 @@
    Install pgloader and add it to PATH. Run in shell (substitute paths):
 
    ```sh
-   SQLITE_DBPATH='simplex_v1_agent.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='simplex_v1_agent_schema' pgloader --on-error-stop sqlite.load
+   export POSTGRES_CONN='postgresql://simplex:123123@localhost:5432/simplex_v1'
+   ```
 
-   SQLITE_DBPATH='simplex_v1_chat.db' POSTGRES_CONN='postgres://simplex@/simplex_v1' POSTGRES_SCHEMA='simplex_v1_chat_schema' pgloader --on-error-stop sqlite.load
+   And then:
+
+   ```sh
+   SQLITE_DBPATH='simplex_v1_agent_plaintext.db' \
+   POSTGRES_SCHEMA='simplex_v1_agent_schema' \
+   pgloader --dynamic-space-size 262144 --on-error-stop sqlite.load
+
+   SQLITE_DBPATH='simplex_v1_chat_plaintext.db' \
+   POSTGRES_SCHEMA='simplex_v1_chat_schema' \
+   pgloader --dynamic-space-size 262144 --on-error-stop sqlite.load
    ```
 
 4. Update sequences for Postgres tables.
 
-   ```sql
-   DO $$
-   DECLARE
-      rec RECORD;
-   BEGIN
-      EXECUTE 'SET SEARCH_PATH TO simplex_v1_agent_schema';
+   Connect to db:
 
-      FOR rec IN
-         SELECT
-            table_name,
-            column_name,
-            pg_get_serial_sequence(table_name, column_name) AS seq_name
-         FROM
-            information_schema.columns
-         WHERE
-            table_schema = 'simplex_v1_agent_schema'
-            AND identity_generation = 'ALWAYS'
-      LOOP
-         EXECUTE format(
-            'SELECT setval(%L, (SELECT MAX(%I) FROM %I))',
-            rec.seq_name, rec.column_name, rec.table_name
-         );
-      END LOOP;
-   END $$;
+   ```sh
+   PGPASSWORD=123123 psql -h localhost -U simplex -d simplex_v1
    ```
 
-   Repeat for `simplex_v1_chat_schema`.
+   Execute the following:
 
-5. \* Compare number of rows between Postgres and SQLite tables.
+   1. For `agent`:
 
-   To check number of rows for all tables in Postgres database schema run:
+      ```sql
+      DO $$
+      DECLARE
+         rec RECORD;
+      BEGIN
+         EXECUTE 'SET SEARCH_PATH TO simplex_v1_agent_schema';
 
-   ```sql
-   WITH tbl AS (
-      SELECT table_schema, table_name
-      FROM information_schema.Tables
-      WHERE table_name NOT LIKE 'pg_%'
-        AND table_schema IN ('simplex_v1_agent_schema')
-   )
-   SELECT
-      table_schema AS schema_name,
-      table_name,
-      (xpath('/row/c/text()', query_to_xml(
-         format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, ''
-      )))[1]::text::int AS records_count
-   FROM tbl
-   ORDER BY records_count DESC;
-   ```
+         FOR rec IN
+            SELECT
+               table_name,
+               column_name,
+               pg_get_serial_sequence(table_name, column_name) AS seq_name
+            FROM
+               information_schema.columns
+            WHERE
+               table_schema = 'simplex_v1_agent_schema'
+               AND identity_generation = 'ALWAYS'
+         LOOP
+            EXECUTE format(
+               'SELECT setval(%L, (SELECT MAX(%I) FROM %I))',
+               rec.seq_name, rec.column_name, rec.table_name
+            );
+         END LOOP;
+      END $$;
+      ```
 
-   Repeat for `simplex_v1_chat_schema`.
+   2. For `chat`:
+
+      ```sql
+      DO $$
+      DECLARE
+         rec RECORD;
+      BEGIN
+         EXECUTE 'SET SEARCH_PATH TO simplex_v1_chat_schema';
+
+         FOR rec IN
+            SELECT
+               table_name,
+               column_name,
+               pg_get_serial_sequence(table_name, column_name) AS seq_name
+            FROM
+               information_schema.columns
+            WHERE
+               table_schema = 'simplex_v1_chat_schema'
+               AND identity_generation = 'ALWAYS'
+         LOOP
+            EXECUTE format(
+               'SELECT setval(%L, (SELECT MAX(%I) FROM %I))',
+               rec.seq_name, rec.column_name, rec.table_name
+            );
+         END LOOP;
+      END $$;
+      ```
+
+5. Compare number of rows between Postgres and SQLite tables.
+
+   **PostgreSQL**:
+
+   1. For `agent`:
+
+      ```sql
+      WITH tbl AS (
+         SELECT table_schema, table_name
+         FROM information_schema.Tables
+         WHERE table_name NOT LIKE 'pg_%'
+           AND table_schema IN ('simplex_v1_agent_schema')
+      )
+      SELECT
+         table_schema AS schema_name,
+         table_name,
+         (xpath('/row/c/text()', query_to_xml(
+            format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, ''
+         )))[1]::text::int AS records_count
+      FROM tbl
+      ORDER BY records_count DESC;
+      ```
+
+   2. For `chat`:
+
+      ```sql
+      WITH tbl AS (
+         SELECT table_schema, table_name
+         FROM information_schema.Tables
+         WHERE table_name NOT LIKE 'pg_%'
+           AND table_schema IN ('simplex_v1_chat_schema')
+      )
+      SELECT
+         table_schema AS schema_name,
+         table_name,
+         (xpath('/row/c/text()', query_to_xml(
+            format('SELECT count(*) AS c FROM %I.%I', table_schema, table_name), false, true, ''
+         )))[1]::text::int AS records_count
+      FROM tbl
+      ORDER BY records_count DESC;
+      ```
+
+   **SQLite**:
+
+   1. For `agent`:
+
+      ```sh
+      db="simplex_v1_agent_plaintext.db"
+      sqlite3 "$db" "SELECT name FROM sqlite_master WHERE type='table';" |
+      while read table; do
+         count=$(sqlite3 "$db" "SELECT COUNT(*) FROM \"$table\";")
+         echo "$table: $count"
+      done | sort -k2 -nr | less
+      ```
+
+   2. For `chat`:
+
+      ```sh
+      db="simplex_v1_chat_plaintext.db"
+      sqlite3 "$db" "SELECT name FROM sqlite_master WHERE type='table';" |
+      while read table; do
+         count=$(sqlite3 "$db" "SELECT COUNT(*) FROM \"$table\";")
+         echo "$table: $count"
+      done | sort -k2 -nr | less
+      ```
 
 6. Build and run desktop app with Postgres backend.
 
@@ -193,4 +292,48 @@
    ./gradlew runDistributable -Pdatabase.backend=postgres
    # or
    ./gradlew packageDmg -Pdatabase.backend=postgres
+   ```
+
+## Transfer data from SQLite to Postgres database
+
+1. Prepare sqlite db:
+
+   1. Download simplex-chat CLI:
+
+      You should download the CLI binary from the same `TAG` as the desktop.
+
+      ```sh
+      export TAG='v6.4.3.1'
+      curl -L "https://github.com/simplex-chat/simplex-chat/releases/download/${TAG}/simplex-chat-ubuntu-22_04-x86_64" -o 'simplex-chat'
+      ```
+
+   2. Run the CLI:
+
+      ```sh
+      ./simplex-chat
+      ```
+
+      Press `Ctrl+C` when CLI ask for a display name.
+
+   3. Move database:
+
+      ```sh
+      mv ~/.simplex/simplex_v1_* ~/.local/share/simplex/
+      ```
+
+2. Transfer data:
+
+   ```sh
+   ./pg2sqlite.py --verbose 'postgresql://simplex:123123@localhost:5432/simplex_v1' ~/.local/share/simplex/
+   ```
+
+4. Update BLOBs:
+
+   ```sh
+   sqlite3 simplex_v1_chat.db
+   ```
+
+   ```sh
+   UPDATE group_members SET member_role = CAST(member_role as BLOB);
+   UPDATE user_contact_links SET group_link_member_role = CAST(group_link_member_role AS BLOB) WHERE group_link_member_role is not null;
    ```
