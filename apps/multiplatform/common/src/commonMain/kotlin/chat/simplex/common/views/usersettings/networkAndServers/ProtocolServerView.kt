@@ -189,7 +189,7 @@ fun CustomServer(
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value)
+      QRCode(serverAddress.value, small = true)
     }
   }
 }

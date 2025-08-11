@@ -14,7 +14,9 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption)
 
 data RcvGroupEvent
   = RGEMemberAdded {groupMemberId :: GroupMemberId, profile :: Profile} -- CRJoinedGroupMemberConnecting
-  | RGEMemberConnected -- CRUserJoinedGroup, CRJoinedGroupMember, CRConnectedToGroupMember
+  | RGEMemberConnected -- CEvtUserJoinedGroup, CRJoinedGroupMember, CEvtConnectedToGroupMember
+  | RGEMemberAccepted {groupMemberId :: GroupMemberId, profile :: Profile}
+  | RGEUserAccepted
   | RGEMemberLeft -- CRLeftMember
   | RGEMemberRole {groupMemberId :: GroupMemberId, profile :: Profile, role :: GroupMemberRole}
   | RGEMemberBlocked {groupMemberId :: GroupMemberId, profile :: Profile, blocked :: Bool} -- CRMemberBlockedForAll
@@ -29,6 +31,7 @@ data RcvGroupEvent
   | RGEInvitedViaGroupLink -- CRSentGroupInvitationViaLink
   | RGEMemberCreatedContact -- CRNewMemberContactReceivedInv
   | RGEMemberProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRGroupMemberUpdated
+  | RGENewMemberPendingReview
   deriving (Show)
 
 data SndGroupEvent
@@ -38,6 +41,8 @@ data SndGroupEvent
   | SGEMemberDeleted {groupMemberId :: GroupMemberId, profile :: Profile} -- CRUserDeletedMembers
   | SGEUserLeft -- CRLeftMemberUser
   | SGEGroupUpdated {groupProfile :: GroupProfile} -- CRGroupUpdated
+  | SGEMemberAccepted {groupMemberId :: GroupMemberId, profile :: Profile}
+  | SGEUserPendingReview
   deriving (Show)
 
 data RcvConnEvent
@@ -56,6 +61,7 @@ data SndConnEvent
 data RcvDirectEvent
   = RDEContactDeleted
   | RDEProfileUpdated {fromProfile :: Profile, toProfile :: Profile} -- CRContactUpdated
+  | RDEGroupInvLinkReceived {groupProfile :: GroupProfile}
   deriving (Show)
 
 -- platform-specific JSON encoding (used in API)

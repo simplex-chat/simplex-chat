@@ -99,7 +99,6 @@ import Data.Type.Equality
 import Data.Word (Word32)
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
-import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
@@ -371,9 +370,9 @@ getXFTPRcvFileDBIds db aRcvFileId =
 
 toFileRef :: (FileTransferId, Maybe Int64, Maybe Int64, Maybe Int64) -> Either StoreError (Maybe ChatRef, FileTransferId)
 toFileRef = \case
-  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId, fileId)
-  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef CTGroup groupId, fileId)
-  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CTLocal folderId, fileId)
+  (fileId, Just contactId, Nothing, Nothing) -> Right (Just $ ChatRef CTDirect contactId Nothing, fileId)
+  (fileId, Nothing, Just groupId, Nothing) -> Right (Just $ ChatRef CTGroup groupId Nothing, fileId)
+  (fileId, Nothing, Nothing, Just folderId) -> Right (Just $ ChatRef CTLocal folderId Nothing, fileId)
   (fileId, _, _, _) -> Right (Nothing, fileId)
 
 updateFileCancelled :: MsgDirectionI d => DB.Connection -> User -> Int64 -> CIFileStatus d -> IO ()
@@ -444,8 +443,8 @@ getChatRefByFileId db user fileId = liftIO (lookupChatRefByFileId db user fileId
 lookupChatRefByFileId :: DB.Connection -> User -> Int64 -> IO (Maybe ChatRef)
 lookupChatRefByFileId db User {userId} fileId =
   getChatRef <&> \case
-    [(Just contactId, Nothing)] -> Just $ ChatRef CTDirect contactId
-    [(Nothing, Just groupId)] -> Just $ ChatRef CTGroup groupId
+    [(Just contactId, Nothing)] -> Just $ ChatRef CTDirect contactId Nothing
+    [(Nothing, Just groupId)] -> Just $ ChatRef CTGroup groupId Nothing
     _ -> Nothing
   where
     getChatRef =

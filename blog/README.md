@@ -1,6 +1,28 @@
 # Blog
 
-Mar 3, 2025 [SimpleX Chat v6.3: new user experience and safety in public groups](./20241014-simplex-network-v6-1-security-review-better-calls-user-experience.md)
+Jul 29, 2025 [SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
+
+What's new in v6.4.1:
+
+- welcome your contacts: set your profile bio and welcome message.
+- protect your communities from spam and abuse:
+  - review new members ("knocking"),
+  - moderator role to delegate message moderation to trusted members,
+  - receive direct feedback from your group members.
+- set default time to delete messages for new contacts.
+- improved app integrity: Linux app builds are now reproducible.
+
+Also, we added 3 new interface languages to Android and desktop apps, thanks to our users: Indonesian, Romanian and Vietnamese.
+
+---
+
+Jul 3, 2025 [SimpleX network: new experience of connecting with people &mdash; available in SimpleX Chat v6.4-beta.4](./20250703-simplex-network-protocol-extension-for-securely-connecting-people.md)
+
+Now you can start talking to your contacts much faster, as soon as you scan the link. This technical post covers the technology that enabled this new user experience &mdash; short links and associated data of messaging queues.
+
+---
+
+Mar 8, 2025 [SimpleX Chat v6.3: new user experience and safety in public groups](./20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html)
 
 What's new in v6.3:
 - preventing spam and abuse in public groups.
@@ -12,13 +34,13 @@ Also, we added Catalan interface language to Android and desktop apps, thanks to
 
 The last but not the least - server builds are now reproducible!
 
---
+---
 
 Jan 14, 2025 [SimpleX network: large groups and privacy-preserving content moderation](./20250114-simplex-network-large-groups-privacy-preserving-content-moderation.md)
 
 This post explains how server operators can moderate end-to-end encrypted conversations without compromising user privacy or end-to-end encryption.
 
---
+---
 
 Dec 10, 2024 [SimpleX network: preset servers operated by Flux, business chats and more with v6.2 of the apps](./20241210-simplex-network-v6-2-servers-by-flux-business-chats.md)
 
@@ -27,7 +49,7 @@ Dec 10, 2024 [SimpleX network: preset servers operated by Flux, business chats a
 - Better user experience: open on the first unread, jump to quoted messages, see who reacted.
 - Improving notifications in iOS app.
 
---
+---
 
 Nov 25, 2024 [Servers operated by Flux - true privacy and decentralization for all users](./20241125-servers-operated-by-flux-true-privacy-and-decentralization-for-all-users.md)
 

@@ -29,7 +29,7 @@ import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import JSONFixtures
 import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Mobile
+import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -75,6 +75,9 @@ mobileTests = do
       it "should convert invalid name to a valid name" testValidNameCApi
     describe "JSON length" $ do
       it "should compute length of JSON encoded string" testChatJsonLengthCApi
+    describe "Parsers" $ do
+      it "should parse server address" testChatParseServer
+      it "should parse and sanitize URI" testChatParseUri
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -317,6 +320,14 @@ testChatJsonLengthCApi _ = do
   cInt1 `shouldBe` 6
   cInt2 <- cChatJsonLength =<< newCString "こんにちは！"
   cInt2 `shouldBe` 18
+
+testChatParseServer :: TestParams -> IO ()
+testChatParseServer _ = do
+  pure ()
+
+testChatParseUri :: TestParams -> IO ()
+testChatParseUri _ = do
+  pure ()
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

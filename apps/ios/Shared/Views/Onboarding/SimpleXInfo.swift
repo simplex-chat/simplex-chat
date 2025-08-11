@@ -18,7 +18,7 @@ struct SimpleXInfo: View {
 
     var body: some View {
         GeometryReader { g in
-            ScrollView {
+            let v = ScrollView {
                 VStack(alignment: .leading) {
                     VStack(alignment: .center, spacing: 10) {
                         Image(colorScheme == .light ? "logo" : "logo-light")
@@ -36,7 +36,7 @@ struct SimpleXInfo: View {
                                 .font(.headline)
                         }
                     }
-                    
+
                     Spacer()
 
                     VStack(alignment: .leading) {
@@ -66,6 +66,9 @@ struct SimpleXInfo: View {
                         }
                     }
                 }
+                .padding(.horizontal, 25)
+                .padding(.top, 75)
+                .padding(.bottom, 25)
                 .frame(minHeight: g.size.height)
             }
             .sheet(isPresented: Binding(
@@ -88,14 +91,17 @@ struct SimpleXInfo: View {
                     createProfileNavLinkActive: $createProfileNavLinkActive
                 )
             }
+            if #available(iOS 16.4, *) {
+                v.scrollBounceBehavior(.basedOnSize)
+            } else {
+                v
+            }
         }
         .onAppear() {
             setLastVersionDefault()
         }
         .frame(maxHeight: .infinity)
-        .padding(.horizontal, 25)
-        .padding(.top, 75)
-        .padding(.bottom, 25)
+        .navigationBarHidden(true) // necessary on iOS 15
     }
 
     private func onboardingInfoRow(_ image: String, _ title: LocalizedStringKey, _ text: LocalizedStringKey, width: CGFloat) -> some View {
@@ -129,6 +135,7 @@ struct SimpleXInfo: View {
 
             NavigationLink(isActive: $createProfileNavLinkActive) {
                 CreateFirstProfile()
+                    .modifier(ThemedBackground())
             } label: {
                 EmptyView()
             }

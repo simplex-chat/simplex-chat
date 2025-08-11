@@ -18,7 +18,6 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.group.AddGroupMembersView
 import chat.simplex.common.views.chatlist.setGroupMembers
@@ -26,10 +25,12 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.*
 import chat.simplex.common.views.chat.group.GroupLinkView
+import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.net.URI
 
 @Composable
@@ -42,11 +43,9 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
       withBGApi {
         val groupInfo = chatModel.controller.apiNewGroup(rhId, incognito, groupProfile)
         if (groupInfo != null) {
-          withChats {
-            updateGroup(rhId = rhId, groupInfo)
-            chatItems.clearAndNotify()
-            chatItemStatuses.clear()
-            chatModel.chatId.value = groupInfo.id
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId = rhId, groupInfo)
+            openGroupChat(rhId, groupInfo.groupId)
           }
           setGroupMembers(rhId, groupInfo, chatModel)
           closeAll.invoke()
@@ -57,7 +56,7 @@ fun AddGroupView(chatModel: ChatModel, rh: RemoteHostInfo?, close: () -> Unit, c
             }
           } else {
             ModalManager.end.showModalCloseable(true) { close ->
-              GroupLinkView(chatModel, rhId, groupInfo, connReqContact = null, memberRole = null, onGroupLinkUpdated = null, creatingGroup = true, close)
+              GroupLinkView(chatModel, rhId, groupInfo, groupLink = null, onGroupLinkUpdated = null, creatingGroup = true, close)
             }
           }
         }
@@ -141,6 +140,7 @@ fun AddGroupLayout(
               createGroup(incognito.value, GroupProfile(
                 displayName = displayName.value.trim(),
                 fullName = "",
+                shortDescr = null,
                 image = profileImage.value,
                 groupPreferences = GroupPreferences(history = GroupPreference(GroupFeatureEnabled.ON))
               ))

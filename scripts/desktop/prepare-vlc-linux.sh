@@ -2,19 +2,23 @@
 
 set -e
 
+ARCH="$(uname -m)"
+
 function readlink() {
   echo "$(cd "$(dirname "$1")"; pwd -P)"
 }
 root_dir="$(dirname "$(dirname "$(readlink "$0")")")"
-vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-x86_64/vlc
+vlc_dir=$root_dir/apps/multiplatform/common/src/commonMain/cpp/desktop/libs/linux-${ARCH}/vlc
 
 mkdir $vlc_dir || exit 0
 
+vlc_tag='v3.0.21-1'
+vlc_url="https://github.com/simplex-chat/vlc/releases/download/${vlc_tag}/vlc-linux-${ARCH}.appimage"
 
 cd /tmp
 mkdir tmp 2>/dev/null || true
 cd tmp
-curl --tlsv1.2 https://github.com/cmatomic/VLCplayer-AppImage/releases/download/3.0.11.1/VLC_media_player-3.0.11.1-x86_64.AppImage -L -o appimage
+curl --tlsv1.2 "${vlc_url}" -L -o appimage
 chmod +x appimage
 ./appimage --appimage-extract
 cp -r squashfs-root/usr/lib/* $vlc_dir

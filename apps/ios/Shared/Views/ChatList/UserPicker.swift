@@ -97,7 +97,7 @@ struct UserPicker: View {
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
-            if case .active = scenePhase {
+            if case .active = scenePhase, hasChatCtrl() {
                 currentUser = m.currentUser?.userId
                 Task {
                     do {
@@ -124,7 +124,7 @@ struct UserPicker: View {
             ZStack(alignment: .topTrailing) {
                 ProfileImage(imageStr: u.user.image, size: size, color: Color(uiColor: .tertiarySystemGroupedBackground))
                 if (u.unreadCount > 0) {
-                    UnreadBadge(userInfo: u).offset(x: 4, y: -4)
+                    userUnreadBadge(u, theme: theme).offset(x: 4, y: -4)
                 }
             }
             .padding(.trailing, 6)
@@ -171,19 +171,27 @@ struct UserPicker: View {
     }
 }
 
+@inline(__always)
+func userUnreadBadge(_ userInfo: UserInfo, theme: AppTheme) -> some View {
+    UnreadBadge(
+        count: userInfo.unreadCount,
+        color: userInfo.user.showNtfs ? theme.colors.primary : theme.colors.secondary
+    )
+}
+
 struct UnreadBadge: View {
-    var userInfo: UserInfo
-    @EnvironmentObject var theme: AppTheme
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+    var count: Int
+    var color: Color
 
     var body: some View {
         let size = dynamicSize(userFont).chatInfoSize
-        unreadCountText(userInfo.unreadCount)
+        unreadCountText(count)
             .font(userFont <= .xxxLarge ? .caption : .caption2)
             .foregroundColor(.white)
             .padding(.horizontal, dynamicSize(userFont).unreadPadding)
             .frame(minWidth: size, minHeight: size)
-            .background(userInfo.user.showNtfs ? theme.colors.primary : theme.colors.secondary)
+            .background(color)
             .cornerRadius(dynamicSize(userFont).unreadCorner)
     }
 }

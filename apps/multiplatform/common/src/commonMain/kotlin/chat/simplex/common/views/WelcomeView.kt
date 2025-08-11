@@ -34,6 +34,12 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.launch
 
+const val MAX_BIO_LENGTH_BYTES = 160
+
+fun bioFitsLimit(bio: String): Boolean {
+  return chatJsonLength(bio) <= MAX_BIO_LENGTH_BYTES
+}
+
 @Composable
 fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
   val scope = rememberCoroutineScope()
@@ -46,6 +52,7 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
         .padding(top = 20.dp)
     ) {
       val displayName = rememberSaveable { mutableStateOf("") }
+      val shortDescr = rememberSaveable { mutableStateOf("") }
       val focusRequester = remember { FocusRequester() }
 
       ColumnWithScrollBar {
@@ -66,16 +73,34 @@ fun CreateProfile(chatModel: ChatModel, close: () -> Unit) {
             }
           }
           ProfileNameField(displayName, "", { it.trim() == mkValidName(it) }, focusRequester)
+
+          Spacer(Modifier.height(DEFAULT_PADDING))
+
+          Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+              stringResource(MR.strings.short_descr),
+              fontSize = 16.sp
+            )
+            Spacer(Modifier.height(20.dp))
+            if (!bioFitsLimit(shortDescr.value)) {
+              IconButton(
+                onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
+                Modifier.size(20.dp)) {
+                Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+              }
+            }
+          }
+          ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
         }
         SettingsActionItem(
           painterResource(MR.images.ic_check),
           stringResource(MR.strings.create_another_profile_button),
-          disabled = !canCreateProfile(displayName.value),
+          disabled = !canCreateProfile(displayName.value) || !bioFitsLimit(shortDescr.value),
           textColor = MaterialTheme.colors.primary,
           iconColor = MaterialTheme.colors.primary,
           click = {
             if (chatModel.localUserCreated.value == true) {
-              createProfileInProfiles(chatModel, displayName.value, close)
+              createProfileInProfiles(chatModel, displayName.value, shortDescr.value, close)
             } else {
               createProfileInNoProfileSetup(displayName.value, close)
             }
@@ -162,7 +187,7 @@ fun CreateFirstProfile(chatModel: ChatModel, close: () -> Unit) {
 
 fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
   withBGApi {
-    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null)) ?: return@withBGApi
+    val user = controller.apiCreateActiveUser(null, Profile(displayName.trim(), "", null, null)) ?: return@withBGApi
     if (!chatModel.connectedToRemote()) {
       chatModel.localUserCreated.value = true
     }
@@ -173,11 +198,11 @@ fun createProfileInNoProfileSetup(displayName: String, close: () -> Unit) {
   }
 }
 
-fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: () -> Unit) {
+fun createProfileInProfiles(chatModel: ChatModel, displayName: String, shortDescr: String, close: () -> Unit) {
   withBGApi {
     val rhId = chatModel.remoteHostId()
     val user = chatModel.controller.apiCreateActiveUser(
-      rhId, Profile(displayName.trim(), "", null)
+      rhId, Profile(displayName.trim(), "", shortDescr.trim().ifEmpty { null }, null)
     ) ?: return@withBGApi
     chatModel.currentUser.value = user
     if (chatModel.users.isEmpty()) {
@@ -196,7 +221,7 @@ fun createProfileInProfiles(chatModel: ChatModel, displayName: String, close: ()
 fun createProfileOnboarding(chatModel: ChatModel, displayName: String, close: () -> Unit) {
   withBGApi {
     chatModel.currentUser.value = chatModel.controller.apiCreateActiveUser(
-      null, Profile(displayName.trim(), "", null)
+      null, Profile(displayName.trim(), "", null, null)
     ) ?: return@withBGApi
     chatModel.localUserCreated.value = true
     val onboardingStage = chatModel.controller.appPrefs.onboardingStage

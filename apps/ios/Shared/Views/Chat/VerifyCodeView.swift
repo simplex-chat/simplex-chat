@@ -24,84 +24,69 @@ struct VerifyCodeView: View {
     }
 
     private func verifyCodeView(_ code: String) -> some View {
-        ScrollView {
-            let splitCode = splitToParts(code, length: 24)
-            VStack(alignment: .leading) {
-                Group {
+        let splitCode = splitToParts(code, length: 24)
+        return List {
+            Section {
+                QRCode(uri: code, small: true)
+
+                Text(splitCode)
+                    .multilineTextAlignment(.leading)
+                    .font(.body.monospaced())
+                    .lineLimit(20)
+                    .frame(maxWidth: .infinity, alignment: .center)
+            } header: {
+                if connectionVerified {
                     HStack {
-                        if connectionVerified {
-                            Image(systemName: "checkmark.shield")
-                                .foregroundColor(theme.colors.secondary)
-                            Text("\(displayName) is verified")
-                        } else {
-                            Text("\(displayName) is not verified")
-                        }
+                        Image(systemName: "checkmark.shield").foregroundColor(theme.colors.secondary)
+                        Text("\(displayName) is verified").textCase(.none)
                     }
-                    .frame(height: 24)
-
-                    QRCode(uri: code)
-                        .padding(.horizontal)
-
-                    Text(splitCode)
-                        .multilineTextAlignment(.leading)
-                        .font(.body.monospaced())
-                        .lineLimit(20)
-                        .padding(.bottom, 8)
+                } else {
+                    Text("\(displayName) is not verified").textCase(.none)
                 }
-                .frame(maxWidth: .infinity, alignment: .center)
-
+            } footer: {
                 Text("To verify end-to-end encryption with your contact compare (or scan) the code on your devices.")
-                    .padding(.bottom)
+            }
 
-                Group {
-                    if connectionVerified {
-                        Button {
-                            verifyCode(nil)
-                        } label: {
-                            Label("Clear verification", systemImage: "shield")
-                        }
-                        .padding()
-                    } else {
-                        HStack {
-                            NavigationLink {
-                                ScanCodeView(connectionVerified: $connectionVerified, verify: verify)
-                                    .navigationBarTitleDisplayMode(.large)
-                                    .navigationTitle("Scan code")
-                                    .modifier(ThemedBackground())
-                            } label: {
-                                Label("Scan code", systemImage: "qrcode")
-                            }
-                            .padding()
-                            Button {
-                                verifyCode(code) { verified in
-                                    if !verified { showCodeError = true }
-                                }
-                            } label: {
-                                Label("Mark verified", systemImage: "checkmark.shield")
-                            }
-                            .padding()
-                            .alert(isPresented: $showCodeError) {
-                                Alert(title: Text("Incorrect security code!"))
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .center)
-            }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+            Section {
+                if connectionVerified {
                     Button {
-                        showShareSheet(items: [splitCode])
+                        verifyCode(nil)
                     } label: {
-                        Image(systemName: "square.and.arrow.up")
+                        Label("Clear verification", systemImage: "shield")
+                    }
+                } else {
+                    NavigationLink {
+                        ScanCodeView(connectionVerified: $connectionVerified, verify: verify)
+                            .navigationBarTitleDisplayMode(.large)
+                            .navigationTitle("Scan code")
+                            .modifier(ThemedBackground())
+                    } label: {
+                        Label("Scan code", systemImage: "qrcode")
+                    }
+                    Button {
+                        verifyCode(code) { verified in
+                            if !verified { showCodeError = true }
+                        }
+                    } label: {
+                        Label("Mark verified", systemImage: "checkmark.shield")
+                    }
+                    .alert(isPresented: $showCodeError) {
+                        Alert(title: Text("Incorrect security code!"))
                     }
                 }
             }
-            .onChange(of: connectionVerified) { _ in
-                if connectionVerified { dismiss() }
+        }
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button {
+                    showShareSheet(items: [splitCode])
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                }
             }
+        }
+        .onChange(of: connectionVerified) { _ in
+            if connectionVerified { dismiss() }
         }
     }
 

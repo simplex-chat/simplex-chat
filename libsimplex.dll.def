@@ -5,11 +5,14 @@ EXPORTS
     chat_migrate_init
     chat_close_store
     chat_send_cmd
+    chat_send_cmd_retry
     chat_send_remote_cmd
+    chat_send_remote_cmd_retry
     chat_recv_msg
     chat_recv_msg_wait
     chat_parse_markdown
     chat_parse_server
+    chat_parse_uri
     chat_password_hash
     chat_valid_name
     chat_json_length

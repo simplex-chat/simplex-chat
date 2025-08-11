@@ -160,7 +160,7 @@ struct ShareView: View {
         }
     }
 
-    @ViewBuilder private func linkPreview(_ linkPreview: LinkPreview) -> some View {
+    private func linkPreview(_ linkPreview: LinkPreview) -> some View {
         previewArea {
             HStack(alignment: .center, spacing: 8) {
                 if let uiImage = imageFromBase64(linkPreview.image) {
@@ -172,7 +172,7 @@ struct ShareView: View {
                 VStack(alignment: .center, spacing: 4) {
                     Text(linkPreview.title)
                         .lineLimit(1)
-                    Text(linkPreview.uri.absoluteString)
+                    Text(linkPreview.uri)
                         .font(.caption)
                         .lineLimit(1)
                         .foregroundColor(.secondary)

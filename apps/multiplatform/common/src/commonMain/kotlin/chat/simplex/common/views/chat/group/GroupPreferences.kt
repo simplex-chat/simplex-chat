@@ -15,9 +15,12 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.PreferenceToggleWithIcon
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.ColumnWithScrollBar
+import chat.simplex.common.platform.chatModel
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.compose.painterResource
+import kotlinx.coroutines.*
 
 private val featureRoles: List<Pair<GroupMemberRole?, String>> = listOf(
   null to generalGetString(MR.strings.feature_roles_all_members),
@@ -42,12 +45,12 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
       val gp = gInfo.groupProfile.copy(groupPreferences = preferences.toGroupPreferences())
       val g = m.controller.apiUpdateGroup(rhId, gInfo.groupId, gp)
       if (g != null) {
-        withChats {
-          updateGroup(rhId, g)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, g)
           currentPreferences = preferences
         }
-        withChats {
-          updateGroup(rhId, g)
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.updateGroup(rhId, g)
         }
       }
       afterSave()
@@ -70,6 +73,16 @@ fun GroupPreferencesView(m: ChatModel, rhId: Long?, chatId: String, close: () ->
         preferences = currentPreferences
       },
       savePrefs = ::savePrefs,
+      openMemberAdmission = {
+        ModalManager.end.showCustomModal { close ->
+          MemberAdmissionView(
+            chatModel,
+            rhId,
+            chatId,
+            close
+          )
+        }
+      }
     )
   }
 }
@@ -82,10 +95,15 @@ private fun GroupPreferencesLayout(
   applyPrefs: (FullGroupPreferences) -> Unit,
   reset: () -> Unit,
   savePrefs: () -> Unit,
+  openMemberAdmission: () -> Unit,
 ) {
   ColumnWithScrollBar {
     val titleId = if (groupInfo.businessChat == null) MR.strings.group_preferences else MR.strings.chat_preferences
     AppBarTitle(stringResource(titleId))
+    if (groupInfo.businessChat == null) {
+      MemberAdmissionButton(openMemberAdmission)
+      SectionDividerSpaced(maxBottomPadding = false)
+    }
     val timedMessages = remember(preferences) { mutableStateOf(preferences.timedMessages.enable) }
     val onTTLUpdated = { ttl: Int? ->
       applyPrefs(preferences.copy(timedMessages = preferences.timedMessages.copy(ttl = ttl)))
@@ -153,6 +171,15 @@ private fun GroupPreferencesLayout(
     }
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun MemberAdmissionButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_toggle_on),
+    stringResource(MR.strings.member_admission),
+    click = onClick
+  )
 }
 
 @Composable

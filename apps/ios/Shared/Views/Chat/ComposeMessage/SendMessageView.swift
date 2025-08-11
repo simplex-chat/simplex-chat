@@ -12,14 +12,17 @@ import SimpleXChat
 private let liveMsgInterval: UInt64 = 3000_000000
 
 struct SendMessageView: View {
+    var placeholder: String?
     @Binding var composeState: ComposeState
     @Binding var selectedRange: NSRange
     @EnvironmentObject var theme: AppTheme
+    @Environment(\.isEnabled) var isEnabled
     var sendMessage: (Int?) -> Void
     var sendLiveMessage: (() async -> Void)? = nil
     var updateLiveMessage: (() async -> Void)? = nil
     var cancelLiveMessage: (() -> Void)? = nil
-    var nextSendGrpInv: Bool = false
+    var sendToConnect: (() -> Void)? = nil
+    var hideSendButton: Bool = false
     var showVoiceMessageButton: Bool = true
     var voiceMessageAllowed: Bool = true
     var disableSendButton = false
@@ -41,7 +44,6 @@ struct SendMessageView: View {
     @State private var showCustomDisappearingMessageDialogue = false
     @State private var showCustomTimePicker = false
     @State private var selectedDisappearingMessageTime: Int? = customDisappearingMessageTimeDefault.get()
-    @State private var progressByTimeout = false
     @UserDefault(DEFAULT_LIVE_MESSAGE_ALERT_SHOWN) private var liveMessageAlertShown = false
 
     var body: some View {
@@ -63,7 +65,7 @@ struct SendMessageView: View {
                     height: $teHeight,
                     focused: $keyboardVisible,
                     lastUnfocusedDate: $keyboardHiddenDate,
-                    placeholder: Binding(get: { composeState.placeholder }, set: { _ in }),
+                    placeholder: Binding(get: { placeholder ?? composeState.placeholder }, set: { _ in }),
                     selectedRange: $selectedRange,
                     onImagesAdded: onMediaAdded
                 )
@@ -73,12 +75,12 @@ struct SendMessageView: View {
             }
         }
         .overlay(alignment: .topTrailing, content: {
-            if !progressByTimeout && teHeight > 100 && !composeState.inProgress {
+            if !composeState.progressByTimeout && teHeight > 100 && !composeState.inProgress {
                 deleteTextButton()
             }
         })
-        .overlay(alignment: .bottomTrailing, content: {
-            if progressByTimeout {
+        .overlay(alignment: .bottomTrailing) {
+            if composeState.progressByTimeout {
                 ProgressView()
                     .scaleEffect(1.4)
                     .frame(width: 31, height: 31, alignment: .center)
@@ -88,28 +90,21 @@ struct SendMessageView: View {
                 // required for intercepting clicks
                     .background(.white.opacity(0.000001))
             }
-        })
+        }
         .padding(.vertical, 1)
         .background(theme.colors.background)
         .clipShape(composeShape)
         .overlay(composeShape.strokeBorder(.secondary, lineWidth: 0.5).opacity(0.7))
         .onChange(of: composeState.message, perform: { text in updateFont(text) })
-        .onChange(of: composeState.inProgress) { inProgress in
-            if inProgress {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                    progressByTimeout = composeState.inProgress
-                }
-            } else {
-                progressByTimeout = false
-            }
-        }
         .padding(.vertical, 8)
     }
 
     @ViewBuilder private func composeActionButtons() -> some View {
         let vmrs = composeState.voiceMessageRecordingState
-        if nextSendGrpInv {
-            inviteMemberContactButton()
+        if hideSendButton {
+            EmptyView()
+        } else if let connect = sendToConnect {
+            sendToConnectButton(connect)
         } else if case .reportedItem = composeState.contextItem {
             sendMessageButton()
         } else if showVoiceMessageButton
@@ -157,20 +152,16 @@ struct SendMessageView: View {
         .padding([.top, .trailing], 4)
     }
 
-    private func inviteMemberContactButton() -> some View {
-        Button {
-            sendMessage(nil)
-        } label: {
+    private func sendToConnectButton(_ connect: @escaping () -> Void) -> some View {
+        let disabled = !composeState.sendEnabled || composeState.inProgress || disableSendButton
+        return Button(action: connect) {
             Image(systemName: "arrow.up.circle.fill")
                 .resizable()
-                .foregroundColor(sendButtonColor)
+                .foregroundColor(disabled ? theme.colors.secondary.opacity(0.67) : sendButtonColor)
                 .frame(width: sendButtonSize, height: sendButtonSize)
                 .opacity(sendButtonOpacity)
         }
-        .disabled(
-            !composeState.sendEnabled ||
-            composeState.inProgress
-        )
+        .disabled(disabled)
         .frame(width: 31, height: 31)
         .padding([.bottom, .trailing], 4)
     }
@@ -255,6 +246,7 @@ struct SendMessageView: View {
     }
 
     private struct RecordVoiceMessageButton: View {
+        @Environment(\.isEnabled) var isEnabled
         @EnvironmentObject var theme: AppTheme
         var startVoiceMessageRecording: (() -> Void)?
         var finishVoiceMessageRecording: (() -> Void)?
@@ -263,13 +255,12 @@ struct SendMessageView: View {
         @State private var pressed: TimeInterval? = nil
 
         var body: some View {
-            Button(action: {}) {
-                Image(systemName: "mic.fill")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 20, height: 20)
-                    .foregroundColor(theme.colors.primary)
-            }
+            Image(systemName: isEnabled ? "mic.fill" : "mic")
+            .resizable()
+            .scaledToFit()
+            .frame(width: 20, height: 20)
+            .foregroundColor(isEnabled ? theme.colors.primary : theme.colors.secondary)
+            .opacity(holdingVMR ? 0.7 : 1)
             .disabled(disabled)
             .frame(width: 31, height: 31)
             .padding([.bottom, .trailing], 4)
@@ -279,9 +270,7 @@ struct SendMessageView: View {
                     pressed = ProcessInfo.processInfo.systemUptime
                     startVoiceMessageRecording?()
                 } else {
-                    let now = ProcessInfo.processInfo.systemUptime
-                    if let pressed = pressed,
-                       now - pressed >= 1 {
+                    if let pressed, ProcessInfo.processInfo.systemUptime - pressed >= 1 {
                         finishVoiceMessageRecording?()
                     }
                     holdingVMR = false
@@ -355,7 +344,7 @@ struct SendMessageView: View {
             Image(systemName: "bolt.fill")
                 .resizable()
                 .scaledToFit()
-                .foregroundColor(theme.colors.primary)
+                .foregroundColor(isEnabled ? theme.colors.primary : theme.colors.secondary)
                 .frame(width: 20, height: 20)
         }
         .frame(width: 29, height: 29)

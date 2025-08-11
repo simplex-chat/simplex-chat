@@ -54,6 +54,24 @@ fun SectionView(
 }
 
 @Composable
+fun SectionViewWithButton(title: String? = null, titleButton: (@Composable () -> Unit)?, contentPadding: PaddingValues = PaddingValues(), headerBottomPadding: Dp = DEFAULT_PADDING, content: (@Composable ColumnScope.() -> Unit)) {
+  Column {
+    if (title != null || titleButton != null) {
+      Row(modifier = Modifier.padding(start = DEFAULT_PADDING, end = DEFAULT_PADDING, bottom = headerBottomPadding).fillMaxWidth()) {
+        if (title != null) {
+          Text(title, color = MaterialTheme.colors.secondary, style = MaterialTheme.typography.body2, fontSize = 12.sp)
+        }
+        if (titleButton != null) {
+          Spacer(modifier = Modifier.weight(1f))
+          titleButton()
+        }
+      }
+    }
+    Column(Modifier.padding(contentPadding).fillMaxWidth()) { content() }
+  }
+}
+
+@Composable
 fun <T> SectionViewSelectable(
   title: String?,
   currentValue: State<T>,
@@ -73,7 +91,7 @@ fun <T> SectionViewSelectable(
       }
     }
   }
-  SectionTextFooter(values.first { it.value == currentValue.value }.description)
+  SectionTextFooter(values.firstOrNull { it.value == currentValue.value }?.description ?: AnnotatedString(""))
 }
 
 @Composable
@@ -203,7 +221,7 @@ fun <T> SectionItemWithValue(
       horizontalArrangement = Arrangement.End
     ) {
       Text(
-        values.first { it.value == currentValue.value }.title + (if (label != null) " $label" else ""),
+        (values.firstOrNull { it.value == currentValue.value }?.title ?: "") + (if (label != null) " $label" else ""),
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         color = MaterialTheme.colors.secondary

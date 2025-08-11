@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.ChatModel
@@ -253,7 +254,8 @@ class AlertManager {
               CircularProgressIndicator(Modifier.size(36.dp).padding(4.dp), color = MaterialTheme.colors.secondary, strokeWidth = 3.dp)
             }
           }
-        }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
       )
     }
   }
@@ -265,6 +267,88 @@ class AlertManager {
     onConfirm: (() -> Unit)? = null,
     hostDevice: Pair<Long?, String>? = null,
   ) = showAlertMsg(generalGetString(title), if (text != null) generalGetString(text) else null, generalGetString(confirmText), onConfirm, hostDevice)
+
+  fun showOpenChatAlert(
+    profileName: String,
+    profileFullName: String,
+    profileImage: @Composable () -> Unit,
+    confirmText: String = generalGetString(MR.strings.connect_plan_open_chat),
+    onConfirm: () -> Unit,
+    dismissText: String = generalGetString(MR.strings.cancel_verb),
+    onDismiss: (() -> Unit)?,
+  ) {
+    showAlert {
+      AlertDialog(
+        onDismissRequest = {
+          onDismiss?.invoke()
+          hideAlert()
+        },
+        buttons = {
+          AlertContent(text = null as String?, null) {
+            Column(
+              Modifier
+                .padding(top = DEFAULT_PADDING_HALF)
+                .width(360.dp),
+              verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+              Column(
+                Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                profileImage()
+                Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                Text(
+                  profileName,
+                  textAlign = TextAlign.Center,
+                  style = MaterialTheme.typography.h4,
+                  lineHeight = 20.sp,
+                  fontWeight = FontWeight.SemiBold,
+                  maxLines = 2,
+                  modifier = Modifier.fillMaxWidth()
+                )
+
+                if (profileFullName.isNotEmpty() && profileFullName != profileName) {
+                  Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+                  Text(
+                    profileFullName,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.body2,
+                    maxLines = 2,
+                    modifier = Modifier.fillMaxWidth()
+                  )
+                }
+              }
+
+              Column(
+                Modifier.fillMaxWidth().padding(horizontal = DEFAULT_PADDING_HALF).padding(top = DEFAULT_PADDING, bottom = 2.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+              ) {
+                val focusRequester = remember { FocusRequester() }
+                LaunchedEffect(Unit) {
+                  // Wait before focusing to prevent auto-confirming if a user used Enter key on hardware keyboard
+                  delay(200)
+                  focusRequester.requestFocus()
+                }
+                TextButton(onClick = {
+                  onConfirm.invoke()
+                  hideAlert()
+                }, Modifier.focusRequester(focusRequester)) {
+                  Text(confirmText)
+                }
+                TextButton(onClick = {
+                  onDismiss?.invoke()
+                  hideAlert()
+                }) {
+                  Text(dismissText)
+                }
+              }
+            }
+          }
+        },
+        shape = RoundedCornerShape(corner = CornerSize(25.dp))
+      )
+    }
+  }
 
   @Composable
   fun showInView() {

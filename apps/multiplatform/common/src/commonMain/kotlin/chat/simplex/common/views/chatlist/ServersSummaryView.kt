@@ -120,7 +120,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, hasSess: Boolean, leadi
   val netCfg = rememberUpdatedState(chatModel.controller.getNetCfg())
   val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, hasSess)
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
-  val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
+  val percentageText = if (subs.total > 0 || hasSess) "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%" else "%"
 
   Row(
     verticalAlignment = Alignment.CenterVertically,

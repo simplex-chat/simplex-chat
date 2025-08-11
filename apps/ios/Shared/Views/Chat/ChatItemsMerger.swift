@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct MergedItems: Hashable, Equatable {
+    let im: ItemsModel
     let items: [MergedItem]
     let splits: [SplitRange]
     // chat item id, index in list
@@ -23,15 +24,15 @@ struct MergedItems: Hashable, Equatable {
         hasher.combine("\(items.hashValue)")
     }
 
-    static func create(_ items: [ChatItem], _ revealedItems: Set<Int64>, _ chatState: ActiveChatState) -> MergedItems {
-        if items.isEmpty {
-            return MergedItems(items: [], splits: [], indexInParentItems: [:])
+    static func create(_ im: ItemsModel, _ revealedItems: Set<Int64>) -> MergedItems {
+        if im.reversedChatItems.isEmpty {
+            return MergedItems(im: im, items: [], splits: [], indexInParentItems: [:])
         }
 
-        let unreadCount = chatState.unreadTotal
+        let unreadCount = im.chatState.unreadTotal
 
-        let unreadAfterItemId = chatState.unreadAfterItemId
-        let itemSplits = chatState.splits
+        let unreadAfterItemId = im.chatState.unreadAfterItemId
+        let itemSplits = im.chatState.splits
         var mergedItems: [MergedItem] = []
         // Indexes of splits here will be related to reversedChatItems, not chatModel.chatItems
         var splitRanges: [SplitRange] = []
@@ -40,19 +41,19 @@ struct MergedItems: Hashable, Equatable {
         var unclosedSplitIndex: Int? = nil
         var unclosedSplitIndexInParent: Int? = nil
         var visibleItemIndexInParent = -1
-        var unreadBefore = unreadCount - chatState.unreadAfterNewestLoaded
+        var unreadBefore = unreadCount - im.chatState.unreadAfterNewestLoaded
         var lastRevealedIdsInMergedItems: BoxedValue<[Int64]>? = nil
         var lastRangeInReversedForMergedItems: BoxedValue<ClosedRange<Int>>? = nil
         var recent: MergedItem? = nil
-        while index < items.count {
-            let item = items[index]
-            let prev = index >= 1 ? items[index - 1] : nil
-            let next = index + 1 < items.count ? items[index + 1] : nil
+        while index < im.reversedChatItems.count {
+            let item = im.reversedChatItems[index]
+            let prev = index >= 1 ? im.reversedChatItems[index - 1] : nil
+            let next = index + 1 < im.reversedChatItems.count ? im.reversedChatItems[index + 1] : nil
             let category = item.mergeCategory
             let itemIsSplit = itemSplits.contains(item.id)
 
             if item.id == unreadAfterItemId {
-                unreadBefore = unreadCount - chatState.unreadAfter
+                unreadBefore = unreadCount - im.chatState.unreadAfter
             }
             if item.isRcvNew {
                 unreadBefore -= 1
@@ -106,18 +107,19 @@ struct MergedItems: Hashable, Equatable {
                 // found item that is considered as a split
                 if let unclosedSplitIndex, let unclosedSplitIndexInParent {
                     // it was at least second split in the list
-                    splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
+                    splitRanges.append(SplitRange(itemId: im.reversedChatItems[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index - 1, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent - 1))
                 }
                 unclosedSplitIndex = index
                 unclosedSplitIndexInParent = visibleItemIndexInParent
-            } else if index + 1 == items.count, let unclosedSplitIndex, let unclosedSplitIndexInParent {
+            } else if index + 1 == im.reversedChatItems.count, let unclosedSplitIndex, let unclosedSplitIndexInParent {
                 // just one split for the whole list, there will be no more, it's the end
-                splitRanges.append(SplitRange(itemId: items[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
+                splitRanges.append(SplitRange(itemId: im.reversedChatItems[unclosedSplitIndex].id, indexRangeInReversed: unclosedSplitIndex ... index, indexRangeInParentItems: unclosedSplitIndexInParent ... visibleItemIndexInParent))
             }
             indexInParentItems[item.id] = visibleItemIndexInParent
             index += 1
         }
         return MergedItems(
+            im: im,
             items: mergedItems,
             splits: splitRanges,
             indexInParentItems: indexInParentItems
@@ -127,7 +129,6 @@ struct MergedItems: Hashable, Equatable {
     // Use this check to ensure that mergedItems state based on currently actual state of global
     // splits and reversedChatItems
     func isActualState() -> Bool {
-        let im = ItemsModel.shared
         // do not load anything if global splits state is different than in merged items because it
         // will produce undefined results in terms of loading and placement of items. 
         // Same applies to reversedChatItems
@@ -321,6 +322,101 @@ class ActiveChatState {
         unreadAfter = 0
         unreadAfterNewestLoaded = 0
     }
+
+    func itemsRead(_ itemIds: Set<Int64>?, _ newItems: [ChatItem]) {
+        guard let itemIds else {
+            // special case when the whole chat became read
+            unreadTotal = 0
+            unreadAfter = 0
+            return
+        }
+        var unreadAfterItemIndex: Int = -1
+        // since it's more often that the newest items become read, it's logical to loop from the end of the list to finish it faster
+        var i = newItems.count - 1
+        var ids = itemIds
+        // intermediate variables to prevent re-setting state value a lot of times without reason
+        var newUnreadTotal = unreadTotal
+        var newUnreadAfter = unreadAfter
+        while i >= 0 {
+            let item = newItems[i]
+            if item.id == unreadAfterItemId {
+                unreadAfterItemIndex = i
+            }
+            if ids.contains(item.id) {
+                // was unread, now this item is read
+                if (unreadAfterItemIndex == -1) {
+                    newUnreadAfter -= 1
+                }
+                newUnreadTotal -= 1
+                ids.remove(item.id)
+                if ids.isEmpty {
+                    break
+                }
+            }
+            i -= 1
+        }
+        unreadTotal = newUnreadTotal
+        unreadAfter = newUnreadAfter
+    }
+
+    func itemAdded(_ item: (Int64, Bool), _ index: Int) {
+        if item.1 {
+            unreadAfter += 1
+            unreadTotal += 1
+        }
+    }
+
+    func itemsRemoved(_ itemIds: [(Int64, Int, Bool)], _ newItems: [ChatItem]) {
+        var newSplits: [Int64] = []
+        for split in splits {
+            let index = itemIds.firstIndex(where: { (delId, _, _) in delId == split })
+            // deleted the item that was right before the split between items, find newer item so it will act like the split
+            if let index {
+                let idx = itemIds[index].1 - itemIds.filter { (_, delIndex, _) in delIndex <= index }.count
+                let newSplit = newItems.count > idx && idx >= 0 ? newItems[idx].id : nil
+                // it the  whole section is gone and splits overlap, don't add it at all
+                if let newSplit, !newSplits.contains(newSplit) {
+                    newSplits.append(newSplit)
+                }
+            } else {
+                newSplits.append(split)
+            }
+        }
+        splits = newSplits
+
+        let index = itemIds.firstIndex(where: { (delId, _, _) in delId == unreadAfterItemId })
+        // unread after item was removed
+        if let index {
+            let idx = itemIds[index].1 - itemIds.filter { (_, delIndex, _) in delIndex <= index }.count
+            var newUnreadAfterItemId = newItems.count > idx && idx >= 0 ? newItems[idx].id : nil
+            let newUnreadAfterItemWasNull = newUnreadAfterItemId == nil
+            if newUnreadAfterItemId == nil {
+                // everything on top (including unread after item) were deleted, take top item as unread after id
+                newUnreadAfterItemId = newItems.first?.id
+            }
+            if let newUnreadAfterItemId {
+                unreadAfterItemId = newUnreadAfterItemId
+                totalAfter -= itemIds.filter { (_, delIndex, _) in delIndex > index }.count
+                unreadTotal -= itemIds.filter { (_, delIndex, isRcvNew) in delIndex <= index && isRcvNew }.count
+                unreadAfter -= itemIds.filter { (_, delIndex, isRcvNew) in delIndex > index && isRcvNew }.count
+                if newUnreadAfterItemWasNull {
+                    // since the unread after item was moved one item after initial position, adjust counters accordingly
+                    if newItems.first?.isRcvNew == true {
+                        unreadTotal += 1
+                        unreadAfter -= 1
+                    }
+                }
+            } else {
+                // all items were deleted, 0 items in chatItems
+                unreadAfterItemId = -1
+                totalAfter = 0
+                unreadTotal = 0
+                unreadAfter = 0
+            }
+        } else {
+            totalAfter -= itemIds.count
+        }
+    }
 }
 
 class BoxedValue<T: Hashable>: Equatable, Hashable {
@@ -339,7 +435,7 @@ class BoxedValue<T: Hashable>: Equatable, Hashable {
 }
 
 @MainActor
-func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.ListState, _ mergedItems: MergedItems) -> ClosedRange<Int> {
+func visibleItemIndexesNonReversed(_ im: ItemsModel, _ listState: EndlessScrollView<MergedItem>.ListState, _ mergedItems: MergedItems) -> ClosedRange<Int> {
     let zero = 0 ... 0
     let items = mergedItems.items
     if items.isEmpty {
@@ -350,110 +446,12 @@ func visibleItemIndexesNonReversed(_ listState: EndlessScrollView<MergedItem>.Li
     guard let newest, let oldest else {
         return zero
     }
-    let size = ItemsModel.shared.reversedChatItems.count
+    let size = im.reversedChatItems.count
     let range = size - oldest ... size - newest
     if range.lowerBound < 0 || range.upperBound < 0 {
         return zero
     }
 
-    // visible items mapped to their underlying data structure which is ItemsModel.shared.reversedChatItems.reversed()
+    // visible items mapped to their underlying data structure which is im.reversedChatItems.reversed()
     return range
-}
-
-class RecalculatePositions {
-    private var chatState: ActiveChatState { get { ItemsModel.shared.chatState } }
-
-    func read(_ itemIds: Set<Int64>?, _ newItems: [ChatItem]) {
-        guard let itemIds else {
-            // special case when the whole chat became read
-            chatState.unreadTotal = 0
-            chatState.unreadAfter = 0
-            return
-        }
-        var unreadAfterItemIndex: Int = -1
-        // since it's more often that the newest items become read, it's logical to loop from the end of the list to finish it faster
-        var i = newItems.count - 1
-        var ids = itemIds
-        // intermediate variables to prevent re-setting state value a lot of times without reason
-        var newUnreadTotal = chatState.unreadTotal
-        var newUnreadAfter = chatState.unreadAfter
-        while i >= 0 {
-            let item = newItems[i]
-            if item.id == chatState.unreadAfterItemId {
-                unreadAfterItemIndex = i
-            }
-            if ids.contains(item.id) {
-                // was unread, now this item is read
-                if (unreadAfterItemIndex == -1) {
-                    newUnreadAfter -= 1
-                }
-                newUnreadTotal -= 1
-                ids.remove(item.id)
-                if ids.isEmpty {
-                    break
-                }
-            }
-            i -= 1
-        }
-        chatState.unreadTotal = newUnreadTotal
-        chatState.unreadAfter = newUnreadAfter
-    }
-    func added(_ item: (Int64, Bool), _ index: Int) {
-        if item.1 {
-            chatState.unreadAfter += 1
-            chatState.unreadTotal += 1
-        }
-    }
-    func removed(_ itemIds: [(Int64, Int, Bool)], _ newItems: [ChatItem]) {
-        var newSplits: [Int64] = []
-        for split in chatState.splits {
-            let index = itemIds.firstIndex(where: { (delId, _, _) in delId == split })
-            // deleted the item that was right before the split between items, find newer item so it will act like the split
-            if let index {
-                let idx = itemIds[index].1 - itemIds.filter { (_, delIndex, _) in delIndex <= index }.count
-                let newSplit = newItems.count > idx && idx >= 0 ? newItems[idx].id : nil
-                // it the  whole section is gone and splits overlap, don't add it at all
-                if let newSplit, !newSplits.contains(newSplit) {
-                    newSplits.append(newSplit)
-                }
-            } else {
-                newSplits.append(split)
-            }
-        }
-        chatState.splits = newSplits
-
-        let index = itemIds.firstIndex(where: { (delId, _, _) in delId == chatState.unreadAfterItemId })
-        // unread after item was removed
-        if let index {
-            let idx = itemIds[index].1 - itemIds.filter { (_, delIndex, _) in delIndex <= index }.count
-            var newUnreadAfterItemId = newItems.count > idx && idx >= 0 ? newItems[idx].id : nil
-            let newUnreadAfterItemWasNull = newUnreadAfterItemId == nil
-            if newUnreadAfterItemId == nil {
-                // everything on top (including unread after item) were deleted, take top item as unread after id
-                newUnreadAfterItemId = newItems.first?.id
-            }
-            if let newUnreadAfterItemId {
-                chatState.unreadAfterItemId = newUnreadAfterItemId
-                chatState.totalAfter -= itemIds.filter { (_, delIndex, _) in delIndex > index }.count
-                chatState.unreadTotal -= itemIds.filter { (_, delIndex, isRcvNew) in delIndex <= index && isRcvNew }.count
-                chatState.unreadAfter -= itemIds.filter { (_, delIndex, isRcvNew) in delIndex > index && isRcvNew }.count
-                if newUnreadAfterItemWasNull {
-                    // since the unread after item was moved one item after initial position, adjust counters accordingly
-                    if newItems.first?.isRcvNew == true {
-                        chatState.unreadTotal += 1
-                        chatState.unreadAfter -= 1
-                    }
-                }
-            } else {
-                // all items were deleted, 0 items in chatItems
-                chatState.unreadAfterItemId = -1
-                chatState.totalAfter = 0
-                chatState.unreadTotal = 0
-                chatState.unreadAfter = 0
-            }
-        } else {
-            chatState.totalAfter -= itemIds.count
-        }
-    }
-    func cleared() { chatState.clear() }
 }

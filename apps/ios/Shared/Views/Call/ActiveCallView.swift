@@ -243,7 +243,7 @@ struct ActiveCallView: View {
                 ChatReceiver.shared.messagesChannel = nil
                 return
             }
-            if case let .chatItemsStatusesUpdated(_, chatItems) = msg,
+            if case let .result(.chatItemsStatusesUpdated(_, chatItems)) = msg,
                chatItems.contains(where: { ci in
                    ci.chatInfo.id == call.contact.id &&
                    ci.chatItem.content.isSndCall &&
@@ -467,7 +467,7 @@ struct ActiveCallOverlay: View {
         .disabled(call.initialCallType == .audio && client.activeCall?.peerHasOldVersion == true)
     }
 
-    @ViewBuilder private func flipCameraButton() -> some View {
+    private func flipCameraButton() -> some View {
         controlButton(call, "arrow.triangle.2.circlepath", padding: 12) {
                 Task {
                     if await WebRTCClient.isAuthorized(for: .video) {
@@ -477,11 +477,11 @@ struct ActiveCallOverlay: View {
         }
     }
 
-    @ViewBuilder private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
+    private func controlButton(_ call: Call, _ imageName: String, padding: CGFloat, _ perform: @escaping () -> Void) -> some View {
         callButton(imageName, call.peerMediaSources.hasVideo ? Color.black.opacity(0.2) : Color.white.opacity(0.2), padding: padding, perform)
     }
 
-    @ViewBuilder private func audioDevicePickerButton() -> some View {
+    private func audioDevicePickerButton() -> some View {
         AudioDevicePicker()
             .opacity(0.8)
             .scaleEffect(2)
