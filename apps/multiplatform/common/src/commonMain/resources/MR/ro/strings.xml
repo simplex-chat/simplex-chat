@@ -1699,7 +1699,7 @@
     <string name="send_receipts_disabled_alert_title">Chitanțele sunt dezactivate</string>
     <string name="info_row_received_at">Primit la</string>
     <string name="v5_0_polish_interface">Interfață poloneză</string>
-    <string name="v5_8_private_routing_descr">Protejați-vă adresa IP de retransmiterile de mesagerie alese de contactele dvs.\nActivați în setările *Rețea și servere*.</string>
+    <string name="v5_8_private_routing_descr">Protejează-ți adresa IP de releele de mesagerie alese de contactele tale.\nActivează din setările *Rețea și servere*.</string>
     <string name="received_message">Mesaj primit</string>
     <string name="loading_remote_file_desc">Vă rugăm să așteptați cât timp fișierul se încarcă de pe dispozitivul mobil conectat</string>
     <string name="image_descr_profile_image">imagine de profil</string>
@@ -1800,7 +1800,7 @@
     <string name="cant_send_message_mem_removed">eliminat din grup</string>
     <string name="cant_send_message_rejected">cererea de înscriere a fost respinsă</string>
     <string name="select_chat_profile">Selectează profilul de chat</string>
-    <string name="save_auto_accept_settings">Salvați setările de acceptare automată</string>
+    <string name="save_auto_accept_settings">Salvează setările adresei SimpleX</string>
     <string name="save_list">Salvați lista</string>
     <string name="settings_section_title_delivery_receipts">TRIMITE CONFIRMĂRI DE LIVRARE LA</string>
     <string name="self_destruct_passcode_changed">Parola de autodistrugere a fost schimbată!</string>
@@ -2450,4 +2450,11 @@
     <string name="v6_4_1_short_address_create">Creează-ți adresa</string>
     <string name="chat_banner_accept_contact_request">Acceptă cererea de contact</string>
     <string name="compose_view_send_contact_request_alert_text"><![CDATA[Vei putea trimite mesaje <b>doar după ce cererea ta este acceptată</b>.]]></string>
+    <string name="files_prohibited_in_this_chat">Fișierele și conținutul media sunt interzise în această conversație.</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Activează implicit mesajele care dispar.</string>
+    <string name="both_you_and_your_contact_can_send_files">Atât tu, cât și contactul tău puteți trimite fișiere și conținut media.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Permite contactelor tale să trimită fișiere și conținut media.</string>
+    <string name="chat_banner_business_connection">Conexiune de afaceri</string>
+    <string name="member_is_deleted_cant_accept_request">Membrul a fost șters – nu poate accepta cererea</string>
+    <string name="allow_files_and_media_only_if">Permite fișierele și conținutul media doar dacă persoana de contact le permite.</string>
 </resources>
