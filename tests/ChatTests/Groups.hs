@@ -148,6 +148,7 @@ chatGroupTests = do
     it "sends and updates profile when creating contact" testMemberContactProfileUpdate
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
+    it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
   describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
@@ -4639,6 +4640,109 @@ testMemberContactAccept =
         ]
 
       bob <##> cath
+
+testMemberContactAcceptIncognito :: HasCallStack => TestParams -> IO ()
+testMemberContactAcceptIncognito =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      -- create group, bob joins incognito
+      alice ##> "/g team"
+      alice <## "group #team is created"
+      alice <## "to add members use /a team <name> or /create link #team"
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      bob ##> ("/c i " <> gLink)
+      bobIncognito <- getTermLine bob
+      bob <## "connection request sent incognito!"
+      alice <## (bobIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> bobIncognito <> " joined the group"),
+          do
+            bob <## "#team: joining the group..."
+            bob <## ("#team: you joined the group incognito as " <> bobIncognito)
+        ]
+      -- cath joins incognito
+      cath ##> ("/c i " <> gLink)
+      cathIncognito <- getTermLine cath
+      cath <## "connection request sent incognito!"
+      alice <## (cathIncognito <> ": accepting request to join group #team...")
+      concurrentlyN_
+        [ alice <## ("#team: " <> cathIncognito <> " joined the group"),
+          do
+            cath <## "#team: joining the group..."
+            cath <## ("#team: you joined the group incognito as " <> cathIncognito)
+            cath <## ("#team: member " <> bobIncognito <> " is connected"),
+          do
+            bob <## ("#team: alice added " <> cathIncognito <> " to the group (connecting...)")
+            bob <## ("#team: new member " <> cathIncognito <> " is connected")
+        ]
+
+      threadDelay 1000000
+
+      -- bob and cath connect
+      bob ##> "/_create member contact #1 3"
+      bob <## ("contact for member #team " <> cathIncognito <> " is created")
+
+      bob ##> "/_invite member contact @2"
+      bob <## ("sent invitation to connect directly to member #team " <> cathIncognito)
+      cath <## ("#team " <> bobIncognito <> " requests to create direct contact with you")
+      cath <## ("to accept: /accept_member_contact @" <> bobIncognito)
+      cath <## ("to reject: /delete @" <> bobIncognito <> " (the sender will NOT be notified)")
+
+      -- check correct incognito profiles are used
+      bob @@@ [("@" <> cathIncognito, "chat banner"), ("#team", "connected")]
+
+      bob ##> ("/i " <> cathIncognito)
+      bob <## "contact ID: 2"
+      bob <##. "receiving messages via"
+      bob <## ("you've shared incognito profile with this contact: " <> bobIncognito)
+      bob <## "connection not verified, use /code command to see security code"
+      bob <## currentChatVRangeInfo
+
+      cath @@@ [("@" <> bobIncognito, "requested connection from group team"), ("#team", "started direct connection with you")]
+      cath #$> ("/_get chat @2 count=1", chat, [(0, "requested connection from group team")])
+
+      cath ##> ("/i " <> bobIncognito)
+      cath <## "contact ID: 2"
+      cath <## ("you've shared incognito profile with this contact: " <> cathIncognito)
+      cath <## "connection not verified, use /code command to see security code"
+      cath <## currentChatVRangeInfo
+
+      -- accept connection
+      cath ##> ("/accept_member_contact @" <> bobIncognito)
+      cath <## ("contact " <> bobIncognito <> " is accepted, starting connection")
+      _ <- getTermLine bob
+      _ <- getTermLine cath
+      concurrentlyN_
+        [ do
+            bob <## (cathIncognito <> ": contact is connected, your incognito profile for this contact is " <> bobIncognito)
+            bob <## ("use /i " <> cathIncognito <> " to print out this incognito profile again"),
+          do
+            cath <## (bobIncognito <> ": contact is connected, your incognito profile for this contact is " <> cathIncognito)
+            cath <## ("use /i " <> bobIncognito <> " to print out this incognito profile again")
+        ]
+
+      bob ?#> ("@" <> cathIncognito <> " hi")
+      cath ?<# (bobIncognito <> "> hi")
+      cath ?#> ("@" <> bobIncognito <> " hey")
+      bob ?<# (cathIncognito <> "> hey")
+
+      -- if group is deleted, bob and cath keep contact with each other
+      alice ##> "/d #team"
+      concurrentlyN_
+        [ alice <## "#team: you deleted the group",
+          do
+            bob <## "#team: alice deleted the group"
+            bob <## "use /d #team to delete the local copy of the group",
+          do
+            cath <## "#team: alice deleted the group"
+            cath <## "use /d #team to delete the local copy of the group"
+        ]
+
+      bob ?#> ("@" <> cathIncognito <> " hi")
+      cath ?<# (bobIncognito <> "> hi")
+      cath ?#> ("@" <> bobIncognito <> " hey")
+      bob ?<# (cathIncognito <> "> hey")
 
 testGroupMsgForward :: HasCallStack => TestParams -> IO ()
 testGroupMsgForward =
