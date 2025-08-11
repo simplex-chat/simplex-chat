@@ -2514,4 +2514,8 @@
     <string name="prohibit_sending_files_and_media">禁止发送文件和媒体。</string>
     <string name="chat_banner_connect_to_use_bot">轻按“连接”使用机器人</string>
     <string name="cant_send_commands_alert_text">你必须已连接才能发送命令。</string>
+    <string name="deprecated_options_section">已废弃的选项</string>
+    <string name="privacy_chat_list_open_clean_web_link">打开干净链接</string>
+    <string name="privacy_chat_list_open_full_web_link">打开完整链接</string>
+    <string name="sanitize_links_toggle">删除链接跟踪</string>
 </resources>
