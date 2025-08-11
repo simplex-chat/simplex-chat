@@ -192,7 +192,7 @@ tasks {
                 outputDir = outputs.files.files.last()
             }
             exec {
-                workingDir("../../../scripts/android")
+                workingDir("../../scripts/android")
                 environment = mapOf("JAVA_HOME" to "$javaHome")
                 commandLine = listOf(
                     "./compress-and-sign-apk.sh",
