@@ -474,14 +474,17 @@ object ChatModel {
     }
 
     fun removeLastChatItems() {
-      val removed: Triple<Long, Int, Boolean>
+      val remIndex: Int
+      val rem: ChatItem?
       chatItems.value = SnapshotStateList<ChatItem>().apply {
         addAll(chatItems.value)
-        val remIndex = lastIndex
-        val rem = removeLast()
-        removed = Triple(rem.id, remIndex, rem.isRcvNew)
+        remIndex = lastIndex
+        rem = removeLastOrNull()
       }
-      chatState.itemsRemoved(listOf(removed), chatItems.value)
+      if (rem != null) {
+        val removed = Triple(rem.id, remIndex, rem.isRcvNew)
+        chatState.itemsRemoved(listOf(removed), chatItems.value)
+      }
     }
 
     suspend fun addChatItem(rhId: Long?, chatInfo: ChatInfo, cItem: ChatItem) {
