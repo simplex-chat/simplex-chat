@@ -3105,8 +3105,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               securityCodeChanged mCt'
               createItems mCt' m
           | otherwise = do
+              acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connReq PQSupportOff
               mCt' <- withStore $ \db -> do
                 updateMemberContactInvited db user mCt groupDirectInv
+                void $ liftIO $ createMemberContactConn db user acId Nothing g mConn ConnPrepared mContactId subMode
                 getContact db vr user mContactId
               securityCodeChanged mCt'
               createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
@@ -3123,8 +3125,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
               createItems mCt m'
           | otherwise = do
+              acId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True connReq PQSupportOff
               (mCt, m') <- withStore $ \db -> do
                 (mContactId, m') <- liftIO $ createMemberContactInvited db user g m groupDirectInv
+                void $ liftIO $ createMemberContactConn db user acId Nothing g mConn ConnPrepared mContactId subMode
                 mCt <- getContact db vr user mContactId
                 pure (mCt, m')
               createInternalChatItem user (CDDirectSnd mCt) CIChatBanner (Just epochStart)
