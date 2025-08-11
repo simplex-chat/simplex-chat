@@ -25,7 +25,6 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Functor (($>))
 import Data.List (find)
 import qualified Data.List.NonEmpty as L
-import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Word (Word8)
 import Foreign.C.String
@@ -57,7 +56,6 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..))
 import Simplex.Messaging.Util (catchAll, liftEitherWith, safeDecodeUtf8)
 import System.IO (utf8)
-import System.Timeout (timeout)
 import qualified URI.ByteString as U
 #if !defined(dbPostgres)
 import Data.ByteArray (ScrubbedBytes)
@@ -348,7 +346,17 @@ chatRecvMsg ChatController {outputQ} = J.encode . uncurry eitherToResult <$> rea
         out -> pure out
 
 chatRecvMsgWait :: ChatController -> Int -> IO JSONByteString
-chatRecvMsgWait cc time = fromMaybe "" <$> timeout time (chatRecvMsg cc)
+chatRecvMsgWait ChatController {outputQ} time = maybe "" (J.encode . uncurry eitherToResult) <$> readChatResponse
+  where
+    readChatResponse =
+      readTBQueueTimeout >>= \case
+        Just (_, Right CEvtTerminalEvent {}) -> readChatResponse
+        out -> pure out
+    readTBQueueTimeout = do
+      delay <- registerDelay time
+      atomically $
+        (Just <$> readTBQueue outputQ)
+          `orElse` (readTVar delay >>= \d -> if d then pure Nothing else retry )
 
 chatParseMarkdown :: ByteString -> JSONByteString
 chatParseMarkdown = J.encode . ParsedMarkdown . parseMaybeMarkdownList . safeDecodeUtf8

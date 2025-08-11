@@ -167,7 +167,7 @@ class SimplexService: Service() {
     }
     return null
   }
-  
+
   private fun createServiceNotification(title: String, text: String): Notification {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
