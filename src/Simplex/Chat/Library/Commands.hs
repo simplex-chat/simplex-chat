@@ -2635,7 +2635,7 @@ processChatCommand vr nm = \case
           subMode <- chatReadVar subscriptionMode
           case activeConn of
             -- Nothing is legacy branch for exisiting contacts without prepared connection;
-            -- for new member contacts connection is prepared immediately,
+            -- for new member contacts connection is prepared immediately (on xGrpDirectInv),
             -- so incognito profile can be attached to it and be visible in UI before accepting
             Nothing -> joinNewConn subMode
             Just conn@Connection {connStatus} -> case connStatus of
