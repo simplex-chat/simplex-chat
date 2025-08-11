@@ -112,7 +112,9 @@ class SimplexService: Service() {
     val title = generalGetString(MR.strings.simplex_service_notification_title)
     val text = generalGetString(MR.strings.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
-    val newNtf = createNotification(title, text)
+    val newNtf = createNotificationBuilder(title, text)
+      .setOngoing(true) // Starting SDK 33 / Android 13, foreground notifications can be swiped away
+      .build()
     serviceNotification = newNtf
     return newNtf
   }
@@ -168,7 +170,9 @@ class SimplexService: Service() {
     return null
   }
 
-  private fun createNotification(title: String, text: String): Notification {
+  private fun createNotification(title: String, text: String): Notification = createNotificationBuilder(title, text).build()
+
+  private fun createNotificationBuilder(title: String, text: String): NotificationCompat.Builder {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
@@ -192,7 +196,7 @@ class SimplexService: Service() {
       builder.addAction(0, generalGetString(MR.strings.hide_notification), setup)
     }
 
-    return builder.build()
+    return builder
   }
 
   override fun onBind(intent: Intent): IBinder? {
