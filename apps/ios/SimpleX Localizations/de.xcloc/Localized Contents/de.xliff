@@ -8248,14 +8248,14 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
         <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - die früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht. Dies kann ein paar Minuten dauern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve" approved="no">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Die älteren als die ausgewählten gesendeten und empfangenen Nachrichten in diesem Chat werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - die in diesem Chat früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
+      <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target>Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - Ihr Profil, Ihre Kontakte, Nachrichten und Dateien werden unwiderruflich verloren gehen.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
