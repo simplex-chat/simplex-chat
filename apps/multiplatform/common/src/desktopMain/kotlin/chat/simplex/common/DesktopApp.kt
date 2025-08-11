@@ -171,7 +171,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         // Shows toast in insertion order with preferred delay per toast. New one will be shown once previous one expires
         LaunchedEffect(toast, toasts.size) {
           delay(toast.second)
-          simplexWindowState.toasts.removeFirst()
+          simplexWindowState.toasts.removeFirstOrNull()
         }
       }
       var windowFocused by remember { simplexWindowState.windowFocused }
