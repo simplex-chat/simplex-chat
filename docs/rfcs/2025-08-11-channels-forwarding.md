@@ -97,15 +97,15 @@ CREATE TABLE forwarding_instructions_members (
 
 Overall forwarding worker algorithm would then be:
 1. Retrieve next forwarding instruction.
-  - Retrieve chat messages corresponding to message_ids, build forward events (XGrpMsgForward).
-  - Retrieve member list based on group_id and forward_scope, filtering out already processed members via forwarding_instructions_members.
+    - Retrieve chat messages corresponding to message_ids, build forward events (XGrpMsgForward).
+    - Retrieve member list based on group_id and forward_scope, filtering out already processed members via forwarding_instructions_members.
 2. Split member list into smaller batches. TBC how to choose optimal batch size.
 3. For each batch of members:
-  1. Group send (sendGroupMessages_) batch of XGrpMsgForward events.
-  2. Persist processed member ids to forwarding_instructions_members.
-    - Persist after save is ok because receiving client can deduplicate in case chat relay fails in-between.
-  3. Possibly small delay to avoid overloading database.
-    - Question: Since chat relays will be working on postgres with multiple connections, do we really need this splitting into member batches? Group send is already batched in itself.
+    1. Group send (sendGroupMessages_) batch of XGrpMsgForward events.
+    2. Persist processed member ids to forwarding_instructions_members.
+        - Persist after save is ok because receiving client can deduplicate in case chat relay fails in-between.
+    3. Possibly small delay to avoid overloading database.
+        - Question: Since chat relays will be working on postgres with multiple connections, do we really need this splitting into member batches? Group send is already batched in itself.
 4. Once forwarding instruction is fully processed, delete it.
 
 ## Other considerations
