@@ -54,7 +54,7 @@
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
     <string name="connection_error">Ошибка соединения</string>
-    <string name="network_error_desc">Пожалуйста, проверьте Ваше соединение с сервером %1$s и попробуйте еще раз.</string>
+    <string name="network_error_desc">Пожалуйста, проверьте Ваше соединение с сервером %1$s и попробуйте ещё раз.</string>
     <string name="error_sending_message">Ошибка при отправке сообщения</string>
     <string name="error_adding_members">Ошибка при добавлении членов группы</string>
     <string name="error_joining_group">Ошибка при вступлении в группу</string>
@@ -67,8 +67,7 @@
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите Ваш контакт отправить Вам новую.</string>
     <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
-    <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.
-\nЧтобы установить соединение, попросите Ваш контакт создать еще одну ссылку и проверьте Ваше соединение с сетью.</string>
+    <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом. \nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
     <string name="error_deleting_contact">Ошибка при удалении контакта</string>
@@ -298,7 +297,7 @@
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Контакт, которому Вы отправили эту ссылку, не сможет соединиться!</string>
     <string name="connection_you_accepted_will_be_cancelled">Подтвержденное соединение будет отменено!</string>
     <!-- Connection Pending Alert Dialogue - ChatListNavLinkView.kt -->
-    <string name="alert_title_contact_connection_pending">Соединение еще не установлено!</string>
+    <string name="alert_title_contact_connection_pending">Соединение ещё не установлено!</string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">Ваш контакт должен быть в сети, чтобы установить соединение.
 \nВы можете отменить соединение и удалить контакт (и попробовать позже с другой ссылкой).</string>
     <!-- Contact Request Information - ContactRequestView.kt -->
@@ -466,7 +465,7 @@
     <string name="next_generation_of_private_messaging">Будущее коммуникаций</string>
     <string name="privacy_redefined">Более конфиденциальный</string>
     <string name="first_platform_without_user_ids">Без идентификаторов пользователей.</string>
-    <string name="immune_to_spam_and_abuse">Защищен от спама</string>
+    <string name="immune_to_spam_and_abuse">Защищён от спама</string>
     <string name="people_can_connect_only_via_links_you_share">Вы определяете, кто может соединиться.</string>
     <string name="decentralized">Децентрализованный</string>
     <string name="opensource_protocol_and_code_anybody_can_run_servers">Кто угодно может запустить сервер.</string>
@@ -1005,7 +1004,7 @@
     <string name="v4_5_message_draft">Черновик сообщения</string>
     <string name="v4_5_multiple_chat_profiles">Много профилей чата</string>
     <string name="v4_5_message_draft_descr">Сохранить последний черновик, вместе с вложениями.</string>
-    <string name="v4_5_private_filenames">Защищенные имена файлов</string>
+    <string name="v4_5_private_filenames">Защищённые имена файлов</string>
     <string name="v4_5_italian_interface_descr">Благодаря пользователям – добавьте переводы через Weblate!</string>
     <string name="v4_5_private_filenames_descr">Чтобы защитить Ваш часовой пояс, файлы картинок и голосовых сообщений используют UTC.</string>
     <string name="v4_4_french_interface">Французский интерфейс</string>
@@ -1111,7 +1110,7 @@
     <string name="la_lock_mode_passcode">Ввод кода доступа</string>
     <string name="la_lock_mode">Режим Блокировки SimpleX</string>
     <string name="la_lock_mode_system">Системная аутентификация</string>
-    <string name="la_could_not_be_verified">Ошибка аутентификации; попробуйте еще раз.</string>
+    <string name="la_could_not_be_verified">Ошибка аутентификации; попробуйте ещё раз.</string>
     <string name="la_immediately">Сразу</string>
     <string name="la_authenticate">Аутентифицировать</string>
     <string name="la_change_app_passcode">Изменить код доступа</string>
@@ -1697,8 +1696,8 @@
     <string name="unblock_for_all_question">Разблокировать члена группы для всех?</string>
     <string name="snd_group_event_member_blocked">Вы заблокировали %s</string>
     <string name="e2ee_info_no_pq"><![CDATA[Сообщения, файлы и звонки защищены <b>end-to-end шифрованием</b> с прямой секретностью (PFS), правдоподобным отрицанием и восстановлением от взлома.]]></string>
-    <string name="e2ee_info_no_pq_short">Чат защищен end-to-end шифрованием.</string>
-    <string name="e2ee_info_pq_short">Чат защищен квантово-устойчивым end-to-end шифрованием.</string>
+    <string name="e2ee_info_no_pq_short">Чат защищён end-to-end шифрованием.</string>
+    <string name="e2ee_info_pq_short">Чат защищён квантово-устойчивым end-to-end шифрованием.</string>
     <string name="auth_open_migration_to_another_device">Открыть экран миграции</string>
     <string name="migrate_from_another_device">Миграция с другого устройства</string>
     <string name="set_passphrase">Установить пароль</string>
@@ -1706,7 +1705,7 @@
     <string name="welcome_message_is_too_long">Приветственное сообщение слишком длинное</string>
     <string name="message_too_large">Сообщение слишком большое</string>
     <string name="migrate_to_device_repeat_download">Повторить загрузку</string>
-    <string name="migrate_to_device_try_again">Вы можете попробовать еще раз.</string>
+    <string name="migrate_to_device_try_again">Вы можете попробовать ещё раз.</string>
     <string name="migrate_from_device_uploading_archive">Загрузка архива</string>
     <string name="migrate_from_device_archiving_database">Подготовка архива</string>
     <string name="migrate_from_device_bytes_uploaded">%s загружено</string>
@@ -1743,7 +1742,7 @@
     <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP серверы.</string>
     <string name="migrate_from_device_upload_failed">Ошибка загрузки</string>
     <string name="migrate_from_device_repeat_upload">Повторить загрузку</string>
-    <string name="migrate_from_device_try_again">Вы можете попробовать еще раз.</string>
+    <string name="migrate_from_device_try_again">Вы можете попробовать ещё раз.</string>
     <string name="migrate_from_device_cancel_migration">Отменить миграцию</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Выберите <i>Мигрировать с другого устройства</i> на новом устройстве и сосканируйте QR-код.]]></string>
     <string name="migrate_from_device_creating_archive_link">Создание ссылки на архив</string>
@@ -1863,7 +1862,7 @@
     <string name="app_will_ask_to_confirm_unknown_file_servers">Приложение будет запрашивать подтверждение загрузки с неизвестных серверов (за исключением .onion адресов или когда SOCKS-прокси включен).</string>
     <string name="network_smp_proxy_mode_unprotected">Незащищённый</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor или VPN, Ваш IP адрес будет доступен серверам файлов.</string>
-    <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP адрес защищен, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP адрес защищён, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="theme_black">Черная</string>
     <string name="chat_theme_apply_to_dark_mode">Тёмный режим</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.</string>
@@ -1885,8 +1884,8 @@
     <string name="network_smp_proxy_fallback_allow_description">Отправьте сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="network_smp_proxy_mode_private_routing">Конфиденциальная доставка</string>
     <string name="network_smp_proxy_mode_unknown_description">Использовать конфиденциальную доставку с неизвестными серверами.</string>
-    <string name="network_smp_proxy_mode_unprotected_description">Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищен.</string>
-    <string name="network_smp_proxy_fallback_allow_protected">Когда IP защищен</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищён.</string>
+    <string name="network_smp_proxy_fallback_allow_protected">Когда IP защищён</string>
     <string name="network_smp_proxy_fallback_allow">Да</string>
     <string name="private_routing_explanation">Чтобы защитить ваш IP адрес, приложение использует Ваши SMP серверы для конфиденциальной доставки сообщений.</string>
     <string name="settings_section_title_profile_images">Изображения профилей</string>
@@ -2235,7 +2234,7 @@
     <string name="view_updated_conditions">Посмотреть измененные условия</string>
     <string name="xiaomi_ignore_battery_optimization"><![CDATA[<b>Устройства Xiaomi</b>: пожалуйста, включите опцию Autostart в системных настройках для работы нотификаций.]]></string>
     <string name="message_deleted_or_not_received_error_title">Нет сообщения</string>
-    <string name="message_deleted_or_not_received_error_desc">Это сообщение было удалено или еще не получено.</string>
+    <string name="message_deleted_or_not_received_error_desc">Это сообщение было удалено или ещё не получено.</string>
     <string name="maximum_message_size_title">Сообщение слишком большое!</string>
     <string name="maximum_message_size_reached_text">Пожалуйста, уменьшите размер сообщения и отправьте снова.</string>
     <string name="maximum_message_size_reached_non_text">Пожалуйста, уменьшите размер сообщения или уберите медиа и отправьте снова.</string>
