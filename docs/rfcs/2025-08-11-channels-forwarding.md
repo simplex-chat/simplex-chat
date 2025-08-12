@@ -130,7 +130,7 @@ Question: Should this be resolved in the same scope, or separately?
 
 Question: Should chat relays also hide sending owner from other owners or not? Probably not, then forwarding instruction would have to be split into separate sends with different sets of XGrpMsgForward events (with and without sending owner's member id).
 
-### Events to forward
+### Connection deleting events
 
 Forwarding regular messages, reactions, updates and many other events is straightforward. However, naive processing of some events currently breaks forwarding logic, specifically member and group deletion.
 
