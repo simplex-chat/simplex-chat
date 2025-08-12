@@ -301,7 +301,7 @@
     <string name="migrate_to_device_bytes_downloaded">%s descărcat</string>
     <string name="share_address_with_contacts_question">Partajați adresa cu contactele?</string>
     <string name="settings_notification_preview_mode_title">Afișează previzualizare</string>
-    <string name="member_contact_send_direct_message">trimiteți un mesaj direct</string>
+    <string name="member_contact_send_direct_message">trimite pentru a te conecta</string>
     <string name="compose_send_direct_message_to_connect">Trimiteți mesaj direct pentru a vă conecta</string>
     <string name="custom_time_picker_select">Selectează</string>
     <string name="stop_snd_file__message">Trimiterea fișierului va fi oprită.</string>
@@ -2248,7 +2248,7 @@
     <string name="appearance_app_toolbars">Bare de instrumente</string>
     <string name="v6_1_better_security">Securitate îmbunătățită ✅</string>
     <string name="delete_chat_list_warning">Toate conversațiile vor fi eliminate din lista %s, iar lista va fi ștearsă</string>
-    <string name="switching_profile_error_message">Conexiunea dvs. a fost mutată la %s, dar a apărut o eroare neașteptată la redirecționarea către profil.</string>
+    <string name="switching_profile_error_message">Conexiunea ta a fost mutată la %s, dar a apărut o eroare la schimbarea profilului.</string>
     <string name="chat_database_exported_migrate">Puteți migra baza de date exportată.</string>
     <string name="your_XFTP_servers">Serverele tale XFTP</string>
     <string name="disable_onion_hosts_when_not_supported"><![CDATA[Setează <i>Utilizați gazdele .onion</i> la Nu dacă proxy-ul SOCKS nu le acceptă.]]></string>
