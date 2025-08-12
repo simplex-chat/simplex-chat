@@ -90,6 +90,18 @@ Restoring list of messages for a forwarding job:
 - Alternatively, we can read full msg_body (it can even be duplicated on forwarding job), and restore chat messages (ChatMessage 'Json) via parseChatMessages. However, this conflicts with possibility that a single batch body will have messages of different scopes, which current processing logic allows, although there's no legitimate case as of now. So, persisting ChatMessage' Json on each record seems preferable. Also it avoids repeated parsing.
 - As a side note, it seems we can stop saving msg_body for received messages, as it's not used for any purpose. This field is only used for retrieving and sending pending group messages.
 
+#### Splitting forwarding job into delivery batches
+
+Chat relay should be able to handle channels consisting of hundreds of thousands of members - loading all members for forwarding in memory will not scale.
+
+Approach 1.
+
+Forwarding job will read required members in loop using a cursor (use group_member_id for cursor? member_id?) to split into further delivery jobs (group sends). Forwarding job can launch group sends in new threads so they start concurrently with job processing further member records. Possibly cursor position can be remembered on the job record after successful scheduling of group send, for faster recovery on failure.
+
+It's unclear if there's a need for a separate lower level abstraction for delivery jobs, that could be reused for feeds and other purposes, as they would require different logic of building delivery lists, and scheduling a delivery for agent already serves a similar purpose.
+
+Optimizing admin forwarding in regular groups would require different queries for member filtering.
+
 Schema draft:
 
 ```sql
@@ -109,36 +121,25 @@ CREATE TABLE forwarding_jobs (
 );
 ```
 
-Forwarding worker will read forwarding jobs sorted by created_at, retrieve chat messages corresponding to message_ids, retrieve group members based on group_id and forward_scope and send batched forward events to them.
+Approach 2.
 
-How to split forwarding to large number of group members into smaller batches?
+Pre-allocate group member ids for the forwarding job in a separate table at the moment of job creation. It may be not as taxing to read only member ids without cursor, and persist them for the job in the same transaction.
 
-One option is to determine forwarding lists at the moment of creating forwarding job and persist them, possibly already split into predefined batches. However, this unnecessarily excludes newly joined members (those that joined between creating job and worker picking it up for forwarding operation).
-
-Another approach would be to split retrieved members into batches at time of processing job, and persist group member ids that job was processed for after sending one batch at a time. Group member retrieval should then filter out already processed members in case of operation failure leading to repeat processing.
+Same applies - optimizing for admin forwarding would require different queries.
 
 ```sql
 CREATE TABLE forwarding_jobs_members (
   forwarding_job_member_id INTEGER PRIMARY KEY,
   forwarding_job_id INTEGER NOT NULL REFERENCES forwarding_jobs ON DELETE CASCADE,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE
-);
+)
 ```
 
-Overall forwarding worker algorithm would then be:
-1. Retrieve next forwarding job.
-    - Retrieve chat messages corresponding to message_ids, build forward events (XGrpMsgForward).
-    - Retrieve member list based on group_id and forward_scope, filtering out already processed members via forwarding_jobs_members.
-2. Split member list into smaller batches. TBC how to choose optimal batch size.
-3. For each batch of members:
-    1. Group send (sendGroupMessages_) batch of XGrpMsgForward events.
-    2. Persist processed member ids to forwarding_jobs_members.
-        - Persist after save is ok because receiving client can deduplicate in case chat relay fails in-between.
-4. Once forwarding job is fully processed, delete it.
-
-Forwarding worker should use low priority db pool.
+Then forwarding job would then use a simpler query to load members in loop using a cursor - without complex filters for member selection. Each scheduled group send can delete its forwarding_jobs_members records, or mark them as complete (requires new field).
 
 Forwarding jobs for different groups can be concurrent, inside group should be sequential to follow order of messages. One approach could be to create a dedicated forwarding worker for each group.
+
+Forwarding worker(s) should use low priority db pool.
 
 ## Other considerations
 
