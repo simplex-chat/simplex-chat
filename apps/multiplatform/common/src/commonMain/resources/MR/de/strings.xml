@@ -2598,7 +2598,7 @@
     <string name="files_prohibited_in_this_chat">In diesem Chat sind Dateien und Medien nicht erlaubt.</string>
     <string name="only_you_can_send_files">Nur Sie können Dateien und Medien senden.</string>
     <string name="only_your_contact_can_send_files">Nur Ihr Kontakt kann Dateien und Medien senden.</string>
-    <string name="privacy_chat_list_open_clean_web_link">Geklärten Link öffnen</string>
+    <string name="privacy_chat_list_open_clean_web_link">Trackingfreien Link öffnen</string>
     <string name="privacy_chat_list_open_full_web_link">Vollständigen Link öffnen</string>
     <string name="open_to_use_bot">Bot für die Nutzung erlaubt</string>
     <string name="prohibit_sending_files_and_media">Das Senden von Dateien und Medien ist nicht erlaubt.</string>
