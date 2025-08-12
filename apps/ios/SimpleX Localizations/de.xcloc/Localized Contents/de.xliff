@@ -5782,9 +5782,9 @@ Dies erfordert die Aktivierung eines VPNs.</target>
         <target>Chat-Konsole öffnen</target>
         <note>authentication reason</note>
       </trans-unit>
-      <trans-unit id="Open clean link" xml:space="preserve">
+      <trans-unit id="Open clean link" xml:space="preserve" approved="no">
         <source>Open clean link</source>
-        <target>Geklärten Link öffnen</target>
+        <target state="translated">Trackingfreien Link öffnen</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open conditions" xml:space="preserve">
@@ -8255,7 +8255,7 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve" approved="no">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target state="translated">Dieser Vorgang kann nicht rückgängig gemacht werden - Ihr Profil, Ihre Kontakte, Nachrichten und Dateien werden unwiderruflich verloren gehen.</target>
+        <target state="translated">Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">
