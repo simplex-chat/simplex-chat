@@ -101,6 +101,7 @@ CREATE TABLE forwarding_jobs (
   forward_scope TEXT NOT NULL, -- save as JSON/text? add field for scope group member id for GFSMemberSupport scope?
   sending_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE, -- or sending_member_id BLOB without fkey
   broker_ts TEXT NOT NULL,
+  group_as_sender INTEGER NOT NULL DEFAULT 0, -- for "message from channel" flag from owner
   message_ids TEXT NOT NULL, -- comma separated list; normalize via many-to-many table? doesn't seem necessary
   failed INTEGER DEFAULT 0, -- for worker marking forwarding job as failed, to be able to proceed to next one
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -133,9 +134,11 @@ Overall forwarding worker algorithm would then be:
     1. Group send (sendGroupMessages_) batch of XGrpMsgForward events.
     2. Persist processed member ids to forwarding_jobs_members.
         - Persist after save is ok because receiving client can deduplicate in case chat relay fails in-between.
-    3. Possibly small delay to avoid overloading database.
-        - Question: Since chat relays will be working on postgres with multiple connections, do we really need this splitting into member batches? Group send is already batched in itself.
 4. Once forwarding job is fully processed, delete it.
+
+Forwarding worker should use low priority db pool.
+
+Forwarding jobs for different groups can be concurrent, inside group should be sequential to follow order of messages. One approach could be to create a dedicated forwarding worker for each group.
 
 ## Other considerations
 
