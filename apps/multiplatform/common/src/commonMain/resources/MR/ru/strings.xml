@@ -549,7 +549,7 @@
     <string name="privacy_and_security">Конфиденциальность</string>
     <string name="your_privacy">Конфиденциальность</string>
     <string name="protect_app_screen">Защитить экран приложения</string>
-    <string name="auto_accept_images">Автоприем изображений</string>
+    <string name="auto_accept_images">Автоприём изображений</string>
     <string name="send_link_previews">Отправлять картинки ссылок</string>
     <string name="full_backup">Резервная копия данных</string>
     <!-- Settings sections -->
@@ -1249,7 +1249,7 @@
     <string name="create_simplex_address">Создать адрес SimpleX</string>
     <string name="share_with_contacts">Поделиться с контактами</string>
     <string name="stop_sharing_address">Прекратить делиться адресом\?</string>
-    <string name="auto_accept_contact">Автоприем</string>
+    <string name="auto_accept_contact">Автоприём</string>
     <string name="enter_welcome_message_optional">Введите приветственное сообщение... (опционально)</string>
     <string name="save_settings_question">Сохранить настройки\?</string>
     <string name="stop_sharing">Прекратить делиться</string>
@@ -1373,7 +1373,7 @@
     <string name="fix_connection_not_supported_by_group_member">Восстановление шифрования не поддерживается членом группы</string>
     <string name="renegotiate_encryption">Пересогласовать шифрование</string>
     <string name="v5_2_favourites_filter">Быстрый поиск чатов</string>
-    <string name="v5_2_message_delivery_receipts">Отчеты о доставке сообщений!</string>
+    <string name="v5_2_message_delivery_receipts">Отчёты о доставке сообщений!</string>
     <string name="v5_2_more_things">Еще несколько изменений</string>
     <string name="delivery_receipts_title">Отчёты о доставке!</string>
     <string name="enable_receipts_all">Включить</string>
@@ -1456,7 +1456,7 @@
     <string name="v5_3_new_desktop_app_descr">Создайте новый профиль в приложении для компьютера. 💻</string>
     <string name="passphrase_will_be_saved_in_settings">Пароль будет сохранён в настройках как простой текст после того, как вы его измените или перезапустите приложение.</string>
     <string name="v5_3_simpler_incognito_mode_descr">Установите режим Инкогнито при соединении.</string>
-    <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)! \n- отчеты о доставке (до 20 членов группы). \n- быстрее и стабильнее.</string>
+    <string name="v5_3_discover_join_groups_descr">- соединиться с каталогом групп (BETA)! \n- отчёты о доставке (до 20 членов группы). \n- быстрее и стабильнее.</string>
     <string name="settings_is_storing_in_clear_text">Пароль хранится в настройках, как открытый текст.</string>
     <string name="rcv_group_event_open_chat">Открыть</string>
     <string name="error_creating_member_contact">Ошибка при создании контакта</string>
