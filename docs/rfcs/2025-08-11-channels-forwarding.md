@@ -29,36 +29,65 @@ Chat relays will serve as forwarding agents instead of inviting admins, with fol
 - Instead of inviting admins all chat relays will forward all messages.
 - Members will deduplicate messages (already implemented).
 - Members should highlight differences in deduplicated messages. This would solve trust issue.
-  - Question: If messages are to be signed by owners, what differences can chat relays introduce? Does this point in initial doc imply owner sending different versions of message to chat relays? Losses in delivery?
-  - TBC prototype UI, backend.
+  - Question: If messages are to be signed by owners, what differences can chat relays introduce? Does this point in initial doc imply owner sending different versions of message to chat relays? Losses in delivery? Answer: Not all messages will be signed.
 
-### Persisted forwarding instructions
+#### Highlighting deduplicated messages differences
 
-- For batch of received messages a forwarding instruction has to be persisted.
-- Special worker would pick up forwarding instructions for sending.
-- Forwarding instruction can be split into smaller batches by members to make smaller group sends one at a time.
+Currently we simply ignore duplicate messages - see createNewRcvMessage.
 
-How to present a forwarding instruction in storage?
+Some options on how to highlight difference in messages from chat relays:
+1. Show only the fact that there is difference.
+    - Persist duplicate error (SEDuplicateGroupMessage) as flag on chat item to then display warning sign in UI.
+2. Save message hashes as some additional entity linked to message or chat item for each chat relay.
+    - If any new hash differs, set flag on chat item for warning sign in UI.
+    - Add ability to load additional info (with other chat item info via APIGetChatItemInfo) showing which relays sent different hashes (e.g. 1 differs from 2 others - show 1 as warning, all differ - show all as warning).
+3. As previous, but save content. Possibly save content additionally to hashes, for faster comparison.
+    - Saving content means converting duplicate messages to chat item content, or only saving text, but latter will fail to show difference in files.
+
+Service events will not have content. We still can/should compare them and indicate difference, e.g. by creating a special chat item (similar to integrity violation).
+
+How to compute hashes. Problem is with file descriptions, as it is legitimate case that they will be different. Hash could be computed as hash of message without file invitation + file digest from file invitation (FileInvitation.fileDigest).
+
+Files can also cause problem with showing difference in content if file preview is the same, but file hash is different. So showing difference in content does not exclude necessity of showing difference in hashes as in option 2.
+
+As a note, this whole section discusses an edge case of chat relays maliciously changing messages, and countermeasures to prevent them doing so undetectably. May be not worth implementing overly complex solution as MVP (option 3), and option 2 or even 1 can suffice. TBC further.
+
+### Persisted forwarding jobs
+
+- For batch of received messages a forwarding job has to be persisted.
+- Special worker would pick up forwarding jobs for sending.
+- Forwarding job can be split into smaller batches by members to make smaller group sends one at a time.
+
+How to present a forwarding job in storage?
 
 Currently we build ad-hoc forwarding instruction for each message based on its scope (GroupForwardScope). Then for each scope message batches are sent separately to different member lists.
 
-Question: should we persist all forwarding instructions of or only for main (GFSMain - for regular messages) scope? For main and all (GFSAll), and don't persist for support scope (GFSMemberSupport)?
+Question: should we persist all forwarding jobs or only for main (GFSMain - for regular messages) and all (GFSAll - for all current and pending members scopes), and don't persist for support scope (GFSMemberSupport)?
 
-We roughly need following data to be persisted for a forwarding instruction:
+Pros/cons of persisting jobs for all scopes:
+- Possibly more uniform processing. However, for support scope group member id is required (see question in schema below).
+- Requires forwarding worker to have more logic.
+
+Pros/cons of persisting jobs only for GFSMain and GFSAll scopes:
+- Forwarding worker and persistence are simpler, but logic lives in 2 places (synchronous as now + worker).
+- Support scopes have small number of members to forward to, so optimizing forward for them is not a necessity.
+
+We roughly need following data to be persisted for a forwarding job:
 - group id,
 - forwarding scope - TBC as above,
 - sending member - to include memberId in XGrpMsgForward,
 - broker timestamp of received messages batch to include in XGrpMsgForward,
+- "message from channel" flag from sending owner - see "Hiding sending owner id" section below,
 - list of messages (events).
 
-Restoring list of messages for a forwarding instruction:
+Restoring list of messages for a forwarding job:
 - Currently for each message full MsgBody is saved, which is just a ByteString. Also if received messages were batched, full batch body is saved for each message record. For example, here is message body of batched deletion of 2 chat items, which is saved on 2 message records:
   ```
   msg_body = [{"v":"1-16","msgId":"ZUd3bzVDTXFHWmc3Z29YSQ==","event":"x.msg.del","params":{"msgId":"QVVuN2RkaXg0aVJJdTZXSA=="}},{"v":"1-16","msgId":"amM5dzV2RkRjNmNYSDRLQQ==","event":"x.msg.del","params":{"msgId":"NzFlV3pNRStpQTRrQjRYUg=="}}]
   ```
   On the other hand for forwarding operation we require ChatMessage 'Json (for XGrpMsgForward).
-- For a forwarding instruction we can persist list of messages ids from messages table (message_id), and save ChatMessage 'Json on records to restore.
-- Alternatively, we can read full msg_body (it can even be duplicated on forwarding instruction), and restore chat messages (ChatMessage 'Json) via parseChatMessages. However, this conflicts with possibility that a single batch body will have messages of different scopes, which current processing logic allows, although there's no legitimate case as of now. So, persisting ChatMessage' Json on each record seems preferable. Also it avoids repeated parsing.
+- For a forwarding job we can persist list of messages ids from messages table (message_id), and save ChatMessage 'Json on records to restore.
+- Alternatively, we can read full msg_body (it can even be duplicated on forwarding job), and restore chat messages (ChatMessage 'Json) via parseChatMessages. However, this conflicts with possibility that a single batch body will have messages of different scopes, which current processing logic allows, although there's no legitimate case as of now. So, persisting ChatMessage' Json on each record seems preferable. Also it avoids repeated parsing.
 - As a side note, it seems we can stop saving msg_body for received messages, as it's not used for any purpose. This field is only used for retrieving and sending pending group messages.
 
 Schema draft:
@@ -66,47 +95,47 @@ Schema draft:
 ```sql
 ALTER TABLE messages ADD COLUMN chat_message_json TEXT;
 
-CREATE TABLE forwarding_instructions (
-  forwarding_instruction_id INTEGER PRIMARY KEY,
+CREATE TABLE forwarding_jobs (
+  forwarding_job_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   forward_scope TEXT NOT NULL, -- save as JSON/text? add field for scope group member id for GFSMemberSupport scope?
   sending_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE, -- or sending_member_id BLOB without fkey
   broker_ts TEXT NOT NULL,
   message_ids TEXT NOT NULL, -- comma separated list; normalize via many-to-many table? doesn't seem necessary
-  failed INTEGER DEFAULT 0, -- for worker marking forwarding instruction as failed, to be able to proceed to next one
+  failed INTEGER DEFAULT 0, -- for worker marking forwarding job as failed, to be able to proceed to next one
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 ```
 
-Forwarding worker will read forwarding instructions sorted by created_at, retrieve chat messages corresponding to message_ids, retrieve group members based on group_id and forward_scope and send batched forward events to them.
+Forwarding worker will read forwarding jobs sorted by created_at, retrieve chat messages corresponding to message_ids, retrieve group members based on group_id and forward_scope and send batched forward events to them.
 
 How to split forwarding to large number of group members into smaller batches?
 
-One option is to determine forwarding lists at the moment of creating forwarding instruction and persist them, possibly already split into predefined batches. However, this unnecessarily excludes newly joined members (those that joined between creating instruction and worker picking it up for forwarding operation).
+One option is to determine forwarding lists at the moment of creating forwarding job and persist them, possibly already split into predefined batches. However, this unnecessarily excludes newly joined members (those that joined between creating job and worker picking it up for forwarding operation).
 
-Another approach would be to split retrieved members into batches at time of processing instruction, and persist group member ids that instruction was processed for after sending one batch at a time. Group member retrieval should then filter out already processed members in case of operation failure leading to repeat processing.
+Another approach would be to split retrieved members into batches at time of processing job, and persist group member ids that job was processed for after sending one batch at a time. Group member retrieval should then filter out already processed members in case of operation failure leading to repeat processing.
 
 ```sql
-CREATE TABLE forwarding_instructions_members (
-  forwarding_instruction_member_id INTEGER PRIMARY KEY,
-  forwarding_instruction_id INTEGER NOT NULL REFERENCES forwarding_instructions ON DELETE CASCADE,
+CREATE TABLE forwarding_jobs_members (
+  forwarding_job_member_id INTEGER PRIMARY KEY,
+  forwarding_job_id INTEGER NOT NULL REFERENCES forwarding_jobs ON DELETE CASCADE,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE
 );
 ```
 
 Overall forwarding worker algorithm would then be:
-1. Retrieve next forwarding instruction.
+1. Retrieve next forwarding job.
     - Retrieve chat messages corresponding to message_ids, build forward events (XGrpMsgForward).
-    - Retrieve member list based on group_id and forward_scope, filtering out already processed members via forwarding_instructions_members.
+    - Retrieve member list based on group_id and forward_scope, filtering out already processed members via forwarding_jobs_members.
 2. Split member list into smaller batches. TBC how to choose optimal batch size.
 3. For each batch of members:
     1. Group send (sendGroupMessages_) batch of XGrpMsgForward events.
-    2. Persist processed member ids to forwarding_instructions_members.
+    2. Persist processed member ids to forwarding_jobs_members.
         - Persist after save is ok because receiving client can deduplicate in case chat relay fails in-between.
     3. Possibly small delay to avoid overloading database.
         - Question: Since chat relays will be working on postgres with multiple connections, do we really need this splitting into member batches? Group send is already batched in itself.
-4. Once forwarding instruction is fully processed, delete it.
+4. Once forwarding job is fully processed, delete it.
 
 ## Other considerations
 
@@ -128,7 +157,7 @@ XMsgNew :: ShowGroupAsSender -> MsgContainer -> ChatMsgEvent 'Json
 
 Question: Should this be resolved in the same scope, or separately?
 
-Question: Should chat relays also hide sending owner from other owners or not? Probably not, then forwarding instruction would have to be split into separate sends with different sets of XGrpMsgForward events (with and without sending owner's member id).
+Question: Should chat relays also hide sending owner from other owners or not? Probably not, then forwarding job would have to be split into separate sends with different sets of XGrpMsgForward events (with and without sending owner's member id).
 
 ### Connection deleting events
 
