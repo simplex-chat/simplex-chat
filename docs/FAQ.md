@@ -1,13 +1,13 @@
 ---
 title: Frequently Asked Questions
 permalink: /faq/index.html
-revision: 23.04.2024
+revision: 13.08.2025
 ---
 
 # Frequently Asked Questions
 
 [How to use it](#how-to-use-it)
-- [How do I add contacts?](#how-do-i-add-contacts)
+- [How do I connect to people?](#how-do-i-connect-to-people)
 - [I have nobody to chat with! Where can I find any groups?](#i-have-nobody-to-chat-with-where-can-i-find-any-groups)
 - [What is database? What can I do with it?](#what-is-database-what-can-i-do-with-it)
 - [Can I send files over SimpleX? ](#can-i-send-files-over-simplex)
@@ -19,7 +19,8 @@ revision: 23.04.2024
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
-- [Why invitation links use simplex.chat domain?](#why-invitation-links-use-simplex.chat-domain)
+- [What each group role can do?](#what-each-group-role-can-do)
+- [I cannot share links or QR codes. How do I share my link?](#i-cannot-share-links-or-qr-codes-how-do-i-share-my-link)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -135,13 +136,40 @@ It is also important to remember, that even if your contact enabled "Delete for 
 
 When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
 
-### Why invitation links use simplex.chat domain?
+### What each group role can do?
 
-You can replace `https://simplex.chat/` with `simplex:/` or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.
+There are 5 roles: owner, admin, moderator, member and observer.
+- Observers can:
+  - add reactions
+  - send reports
+  - talk to admins via "chat with admins"
+- Members can send messages
+- Moderators can:
+  - approve members in review
+  - moderate messages
+  - block members temporarily
+  - participate in admin chats
+- Admins can:
+  - add and remove members
+  - change member roles
+  - create group links (but the new members will join via them, so use links of admins who are always online)
+- Owners can:
+  - edit group profile
+  - delete the group
 
-The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.
+Each role can do everything that the previous roles can, except moderators and higher cannot send reports or "chat with admins".
 
-The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (`#`) is not sent over the internet - the server can only see `https://simplex.chat/contact/` and the rest is processed on user's device in the browser, if you open it as a page.
+Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote themselves).
+
+### I cannot share links or QR codes. How do I share my link?
+
+For this example I will use "smp18.simplex.im", but you will have to replace that with the server of your link.
+
+You can replace https://smp18.simplex.im/ part of the link with simplex:/ and add ?h=smp18.simplex.im (replace it with server of your link) to the end of the link. then it will not be recognized as a link in other places, but it will be accepted by SimpleX Chat as a link.
+For example this link:
+https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ
+Becomes:
+simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im
 
 ## Troubleshooting
 
