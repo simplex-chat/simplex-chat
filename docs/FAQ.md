@@ -1,7 +1,7 @@
 ---
 title: Frequently Asked Questions
 permalink: /faq/index.html
-revision: 23.04.2024
+revision: 13.08.2025
 ---
 
 # Frequently Asked Questions
@@ -19,6 +19,8 @@ revision: 23.04.2024
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
+- [What each group role can do?](#what-each-group-role-can-do)
+- [I cannot share links or QR codes. How do I share my link?](#i-cannot-share-links-or-qr-codes-how-do-i-share-my-link)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -157,7 +159,17 @@ There are 5 roles: owner, admin, moderator, member and observer.
 
 Each role can do everything that the previous roles can, except moderators and higher cannot send reports or "chat with admins".
 
-Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote themselves). 
+Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote themselves).
+
+### I cannot share links or QR codes. How do I share my link?
+
+For this example I will use "smp18.simplex.im", but you will have to replace that with the server of your link.
+
+You can replace https://smp18.simplex.im/ part of the link with simplex:/ and add ?h=smp18.simplex.im (replace it with server of your link) to the end of the link. then it will not be recognized as a link in other places, but it will be accepted by SimpleX Chat as a link.
+For example this link:
+https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ
+Becomes:
+simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im
 
 ## Troubleshooting
 
