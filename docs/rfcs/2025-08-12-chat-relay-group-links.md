@@ -4,6 +4,8 @@
 
 We want to make group links independent from the user who created it, and that members can join via several chat relays referenced by this link, without allowing these chat relays to perform MITM attack on the group.
 
+We also want to establish shared secret, or even a pairwise ratchet with each active group owner, so that we can send e2e encrypted support messages.
+
 ## Solution
 
 To make group shared, we would make it a part of group profile, with a lot of UX friction to remove it. It will be created at a point a new public group or channel is created (the type is part of the link, it's either /g or /c) and it will be delegated to chat relays  during the creation.
@@ -17,30 +19,31 @@ The criteria for this protocol:
 - chat relay should create a separate address for each group, to be able to process requests in parallel, and to prevent high load in one group slowing down all groups (at least, on the message queue level).
 - protocol should be idempotent, so that the repeated requests to provide address for the same group did not result in creation of the new addresses.
 
-It means that user's connection with chat relay cannot be a persistent connection, but rather each group should be added via a separate per-group connection, which can be used both for future requests about this group (e.g., suspend/delete), and also for relay to send service messages to the group owners.
+Owners connection with each chat relay in a group will be a special "service group", where owners can only send pre-agreed commands to the relay, receive service notifications from relay, and messages from relay operators.
 
-We several options here:
-- connection with relay is a "connection", and it has no presence in the UI. The downside is that this connection will be not manageable in the UI, and no history of group operations will be visible.
-- connection with relay is a "contact", and it has presence in the UI as a conversation. It allows to implement both commands and UI actions, so more flexible, but the downside is that this connection will be owned by one owner, and cannot be shared, so if owner disappears it would be hard to transfer management to other owners.
-- connection with relay is a special "service group" for public group, and each new owner is added to this group. This is probably the best option, as it also would give owners the space to discuss any matters about the group and also send commands to the relay. But the downside here is that we don't support any e2e encryption in this group, and it won't be obvious to the users, so we should probably disable messaging until we have e2e encryption in support and this new "owners" scopes for new channels. But we still can support commands and other UI actions with relay (e.g., suspend accepting new members or removing the relay), and all owners will see these changes in this channel.
+This service group will be established at the point relay is added, and the original message sent to relay's contact address would have SMP invitation (possibly, a short version) to join this service group. If it's a short invitation, it may include service group profile that would be required to reference the original group in some way, e.g., reference its link.
 
-One more challenge here is that it's also not per group, but per relay, so probably it's wrong to use conversation semantics here - while we can have it as a group, and show log of changes, using group entity, we should not allow general messaging here.
+In addition to that, each public group would have an associated group between owners that they would use to run a consensus protocol to agree any group changes, share any secrets and keys (e.g., recipient keys to be added to queue), and can also use for ad-hoc messages. This only needs to exist if there is more than one owner in the group (which is recommended).
 
-So it would be just a "log" associated with each relay and under the hood it would be a group.
-
-The protocol for adding relay to a public group channel:
-- owner creates a "relay service group" for this relay and this public group/channel/.
+The steps to create a public group:
+- owner creates a group profile and a link to join the group. This link will be marked as inactive, as there will be no relays in it, so it won't be possible to join via it until relays are added. Probably, this link won't be even visible in the UI at this point.
+- for each relay chosen to be used in the group, owner creates a "relay service group" for this relay and this public group/channel.
 - owner sends a special request to relay's contact address to join this service group (it's "invitation" in SMP protocol terms, with group profile in metadata)
 - relay would join the group
 - relay can analyze the invitation and reject if it doesn't like the group profile (it should still join the group, as currently we don't have rejection mechanism that would work without connecting, but we can reconsider it),
-- if relay is happy to service this group, it would generate it's dedicated address for this group and send back in a special message.
-- owner would add this address in delegate section in profile data - it's outside of group profile.
-- owner may notify relay that group profile is updated.
-- relay would validate that it's address is present in profile and update the state.
+- if relay is happy to provide service to this group, it would generate it's dedicated address for this group and send back in a special message. At this point relay may start accepting members to this group.
+- owner would add this address in delegate section in link data.
+- owner may notify relay that group profile is updated, the relay would verify it.
+- relay would validate that it's address is present in profile and update its state.
 
-Questions:
-- should relay accept requests to group address prior to being notified and validating that address is added? Probably yes, to avoid race conditions. But we can simply receive these requests and hold them as unprocessed. That also suggest some worker mechanism to process requests to avoid their loss even in auto-accept scenarios.
+Steps for a member to join the group:
+- a member would load group profile and would see that it is a public and delegated group (direct connections are prohibited, delegates are present).
+- a member would connect to all delegates (relays), that would know that it is a request to join the group.
+- a relay would send owners profiles, signed by group owner keys present in group link (or its extension, see below). Question - at what point a relay would see signed owners profile? Probably all profiles sent in a group should be signed by member keys, and these keys should be the same as in the link (or signed by the key in the link). It means that relay should retain signed profiles.
+- a member would send back both its public signature key and X25519 key for future e2e encryption (or, possibly, DR keys for double ratchet agreement via relay?), either for each owner separately or one set of keys for all owners? Probably same set of member identity keys and 1-time key per owner, as in DR's X3DH agreement.
+- an owner would compute shared secret or DR state, and sign it with its key and would send back. Owner would also sign member's signature key to authenticate it.
+- member would validate signature, both on DR agreement and on the signature key, to confirm integrity of the exchange - that would allow sending e2e encrypted messages (e.g., in support scope) via relay to owners.
 
-Owners credentials (signature keys) are embedded into group address, and cannot be replace by the relay. How could we similarly protect relay MITM attack on member credentials? While it's not critical for channel phase, it will be important for groups - probably we should either include one public X25519 key that can be used to encrypt/authenticate member's key(s), where private counterpart would be shared across owners, or to have one X25519 key per owner.
+The requirement to have 1-time key complicates messaging, as relay has to forward each message to only one owner, so it sort of requires a smaller scope per member - effectively a DM scope. But this can be useful for establishing DMs via relays as well as each member's profile would authenticated by the owner and once we start sending member profiles to other members (although it'll probably would happen with channels already, they will be authenticated by some or all owners). So, effectively owners would play the role of authentication service in this exchange enabling member to member DMs, without relay trust. Also any important messages from the members - such as profile update, and leaving the group, would have to be signed by the member, and the signature key would be authenticated by the owners too.
 
-Owners probably need a separate communication channel related to the group that is independent of relays, so they can exchange any keys (e.g., recipient keys for the queue), or this X25519 key, without the need to establish e2e encryption via relay. It can also allow discussing group/channel matters privately and independently of relays.
+As owners credentials (signature keys) are embedded into group address, they cannot be replace by the relay. The above agreement protects from MITM attack by relay completely, and only allows attack by owners, but the relays would protect from owners - so effectively only the group when owners and all relays are in collusion would be able to MITM direct member connections, and in all other scenarios it would be mitigated - relays protect from owners (and each other), and owners protect from relays.
