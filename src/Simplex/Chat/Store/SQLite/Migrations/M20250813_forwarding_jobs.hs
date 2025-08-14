@@ -16,6 +16,7 @@ CREATE TABLE forwarding_jobs (
 
 ALTER TABLE messages ADD COLUMN chat_message_json TEXT;
 ALTER TABLE messages ADD COLUMN forward_scope TEXT;
+ALTER TABLE messages ADD COLUMN group_as_sender INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE messages ADD COLUMN forward_complete INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE messages ADD COLUMN forwarding_job_id INTEGER REFERENCES forwarding_jobs ON DELETE SET NULL;
 |]
@@ -25,6 +26,7 @@ down_m20250813_forwarding_jobs =
   [sql|
 ALTER TABLE MESSAGES DROP COLUMN chat_message_json;
 ALTER TABLE MESSAGES DROP COLUMN forward_scope;
+ALTER TABLE MESSAGES DROP COLUMN group_as_sender;
 ALTER TABLE MESSAGES DROP COLUMN forward_complete;
 ALTER TABLE MESSAGES DROP COLUMN forwarding_job_id;
 

@@ -67,7 +67,7 @@ Chat relay should be able to handle channels consisting of hundreds of thousands
 
 Question: Should synchronous processing be changed to forwarding jobs for all types of scopes, or only for Main (GFSMain - for regular messages) and All (GFSAll - for all current members and for all pending members scopes), and not for Support scope (GFSMemberSupport)?
   - Pros/cons of persisting jobs for all types of scopes:
-    - Possibly more uniform processing. However, for support scope group member id is required (see question in schema below).
+    - Possibly more uniform processing. However, for support scope group member id is required. Either encode scope as json or add field for scope group member id for persistence (see schema below).
     - Requires forwarding worker to have more logic ("if"), or different worker types.
   - Pros/cons of persisting jobs only for Main and All scopes:
     - Forwarding worker and persistence are simpler, but logic lives in 2 places (synchronous as now + worker).
@@ -141,6 +141,7 @@ CREATE TABLE forwarding_jobs (
 
 ALTER TABLE messages ADD COLUMN chat_message_json TEXT;
 ALTER TABLE messages ADD COLUMN forward_scope TEXT;
+ALTER TABLE messages ADD COLUMN group_as_sender INTEGER NOT NULL DEFAULT 0; -- for "message from channel" flag from owner
 ALTER TABLE messages ADD COLUMN forward_complete INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE messages ADD COLUMN forwarding_job_id INTEGER REFERENCES forwarding_jobs ON DELETE SET NULL;
 
