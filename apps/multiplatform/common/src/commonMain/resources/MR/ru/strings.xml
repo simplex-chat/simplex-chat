@@ -829,7 +829,7 @@
     <!-- Default themes -->
     <string name="theme_system">Системная</string>
     <string name="theme_light">Светлая</string>
-    <string name="theme_dark">Темная</string>
+    <string name="theme_dark">Тёмная</string>
     <!-- Appearance.kt -->
     <string name="theme">Тема</string>
     <string name="reset_color">Сбросить цвета</string>
@@ -1261,7 +1261,7 @@
     <string name="group_welcome_preview">Просмотр</string>
     <string name="share_address">Поделиться адресом</string>
     <string name="you_can_share_this_address_with_your_contacts">Вы можете поделиться этим адресом с Вашими контактами, чтобы они могли соединиться с %s.</string>
-    <string name="dark_theme">Темная тема</string>
+    <string name="dark_theme">Тёмная тема</string>
     <string name="import_theme">Импорт темы</string>
     <string name="import_theme_error">Ошибка импорта темы</string>
     <string name="theme_simplex">SimpleX</string>
@@ -1863,7 +1863,7 @@
     <string name="network_smp_proxy_mode_unprotected">Незащищённый</string>
     <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor или VPN, Ваш IP-адрес будет доступен серверам файлов.</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP-адрес защищён, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
-    <string name="theme_black">Черная</string>
+    <string name="theme_black">Чёрная</string>
     <string name="chat_theme_apply_to_dark_mode">Тёмный режим</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="color_mode">Режим цветов</string>
