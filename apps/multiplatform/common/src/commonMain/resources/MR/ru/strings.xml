@@ -48,8 +48,8 @@
     <string name="simplex_link_mode_browser">В браузере</string>
     <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</string>
     <!-- SimpleXAPI.kt -->
-    <string name="error_saving_smp_servers">Ошибка при сохранении SMP серверов</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
+    <string name="error_saving_smp_servers">Ошибка при сохранении SMP-серверов</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP-серверов имеют правильный формат, каждый адрес на отдельной строке и не дублируется.</string>
     <string name="error_setting_network_config">Ошибка при сохранении настроек сети</string>
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
@@ -350,7 +350,7 @@
     <string name="send_us_an_email">Написать нам письмо</string>
     <string name="chat_lock">Блокировка SimpleX</string>
     <string name="chat_console">Консоль</string>
-    <string name="smp_servers">SMP серверы</string>
+    <string name="smp_servers">SMP-серверы</string>
     <string name="smp_servers_preset_address">Адрес сервера по умолчанию</string>
     <string name="smp_servers_preset_add">Добавить серверы по умолчанию</string>
     <string name="smp_servers_add">Добавить сервер</string>
@@ -374,8 +374,8 @@
     <string name="star_on_github">Поставить звёздочку на GitHub</string>
     <string name="contribute">Внести свой вклад</string>
     <string name="rate_the_app">Оценить приложение</string>
-    <string name="use_simplex_chat_servers__question">Использовать серверы предосталенные SimpleX Chat?</string>
-    <string name="your_SMP_servers">Ваши SMP серверы</string>
+    <string name="use_simplex_chat_servers__question">Использовать серверы, предосталенные SimpleX Chat?</string>
+    <string name="your_SMP_servers">Ваши SMP-серверы</string>
     <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
@@ -389,10 +389,10 @@
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
     <string name="network_settings_title">Настройки сети</string>
-    <string name="network_enable_socks">Использовать SOCKS прокси?</string>
-    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
+    <string name="network_enable_socks">Использовать SOCKS-прокси?</string>
+    <string name="network_enable_socks_info">Соединяться с серверами через SOCKS-прокси через порт %d? Прокси должен быть запущен до включения этой опции.</string>
     <string name="network_disable_socks">Использовать прямое соединение с Интернет?</string>
-    <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
+    <string name="network_disable_socks_info">Если Вы подтвердите, серверы смогут видеть Ваш IP-адрес, а провайдер - с какими серверами Вы соединяетесь.</string>
     <string name="network_use_onion_hosts">Использовать .onion хосты</string>
     <string name="network_use_onion_hosts_prefer">Когда возможно</string>
     <string name="network_use_onion_hosts_no">Нет</string>
@@ -505,8 +505,8 @@
     <string name="no_call_on_lock_screen">Выключить</string>
     <string name="your_ice_servers">Ваши ICE серверы</string>
     <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
-    <string name="relay_server_protects_ip">Relay сервер защищает Ваш IP адрес, но может отслеживать продолжительность звонка.</string>
-    <string name="relay_server_if_necessary">Relay сервер используется только при необходимости. Другая сторона может видеть Ваш IP адрес.</string>
+    <string name="relay_server_protects_ip">Relay-сервер защищает Ваш IP-адрес, но может отслеживать продолжительность звонка.</string>
+    <string name="relay_server_if_necessary">Relay-сервер используется только при необходимости. Другая сторона может видеть Ваш IP-адрес.</string>
     <!-- Call Lock Screen -->
     <string name="open_simplex_chat_to_accept_call">Откройте SimpleX Chat\nчтобы принять звонок</string>
     <string name="allow_accepting_calls_from_lock_screen">Вы можете разрешить принимать звонки на экране блокировки через Настройки.</string>
@@ -536,7 +536,7 @@
     <string name="answer_call">Принять звонок</string>
     <!-- Message integrity -->
     <string name="integrity_msg_skipped">%1$d пропущенных сообщений</string>
-    <string name="integrity_msg_bad_hash">ошибка хэш сообщения</string>
+    <string name="integrity_msg_bad_hash">ошибка хэша сообщения</string>
     <string name="integrity_msg_bad_id">ошибка ID сообщения</string>
     <string name="integrity_msg_duplicate">повторное сообщение</string>
     <string name="alert_title_skipped_messages">Пропущенные сообщения</string>
@@ -560,7 +560,7 @@
     <string name="settings_section_title_chats">ЧАТЫ</string>
     <string name="settings_developer_tools">Инструменты разработчика</string>
     <string name="settings_experimental_features">Экспериментальные функции</string>
-    <string name="settings_section_title_socks">SOCKS ПРОКСИ</string>
+    <string name="settings_section_title_socks">SOCKS-ПРОКСИ</string>
     <string name="settings_section_title_icon">ЗНАЧОК</string>
     <string name="settings_section_title_themes">ТЕМЫ</string>
     <string name="settings_section_title_messages">СООБЩЕНИЯ И ФАЙЛЫ</string>
@@ -1093,18 +1093,18 @@
     <string name="unhide_profile">Раскрыть профиль</string>
     <string name="video_will_be_received_when_contact_is_online">Видео будет получено, когда Ваш контакт будет онлайн, пожалуйста, подождите или проверьте позже!</string>
     <string name="unhide_chat_profile">Раскрыть профиль чата</string>
-    <string name="error_loading_smp_servers">Ошибка при загрузке SMP серверов</string>
-    <string name="error_loading_xftp_servers">Ошибка при загрузке XFTP серверов</string>
-    <string name="error_saving_xftp_servers">Ошибка при сохранении XFTP серверов</string>
+    <string name="error_loading_smp_servers">Ошибка при загрузке SMP-серверов</string>
+    <string name="error_loading_xftp_servers">Ошибка при загрузке XFTP-серверов</string>
+    <string name="error_saving_xftp_servers">Ошибка при сохранении XFTP-серверов</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Проверьте, что адреса XFTP-серверов указаны в правильном формате и не дублируются.</string>
     <string name="error_xftp_test_server_auth">Сервер требует авторизации для загрузки, проверьте пароль.</string>
     <string name="smp_server_test_compare_file">Сравнение файла</string>
     <string name="smp_server_test_delete_file">Удалить файл</string>
     <string name="smp_server_test_download_file">Загрузка файла</string>
     <string name="smp_server_test_upload_file">Загрузка файла</string>
-    <string name="xftp_servers">XFTP серверы</string>
-    <string name="your_XFTP_servers">Ваши XFTP серверы</string>
-    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Установите <i>Использовать .onion хосты</i> в Нет если SOCKS прокси их не поддерживает.]]></string>
+    <string name="xftp_servers">XFTP-серверы</string>
+    <string name="your_XFTP_servers">Ваши XFTP-серверы</string>
+    <string name="disable_onion_hosts_when_not_supported"><![CDATA[Установите <i>Использовать .onion хосты</i> в Нет если SOCKS-прокси их не поддерживает.]]></string>
     <string name="la_auth_failed">Ошибка аутентификации</string>
     <string name="la_no_app_password">Нет кода доступа</string>
     <string name="la_lock_mode_passcode">Ввод кода доступа</string>
@@ -1116,8 +1116,8 @@
     <string name="la_change_app_passcode">Изменить код доступа</string>
     <string name="la_current_app_passcode">Текущий Код</string>
     <string name="la_enter_app_passcode">Введите Код</string>
-    <string name="network_socks_proxy_settings">Настройки SOCKS прокси</string>
-    <string name="network_socks_toggle_use_socks_proxy">Использовать SOCKS прокси</string>
+    <string name="network_socks_proxy_settings">Настройки SOCKS-прокси</string>
+    <string name="network_socks_toggle_use_socks_proxy">Использовать SOCKS-прокси</string>
     <string name="host_verb">Хост</string>
     <string name="port_verb">Порт</string>
     <string name="network_proxy_port">порт %d</string>
@@ -1128,7 +1128,7 @@
     <string name="alert_text_decryption_error_n_messages_failed_to_decrypt">%1$d сообщений не удалось расшифровать.</string>
     <string name="decryption_error">Ошибка расшифровки</string>
     <string name="lock_not_enabled">Блокировка SimpleX не включена!</string>
-    <string name="alert_title_msg_bad_hash">Ошибка хэш сообщения</string>
+    <string name="alert_title_msg_bad_hash">Ошибка хэша сообщения</string>
     <string name="alert_text_msg_bad_hash">Хэш предыдущего сообщения отличается.</string>
     <string name="confirm_passcode">Подтвердить код</string>
     <string name="incorrect_passcode">Неправильный код</string>
@@ -1435,7 +1435,7 @@
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
     <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
-    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
+    <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
     <string name="v5_3_new_interface_languages">6 новых языков интерфейса</string>
@@ -1739,7 +1739,7 @@
     <string name="migrate_from_device_stopping_chat">Остановка чата</string>
     <string name="migrate_from_device_archive_and_upload">Архивировать и загрузить</string>
     <string name="migrate_from_device_confirm_upload">Подтвердить загрузку</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP серверы.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP-серверы.</string>
     <string name="migrate_from_device_upload_failed">Ошибка загрузки</string>
     <string name="migrate_from_device_repeat_upload">Повторить загрузку</string>
     <string name="migrate_from_device_try_again">Вы можете попробовать ещё раз.</string>
@@ -1861,8 +1861,8 @@
     <string name="chat_list_always_visible">Показать список чатов в новом окне</string>
     <string name="app_will_ask_to_confirm_unknown_file_servers">Приложение будет запрашивать подтверждение загрузки с неизвестных серверов (за исключением .onion адресов или когда SOCKS-прокси включен).</string>
     <string name="network_smp_proxy_mode_unprotected">Незащищённый</string>
-    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor или VPN, Ваш IP адрес будет доступен серверам файлов.</string>
-    <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP адрес защищён, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
+    <string name="without_tor_or_vpn_ip_address_will_be_visible_to_file_servers">Без Tor или VPN, Ваш IP-адрес будет доступен серверам файлов.</string>
+    <string name="network_smp_proxy_fallback_allow_protected_description">Отправлять сообщения напрямую, когда IP-адрес защищён, и Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="theme_black">Черная</string>
     <string name="chat_theme_apply_to_dark_mode">Тёмный режим</string>
     <string name="network_smp_proxy_fallback_prohibit_description">Не отправлять сообщения напрямую, даже если сервер получателя не поддерживает конфиденциальную доставку.</string>
@@ -1879,22 +1879,22 @@
     <string name="v5_8_chat_themes_descr">Сделайте ваши чаты разными!</string>
     <string name="message_queue_info">Информация об очереди сообщений</string>
     <string name="v5_8_persian_ui">Персидский интерфейс</string>
-    <string name="protect_ip_address">Защитить IP адрес</string>
+    <string name="protect_ip_address">Защитить IP-адрес</string>
     <string name="v5_8_private_routing_descr">Защитите ваш IP-адрес от серверов сообщений, выбранных Вашими контактами. \nВключите в настройках Сеть и серверы.</string>
     <string name="network_smp_proxy_fallback_allow_description">Отправьте сообщения напрямую, когда Ваш сервер или сервер получателя не поддерживает конфиденциальную доставку.</string>
     <string name="network_smp_proxy_mode_private_routing">Конфиденциальная доставка</string>
     <string name="network_smp_proxy_mode_unknown_description">Использовать конфиденциальную доставку с неизвестными серверами.</string>
-    <string name="network_smp_proxy_mode_unprotected_description">Использовать конфиденциальную доставку с неизвестными серверами, когда IP адрес не защищён.</string>
+    <string name="network_smp_proxy_mode_unprotected_description">Использовать конфиденциальную доставку с неизвестными серверами, когда IP-адрес не защищён.</string>
     <string name="network_smp_proxy_fallback_allow_protected">Когда IP защищён</string>
     <string name="network_smp_proxy_fallback_allow">Да</string>
-    <string name="private_routing_explanation">Чтобы защитить ваш IP адрес, приложение использует Ваши SMP серверы для конфиденциальной доставки сообщений.</string>
+    <string name="private_routing_explanation">Чтобы защитить Ваш IP-адрес, приложение использует Ваши SMP-серверы для конфиденциальной доставки сообщений.</string>
     <string name="settings_section_title_profile_images">Изображения профилей</string>
     <string name="chat_theme_apply_to_all_modes">Все режимы</string>
     <string name="theme_destination_app_theme">Тема приложения</string>
     <string name="chat_theme_reset_to_app_theme">Сбросить на тему приложения</string>
     <string name="chat_theme_reset_to_user_theme">Сбросить на тему пользователя</string>
     <string name="file_not_approved_title">Неизвестные серверы!</string>
-    <string name="file_not_approved_descr">Без Tor или VPN, Ваш IP адрес будет доступен этим серверам файлов: \n%1$s.</string>
+    <string name="file_not_approved_descr">Без Tor или VPN, Ваш IP-адрес будет доступен этим серверам файлов: \n%1$s.</string>
     <string name="network_smp_proxy_mode_never_description">Не использовать конфиденциальную маршрутизацию.</string>
     <string name="network_smp_proxy_mode_never">Никогда</string>
     <string name="network_smp_proxy_mode_unknown">Неизвестные серверы</string>
@@ -1922,7 +1922,7 @@
     <string name="color_wallpaper_tint">Рисунок обоев</string>
     <string name="color_wallpaper_background">Фон обоев</string>
     <string name="chat_theme_apply_to_mode">Применить к</string>
-    <string name="cannot_share_message_alert_title">Не удается отправить сообщение</string>
+    <string name="cannot_share_message_alert_title">Не удаётся отправить сообщение</string>
     <string name="app_check_for_updates_beta">Бета</string>
     <string name="servers_info_sessions_connected">Соединeно</string>
     <string name="attempts_label">попытки</string>
@@ -1933,11 +1933,11 @@
     <string name="app_check_for_updates_notice_title">Проверка на наличие обновлений</string>
     <string name="allow_calls_question">Разрешить звонки?</string>
     <string name="calls_prohibited_alert_title">Звонки запрещены!</string>
-    <string name="cant_call_member_alert_title">Не удается позвонить члену группы</string>
+    <string name="cant_call_member_alert_title">Не удаётся позвонить члену группы</string>
     <string name="app_check_for_updates_download_completed_title">Обновление скачано</string>
     <string name="info_view_call_button">звонок</string>
-    <string name="cant_call_contact_alert_title">Не удается позвонить контакту</string>
-    <string name="cant_send_message_to_member_alert_title">Не удается написать члену группы</string>
+    <string name="cant_call_contact_alert_title">Не удаётся позвонить контакту</string>
+    <string name="cant_send_message_to_member_alert_title">Не удаётся написать члену группы</string>
     <string name="app_check_for_updates">Проверять обновления</string>
     <string name="info_view_connect_button">соединиться</string>
     <string name="proxy_destination_error_broker_host">Адрес сервера назначения %1$s несовместим с настройками пересылающего сервера %2$s.</string>
@@ -1949,8 +1949,8 @@
     <string name="cannot_share_message_alert_text">Выбранные настройки чата запрещают это сообщение.</string>
     <string name="file_error">Ошибка файла</string>
     <string name="scan_paste_link">Сканировать / Вставить ссылку</string>
-    <string name="xftp_servers_other">Другие XFTP серверы</string>
-    <string name="xftp_servers_configured">Настроенные XFTP серверы</string>
+    <string name="xftp_servers_other">Другие XFTP-серверы</string>
+    <string name="xftp_servers_configured">Настроенные XFTP-серверы</string>
     <string name="app_check_for_updates_button_download">Загрузка %s (%s)</string>
     <string name="app_check_for_updates_update_available">Доступно обновление: %s</string>
     <string name="app_check_for_updates_notice_disable">Выключить</string>
@@ -1969,9 +1969,9 @@
     <string name="servers_info_reset_stats_alert_message">Статистика серверов будет сброшена - это нельзя отменить!</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Всего отправлено</string>
     <string name="reconnect">Переподключить</string>
-    <string name="smp_server">SMP сервер</string>
+    <string name="smp_server">SMP-сервер</string>
     <string name="servers_info_starting_from">Начиная с %s.</string>
-    <string name="xftp_server">XFTP сервер</string>
+    <string name="xftp_server">XFTP-сервер</string>
     <string name="duplicates_label">дубликаты</string>
     <string name="expired_label">истекло</string>
     <string name="other_label">другое</string>
@@ -2011,7 +2011,7 @@
     <string name="no_filtered_contacts">Нет отфильтрованных контактов</string>
     <string name="contact_list_header_title">Ваши контакты</string>
     <string name="deleted_chats">Архивированные контакты</string>
-    <string name="smp_servers_configured">Настроенные SMP серверы</string>
+    <string name="smp_servers_configured">Настроенные SMP-серверы</string>
     <string name="subscription_percentage">Показать процент</string>
     <string name="privacy_media_blur_radius_soft">Слабое</string>
     <string name="privacy_media_blur_radius_medium">Среднее</string>
@@ -2055,7 +2055,7 @@
     <string name="selected_chat_items_selected_n">Выбрано %d</string>
     <string name="toolbar_settings">Настройки</string>
     <string name="you_can_still_view_conversation_with_contact">Вы по-прежнему можете просмотреть разговор с %1$s в списке чатов.</string>
-    <string name="smp_servers_other">Другие SMP серверы</string>
+    <string name="smp_servers_other">Другие SMP-серверы</string>
     <string name="app_check_for_updates_disabled">Выключено</string>
     <string name="app_check_for_updates_installed_successfully_title">Установлено успешно</string>
     <string name="app_check_for_updates_button_install">Установить обновление</string>
@@ -2069,7 +2069,7 @@
     <string name="chat_database_exported_continue">Продолжить</string>
     <string name="media_and_file_servers">Серверы файлов и медиа</string>
     <string name="message_servers">Серверы сообщений</string>
-    <string name="network_socks_proxy">SOCKS прокси</string>
+    <string name="network_socks_proxy">SOCKS-прокси</string>
     <string name="chat_database_exported_not_all_files">Некоторые файл(ы) не были экспортированы</string>
     <string name="chat_database_exported_migrate">Вы можете мигрировать экспортированную базу данных.</string>
     <string name="chat_database_exported_save">Вы можете сохранить экспортированный архив.</string>
@@ -2098,7 +2098,7 @@
     <string name="servers_info_proxied_servers_section_footer">Вы не подключены к этим серверам. Для доставки сообщений на них используется конфиденциальная доставка.</string>
     <string name="v6_0_connect_faster_descr">Соединяйтесь с друзьями быстрее</string>
     <string name="v6_0_connection_servers_status">Управляйте своей сетью</string>
-    <string name="v6_0_private_routing_descr">Защищает ваш IP адрес и соединения.</string>
+    <string name="v6_0_private_routing_descr">Защищает ваш IP-адрес и соединения.</string>
     <string name="open_server_settings_button">Открыть настройки серверов</string>
     <string name="servers_info_detailed_statistics_received_messages_header">Полученные сообщения</string>
     <string name="servers_info_detailed_statistics_receive_errors">Ошибки приема</string>
@@ -2166,8 +2166,8 @@
     <string name="switching_profile_error_message">Соединение было перемещено в профиль %s, но при переключении профиля произошла ошибка.</string>
     <string name="settings_message_shape_corner">Угол</string>
     <string name="network_session_mode_session">Сессия приложения</string>
-    <string name="network_session_mode_session_description">Новые учетные данные SOCKS будут использоваться при каждом запуске приложения.</string>
-    <string name="network_session_mode_server_description">Новые учетные данные SOCKS будут использоваться для каждого сервера.</string>
+    <string name="network_session_mode_session_description">Новые учётные данные SOCKS будут использоваться при каждом запуске приложения.</string>
+    <string name="network_session_mode_server_description">Новые учётные данные SOCKS будут использоваться для каждого сервера.</string>
     <string name="network_session_mode_server">Сервер</string>
     <string name="settings_section_title_message_shape">Форма сообщений</string>
     <string name="settings_message_shape_tail">Хвост</string>
