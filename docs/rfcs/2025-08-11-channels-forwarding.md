@@ -126,6 +126,10 @@ It's unclear if there's a need for a separate lower level abstraction for delive
         - Otherwise worker uses saved encoding (recovery).
 3. With moving cursor on group member id for member retrieval, forward encoded batch. In loop:
     1. Retrieve members up to some limit and filtering according to a cursor. In normal execution path on first iteration job would not have a previously saved cursor yet.
+        - For Main scope all current members will be retrieved;
+        - For Support scopes - moderators and above + scope member;
+        - For All scope - all current and pending members (Question: will channels have member review? If not, possibly we don't have to account for All scope).
+        - Main difference from forwarding in regular groups here is that for inviting admins we retrieve only introduced and invited members for the message's sending member, that are not yet connected. For channels there will be no such filtering.
     2. Group send encoded batch to retrieved members.
     3. Update cursor on the job.
 4. Mark message as forwarded.
