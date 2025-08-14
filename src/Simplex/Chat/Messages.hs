@@ -1178,6 +1178,14 @@ data RcvMessage = RcvMessage
 
 type MessageId = Int64
 
+-- TODO [channels fwd] review
+data ForwardingJob = ForwardingJob
+  { jobId :: Int64,
+    msgBatchEncoding :: Maybe (NonEmpty (ChatMessage 'Json)),
+    cursorGroupMemberId :: Maybe Int64
+  }
+  deriving (Show)
+
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 
 data SndMsgDelivery = SndMsgDelivery
