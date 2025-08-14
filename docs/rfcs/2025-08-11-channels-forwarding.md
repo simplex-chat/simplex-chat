@@ -133,7 +133,7 @@ It's unclear if there's a need for a separate lower level abstraction for delive
         - Main difference from forwarding in regular groups here is that for inviting admins we retrieve only introduced and invited members for the message's sending member, that are not yet connected. For channels there will be no such filtering.
     2. Group send encoded batch to retrieved members.
     3. Update cursor on the job.
-4. Mark message as forwarded.
+4. Marks all messages attached to the job as forwarded (forward_complete), deletes the job record.
 
 Schema draft:
 
