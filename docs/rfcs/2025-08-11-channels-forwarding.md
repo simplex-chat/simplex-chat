@@ -52,94 +52,100 @@ Files can also cause problem with showing difference in content if file preview 
 
 As a note, this whole section discusses an edge case of chat relays maliciously changing messages, and countermeasures to prevent them doing so undetectably. May be not worth implementing overly complex solution as MVP (option 3), and option 2 or even 1 can suffice. TBC further.
 
-### Persisted forwarding jobs
+### Forwarding jobs
 
-- For batch of received messages a forwarding job has to be persisted.
-- Special worker would pick up forwarding jobs for sending.
+- Received messages will be marked for forwarding and picked up by a forwarding worker to form forwarding jobs.
 - Forwarding job can be split into smaller batches by members to make smaller group sends one at a time.
 
-How to present a forwarding job in storage?
+**How forwarding works now:**
 
-Currently we build ad-hoc forwarding instruction for each message based on its scope (GroupForwardScope). Then for each scope message batches are sent separately to different member lists.
+Currently we build ad-hoc forwarding instruction for each message based on its scope (GroupForwardScope). The output of processing a batch of messages is `Map GroupForwardScope (NonEmpty (ChatMessage 'Json))`. Then for each scope message batches are sent separately to different member lists (to clarify, "sent" here means scheduled for sending in agent). All this is done synchronously in receive loop.
 
-Question: should we persist all forwarding jobs or only for main (GFSMain - for regular messages) and all (GFSAll - for all current and pending members scopes), and don't persist for support scope (GFSMemberSupport)?
+**How forwarding will work:**
 
-Pros/cons of persisting jobs for all scopes:
-- Possibly more uniform processing. However, for support scope group member id is required (see question in schema below).
-- Requires forwarding worker to have more logic.
+Chat relay should be able to handle channels consisting of hundreds of thousands of members. Synchronous forwarding will be replaced by asynchronous forwarding jobs to reduce load in the receive loop, and make forwarding resumable on failure. Also loading all members in memory will not scale, so these jobs have to be split into smaller batches.
 
-Pros/cons of persisting jobs only for GFSMain and GFSAll scopes:
-- Forwarding worker and persistence are simpler, but logic lives in 2 places (synchronous as now + worker).
-- Support scopes have small number of members to forward to, so optimizing forward for them is not a necessity.
+Question: Should synchronous processing be changed to forwarding jobs for all types of scopes, or only for Main (GFSMain - for regular messages) and All (GFSAll - for all current members and for all pending members scopes), and not for Support scope (GFSMemberSupport)?
+  - Pros/cons of persisting jobs for all types of scopes:
+    - Possibly more uniform processing. However, for support scope group member id is required (see question in schema below).
+    - Requires forwarding worker to have more logic ("if"), or different worker types.
+  - Pros/cons of persisting jobs only for Main and All scopes:
+    - Forwarding worker and persistence are simpler, but logic lives in 2 places (synchronous as now + worker).
+    - As a note, support scopes have small number of members to forward to, so optimizing forward for them is not a necessity.
 
-We roughly need following data to be persisted for a forwarding job:
+Answer: All forwarding logic will become asynchronous. This will reduce load in the receive loop for inviting admins in regular groups as well.
+
+Forwarding jobs for different groups can be concurrent, inside group should be sequential to follow order of messages. One approach could be to create a dedicated forwarding worker for each group. Different scope types can also use dedicated workers (possibly: 1 worker for all + main scopes, 1 - for all support scopes), so heavy full group forwarding wouldn't slow down forwarding in much smaller support scopes.
+
+Forwarding workers will re-use worker abstraction from agent.
+
+Forwarding workers should use low priority db pool.
+
+We roughly need following data for a forwarding job:
 - group id,
-- forwarding scope - TBC as above,
+- forwarding scope,
 - sending member - to include memberId in XGrpMsgForward,
 - broker timestamp of received messages batch to include in XGrpMsgForward,
 - "message from channel" flag from sending owner - see "Hiding sending owner id" section below,
 - list of messages (events).
 
-Restoring list of messages for a forwarding job:
-- Currently for each message full MsgBody is saved, which is just a ByteString. Also if received messages were batched, full batch body is saved for each message record. For example, here is message body of batched deletion of 2 chat items, which is saved on 2 message records:
-  ```
-  msg_body = [{"v":"1-16","msgId":"ZUd3bzVDTXFHWmc3Z29YSQ==","event":"x.msg.del","params":{"msgId":"QVVuN2RkaXg0aVJJdTZXSA=="}},{"v":"1-16","msgId":"amM5dzV2RkRjNmNYSDRLQQ==","event":"x.msg.del","params":{"msgId":"NzFlV3pNRStpQTRrQjRYUg=="}}]
-  ```
-  On the other hand for forwarding operation we require ChatMessage 'Json (for XGrpMsgForward).
-- For a forwarding job we can persist list of messages ids from messages table (message_id), and save ChatMessage 'Json on records to restore.
-- Alternatively, we can read full msg_body (it can even be duplicated on forwarding job), and restore chat messages (ChatMessage 'Json) via parseChatMessages. However, this conflicts with possibility that a single batch body will have messages of different scopes, which current processing logic allows, although there's no legitimate case as of now. So, persisting ChatMessage' Json on each record seems preferable. Also it avoids repeated parsing.
-- As a side note, it seems we can stop saving msg_body for received messages, as it's not used for any purpose. This field is only used for retrieving and sending pending group messages.
+**How to build message batches for a forwarding job:**
 
-#### Splitting forwarding job into delivery batches
+Currently for each message a full MsgBody is saved on `messages` table record, which is just a ByteString. Also if received messages were batched, full batch body is saved for each message record (it's a questionable design). For example, here is message body of batched deletion of 2 chat items, which is saved on 2 message records:
 
-Chat relay should be able to handle channels consisting of hundreds of thousands of members - loading all members for forwarding in memory will not scale.
+```
+msg_body = [{"v":"1-16","msgId":"ZUd3bzVDTXFHWmc3Z29YSQ==","event":"x.msg.del","params":{"msgId":"QVVuN2RkaXg0aVJJdTZXSA=="}},{"v":"1-16","msgId":"amM5dzV2RkRjNmNYSDRLQQ==","event":"x.msg.del","params":{"msgId":"NzFlV3pNRStpQTRrQjRYUg=="}}]
+```
 
-Approach 1.
+On the other hand for forwarding operation we require ChatMessage 'Json (for XGrpMsgForward), which could be saved on message records instead.
 
-Forwarding job will read required members in loop using a cursor (use group_member_id for cursor? member_id?) to split into further delivery jobs (group sends). Forwarding job can launch group sends in new threads so they start concurrently with job processing further member records. Possibly cursor position can be remembered on the job record after successful scheduling of group send, for faster recovery on failure.
+As a side note, it seems we can stop saving full batch body as msg_body for received messages, as it's not used for any purpose. This field is only used for retrieving and sending pending group messages (sent, not received).
 
-It's unclear if there's a need for a separate lower level abstraction for delivery jobs, that could be reused for feeds and other purposes, as they would require different logic of building delivery lists, and scheduling a delivery for agent already serves a similar purpose.
+Alternatively, we could read full msg_body, and repeatedly parse list of ChatMessage 'Json. However, this conflicts with possibility that a single batch body will have messages of different scopes, which current processing logic allows, although there's no legitimate case as of now. This means we'd have make jobs forward to different lists of members, or have some supervisor to launch different jobs, which further complicates the processing. Also, this limits forwarding to the same batch sizes (in terms of number of messages) as those batches that received messages came in, and instead we could possibly fit more messages into batches if available. Overall, persisting ChatMessage' Json on each message record, and then retrieving available messages for the job, seems preferable.
 
-Optimizing admin forwarding in regular groups would require different queries for member filtering.
+**How to split forwarding jobs into smaller delivery batches:**
+
+For simplicity, this will be done only for channels, and not for inviting admins in regular groups, at least initially. Inviting admins have more complex logic, involving multiple queries and filters to retrieve less (only necessary) members, as we're trying to limit load on them, as they can be mobile clients. They will be moved to asynchronous processing too, though.
+
+Forwarding job will read required members in loop using a cursor (e.g., use group_member_id as a cursor) to split into further delivery jobs (group sends) by members. As a reminder, group send in terms of chat logic is not a network operation, but a request to agent. We can consider this part a black box for now, and consider if groups sends should be made concurrently later. For now though, for simplicity we can consider that group sends are done in a synchronous loop with moving cursor for member retrieval. Cursor position can be remembered on the job record after each group send, for recovery.
+
+It's unclear if there's a need for a separate lower level abstraction for delivery jobs, that could be reused for feeds and other purposes, as they would require different logic of building delivery lists, and scheduling a delivery for agent already serves a similar purpose. For now, it seems this additional abstraction is unnecessary.
+
+**How a forwarding job will work overall:**
+
+0. There is some process on start that launches necessary workers for each group/scope client serves as a forwarding agent. Also message receive loop "kicks" necessary workers. Below we start with a worker for some group/scope trying to retrieve next work item, that is being next message(s) to forward.
+1. Worker retrieves next message from `messages` table that was marked for forwarding, that matches the worker's group/scope.
+2. Worker checks, if this message is already attached to some forwarding job, and the state of the job.
+    1. Worker gets job record.
+        - If message is not attached to any job yet, worker creates a new job record, sets job id on the message record (normal execution path).
+        - Otherwise worker gets existing job attached to the message (recovery path).
+    2. Worker determines forwarding batch encoding for the job.
+        - If encoding is not saved on the job, it means it wasn't determined before (normal execution):
+          1. Worker retrieves more messages that match its group/scope (in loop or in bulk? also message list has to preserve reception order).
+          2. Worker prepares encoding (wraps messages in XGrpMsgForward events with metadata) and saves it on the job record.
+        - Otherwise worker uses saved encoding (recovery).
+3. With moving cursor on group member id for member retrieval, forward encoded batch. In loop:
+    1. Retrieve members up to some limit and filtering according to a cursor. In normal execution path on first iteration job would not have a previously saved cursor yet.
+    2. Group send encoded batch to retrieved members.
+    3. Update cursor on the job.
+4. Mark message as forwarded.
 
 Schema draft:
 
 ```sql
-ALTER TABLE messages ADD COLUMN chat_message_json TEXT;
-
 CREATE TABLE forwarding_jobs (
   forwarding_job_id INTEGER PRIMARY KEY,
-  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  forward_scope TEXT NOT NULL, -- save as JSON/text? add field for scope group member id for GFSMemberSupport scope?
-  sending_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE, -- or sending_member_id BLOB without fkey
-  broker_ts TEXT NOT NULL,
-  group_as_sender INTEGER NOT NULL DEFAULT 0, -- for "message from channel" flag from owner
-  message_ids TEXT NOT NULL, -- comma separated list; normalize via many-to-many table? doesn't seem necessary
-  failed INTEGER DEFAULT 0, -- for worker marking forwarding job as failed, to be able to proceed to next one
-  created_at TEXT NOT NULL DEFAULT (datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
-```
-
-Approach 2.
-
-Pre-allocate group member ids for the forwarding job in a separate table at the moment of job creation. It may be not as taxing to read only member ids without cursor, and persist them for the job in the same transaction.
-
-Same applies - optimizing for admin forwarding would require different queries.
-
-```sql
-CREATE TABLE forwarding_jobs_members (
-  forwarding_job_member_id INTEGER PRIMARY KEY,
-  forwarding_job_id INTEGER NOT NULL REFERENCES forwarding_jobs ON DELETE CASCADE,
-  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE
+  msg_batch_encoding TEXT,
+  cursor_group_member_id INTEGER
 )
+
+ALTER TABLE messages ADD COLUMN chat_message_json TEXT;
+ALTER TABLE messages ADD COLUMN forward_scope TEXT;
+ALTER TABLE messages ADD COLUMN forward_complete INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE messages ADD COLUMN forwarding_job_id INTEGER REFERENCES forwarding_jobs ON DELETE SET NULL;
+
+-- indexes for fkey, search based on group/scope and order;
 ```
-
-Then forwarding job would then use a simpler query to load members in loop using a cursor - without complex filters for member selection. Each scheduled group send can delete its forwarding_jobs_members records, or mark them as complete (requires new field).
-
-Forwarding jobs for different groups can be concurrent, inside group should be sequential to follow order of messages. One approach could be to create a dedicated forwarding worker for each group.
-
-Forwarding worker(s) should use low priority db pool.
 
 ## Other considerations
 
