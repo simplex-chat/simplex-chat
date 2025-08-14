@@ -1152,18 +1152,13 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
 key .=? value = maybe id ((:) . (key .=)) value
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
-chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
-  SBinary ->
-    let (binaryMsgId, body) = toBody chatMsgEvent
-     in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
+chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
+  SBinary -> AMBinary AppMessageBinary {msgId = Nothing, tag = B.head $ strEncode tag, body = chatMsgBinaryToBody chatMsg}
   SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
     o = JM.fromList
-    toBody :: ChatMsgEvent 'Binary -> (Maybe SharedMsgId, ByteString)
-    toBody = \case
-      BFileChunk (SharedMsgId msgId') chunk -> (Nothing, smpEncode (msgId', IFC chunk))
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container
@@ -1211,6 +1206,15 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
+
+chatMsgBinaryToBody :: ChatMessage 'Binary -> ByteString
+chatMsgBinaryToBody ChatMessage {chatMsgEvent} = case chatMsgEvent of
+  BFileChunk (SharedMsgId msgId) chunk -> smpEncode (msgId, IFC chunk)
+
+chatMsgToBody :: forall e. MsgEncodingI e => ChatMessage e -> ByteString
+chatMsgToBody chatMsg = case encoding @e of
+  SBinary -> chatMsgBinaryToBody chatMsg
+  SJson -> LB.toStrict $ J.encode chatMsg
 
 instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage
