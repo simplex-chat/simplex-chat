@@ -56,7 +56,7 @@
     <string name="allow_to_send_files">Permite trimiterea de fișiere și media.</string>
     <string name="v5_1_self_destruct_passcode_descr">Toate datele sunt șterse la introducerea lor.</string>
     <string name="all_group_members_will_remain_connected">Toți membrii grupului vor rămâne conectați.</string>
-    <string name="clear_chat_warning">Toate mesajele vor fi șterse - această acțiune nu poate fi anulată! Mesajele vor fi șterse NUMAI pentru dvs.</string>
+    <string name="clear_chat_warning">Toate mesajele vor fi șterse - această acțiune nu poate fi anulată! Mesajele vor fi șterse NUMAI pentru tine.</string>
     <string name="block_member_desc">Toate mesajele noi de la %s vor fi ascunse!</string>
     <string name="turn_off_battery_optimization_button">Permite</string>
     <string name="allow_verb">Permite</string>
@@ -1432,7 +1432,7 @@
     <string name="leave_group_question">Părăsiți grupul?</string>
     <string name="alert_title_no_group">Grupul nu a fost găsit!</string>
     <string name="error_creating_member_contact">Eroare la crearea contactului membrului</string>
-    <string name="only_chat_owners_can_change_prefs">Doar proprietarii chatului pot schimba preferințele.</string>
+    <string name="only_chat_owners_can_change_prefs">Doar proprietarii conversației pot schimba preferințele.</string>
     <string name="info_row_file_status">Stare fișier</string>
     <string name="share_text_file_status">Starea fișierului: %s</string>
     <string name="share_text_message_status">Statusul mesajului: %s</string>
@@ -1792,7 +1792,7 @@
     <string name="servers_info_reconnect_all_servers_button">Reconectează toate serverele</string>
     <string name="servers_info_reconnect_server_title">Reconectați serverul?</string>
     <string name="servers_info_detailed_statistics_sent_messages_total">Total trimise</string>
-    <string name="cannot_share_message_alert_text">Preferințele de chat selectate interzic acest mesaj.</string>
+    <string name="cannot_share_message_alert_text">Preferințele conversației selectate interzic acest mesaj.</string>
     <string name="receipts_groups_override_enabled">Trimiterea confirmărilor este activată pentru %d grupuri</string>
     <string name="self_destruct_passcode">Parolă de autodistrugere</string>
     <string name="v6_3_reports">Trimiteți rapoarte private</string>
@@ -2457,4 +2457,30 @@
     <string name="chat_banner_business_connection">Conexiune de afaceri</string>
     <string name="member_is_deleted_cant_accept_request">Membrul a fost șters – nu poate accepta cererea</string>
     <string name="allow_files_and_media_only_if">Permite fișierele și conținutul media doar dacă persoana de contact le permite.</string>
+    <string name="deprecated_options_section">Opțiuni depreciate</string>
+    <string name="v6_4_1_keep_chats_clean">Păstrează-ți conversațiile curate</string>
+    <string name="private_routing_no_session">Nicio sesiune de rutare privată</string>
+    <string name="privacy_chat_list_open_full_web_link">Deschide linkul complet</string>
+    <string name="open_to_use_bot">Deschide pentru a folosi botul</string>
+    <string name="prohibit_sending_files_and_media">Interzice trimiterea de fișiere și conținut media.</string>
+    <string name="network_option_protocol_timeout_background">Timp de expirare protocol în fundal</string>
+    <string name="v6_4_review_members">Revizuiește membrii grupului</string>
+    <string name="compose_view_send_contact_request_alert_question">Trimiți cerere de contact?</string>
+    <string name="compose_view_send_request">Trimite cererea</string>
+    <string name="compose_view_send_request_without_message">Trimite cererea fără mesaj</string>
+    <string name="v6_4_support_chat_descr">Trimite feedbackul tău privat grupurilor.</string>
+    <string name="v6_4_1_welcome_contacts_descr">Setează biografia și mesajul de bun venit al profilului.</string>
+    <string name="v6_4_1_short_address_share">Partajează-ți adresa</string>
+    <string name="chat_banner_send_request_to_connect">Atinge Conectează-te pentru a trimite cererea</string>
+    <string name="chat_banner_connect_to_use_bot">Atinge Conectează-te pentru a folosi botul</string>
+    <string name="share_group_profile_via_link">Actualizezi linkul grupului?</string>
+    <string name="v6_4_1_welcome_contacts">Urează bun venit contactelor tale 👋</string>
+    <string name="short_descr">Biografia ta:</string>
+    <string name="chat_banner_your_business_contact">Contactul tău de afaceri</string>
+    <string name="chat_banner_your_contact">Contactul tău</string>
+    <string name="chat_banner_your_group">Grupul tău</string>
+    <string name="only_you_can_send_files">Doar tu poți trimite fișiere și conținut media.</string>
+    <string name="only_your_contact_can_send_files">Doar contactele tale pot trimite fișiere și conținut media.</string>
+    <string name="privacy_chat_list_open_clean_web_link">Deschide link securizat</string>
+    <string name="reject_contact_request">Respinge cererea de contact</string>
 </resources>
