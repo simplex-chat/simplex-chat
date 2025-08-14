@@ -114,8 +114,8 @@ It's unclear if there's a need for a separate lower level abstraction for delive
 **How a forwarding job will work overall:**
 
 0. There is some process on start that launches necessary workers for each group/scope client serves as a forwarding agent. Also message receive loop "kicks" necessary workers. Below we start with a worker for some group/scope trying to retrieve next work item, that is being next message(s) to forward.
-    - Question: Do we need a separate flag on message record to mark it as "for forwarding"? Perhaps having forward_scope (see schema below) is enough.
 1. Worker retrieves next message from `messages` table that was marked for forwarding, that matches the worker's group/scope.
+    - Question: Do we need a separate flag on message record to mark it as "for forwarding"? Perhaps having forward_scope (see schema below) is enough.
 2. Worker checks, if this message is already attached to some forwarding job, and the state of the job.
     1. Worker gets job record.
         - If message is not attached to any job yet, worker creates a new job record, sets job id on the message record (normal execution path).
