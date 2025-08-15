@@ -160,7 +160,9 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
-    it "forward member deletion (x.grp.mem.del)" testGroupMsgForwardMemberDelete
+    it "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
+    it "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
+    it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -5056,8 +5058,8 @@ testGroupMsgForwardLeave =
       alice <## "#team: bob left the group"
       cath <## "#team: bob left the group"
 
-testGroupMsgForwardMemberDelete :: HasCallStack => TestParams -> IO ()
-testGroupMsgForwardMemberDelete =
+testGroupMsgForwardMemberRemoval :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardMemberRemoval =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
@@ -5080,6 +5082,80 @@ testGroupMsgForwardMemberDelete =
       concurrently_
         (bob <# "#team alice> hello")
         (cath </)
+      cath ##> "#team hello"
+      cath <## "bad chat command: not current member"
+
+testGroupMsgForwardAdminRemoval :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardAdminRemoval =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GROwner) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+
+      -- alice forwards messages between bob and cath
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey [>>]"
+
+      -- if alice is removed, she forwards message of her own removal
+      bob ##> "/rm team alice"
+      concurrentlyN_
+        [ bob <## "#team: you removed alice from the group",
+          do
+            alice <## "#team: bob removed you from the group"
+            alice <## "use /d #team to delete the group",
+          cath <## "#team: bob removed alice from the group"
+        ]
+
+      -- there is no forwarding admin anymore between bob and cath, so messages don't get delivered
+      -- (this is not a desired behavior, just a test demonstration/proof of current implementation)
+      bob #> "#team hi"
+      concurrently_
+        (cath </)
+        (alice </)
+      cath #> "#team hello"
+      concurrently_
+        (bob </)
+        (alice </)
+      alice ##> "#team hello"
+      alice <## "bad chat command: not current member"
+
+testGroupMsgForwardGroupDeletion :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardGroupDeletion =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GROwner) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+
+      -- alice forwards messages between bob and cath
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey [>>]"
+
+      -- if bob deletes the group, alice forwards it to cath
+      bob ##> "/d #team"
+      concurrentlyN_
+        [ bob <## "#team: you deleted the group",
+          do
+            alice <## "#team: bob deleted the group"
+            alice <## "use /d #team to delete the local copy of the group",
+          do
+            cath <## "#team: bob deleted the group"
+            cath <## "use /d #team to delete the local copy of the group"
+        ]
+
+      alice ##> "#team hello"
+      alice <## "bad chat command: not current member"
+      bob ##> "#team hello"
+      bob <## "no group #team"
       cath ##> "#team hello"
       cath <## "bad chat command: not current member"
 
