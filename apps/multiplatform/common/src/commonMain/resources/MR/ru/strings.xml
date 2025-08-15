@@ -1679,7 +1679,7 @@
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
     <string name="past_member_vName">Бывший член %1$s</string>
-    <string name="saved_message_title">Сохраненное сообщение</string>
+    <string name="saved_message_title">Сохранённое сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
     <string name="blocked_by_admin_items_description">%d сообщений заблокировано администратором</string>
