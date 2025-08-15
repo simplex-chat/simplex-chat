@@ -160,6 +160,7 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
+    it "forward member deletion (x.grp.mem.del)" testGroupMsgForwardMemberDelete
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -5054,6 +5055,33 @@ testGroupMsgForwardLeave =
       bob <## "use /d #team to delete the group"
       alice <## "#team: bob left the group"
       cath <## "#team: bob left the group"
+
+testGroupMsgForwardMemberDelete :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardMemberDelete =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+
+      -- remove member
+      bob ##> "/rm team cath"
+      concurrentlyN_
+        [ bob <## "#team: you removed cath from the group",
+          alice <## "#team: bob removed cath from the group",
+          do
+            cath <## "#team: bob removed you from the group"
+            cath <## "use /d #team to delete the group"
+        ]
+      bob #> "#team hi"
+      concurrently_
+        (alice <# "#team bob> hi")
+        (cath </)
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath </)
+      cath ##> "#team hello"
+      cath <## "bad chat command: not current member"
 
 testGroupHistory :: HasCallStack => TestParams -> IO ()
 testGroupHistory =

@@ -818,9 +818,9 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
               FROM groups g
               JOIN group_members mu ON mu.group_id = g.group_id
               WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-                AND mu.member_status NOT IN (?,?,?)
+                AND mu.member_status NOT IN (?,?,?,?)
           |]
-          (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+          (groupId, userId, userContactId, GSMemMarkedRemoved, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       where
         toInfo :: (GroupName, GroupMemberStatus) -> ShortGroupInfo
         toInfo (groupName, membershipStatus) =
@@ -839,9 +839,9 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
                 WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
               )
               WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                AND m.member_status NOT IN (?,?,?)
+                AND m.member_status NOT IN (?,?,?,?)
           |]
-          (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+          (userId, userId, groupId, userContactId, GSMemMarkedRemoved, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       where
         toShortMember :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
         toShortMember (groupMemberId, localDisplayName, agentConnId) =
@@ -995,9 +995,9 @@ getGroupSummary db User {userId} groupId = do
           JOIN group_members m USING (group_id)
           WHERE g.user_id = ?
             AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?)
+            AND m.member_status NOT IN (?,?,?,?,?,?)
         |]
-        (userId, groupId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
+        (userId, groupId, GSMemRejected, GSMemMarkedRemoved, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
   pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
@@ -1143,13 +1143,13 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
       ( groupMemberQuery
           <> [sql|
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                  AND m.member_status IN (?, ?, ?, ?)
+                  AND m.member_status IN (?, ?, ?, ?, ?)
                   AND m.group_member_id NOT IN (
                     SELECT DISTINCT group_member_id FROM chat_items
                   )
               |]
       )
-      (userId, groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+      (userId, groupId, userId, userContactId, GSMemMarkedRemoved, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
 
 toContactMember :: VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember vr User {userContactId} (memberRow :. connRow) =
@@ -2104,10 +2104,10 @@ getGroupInfoByGroupLinkHash db vr user@User {userId, userContactId} (groupLinkHa
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
           WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
-            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
+            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?,?)
           LIMIT 1
         |]
-        (userId, groupLinkHash1, groupLinkHash2, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+        (userId, groupLinkHash1, groupLinkHash2, userContactId, GSMemMarkedRemoved, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
   maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getGroupInfo db vr user) groupId_
 
 getGroupIdByName :: DB.Connection -> User -> GroupName -> ExceptT StoreError IO GroupId

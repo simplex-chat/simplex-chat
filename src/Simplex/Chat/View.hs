@@ -1299,7 +1299,7 @@ showRole = plain . strEncode
 viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
-    removedOrLeft m = let s = memberStatus m in s == GSMemRejected || s == GSMemRemoved || s == GSMemLeft
+    removedOrLeft m = let s = memberStatus m in s == GSMemRejected || s == GSMemMarkedRemoved || s == GSMemRemoved || s == GSMemLeft
     groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
     role :: GroupMember -> String
     role GroupMember {memberRole} = B.unpack $ strEncode memberRole
@@ -1310,6 +1310,7 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       _ -> []
     status m = case memberStatus m of
       GSMemRejected -> ["rejected"]
+      GSMemMarkedRemoved -> ["removed"]
       GSMemRemoved -> ["removed"]
       GSMemLeft -> ["left"]
       GSMemUnknown -> ["status unknown"]
@@ -1363,6 +1364,7 @@ viewGroupsList gs = map groupSS $ sortOn ldn_ gs
       where
         viewMemberStatus = \case
           GSMemRejected -> delete "you are rejected"
+          GSMemMarkedRemoved -> delete "you are removed" -- shouldn't happen - status is only assigned to other members
           GSMemRemoved -> delete "you are removed"
           GSMemLeft -> delete "you left"
           GSMemGroupDeleted -> delete "group deleted"

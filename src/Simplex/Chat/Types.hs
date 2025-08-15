@@ -1165,6 +1165,7 @@ instance TextEncoding GroupMemberCategory where
 
 data GroupMemberStatus
   = GSMemRejected -- joining member who was rejected by the host, or host that rejected the join
+  | GSMemMarkedRemoved -- member was removed from the group, but forwarding relay keeps their connection temporarily
   | GSMemRemoved -- member who was removed from the group
   | GSMemLeft -- member who left the group
   | GSMemGroupDeleted -- user member of the deleted group
@@ -1202,6 +1203,7 @@ acceptanceToStatus memberAdmission groupAcceptance
 memberActive :: GroupMember -> Bool
 memberActive m = case memberStatus m of
   GSMemRejected -> False
+  GSMemMarkedRemoved -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -1233,6 +1235,7 @@ memberCurrentOrPending m = memberCurrent m || memberPending m
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
   GSMemRejected -> False
+  GSMemMarkedRemoved -> False
   GSMemRemoved -> False
   GSMemLeft -> False
   GSMemGroupDeleted -> False
@@ -1251,6 +1254,7 @@ memberCurrent' = \case
 memberRemoved :: GroupMember -> Bool
 memberRemoved m = case memberStatus m of
   GSMemRejected -> True
+  GSMemMarkedRemoved -> True
   GSMemRemoved -> True
   GSMemLeft -> True
   GSMemGroupDeleted -> True
@@ -1269,6 +1273,7 @@ memberRemoved m = case memberStatus m of
 instance TextEncoding GroupMemberStatus where
   textDecode = \case
     "rejected" -> Just GSMemRejected
+    "marked_removed" -> Just GSMemMarkedRemoved
     "removed" -> Just GSMemRemoved
     "left" -> Just GSMemLeft
     "deleted" -> Just GSMemGroupDeleted
@@ -1286,6 +1291,7 @@ instance TextEncoding GroupMemberStatus where
     _ -> Nothing
   textEncode = \case
     GSMemRejected -> "rejected"
+    GSMemMarkedRemoved -> "marked_removed"
     GSMemRemoved -> "removed"
     GSMemLeft -> "left"
     GSMemGroupDeleted -> "deleted"
