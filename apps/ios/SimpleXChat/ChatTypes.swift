@@ -4666,6 +4666,7 @@ public enum SimplexLinkType: String, Decodable, Hashable {
     case invitation
     case group
     case channel
+    case relay
 
     public var description: String {
         switch self {
@@ -4673,6 +4674,7 @@ public enum SimplexLinkType: String, Decodable, Hashable {
         case .invitation: return NSLocalizedString("SimpleX one-time invitation", comment: "simplex link type")
         case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
         case .channel: return NSLocalizedString("SimpleX channel link", comment: "simplex link type")
+        case .relay: return NSLocalizedString("SimpleX relay link", comment: "simplex link type")
         }
     }
 }
