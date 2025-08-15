@@ -3143,7 +3143,7 @@ processChatCommand vr nm = \case
     contactMember :: Contact -> [GroupMember] -> Maybe GroupMember
     contactMember Contact {contactId} =
       find $ \GroupMember {memberContactId = cId, memberStatus = s} ->
-        cId == Just contactId && s /= GSMemRejected && s /= GSMemRemoved && s /= GSMemMarkedRemoved && s /= GSMemLeft
+        cId == Just contactId && s /= GSMemRejected && s /= GSMemRemoved && s /= GSMemLeft
     checkSndFile :: CryptoFile -> CM Integer
     checkSndFile (CryptoFile f cfArgs) = do
       fsFilePath <- lift $ toFSFilePath f

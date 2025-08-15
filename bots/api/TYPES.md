@@ -2287,7 +2287,6 @@ Known:
 
 **Enum type**:
 - "rejected"
-- "marked_removed"
 - "removed"
 - "left"
 - "deleted"

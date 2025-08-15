@@ -351,6 +351,8 @@ processAgentMsgRcvFile _corrId aFileId msg = do
               agentXFTPDeleteRcvFile aFileId fileId
               toView $ CEvtRcvFileError user aci_ e ft
 
+type ShouldDeleteGroupConns = Bool
+
 processAgentMessageConn :: VersionRangeChat -> User -> ACorrId -> ConnId -> AEvent 'AEConn -> CM ()
 processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = do
   -- Missing connection/entity errors here will be sent to the view but not shown as CRITICAL alert,
@@ -895,13 +897,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
-          (fwdScopesMsgs, connDeletingMsgs) <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, []) aChatMsgs
+          (fwdScopesMsgs, shouldDelConns) <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, False) aChatMsgs
           when (isUserGrpFwdRelay gInfo') $ do
-            unless (blockedByAdmin m) $ do
-              let hasConnDeletingMsgs = not (null connDeletingMsgs)
+            unless (blockedByAdmin m) $
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
-                forwardMsgs groupForwardScope (L.reverse fwdMsgs) hasConnDeletingMsgs `catchChatError` eToView
-            forM_ (reverse connDeletingMsgs) $ \chatMsg -> processConnectionDeletingMsg gInfo' chatMsg
+                forwardMsgs groupForwardScope (L.reverse fwdMsgs) `catchChatError` eToView
+            when shouldDelConns $ deleteGroupConnections gInfo'
           checkSendRcpt $ rights aChatMsgs
         where
           aChatMsgs = parseChatMessages msgBody
@@ -911,30 +912,28 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -> GroupMember
             -> TVar [Text]
             -> Text
-            -> (Map GroupForwardScope (NonEmpty (ChatMessage 'Json)), [ChatMessage 'Json])
+            -> (Map GroupForwardScope (NonEmpty (ChatMessage 'Json)), ShouldDeleteGroupConns)
             -> Either String AChatMessage
-            -> CM (Map GroupForwardScope (NonEmpty (ChatMessage 'Json)), [ChatMessage 'Json])
-          processAChatMsg gInfo' m' tags eInfo (fwdScopeMap, connDeletingMsgs) = \case
+            -> CM (Map GroupForwardScope (NonEmpty (ChatMessage 'Json)), ShouldDeleteGroupConns)
+          processAChatMsg gInfo' m' tags eInfo (fwdScopeMap, shouldDelConns) = \case
             Right (ACMsg SJson chatMsg) -> do
-              (cmFwdScope_, isConnDeletingMsg) <-
+              (cmFwdScope_, cmShouldDelConns) <-
                 processEvent gInfo' m' tags eInfo chatMsg `catchChatError` \e -> eToView e $> (Nothing, False)
               let fwdScopeMap' =
                     case cmFwdScope_ of
                       Nothing -> fwdScopeMap
                       Just cmFwdScope -> M.alter (Just . maybe [chatMsg] (chatMsg <|)) cmFwdScope fwdScopeMap
-                  connDeletingMsgs'
-                    | isConnDeletingMsg = chatMsg : connDeletingMsgs
-                    | otherwise = connDeletingMsgs
-              pure (fwdScopeMap', connDeletingMsgs')
+                  shouldDelConns' = shouldDelConns || cmShouldDelConns
+              pure (fwdScopeMap', shouldDelConns')
             Right (ACMsg SBinary chatMsg) -> do
               void (processEvent gInfo' m' tags eInfo chatMsg) `catchChatError` \e -> eToView e
-              pure (fwdScopeMap, connDeletingMsgs)
+              pure (fwdScopeMap, shouldDelConns)
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               eToView (ChatError . CEException $ "error parsing chat message: " <> e)
-              pure (fwdScopeMap, connDeletingMsgs)
-          processEvent :: GroupInfo -> GroupMember -> TVar [Text] -> Text -> MsgEncodingI e => ChatMessage e -> CM (Maybe GroupForwardScope, Bool)
+              pure (fwdScopeMap, shouldDelConns)
+          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [Text] -> Text -> ChatMessage e -> CM (Maybe GroupForwardScope, ShouldDeleteGroupConns)
           processEvent gInfo' m' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
             let tag = toCMEventTag chatMsgEvent
             atomically $ modifyTVar' tags (tshow tag :)
@@ -964,7 +963,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemRole memId memRole -> (,False) <$> xGrpMemRole gInfo' m'' memId memRole msg brokerTs
               XGrpMemRestrict memId memRestrictions -> (,False) <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> (Nothing, False) <$ xGrpMemCon gInfo' m'' memId
-              XGrpMemDel memId withMessages -> xGrpMemDel gInfo' m'' memId withMessages msg brokerTs
+              XGrpMemDel memId withMessages -> case encoding @e of
+                SJson -> xGrpMemDel gInfo' m'' memId withMessages chatMsg msg brokerTs
+                SBinary -> pure (Nothing, False) -- impossible
               XGrpLeave -> (,False) <$> xGrpLeave gInfo' m'' msg brokerTs
               XGrpDel -> (Just GFSAll, True) <$ xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> (,False) <$> xGrpInfo gInfo' m'' p' msg brokerTs
@@ -994,8 +995,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           --   as an additional step, instead initially retrieve only moderators
           --   (reuse getForwardIntroducedModerators, getForwardInvitedModerators + filters)
           -- - new GroupForwardScope for excluding members on XGrpMemRestrict
-          forwardMsgs :: GroupForwardScope -> NonEmpty (ChatMessage 'Json) -> Bool -> CM ()
-          forwardMsgs groupForwardScope fwdMsgs hasConnDeletingMsgs = do
+          forwardMsgs :: GroupForwardScope -> NonEmpty (ChatMessage 'Json) -> CM ()
+          forwardMsgs groupForwardScope fwdMsgs = do
             ms <- buildMemberList
             let GroupMember {memberId} = m
                 events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) fwdMsgs
@@ -1004,16 +1005,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               buildMemberList = case groupForwardScope of
                 GFSAll -> do
                   ms <- getAllIntroducedAndInvited
-                  let memberFilter mem =
-                        (memberCurrentOrPending mem || (hasConnDeletingMsgs && memberStatus mem == GSMemMarkedRemoved))
-                        && msgsForwardedToMember fwdMsgs mem
-                  pure $ filter memberFilter ms
+                  pure $ filter (\mem -> memberCurrentOrPending mem && msgsForwardedToMember fwdMsgs mem) ms
                 GFSMain -> do
                   ms <- getAllIntroducedAndInvited
-                  let memberFilter mem =
-                        (memberCurrent mem || (hasConnDeletingMsgs && memberStatus mem == GSMemMarkedRemoved))
-                        && msgsForwardedToMember fwdMsgs mem
-                  pure $ filter memberFilter ms
+                  pure $ filter (\mem -> memberCurrent mem && msgsForwardedToMember fwdMsgs mem) ms
                 GFSMemberSupport scopeGMId -> do
                   -- moderators introduced to this invited member
                   introducedModMs <-
@@ -1024,7 +1019,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user m
                   let modMs = introducedModMs <> invitedModMs
                       moderatorFilter mem =
-                        (memberCurrent mem || (hasConnDeletingMsgs && memberStatus mem == GSMemMarkedRemoved))
+                        memberCurrent mem
                         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
                         && msgsForwardedToMember fwdMsgs mem
                       modMs' = filter moderatorFilter modMs
@@ -1045,12 +1040,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- invited members to which this member was introduced
                     invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
                     pure $ introducedMembers <> invitedMembers
-          processConnectionDeletingMsg :: GroupInfo -> ChatMessage 'Json -> CM ()
-          processConnectionDeletingMsg gInfo' ChatMessage {chatMsgEvent} =
-            case chatMsgEvent of
-              XGrpMemDel memId _withMessages -> xGrpMemDelAfterFwd gInfo' memId
-              XGrpDel -> deleteAllMemberConnections gInfo'
-              _ -> messageWarning ("unexpected connection deleting message: " <> tshow chatMsgEvent)
       RCVD msgMeta msgRcpt ->
         withAckMessage' "group rcvd" agentConnId msgMeta $
           groupMsgReceived gInfo m conn msgMeta msgRcpt
@@ -1489,7 +1478,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
 
-    memberCanSend :: GroupMember -> Maybe MsgScope -> CM (Maybe GroupForwardScope, Bool) -> CM (Maybe GroupForwardScope, Bool)
+    memberCanSend ::
+      GroupMember ->
+      Maybe MsgScope ->
+      CM (Maybe GroupForwardScope, ShouldDeleteGroupConns) ->
+      CM (Maybe GroupForwardScope, ShouldDeleteGroupConns)
     memberCanSend m@GroupMember {memberRole} msgScope a = case msgScope of
       Just MSMember {} -> a
       Nothing
@@ -2979,13 +2972,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> updateStatus introId GMIntroReConnected
         updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope, Bool)
-    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages msg brokerTs = do
+    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope, ShouldDeleteGroupConns)
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages chatMsg msg brokerTs = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
-          unless (isUserGrpFwdRelay gInfo) $ deleteAllMemberConnections gInfo
+          unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
@@ -2995,32 +2988,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         else
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.del with unknown member ID" $> (Just GFSAll, False)
-            Right member@GroupMember {groupMemberId, memberProfile} ->
-              checkRole member $
+            Right deletedMember@GroupMember {groupMemberId, memberProfile} ->
+              checkRole deletedMember $ do
+                -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
                 if isUserGrpFwdRelay gInfo
                   then do
-                    gInfo' <-
-                      withStore' $ \db -> do
-                        gInfo' <- if gmRequiresAttention member
-                          then decreaseGroupMembersRequireAttention db user gInfo
-                          else pure gInfo
-                        updateGroupMemberStatus db userId member GSMemMarkedRemoved
-                        pure gInfo'
-                    let member' = member {memberStatus = GSMemMarkedRemoved}
-                    when withMessages $ deleteMessages gInfo' member' SMDRcv
-                    deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                    toView $ CEvtDeletedMember user gInfo' m member' withMessages
-                    pure (memberEventForwardScope member, True)
-                  else do
-                    -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
-                    deleteMemberConnection member
-                    -- undeleted "member connected" chat item will prevent deletion of member record
-                    gInfo' <- deleteOrUpdateMemberRecord user gInfo member
-                    let member' = member {memberStatus = GSMemRemoved}
-                    when withMessages $ deleteMessages gInfo' member' SMDRcv
-                    deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                    toView $ CEvtDeletedMember user gInfo' m member' withMessages
-                    pure (Nothing, False)
+                    -- Special case: forward before deleting connection.
+                    -- It allows us to avoid adding logic in forwardMsgs to circumvent member filtering.
+                    forwardToMember deletedMember
+                    deleteMemberConnection' deletedMember True
+                  else deleteMemberConnection deletedMember
+                -- undeleted "member connected" chat item will prevent deletion of member record
+                gInfo' <- deleteOrUpdateMemberRecord user gInfo deletedMember
+                let deletedMember' = deletedMember {memberStatus = GSMemRemoved}
+                when withMessages $ deleteMessages gInfo' deletedMember' SMDRcv
+                deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                toView $ CEvtDeletedMember user gInfo' m deletedMember' withMessages
+                pure (memberEventForwardScope deletedMember, False)
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
@@ -3034,34 +3018,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         deleteMessages gInfo' delMem msgDir
           | groupFeatureMemberAllowed SGFFullDelete m gInfo' = deleteGroupMemberCIs user gInfo' delMem m msgDir
           | otherwise = markGroupMemberCIsDeleted user gInfo' delMem m
+        forwardToMember :: GroupMember -> CM ()
+        forwardToMember member = do
+          let GroupMember {memberId} = m
+              event = XGrpMsgForward memberId chatMsg brokerTs
+          sendGroupMemberMessage gInfo member event Nothing (pure ())
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
     isUserGrpFwdRelay GroupInfo {membership = GroupMember {memberRole}} =
       memberRole >= GRAdmin
 
-    deleteAllMemberConnections :: GroupInfo -> CM ()
-    deleteAllMemberConnections gInfo = do
+    deleteGroupConnections :: GroupInfo -> CM ()
+    deleteGroupConnections gInfo = do
       -- member records are not deleted to keep history
       members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-      deleteMembersConnections user members
-
-    xGrpMemDelAfterFwd :: GroupInfo -> MemberId -> CM ()
-    xGrpMemDelAfterFwd gInfo@GroupInfo {membership} memId = do
-      let GroupMember {memberId = membershipMemId} = membership
-      if membershipMemId == memId
-        then
-          -- This scenario is fwd relay deleting member connections with all members
-          -- after forwarding to them that relay itself was removed.
-          deleteAllMemberConnections gInfo
-        else
-          -- This scenario is fwd relay deleting member connection with the removed member
-          -- after forwarding to that member that they were removed.
-          withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Left _ -> messageError "x.grp.mem.del with unknown member ID"
-            Right member -> do
-              deleteMemberConnection member
-              -- undeleted "member connected" chat item will prevent deletion of member record
-              void $ deleteOrUpdateMemberRecord user gInfo member
+      deleteMembersConnections' user members True
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
     xGrpLeave gInfo m msg brokerTs = do
@@ -3082,7 +3053,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
-      unless (isUserGrpFwdRelay gInfo) $ deleteAllMemberConnections gInfo
+      unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView cInfo ci
@@ -3236,7 +3207,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XInfo p -> void $ xInfoMember gInfo author p msgTs
             XGrpMemNew memInfo msgScope -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
-            XGrpMemDel memId withMessages -> void $ xGrpMemDel gInfo author memId withMessages rcvMsg msgTs
+            XGrpMemDel memId withMessages -> void $ xGrpMemDel gInfo author memId withMessages chatMsg rcvMsg msgTs
             XGrpLeave -> void $ xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> void $ xGrpInfo gInfo author p' rcvMsg msgTs

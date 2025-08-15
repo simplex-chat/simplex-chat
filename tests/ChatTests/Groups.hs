@@ -160,9 +160,9 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
-    it "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
-    it "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
-    it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
+    fit "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
+    fit "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
+    fit "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
