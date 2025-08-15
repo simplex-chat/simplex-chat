@@ -160,9 +160,9 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
-    fit "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
-    fit "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
-    fit "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
+    it "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
+    it "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
+    it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -5152,12 +5152,13 @@ testGroupMsgForwardGroupDeletion =
             cath <## "use /d #team to delete the local copy of the group"
         ]
 
-      alice ##> "#team hello"
-      alice <## "bad chat command: not current member"
-      bob ##> "#team hello"
-      bob <## "no group #team"
-      cath ##> "#team hello"
-      cath <## "bad chat command: not current member"
+      alice ##> "/groups"
+      alice <## "#team (group deleted, delete local copy: /d #team)"
+      bob ##> "/groups"
+      bob <## "you have no groups!"
+      bob <## "to create: /g <name>"
+      cath ##> "/groups"
+      cath <## "#team (group deleted, delete local copy: /d #team)"
 
 testGroupHistory :: HasCallStack => TestParams -> IO ()
 testGroupHistory =
