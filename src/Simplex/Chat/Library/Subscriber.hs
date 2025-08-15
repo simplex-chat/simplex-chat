@@ -964,7 +964,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemRestrict memId memRestrictions -> (,False) <$> xGrpMemRestrict gInfo' m'' memId memRestrictions msg brokerTs
               XGrpMemCon memId -> (Nothing, False) <$ xGrpMemCon gInfo' m'' memId
               XGrpMemDel memId withMessages -> case encoding @e of
-                SJson -> xGrpMemDel gInfo' m'' memId withMessages chatMsg msg brokerTs
+                SJson -> xGrpMemDel gInfo' m'' memId withMessages chatMsg msg brokerTs False
                 SBinary -> pure (Nothing, False) -- impossible
               XGrpLeave -> (,False) <$> xGrpLeave gInfo' m'' msg brokerTs
               XGrpDel -> (Just GFSAll, True) <$ xGrpDel gInfo' m'' msg brokerTs
@@ -2972,8 +2972,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           _ -> updateStatus introId GMIntroReConnected
         updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
 
-    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope, ShouldDeleteGroupConns)
-    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages chatMsg msg brokerTs = do
+    xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe GroupForwardScope, ShouldDeleteGroupConns)
+    xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages chatMsg msg brokerTs forwarded = do
       let GroupMember {memberId = membershipMemId} = membership
       if membershipMemId == memId
         then checkRole membership $ do
@@ -2991,7 +2991,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right deletedMember@GroupMember {groupMemberId, memberProfile} ->
               checkRole deletedMember $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
-                if isUserGrpFwdRelay gInfo
+                if isUserGrpFwdRelay gInfo && not forwarded
                   then do
                     -- Special case: forward before deleting connection.
                     -- It allows us to avoid adding logic in forwardMsgs to circumvent member filtering.
@@ -3207,7 +3207,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XInfo p -> void $ xInfoMember gInfo author p msgTs
             XGrpMemNew memInfo msgScope -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
             XGrpMemRole memId memRole -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
-            XGrpMemDel memId withMessages -> void $ xGrpMemDel gInfo author memId withMessages chatMsg rcvMsg msgTs
+            XGrpMemDel memId withMessages -> void $ xGrpMemDel gInfo author memId withMessages chatMsg rcvMsg msgTs True
             XGrpLeave -> void $ xGrpLeave gInfo author rcvMsg msgTs
             XGrpDel -> void $ xGrpDel gInfo author rcvMsg msgTs
             XGrpInfo p' -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
