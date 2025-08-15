@@ -1198,7 +1198,7 @@
     <string name="prohibit_sending_files">A fájlok és a médiatartalmak küldése le van tiltva.</string>
     <string name="share_file">Fájl megosztása…</string>
     <string name="save_verb">Mentés</string>
-    <string name="call_connection_via_relay">egy továbbítókiszolgálón keresztül</string>
+    <string name="call_connection_via_relay">továbbítókiszolgálón keresztül</string>
     <string name="stop_sharing">Megosztás megállítása</string>
     <string name="snd_group_event_member_deleted">Ön eltávolította őt: %1$s</string>
     <string name="save_passphrase_and_open_chat">Jelmondat mentése és a csevegés megnyitása</string>
@@ -2498,4 +2498,5 @@
     <string name="privacy_chat_list_open_clean_web_link">Tiszta hivatkozás megnyitása</string>
     <string name="privacy_chat_list_open_full_web_link">Teljes hivatkozás megnyitása</string>
     <string name="sanitize_links_toggle">Nyomonkövetési paraméterek eltávolítása a hivatkozásokból</string>
+    <string name="simplex_link_relay">SimpleX továbbítókiszolgáló-hivatkozás</string>
 </resources>
