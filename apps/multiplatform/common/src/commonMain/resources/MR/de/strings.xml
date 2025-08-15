@@ -1910,7 +1910,7 @@
     <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
     <string name="message_queue_info_none">Keine Information</string>
     <string name="info_row_debug_delivery">Debugging-Zustellung</string>
-    <string name="message_queue_info">Informationen zur Nachrichtenwarteschlange</string>
+    <string name="message_queue_info">Information Nachrichtenwarteschlange</string>
     <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
 \n
 \nZuletzt empfangene Nachricht: %2$s</string>
