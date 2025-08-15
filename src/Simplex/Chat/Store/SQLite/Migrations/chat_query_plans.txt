@@ -253,7 +253,7 @@ Query:
               FROM groups g
               JOIN group_members mu ON mu.group_id = g.group_id
               WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-                AND mu.member_status NOT IN (?,?,?,?)
+                AND mu.member_status NOT IN (?,?,?)
           
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
@@ -268,7 +268,7 @@ Query:
                 WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
               )
               WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                AND m.member_status NOT IN (?,?,?,?)
+                AND m.member_status NOT IN (?,?,?)
           
 Plan:
 SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
@@ -1220,7 +1220,7 @@ Query:
           JOIN group_members m USING (group_id)
           WHERE g.user_id = ?
             AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?,?)
+            AND m.member_status NOT IN (?,?,?,?,?)
         
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
@@ -1295,7 +1295,7 @@ Query:
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
           WHERE g.user_id = ? AND g.via_group_link_uri_hash IN (?,?)
-            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?,?)
+            AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?,?)
           LIMIT 1
         
 Plan:
@@ -4842,7 +4842,7 @@ Query:
     )
   
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                  AND m.member_status IN (?, ?, ?, ?, ?)
+                  AND m.member_status IN (?, ?, ?, ?)
                   AND m.group_member_id NOT IN (
                     SELECT DISTINCT group_member_id FROM chat_items
                   )
