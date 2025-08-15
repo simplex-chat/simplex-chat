@@ -98,6 +98,7 @@
   <string name="simplex_link_invitation">SimpleX one-time invitation</string>
   <string name="simplex_link_group">SimpleX group link</string>
   <string name="simplex_link_channel">SimpleX channel link</string>
+  <string name="simplex_link_relay">SimpleX relay link</string>
   <string name="simplex_link_connection">via %1$s</string>
   <string name="simplex_link_mode">SimpleX links</string>
   <string name="simplex_link_mode_description">Description</string>

@@ -72,7 +72,7 @@ mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
       Mention name -> Just name
       _ -> Nothing
 
-data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel
+data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel | XLRelay
   deriving (Eq, Show)
 
 colored :: Color -> Format
@@ -326,6 +326,7 @@ markdownP = mconcat <$> A.many' fragmentP
             CCTGroup -> XLGroup
             CCTChannel -> XLChannel
             CCTContact -> XLContact
+            CCTRelay -> XLRelay
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
 

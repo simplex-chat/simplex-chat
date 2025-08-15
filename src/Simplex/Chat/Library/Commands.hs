@@ -3534,6 +3534,7 @@ processChatCommand vr nm = \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
           CCTChannel -> throwCmdError "channel links are not supported in this version"
+          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
