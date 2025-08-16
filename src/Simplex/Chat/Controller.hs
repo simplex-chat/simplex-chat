@@ -400,6 +400,7 @@ data ChatCommand
   | APIGetNetworkConfig
   | SetNetworkConfig SimpleNetCfg
   | APISetNetworkInfo UserNetworkInfo
+  | APISetUserService {userId :: UserId, enable :: Bool}
   | ReconnectAllServers
   | ReconnectServer UserId SMPServer
   | APISetChatSettings {chatRef :: ChatRef, chatSettings :: ChatSettings}

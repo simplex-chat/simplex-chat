@@ -366,6 +366,7 @@ processChatCommand vr nm = \case
     tryChatError (withFastStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand vr nm $ APISetActiveUser userId viewPwd_
+  APISetUserService userId enable -> undefined -- TODO [certs rcv]
   SetAllContactReceipts onOff -> withUser $ \_ -> withFastStore' (`updateAllContactReceipts` onOff) >> ok_
   APISetUserContactReceipts userId' settings -> withUser $ \user -> do
     user' <- privateGetUser userId'
@@ -1707,8 +1708,7 @@ processChatCommand vr nm = \case
     incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
     subMode <- chatReadVar subscriptionMode
     let userData = contactShortLinkData (userProfileDirect user incognitoProfile Nothing True) Nothing
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation (Just userData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     -- TODO PQ pass minVersion from the current range
     conn <- withFastStore' $ \db -> createDirectConnection db user connId ccLink' Nothing ConnNew incognitoProfile subMode initialChatVersion PQSupportOn
@@ -1749,8 +1749,7 @@ processChatCommand vr nm = \case
             userData_
               | short = Just $ contactShortLinkData (userProfileDirect newUser Nothing Nothing True) Nothing
               | otherwise = Nothing
-        -- TODO [certs rcv]
-        (agConnId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True SCMInvitation userData_ Nothing IKPQOn subMode
+        (agConnId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId newUser) True SCMInvitation userData_ Nothing IKPQOn subMode
         ccLink' <- shortenCreatedLink ccLink
         conn' <- withFastStore' $ \db -> do
           deleteConnectionRecord db user connId
@@ -1941,8 +1940,7 @@ processChatCommand vr nm = \case
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
     let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) Nothing IKPQOn subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
     withFastStore $ \db -> createUserContactLink db user connId ccLink' subMode
     pure $ CRUserContactLinkCreated user ccLink'
@@ -2161,8 +2159,7 @@ processChatCommand vr nm = \case
       Nothing -> do
         gVar <- asks random
         subMode <- chatReadVar subscriptionMode
-        -- TODO [certs rcv]
-        (agentConnId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation Nothing Nothing IKPQOff subMode
+        (agentConnId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation Nothing Nothing IKPQOff subMode
         member <- withFastStore $ \db -> createNewContactMember db gVar user gInfo contact memRole agentConnId cReq subMode
         sendInvitation member cReq
         pure $ CRSentGroupInvitation user gInfo contact member
@@ -2553,8 +2550,7 @@ processChatCommand vr nm = \case
     subMode <- chatReadVar subscriptionMode
     let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
         crClientData = encodeJSON $ CRDataGroup groupLinkId
-    -- TODO [certs rcv]
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
+    (connId, ccLink) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
     gLink <- withFastStore $ \db -> createGroupLink db user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo gLink
@@ -2592,8 +2588,7 @@ processChatCommand vr nm = \case
         when (isJust $ memberContactId m) $ throwCmdError "member contact already exists"
         subMode <- chatReadVar subscriptionMode
         -- TODO PQ should negotitate contact connection with PQSupportOn?
-        -- TODO [certs rcv]
-        (connId, (CCLink cReq _, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation Nothing Nothing IKPQOff subMode
+        (connId, CCLink cReq _) <- withAgent $ \a -> createConnection a nm (aUserId user) True SCMInvitation Nothing Nothing IKPQOff subMode
         -- [incognito] reuse membership incognito profile
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
@@ -2655,7 +2650,7 @@ processChatCommand vr nm = \case
             -- [incognito] send membership incognito profile
             let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile gInfo) Nothing True
             dm <- encodeConnInfo $ XInfo p
-            (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+            sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
             let newStatus = if sqSecured then ConnSndReady else ConnJoined
             void $ withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
   CreateGroupLink gName mRole -> withUser $ \user -> do
@@ -3028,7 +3023,7 @@ processChatCommand vr nm = \case
               joinPreparedConn conn incognitoProfile chatV = do
                 let profileToSend = userProfileDirect user incognitoProfile Nothing True
                 dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-                (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
+                sqSecured <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm pqSup' subMode
                 let newStatus = if sqSecured then ConnSndReady else ConnJoined
                 conn' <- withFastStore' $ \db -> updateConnectionStatusFromTo db conn ConnPrepared newStatus
                 pure (conn', incognitoProfile)
@@ -4104,7 +4099,7 @@ agentSubscriber = do
       where
         run action = action `catchChatError'` (eToView')
 
-type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType (Maybe ClientServiceId)))
+type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType ()))
 
 -- TODO [certs rcv]
 subscribeUserConnections :: VersionRangeChat -> Bool -> AgentBatchSubscribe -> User -> CM ()
@@ -4186,7 +4181,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
       pcs <- withStore_ getPendingContactConnections
       let connIds = map aConnId' pcs
       pure (connIds, M.fromList $ zip connIds pcs)
-    contactSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId Contact -> Bool -> CM ()
+    contactSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId Contact -> Bool -> CM ()
     contactSubsToView rs cts ce = do
       chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
       ifM (asks $ coreApi . config) (notifyAPI statuses) notifyCLI
@@ -4212,9 +4207,9 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
               ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
     -- TODO possibly below could be replaced with less noisy events for API
-    contactLinkSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId UserContact -> CM ()
+    contactLinkSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId UserContact -> CM ()
     contactLinkSubsToView rs = toView . CEvtUserContactSubSummary user . map (uncurry UserContactSubStatus) . resultsFor rs
-    groupSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> [ShortGroup] -> Map ConnId ShortGroupMember -> Bool -> CM ()
+    groupSubsToView :: Map ConnId (Either AgentErrorType ()) -> [ShortGroup] -> Map ConnId ShortGroupMember -> Bool -> CM ()
     groupSubsToView rs gs ms ce = do
       mapM_ groupSub $
         sortOn (\(ShortGroup ShortGroupInfo {groupName = g} _) -> g) gs
@@ -4236,7 +4231,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
               | membershipStatus == GSMemInvited = TEGroupInvitation user g
               | null members = TEGroupEmpty user g
               | otherwise = TEGroupSubscribed user g
-    sndFileSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId SndFileTransfer -> CM ()
+    sndFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId SndFileTransfer -> CM ()
     sndFileSubsToView rs sfts = do
       let sftRs = resultsFor rs sfts
       forM_ sftRs $ \(ft@SndFileTransfer {fileId, fileStatus}, err_) -> do
@@ -4245,20 +4240,20 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
           threadDelay 1000000
           when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withChatLock "subscribe sendFileChunk" $
             sendFileChunk user ft
-    rcvFileSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId RcvFileTransfer -> CM ()
+    rcvFileSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId RcvFileTransfer -> CM ()
     rcvFileSubsToView rs = mapM_ (toViewTE . uncurry (TERcvFileSubError user)) . filterErrors . resultsFor rs
-    pendingConnSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId PendingContactConnection -> CM ()
+    pendingConnSubsToView :: Map ConnId (Either AgentErrorType ()) -> Map ConnId PendingContactConnection -> CM ()
     pendingConnSubsToView rs = toViewTE . TEPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> CM [a]
     withStore_ a = withStore' (`a` user) `catchChatError` \e -> eToView e $> []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
     filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
-    resultsFor :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId a -> [(a, Maybe ChatError)]
+    resultsFor :: Map ConnId (Either AgentErrorType ()) -> Map ConnId a -> [(a, Maybe ChatError)]
     resultsFor rs = M.foldrWithKey' addResult []
       where
         addResult :: ConnId -> a -> [(a, Maybe ChatError)] -> [(a, Maybe ChatError)]
         addResult connId = (:) . (,resultErr connId rs)
-    resultErr :: ConnId -> Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Maybe ChatError
+    resultErr :: ConnId -> Map ConnId (Either AgentErrorType ()) -> Maybe ChatError
     resultErr connId rs = case M.lookup connId rs of
       Just (Left e) -> Just $ ChatErrorAgent e Nothing
       Just _ -> Nothing
@@ -4389,6 +4384,7 @@ chatCommandP =
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
       ("/user " <|> "/u ") *> (SetActiveUser <$> displayNameP <*> optional (A.space *> pwdP)),
+      "/_set user service " *> (APISetUserService <$> A.decimal <* A.space <*> onOffP),
       "/set receipts all " *> (SetAllContactReceipts <$> onOffP),
       "/_set receipts contacts " *> (APISetUserContactReceipts <$> A.decimal <* A.space <*> receiptSettings),
       "/set receipts contacts " *> (SetUserContactReceipts <$> receiptSettings),

@@ -122,6 +122,7 @@ aUserId User {agentUserId = AgentUserId uId} = uId
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
+    useRcvServices :: Bool,
     userContactId :: ContactId,
     localDisplayName :: ContactName,
     profile :: LocalProfile,
