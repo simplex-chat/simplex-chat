@@ -194,10 +194,10 @@
     <string name="image_decoding_exception_desc">Не получается декодировать изображение. Пожалуйста, попробуйте другое изображение или свяжитесь с разработчиками.</string>
     <!-- Images - chat.simplex.app.views.chat.item.CIImageView.kt -->
     <string name="image_descr">Изображение</string>
-    <string name="icon_descr_waiting_for_image">Ожидается прием изображения</string>
+    <string name="icon_descr_waiting_for_image">Ожидается приём изображения</string>
     <string name="icon_descr_asked_to_receive">Предложено получить изображение</string>
     <string name="icon_descr_image_snd_complete">Изображение отправлено</string>
-    <string name="waiting_for_image">Ожидается прием изображения</string>
+    <string name="waiting_for_image">Ожидается приём изображения</string>
     <string name="image_will_be_received_when_contact_is_online">Изображение будет принято, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
     <string name="image_saved">Изображение сохранено в Галерею</string>
     <!-- Files - CIFileView.kt -->
@@ -205,7 +205,7 @@
     <string name="large_file">Большой файл!</string>
     <string name="contact_sent_large_file">Ваш контакт отправил файл, размер которого превышает поддерживаемый в настоящее время максимальный размер (%1$s).</string>
     <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет %1$s.</string>
-    <string name="waiting_for_file">Ожидается прием файла</string>
+    <string name="waiting_for_file">Ожидается приём файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
     <string name="file_saved">Файл сохранен</string>
     <string name="file_not_found">Файл не найден</string>
@@ -1081,7 +1081,7 @@
     <string name="delete_profile">Удалить профиль</string>
     <string name="profile_password">Пароль профиля</string>
     <string name="videos_limit_title">Слишком много видео!</string>
-    <string name="icon_descr_video_asked_to_receive">Запросил прием видео</string>
+    <string name="icon_descr_video_asked_to_receive">Запросил приём видео</string>
     <string name="video_descr">Видео</string>
     <string name="icon_descr_video_snd_complete">Видео отправлено</string>
     <string name="icon_descr_waiting_for_video">Ожидание видео</string>
@@ -1963,7 +1963,7 @@
     <string name="servers_info_details">Подробности</string>
     <string name="servers_info_subscriptions_total">Всего</string>
     <string name="servers_info_subscriptions_connections_subscribed">Активные соединения</string>
-    <string name="servers_info_subscriptions_section_header">Прием сообщений</string>
+    <string name="servers_info_subscriptions_section_header">Приём сообщений</string>
     <string name="servers_info_subscriptions_connections_pending">В ожидании</string>
     <string name="servers_info_uploaded">Загружено</string>
     <string name="servers_info_reset_stats_alert_message">Статистика серверов будет сброшена - это нельзя отменить!</string>
@@ -1984,7 +1984,7 @@
     <string name="chunks_uploaded">Блоков загружено</string>
     <string name="upload_errors">Ошибки загрузки</string>
     <string name="size">Размер</string>
-    <string name="download_errors">Ошибки приема</string>
+    <string name="download_errors">Ошибки приёма</string>
     <string name="downloaded_files">Принятые файлы</string>
     <string name="server_address">Адрес сервера</string>
     <string name="file_error_relay">Ошибка сервера файлов: %1$s</string>
@@ -2101,7 +2101,7 @@
     <string name="v6_0_private_routing_descr">Защищает ваш IP-адрес и соединения.</string>
     <string name="open_server_settings_button">Открыть настройки серверов</string>
     <string name="servers_info_detailed_statistics_received_messages_header">Полученные сообщения</string>
-    <string name="servers_info_detailed_statistics_receive_errors">Ошибки приема</string>
+    <string name="servers_info_detailed_statistics_receive_errors">Ошибки приёма</string>
     <string name="v6_0_your_contacts_descr">Архивируйте контакты чтобы продолжить переписку.</string>
     <string name="sent_directly">Отправлено напрямую</string>
     <string name="sent_via_proxy">Отправлено через прокси</string>
@@ -2196,11 +2196,11 @@
     <string name="operator_conditions_accepted">Принятые условия</string>
     <string name="accept_conditions">Принять условия</string>
     <string name="no_message_servers_configured">Нет серверов сообщений.</string>
-    <string name="no_message_servers_configured_for_receiving">Нет серверов для приема сообщений.</string>
+    <string name="no_message_servers_configured_for_receiving">Нет серверов для приёма сообщений.</string>
     <string name="errors_in_servers_configuration">Ошибки в настройках серверов.</string>
     <string name="for_chat_profile">Для профиля %s:</string>
     <string name="no_media_servers_configured">Нет серверов файлов и медиа.</string>
-    <string name="no_media_servers_configured_for_private_routing">Нет серверов для приема файлов.</string>
+    <string name="no_media_servers_configured_for_private_routing">Нет серверов для приёма файлов.</string>
     <string name="no_media_servers_configured_for_sending">Нет серверов для отправки файлов.</string>
     <string name="connection_error_quota">Недоставленные сообщения</string>
     <string name="address_creation_instruction">Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.</string>
@@ -2320,7 +2320,7 @@
     <string name="onboarding_network_operators_cant_see_who_talks_to_whom">Когда больше чем один оператор включен, ни один из них не видит метаданные, чтобы определить, кто соединен с кем.</string>
     <string name="failed_to_save_servers">Ошибка сохранения серверов</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Условия будут приняты для включенных операторов через 30 дней.</string>
-    <string name="error_accepting_operator_conditions">Ошибка приема условий</string>
+    <string name="error_accepting_operator_conditions">Ошибка приёма условий</string>
     <string name="connection_error_quota_desc">Соединение достигло предела недоставленных сообщений. Возможно, Ваш контакт не в сети.</string>
     <string name="to_protect_against_your_link_replaced_compare_codes">Чтобы защитить Вашу ссылку от замены, Вы можете сравнить код безопасности.</string>
     <string name="onboarding_network_operators_app_will_use_for_routing">Например, если ваш контакт получает сообщения через сервер SimpleX Chat, ваше приложение будет доставлять их через сервер Flux.</string>
