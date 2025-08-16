@@ -722,9 +722,9 @@ swipe action</note>
         <target>Cím</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve">
+      <trans-unit id="Address change will be aborted. Old receiving address will be used." xml:space="preserve" approved="no">
         <source>Address change will be aborted. Old receiving address will be used.</source>
-        <target>A cím módosítása meg fog szakadni. A régi fogadási cím lesz használva.</target>
+        <target state="translated">A kliens megszakítja a cím módosítását, és a régi fogadási címet fogja használni.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Address or 1-time link?" xml:space="preserve">
@@ -3717,9 +3717,9 @@ snd error text</note>
         <target>Nem sikerült eltávolítani a jelmondatot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve">
+      <trans-unit id="Fast and no wait until the sender is online!" xml:space="preserve" approved="no">
         <source>Fast and no wait until the sender is online!</source>
-        <target>Gyors és nem kell várni, amíg a feladó online lesz!</target>
+        <target state="translated">Gyors és nem kell várni, amíg az üzenetküldő online lesz!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Faster deletion of groups." xml:space="preserve">
@@ -5047,9 +5047,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>A reakciók hozzáadása az üzenetekhez le van tiltva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message reception" xml:space="preserve">
+      <trans-unit id="Message reception" xml:space="preserve" approved="no">
         <source>Message reception</source>
-        <target>Üzenetjelentés</target>
+        <target state="translated">Üzenetfogadás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message servers" xml:space="preserve">
@@ -5687,9 +5687,9 @@ VPN engedélyezése szükséges.</target>
         <target>Csak a csoport tulajdonosai engedélyezhetik a hangüzenetek küldését.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Only sender and moderators see it" xml:space="preserve">
+      <trans-unit id="Only sender and moderators see it" xml:space="preserve" approved="no">
         <source>Only sender and moderators see it</source>
-        <target>Csak a küldő és a moderátorok látják</target>
+        <target state="translated">Csak az üzenet küldője és a moderátorok látják</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you and moderators see it" xml:space="preserve">
@@ -6445,9 +6445,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Összes fogadott üzenet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve">
+      <trans-unit id="Receiving address will be changed to a different server. Address change will complete after sender comes online." xml:space="preserve" approved="no">
         <source>Receiving address will be changed to a different server. Address change will complete after sender comes online.</source>
-        <target>A fogadási cím egy másik kiszolgálóra fog módosulni. A cím módosítása a feladó online állapotba kerülése után fejeződik be.</target>
+        <target state="translated">Az üzenetfogadási cím egy másik kiszolgálóra fog módosulni. A cím módosítása akkor fejeződik be, amikor az üzenetküldési kiszolgáló online lesz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Receiving file will be stopped." xml:space="preserve">
@@ -6547,9 +6547,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
 reject incoming call via notification
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
+      <trans-unit id="Reject (sender NOT notified)" xml:space="preserve" approved="no">
         <source>Reject (sender NOT notified)</source>
-        <target>Elutasítás (a feladó NEM kap értesítést)</target>
+        <target state="translated">Elutasítás (a kérés küldője NEM fog értesítést kapni)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject contact request" xml:space="preserve">
@@ -7198,9 +7198,9 @@ chat item action</note>
         <target>A fájl küldője visszavonta az átvitelt.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve">
+      <trans-unit id="Sender may have deleted the connection request." xml:space="preserve" approved="no">
         <source>Sender may have deleted the connection request.</source>
-        <target>A küldője törölhette a kapcsolódási kérést.</target>
+        <target state="translated">A kérés küldője törölhette a kapcsolódási kérést.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending delivery receipts will be enabled for all contacts in all visible chat profiles." xml:space="preserve">
@@ -8194,9 +8194,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A második jelölés, amit kihagytunk! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The sender will NOT be notified" xml:space="preserve">
+      <trans-unit id="The sender will NOT be notified" xml:space="preserve" approved="no">
         <source>The sender will NOT be notified</source>
-        <target>A feladó NEM fog értesítést kapni</target>
+        <target state="translated">A kérés küldője NEM fog értesítést kapni</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
