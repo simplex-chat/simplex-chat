@@ -2518,4 +2518,5 @@
     <string name="privacy_chat_list_open_clean_web_link">打开干净链接</string>
     <string name="privacy_chat_list_open_full_web_link">打开完整链接</string>
     <string name="sanitize_links_toggle">删除链接跟踪</string>
+    <string name="simplex_link_relay">SimpleX 中继链接</string>
 </resources>
