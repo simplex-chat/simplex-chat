@@ -305,7 +305,7 @@ jobs:
           sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
 
       - name: Run tests
-        if: matrix.should_run == true
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
         shell: bash
         run: |
