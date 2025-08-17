@@ -144,11 +144,11 @@ class SimplexService: Service() {
           return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
-        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-            acquire()
-          }
-        }
+//        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+//          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+//            acquire()
+//          }
+//        }
       } finally {
         isCheckingNewMessages = false
       }

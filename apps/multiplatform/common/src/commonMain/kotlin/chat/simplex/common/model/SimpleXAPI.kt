@@ -644,6 +644,7 @@ object ChatController {
     if (receiverStarted) return
     receiverStarted = true
     CoroutineScope(Dispatchers.IO).launch {
+      var releaseWakeLock: (() -> Unit) = {}
       while (true) {
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
          * to change it everywhere in code after changing a database.
@@ -653,8 +654,11 @@ object ChatController {
           receiverStarted = false
           break
         }
+
         try {
+          releaseWakeLock()
           val msg = recvMsg(ctrl)
+          releaseWakeLock = getWakeLock()
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
@@ -672,8 +676,10 @@ object ChatController {
             }
           }
         } catch (e: Exception) {
+          releaseWakeLock()
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
         } catch (e: Throwable) {
+          releaseWakeLock()
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg throwable: " + e.stackTraceToString())
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
         }
