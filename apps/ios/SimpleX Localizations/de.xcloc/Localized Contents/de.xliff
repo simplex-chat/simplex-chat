@@ -7714,8 +7714,9 @@ chat item action</note>
         <target>Die SimpleX-Protokolle wurden von Trail of Bits überprüft.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX relay link" xml:space="preserve">
+      <trans-unit id="SimpleX relay link" xml:space="preserve" approved="no">
         <source>SimpleX relay link</source>
+        <target state="translated">SimpleX Relais-Link</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
