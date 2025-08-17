@@ -2605,4 +2605,5 @@
     <string name="sanitize_links_toggle">Link-Tracking entfernen</string>
     <string name="chat_banner_connect_to_use_bot">Verbinden tippen, um den Bot zu nutzen.</string>
     <string name="cant_send_commands_alert_text">Um Befehle senden zu können, müssen Sie verbunden sein.</string>
+    <string name="simplex_link_relay">SimpleX Relais-Link</string>
 </resources>
