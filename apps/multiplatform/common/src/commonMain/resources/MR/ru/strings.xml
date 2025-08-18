@@ -49,7 +49,7 @@
     <string name="simplex_link_mode_browser_warning">Использование ссылки в браузере может уменьшить конфиденциальность и безопасность соединения. Ссылки на неизвестные сайты будут красными.</string>
     <!-- SimpleXAPI.kt -->
     <string name="error_saving_smp_servers">Ошибка при сохранении SMP-серверов</string>
-    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP-серверов имеют правильный формат, каждый адрес на отдельной строке и не дублируется.</string>
+    <string name="ensure_smp_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса SMP-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="error_setting_network_config">Ошибка при сохранении настроек сети</string>
     <!-- API Error Responses - SimpleXAPI.kt -->
     <string name="connection_timeout">Превышено время соединения</string>
@@ -67,7 +67,7 @@
     <string name="invalid_connection_link">Ошибка в ссылке контакта</string>
     <string name="please_check_correct_link_and_maybe_ask_for_a_new_one">Пожалуйста, проверьте, что Вы использовали правильную ссылку, или попросите Ваш контакт отправить Вам новую.</string>
     <string name="connection_error_auth">Ошибка соединения (AUTH)</string>
-    <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом. \nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</string>
+    <string name="connection_error_auth_desc">Возможно, Ваш контакт удалил ссылку, или она уже была использована. Если это не так, то это может быть ошибкой - пожалуйста, сообщите нам об этом.\nЧтобы установить соединение, попросите Ваш контакт создать ещё одну ссылку и проверьте Ваше соединение с сетью.</string>
     <string name="error_accepting_contact_request">Ошибка при принятии запроса на соединение</string>
     <string name="sender_may_have_deleted_the_connection_request">Отправитель мог удалить запрос на соединение.</string>
     <string name="error_deleting_contact">Ошибка при удалении контакта</string>
