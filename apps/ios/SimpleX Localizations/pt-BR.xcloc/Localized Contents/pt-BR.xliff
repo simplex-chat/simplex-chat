@@ -5713,6 +5713,26 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Add your team members to the conversations.</source>
         <target state="translated">Adicione membros da sua equipe às conversas.</target>
       </trans-unit>
+      <trans-unit id="Added media &amp; file servers" xml:space="preserve" approved="no">
+        <source>Added media &amp; file servers</source>
+        <target state="translated">Servidores de mídia e arquivos adicionados</target>
+      </trans-unit>
+      <trans-unit id="Added message servers" xml:space="preserve" approved="no">
+        <source>Added message servers</source>
+        <target state="translated">Servidores de mensagem adicionados</target>
+      </trans-unit>
+      <trans-unit id="Address or 1-time link?" xml:space="preserve" approved="no">
+        <source>Address or 1-time link?</source>
+        <target state="translated">Endereço ou link de uso único?</target>
+      </trans-unit>
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
+        <source>Address settings</source>
+        <target state="translated">Configurações de endereço</target>
+      </trans-unit>
+      <trans-unit id="All" xml:space="preserve" approved="no">
+        <source>All</source>
+        <target state="translated">Todos</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt-BR" datatype="plaintext">
