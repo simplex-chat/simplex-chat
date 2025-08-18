@@ -3,6 +3,7 @@ package chat.simplex.common.helpers
 import android.net.*
 import android.util.Log
 import androidx.core.content.getSystemService
+import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.model.UserNetworkInfo
 import chat.simplex.common.model.UserNetworkType
@@ -73,6 +74,7 @@ class NetworkObserver {
   }
 
   private fun setNetworkInfo(info: UserNetworkInfo) {
+    if (appPrefs.backgroundServiceSaveBattery.get()) getWakeLock(timeout = 120000)
     Log.d(TAG, "Network changed: $info")
     noNetworkJob.cancel()
     if (info.online) {

@@ -26,11 +26,7 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
     AppBarTitle(stringResource(MR.strings.settings_developer_tools))
     val developerTools = m.controller.appPrefs.developerTools
     val devTools = remember { developerTools.state }
-    val apiRecvTimeout = remember { mutableStateOf(chatModel.controller.appPrefs.apiRecvTimeout.get().toLong()) }
     val unchangedHints = mutableStateOf(unchangedHintPreferences())
-    LaunchedEffect(apiRecvTimeout.value) {
-      chatModel.controller.appPrefs.apiRecvTimeout.set(apiRecvTimeout.value.toInt())
-    }
     SectionView {
       InstallTerminalAppItem(uriHandler)
       ChatConsoleItem { withAuth(generalGetString(MR.strings.auth_open_chat_console), generalGetString(MR.strings.auth_log_in_using_credential)) { ModalManager.start.showModalCloseable { TerminalView(false) } } }
@@ -64,12 +60,6 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         }
         SettingsPreferenceItem(painterResource(MR.images.ic_report), stringResource(MR.strings.show_internal_errors), appPreferences.showInternalErrors)
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
-        SectionItemView {
-          TimeoutSettingRow(
-            "Core API timeout", apiRecvTimeout,
-            listOf(15_000000, 60_000000, 180_000000, 600_000000, 1200_000000, 1800_000000), stringResource(MR.strings.network_option_seconds_label)
-          )
-        }
       }
     }
     SectionDividerSpaced(maxTopPadding = true)

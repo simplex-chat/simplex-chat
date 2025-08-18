@@ -93,6 +93,7 @@ class AppPreferences {
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
+  val backgroundServiceSaveBattery = mkBoolPreference(SHARED_PREFS_SERVICE_SAVE_BATTERY, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
   val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
   val callOnLockScreen: SharedPreference<CallOnLockScreen> = mkSafeEnumPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default)
@@ -129,7 +130,6 @@ class AppPreferences {
   val showInternalErrors = mkBoolPreference(SHARED_PREFS_SHOW_INTERNAL_ERRORS, false)
   val showSlowApiCalls = mkBoolPreference(SHARED_PREFS_SHOW_SLOW_API_CALLS, false)
   val terminalAlwaysVisible = mkBoolPreference(SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE, false)
-  val apiRecvTimeout = mkIntPreference(SHARED_PREFS_API_RECV_TIMEOUT, 15_000_000)
   val networkUseSocksProxy = mkBoolPreference(SHARED_PREFS_NETWORK_USE_SOCKS_PROXY, false)
   val networkShowSubscriptionPercentage = mkBoolPreference(SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE, false)
   private val _networkProxy = mkStrPreference(SHARED_PREFS_NETWORK_PROXY_HOST_PORT, json.encodeToString(NetworkProxy()))
@@ -362,6 +362,7 @@ class AppPreferences {
     private const val SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS = "CanAskToEnableNotifications"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
+    private const val SHARED_PREFS_SERVICE_SAVE_BATTERY = "BackgroundServiceSaveBattery"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
@@ -403,7 +404,6 @@ class AppPreferences {
     private const val SHARED_PREFS_SHOW_INTERNAL_ERRORS = "ShowInternalErrors"
     private const val SHARED_PREFS_SHOW_SLOW_API_CALLS = "ShowSlowApiCalls"
     private const val SHARED_PREFS_TERMINAL_ALWAYS_VISIBLE = "TerminalAlwaysVisible"
-    private const val SHARED_PREFS_API_RECV_TIMEOUT = "EventPollTimeout"
     private const val SHARED_PREFS_NETWORK_USE_SOCKS_PROXY = "NetworkUseSocksProxy"
     private const val SHARED_PREFS_NETWORK_SHOW_SUBSCRIPTION_PERCENTAGE = "ShowSubscriptionPercentage"
     private const val SHARED_PREFS_NETWORK_PROXY_HOST_PORT = "NetworkProxyHostPort"
@@ -481,7 +481,7 @@ class AppPreferences {
   }
 }
 
-private const val MESSAGE_TIMEOUT: Int = 15_000_000
+private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
   var ctrl: ChatCtrl? = -1
@@ -658,7 +658,7 @@ object ChatController {
         try {
           releaseWakeLock()
           val msg = recvMsg(ctrl)
-          releaseWakeLock = getWakeLock()
+          if (appPrefs.backgroundServiceSaveBattery.get()) releaseWakeLock = getWakeLock(timeout = 60000)
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
@@ -676,10 +676,8 @@ object ChatController {
             }
           }
         } catch (e: Exception) {
-          releaseWakeLock()
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg exception: " + e.stackTraceToString());
         } catch (e: Throwable) {
-          releaseWakeLock()
           Log.e(TAG, "ChatController recvMsg/processReceivedMsg throwable: " + e.stackTraceToString())
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
         }
@@ -795,7 +793,7 @@ object ChatController {
   }
 
   fun recvMsg(ctrl: ChatCtrl): API? {
-    val rStr = chatRecvMsgWait(ctrl, appPrefs.apiRecvTimeout.get())
+    val rStr = chatRecvMsgWait(ctrl, MESSAGE_TIMEOUT)
     return if (rStr == "") {
       null
     } else {

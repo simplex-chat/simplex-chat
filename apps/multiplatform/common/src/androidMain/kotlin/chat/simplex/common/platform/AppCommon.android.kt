@@ -3,7 +3,6 @@ package chat.simplex.common.platform
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.LocalServerSocket
-import android.os.PowerManager
 import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.fragment.app.FragmentActivity
@@ -14,7 +13,6 @@ import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
-import kotlin.random.Random
 
 actual val appPlatform = AppPlatform.ANDROID
 
@@ -26,30 +24,6 @@ var isAppOnForeground: Boolean = false
 val defaultLocale: Locale = Locale.getDefault()
 
 actual fun isAppVisibleAndFocused(): Boolean = isAppOnForeground
-
-actual fun getWakeLock(): (() -> Unit) {
-  val context = AppContextProvider.getApplicationContext()
-    ?: throw IllegalStateException("Application context not initialized")
-  var wakeLock: PowerManager.WakeLock? = (context.applicationContext.getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-    newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "SimplexService::lock").apply {
-      acquire(60000)
-    }
-  }
-  return {
-    wakeLock?.release()
-    wakeLock = null
-  }
-}
-
-object AppContextProvider {
-  private var applicationContext: Context? = null
-
-  fun initialize(context: Context) {
-    this.applicationContext = context.applicationContext
-  }
-
-  fun getApplicationContext(): Context? = applicationContext
-}
 
 @SuppressLint("StaticFieldLeak")
 lateinit var androidAppContext: Context

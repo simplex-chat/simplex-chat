@@ -25,6 +25,7 @@ import chat.simplex.app.model.NtfManager
 import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.ChatController
+import chat.simplex.common.model.ChatModel
 import chat.simplex.common.model.NotificationsMode
 import chat.simplex.common.platform.*
 import chat.simplex.common.views.helpers.*
@@ -144,11 +145,13 @@ class SimplexService: Service() {
           return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
-//        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-//          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-//            acquire()
-//          }
-//        }
+        if (!ChatModel.controller.appPrefs.backgroundServiceSaveBattery.get()) {
+          wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+            newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+              acquire()
+            }
+          }
+        }
       } finally {
         isCheckingNewMessages = false
       }
