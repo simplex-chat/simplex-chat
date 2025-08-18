@@ -4437,13 +4437,15 @@ enum class SimplexLinkType(val linkType: String) {
   contact("contact"),
   invitation("invitation"),
   group("group"),
-  channel("channel");
+  channel("channel"),
+  relay("relay");
 
   val description: String get() = generalGetString(when (this) {
       contact -> MR.strings.simplex_link_contact
       invitation -> MR.strings.simplex_link_invitation
       group -> MR.strings.simplex_link_group
       channel -> MR.strings.simplex_link_channel
+      relay -> MR.strings.simplex_link_relay
   })
 }
 

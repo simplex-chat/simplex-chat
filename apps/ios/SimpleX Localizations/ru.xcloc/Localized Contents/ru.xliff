@@ -7713,6 +7713,10 @@ chat item action</note>
         <target>Аудит SimpleX протоколов от Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="SimpleX relay link" xml:space="preserve">
+        <source>SimpleX relay link</source>
+        <note>simplex link type</note>
+      </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
         <source>Simplified incognito mode</source>
         <target>Упрощенный режим Инкогнито</target>

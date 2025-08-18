@@ -160,6 +160,9 @@ chatGroupTests = do
     it "forward role change (x.grp.mem.role)" testGroupMsgForwardChangeRole
     it "forward new member announcement (x.grp.mem.new)" testGroupMsgForwardNewMember
     it "forward member leaving (x.grp.leave)" testGroupMsgForwardLeave
+    it "forward member removal (x.grp.mem.del)" testGroupMsgForwardMemberRemoval
+    it "forward admin removal (x.grp.mem.del, relay forwards it was removed)" testGroupMsgForwardAdminRemoval
+    it "forward group deletion (x.grp.del)" testGroupMsgForwardGroupDeletion
   describe "group history" $ do
     it "text messages" testGroupHistory
     it "history is sent when joining via group link" testGroupHistoryGroupLink
@@ -209,6 +212,9 @@ chatGroupTests = do
     it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
     it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
+    it "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
+    it "should forward admin removal in support scope in review (x.grp.mem.del, relay forwards it was removed)" testScopedSupportForwardAdminRemoval
+    it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -5055,6 +5061,108 @@ testGroupMsgForwardLeave =
       alice <## "#team: bob left the group"
       cath <## "#team: bob left the group"
 
+testGroupMsgForwardMemberRemoval :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardMemberRemoval =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GRAdmin) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+
+      -- remove member
+      bob ##> "/rm team cath"
+      concurrentlyN_
+        [ bob <## "#team: you removed cath from the group",
+          alice <## "#team: bob removed cath from the group",
+          do
+            cath <## "#team: bob removed you from the group"
+            cath <## "use /d #team to delete the group"
+        ]
+      bob #> "#team hi"
+      concurrently_
+        (alice <# "#team bob> hi")
+        (cath </)
+      alice #> "#team hello"
+      concurrently_
+        (bob <# "#team alice> hello")
+        (cath </)
+      cath ##> "#team hello"
+      cath <## "bad chat command: not current member"
+
+testGroupMsgForwardAdminRemoval :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardAdminRemoval =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GROwner) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+
+      -- alice forwards messages between bob and cath
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey [>>]"
+
+      -- if alice is removed, she forwards message of her own removal
+      bob ##> "/rm team alice"
+      concurrentlyN_
+        [ bob <## "#team: you removed alice from the group",
+          do
+            alice <## "#team: bob removed you from the group"
+            alice <## "use /d #team to delete the group",
+          cath <## "#team: bob removed alice from the group"
+        ]
+
+      -- there is no forwarding admin anymore between bob and cath, so messages don't get delivered
+      -- (this is not a desired behavior, just a test demonstration/proof of current implementation)
+      bob #> "#team hi"
+      concurrently_
+        (cath </)
+        (alice </)
+      cath #> "#team hello"
+      concurrently_
+        (bob </)
+        (alice </)
+      alice ##> "#team hello"
+      alice <## "bad chat command: not current member"
+
+testGroupMsgForwardGroupDeletion :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardGroupDeletion =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3' "team" alice (bob, GROwner) (cath, GRMember)
+      setupGroupForwarding alice bob cath
+
+      -- alice forwards messages between bob and cath
+      bob #> "#team hi there"
+      alice <# "#team bob> hi there"
+      cath <# "#team bob> hi there [>>]"
+
+      cath #> "#team hey"
+      alice <# "#team cath> hey"
+      bob <# "#team cath> hey [>>]"
+
+      -- if bob deletes the group, alice forwards it to cath
+      bob ##> "/d #team"
+      concurrentlyN_
+        [ bob <## "#team: you deleted the group",
+          do
+            alice <## "#team: bob deleted the group"
+            alice <## "use /d #team to delete the local copy of the group",
+          do
+            cath <## "#team: bob deleted the group"
+            cath <## "use /d #team to delete the local copy of the group"
+        ]
+
+      alice ##> "/groups"
+      alice <## "#team (group deleted, delete local copy: /d #team)"
+      bob ##> "/groups"
+      bob <## "you have no groups!"
+      bob <## "to create: /g <name>"
+      cath ##> "/groups"
+      cath <## "#team (group deleted, delete local copy: /d #team)"
+
 testGroupHistory :: HasCallStack => TestParams -> IO ()
 testGroupHistory =
   testChat3 aliceProfile bobProfile cathProfile $
@@ -7472,6 +7580,172 @@ testScopedSupportForwardFile =
               "started receiving file 1 (test.jpg) from bob"
             ]
     dan <## "completed receiving file 1 (test.jpg) from bob"
+
+testScopedSupportForwardMemberRemoval :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardMemberRemoval =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
+      setupReviewForward alice bob cath dan eve
+
+      -- bob removes eve, eve and dan receive member removal message
+      bob ##> "/_remove #1 5"
+      concurrentlyN_
+        [ bob <## "#team: you removed eve from the group",
+          alice <## "#team: bob removed eve from the group",
+          dan <## "#team: bob removed eve from the group",
+          do
+            eve <## "#team: bob removed you from the group"
+            eve <## "use /d #team to delete the group"
+        ]
+
+      alice ##> "#team (support: eve) hi"
+      alice <## "bad chat command: support member not current or pending"
+      bob ##> "#team (support: eve) hi"
+      bob <## "bad chat command: support member not current or pending"
+      dan ##> "#team (support: eve) hi"
+      dan <## "bad chat command: support member not current or pending"
+      eve ##> "/groups"
+      eve <## "#team (you are removed, delete local copy: /d #team)"
+
+setupReviewForward :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
+setupReviewForward alice bob cath dan eve = do
+  alice ##> "/set admission review #team all"
+  alice <## "changed member admission rules"
+  concurrentlyN_
+    [ do
+        bob <## "alice updated group #team:"
+        bob <## "changed member admission rules",
+      do
+        cath <## "alice updated group #team:"
+        cath <## "changed member admission rules",
+      do
+        dan <## "alice updated group #team:"
+        dan <## "changed member admission rules"
+    ]
+
+  alice ##> "/create link #team"
+  gLink <- getGroupLink alice "team" GRMember True
+  eve ##> ("/c " <> gLink)
+  eve <## "connection request sent!"
+  alice <## "eve (Eve): accepting request to join group #team..."
+  concurrentlyN_
+    [ alice <## "#team: eve connected and pending review",
+      eve
+        <### [ "#team: alice accepted you to the group, pending review",
+                "#team: joining the group...",
+                "#team: you joined the group, connecting to group moderators for admission to group",
+                "#team: member bob (Bob) is connected",
+                "#team: member dan (Daniel) is connected"
+              ],
+      do
+        bob <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+        bob <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+      do
+        dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+        dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+    ]
+
+  setupGroupForwarding alice bob eve
+  setupGroupForwarding alice bob dan
+
+  -- alice forwards messages between bob and eve, bob and dan
+  eve #> "#team (support) 3"
+  [alice, dan] *<# "#team (support: eve) eve> 3"
+  bob <# "#team (support: eve) eve> 3 [>>]"
+
+  dan #> "#team (support: eve) 4"
+  alice <# "#team (support: eve) dan> 4"
+  bob <# "#team (support: eve) dan> 4 [>>]"
+  eve <# "#team (support) dan> 4"
+
+  bob #> "#team (support: eve) 5"
+  alice <# "#team (support: eve) bob> 5"
+  dan <# "#team (support: eve) bob> 5 [>>]"
+  eve <# "#team (support) bob> 5 [>>]"
+
+testScopedSupportForwardAdminRemoval :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardAdminRemoval =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GROwner) (cath, GRMember) (dan, GRModerator)
+      setupReviewForward alice bob cath dan eve
+
+      -- bob removes eve, eve and dan receive member removal message
+      bob ##> "/rm team alice"
+      concurrentlyN_
+        [ bob <## "#team: you removed alice from the group",
+          do
+            alice <## "#team: bob removed you from the group"
+            alice <## "use /d #team to delete the group",
+          cath <## "#team: bob removed alice from the group",
+          dan <## "#team: bob removed alice from the group",
+          eve <## "#team: bob removed alice from the group"
+        ]
+
+      -- there is no forwarding admin anymore between bob and cath,
+      -- so messages between bob and eve, bob and dan don't get delivered
+      -- (this is not a desired behavior, just a test demonstration/proof of current implementation)
+      eve #> "#team (support) hi"
+      concurrentlyN_
+        [ dan <# "#team (support: eve) eve> hi",
+          (bob </),
+          (alice </)
+        ]
+
+      dan #> "#team (support: eve) hey"
+      concurrentlyN_
+        [ eve <# "#team (support) dan> hey",
+          (bob </),
+          (alice </)
+        ]
+
+      bob #> "#team (support: eve) hello"
+      concurrentlyN_
+        [ (eve </),
+          (dan </),
+          (alice </)
+        ]
+
+      alice ##> "/groups"
+      alice <## "#team (you are removed, delete local copy: /d #team)"
+
+testScopedSupportForwardGroupDeletion :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardGroupDeletion =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GROwner) (cath, GRMember) (dan, GRModerator)
+      setupReviewForward alice bob cath dan eve
+
+      -- if bob deletes the group, alice forwards it to eve and dan
+      bob ##> "/d #team"
+      concurrentlyN_
+        [ bob <## "#team: you deleted the group",
+          do
+            alice <## "#team: bob deleted the group"
+            alice <## "use /d #team to delete the local copy of the group",
+          do
+            cath <## "#team: bob deleted the group"
+            cath <## "use /d #team to delete the local copy of the group",
+          do
+            dan <## "#team: bob deleted the group"
+            dan <## "use /d #team to delete the local copy of the group",
+          do
+            eve <## "#team: bob deleted the group"
+            eve <## "use /d #team to delete the local copy of the group"
+        ]
+
+      alice ##> "/groups"
+      alice <## "#team (group deleted, delete local copy: /d #team)"
+      bob ##> "/groups"
+      bob <## "you have no groups!"
+      bob <## "to create: /g <name>"
+      cath ##> "/groups"
+      cath <## "#team (group deleted, delete local copy: /d #team)"
+      dan ##> "/groups"
+      dan <## "#team (group deleted, delete local copy: /d #team)"
+      eve ##> "/groups"
+      eve <## "#team (group deleted, delete local copy: /d #team)"
 
 testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
 testSupportCLISendCommand =

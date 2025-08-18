@@ -2526,4 +2526,9 @@
     <string name="prohibit_sending_files_and_media">Archivos y multimedia no permitidos.</string>
     <string name="chat_banner_connect_to_use_bot">Pulsa Conectar para usar el bot</string>
     <string name="cant_send_commands_alert_text">Para enviar comandos debes estar conectado.</string>
+    <string name="deprecated_options_section">Opciones obsoletas</string>
+    <string name="privacy_chat_list_open_clean_web_link">Abrir enlace limpio</string>
+    <string name="sanitize_links_toggle">Limpiar enlaces de seguimiento</string>
+    <string name="privacy_chat_list_open_full_web_link">Abrir enlace completo</string>
+    <string name="simplex_link_relay">Enlace de servidor SimpleX</string>
 </resources>

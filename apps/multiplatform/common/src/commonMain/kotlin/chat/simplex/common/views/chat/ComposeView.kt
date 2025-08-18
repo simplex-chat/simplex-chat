@@ -876,7 +876,7 @@ fun ComposeView(
       var updated = ft
       when(ft.format) {
         is Format.Uri -> {
-          val sanitized = parseSanitizeUri(ft.text)?.uriInfo?.sanitized
+          val sanitized = parseSanitizeUri(ft.text, safe = true)?.uriInfo?.sanitized
           if (sanitized != null) {
             updated = FormattedText(text = sanitized, format = Format.Uri())
             pos += updated.text.count()
@@ -884,7 +884,7 @@ fun ComposeView(
           }
         }
         is Format.HyperLink -> {
-          val sanitized = parseSanitizeUri(ft.format.linkUri)?.uriInfo?.sanitized
+          val sanitized = parseSanitizeUri(ft.format.linkUri, safe = true)?.uriInfo?.sanitized
           if (sanitized != null) {
             val updatedText = if (ft.format.showText == null) sanitized else "[${ft.format.showText}]($sanitized)"
             updated = FormattedText(text = updatedText, format = Format.HyperLink(showText = ft.format.showText, linkUri = sanitized))
