@@ -1,9 +1,10 @@
+import org.gradle.internal.extensions.stdlib.toDefaultLowerCase
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 plugins {
   kotlin("multiplatform")
   id("org.jetbrains.compose")
+  id("org.jetbrains.kotlin.plugin.compose")
   id("io.github.tomtzook.gradle-cmake") version "1.2.2"
 }
 
@@ -89,7 +90,7 @@ compose {
             }
           }
         }
-        val os = System.getProperty("os.name", "generic").toLowerCaseAsciiOnly()
+        val os = System.getProperty("os.name", "generic").toDefaultLowerCase()
         if (os.contains("mac") || os.contains("win")) {
           packageName = "SimpleX"
         } else {

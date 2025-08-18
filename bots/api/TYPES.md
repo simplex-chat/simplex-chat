@@ -3111,6 +3111,7 @@ A_QUEUE:
 - "invitation"
 - "group"
 - "channel"
+- "relay"
 
 
 ---

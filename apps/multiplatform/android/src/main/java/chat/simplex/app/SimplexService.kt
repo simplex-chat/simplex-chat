@@ -112,7 +112,7 @@ class SimplexService: Service() {
     val title = generalGetString(MR.strings.simplex_service_notification_title)
     val text = generalGetString(MR.strings.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
-    val newNtf = createNotification(title, text)
+    val newNtf = createServiceNotification(title, text)
     serviceNotification = newNtf
     return newNtf
   }
@@ -167,8 +167,8 @@ class SimplexService: Service() {
     }
     return null
   }
-
-  private fun createNotification(title: String, text: String): Notification {
+  
+  private fun createServiceNotification(title: String, text: String): Notification {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
@@ -181,6 +181,7 @@ class SimplexService: Service() {
       .setContentIntent(pendingIntent)
       .setSilent(true)
       .setShowWhen(false) // no date/time
+      .setOngoing(true) // Starting SDK 33 / Android 13, foreground notifications can be swiped away
 
     // Shows a button which opens notification channel settings
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

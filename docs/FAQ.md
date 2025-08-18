@@ -7,6 +7,7 @@ revision: 23.04.2024
 # Frequently Asked Questions
 
 [How to use it](#how-to-use-it)
+- [How do I add contacts?](#how-do-i-add-contacts)
 - [I have nobody to chat with! Where can I find any groups?](#i-have-nobody-to-chat-with-where-can-i-find-any-groups)
 - [What is database? What can I do with it?](#what-is-database-what-can-i-do-with-it)
 - [Can I send files over SimpleX? ](#can-i-send-files-over-simplex)
@@ -29,6 +30,7 @@ revision: 23.04.2024
 - [Audio or video calls without e2e encryption](#audio-or-video-calls-without-e2e-encryption)
 - [I clicked the link to connect, but could not connect](#i-clicked-the-link-to-connect-but-could-not-connect)
 - [I do not know my database passphrase](#i-do-not-know-my-database-passphrase)
+- [My mobile app does not connect to desktop app](#my-mobile-app-does-not-connect-to-desktop-app)
 
 [Privacy and security](#privacy-and-security)
 - [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
@@ -45,6 +47,16 @@ revision: 23.04.2024
 - [What will be the business model?](#what-will-be-the-business-model)
 
 ## How to use it
+
+### How do I connect to people?
+
+Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link in the app's search bar. The link will can also be opened via the browser, once the app is installed.
+
+Alternatively, you can show the QR code when meeting in person or in a video call.
+
+It is safe to share this link over any communication channel, it contains only public keys and can only be used once.
+
+If you want to share your address publicly, so that many people can connect to you, use your SimpleX address instead of 1-time links. Tap your profile image/avatar, then Your SimpleX address. Once you create the address, you can share it in social media profiles, email signature, etc. See [the comparison of SimpleX address with 1-time links](./guide/making-connections.md#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).
 
 ### I have nobody to chat with! Where can I find any groups?
 
@@ -250,6 +262,19 @@ You can resolve it by deleting the app's database: (WARNING: this results in del
 - on Windows, delete folder `C:\AppData\Roaming\SimpleX`, you can find it by pressing Windows key + R and entering `%appdata%`.
 - on Linux/Mac, delete directories `~/.local/share/simplex` and `~/.config/simplex`, where `~` represents your home directory (/home/user)
 - on Flatpak, delete directory `~/.var/app/chat.simplex.simplex`.
+
+### My mobile app does not connect to desktop app
+
+1. Check that both devices are connected to the same network (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).
+2. If you use VPN on mobile, allow connections to local network in you VPN settings, or disable VPN.
+3. Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port in desktop app to accept connections, by default it uses a random port every time.
+4. Check that your WiFi router allows connections between devices (e.g., it may have an option for "device isolation", or similar).
+5. If you see an error "certificate expired", please check that your device clocks are synchronized within a few seconds.
+6. If iOS app fails to connect and shows an error containing "no route", check that local network connections are allowed for the app in system settings.
+
+Also see this post: https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol
+
+If none of the suggestions work for you, you can create a separate profile on each device and create a small group inviting both of your device profiles and your contact.
 
 ## Privacy and security
 

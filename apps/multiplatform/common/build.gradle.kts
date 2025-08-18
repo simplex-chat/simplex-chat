@@ -3,6 +3,7 @@ plugins {
   id("org.jetbrains.compose")
   id("com.android.library")
   id("org.jetbrains.kotlin.plugin.serialization")
+  id("org.jetbrains.kotlin.plugin.compose")
   id("dev.icerock.mobile.multiplatform-resources")
   id("com.github.gmazzo.buildconfig") version "5.3.5"
 }
@@ -39,6 +40,8 @@ kotlin {
         api("com.russhwolf:multiplatform-settings:1.1.1")
         api("com.charleskorn.kaml:kaml:0.59.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
+        implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
+        implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
         api("org.boofcv:boofcv-core:1.1.3")
@@ -125,7 +128,7 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 34
+  compileSdk = 35
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26

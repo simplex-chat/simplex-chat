@@ -5,10 +5,11 @@ plugins {
     id("org.jetbrains.compose")
     kotlin("android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "chat.simplex.app"
@@ -191,7 +192,7 @@ tasks {
                 outputDir = outputs.files.files.last()
             }
             exec {
-                workingDir("../../../scripts/android")
+                workingDir("../../scripts/android")
                 environment = mapOf("JAVA_HOME" to "$javaHome")
                 commandLine = listOf(
                     "./compress-and-sign-apk.sh",

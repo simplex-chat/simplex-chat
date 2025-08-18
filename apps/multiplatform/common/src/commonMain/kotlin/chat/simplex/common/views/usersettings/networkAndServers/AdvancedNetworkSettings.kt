@@ -33,7 +33,7 @@ import chat.simplex.res.MR
 import java.text.DecimalFormat
 
 @Composable
-fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> Unit, close: () -> Unit) {
+fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -> Unit) -> Unit, close: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   val developerTools = remember { appPrefs.developerTools.get() }
 
@@ -216,7 +216,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   updateSessionMode: (TransportSessionMode) -> Unit,
   updateSMPProxyMode: (SMPProxyMode) -> Unit,
   updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
-  showModal: (ModalData.() -> Unit) -> Unit,
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
   resetDisabled: Boolean,
   reset: () -> Unit,
   saveDisabled: Boolean,

@@ -2634,6 +2634,9 @@ processChatCommand vr nm = \case
         withInvitationLock "connect" (strEncode cReq) $ do
           subMode <- chatReadVar subscriptionMode
           case activeConn of
+            -- Nothing is legacy branch for exisiting contacts without prepared connection;
+            -- for new member contacts connection is prepared immediately (on xGrpDirectInv),
+            -- so incognito profile can be attached to it and be visible in UI before accepting
             Nothing -> joinNewConn subMode
             Just conn@Connection {connStatus} -> case connStatus of
               ConnPrepared -> joinPreparedConn subMode conn
@@ -3531,6 +3534,7 @@ processChatCommand vr nm = \case
                   Just (cReq, g) -> pure $ Just (con cReq, CPGroupLink (GLPOwnLink g))
                   Nothing -> (gPlan =<<) <$> getGroupViaShortLinkToConnect db vr user l'
           CCTChannel -> throwCmdError "channel links are not supported in this version"
+          CCTRelay -> throwCmdError "chat relay links are not supported in this version"
     connectWithPlan :: User -> IncognitoEnabled -> ACreatedConnLink -> ConnectionPlan -> CM ChatResponse
     connectWithPlan user@User {userId} incognito ccLink plan
       | connectionPlanProceed plan = do
