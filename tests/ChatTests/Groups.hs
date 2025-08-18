@@ -212,6 +212,7 @@ chatGroupTests = do
     it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
     it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
+    fit "should forward member removal in support scope while in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
@@ -7577,6 +7578,86 @@ testScopedSupportForwardFile =
               "started receiving file 1 (test.jpg) from bob"
             ]
     dan <## "completed receiving file 1 (test.jpg) from bob"
+
+testScopedSupportForwardMemberRemoval :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardMemberRemoval =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
+
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "changed member admission rules"
+        ]
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      eve ##> ("/c " <> gLink)
+      eve <## "connection request sent!"
+      alice <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: alice accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member bob (Bob) is connected",
+                   "#team: member dan (Daniel) is connected"
+                 ],
+          do
+            bob <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            bob <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            dan <## "#team: alice added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            dan <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+
+      setupGroupForwarding alice bob eve
+      setupGroupForwarding alice bob dan
+
+      -- messages are forwarded in support scope between bob and eve, bob and dan
+      eve #> "#team (support) 3"
+      [alice, dan] *<# "#team (support: eve) eve> 3"
+      bob <# "#team (support: eve) eve> 3 [>>]"
+
+      dan #> "#team (support: eve) 4"
+      alice <# "#team (support: eve) dan> 4"
+      bob <# "#team (support: eve) dan> 4 [>>]"
+      eve <# "#team (support) dan> 4"
+
+      bob #> "#team (support: eve) 5"
+      alice <# "#team (support: eve) bob> 5"
+      dan <# "#team (support: eve) bob> 5 [>>]"
+      eve <# "#team (support) bob> 5 [>>]"
+
+      -- bob removes eve, eve and dan receive member removal message
+      bob ##> "/_remove #1 5"
+      concurrentlyN_
+        [ bob <## "#team: you removed eve from the group",
+          alice <## "#team: bob removed eve from the group",
+          dan <## "#team: bob removed eve from the group",
+          do
+            eve <## "#team: bob removed you from the group"
+            eve <## "use /d #team to delete the group"
+        ]
+
+      alice ##> "#team (support: eve) hi"
+      alice <## "bad chat command: support member not current or pending"
+      bob ##> "#team (support: eve) hi"
+      bob <## "bad chat command: support member not current or pending"
+      dan ##> "#team (support: eve) hi"
+      dan <## "bad chat command: support member not current or pending"
+      eve ##> "/groups"
+      eve <## "#team (you are removed, delete local copy: /d #team)"
 
 testSupportCLISendCommand :: HasCallStack => TestParams -> IO ()
 testSupportCLISendCommand =
