@@ -385,9 +385,9 @@ isForwardedGroupMsg ev = case ev of
   XGrpMemNew {} -> True
   XGrpMemRole {} -> True
   XGrpMemRestrict {} -> True
-  XGrpMemDel {} -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
+  XGrpMemDel {} -> True
   XGrpLeave -> True
-  XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
+  XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   _ -> False
