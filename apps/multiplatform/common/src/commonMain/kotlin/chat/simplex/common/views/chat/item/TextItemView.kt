@@ -427,7 +427,7 @@ fun showInvalidLinkAlert(uri: String, error: String? = null) {
 }
 
 fun sanitizeUri(s: String): Pair<Pair<Boolean, String?>?, String?> {
-  val parsed = parseSanitizeUri(s)
+  val parsed = parseSanitizeUri(s, safe = false)
   return if (parsed?.uriInfo != null) {
     (true to parsed.uriInfo.sanitized) to null
   } else {

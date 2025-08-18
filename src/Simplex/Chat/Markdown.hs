@@ -346,18 +346,20 @@ parseUri s = case U.parseURI U.laxURIParserOptions s of
 -- 2) also allow whitelisted parameters,
 -- 3) remove all other parameters.
 -- *page name: lowercase latin in snake-case or hyphen-case, allowing for sinlge leading or trailing hyphen or underscore.
-sanitizeUri :: U.URI -> Maybe U.URI
-sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
+sanitizeUri :: Bool -> U.URI -> Maybe U.URI
+sanitizeUri safe uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
   let sanitizedQS
+        | safe = filter (not . isSafeBlacklisted . fst) originalQS
         | isNamePath = case originalQS of
-            p@(n, _) : ps -> (if isBlacklisted n && not (isWhitelisted n) then id else (p :)) $ filter (isWhitelisted . fst) ps
+            p@(n, _) : ps -> (if isWhitelisted n || not (isBlacklisted n) then (p :) else id) $ filter (isWhitelisted . fst) ps
             [] -> []
         | otherwise = filter (isWhitelisted . fst) originalQS
    in if length sanitizedQS == length originalQS
         then Nothing
         else Just $ uri {U.uriQuery = U.Query sanitizedQS}
   where
-    isBlacklisted p = any ($ p) qsBlacklist
+    isSafeBlacklisted p = any (`B.isPrefixOf` p) qsSafeBlacklist
+    isBlacklisted p = isSafeBlacklisted p || any ($ p) qsBlacklist
     isWhitelisted p = any (\(f, ps) -> f host && p `elem` ps) qsWhitelist
     host = maybe "" (\U.Authority {authorityHost = U.Host h} -> h) uriAuthority
     isNamePath = B.all (\c -> (c >= 'a' && c <= 'z') || c == '_' || c == '-' || c == '/') uriPath
@@ -368,7 +370,8 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
         (dom "amazon.com", ["i", "rh", "k"]), -- department, filter, keyword
         (dom "baidu.com", ["wd"]), -- search string
         (dom "bing.com", ["mkt"]), -- localized results
-        (dom "github.com", ["author", "diff", "w"]), -- author in search result, PR parameters
+        (dom "github.com", ["author", "diff", "ref", "w"]), -- author in search result, PR parameters
+        (dom "play.google.com", ["id"]),
         (dom "reddit.com", ["t"]), -- search type, time range
         (dom "wikipedia.com", ["oldid", "uselang"]), -- to show old page revision and chosen user language
         (dom "x.com", ["f"]), -- feed type
@@ -380,23 +383,43 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
     qsBlacklist :: [ByteString -> Bool]
     qsBlacklist =
       [ (B.any (== '_')),
-        ("ad" `B.isPrefixOf`),
-        ("af" `B.isPrefixOf`),
-        ("dc" `B.isPrefixOf`),
-        ("fb" `B.isPrefixOf`),
-        ("gc" `B.isPrefixOf`),
-        ("li" `B.isPrefixOf`),
-        ("ref" `B.isPrefixOf`),
-        ("si" `B.isPrefixOf`),
-        ("tw" `B.isPrefixOf`),
-        ("utm" `B.isPrefixOf`),
-        ("camp" `B.isInfixOf`),
-        ("cmp" `B.isInfixOf`),
-        ("dev" `B.isInfixOf`),
-        ("id" `B.isInfixOf`),
-        ("prom" `B.isInfixOf`),
-        ("source" `B.isInfixOf`),
-        ("src" `B.isInfixOf`)
+        ("id" `B.isSuffixOf`),
+        ("source" `B.isPrefixOf`)
+      ]
+    qsSafeBlacklist :: [ByteString]
+    qsSafeBlacklist =
+      [ "ad",
+        "af",
+        "camp",
+        "cmp",
+        "dc",
+        "dev",
+        "ef_",
+        "fb",
+        "gad_",
+        "gc",
+        "gdf",
+        "hsa_",
+        "igsh",
+        "li",
+        "matomo_",
+        "mc_",
+        "mkwid",
+        "msc",
+        "mtm_",
+        "pcrid",
+        "piwik_",
+        "pk_",
+        "prom",
+        "ref",
+        "s_kw",
+        "si",
+        "src",
+        "srs",
+        "trk_",
+        "tw",
+        "utm",
+        "ycl"
       ]
 
 markdownText :: FormattedText -> Text
