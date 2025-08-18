@@ -450,7 +450,7 @@
     <string name="group_main_profile_sent">Profilul tău de chat va fi trimis membrilor grupului</string>
     <string name="color_mode_dark">Întunecat</string>
     <string name="dark_mode_colors">Culori mod întunecat</string>
-    <string name="both_you_and_your_contact_can_make_calls">Atât dvs., cât și contactul dvs. puteți efectua apeluri.</string>
+    <string name="both_you_and_your_contact_can_make_calls">Atât tu, cât și contactul tău puteți efectua apeluri.</string>
     <string name="feature_cancelled_item">%s anulat</string>
     <string name="connected_to_mobile">Conectat la mobil</string>
     <string name="copy_error">Eroare copiere</string>
@@ -470,7 +470,7 @@
     <string name="snd_conn_event_switch_queue_phase_completed_for_member">ați schimbat adresa pentru %s</string>
     <string name="snd_conn_event_switch_queue_phase_changing">se schimbă adresa…</string>
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">se schimbă adresa pentru %s…</string>
-    <string name="both_you_and_your_contact_can_send_disappearing">Atât dvs., cât și contactul dvs. puteți trimite mesaje autodistructive.</string>
+    <string name="both_you_and_your_contact_can_send_disappearing">Atât tu, cât și contactul tău puteți trimite mesaje autodistructive.</string>
     <string name="cannot_receive_file">Nu se pot primi fișiere</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Poate fi dezactivat din setări</b> – notificările vor fi afișate dacă aplicația este în funcțiune.]]></string>
     <string name="notifications_mode_periodic_desc">Verifică mesajele noi la fiecare 10 minute timp de până la 1 minut</string>
@@ -504,7 +504,7 @@
     <string name="snd_group_event_user_left">ați ieșit</string>
     <string name="block_member_question">Blocați membrul?</string>
     <string name="member_blocked_by_admin">Blocat de admin</string>
-    <string name="both_you_and_your_contact_can_add_message_reactions">Atât dvs., cât și contactul dvs. puteți adăuga reacții la mesaje.</string>
+    <string name="both_you_and_your_contact_can_add_message_reactions">Atât tu, cât și contactul tău puteți adăuga reacții la mesaje.</string>
     <string name="v5_1_better_messages">Mesaje îmbunătățite</string>
     <string name="blocked_item_description">blocat</string>
     <string name="blocked_by_admin_item_description">blocat de admin</string>
@@ -524,7 +524,7 @@
     <string name="onboarding_notifications_mode_periodic_desc"><![CDATA[<b>Bun pentru baterie</b>. Aplicația verifică mesajele la fiecare 10 minute. Pot fi pierdute apeluri sau mesaje urgente.]]></string>
     <string name="theme_black">Negru</string>
     <string name="block_for_all_question">Blocați membrul pentru toți?</string>
-    <string name="both_you_and_your_contacts_can_delete">Atât dvs., cât și contactul dvs. puteți șterge ireversibil mesajele trimise. (24 de ore)</string>
+    <string name="both_you_and_your_contacts_can_delete">Atât tu, cât și contactul tău puteți șterge definitiv mesajele trimise. (24 de ore)</string>
     <string name="onboarding_notifications_mode_service_desc"><b>Folosește mai multă baterie</b>!
 \nServiciul în fundal rulează mereu – notificările sunt afișate imediat ce mesajele sunt disponibile.</string>
     <string name="cannot_share_message_alert_title">Nu se poate trimite mesajul</string>
