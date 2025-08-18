@@ -72,7 +72,7 @@ mentionedNames = mapMaybe (\(FormattedText f _) -> mentionedName =<< f)
       Mention name -> Just name
       _ -> Nothing
 
-data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel
+data SimplexLinkType = XLContact | XLInvitation | XLGroup | XLChannel | XLRelay
   deriving (Eq, Show)
 
 colored :: Color -> Format
@@ -326,6 +326,7 @@ markdownP = mconcat <$> A.many' fragmentP
             CCTGroup -> XLGroup
             CCTChannel -> XLChannel
             CCTContact -> XLContact
+            CCTRelay -> XLRelay
     strEncodeText :: StrEncoding a => a -> Text
     strEncodeText = safeDecodeUtf8 . strEncode
 
@@ -349,7 +350,7 @@ sanitizeUri :: U.URI -> Maybe U.URI
 sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
   let sanitizedQS
         | isNamePath = case originalQS of
-            p : ps -> (if isBlacklisted (fst p) then id else (p :)) $ filter (isWhitelisted . fst) ps
+            p@(n, _) : ps -> (if isBlacklisted n && not (isWhitelisted n) then id else (p :)) $ filter (isWhitelisted . fst) ps
             [] -> []
         | otherwise = filter (isWhitelisted . fst) originalQS
    in if length sanitizedQS == length originalQS
@@ -362,8 +363,17 @@ sanitizeUri uri@U.URI {uriAuthority, uriPath, uriQuery = U.Query originalQS} =
     isNamePath = B.all (\c -> (c >= 'a' && c <= 'z') || c == '_' || c == '-' || c == '/') uriPath
     qsWhitelist :: [(ByteString -> Bool, [ByteString])]
     qsWhitelist =
-      [ (const True, ["q", "search"]),
-        (dom "youtube.com", ["v", "t"]),
+      [ (const True, ["q", "search", "search_query", "lang", "list", "page", "text", "type"]),
+        (dom "aliexpress.com", ["SearchText", "catId", "minPrice", "maxPrice"]),
+        (dom "amazon.com", ["i", "rh", "k"]), -- department, filter, keyword
+        (dom "baidu.com", ["wd"]), -- search string
+        (dom "bing.com", ["mkt"]), -- localized results
+        (dom "github.com", ["author", "diff", "w"]), -- author in search result, PR parameters
+        (dom "reddit.com", ["t"]), -- search type, time range
+        (dom "wikipedia.com", ["oldid", "uselang"]), -- to show old page revision and chosen user language
+        (dom "x.com", ["f"]), -- feed type
+        (dom "yahoo.com", ["p"]), -- search string
+        (dom "youtube.com", ["v", "t"]), -- video ID and timestamp
         (dom "youtu.be", ["t"])
       ]
     dom d h = d == h || (('.' `B.cons` d) `B.isSuffixOf` h)
