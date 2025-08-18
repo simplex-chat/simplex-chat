@@ -902,7 +902,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             unless (blockedByAdmin m) $
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
                 forwardMsgs groupForwardScope (L.reverse fwdMsgs) `catchChatError` eToView
-            when shouldDelConns $ deleteGroupConnections gInfo'
+            when shouldDelConns $ deleteGroupConnections gInfo' True
           checkSendRcpt $ rights aChatMsgs
         where
           aChatMsgs = parseChatMessages msgBody
@@ -2978,7 +2978,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       if membershipMemId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
-          unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo
+          unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo False
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
@@ -3028,11 +3028,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     isUserGrpFwdRelay GroupInfo {membership = GroupMember {memberRole}} =
       memberRole >= GRAdmin
 
-    deleteGroupConnections :: GroupInfo -> CM ()
-    deleteGroupConnections gInfo = do
+    deleteGroupConnections :: GroupInfo -> Bool -> CM ()
+    deleteGroupConnections gInfo waitDelivery = do
       -- member records are not deleted to keep history
       members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-      deleteMembersConnections' user members True
+      deleteMembersConnections' user members waitDelivery
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
     xGrpLeave gInfo m msg brokerTs = do
@@ -3053,7 +3053,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
-      unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo
+      unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo False
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView cInfo ci
