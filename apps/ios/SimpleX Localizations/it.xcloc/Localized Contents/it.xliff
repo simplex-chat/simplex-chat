@@ -7716,6 +7716,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX relay link" xml:space="preserve">
         <source>SimpleX relay link</source>
+        <target>Link del relay SimpleX</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
