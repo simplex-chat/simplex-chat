@@ -469,7 +469,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
-          withAckMessage "contact msg" agentConnId msgMeta Nothing True (Just tags) $ \eInfo -> do
+          withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
             checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
@@ -893,8 +893,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 _ -> messageWarning "sendXGrpMemCon: member category GCPreMember or GCPostMember is expected"
       MSG msgMeta _msgFlags msgBody -> do
         tags <- newTVarIO []
-        cancelAckVar <- newTVarIO False
-        withAckMessage "group msg" agentConnId msgMeta (Just cancelAckVar) True (Just tags) $ \eInfo -> do
+        withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
@@ -903,9 +902,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             unless (blockedByAdmin m) $
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
                 forwardMsgs groupForwardScope (L.reverse fwdMsgs) `catchChatError` eToView
-            when shouldDelConns $ do
-              atomically $ writeTVar cancelAckVar True
-              deleteGroupConnections gInfo' True
+            when shouldDelConns $ deleteGroupConnections gInfo' True
           checkSendRcpt $ rights aChatMsgs
         where
           aChatMsgs = parseChatMessages msgBody
@@ -1547,10 +1544,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     withAckMessage' :: Text -> ConnId -> MsgMeta -> CM () -> CM ()
     withAckMessage' label cId msgMeta action = do
-      withAckMessage label cId msgMeta Nothing False Nothing $ \_ -> action $> False
+      withAckMessage label cId msgMeta False Nothing $ \_ -> action $> False
 
-    withAckMessage :: Text -> ConnId -> MsgMeta -> Maybe (TVar Bool) -> Bool -> Maybe (TVar [Text]) -> (Text -> CM Bool) -> CM ()
-    withAckMessage label cId msgMeta cancelAckVar showCritical tags action = do
+    withAckMessage :: Text -> ConnId -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> (Text -> CM Bool) -> CM ()
+    withAckMessage label cId msgMeta showCritical tags action = do
       -- [async agent commands] command should be asynchronous
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
       -- Possible solutions are:
@@ -1560,15 +1557,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       eInfo <- eventInfo
       logInfo $ label <> ": " <> eInfo
       tryChatError (action eInfo) >>= \case
-        Right withRcpt -> do
-          cancelAck <- maybe (pure False) readTVarIO cancelAckVar
-          unless cancelAck $ withLog (eInfo <> " ok") $ ackMsg msgMeta (if withRcpt then Just "" else Nothing)
+        Right withRcpt ->
+          withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
         Left e -> do
-          cancelAck <- maybe (pure False) readTVarIO cancelAckVar
-          unless cancelAck $ withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
+          withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
       where
         eventInfo = do
