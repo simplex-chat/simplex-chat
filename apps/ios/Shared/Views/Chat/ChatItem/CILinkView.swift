@@ -97,7 +97,7 @@ func showInvalidLinkAlert(_ uri: String, error: String? = nil) {
 }
 
 func sanitizeUri(_ s: String) -> (url: (uri: URL, sanitizedUri: URL?)?, error: String?) {
-    let parsed = parseSanitizeUri(s)
+    let parsed = parseSanitizeUri(s, safe: false)
     return if let uri = URL(string: s), let uriInfo = parsed?.uriInfo {
         (url: (uri: uri, sanitizedUri: uriInfo.sanitized.flatMap { URL(string: $0) }), error: nil)
     } else {
