@@ -143,11 +143,11 @@
    ```sh
    SQLITE_DBPATH='simplex_v1_agent_plaintext.db' \
    POSTGRES_SCHEMA='simplex_v1_agent_schema' \
-   pgloader --dynamic-space-size 262144 --on-error-stop sqlite.load
+   CPU_CORES=$(nproc) WORKERS=$((CPU_CORES - 1)) pgloader --dynamic-space-size 262144 --on-error-stop sqlite.load
 
    SQLITE_DBPATH='simplex_v1_chat_plaintext.db' \
    POSTGRES_SCHEMA='simplex_v1_chat_schema' \
-   pgloader --dynamic-space-size 262144 --on-error-stop sqlite.load
+   CPU_CORES=$(nproc) WORKERS=$((CPU_CORES - 1)) pgloader --dynamic-space-size 262144 --on-error-stop sqlite.load
    ```
 
 4. Update sequences for Postgres tables.
