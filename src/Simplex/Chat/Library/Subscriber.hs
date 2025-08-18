@@ -480,7 +480,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 atomically $ modifyTVar' tags ("error" :)
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
                 eToView (ChatError . CEException $ "error parsing chat message: " <> e)
-            checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
+            withRcpt <- checkSendRcpt ct' $ rights aChatMsgs -- not crucial to use ct'' from processEvent
+            pure (withRcpt, False)
           where
             aChatMsgs = parseChatMessages msgBody
             processEvent :: Contact -> Connection -> TVar [Text] -> Text -> MsgEncodingI e => ChatMessage e -> CM ()
@@ -903,7 +904,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
                 forwardMsgs groupForwardScope (L.reverse fwdMsgs) `catchChatError` eToView
             when shouldDelConns $ deleteGroupConnections gInfo' True
-          checkSendRcpt $ rights aChatMsgs
+          withRcpt <- checkSendRcpt $ rights aChatMsgs
+          pure (withRcpt, shouldDelConns)
         where
           aChatMsgs = parseChatMessages msgBody
           brokerTs = metaBrokerTs msgMeta
@@ -1544,9 +1546,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     withAckMessage' :: Text -> ConnId -> MsgMeta -> CM () -> CM ()
     withAckMessage' label cId msgMeta action = do
-      withAckMessage label cId msgMeta False Nothing $ \_ -> action $> False
+      withAckMessage label cId msgMeta False Nothing $ \_ -> action $> (False, False)
 
-    withAckMessage :: Text -> ConnId -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> (Text -> CM Bool) -> CM ()
+    withAckMessage :: Text -> ConnId -> MsgMeta -> Bool -> Maybe (TVar [Text]) -> (Text -> CM (Bool, ShouldDeleteGroupConns)) -> CM ()
     withAckMessage label cId msgMeta showCritical tags action = do
       -- [async agent commands] command should be asynchronous
       -- TODO catching error and sending ACK after an error, particularly if it is a database error, will result in the message not processed (and no notification to the user).
@@ -1557,8 +1559,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       eInfo <- eventInfo
       logInfo $ label <> ": " <> eInfo
       tryChatError (action eInfo) >>= \case
-        Right withRcpt ->
-          withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
+        Right (withRcpt, shouldDelConns) ->
+          unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
         Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
