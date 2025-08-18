@@ -186,9 +186,9 @@ struct ParsedServerAddress: Decodable {
     var parseError: String
 }
 
-public func parseSanitizeUri(_ s: String) -> ParsedUri? {
+public func parseSanitizeUri(_ s: String, safe: Bool) -> ParsedUri? {
     var c = s.cString(using: .utf8)!
-    if let cjson = chat_parse_uri(&c) {
+    if let cjson = chat_parse_uri(&c, safe ? 1 : 0) {
          if let d = dataFromCString(cjson) {
             do {
                 return try jsonDecoder.decode(ParsedUri.self, from: d)
