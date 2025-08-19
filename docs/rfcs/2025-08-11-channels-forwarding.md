@@ -43,14 +43,20 @@ Some options on how to highlight difference in messages from chat relays:
     - Add ability to load additional info (with other chat item info via APIGetChatItemInfo) showing which relays sent different hashes (e.g. 1 differs from 2 others - show 1 as warning, all differ - show all as warning).
 3. As previous, but save content. Possibly save content additionally to hashes, for faster comparison.
     - Saving content means converting duplicate messages to chat item content, or only saving text, but latter will fail to show difference in files.
+4. Create new versions as "different version of another message" chat items.
+    - Timestamp would have to be made the same as on original chat item, as it's not guaranteed to be the same - each chat relay will forward a broker ts based on its own metadata of receiving message from sender.
+    - It could be done via special replies, to re-use reply machinery. However, this won't work for messages being replies themselves then.
+    - Alternatively, it could say "different message from X relay".
 
 Service events will not have content. We still can/should compare them and indicate difference, e.g. by creating a special chat item (similar to integrity violation).
 
-How to compute hashes. Problem is with file descriptions, as it is legitimate case that they will be different. Hash could be computed as hash of message without file invitation + file digest from file invitation (FileInvitation.fileDigest).
+How to compute hashes. Problem is with file descriptions, as it is legitimate case that they will be different. Hash could be computed as hash of message, excluding file description from FileInvitation. File digest and names should be the same, the problem of different names needs to be fixed.
 
 Files can also cause problem with showing difference in content if file preview is the same, but file hash is different. So showing difference in content does not exclude necessity of showing difference in hashes as in option 2.
 
-As a note, this whole section discusses an edge case of chat relays maliciously changing messages, and countermeasures to prevent them doing so undetectably. May be not worth implementing overly complex solution as MVP (option 3), and option 2 or even 1 can suffice. TBC further.
+As a note, this whole section discusses an edge case of chat relays maliciously changing messages, and countermeasures to prevent them doing so undetectably. May be not worth implementing overly complex solution as MVP (options 3, 4).
+
+For MVP from UI standpoint this should suffice: a marker on item, that would show in info which relays delivered it with a sign which relay delivered different hash. Possibly also special event item next to marked item (with same timestamp) - for service events that don't create a chat item, or in case we don't account it for some chat items.
 
 ### Forwarding jobs
 
@@ -83,10 +89,10 @@ Forwarding workers should use low priority db pool.
 
 We roughly need following data for a forwarding job:
 - group id,
-- forwarding scope,
+- forwarding scope (forward_scope),
 - sending member - to include memberId in XGrpMsgForward,
 - broker timestamp of received messages batch to include in XGrpMsgForward,
-- "message from channel" flag from sending owner - see "Hiding sending owner id" section below,
+- "message from channel" flag from sending owner - see "Hiding sending owner id" section below (group_as_sender),
 - list of messages (events).
 
 **How to build message batches for a forwarding job:**
@@ -113,27 +119,32 @@ It's unclear if there's a need for a separate lower level abstraction for delive
 
 **How a forwarding job will work overall:**
 
-0. There is some process on start that launches necessary workers for each group/scope client serves as a forwarding agent. Also message receive loop "kicks" necessary workers. Below we start with a worker for some group/scope trying to retrieve next work item, that is being next message(s) to forward.
+0. There is some process on start that launches necessary workers for each group/scope client serves as a forwarding agent (for those that have messages that need forwarding). Also message receive loop "kicks" necessary workers. Below we start with a worker for some group/scope trying to retrieve next work item, that is being next message(s) to forward.
 1. Worker retrieves next message from `messages` table that was marked for forwarding, that matches the worker's group/scope.
-    - Question: Do we need a separate flag on message record to mark it as "for forwarding"? Perhaps having forward_scope (see schema below) is enough.
+    - We may need a separate field on message record to track "forward pending" state, to know what to forward. Setting forward_scope as a task with addition of forward_complete flag to mark forward completion may be enough (see schema below).
 2. Worker checks, if this message is already attached to some forwarding job, and the state of the job.
     1. Worker gets job record.
         - If message is not attached to any job yet, worker creates a new job record, sets job id on the message record (normal execution path).
         - Otherwise worker gets existing job attached to the message (recovery path).
     2. Worker determines forwarding batch encoding for the job.
         - If encoding is not saved on the job, it means it wasn't determined before (normal execution):
-          1. Worker retrieves more messages that match its group/scope (in loop or in bulk? also message list has to preserve reception order).
+          1. Worker retrieves more messages that match its group/scope.
+              - Could be in loop or in bulk.
+              - We won't know how much we'd need. Some heuristic could be read 100, then mark those that are used with jobId, or load more if needed.
+              - Also message list has to preserve reception order.
           2. Worker prepares encoding (wraps messages in XGrpMsgForward events with metadata) and saves it on the job record.
+              - It's important to put encoding into job and mark all relevant messages in one transaction.
         - Otherwise worker uses saved encoding (recovery).
 3. With moving cursor on group member id for member retrieval, forward encoded batch. In loop:
     1. Retrieve members up to some limit and filtering according to a cursor. In normal execution path on first iteration job would not have a previously saved cursor yet.
-        - For Main scope all current members will be retrieved;
-        - For Support scopes - moderators and above + scope member;
-        - For All scope - all current and pending members (Question: will channels have member review? If not, possibly we don't have to account for All scope).
+        - For Main scope all current members will be retrieved.
+        - For Support scopes - moderators and above + scope member. For support scope job can be done without a cursor, instead simply loading all its members and forwarding.
+        - For All scope - all current and pending members (In channels there is no need for member review. So possibly we don't have to account for All scope).
         - Main difference from forwarding in regular groups here is that for inviting admins we retrieve only introduced and invited members for the message's sending member, that are not yet connected. For channels there will be no such filtering.
     2. Group send encoded batch to retrieved members.
     3. Update cursor on the job.
 4. Marks all messages attached to the job as forwarded (forward_complete), deletes the job record.
+    - Possibly do in cleanup manager and delete after say a week.
 
 Schema draft:
 
@@ -171,9 +182,9 @@ Receiving members would then save this message as received from group. We alread
 XMsgNew :: ShowGroupAsSender -> MsgContainer -> ChatMsgEvent 'Json
 ```
 
-Question: Should this be resolved in the same scope, or separately?
+ShowGroupAsSender can be in MsgContainer, not separate.
 
-Question: Should chat relays also hide sending owner from other owners or not? Probably not, then forwarding job would have to be split into separate sends with different sets of XGrpMsgForward events (with and without sending owner's member id).
+Chat relays should not hide sending owner from other owners: sending owner should be visible to them, but message shown as from channel. This means forwarding job has to be split into separate sends with different sets of XGrpMsgForward events (with and without sending owner's member id).
 
 ### Connection deleting events
 
@@ -185,4 +196,35 @@ Currently we ignore this problem (there are TODOs), as all members according to 
 
 With chat relays, however, no messages are sent directly from owners to members, so if logic is kept as is these events would never be received. So, their processing should be special cased to delay until after forwarding operation.
 
-Question: Should this be resolved in the same scope, or separately? This is already an issue in current group design, so it could be a separate improvement.
+## Further considerations, ideas (Update)
+
+- Sending member profiles.
+  - Profiles of owners (and admins, moderators) should be sent to all members on joining.
+  - Profiles of other members should be sent on interaction with them.
+  - For MVP: we can show counts on reactions and avoid solving it, but we should have a design to solve this problem, as it would be necessary for comments and later for large groups.
+  - As a draft for solution:
+    - Track last interaction timestamp on each member.
+    - When forwarding from this member split members into two parts: include profile for those who joined after interaction, don't include for those who joined before interaction.
+    - This suggests that job would be divided into two parts.
+    - Protocol to request member profile as a fallback.
+- When chat relay receives group deletion event, or event removing it [chat relay itself] from the group:
+  - Chat relay should kill all forwarding workers for the group -> delete all jobs -> create one new job to forward group deletion.
+  - It could be a special type of job.
+- Sending each reaction (and in future comment) won't scale well.
+  - Instead periodically send reaction and comment counts.
+  - Send reactions and comments themselves on request.
+  - This implies that instead of message records, special entity for forwarding tasks should be added, for worker to search for next work items - see more below.
+- Connections with priority.
+  - Client could have 2 connections/queues with relay, and relay - 2 subscribers.
+  - Separation of responsibilities between connections/queues:
+    - Normal queue to be used for regular forwarding of messages, reactions, etc.
+    - High-priority queue to be used for serving client requests and sending important service events (e.g. ownership changes, group deletion).
+  - Possibly special case of connection redundancy.
+- Design to be reworked to use special entity for forwarding tasks instead of relying on messages.
+  - Points for this:
+    - Batched reactions/comments counts.
+    - Special logic on group deletion/relay removal.
+    - Possibly special logic on sending member profiles, as it's not needed for all types of jobs.
+  - Sum type of task types.
+  - Some tasks may simply point to message records.
+  - Some tasks may be created for further updating their metadata / scheduling, e.g. "send reactions/comments count update", and the information itself may be taken from chat items.
