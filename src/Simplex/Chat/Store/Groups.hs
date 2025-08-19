@@ -190,7 +190,7 @@ import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
 import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, firstRow', ($>>), ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>), ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -213,7 +213,7 @@ createGroupLink db gVar user@User {userId} groupInfo@GroupInfo {groupId, localDi
   checkConstraint (SEDuplicateGroupLink groupInfo) . liftIO $ do
     currentTs <- getCurrentTime
     randSuffix <- liftIO $ encodedRandomBytes gVar 12
-    let groupLinkLDN = "group_link_" <> localDisplayName <> "_" <> randSuffix
+    let groupLinkLDN = "group_link_" <> localDisplayName <> "_" <> safeDecodeUtf8 randSuffix
         slDataSet = BI (isJust shortLink)
     DB.execute
       db
