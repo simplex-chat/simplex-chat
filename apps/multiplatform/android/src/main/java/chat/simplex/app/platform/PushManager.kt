@@ -29,6 +29,7 @@ import org.unifiedpush.android.connector.UnifiedPush
  */
 object PushManager {
   private const val TAG = "PushManager"
+  private val VAPID_REGEX = Regex("^[A-Za-z0-9_-]{87}(=+)?$")
 
   /**
    * Show an alert if NTF server isn't define,
@@ -37,6 +38,8 @@ object PushManager {
    * Else alert about missing service
    */
   suspend fun initUnifiedPush(context: Context, scope: CoroutineScope, onSuccess: () -> Unit) {
+    // TODO: abort is VAPID is null?
+    val vapid = await getVapidKey()
     val distributors = UnifiedPush.getDistributors(context)
     when (distributors.size) {
       0 -> {
@@ -46,7 +49,7 @@ object PushManager {
       1 -> {
         Log.d(TAG, "Found only one distributor installed")
         UnifiedPush.saveDistributor(context, distributors.first())
-        register(context)
+        register(context, vapid)
         onSuccess()
       }
       else -> {
@@ -54,7 +57,7 @@ object PushManager {
         showSelectPushServiceIntroDialog {
           showSelectPushServiceDialog(context, distributors) {
             UnifiedPush.saveDistributor(context, it)
-            register(context)
+            register(context, vapid)
             onSuccess()
           }
         }
@@ -63,22 +66,34 @@ object PushManager {
   }
 
   /**
+   * Get VAPID key of the ntf server
+   */
+   suspend fun getVapidKey(): String? {
+     //TODO: get VAPID key
+     return null
+        ?.takeIf { VAPID_REGEX.matches(it) }
+   }
+
+  /**
    * Register to UnifiedPush distributor if any is already used
    *
    * To run when the app starts; call [chat.simplex.app.PushService.onUnregistered]
    * if the distributor is uninstalled
    */
-  fun initStart(context: Context) {
+  suspend fun initStart(context: Context) {
     Log.d(TAG, "Init UnifiedPush during app startup")
     //TODO: limit to once a day to reduce registrations to ntf server ?
     UnifiedPush.getAckDistributor(context)?.let {
-      register(context)
+      val vapid = getVapidKey()
+        // Unregister if the user deleted the ntf server or change it with one without vapid
+        //TODO: change ? Maybe there is just a network error - ntf servers are hardcoded now
+        ?: return UnifiedPush.unregister(context)
+      register(context, vapid)
     }
   }
 
-  private fun register(context: Context) {
-    // TODO: add VAPID
-    UnifiedPush.register(context)
+  private fun register(context: Context, vapid: String) {
+    UnifiedPush.register(context, vapid = vapid)
   }
 
   /**

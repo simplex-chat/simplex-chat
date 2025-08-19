@@ -271,11 +271,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
         // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
         if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           SimplexService.showBackgroundServiceNoticeIfNeeded()
-          PushManager.initStart(context)
-          if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
-            withBGApi {
+          when (appPrefs.notificationsMode.get()) {
+            NotificationsMode.SERVICE -> withBGApi {
               platform.androidServiceStart()
             }
+            NotificationsMode.INSTANT -> withBGApi {
+              PushManager.initStart(context)
+            }
+            else -> {}
+          }
         }
       }
 
