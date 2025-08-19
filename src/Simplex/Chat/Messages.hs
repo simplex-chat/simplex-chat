@@ -1178,12 +1178,49 @@ data RcvMessage = RcvMessage
 
 type MessageId = Int64
 
--- TODO [channels fwd] review
-data ForwardingJob = ForwardingJob
-  { jobId :: Int64,
-    msgBatchEncoding :: Maybe (NonEmpty (ChatMessage 'Json)),
-    cursorGroupMemberId :: Maybe Int64
+-- TODO [channels fwd] review types
+data ForwardingTask = ForwardingTask
+  { taskId :: Int64,
+    taskContext :: ForwardingTaskContext
   }
+  deriving (Show)
+
+data ForwardingTaskContext
+  = FTCMessage {messageForwardingContext :: MessageForwardingContext}
+  | FTCRelayRemoval {relayRemovalForwardingContext :: RelayRemovalForwardingContext}
+  | FTCReactionCount {reactionCountForwaradingContext :: ReactionCountForwaradingContext}
+  deriving (Show)
+
+-- prevSenderInteractionTs: members are split based on this timestamp;
+-- postInteractionCursorGMId: for these members sender profiles are packaged;
+-- question: how to retrieve sender profiles for multiple messages when we already created encoding/list of them?
+-- perhaps we should save references to messages on the task, instead of encoding;
+data MessageForwardingContext = MessageForwardingContext
+  { prevSenderInteractionTs :: Maybe UTCTime,
+    postInteractionCursorGMId :: Maybe Int64,
+    preInteractionCursorGMId :: Maybe Int64,
+    messages :: Maybe (NonEmpty (ChatMessage 'Json)),
+  }
+  deriving (Show)
+
+-- messageId: we don't know is it group deletion or relay removal;
+-- we could read ChatMessage 'Json by reference instead;
+data RelayRemovalForwardingContext = RelayRemovalForwardingContext
+  { cursorGMId :: Maybe Int64,
+    messageId :: MessageId
+  }
+  deriving (Show)
+
+-- reaction counts to be retrieved from chat items;
+-- question: how to keep track which chat items received reactions since last such task?
+-- requires additional protocol message
+data ReactionCountForwaradingContext = ReactionCountForwaradingContext
+  { cursorGMId :: Maybe Int64
+  }
+  deriving (Show)
+
+-- to save on task record in db
+data ForwardingContextTag = FCTMessage | FCTRelayRemoval | FCTReactionCount
   deriving (Show)
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
