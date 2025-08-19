@@ -93,7 +93,6 @@ class AppPreferences {
   val canAskToEnableNotifications = mkBoolPreference(SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS, true)
   val backgroundServiceNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_NOTICE_SHOWN, false)
   val backgroundServiceBatteryNoticeShown = mkBoolPreference(SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN, false)
-  val backgroundServiceSaveBattery = mkBoolPreference(SHARED_PREFS_SERVICE_SAVE_BATTERY, false)
   val autoRestartWorkerVersion = mkIntPreference(SHARED_PREFS_AUTO_RESTART_WORKER_VERSION, 0)
   val webrtcPolicyRelay = mkBoolPreference(SHARED_PREFS_WEBRTC_POLICY_RELAY, true)
   val callOnLockScreen: SharedPreference<CallOnLockScreen> = mkSafeEnumPreference(SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN, CallOnLockScreen.default)
@@ -362,7 +361,6 @@ class AppPreferences {
     private const val SHARED_PREFS_CAN_ASK_TO_ENABLE_NOTIFICATIONS = "CanAskToEnableNotifications"
     private const val SHARED_PREFS_SERVICE_NOTICE_SHOWN = "BackgroundServiceNoticeShown"
     private const val SHARED_PREFS_SERVICE_BATTERY_NOTICE_SHOWN = "BackgroundServiceBatteryNoticeShown"
-    private const val SHARED_PREFS_SERVICE_SAVE_BATTERY = "BackgroundServiceSaveBattery"
     private const val SHARED_PREFS_WEBRTC_POLICY_RELAY = "WebrtcPolicyRelay"
     private const val SHARED_PREFS_WEBRTC_CALLS_ON_LOCK_SCREEN = "CallsOnLockScreen"
     private const val SHARED_PREFS_PERFORM_LA = "PerformLA"
@@ -644,7 +642,7 @@ object ChatController {
     if (receiverStarted) return
     receiverStarted = true
     CoroutineScope(Dispatchers.IO).launch {
-      var releaseWakeLock: (() -> Unit) = {}
+      var releaseLock: (() -> Unit) = {}
       while (true) {
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
          * to change it everywhere in code after changing a database.
@@ -654,11 +652,10 @@ object ChatController {
           receiverStarted = false
           break
         }
-
         try {
-          releaseWakeLock()
+          releaseLock()
           val msg = recvMsg(ctrl)
-          if (appPrefs.backgroundServiceSaveBattery.get()) releaseWakeLock = getWakeLock(timeout = 60000)
+          releaseLock = getWakeLock(timeout = 60000)
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)

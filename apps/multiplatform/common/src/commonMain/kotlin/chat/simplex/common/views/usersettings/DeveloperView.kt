@@ -2,11 +2,9 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionItemView
 import SectionTextFooter
 import SectionView
 import androidx.compose.runtime.*
-import androidx.compose.runtime.snapshots.toInt
 import androidx.compose.ui.platform.LocalUriHandler
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -14,7 +12,6 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.networkAndServers.TimeoutSettingRow
 import chat.simplex.res.MR
 
 @Composable

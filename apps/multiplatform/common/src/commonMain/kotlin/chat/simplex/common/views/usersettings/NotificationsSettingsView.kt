@@ -78,13 +78,9 @@ fun NotificationsSettingsLayout(
         SectionTextFooter(annotatedStringResource(MR.strings.xiaomi_ignore_battery_optimization))
       }
     }
-    ServiceSaveBatterySection(notificationsMode)
     SectionBottomSpacer()
   }
 }
-
-@Composable
-expect fun ServiceSaveBatterySection(notificationsMode: State<NotificationsMode>)
 
 @Composable
 fun NotificationsModeView(
