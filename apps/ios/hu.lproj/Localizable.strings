@@ -453,7 +453,7 @@ swipe action */
 "Address" = "Cím";
 
 /* No comment provided by engineer. */
-"Address change will be aborted. Old receiving address will be used." = "A cím módosítása meg fog szakadni. A régi fogadási cím lesz használva.";
+"Address change will be aborted. Old receiving address will be used." = "A kliens megszakítja a cím módosítását, és a régi fogadási címet fogja használni.";
 
 /* No comment provided by engineer. */
 "Address or 1-time link?" = "Cím vagy egyszer használható meghívó?";
@@ -2487,7 +2487,7 @@ snd error text */
 "Failed to remove passphrase" = "Nem sikerült eltávolítani a jelmondatot";
 
 /* No comment provided by engineer. */
-"Fast and no wait until the sender is online!" = "Gyors és nem kell várni, amíg a feladó online lesz!";
+"Fast and no wait until the sender is online!" = "Gyors és nem kell várni, amíg az üzenetküldő online lesz!";
 
 /* No comment provided by engineer. */
 "Faster deletion of groups." = "Gyorsabb csoporttörlés.";
@@ -3366,7 +3366,7 @@ snd error text */
 "message received" = "üzenet érkezett";
 
 /* No comment provided by engineer. */
-"Message reception" = "Üzenetjelentés";
+"Message reception" = "Üzenetfogadás";
 
 /* No comment provided by engineer. */
 "Message servers" = "Üzenetkiszolgálók";
@@ -3800,7 +3800,7 @@ new chat action */
 "Only group owners can enable voice messages." = "Csak a csoport tulajdonosai engedélyezhetik a hangüzenetek küldését.";
 
 /* No comment provided by engineer. */
-"Only sender and moderators see it" = "Csak a küldő és a moderátorok látják";
+"Only sender and moderators see it" = "Csak az üzenet küldője és a moderátorok látják";
 
 /* No comment provided by engineer. */
 "Only you and moderators see it" = "Csak Ön és a moderátorok látják";
@@ -4283,7 +4283,7 @@ new chat action */
 "Received total" = "Összes fogadott üzenet";
 
 /* No comment provided by engineer. */
-"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "A fogadási cím egy másik kiszolgálóra fog módosulni. A cím módosítása a feladó online állapotba kerülése után fejeződik be.";
+"Receiving address will be changed to a different server. Address change will complete after sender comes online." = "Az üzenetfogadási cím egy másik kiszolgálóra fog módosulni. A cím módosítása akkor fejeződik be, amikor az üzenetküldési kiszolgáló online lesz.";
 
 /* No comment provided by engineer. */
 "Receiving file will be stopped." = "A fájl fogadása le fog állni.";
@@ -4345,7 +4345,7 @@ swipe action */
 "Reject" = "Elutasítás";
 
 /* No comment provided by engineer. */
-"Reject (sender NOT notified)" = "Elutasítás (a feladó NEM kap értesítést)";
+"Reject (sender NOT notified)" = "Elutasítás (a kérés küldője NEM fog értesítést kapni)";
 
 /* alert title */
 "Reject contact request" = "Partneri kapcsolatkérés elutasítása";
@@ -4375,7 +4375,7 @@ swipe action */
 "Remove image" = "Kép eltávolítása";
 
 /* No comment provided by engineer. */
-"Remove link tracking" = "Hivatkozáskövetés eltávolítása";
+"Remove link tracking" = "Nyomonkövetési paraméterek eltávolítása a hivatkozásokból";
 
 /* No comment provided by engineer. */
 "Remove member" = "Eltávolítás";
@@ -4796,7 +4796,7 @@ chat item action */
 "Sender cancelled file transfer." = "A fájl küldője visszavonta az átvitelt.";
 
 /* No comment provided by engineer. */
-"Sender may have deleted the connection request." = "A küldője törölhette a kapcsolódási kérést.";
+"Sender may have deleted the connection request." = "A kérés küldője törölhette a kapcsolódási kérést.";
 
 /* No comment provided by engineer. */
 "Sending delivery receipts will be enabled for all contacts in all visible chat profiles." = "A kézbesítési jelentések küldése engedélyezve lesz az összes látható csevegési profilban lévő összes partnere számára.";
@@ -5114,6 +5114,9 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "A SimpleX protokollokat a Trail of Bits auditálta.";
 
+/* simplex link type */
+"SimpleX relay link" = "SimpleX továbbítókiszolgáló-hivatkozás";
+
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Egyszerűsített inkognitómód";
 
@@ -5413,7 +5416,7 @@ report reason */
 "The second tick we missed! ✅" = "A második jelölés, amit kihagytunk! ✅";
 
 /* alert message */
-"The sender will NOT be notified" = "A feladó NEM fog értesítést kapni";
+"The sender will NOT be notified" = "A kérés küldője NEM fog értesítést kapni";
 
 /* No comment provided by engineer. */
 "The servers for new connections of your current chat profile **%@**." = "A jelenlegi **%@** nevű csevegési profiljához tartozó új kapcsolatok kiszolgálói.";
@@ -5866,7 +5869,7 @@ report reason */
 "via one-time link" = "egy egyszer használható meghívón keresztül";
 
 /* No comment provided by engineer. */
-"via relay" = "egy továbbítókiszolgálón keresztül";
+"via relay" = "továbbítókiszolgálón keresztül";
 
 /* No comment provided by engineer. */
 "Via secure quantum resistant protocol." = "Biztonságos kvantumbiztos protokollon keresztül.";

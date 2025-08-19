@@ -934,7 +934,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow voice messages?" xml:space="preserve">
         <source>Allow voice messages?</source>
-        <target>Sprachnachricht erlauben?</target>
+        <target>Sprachnachrichten erlauben?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts adding message reactions." xml:space="preserve">
@@ -5029,7 +5029,7 @@ Das ist Ihr Link für die Gruppe %@!</target>
       </trans-unit>
       <trans-unit id="Message queue info" xml:space="preserve">
         <source>Message queue info</source>
-        <target>Nachrichten-Warteschlangen-Information</target>
+        <target>Information Nachrichtenwarteschlange</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message reactions" xml:space="preserve">
@@ -5784,7 +5784,7 @@ Dies erfordert die Aktivierung eines VPNs.</target>
       </trans-unit>
       <trans-unit id="Open clean link" xml:space="preserve">
         <source>Open clean link</source>
-        <target>Geklärten Link öffnen</target>
+        <target>Trackingfreien Link öffnen</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open conditions" xml:space="preserve">
@@ -7716,6 +7716,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX relay link" xml:space="preserve">
         <source>SimpleX relay link</source>
+        <target>SimpleX Relais-Link</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
@@ -8240,22 +8241,22 @@ Dies kann passieren, wenn es einen Fehler gegeben hat oder die Verbindung kompro
       </trans-unit>
       <trans-unit id="This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." xml:space="preserve">
         <source>This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain.</source>
-        <target>Es werden alle herunter- und hochgeladenen Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target>Dieser Vorgang kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien sowie Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes.</source>
-        <target>Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target>Dieser Vorgang kann nicht rückgängig gemacht werden - die früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht. Dies kann ein paar Minuten dauern.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." xml:space="preserve">
         <source>This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted.</source>
-        <target>Die älteren als die ausgewählten gesendeten und empfangenen Nachrichten in diesem Chat werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target>Dieser Vorgang kann nicht rückgängig gemacht werden - die in diesem Chat früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." xml:space="preserve">
         <source>This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost.</source>
-        <target>Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!</target>
+        <target>Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="This chat is protected by end-to-end encryption." xml:space="preserve">

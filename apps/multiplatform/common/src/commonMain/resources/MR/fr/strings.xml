@@ -2344,4 +2344,21 @@
     <string name="error_reading_passphrase">Erreur lors de la lecture de la phase secrète de la base de données</string>
     <string name="v6_3_reports_descr">Aider les administrateurs à modérer leurs groupes.</string>
     <string name="block_members_desc">Tous les nouveaux messages de ces membres seront cachés !</string>
+    <string name="connect_use_incognito_profile">Utiliser le profil incognito</string>
+    <string name="connect_plan_open_chat">Chat ouvert</string>
+    <string name="connect_plan_open_new_chat">Ouvrir un nouveau chat</string>
+    <string name="connect_plan_open_new_group">Ouvrir un nouveau groupe</string>
+    <string name="simplex_link_channel">Lien pour la voie SimpleX</string>
+    <string name="private_routing_no_session">Pas de session de routage privé</string>
+    <string name="error_accepting_member">Membre acceptant des erreurs</string>
+    <string name="error_deleting_member_support_chat">Erreur effaçant le chat avec le membre</string>
+    <string name="unsupported_connection_link">Lien de connexion pas soutenu</string>
+    <string name="link_requires_newer_app_version_please_upgrade">Ce lien requiert une version de l\'application plus récente. Veuillez s\'il-vous-plait actualiser l\'application ou demander à votre contact de vous envoyer un lien compatible.</string>
+    <string name="error_rejecting_contact_request">Erreur lors de rejeter la demande de contact</string>
+    <string name="error_preparing_contact">Erreur en ouvrant le chat</string>
+    <string name="error_preparing_group">Erreur en ouvrant le groupe</string>
+    <string name="error_changing_user">Erreur en changeant le profil</string>
+    <string name="v6_4_1_new_interface_languages">Quatres nouvelles langues d\'interface</string>
+    <string name="v6_4_1_short_address_share">Partagez votre adresse</string>
+    <string name="v6_4_1_short_address_update">Actualisez votre adresse</string>
 </resources>

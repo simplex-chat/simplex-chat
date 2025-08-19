@@ -5114,6 +5114,9 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolli di SimpleX esaminati da Trail of Bits.";
 
+/* simplex link type */
+"SimpleX relay link" = "Link del relay SimpleX";
+
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Modalità incognito semplificata";
 
