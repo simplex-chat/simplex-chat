@@ -12,7 +12,7 @@ constraints: zip +disable-bzip2 +disable-zstd
 source-repository-package
     type: git
     location: https://codeberg.org/s1m/sxmq.git
-    tag: a9ef465c0af3829c58fb5e45627d9673aa5b1ee7
+    tag: f28a2052ae88c59653993ca0e409231b5ed00b11
 
 -- source-repository-package
 --     type: git

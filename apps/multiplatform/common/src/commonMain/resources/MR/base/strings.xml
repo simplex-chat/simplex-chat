@@ -277,7 +277,9 @@
   <string name="notification_contact_connected">Connected</string>
   <string name="error_showing_desktop_notification">Error showing notification, contact developers.</string>
   <string name="warning_push_needs_ntf_server">You first need to set a NTF server to get push notifications.\n\nIt will send the notifications to your push provider.</string>
+  <string name="warning_push_needs_ntf_server_with_vapid">Your NTF server doesn\'t support VAPID, which is required to get push notifications.</string>
   <string name="warning_push_needs_push_service">You don\'t have any push service installed on your device.\n\nPlease installed one and try again.\n\nFor more information, visit\ </string>
+  <string name="warning_ntf_server_changed">Your NTF server has been removed or has changed and doesn\'t support VAPID, which is required to get push notifications.</string>
   <string name="select_push_service">Select Push Service</string>
   <string name="select_push_service_intro">Multiple push services are installed on your system, please select the service you wish to use.</string>
   <string name="unifiedpush_unregistered">SimpleX is no longer registered with your UnifiedPush distributor. The distributor may have been uninstalled or been logged out. You should reset your notifications settings.</string>

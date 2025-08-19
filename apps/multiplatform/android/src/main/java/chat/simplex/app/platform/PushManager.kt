@@ -24,12 +24,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.coroutines.*
 import org.unifiedpush.android.connector.UnifiedPush
+import androidx.core.net.toUri
 
 /**
  * Object with functions to interact with push services
  */
 object PushManager {
   private const val TAG = "PushManager"
+  private val VAPID_REGEX = Regex("^[A-Za-z0-9_-]{87}(=+)?$")
 
   /**
    * Check if a NTF server is setup and ask user's push distributor
@@ -42,12 +44,20 @@ object PushManager {
   suspend fun initUnifiedPush(context: Context, scope: CoroutineScope, onSuccess: () -> Unit) {
     val rh = chatModel.remoteHostId()
     val userServers = getUserServers(rh) ?: listOf()
-    if (!userServers.hasNtfServer()) {
+    val userNtfServer = userServers.userNtfServer()
+      ?: run {
       Log.d(TAG, "User doesn't have any NTF server")
       showMissingNTFDialog(scope, rh, userServers)
       // After coming back from the server view, users will have to click on "Instant" again
       return
     }
+    val vapid = userNtfServer.vapid()
+      ?: run {
+        Log.d(TAG, "User NTF Server doesn't have any VAPID FP")
+        showNTFNoVAPIDDialog(scope, rh, userServers)
+        // After coming back from the server view, users will have to click on "Instant" again
+        return
+      }
     val distributors = UnifiedPush.getDistributors(context)
     when (distributors.size) {
       0 -> {
@@ -57,7 +67,7 @@ object PushManager {
       1 -> {
         Log.d(TAG, "Found only one distributor installed")
         UnifiedPush.saveDistributor(context, distributors.first())
-        register(context)
+        register(context, vapid)
         onSuccess()
       }
       else -> {
@@ -65,7 +75,7 @@ object PushManager {
         showSelectPushServiceIntroDialog {
           showSelectPushServiceDialog(context, distributors) {
             UnifiedPush.saveDistributor(context, it)
-            register(context)
+            register(context, vapid)
             onSuccess()
           }
         }
@@ -79,26 +89,39 @@ object PushManager {
    * To run when the app starts; call [chat.simplex.app.PushService.onUnregistered]
    * if the distributor is uninstalled
    */
-  fun initStart(context: Context) {
+  suspend fun initStart(context: Context) {
     Log.d(TAG, "Init UnifiedPush during app startup")
     //TODO: limit to once a day to reduce registrations to ntf server ?
     UnifiedPush.getAckDistributor(context)?.let {
-      register(context)
+      val vapid = getUserServers(chatModel.remoteHostId())
+        ?.userNtfServer()
+        ?.vapid()
+        // Unregister if the user deleted the ntf server or change it with one without vapid
+        ?: return UnifiedPush.unregister(context)
+      register(context, vapid)
     }
   }
 
-  private fun register(context: Context) {
-    // TODO: add VAPID
-    UnifiedPush.register(context)
+  private fun register(context: Context, vapid: String) {
+    UnifiedPush.register(context, vapid = vapid)
   }
 
   /**
-   * Check if any NTF server is recorded
+   * Get user NTF server
    */
-  private fun List<UserOperatorServers>.hasNtfServer(): Boolean {
-    // TODO: check if ntf server has a VAPID key
-    return this.any { it.ntfServers.any { s -> s.enabled } }
+  private fun List<UserOperatorServers>.userNtfServer(): UserServer? {
+    return this.firstNotNullOfOrNull {
+      it.ntfServers.firstOrNull { s -> s.enabled }
+    }
   }
+
+  /**
+   * Get vapid fingerprint from the URI
+   */
+  private fun UserServer.vapid(): String ? = server
+    .toUri()
+    .getQueryParameter("vapid")
+    ?.takeIf { VAPID_REGEX.matches(it) }
 
   /**
    * Show a dialog to inform about missing NTF server
@@ -136,6 +159,41 @@ object PushManager {
     )
   }
 
+  /**
+   * Show a dialog to inform about missing VAPID with the NTF server
+   */
+  private fun showNTFNoVAPIDDialog(scope: CoroutineScope, rh: Long?, userServers: List<UserOperatorServers>) = AlertManager.shared.showAlert {
+    AlertDialog(
+      onDismissRequest = AlertManager.shared::hideAlert,
+      title = {
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+          Icon(
+            painterResource(MR.images.ic_warning),
+            contentDescription = null, // The icon doesn't add any meaning and must not be transcripted with screen readers
+          )
+          Text(
+            stringResource(MR.strings.icon_descr_instant_notifications),
+            fontWeight = FontWeight.Bold
+          )
+        }
+      },
+      text = {
+        Text(stringResource(MR.strings.warning_push_needs_ntf_server_with_vapid))
+      },
+      // Go to user's servers settings
+      confirmButton = {
+        TextButton(onClick = {
+          AlertManager.shared.hideAlert()
+          showAddServerDialog(scope, rh, userServers)
+        }) { Text(stringResource(MR.strings.smp_servers_add)) }
+      },
+      // Ignore
+      dismissButton = {
+        TextButton(onClick = AlertManager.shared::hideAlert) { Text(stringResource(android.R.string.cancel)) }
+      },
+      shape = RoundedCornerShape(corner = CornerSize(25.dp))
+    )
+  }
   /**
    * Dialog to add a server, manually or with a QR code
    */
