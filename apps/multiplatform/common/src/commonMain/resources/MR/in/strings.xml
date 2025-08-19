@@ -2407,4 +2407,20 @@
     <string name="accept_pending_member_alert_title">Terima anggota</string>
     <string name="accept_pending_member_alert_question">Anggota akan bergabung ke grup, terima?</string>
     <string name="reject_pending_member_alert_title">Tolak anggota?</string>
+    <string name="v6_4_1_new_interface_languages">4 bahasa antarmuka baru</string>
+    <string name="accept_contact_request">Terima permintaan kontak</string>
+    <string name="chat_banner_accept_contact_request">Terima permintaan kontak</string>
+    <string name="compose_view_add_message">Tambahkan pesan</string>
+    <string name="allow_files_and_media_only_if">Izinkan berkas dan media jika kontak Anda mengizinkan.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Izinkan kontak Anda mengirim berkas dan media.</string>
+    <string name="short_descr__field">Bio:</string>
+    <string name="bio_too_large">Bio terlalu panjang</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="both_you_and_your_contact_can_send_files">Anda dan kontak Anda dapat mengirim berkas dan media.</string>
+    <string name="chat_banner_business_connection">Koneksi bisnis</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Tak dapat ubah profil</string>
+    <string name="v6_4_1_new_interface_languages_descr">Bahasa Katalan, Indonesia, Rumania, dan Vietnam - terima kasih kepada pengguna kami!</string>
+    <string name="e2ee_info_e2ee"><![CDATA[Pesan dilindungi <b>enkripsi end-to-end</b>.]]></string>
+    <string name="compose_view_send_contact_request_alert_text"><![CDATA[Anda akan dapat mengirim pesan <b>hanya setelah permintaan Anda diterima</b>.]]></string>
+    <string name="v6_4_support_chat">Obrolan dengan admin</string>
 </resources>

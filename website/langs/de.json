@@ -16,7 +16,7 @@
     "simplex-explained-tab-1-p-2": "Wie funktioniert das mit den unidirektionalen Warteschlangen und ohne Profilkennungen?",
     "simplex-explained-tab-2-p-1": "Für jede Verbindung nutzen Sie zwei separate Nachrichten-Warteschlangen, um die Nachrichten über verschiedene Server zu senden und zu empfangen.",
     "simplex-explained-tab-2-p-2": "Die Server leiten Nachrichten immer nur in eine Richtung weiter, ohne den vollständigen Verlauf der Nutzer-Unterhaltungen oder seiner Verbindungen zu kennen.",
-    "simplex-explained-tab-3-p-1": "Die Server nutzen für jede Warteschlange separate, anonyme Anmeldeinformationen und wissen nicht welchem Nutzer diese gehören.",
+    "simplex-explained-tab-3-p-1": "Die Server nutzen für jede Warteschlange separate, anonyme Anmeldeinformationen und wissen nicht, welchem Nutzer diese gehören.",
     "simplex-explained-tab-3-p-2": "Durch die Verwendung von Tor-Zugangsservern können Nutzer ihre Metadaten-Privatsphäre weiter verbessern und Korellationen von IP-Adressen verhindern.",
     "smp-protocol": "SMP-Protokoll",
     "chat-bot-example": "Beispiel für einen Chatbot",
