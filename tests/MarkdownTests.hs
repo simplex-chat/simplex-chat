@@ -378,9 +378,18 @@ testSanitizeUri = describe "sanitizeUri" $ do
     "https://www.youtube.com/watch?v=abc&t=123" `sanitized` Nothing
     "https://www.youtube.com/watch?ref=456&v=abc&t=123" `sanitized` Just "https://www.youtube.com/watch?v=abc&t=123"
   it "should only allow whitelisted parameters if path contains IDs" $ do
-    "https://example.com/page/a123?name=abc" `sanitized` Just "https://example.com/page/a123"
     "https://youtu.be/a123?si=456" `sanitized` Just "https://youtu.be/a123"
     "https://youtu.be/a123?t=456" `sanitized` Nothing
     "https://youtu.be/a123?si=456&t=789" `sanitized` Just "https://youtu.be/a123?t=789"
+  it "should allow some parameters in safe mode, but sanitize in unsafe" $ do
+    "https://example.com/page/a123?source=abc" `eagerSanitized` Just "https://example.com/page/a123"
+    "https://example.com/page/a123?source=abc" `safeSanitized` Nothing -- source is in unsafe blacklist
+    "https://example.com/page/a123?name=abc" `eagerSanitized` Just "https://example.com/page/a123"
+    "https://example.com/page/a123?name=abc" `safeSanitized` Nothing -- name is not in a whitelist
   where
-    s `sanitized` res = (U.serializeURIRef' <$$> (sanitizeUri <$> parseUri s)) `shouldBe` Right res
+    s `eagerSanitized` res = sanitized_ False s res
+    s `safeSanitized` res = sanitized_ True s res
+    s `sanitized` res = do
+      s `eagerSanitized` res
+      s `safeSanitized` res
+    sanitized_ safe s res = (U.serializeURIRef' <$$> (sanitizeUri safe <$> parseUri s)) `shouldBe` Right res

@@ -4634,8 +4634,8 @@ data class ParsedServerAddress (
   var parseError: String
 )
 
-fun parseSanitizeUri(s: String): ParsedUri? {
-  val parsed = chatParseUri(s)
+fun parseSanitizeUri(s: String, safe: Boolean): ParsedUri? {
+  val parsed = chatParseUri(s, if (safe) 1 else 0)
   return runCatching { json.decodeFromString(ParsedUri.serializer(), parsed) }
     .onFailure { Log.d(TAG, "parseSanitizeUri decode error: $it") }
     .getOrNull()

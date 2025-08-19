@@ -99,9 +99,9 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
               created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
-            WHERE user_id = ? AND agent_conn_id = ?
+            WHERE user_id = ? AND agent_conn_id = ? AND conn_status != ?
           |]
-          (userId, agentConnId)
+          (userId, agentConnId, ConnDeleted)
     getContactRec_ :: Int64 -> Connection -> ExceptT StoreError IO Contact
     getContactRec_ contactId c = ExceptT $ do
       chatTags <- getDirectChatTags db contactId
@@ -116,9 +116,9 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
               c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
-            WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
+            WHERE c.user_id = ? AND c.contact_id = ? AND c.contact_status = ? AND c.deleted = 0
           |]
-          (userId, contactId)
+          (userId, contactId, CSActive)
     toContact' :: Int64 -> Connection -> [ChatTagId] -> ContactRow' -> Contact
     toContact' contactId conn chatTags ((profileId, localDisplayName, viaGroup, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, BI contactUsed, contactStatus) :. (enableNtfs_, sendRcpts, BI favorite, preferences, userPreferences, createdAt, updatedAt, chatTs) :. preparedContactRow :. (contactRequestId, contactGroupMemberId, BI contactGrpInvSent) :. groupDirectInvRow :. (uiThemes, BI chatDeleted, customData, chatItemTTL)) =
       let profile = LocalProfile {profileId, displayName, fullName, shortDescr, image, contactLink, peerType, preferences, localAlias}
@@ -163,8 +163,9 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
                 JOIN group_members mu ON g.group_id = mu.group_id
                 JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
                 WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
+                  AND mu.member_status NOT IN (?,?,?)
               |]
-              (groupMemberId, userId, userContactId)
+              (groupMemberId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       liftIO $ bitraverse (addGroupChatTags db) pure gm
     toGroupAndMember :: Connection -> GroupInfoRow :. GroupMemberRow -> (GroupInfo, GroupMember)
     toGroupAndMember c (groupInfoRow :. memberRow) =
