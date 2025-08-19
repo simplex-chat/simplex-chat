@@ -4,10 +4,8 @@ import SectionBottomSpacer
 import SectionTextFooter
 import SectionView
 import SectionViewSelectable
-import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.AnnotatedString
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.capitalize
@@ -15,7 +13,6 @@ import androidx.compose.ui.text.intl.Locale
 import androidx.compose.ui.text.style.TextOverflow
 import chat.simplex.common.model.*
 import chat.simplex.common.platform.*
-import chat.simplex.common.ui.theme.DEFAULT_PADDING_HALF
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlin.collections.ArrayList
