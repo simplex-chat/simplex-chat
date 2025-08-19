@@ -20,10 +20,7 @@ You can get the latest beta releases from [GitHub](https://github.com/simplex-ch
 You can link your mobile device with desktop to use the same profile remotely, but this is only possible when both devices are connected to the same local network.
 
 **Linux**:
-x86_64:
-[AppImage](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage) or [Flatpak](https://flathub.org/apps/chat.simplex.simplex) (most Linux distros), [Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb) (and Debian-based distros), [Ubuntu 24.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-x86_64.deb).
-aarch64:
-[Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-aarch64.deb) (and Debian-based distros), [Ubuntu 24.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-aarch64.deb).
+AppImage [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-aarch64.AppImage) or [Flatpak](https://flathub.org/apps/chat.simplex.simplex) (most Linux distros), Ubuntu 22.04 [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-aarch64.deb) (and Debian-based distros), Ubuntu 24.04 [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-x86_64.deb), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-aarch64.deb).
 
 **Mac**: [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-aarch64.dmg) (Apple Silicon), [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-x86_64.dmg) (Intel).
 
@@ -40,10 +37,7 @@ aarch64:
 See [Using terminal app](/docs/CLI.md).
 
 **Linux**:
-x86_64:
-[Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-x86_64), [Ubuntu 24.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-24_04-x86_64).
-aarch64:
-[Ubuntu 22.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-aarch64), [Ubuntu 24.04](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-24_04-aarch64).
+Ubuntu 22.04 [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-x86_64), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-22_04-aarch64), Ubuntu 24.04 [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-24_04-x86_64), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-ubuntu-24_04-aarch64).
 
 **Mac** [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-macos-x86-64), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-chat-macos-aarch64).
 
