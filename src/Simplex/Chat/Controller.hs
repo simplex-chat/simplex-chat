@@ -238,6 +238,8 @@ data ChatController = ChatController
     remoteCtrlSession :: TVar (Maybe (SessionSeq, RemoteCtrlSession)), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
+    workerSeq :: TVar Int,
+    forwardWorkers :: TMap ForwardWorkerAssignment (Worker, TMVar ()),
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),

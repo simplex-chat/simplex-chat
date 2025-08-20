@@ -899,6 +899,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
           (fwdScopesMsgs, shouldDelConns) <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, False) aChatMsgs
+          -- TODO [channels fwd] schedule forwarding tasks instead of doing forwarding synchronously
+          -- save task with ForwardContextTag
           when (isUserGrpFwdRelay gInfo') $ do
             unless (blockedByAdmin m) $
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
@@ -3303,3 +3305,48 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else pure Nothing
               else pure Nothing
           _ -> pure Nothing
+
+-- TODO [channels fwd] forwarding worker implementation, below is not working code
+-- TODO [channels fwd] refactor agent Worker for export and reuse
+
+startForwardWorkers :: AM ()
+startForwardWorkers = do
+  -- TODO [channels fwd] getPendingFwdAssignments - select based on pending tasks
+  pendingFwdAssignments <- withStore' c $ \db -> getPendingFwdAssignments db
+  lift . forM_ pendingFwdAssignments resumeForwardWork
+
+data ForwardPriority = FPRegular | FPImportant
+
+-- for each group and forwad scope 2 workers can be created for each priority
+type ForwardWorkerAssignment = (GroupId, GroupForwardScope, ForwardPriority)
+
+-- to be used on startup
+resumeForwardWork :: ForwardWorkerAssignment -> CM ()
+resumeForwardWork = void .: getForwardWorker False
+
+-- to be used when new work items are available
+getForwardWorker :: Bool -> ForwardWorkerAssignment -> CM Worker
+getForwardWorker hasWork fwdAssignment = do
+  ws <- asks forwardWorkers
+  -- TODO [channels fwd] not an **agent** worker
+  getAgentWorker "fwd" hasWork fwdAssignment ws $ runForwardWorker fwdAssignment
+
+runForwardWorker :: ForwardWorkerAssignment -> Worker -> CM ()
+runForwardWorker fwdAssignment Worker {doWork} = do
+  forever $ do
+    lift $ waitForWork doWork
+    runForwardingOperation cfg
+  where
+    runForwardingOperation :: CM ()
+    runForwardingOperation = do
+      -- TODO [channels fwd] getNextForwardTask - search "inside" worker assignment for next task
+      withWork c doWork (\db -> getNextForwardTask db fwdAssignment) processDeletedReplica
+      where
+        processForwardTask :: ForwardTask -> CM ()
+        processForwardTask = do
+          -- TODO [channels fwd] implement forwarding logic
+          -- case by task context (ForwardTaskContext)
+          -- for MessageForwardContext: build encoding/list of messages
+          -- job(s) iterating over members via cursor(s)
+          -- post forwarding operations: e.g. delete group connections (for RelayRemovalForwardContext)
+          pure ()
