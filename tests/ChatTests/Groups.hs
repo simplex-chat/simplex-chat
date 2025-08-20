@@ -112,7 +112,7 @@ chatGroupTests = do
     it "accept member - only moderators review" testGLinkReviewMember
     it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
-    fit "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
+    it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
