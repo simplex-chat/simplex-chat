@@ -4554,6 +4554,14 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
+      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      WHERE group_member_id = ?
+    
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE group_members
       SET show_messages = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
     
