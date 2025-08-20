@@ -1326,9 +1326,9 @@ updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRang
     else pure conn'
 
 updateMemberChatVRange :: GroupMember -> Connection -> VersionRangeChat -> CM (GroupMember, Connection)
-updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
+updateMemberChatVRange mem@GroupMember {groupMemberId, memberChatVRange} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
   v' <- lift $ upgradedConnVersion v msgVRange
-  if msgVRange /= peerChatVRange || v' /= v
+  if msgVRange /= peerChatVRange || v' /= v || msgVRange /= memberChatVRange
     then do
       withStore' $ \db -> do
         setPeerChatVRange db connId v' msgVRange
