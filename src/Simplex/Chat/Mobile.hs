@@ -245,6 +245,7 @@ mobileChatOpts dbOptions =
           { dbOptions,
             smpServers = [],
             xftpServers = [],
+            ntfServers = [],
             simpleNetCfg = defaultSimpleNetCfg,
             logLevel = CLLImportant,
             logConnections = False,

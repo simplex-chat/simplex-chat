@@ -50,10 +50,11 @@ terminalChatConfig =
                         ],
                     useSMP = 3,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    ntf = map (presetServer True) $ L.toList _defaultNtfServers,
+                    useNTF = 3
                   }
               ],
-            ntf = _defaultNtfServers,
             netCfg =
               defaultNetworkConfig
                 { smpProxyMode = SPMUnknown,

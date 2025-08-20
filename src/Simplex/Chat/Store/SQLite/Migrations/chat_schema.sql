@@ -494,6 +494,7 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   host TEXT NOT NULL,
   port TEXT NOT NULL,
   key_hash BLOB NOT NULL,
+  extras TEXT,
   basic_auth TEXT,
   preset INTEGER NOT NULL DEFAULT 0,
   tested INTEGER,

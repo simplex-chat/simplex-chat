@@ -230,6 +230,9 @@ object NtfManager {
     val builder = NotificationCompat.Builder(context, MessageChannel)
       .setContentTitle(title)
       .setContentText(text)
+      .setStyle(
+        NotificationCompat.BigTextStyle().bigText(text)
+      )
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setGroup(MessageGroup)
       .setGroupAlertBehavior(NotificationCompat.GROUP_ALERT_CHILDREN)

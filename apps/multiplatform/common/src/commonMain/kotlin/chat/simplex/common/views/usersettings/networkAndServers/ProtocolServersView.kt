@@ -148,12 +148,40 @@ fun YourServersViewLayout(
       }
     }
 
+    if (platform.supportsPushNotifications) {
+      if (userServers.value[operatorIndex].ntfServers.any { !it.deleted }) {
+        SectionDividerSpaced()
+        SectionView(generalGetString(MR.strings.notif_servers).uppercase()) {
+          userServers.value[operatorIndex].ntfServers.forEachIndexed { i, server ->
+            if (server.deleted) return@forEachIndexed
+            SectionItemView({ navigateToProtocolView(i, server, ServerProtocol.NTF) }) {
+              ProtocolServerViewLink(
+                srv = server,
+                serverProtocol = ServerProtocol.NTF,
+                duplicateHosts = duplicateHosts
+              )
+            }
+          }
+        }
+        val ntfErr = globalNTFServersError(serverErrors.value)
+        if (ntfErr != null) {
+          SectionCustomFooter {
+            ServersErrorFooter(ntfErr)
+          }
+        } else {
+          SectionTextFooter(generalGetString(MR.strings.ntf_servers_per_user))
+        }
+      }
+    }
+
     if (
+      userServers.value[operatorIndex].ntfServers.any { !it.deleted } && platform.supportsPushNotifications ||
       userServers.value[operatorIndex].smpServers.any { !it.deleted } ||
       userServers.value[operatorIndex].xftpServers.any { !it.deleted }
       ) {
       SectionDividerSpaced(maxTopPadding = false, maxBottomPadding = false)
     }
+
 
     SectionView {
       SettingsActionItem(
@@ -178,14 +206,19 @@ fun YourServersViewLayout(
         testing = testing,
         smpServers = userServers.value[operatorIndex].smpServers,
         xftpServers = userServers.value[operatorIndex].xftpServers,
+        ntfServers = userServers.value[operatorIndex].ntfServers,
       ) { p, l ->
         when (p) {
+          ServerProtocol.NTF -> userServers.value = userServers.value.toMutableList().apply {
+            this[operatorIndex] = this[operatorIndex].copy(
+              ntfServers = l
+            )
+          }
           ServerProtocol.XFTP -> userServers.value = userServers.value.toMutableList().apply {
             this[operatorIndex] = this[operatorIndex].copy(
               xftpServers = l
             )
           }
-
           ServerProtocol.SMP -> userServers.value = userServers.value.toMutableList().apply {
             this[operatorIndex] = this[operatorIndex].copy(
               smpServers = l
@@ -204,16 +237,17 @@ fun YourServersViewLayout(
 fun TestServersButton(
   smpServers: List<UserServer>,
   xftpServers: List<UserServer>,
+  ntfServers: List<UserServer>,
   testing: MutableState<Boolean>,
   onUpdate: (ServerProtocol, List<UserServer>) -> Unit
 ) {
   val scope = rememberCoroutineScope()
-  val disabled = derivedStateOf { (smpServers.none { it.enabled } && xftpServers.none { it.enabled }) || testing.value }
+  val disabled = derivedStateOf { (smpServers.none { it.enabled } && xftpServers.none { it.enabled } && ntfServers.none { it.enabled }) || testing.value }
 
   SectionItemView(
     {
       scope.launch {
-        testServers(testing, smpServers, xftpServers, chatModel, onUpdate)
+        testServers(testing, smpServers, xftpServers, ntfServers, chatModel, onUpdate)
       }
     },
     disabled = disabled.value
@@ -303,6 +337,7 @@ private suspend fun testServers(
   testing: MutableState<Boolean>,
   smpServers: List<UserServer>,
   xftpServers: List<UserServer>,
+  ntfServers: List<UserServer>,
   m: ChatModel,
   onUpdate: (ServerProtocol, List<UserServer>) -> Unit
 ) {
@@ -310,11 +345,14 @@ private suspend fun testServers(
   onUpdate(ServerProtocol.SMP, smpResetStatus)
   val xftpResetStatus = resetTestStatus(xftpServers)
   onUpdate(ServerProtocol.XFTP, xftpResetStatus)
+  val ntfResetStatus = resetTestStatus(ntfServers)
+  onUpdate(ServerProtocol.NTF, ntfResetStatus)
   testing.value = true
   val smpFailures = runServersTest(smpResetStatus, m) { onUpdate(ServerProtocol.SMP, it) }
   val xftpFailures = runServersTest(xftpResetStatus, m) { onUpdate(ServerProtocol.XFTP, it) }
+  val ntfFailures = runServersTest(ntfResetStatus, m) { onUpdate(ServerProtocol.NTF, it) }
   testing.value = false
-  val fs = smpFailures + xftpFailures
+  val fs = smpFailures + xftpFailures + ntfFailures
   if (fs.isNotEmpty()) {
     val msg = fs.map { it.key + ": " + it.value.localizedDescription }.joinToString("\n")
     AlertManager.shared.showAlertMsg(
@@ -352,6 +390,32 @@ private suspend fun runServersTest(servers: List<UserServer>, m: ChatModel, onUp
     }
   }
   return fs
+}
+
+fun deleteNTFServer(
+  userServers: MutableState<List<UserOperatorServers>>,
+  operatorServersIndex: Int,
+  serverIndex: Int
+) {
+  val serverIsSaved = userServers.value[operatorServersIndex].ntfServers[serverIndex].serverId != null
+
+  if (serverIsSaved) {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        ntfServers = this[operatorServersIndex].ntfServers.toMutableList().apply {
+          this[serverIndex] = this[serverIndex].copy(deleted = true)
+        }
+      )
+    }
+  } else {
+    userServers.value = userServers.value.toMutableList().apply {
+      this[operatorServersIndex] = this[operatorServersIndex].copy(
+        ntfServers = this[operatorServersIndex].ntfServers.toMutableList().apply {
+          this.removeAt(serverIndex)
+        }
+      )
+    }
+  }
 }
 
 fun deleteXFTPServer(

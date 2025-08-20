@@ -20,6 +20,7 @@ import androidx.work.*
 import chat.simplex.app.MainActivity.Companion.OLD_ANDROID_UI_FLAGS
 import chat.simplex.app.model.NtfManager
 import chat.simplex.app.model.NtfManager.AcceptCallAction
+import chat.simplex.app.platform.PushManager
 import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
@@ -237,6 +238,16 @@ class SimplexApp: Application(), LifecycleEventObserver {
         if (mode != NotificationsMode.PERIODIC) {
           MessagesFetcherWorker.cancelAll()
         }
+        if (mode == NotificationsMode.INSTANT) {
+          CoroutineScope(Dispatchers.Default).launch {
+            SimplexService.initUnifiedPush(this) {
+              // Change notifications mode only if everything is correctly setup
+              chatModel.controller.appPrefs.notificationsMode.set(mode)
+            }
+          }
+        } else {
+          chatModel.controller.appPrefs.notificationsMode.set(mode)
+        }
         SimplexService.showBackgroundServiceNoticeIfNeeded(showOffAlert = false)
       }
 
@@ -246,6 +257,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           NotificationsMode.SERVICE -> CoroutineScope(Dispatchers.Default).launch { platform.androidServiceStart() }
           NotificationsMode.PERIODIC -> SimplexApp.context.schedulePeriodicWakeUp()
           NotificationsMode.OFF -> {}
+          NotificationsMode.INSTANT -> {}
         }
       }
 
@@ -259,10 +271,15 @@ class SimplexApp: Application(), LifecycleEventObserver {
         // Prevents from showing "Enable notifications" alert when onboarding wasn't complete yet
         if (chatModel.controller.appPrefs.onboardingStage.get() == OnboardingStage.OnboardingComplete) {
           SimplexService.showBackgroundServiceNoticeIfNeeded()
-          if (appPrefs.notificationsMode.get() == NotificationsMode.SERVICE)
-            withBGApi {
+          when (appPrefs.notificationsMode.get()) {
+            NotificationsMode.SERVICE -> withBGApi {
               platform.androidServiceStart()
             }
+            NotificationsMode.INSTANT -> withBGApi {
+              PushManager.initStart(context)
+            }
+            else -> {}
+          }
         }
       }
 
@@ -370,6 +387,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override fun androidCreateActiveCallState(): Closeable = ActiveCallState()
 
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
+      override val supportsPushNotifications = true
     }
   }
 

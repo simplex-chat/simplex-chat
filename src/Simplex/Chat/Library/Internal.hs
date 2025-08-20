@@ -151,13 +151,14 @@ withFileLock name = withEntityLock name . CLFile
 {-# INLINE withFileLock #-}
 
 useServerCfgs :: forall p. UserProtocol p => SProtocolType p -> RandomAgentServers -> [(Text, ServerOperator)] -> [UserServer p] -> NonEmpty (ServerCfg p)
-useServerCfgs p RandomAgentServers {smpServers, xftpServers} opDomains =
+useServerCfgs p RandomAgentServers {smpServers, xftpServers, ntfServers} opDomains =
   fromMaybe (rndAgentServers p) . L.nonEmpty . agentServerCfgs p opDomains
   where
     rndAgentServers :: SProtocolType p -> NonEmpty (ServerCfg p)
     rndAgentServers = \case
       SPSMP -> smpServers
       SPXFTP -> xftpServers
+      SPNTF -> ntfServers
 
 contactCITimed :: Contact -> CM (Maybe CITimed)
 contactCITimed ct = sndContactCITimed False ct Nothing

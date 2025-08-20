@@ -22,6 +22,7 @@ import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
 import androidx.work.*
 import chat.simplex.app.model.NtfManager
+import chat.simplex.app.platform.PushManager
 import chat.simplex.common.AppLock
 import chat.simplex.common.helpers.requiresIgnoringBattery
 import chat.simplex.common.model.ChatController
@@ -426,6 +427,10 @@ class SimplexService: Service() {
     }
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
+
+    suspend fun initUnifiedPush(scope: CoroutineScope, onSuccess: () -> Unit) {
+      PushManager.initUnifiedPush(androidAppContext, scope, onSuccess)
+    }
 
     fun showBackgroundServiceNoticeIfNeeded(showOffAlert: Boolean = true) {
       val appPrefs = ChatController.appPrefs

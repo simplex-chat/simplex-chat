@@ -162,7 +162,8 @@ data ChatConfig = ChatConfig
 
 data RandomAgentServers = RandomAgentServers
   { smpServers :: NonEmpty (ServerCfg 'PSMP),
-    xftpServers :: NonEmpty (ServerCfg 'PXFTP)
+    xftpServers :: NonEmpty (ServerCfg 'PXFTP),
+    ntfServers :: NonEmpty (ServerCfg 'PNTF)
   }
   deriving (Show)
 
@@ -184,7 +185,6 @@ defaultChatHooks = ChatHooks Nothing Nothing Nothing
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
-    ntf :: [NtfServer],
     netCfg :: NetworkConfig
   }
   deriving (Show)
@@ -354,8 +354,10 @@ data ChatCommand
   | APIGetNtfToken
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
+  | APIVerifySavedToken ByteString
   | APICheckToken DeviceToken
   | APIDeleteToken DeviceToken
+  | APIDeleteSavedToken
   | APIGetNtfConns {nonce :: C.CbNonce, encNtfInfo :: ByteString}
   | APIGetConnNtfMessages (NonEmpty ConnMsgReq)
   | APIAddMember {groupId :: GroupId, contactId :: ContactId, memberRole :: GroupMemberRole}

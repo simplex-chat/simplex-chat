@@ -114,7 +114,7 @@ import qualified Simplex.Messaging.Crypto as C
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON)
-import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode)
+import Simplex.Messaging.Protocol (BasicAuth (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode, Extras)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
@@ -589,15 +589,15 @@ getProtocolServers db p User {userId} =
     <$> DB.query
       db
       [sql|
-        SELECT smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled
+        SELECT smp_server_id, host, port, key_hash, extras, basic_auth, preset, tested, enabled
         FROM protocol_servers
         WHERE user_id = ? AND protocol = ?
       |]
       (userId, decodeLatin1 $ strEncode p)
   where
-    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) -> UserServer p
-    toUserServer (serverId, host, port, keyHash, auth_, BI preset, tested, BI enabled) =
-      let server = ProtoServerWithAuth (ProtocolServer p host port keyHash) (BasicAuth . encodeUtf8 <$> auth_)
+    toUserServer :: (DBEntityId, NonEmpty TransportHost, String, C.KeyHash, Maybe Extras, Maybe Text, BoolInt, Maybe BoolInt, BoolInt) -> UserServer p
+    toUserServer (serverId, host, port, keyHash, extras, auth_, BI preset, tested, BI enabled) =
+      let server = ProtoServerWithAuth (ProtocolServer p host port keyHash extras) (BasicAuth . encodeUtf8 <$> auth_)
        in UserServer {serverId, server, preset, tested = unBI <$> tested, enabled, deleted = False}
 
 insertProtocolServer :: forall p. ProtocolTypeI p => DB.Connection -> SProtocolType p -> User -> UTCTime -> NewUserServer p -> IO (UserServer p)
@@ -606,8 +606,8 @@ insertProtocolServer db p User {userId} ts srv@UserServer {server, preset, teste
     db
     [sql|
       INSERT INTO protocol_servers
-        (protocol, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?)
+        (protocol, host, port, key_hash, extras, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
     |]
     (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, userId, ts, ts))
   sId <- insertedRowId db
@@ -619,17 +619,17 @@ updateProtocolServer db p ts UserServer {serverId, server, preset, tested, enabl
     db
     [sql|
       UPDATE protocol_servers
-      SET protocol = ?, host = ?, port = ?, key_hash = ?, basic_auth = ?,
+      SET protocol = ?, host = ?, port = ?, key_hash = ?, extras = ?, basic_auth = ?,
           preset = ?, tested = ?, enabled = ?, updated_at = ?
       WHERE smp_server_id = ?
     |]
     (serverColumns p server :. (BI preset, BI <$> tested, BI enabled, ts, serverId))
 
-serverColumns :: ProtocolTypeI p => SProtocolType p -> ProtoServerWithAuth p -> (Text, NonEmpty TransportHost, String, C.KeyHash, Maybe Text)
-serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_) =
+serverColumns :: ProtocolTypeI p => SProtocolType p -> ProtoServerWithAuth p -> (Text, NonEmpty TransportHost, String, C.KeyHash, Maybe Extras, Maybe Text)
+serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash, extras} auth_) =
   let protocol = decodeLatin1 $ strEncode p
       auth = safeDecodeUtf8 . unBasicAuth <$> auth_
-   in (protocol, host, port, keyHash, auth)
+   in (protocol, host, port, keyHash, extras, auth)
 
 getServerOperators :: DB.Connection -> ExceptT StoreError IO ServerOperatorConditions
 getServerOperators db = do
@@ -642,12 +642,13 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserServer 'PNTF])
 getUserServers db user =
-  (,,)
+  (,,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
     <*> liftIO (getProtocolServers db SPSMP user)
     <*> liftIO (getProtocolServers db SPXFTP user)
+    <*> liftIO (getProtocolServers db SPNTF user)
 
 setServerOperators :: DB.Connection -> NonEmpty ServerOperator -> IO ()
 setServerOperators db ops = do
@@ -860,11 +861,12 @@ setUserServers :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers
 setUserServers db user ts = checkConstraint SEUniqueID . liftIO . setUserServers' db user ts
 
 setUserServers' :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers -> IO UserOperatorServers
-setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers} = do
+setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers, ntfServers} = do
   mapM_ (updateServerOperator db ts) operator
   smpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPSMP) smpServers
   xftpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPXFTP) xftpServers
-  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs'}
+  ntfSrvs' <- catMaybes <$> mapM (upsertOrDelete SPNTF) ntfServers
+  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs', ntfServers = ntfSrvs'}
   where
     upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
     upsertOrDelete p (AUS _ s@UserServer {serverId, deleted}) = case serverId of
