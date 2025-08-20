@@ -112,6 +112,7 @@ chatGroupTests = do
     it "accept member - only moderators review" testGLinkReviewMember
     it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
+    fit "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
   describe "group link connection plan" $ do
     it "ok to connect; known group" testPlanGroupLinkKnown
     it "own group link" testPlanGroupLinkOwn
@@ -3391,6 +3392,157 @@ testGLinkDeletePendingApprovalMember =
       cath <## "use /d #team to delete the group"
   where
     cfg = testCfg {chatHooks = defaultChatHooks {acceptMember = Just (\_ _ _ -> pure $ Right (GAPendingApproval, GRObserver))}}
+
+testGLinkReviewIntroduce :: HasCallStack => TestParams -> IO ()
+testGLinkReviewIntroduce =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup3' "team" alice (bob, GRMember) (cath, GRModerator)
+
+      alice ##> "/create link #team"
+      gLink <- getGroupLink alice "team" GRMember True
+      dan ##> ("/c " <> gLink)
+      dan <## "connection request sent!"
+      alice <## "dan (Daniel): accepting request to join group #team..."
+      concurrentlyN_
+        [ alice <## "#team: dan joined the group",
+          do
+            dan <## "#team: joining the group..."
+            dan <## "#team: you joined the group"
+            dan <###
+              [ "#team: member bob (Bob) is connected",
+                "#team: member cath (Catherine) is connected"
+              ],
+          do
+            bob <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            bob <## "#team: new member dan is connected",
+          do
+            cath <## "#team: alice added dan (Daniel) to the group (connecting...)"
+            cath <## "#team: new member dan is connected"
+        ]
+
+      alice ##> "/mr team dan admin"
+      concurrentlyN_
+        [ alice <## "#team: you changed the role of dan to admin",
+          bob <## "#team: alice changed the role of dan from member to admin",
+          cath <## "#team: alice changed the role of dan from member to admin",
+          dan <## "#team: alice changed your role from member to admin"
+        ]
+
+      alice ##> "/set admission review #team all"
+      alice <## "changed member admission rules"
+      concurrentlyN_
+        [ do
+            bob <## "alice updated group #team:"
+            bob <## "changed member admission rules",
+          do
+            cath <## "alice updated group #team:"
+            cath <## "changed member admission rules",
+          do
+            dan <## "alice updated group #team:"
+            dan <## "changed member admission rules"
+        ]
+
+      dan ##> "/create link #team"
+      gLinkDan <- getGroupLink dan "team" GRMember True
+      eve ##> ("/c " <> gLinkDan)
+      eve <## "connection request sent!"
+      dan <## "eve (Eve): accepting request to join group #team..."
+      concurrentlyN_
+        [ dan <## "#team: eve connected and pending review",
+          eve
+            <### [ "#team: dan accepted you to the group, pending review",
+                   "#team: joining the group...",
+                   "#team: you joined the group, connecting to group moderators for admission to group",
+                   "#team: member alice (Alice) is connected",
+                   "#team: member cath (Catherine) is connected"
+                 ],
+          do
+            alice <## "#team: dan added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            alice <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member",
+          do
+            cath <## "#team: dan added eve (Eve) to the group (connecting and pending review...), use /_accept member #1 5 <role> to accept member"
+            cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
+        ]
+
+      -- -- pending member doesn't see messages sent in group
+      -- alice #> "#team 1"
+      -- [bob, cath, dan] *<# "#team alice> 1"
+
+      -- bob #> "#team 2"
+      -- [alice, cath, dan] *<# "#team bob> 2"
+
+      -- cath #> "#team 3"
+      -- [alice, bob, dan] *<# "#team cath> 3"
+
+      -- dan #> "#team 4"
+      -- [alice, bob, cath] *<# "#team dan> 4"
+
+      -- (eve </)
+
+      -- -- pending member can't send messages to group
+      -- eve ##> "#team hello"
+      -- eve <## "bad chat command: not current member"
+
+      -- -- pending member and moderators can send messages to each other
+      -- alice ##> "/_send #1(_support:5) text 5"
+      -- alice <# "#team (support: eve) 5"
+      -- [cath, dan] *<# "#team (support: eve) alice> 5"
+      -- eve <# "#team (support) alice> 5"
+
+      -- cath ##> "/_send #1(_support:5) text 6"
+      -- cath <# "#team (support: eve) 6"
+      -- [alice, dan] *<# "#team (support: eve) cath> 6"
+      -- eve <# "#team (support) cath> 6"
+
+      -- dan ##> "/_send #1(_support:5) text 7"
+      -- dan <# "#team (support: eve) 7"
+      -- [alice, cath] *<# "#team (support: eve) dan> 7"
+      -- eve <# "#team (support) dan> 7"
+
+      -- eve ##> "/_send #1(_support) text 8"
+      -- eve <# "#team (support) 8"
+      -- [alice, cath, dan] *<# "#team (support: eve) eve> 8"
+
+      -- (bob </)
+
+      -- -- deleting support chat with pending member is prohibited
+      -- alice ##> "/_delete member chat #1 5"
+      -- alice <## "bad chat command: member is pending"
+
+      -- -- accept member
+      -- dan ##> "/_accept member #1 5 member"
+      -- concurrentlyN_
+      --   [ dan <## "#team: eve accepted",
+      --     alice <## "#team: dan accepted eve to the group (will introduce remaining members)",
+      --     cath <## "#team: dan accepted eve to the group",
+      --     eve
+      --       <### [ "#team: you joined the group",
+      --              WithTime "#team alice> 1 [>>]",
+      --              WithTime "#team bob> 2 [>>]",
+      --              WithTime "#team cath> 3 [>>]",
+      --              WithTime "#team dan> 4 [>>]",
+      --              "#team: member bob (Bob) is connected"
+      --            ],
+      --     do
+      --       bob <## "#team: alice added eve (Eve) to the group (connecting...)"
+      --       bob <## "#team: new member eve is connected"
+      --   ]
+
+      -- alice #> "#team 9"
+      -- [bob, cath, dan, eve] *<# "#team alice> 9"
+
+      -- bob #> "#team 10"
+      -- [alice, cath, dan, eve] *<# "#team bob> 10"
+
+      -- cath #> "#team 11"
+      -- [alice, bob, dan, eve] *<# "#team cath> 11"
+
+      -- dan #> "#team 12"
+      -- [alice, bob, cath, eve] *<# "#team dan> 12"
+
+      -- eve #> "#team 13"
+      -- [alice, bob, cath, dan] *<# "#team eve> 13"
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =
