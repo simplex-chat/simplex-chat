@@ -3465,84 +3465,35 @@ testGLinkReviewIntroduce =
             cath <## "#team: new member eve is connected and pending review, use /_accept member #1 5 <role> to accept member"
         ]
 
-      -- -- pending member doesn't see messages sent in group
-      -- alice #> "#team 1"
-      -- [bob, cath, dan] *<# "#team alice> 1"
+      -- owner accepts new member
+      alice ##> "/_accept member #1 5 member"
+      concurrentlyN_
+        [ alice <## "#team: eve accepted",
+          dan <## "#team: alice accepted eve to the group (will introduce remaining members)",
+          cath <## "#team: alice accepted eve to the group",
+          eve
+            <### [ "#team: you joined the group",
+                   "#team: member bob (Bob) is connected"
+                 ],
+          do
+            bob <## "#team: dan added eve (Eve) to the group (connecting...)"
+            bob <## "#team: new member eve is connected"
+        ]
 
-      -- bob #> "#team 2"
-      -- [alice, cath, dan] *<# "#team bob> 2"
+      alice #> "#team 1"
+      [bob, cath, dan, eve] *<# "#team alice> 1"
 
-      -- cath #> "#team 3"
-      -- [alice, bob, dan] *<# "#team cath> 3"
+      bob #> "#team 2"
+      [alice, cath, dan, eve] *<# "#team bob> 2"
 
-      -- dan #> "#team 4"
-      -- [alice, bob, cath] *<# "#team dan> 4"
+      cath #> "#team 3"
+      [alice, bob, dan, eve] *<# "#team cath> 3"
 
-      -- (eve </)
+      dan #> "#team 4"
+      [alice, bob, cath, eve] *<# "#team dan> 4"
 
-      -- -- pending member can't send messages to group
-      -- eve ##> "#team hello"
-      -- eve <## "bad chat command: not current member"
-
-      -- -- pending member and moderators can send messages to each other
-      -- alice ##> "/_send #1(_support:5) text 5"
-      -- alice <# "#team (support: eve) 5"
-      -- [cath, dan] *<# "#team (support: eve) alice> 5"
-      -- eve <# "#team (support) alice> 5"
-
-      -- cath ##> "/_send #1(_support:5) text 6"
-      -- cath <# "#team (support: eve) 6"
-      -- [alice, dan] *<# "#team (support: eve) cath> 6"
-      -- eve <# "#team (support) cath> 6"
-
-      -- dan ##> "/_send #1(_support:5) text 7"
-      -- dan <# "#team (support: eve) 7"
-      -- [alice, cath] *<# "#team (support: eve) dan> 7"
-      -- eve <# "#team (support) dan> 7"
-
-      -- eve ##> "/_send #1(_support) text 8"
-      -- eve <# "#team (support) 8"
-      -- [alice, cath, dan] *<# "#team (support: eve) eve> 8"
-
-      -- (bob </)
-
-      -- -- deleting support chat with pending member is prohibited
-      -- alice ##> "/_delete member chat #1 5"
-      -- alice <## "bad chat command: member is pending"
-
-      -- -- accept member
-      -- dan ##> "/_accept member #1 5 member"
-      -- concurrentlyN_
-      --   [ dan <## "#team: eve accepted",
-      --     alice <## "#team: dan accepted eve to the group (will introduce remaining members)",
-      --     cath <## "#team: dan accepted eve to the group",
-      --     eve
-      --       <### [ "#team: you joined the group",
-      --              WithTime "#team alice> 1 [>>]",
-      --              WithTime "#team bob> 2 [>>]",
-      --              WithTime "#team cath> 3 [>>]",
-      --              WithTime "#team dan> 4 [>>]",
-      --              "#team: member bob (Bob) is connected"
-      --            ],
-      --     do
-      --       bob <## "#team: alice added eve (Eve) to the group (connecting...)"
-      --       bob <## "#team: new member eve is connected"
-      --   ]
-
-      -- alice #> "#team 9"
-      -- [bob, cath, dan, eve] *<# "#team alice> 9"
-
-      -- bob #> "#team 10"
-      -- [alice, cath, dan, eve] *<# "#team bob> 10"
-
-      -- cath #> "#team 11"
-      -- [alice, bob, dan, eve] *<# "#team cath> 11"
-
-      -- dan #> "#team 12"
-      -- [alice, bob, cath, eve] *<# "#team dan> 12"
-
-      -- eve #> "#team 13"
-      -- [alice, bob, cath, dan] *<# "#team eve> 13"
+      eve #> "#team 5"
+      [alice, bob, cath, dan] *<# "#team eve> 5"
 
 testPlanGroupLinkKnown :: HasCallStack => TestParams -> IO ()
 testPlanGroupLinkKnown =
