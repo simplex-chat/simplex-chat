@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="hu" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -7123,9 +7123,9 @@ chat item action</note>
         <target>Üzenetküldési hibák</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Send link previews" xml:space="preserve">
+      <trans-unit id="Send link previews" xml:space="preserve" approved="no">
         <source>Send link previews</source>
-        <target>Hivatkozás előnézete</target>
+        <target state="translated">Hivatkozások előnézetének megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Send live message" xml:space="preserve">
@@ -7579,9 +7579,9 @@ chat item action</note>
         <target>Fejlesztői beállítások megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show last messages" xml:space="preserve">
+      <trans-unit id="Show last messages" xml:space="preserve" approved="no">
         <source>Show last messages</source>
-        <target>Legutóbbi üzenet előnézetének megjelenítése</target>
+        <target state="translated">Legutóbbi üzenetek előnézetének megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show message status" xml:space="preserve">
@@ -7594,9 +7594,9 @@ chat item action</note>
         <target>Százalék megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show preview" xml:space="preserve">
+      <trans-unit id="Show preview" xml:space="preserve" approved="no">
         <source>Show preview</source>
-        <target>Értesítés előnézete</target>
+        <target state="translated">Értesítések előnézetének megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">
@@ -10447,9 +10447,9 @@ time to disappear</note>
         <target>titok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="security code changed" xml:space="preserve">
+      <trans-unit id="security code changed" xml:space="preserve" approved="no">
         <source>security code changed</source>
-        <target>a biztonsági kód módosult</target>
+        <target state="translated">biztonsági kódja módosult</target>
         <note>chat item text</note>
       </trans-unit>
       <trans-unit id="server queue info: %@&#10;&#10;last received msg: %@" xml:space="preserve">
@@ -10675,7 +10675,7 @@ utoljára fogadott üzenet: %2$@</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="hu" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -10712,7 +10712,7 @@ utoljára fogadott üzenet: %2$@</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="hu" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10734,7 +10734,7 @@ utoljára fogadott üzenet: %2$@</target>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="hu" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -10766,7 +10766,7 @@ utoljára fogadott üzenet: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="hu" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10788,7 +10788,7 @@ utoljára fogadott üzenet: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="hu" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">
