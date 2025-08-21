@@ -2138,7 +2138,7 @@
     <string name="compose_save_messages_n">Сохранение %1$s сообщений</string>
     <string name="network_proxy_incorrect_config_desc">Убедитесь, что конфигурация прокси правильная.</string>
     <string name="network_proxy_auth">Аутентификация прокси</string>
-    <string name="network_proxy_random_credentials">Использовать случайные учетные данные</string>
+    <string name="network_proxy_random_credentials">Использовать случайные учётные данные</string>
     <string name="system_mode_toast">Режим системы</string>
     <string name="error_forwarding_messages">Ошибка пересылки сообщений</string>
     <string name="n_file_errors">%1$d ошибок файлов:\n%2$s</string>
@@ -2184,13 +2184,13 @@
     <string name="v6_1_switch_chat_profile_descr">Переключайте профиль чата для одноразовых приглашений.</string>
     <string name="v6_1_better_security_descr">Аудит SimpleX протоколов от Trail of Bits.</string>
     <string name="call_desktop_permission_denied_title">Чтобы совершать звонки, разрешите использовать микрофон. Завершите вызов и попробуйте позвонить снова.</string>
-    <string name="network_proxy_auth_mode_no_auth">Не использовать учетные данные с прокси.</string>
+    <string name="network_proxy_auth_mode_no_auth">Не использовать учётные данные с прокси.</string>
     <string name="network_proxy_incorrect_config_title">Ошибка сохранения прокси</string>
     <string name="network_proxy_password">Пароль</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Использовать разные учетные данные прокси для каждого соединения.</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_user">Использовать разные учетные данные прокси для каждого профиля.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Использовать разные учётные данные прокси для каждого соединения.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Использовать разные учётные данные прокси для каждого профиля.</string>
     <string name="network_proxy_username">Имя пользователя</string>
-    <string name="network_proxy_auth_mode_username_password">Ваши учетные данные могут быть отправлены в незашифрованном виде.</string>
+    <string name="network_proxy_auth_mode_username_password">Ваши учётные данные могут быть отправлены в незашифрованном виде.</string>
     <string name="migrate_from_device_remove_archive_question">Удалить архив?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Загруженный архив базы данных будет навсегда удален с серверов.</string>
     <string name="operator_conditions_accepted">Принятые условия</string>
