@@ -1179,6 +1179,8 @@ data RcvMessage = RcvMessage
 type MessageId = Int64
 
 -- TODO [channels fwd] review types
+type DeliveryWorkerGroupScope = (GroupId, GroupForwardScope)
+
 data DeliveryTask
   = DTMessageForward {messageForwardTask :: MessageForwardTask}
   | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
@@ -1194,7 +1196,7 @@ data MessageForwardTask = MessageForwardTask
     prevSenderInteractionTs :: Maybe UTCTime,
     postInteractionCursorGMId :: Maybe Int64,
     preInteractionCursorGMId :: Maybe Int64,
-    messages :: Maybe (NonEmpty (ChatMessage 'Json)),
+    messages :: Maybe (NonEmpty (ChatMessage 'Json))
   }
   deriving (Show)
 
@@ -1219,6 +1221,7 @@ data ChatItemCountsTask = ChatItemCountsTask
 -- to save on task record in db
 data DeliveryTaskTag = DTTMessageForward | DTTRelayRemoved | DTTChatItemsCount
   deriving (Show)
+
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 

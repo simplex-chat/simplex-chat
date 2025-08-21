@@ -65,6 +65,7 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -3309,41 +3310,39 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 -- TODO [channels fwd] forwarding worker implementation, below is not working code
 -- TODO [channels fwd] refactor agent Worker for export and reuse
 
-startDeliveryWorkers :: AM ()
-startDeliveryWorkers = do
-  -- TODO [channels fwd] getPendingDeliveryScopes - select based on pending tasks
-  pendingDeliveryScopes <- withStore' c $ \db -> getPendingDeliveryScopes db
-  lift . forM_ pendingDeliveryScopes resumeDeliveryWork
+-- startDeliveryWorkers :: CM ()
+-- startDeliveryWorkers = do
+--   -- TODO [channels fwd] getPendingDeliveryScopes - select based on pending tasks
+--   pendingDeliveryScopes <- withStore' $ \db -> getPendingDeliveryScopes db
+--   lift . forM_ pendingDeliveryScopes resumeDeliveryWork
 
-type DeliveryWorkerGroupScope = (GroupId, GroupForwardScope)
+-- -- to be used on startup
+-- resumeDeliveryWork :: DeliveryWorkerGroupScope -> CM ()
+-- resumeDeliveryWork = void .: getDeliveryWorker False
 
--- to be used on startup
-resumeDeliveryWork :: DeliveryWorkerGroupScope -> CM ()
-resumeDeliveryWork = void .: getDeliveryWorker False
+-- -- to be used when new work items are available
+-- getDeliveryWorker :: Bool -> DeliveryWorkerGroupScope -> CM Worker
+-- getDeliveryWorker hasWork deliveryScope = do
+--   ws <- asks forwardWorkers
+--   -- TODO [channels fwd] not an **agent** worker
+--   getAgentWorker "fwd" hasWork deliveryScope ws $ runDeliveryWorker deliveryScope
 
--- to be used when new work items are available
-getDeliveryWorker :: Bool -> DeliveryWorkerGroupScope -> CM Worker
-getDeliveryWorker hasWork deliveryScope = do
-  ws <- asks forwardWorkers
-  -- TODO [channels fwd] not an **agent** worker
-  getAgentWorker "fwd" hasWork deliveryScope ws $ runDeliveryWorker deliveryScope
-
-runDeliveryWorker :: DeliveryWorkerGroupScope -> Worker -> CM ()
-runDeliveryWorker deliveryScope Worker {doWork} = do
-  forever $ do
-    lift $ waitForWork doWork
-    runDeliveryOperation cfg
-  where
-    runDeliveryOperation :: CM ()
-    runDeliveryOperation = do
-      -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker assignment for next task
-      withWork c doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
-      where
-        processDeliveryTask :: ForwardTask -> CM ()
-        processDeliveryTask = do
-          -- TODO [channels fwd] implement forwarding logic
-          -- case by task type (DeliveryTask)
-          -- for MessageForwardTask: build encoding/list of messages
-          -- job(s) iterating over members via cursor(s)
-          -- post forwarding operations: e.g. delete group connections (for RelayRemovedTask)
-          pure ()
+-- runDeliveryWorker :: DeliveryWorkerGroupScope -> Worker -> CM ()
+-- runDeliveryWorker deliveryScope Worker {doWork} = do
+--   forever $ do
+--     lift $ waitForWork doWork
+--     runDeliveryOperation
+--   where
+--     runDeliveryOperation :: CM ()
+--     runDeliveryOperation = do
+--       -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker assignment for next task
+--       withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
+--       where
+--         processDeliveryTask :: DeliveryTask -> CM ()
+--         processDeliveryTask = do
+--           -- TODO [channels fwd] implement forwarding logic
+--           -- case by task type (DeliveryTask)
+--           -- for MessageForwardTask: build encoding/list of messages
+--           -- job(s) iterating over members via cursor(s)
+--           -- post forwarding operations: e.g. delete group connections (for RelayRemovedTask)
+--           pure ()
