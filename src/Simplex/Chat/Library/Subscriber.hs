@@ -3309,44 +3309,41 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 -- TODO [channels fwd] forwarding worker implementation, below is not working code
 -- TODO [channels fwd] refactor agent Worker for export and reuse
 
-startForwardWorkers :: AM ()
-startForwardWorkers = do
-  -- TODO [channels fwd] getPendingFwdAssignments - select based on pending tasks
-  pendingFwdAssignments <- withStore' c $ \db -> getPendingFwdAssignments db
-  lift . forM_ pendingFwdAssignments resumeForwardWork
+startDeliveryWorkers :: AM ()
+startDeliveryWorkers = do
+  -- TODO [channels fwd] getPendingDeliveryScopes - select based on pending tasks
+  pendingDeliveryScopes <- withStore' c $ \db -> getPendingDeliveryScopes db
+  lift . forM_ pendingDeliveryScopes resumeDeliveryWork
 
-data ForwardPriority = FPRegular | FPImportant
-
--- for each group and forwad scope 2 workers can be created for each priority
-type ForwardWorkerAssignment = (GroupId, GroupForwardScope, ForwardPriority)
+type DeliveryWorkerGroupScope = (GroupId, GroupForwardScope)
 
 -- to be used on startup
-resumeForwardWork :: ForwardWorkerAssignment -> CM ()
-resumeForwardWork = void .: getForwardWorker False
+resumeDeliveryWork :: DeliveryWorkerGroupScope -> CM ()
+resumeDeliveryWork = void .: getDeliveryWorker False
 
 -- to be used when new work items are available
-getForwardWorker :: Bool -> ForwardWorkerAssignment -> CM Worker
-getForwardWorker hasWork fwdAssignment = do
+getDeliveryWorker :: Bool -> DeliveryWorkerGroupScope -> CM Worker
+getDeliveryWorker hasWork deliveryScope = do
   ws <- asks forwardWorkers
   -- TODO [channels fwd] not an **agent** worker
-  getAgentWorker "fwd" hasWork fwdAssignment ws $ runForwardWorker fwdAssignment
+  getAgentWorker "fwd" hasWork deliveryScope ws $ runDeliveryWorker deliveryScope
 
-runForwardWorker :: ForwardWorkerAssignment -> Worker -> CM ()
-runForwardWorker fwdAssignment Worker {doWork} = do
+runDeliveryWorker :: DeliveryWorkerGroupScope -> Worker -> CM ()
+runDeliveryWorker deliveryScope Worker {doWork} = do
   forever $ do
     lift $ waitForWork doWork
-    runForwardingOperation cfg
+    runDeliveryOperation cfg
   where
-    runForwardingOperation :: CM ()
-    runForwardingOperation = do
-      -- TODO [channels fwd] getNextForwardTask - search "inside" worker assignment for next task
-      withWork c doWork (\db -> getNextForwardTask db fwdAssignment) processDeletedReplica
+    runDeliveryOperation :: CM ()
+    runDeliveryOperation = do
+      -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker assignment for next task
+      withWork c doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
       where
-        processForwardTask :: ForwardTask -> CM ()
-        processForwardTask = do
+        processDeliveryTask :: ForwardTask -> CM ()
+        processDeliveryTask = do
           -- TODO [channels fwd] implement forwarding logic
-          -- case by task context (ForwardTaskContext)
-          -- for MessageForwardContext: build encoding/list of messages
+          -- case by task type (DeliveryTask)
+          -- for MessageForwardTask: build encoding/list of messages
           -- job(s) iterating over members via cursor(s)
-          -- post forwarding operations: e.g. delete group connections (for RelayRemovalForwardContext)
+          -- post forwarding operations: e.g. delete group connections (for RelayRemovedTask)
           pure ()

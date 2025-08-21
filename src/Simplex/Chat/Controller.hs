@@ -239,7 +239,7 @@ data ChatController = ChatController
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
     workerSeq :: TVar Int,
-    forwardWorkers :: TMap ForwardWorkerAssignment (Worker, TMVar ()),
+    forwardWorkers :: TMap DeliveryWorkerGroupScope (Worker, TMVar ()),
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -1586,6 +1586,9 @@ toView_ ev = do
         | either (const True) allowRemoteEvent event -> writeTBQueue remoteOutputQ event
       -- TODO potentially, it should hold some events while connecting
       _ -> writeTBQueue localQ (Nothing, event)
+
+cmToAM :: ChatController -> CM a -> AM a
+cmToAM _cc _a = undefined
 
 withStore' :: (DB.Connection -> IO a) -> CM a
 withStore' action = withStore $ liftIO . action

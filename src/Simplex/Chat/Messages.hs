@@ -1179,24 +1179,19 @@ data RcvMessage = RcvMessage
 type MessageId = Int64
 
 -- TODO [channels fwd] review types
-data ForwardTask = ForwardTask
-  { taskId :: Int64,
-    taskContext :: ForwardTaskContext
-  }
-  deriving (Show)
-
-data ForwardTaskContext
-  = FTCMessage {messageForwardContext :: MessageForwardContext}
-  | FTCRelayRemoval {relayRemovalForwardContext :: RelayRemovalForwardContext}
-  | FTCReactionCount {reactionCountForwradContext :: ReactionCountForwradContext}
+data DeliveryTask
+  = DTMessageForward {messageForwardTask :: MessageForwardTask}
+  | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
+  | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
   deriving (Show)
 
 -- prevSenderInteractionTs: members are split based on this timestamp;
 -- postInteractionCursorGMId: for these members sender profiles are packaged;
 -- question: how to retrieve sender profiles for multiple messages when we already created encoding/list of them?
 -- perhaps we should save references to messages on the task, instead of encoding;
-data MessageForwardContext = MessageForwardContext
-  { prevSenderInteractionTs :: Maybe UTCTime,
+data MessageForwardTask = MessageForwardTask
+  { taskId :: Int64,
+    prevSenderInteractionTs :: Maybe UTCTime,
     postInteractionCursorGMId :: Maybe Int64,
     preInteractionCursorGMId :: Maybe Int64,
     messages :: Maybe (NonEmpty (ChatMessage 'Json)),
@@ -1205,8 +1200,9 @@ data MessageForwardContext = MessageForwardContext
 
 -- messageId: we don't know is it group deletion or relay removal;
 -- we could read ChatMessage 'Json by reference instead;
-data RelayRemovalForwardContext = RelayRemovalForwardContext
-  { cursorGMId :: Maybe Int64,
+data RelayRemovedTask = RelayRemovedTask
+  { taskId :: Int64,
+    cursorGMId :: Maybe Int64,
     messageId :: MessageId
   }
   deriving (Show)
@@ -1214,13 +1210,14 @@ data RelayRemovalForwardContext = RelayRemovalForwardContext
 -- reaction counts to be retrieved from chat items;
 -- question: how to keep track which chat items received reactions since last such task?
 -- requires additional protocol message
-data ReactionCountForwradContext = ReactionCountForwradContext
-  { cursorGMId :: Maybe Int64
+data ChatItemCountsTask = ChatItemCountsTask
+  { taskId :: Int64,
+    cursorGMId :: Maybe Int64
   }
   deriving (Show)
 
 -- to save on task record in db
-data ForwardContextTag = FCTMessage | FCTRelayRemoval | FCTReactionCount
+data DeliveryTaskTag = DTTMessageForward | DTTRelayRemoved | DTTChatItemsCount
   deriving (Show)
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
