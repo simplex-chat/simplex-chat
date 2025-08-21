@@ -710,7 +710,7 @@
     <string name="large_file">Nagy fájl!</string>
     <string name="info_row_local_name">Helyi név</string>
     <string name="network_and_servers">Hálózat és kiszolgálók</string>
-    <string name="settings_notification_preview_title">Értesítés előnézete</string>
+    <string name="settings_notification_preview_title">Értesítésekben megjelenő információk</string>
     <string name="v5_4_link_mobile_desktop">Társítsa össze a hordozható eszköz- és számítógépes alkalmazásokat! 🔗</string>
     <string name="conn_level_desc_indirect">közvetett (%1$s)</string>
     <string name="v4_6_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
@@ -882,7 +882,7 @@
     <string name="rcv_group_event_open_chat">Megnyitás</string>
     <string name="network_option_protocol_timeout">Protokoll időtúllépése</string>
     <string name="secret_text">titok</string>
-    <string name="settings_notification_preview_mode_title">Értesítés előnézete</string>
+    <string name="settings_notification_preview_mode_title">Értesítések előnézetének megjelenítése</string>
     <string name="callstate_waiting_for_confirmation">várakozás a visszaigazolásra…</string>
     <string name="stop_file__action">Fájl megállítása</string>
     <string name="description_via_group_link">a csoporthivatkozáson keresztül</string>
@@ -931,8 +931,8 @@
     <string name="connect_use_new_incognito_profile">Új inkognitóprofil használata</string>
     <string name="contact_developers">Frissítse az alkalmazást, és lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="theme_simplex">SimpleX</string>
-    <string name="send_link_previews">Hivatkozás előnézete</string>
-    <string name="rcv_conn_event_verification_code_reset">a biztonsági kód módosult</string>
+    <string name="send_link_previews">Hivatkozások előnézetének megjelenítése</string>
+    <string name="rcv_conn_event_verification_code_reset">biztonsági kódja módosult</string>
     <string name="notification_preview_mode_contact_desc">Csak a partner nevének megjelenítése</string>
     <string name="icon_descr_speaker_on">Hangszóró bekapcsolva</string>
     <string name="restart_the_app_to_use_imported_chat_database">Importált csevegési adatbázis használatához indítsa újra az alkalmazást.</string>
@@ -1134,7 +1134,7 @@
     <string name="connect_plan_open_group">Csoport megnyitása</string>
     <string name="info_row_sent_at">Elküldve</string>
     <string name="prohibit_sending_voice">A hangüzenetek küldése le van tiltva.</string>
-    <string name="privacy_show_last_messages">Legutóbbi üzenet előnézetének megjelenítése</string>
+    <string name="privacy_show_last_messages">Legutóbbi üzenetek előnézetének megjelenítése</string>
     <string name="smp_servers_preset_address">Az előre beállított kiszolgáló címe</string>
     <string name="periodic_notifications_disabled">Időszakos értesítések letiltva!</string>
     <string name="passcode_changed">A jelkód módosult!</string>
