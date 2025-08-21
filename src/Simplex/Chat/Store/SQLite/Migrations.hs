@@ -139,7 +139,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20250721_indexes
 import Simplex.Chat.Store.SQLite.Migrations.M20250729_member_contact_requests
 import Simplex.Chat.Store.SQLite.Migrations.M20250801_via_group_link_uri
 import Simplex.Chat.Store.SQLite.Migrations.M20250802_chat_peer_type
-import Simplex.Chat.Store.SQLite.Migrations.M20250813_forward_tasks
+import Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -279,7 +279,7 @@ schemaMigrations =
     ("20250729_member_contact_requests", m20250729_member_contact_requests, Just down_m20250729_member_contact_requests),
     ("20250801_via_group_link_uri", m20250801_via_group_link_uri, Just down_m20250801_via_group_link_uri),
     ("20250802_chat_peer_type", m20250802_chat_peer_type, Just down_m20250802_chat_peer_type),
-    ("20250813_forward_tasks", m20250813_forward_tasks, Just down_m20250813_forward_tasks)
+    ("20250813_delivery_tasks", m20250813_delivery_tasks, Just down_m20250813_delivery_tasks)
   ]
 
 -- | The list of migrations in ascending order by date
