@@ -2522,7 +2522,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         get {
             let p = memberProfile
             let name = p.localAlias == "" ? p.displayName : p.localAlias
-            return pastMember(name)
+            return unknownMember(name)
         }
     }
     public var fullName: String { get { memberProfile.fullName } }
@@ -2549,13 +2549,19 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
                 ? p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
                 : p.localAlias
             )
-            return pastMember(name)
+            return unknownMember(name)
         }
     }
 
-    private func pastMember(_ name: String) -> String {
+    private func unknownMember(_ name: String) -> String {
         memberStatus == .memUnknown
-        ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
+        ? (
+            memberId.hasPrefix(name)
+            // unknown member was created using memberId for name
+            ? String.localizedStringWithFormat(NSLocalizedString("Member %@", comment: "past/unknown group member"), name)
+            // unknown member was created with name
+            : name
+        )
         : name
     }
 
@@ -2565,7 +2571,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
             let fullName = p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
             let name = p.localAlias == "" ? fullName : "\(p.localAlias) (\(fullName))"
 
-            return pastMember(name)
+            return unknownMember(name)
         }
     }
 
