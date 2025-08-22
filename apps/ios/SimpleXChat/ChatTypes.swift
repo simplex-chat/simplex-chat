@@ -2555,7 +2555,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     private func pastMember(_ name: String) -> String {
         memberStatus == .memUnknown
-        ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
+        ? String.localizedStringWithFormat(NSLocalizedString("Member %@", comment: "past/unknown group member"), name)
         : name
     }
 
