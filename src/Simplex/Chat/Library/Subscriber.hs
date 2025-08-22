@@ -3313,72 +3313,72 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 -- TODO [channels fwd] forwarding workers implementation, below is not working code
 -- TODO [channels fwd] refactor agent Worker for export and reuse
 
-startDeliveryTaskWorkers :: CM ()
-startDeliveryTaskWorkers = do
-  -- TODO [channels fwd] getPendingDeliveryTaskScopes - retrieve [DeliveryWorkerScope] based on pending tasks
-  workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
-  lift . forM_ workerScopes resumeDeliveryTaskWork
+-- startDeliveryTaskWorkers :: CM ()
+-- startDeliveryTaskWorkers = do
+--   -- TODO [channels fwd] getPendingDeliveryTaskScopes - retrieve [DeliveryWorkerScope] based on pending tasks
+--   workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
+--   lift . forM_ workerScopes resumeDeliveryTaskWork
 
-resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM ()
-resumeDeliveryTaskWork = void .: getDeliveryTaskWorker False
+-- resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM ()
+-- resumeDeliveryTaskWork = void .: getDeliveryTaskWorker False
 
-getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
-getDeliveryTaskWorker hasWork deliveryScope = do
-  ws <- asks deliveryTaskWorkers
-  -- TODO [channels fwd] not an **agent** worker
-  getAgentWorker "delivery_task" hasWork deliveryScope ws $ runDeliveryTaskWorker deliveryScope
+-- getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+-- getDeliveryTaskWorker hasWork deliveryScope = do
+--   ws <- asks deliveryTaskWorkers
+--   -- TODO [channels fwd] not an **agent** worker
+--   getAgentWorker "delivery_task" hasWork deliveryScope ws $ runDeliveryTaskWorker deliveryScope
 
-runDeliveryTaskWorker :: DeliveryWorkerScope -> Worker -> CM ()
-runDeliveryTaskWorker deliveryScope Worker {doWork} = do
-  forever $ do
-    lift $ waitForWork doWork
-    runDeliveryTaskOperation
-  where
-    runDeliveryTaskOperation :: CM ()
-    runDeliveryTaskOperation = do
-      -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker scope for next task
-      withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
-      where
-        processDeliveryTask :: DeliveryTask -> CM ()
-        processDeliveryTask = do
-          -- TODO [channels fwd] converte tasks into jobs
-          -- case by task type (DeliveryTask)
-          -- for MessageForwardTask:
-          --   build encoding/list of messages
-          --   update correpsonding tasks as processed
-          -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
-          pure ()
+-- runDeliveryTaskWorker :: DeliveryWorkerScope -> Worker -> CM ()
+-- runDeliveryTaskWorker deliveryScope Worker {doWork} = do
+--   forever $ do
+--     lift $ waitForWork doWork
+--     runDeliveryTaskOperation
+--   where
+--     runDeliveryTaskOperation :: CM ()
+--     runDeliveryTaskOperation = do
+--       -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker scope for next task
+--       withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
+--       where
+--         processDeliveryTask :: DeliveryTask -> CM ()
+--         processDeliveryTask = do
+--           -- TODO [channels fwd] converte tasks into jobs
+--           -- case by task type (DeliveryTask)
+--           -- for MessageForwardTask:
+--           --   build encoding/list of messages
+--           --   update correpsonding tasks as processed
+--           -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
+--           pure ()
 
-startDeliveryJobWorkers :: CM ()
-startDeliveryJobWorkers = do
-  -- TODO [channels fwd] getPendingDeliveryJobScopes - retrieve [DeliveryWorkerScope] based on pending jobs
-  workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
-  lift . forM_ workerScopes resumeDeliveryJobWork
+-- startDeliveryJobWorkers :: CM ()
+-- startDeliveryJobWorkers = do
+--   -- TODO [channels fwd] getPendingDeliveryJobScopes - retrieve [DeliveryWorkerScope] based on pending jobs
+--   workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
+--   lift . forM_ workerScopes resumeDeliveryJobWork
 
-resumeDeliveryJobWork :: DeliveryWorkerScope -> CM ()
-resumeDeliveryJobWork = void .: getDeliveryJobWorker False
+-- resumeDeliveryJobWork :: DeliveryWorkerScope -> CM ()
+-- resumeDeliveryJobWork = void .: getDeliveryJobWorker False
 
-getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
-getDeliveryJobWorker hasWork deliveryScope = do
-  ws <- asks DeliveryJobWorkers
-  -- TODO [channels fwd] not an **agent** worker
-  getAgentWorker "delivery_job" hasWork deliveryScope ws $ runDeliveryJobWorker deliveryScope
+-- getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+-- getDeliveryJobWorker hasWork deliveryScope = do
+--   ws <- asks DeliveryJobWorkers
+--   -- TODO [channels fwd] not an **agent** worker
+--   getAgentWorker "delivery_job" hasWork deliveryScope ws $ runDeliveryJobWorker deliveryScope
 
-runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
-runDeliveryJobWorker deliveryScope Worker {doWork} = do
-  forever $ do
-    lift $ waitForWork doWork
-    runDeliveryJobOperation
-  where
-    runDeliveryJobOperation :: CM ()
-    runDeliveryJobOperation = do
-      -- TODO [channels fwd] getNextDeliveryJob - search "inside" worker scope for next job
-      withWork doWork (\db -> getNextDeliveryJob db deliveryScope) processDeliveryJob
-      where
-        processDeliveryJob :: DeliveryJob -> CM ()
-        processDeliveryJob = do
-          -- TODO [channels fwd] implement forwarding logic
-          -- case by job type (DeliveryJob)
-          -- iterate over members via cursor, update cursor on the job record
-          -- post forwarding operations: e.g. delete group connections (for RelayRemovedJob)
-          pure ()
+-- runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
+-- runDeliveryJobWorker deliveryScope Worker {doWork} = do
+--   forever $ do
+--     lift $ waitForWork doWork
+--     runDeliveryJobOperation
+--   where
+--     runDeliveryJobOperation :: CM ()
+--     runDeliveryJobOperation = do
+--       -- TODO [channels fwd] getNextDeliveryJob - search "inside" worker scope for next job
+--       withWork doWork (\db -> getNextDeliveryJob db deliveryScope) processDeliveryJob
+--       where
+--         processDeliveryJob :: DeliveryJob -> CM ()
+--         processDeliveryJob = do
+--           -- TODO [channels fwd] implement forwarding logic
+--           -- case by job type (DeliveryJob)
+--           -- iterate over members via cursor, update cursor on the job record
+--           -- post forwarding operations: e.g. delete group connections (for RelayRemovedJob)
+--           pure ()
