@@ -1196,8 +1196,14 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
                 _ -> pure []
               let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
                   GroupMember {memberId} = sender
-                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                  memberName = Just $ memberShortenedName sender
+                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId memberName cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
               pure msgForwardEvents
+
+memberShortenedName :: GroupMember -> ContactName
+memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
+  | T.length displayName <= 16 = displayName
+  | otherwise = T.take 16 displayName `T.snoc` '…'
 
 splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
 splitFileDescr partSize rfdText = splitParts 1 rfdText
