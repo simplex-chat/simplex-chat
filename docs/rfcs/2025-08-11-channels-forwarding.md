@@ -202,11 +202,18 @@ With chat relays, however, no messages are sent directly from owners to members,
   - Profiles of owners (and admins, moderators) should be sent to all members on joining.
   - Profiles of other members should be sent on interaction with them.
   - For MVP: we can show counts on reactions and avoid solving it, but we should have a design to solve this problem, as it would be necessary for comments and later for large groups.
-  - As a draft for solution:
+  - Solution draft - partition members based on join timestamp and sender last interaction time:
     - Track last interaction timestamp on each member.
-    - When forwarding from this member split members into two parts: include profile for those who joined after interaction, don't include for those who joined before interaction.
+    - When forwarding from this member partition members into two parts: include profile for those who joined after interaction, don't include for those who joined before interaction.
     - This suggests that job would be divided into two parts.
     - Protocol to request member profile as a fallback.
+    - This becomes more complex in case batch has multiple members - for n required profiles to send, recipients need to be partitioned into n + 1 parts.
+  - Better solution - schedule profile deliveries separately from batch on first post-join delivery per sender.
+    - Track last_profile_delivery_ts (for sender), join_ts (for recipient) on member records.
+    - On the sender's first overall interaction (last_profile_delivery_ts is null), first create a special task to deliver profile to all (in scope All).
+    - On following sends on batching, for senders whose last_profile_delivery_ts < any member's join_time (i.e., some member missed the initial broadcast), create a profile delivery task for those specific senders.
+    - Message task should have a flag whether profile should be delivered to anyone (set to false on first profile delivery). Checking last_profile_delivery_ts is null seems to be sufficient.
+- Don't partition for owners based on "message from channel" flag to simplify delivery - no need for two separate jobs/cursors.
 - When chat relay receives group deletion event, or event removing it [chat relay itself] from the group:
   - Chat relay should kill all forwarding workers for the group -> delete all jobs -> create one new job to forward group deletion.
   - It could be a special type of job.

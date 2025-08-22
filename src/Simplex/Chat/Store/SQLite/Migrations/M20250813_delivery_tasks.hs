@@ -14,21 +14,21 @@ CREATE TABLE delivery_tasks (
   delivery_scope TEXT, -- GroupForwardScope - tag? or, add support scope group_member_id?
   task_tag TEXT NOT NULL, -- DeliveryTaskTag = FCTMessage | FCTRelayRemoval | FCTReactionCount
   task_complete INTEGER NOT NULL DEFAULT 0, -- or task_status? e.g. "pending", "in_progress", "complete"
-  prev_sender_interaction_ts TEXT,
-  cursor_group_member_id INTEGER, -- for members that joined before prev_sender_interaction_ts (MessageDeliveryTask); or for all members
-  post_interaction_cursor_group_member_id INTEGER, -- for members that joined after prev_sender_interaction_ts
+  cursor_group_member_id INTEGER,
   messages_encoding TEXT, -- or, instead save comma separated list of references to messages? (for MessageDeliveryTask)
-  group_as_sender INTEGER NOT NULL DEFAULT 0, -- for MessageDeliveryTask (sender sent "message from channel")
+  message_from_channel INTEGER NOT NULL DEFAULT 0, -- for MessageDeliveryTask (sender sent "message from channel")
   message_id INTEGER REFERENCES messages ON DELETE CASCADE -- for RelayRemovedTask
 );
 
-ALTER TABLE group_members ADD COLUMN last_interaction_ts TEXT;
+ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
+ALTER TABLE group_members ADD COLUMN join_ts TEXT;
 |]
 
 down_m20250813_delivery_tasks :: Query
 down_m20250813_delivery_tasks =
   [sql|
-ALTER TABLE group_members DROP COLUMN last_interaction_ts;
+ALTER TABLE group_members DROP COLUMN last_profile_delivery_ts;
+ALTER TABLE group_members DROP COLUMN join_ts;
 
 DROP TABLE delivery_tasks;
 |]

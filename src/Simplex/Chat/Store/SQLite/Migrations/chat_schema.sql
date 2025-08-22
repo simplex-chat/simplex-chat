@@ -196,6 +196,7 @@ CREATE TABLE group_members(
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
   member_welcome_shared_msg_id BLOB,
+  last_interaction_ts TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -690,6 +691,21 @@ CREATE TABLE chat_item_mentions(
   member_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
+);
+CREATE TABLE delivery_tasks(
+  delivery_task_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  delivery_scope TEXT, -- GroupForwardScope - tag? or, add support scope group_member_id?
+  task_tag TEXT NOT NULL, -- DeliveryTaskTag = FCTMessage | FCTRelayRemoval | FCTReactionCount
+  task_complete INTEGER NOT NULL DEFAULT 0, -- or task_status? e.g. "pending",
+  "in_progress",
+  "complete"
+  prev_sender_interaction_ts TEXT,
+  cursor_group_member_id INTEGER, -- for members that joined before prev_sender_interaction_ts(MessageDeliveryTask); or for all members
+  post_interaction_cursor_group_member_id INTEGER, -- for members that joined after prev_sender_interaction_ts
+  messages_encoding TEXT, -- or, instead save comma separated list of references to messages?(for MessageDeliveryTask)
+  group_as_sender INTEGER NOT NULL DEFAULT 0, -- for MessageDeliveryTask(sender sent "message from channel")
+  message_id INTEGER REFERENCES messages ON DELETE CASCADE -- for RelayRemovedTask
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

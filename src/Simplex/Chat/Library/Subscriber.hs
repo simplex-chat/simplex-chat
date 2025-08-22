@@ -3335,7 +3335,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 --   where
 --     runDeliveryOperation :: CM ()
 --     runDeliveryOperation = do
---       -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker assignment for next task
+--       -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker scope for next task
 --       withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
 --       where
 --         processDeliveryTask :: DeliveryTask -> CM ()

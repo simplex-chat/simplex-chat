@@ -1183,6 +1183,7 @@ type DeliveryWorkerGroupScope = (GroupId, GroupForwardScope)
 
 data DeliveryTask
   = DTMessageForward {messageForwardTask :: MessageForwardTask}
+  | DTProfileDelivery {profileDeliveryTask :: ProfileDeliveryTask}
   | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
   | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
   deriving (Show)
@@ -1193,10 +1194,16 @@ data DeliveryTask
 -- perhaps we should save references to messages on the task, instead of encoding;
 data MessageForwardTask = MessageForwardTask
   { taskId :: Int64,
-    prevSenderInteractionTs :: Maybe UTCTime,
-    postInteractionCursorGMId :: Maybe Int64,
-    preInteractionCursorGMId :: Maybe Int64,
+    lastProfileDeliveryTs :: Maybe UTCTime,
+    cursorGMId :: Maybe Int64,
     messages :: Maybe (NonEmpty (ChatMessage 'Json))
+  }
+  deriving (Show)
+
+data ProfileDeliveryTask = ProfileDeliveryTask
+  { taskId :: Int64,
+    lastProfileDeliveryTs :: Maybe UTCTime, -- to filter list of recipients
+    cursorGMId :: Maybe Int64
   }
   deriving (Show)
 
@@ -1219,7 +1226,7 @@ data ChatItemCountsTask = ChatItemCountsTask
   deriving (Show)
 
 -- to save on task record in db
-data DeliveryTaskTag = DTTMessageForward | DTTRelayRemoved | DTTChatItemsCount
+data DeliveryTaskTag = DTTMessageForward | DTTProfileDelivery | DTTRelayRemoved | DTTChatItemsCount
   deriving (Show)
 
 
