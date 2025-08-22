@@ -211,7 +211,7 @@ With chat relays, however, no messages are sent directly from owners to members,
   - Better solution - schedule profile deliveries separately from batch on first post-join delivery per sender.
     - Track last_profile_delivery_ts (for sender), join_ts (for recipient) on member records.
     - On the sender's first overall interaction (last_profile_delivery_ts is null), first create a special task to deliver profile to all (in scope All).
-    - On following sends on batching, for senders whose last_profile_delivery_ts < any member's join_time (i.e., some member missed the initial broadcast), create a profile delivery task for those specific senders.
+    - On following sends on batching, for senders whose last_profile_delivery_ts < any member's join_ts (i.e., some member missed the initial broadcast), create a profile delivery task for those specific senders.
     - Message task should have a flag whether profile should be delivered to anyone (set to false on first profile delivery). Checking last_profile_delivery_ts is null seems to be sufficient.
 - Don't partition for owners based on "message from channel" flag to simplify delivery - no need for two separate jobs/cursors.
 - When chat relay receives group deletion event, or event removing it [chat relay itself] from the group:

@@ -1179,56 +1179,90 @@ data RcvMessage = RcvMessage
 type MessageId = Int64
 
 -- TODO [channels fwd] review types
-type DeliveryWorkerGroupScope = (GroupId, GroupForwardScope)
+type DeliveryWorkerScope = (GroupId, DeliveryJobScope)
+
+data DeliveryJobScope = DJSGroup | DJSMemberSupport | DJSMemberProfile
+
+data DeliveryJobTag
+  = DJTMessageForward
+  -- | DJTMemberProfile
+  | DJTRelayRemoved
+  -- | DJTChatItemsCount
+  deriving (Show)
+
+data DeliveryTaskStatus
+  = DTSNew -- created for delivery task worker to pick up and convert into a delivery job
+  | DTSProcessed -- processed by delivery task worker, delivery job created, task can be deleted
+  deriving (Show)
 
 data DeliveryTask
   = DTMessageForward {messageForwardTask :: MessageForwardTask}
-  | DTProfileDelivery {profileDeliveryTask :: ProfileDeliveryTask}
+  -- | DTMemberProfile {memberProfileTask :: MemberProfileTask}
   | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
-  | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
+  -- | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
   deriving (Show)
 
--- prevSenderInteractionTs: members are split based on this timestamp;
--- postInteractionCursorGMId: for these members sender profiles are packaged;
--- question: how to retrieve sender profiles for multiple messages when we already created encoding/list of them?
--- perhaps we should save references to messages on the task, instead of encoding;
 data MessageForwardTask = MessageForwardTask
   { taskId :: Int64,
-    lastProfileDeliveryTs :: Maybe UTCTime,
-    cursorGMId :: Maybe Int64,
-    messages :: Maybe (NonEmpty (ChatMessage 'Json))
+    sender :: GroupMember,
+    chatMessage :: ChatMessage 'Json,
+    messageFromChannel :: MessageFromChannel
   }
   deriving (Show)
 
-data ProfileDeliveryTask = ProfileDeliveryTask
-  { taskId :: Int64,
-    lastProfileDeliveryTs :: Maybe UTCTime, -- to filter list of recipients
-    cursorGMId :: Maybe Int64
-  }
-  deriving (Show)
+-- data MemberProfileTask = ProfileDeliveryTask
+--   { taskId :: Int64,
+--     member :: GroupMember -- use last_profile_delivery_ts to filter list of recipients
+--   }
+--   deriving (Show)
 
--- messageId: we don't know is it group deletion or relay removal;
--- we could read ChatMessage 'Json by reference instead;
 data RelayRemovedTask = RelayRemovedTask
   { taskId :: Int64,
-    cursorGMId :: Maybe Int64,
-    messageId :: MessageId
+    chatMessage :: ChatMessage 'Json
   }
   deriving (Show)
 
--- reaction counts to be retrieved from chat items;
--- question: how to keep track which chat items received reactions since last such task?
--- requires additional protocol message
-data ChatItemCountsTask = ChatItemCountsTask
-  { taskId :: Int64,
-    cursorGMId :: Maybe Int64
+-- data ChatItemCountsTask = ChatItemCountsTask
+--   { taskId :: Int64,
+--     chatMessage :: ChatMessage 'Json
+--   }
+--   deriving (Show)
+
+data DeliveryJobStatus
+  = DJSNew -- created for delivery job worker to pick up
+  | DJSInProgress -- being processed by delivery job worker
+  | DJSComplete -- complete by delivery job worker, job can be deleted
+  deriving (Show)
+
+data DeliveryJob
+  = DJMessageForward {messageForwardJob :: MessageForwardJob}
+  -- | DJMemberProfile {memberProfileJob :: MemberProfileJob}
+  | DJRelayRemoved {relayRemovedJob :: RelayRemovedJob}
+  -- | DJChatItemsCount {chatItemCountsJob :: ChatItemCountsJob}
+  deriving (Show)
+
+data MessageForwardJob = MessageForwardJob
+  { jobId :: Int64,
+    messagesBatch :: Text,
+    cursorGMId :: Maybe GroupMemberId
   }
   deriving (Show)
 
--- to save on task record in db
-data DeliveryTaskTag = DTTMessageForward | DTTProfileDelivery | DTTRelayRemoved | DTTChatItemsCount
+-- data MemberProfileJob = ProfileDeliveryJob
+--   { jobId :: Int64,
+--     member :: GroupMember, -- use last_profile_delivery_ts to filter list of recipients
+--     cursorGMId :: Maybe GroupMemberId
+--   }
+--   deriving (Show)
+
+data RelayRemovedJob = RelayRemovedJob
+  { jobId :: Int64,
+    chatMessage :: ChatMessage 'Json,
+    cursorGMId :: Maybe GroupMemberId
+  }
   deriving (Show)
 
+-- data ChatItemCountsJob = undefined
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 

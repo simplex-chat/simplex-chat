@@ -164,7 +164,8 @@ newChatController
     filesFolder <- newTVarIO optFilesFolder
     chatStoreChanged <- newTVarIO False
     workerSeq <- newTVarIO 0
-    forwardWorkers <- TM.emptyIO
+    deliveryTaskWorkers <- TM.emptyIO
+    deliveryJobWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
@@ -206,7 +207,8 @@ newChatController
           config,
           filesFolder,
           workerSeq,
-          forwardWorkers,
+          deliveryTaskWorkers,
+          deliveryJobWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,

@@ -901,7 +901,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
           (fwdScopesMsgs, shouldDelConns) <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, False) aChatMsgs
           -- TODO [channels fwd] schedule forwarding tasks instead of doing forwarding synchronously
-          -- save task with ForwardContextTag
+          -- save task with DeliveryJobScope, DeliveryJobTag, GroupForwardScope
+          -- kick delivery task worker for the required delivery scope (getDeliveryTaskWorker)
           when (isUserGrpFwdRelay gInfo') $ do
             unless (blockedByAdmin m) $
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
@@ -3309,42 +3310,75 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else pure Nothing
           _ -> pure Nothing
 
--- TODO [channels fwd] forwarding worker implementation, below is not working code
+-- TODO [channels fwd] forwarding workers implementation, below is not working code
 -- TODO [channels fwd] refactor agent Worker for export and reuse
 
--- startDeliveryWorkers :: CM ()
--- startDeliveryWorkers = do
---   -- TODO [channels fwd] getPendingDeliveryScopes - select based on pending tasks
---   pendingDeliveryScopes <- withStore' $ \db -> getPendingDeliveryScopes db
---   lift . forM_ pendingDeliveryScopes resumeDeliveryWork
+startDeliveryTaskWorkers :: CM ()
+startDeliveryTaskWorkers = do
+  -- TODO [channels fwd] getPendingDeliveryTaskScopes - retrieve [DeliveryWorkerScope] based on pending tasks
+  workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
+  lift . forM_ workerScopes resumeDeliveryTaskWork
 
--- -- to be used on startup
--- resumeDeliveryWork :: DeliveryWorkerGroupScope -> CM ()
--- resumeDeliveryWork = void .: getDeliveryWorker False
+resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryTaskWork = void .: getDeliveryTaskWorker False
 
--- -- to be used when new work items are available
--- getDeliveryWorker :: Bool -> DeliveryWorkerGroupScope -> CM Worker
--- getDeliveryWorker hasWork deliveryScope = do
---   ws <- asks forwardWorkers
---   -- TODO [channels fwd] not an **agent** worker
---   getAgentWorker "fwd" hasWork deliveryScope ws $ runDeliveryWorker deliveryScope
+getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryTaskWorker hasWork deliveryScope = do
+  ws <- asks deliveryTaskWorkers
+  -- TODO [channels fwd] not an **agent** worker
+  getAgentWorker "delivery_task" hasWork deliveryScope ws $ runDeliveryTaskWorker deliveryScope
 
--- runDeliveryWorker :: DeliveryWorkerGroupScope -> Worker -> CM ()
--- runDeliveryWorker deliveryScope Worker {doWork} = do
---   forever $ do
---     lift $ waitForWork doWork
---     runDeliveryOperation
---   where
---     runDeliveryOperation :: CM ()
---     runDeliveryOperation = do
---       -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker scope for next task
---       withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
---       where
---         processDeliveryTask :: DeliveryTask -> CM ()
---         processDeliveryTask = do
---           -- TODO [channels fwd] implement forwarding logic
---           -- case by task type (DeliveryTask)
---           -- for MessageForwardTask: build encoding/list of messages
---           -- job(s) iterating over members via cursor(s)
---           -- post forwarding operations: e.g. delete group connections (for RelayRemovedTask)
---           pure ()
+runDeliveryTaskWorker :: DeliveryWorkerScope -> Worker -> CM ()
+runDeliveryTaskWorker deliveryScope Worker {doWork} = do
+  forever $ do
+    lift $ waitForWork doWork
+    runDeliveryTaskOperation
+  where
+    runDeliveryTaskOperation :: CM ()
+    runDeliveryTaskOperation = do
+      -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker scope for next task
+      withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
+      where
+        processDeliveryTask :: DeliveryTask -> CM ()
+        processDeliveryTask = do
+          -- TODO [channels fwd] converte tasks into jobs
+          -- case by task type (DeliveryTask)
+          -- for MessageForwardTask:
+          --   build encoding/list of messages
+          --   update correpsonding tasks as processed
+          -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
+          pure ()
+
+startDeliveryJobWorkers :: CM ()
+startDeliveryJobWorkers = do
+  -- TODO [channels fwd] getPendingDeliveryJobScopes - retrieve [DeliveryWorkerScope] based on pending jobs
+  workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
+  lift . forM_ workerScopes resumeDeliveryJobWork
+
+resumeDeliveryJobWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryJobWork = void .: getDeliveryJobWorker False
+
+getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryJobWorker hasWork deliveryScope = do
+  ws <- asks DeliveryJobWorkers
+  -- TODO [channels fwd] not an **agent** worker
+  getAgentWorker "delivery_job" hasWork deliveryScope ws $ runDeliveryJobWorker deliveryScope
+
+runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
+runDeliveryJobWorker deliveryScope Worker {doWork} = do
+  forever $ do
+    lift $ waitForWork doWork
+    runDeliveryJobOperation
+  where
+    runDeliveryJobOperation :: CM ()
+    runDeliveryJobOperation = do
+      -- TODO [channels fwd] getNextDeliveryJob - search "inside" worker scope for next job
+      withWork doWork (\db -> getNextDeliveryJob db deliveryScope) processDeliveryJob
+      where
+        processDeliveryJob :: DeliveryJob -> CM ()
+        processDeliveryJob = do
+          -- TODO [channels fwd] implement forwarding logic
+          -- case by job type (DeliveryJob)
+          -- iterate over members via cursor, update cursor on the job record
+          -- post forwarding operations: e.g. delete group connections (for RelayRemovedJob)
+          pure ()

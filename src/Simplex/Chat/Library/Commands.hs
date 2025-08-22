@@ -181,7 +181,8 @@ startChatController mainApp enableSndFiles = do
         then do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
-          -- startDeliveryWorkers -- TODO [channels fwd] start workers
+          startDeliveryTaskWorkers -- TODO [channels fwd] start task workers
+          startDeliveryJobWorkers -- TODO [channels fwd] start job workers
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
