@@ -1203,7 +1203,7 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
 memberShortenedName :: GroupMember -> ContactName
 memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
   | T.length displayName <= 16 = displayName
-  | otherwise = T.take 16 displayName <> "…"
+  | otherwise = T.take 16 displayName `T.snoc` '…'
 
 splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
 splitFileDescr partSize rfdText = splitParts 1 rfdText
