@@ -196,7 +196,6 @@ CREATE TABLE group_members(
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
   member_welcome_shared_msg_id BLOB,
-  last_interaction_ts TEXT,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -695,17 +694,31 @@ CREATE TABLE chat_item_mentions(
 CREATE TABLE delivery_tasks(
   delivery_task_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  delivery_scope TEXT, -- GroupForwardScope - tag? or, add support scope group_member_id?
-  task_tag TEXT NOT NULL, -- DeliveryTaskTag = FCTMessage | FCTRelayRemoval | FCTReactionCount
-  task_complete INTEGER NOT NULL DEFAULT 0, -- or task_status? e.g. "pending",
-  "in_progress",
-  "complete"
-  prev_sender_interaction_ts TEXT,
-  cursor_group_member_id INTEGER, -- for members that joined before prev_sender_interaction_ts(MessageDeliveryTask); or for all members
-  post_interaction_cursor_group_member_id INTEGER, -- for members that joined after prev_sender_interaction_ts
-  messages_encoding TEXT, -- or, instead save comma separated list of references to messages?(for MessageDeliveryTask)
-  group_as_sender INTEGER NOT NULL DEFAULT 0, -- for MessageDeliveryTask(sender sent "message from channel")
-  message_id INTEGER REFERENCES messages ON DELETE CASCADE -- for RelayRemovedTask
+  delivery_job_scope TEXT NOT NULL,
+  delivery_job_tag TEXT NOT NULL,
+  forward_scope TEXT,
+  forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  sender_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  message_id INTEGER REFERENCES messages ON DELETE CASCADE,
+  message_from_channel INTEGER NOT NULL DEFAULT 0,
+  task_status TEXT NOT NULL,
+  failed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE delivery_jobs(
+  delivery_job_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  delivery_job_scope TEXT NOT NULL,
+  delivery_job_tag TEXT NOT NULL,
+  forward_scope TEXT,
+  forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  messages_batch TEXT,
+  cursor_group_member_id INTEGER,
+  job_status TEXT NOT NULL,
+  failed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1118,4 +1131,16 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON contacts(
 );
 CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON contacts(
   grp_direct_inv_from_member_conn_id
+);
+CREATE INDEX idx_delivery_tasks_group_id ON delivery_tasks(group_id);
+CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(
+  sender_group_member_id
+);
+CREATE INDEX idx_delivery_tasks_forward_scope_group_member_id ON delivery_tasks(
+  forward_scope_group_member_id
+);
+CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
+CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
+CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(
+  forward_scope_group_member_id
 );
