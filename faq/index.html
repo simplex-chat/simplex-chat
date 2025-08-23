@@ -917,7 +917,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div><h1 id="frequently-asked-questions" tabindex="-1">Frequently Asked Questions</h1>
 <p><a href="#how-to-use-it">How to use it</a></p>
 <ul>
-<li><a href="#how-do-i-add-contacts">How do I add contacts?</a></li>
+<li><a href="#how-do-i-connect-to-people">How do I connect to people?</a></li>
 <li><a href="#i-have-nobody-to-chat-with-where-can-i-find-any-groups">I have nobody to chat with! Where can I find any groups?</a></li>
 <li><a href="#what-is-database-what-can-i-do-with-it">What is database? What can I do with it?</a></li>
 <li><a href="#can-i-send-files-over-simplex">Can I send files over SimpleX? </a></li>
@@ -929,7 +929,8 @@ window.addEventListener('scroll',changeHeaderBg);
 <li><a href="#i-want-to-see-when-my-contacts-read-my-messages">I want to see when my contacts read my messages</a></li>
 <li><a href="#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform">Can I use the same profile on desktop? Do messages sync cross-platform?</a></li>
 <li><a href="#why-cannot-i-delete-messages-i-sent-from-my-contacts-device">Why cannot I delete messages I sent from my contact's device?</a></li>
-<li><a href="#why-invitation-links-use-simplex.chat-domain">Why invitation links use simplex.chat domain?</a></li>
+<li><a href="#what-do-group-roles-mean">What do group roles mean?</a></li>
+<li><a href="#i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect">I don't want to share a web link or a QR code. How can I connect?</a></li>
 </ul>
 <p><a href="#troubleshooting">Troubleshooting</a></p>
 <ul>
@@ -961,7 +962,7 @@ window.addEventListener('scroll',changeHeaderBg);
 </ul>
 <h2 id="how-to-use-it" tabindex="-1">How to use it</h2>
 <h3 id="how-do-i-connect-to-people" tabindex="-1">How do I connect to people?</h3>
-<p>Tap &quot;pencil&quot; button in the right corner, then &quot;Create 1-time link&quot;. Share the link with the person you want to connect to. Your contact has to paste the link in the app's search bar. The link will can also be opened via the browser, once the app is installed.</p>
+<p>Tap &quot;pencil&quot; button in the right corner, then &quot;Create 1-time link&quot;. Share the link with the person you want to connect to. Your contact has to paste the link to the app's search bar. The link will can also be opened via the browser, once the app is installed.</p>
 <p>Alternatively, you can show the QR code when meeting in person or in a video call.</p>
 <p>It is safe to share this link over any communication channel, it contains only public keys and can only be used once.</p>
 <p>If you want to share your address publicly, so that many people can connect to you, use your SimpleX address instead of 1-time links. Tap your profile image/avatar, then Your SimpleX address. Once you create the address, you can share it in social media profiles, email signature, etc. See <a href="/docs/guide/making-connections.html#comparison-of-1-time-invitation-links-and-simplex-contact-addresses">the comparison of SimpleX address with 1-time links</a>.</p>
@@ -1015,10 +1016,42 @@ If interested, please read more: <a href="/docs/guide/making-connections.html">A
 </ol>
 <p>It is also important to remember, that even if your contact enabled &quot;Delete for everyone&quot;, you cannot really see it as a strong guarantee that the message will be deleted. Your contact's app can have a very simple modification (a one-line code change), that would prevent this deletion from happening when you request it. So you cannot see it as something that guarantees your security from your contacts.</p>
 <p>When &quot;Delete for everyone&quot; is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as &quot;deleted message&quot;, and will be able to reveal the original message.</p>
-<h3 id="why-invitation-links-use-simplexchat-domain" tabindex="-1">Why invitation links use simplex.chat domain?</h3>
-<p>You can replace <code>https://simplex.chat/</code> with <code>simplex:/</code> or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.</p>
-<p>The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.</p>
-<p>The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (<code>#</code>) is not sent over the internet - the server can only see <code>https://simplex.chat/contact/</code> and the rest is processed on user's device in the browser, if you open it as a page.</p>
+<h3 id="what-do-group-roles-mean" tabindex="-1">What do group roles mean?</h3>
+<p>Groups support 5 member roles: owner, admin, moderator, member and observer.</p>
+<p>An observer can:</p>
+<ul>
+<li>add reactions</li>
+<li>send reports</li>
+<li>talk to admins via &quot;Chat with admins&quot;</li>
+</ul>
+<p>A member can:</p>
+<ul>
+<li>send messages</li>
+</ul>
+<p>A moderator can:</p>
+<ul>
+<li>approve members in review (&quot;knocking&quot;)</li>
+<li>moderate messages<sup>*</sup></li>
+<li>block members temporarily<sup>*</sup></li>
+<li>participate in &quot;Chats with members&quot;</li>
+</ul>
+<p>An admin can:</p>
+<ul>
+<li>add and remove members<sup>*</sup></li>
+<li>change member roles<sup>*</sup>, including their own</li>
+<li>create group links (but the new members will join via them, so use links of admins who are always online).</li>
+</ul>
+<p>A group owner can:</p>
+<ul>
+<li>edit group profile</li>
+<li>delete the group</li>
+</ul>
+<p>Each role can do everything that the previous roles can, except moderators and higher cannot send reports or &quot;Chat with admins&quot;.</p>
+<p><sup>*</sup>Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote other admins and themselves, or make anybody an admin).</p>
+<h3 id="i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect" tabindex="-1">I don't want to share a web link or a QR code. How can I connect?</h3>
+<p>You can replace the server part of the link (e.g., <code>https://smp18.simplex.im/</code>) with <code>simplex:/</code> and add <code>?h=smp18.simplex.im</code> (replace it with server of your link) to the end of the link. Then it will not be possible to use it in a web browser, but it will be recognized by SimpleX Chat app.</p>
+<p>For example, this link: <code>https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ</code></p>
+<p>becomes: <code>simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im</code></p>
 <h2 id="troubleshooting" tabindex="-1">Troubleshooting</h2>
 <h3 id="i-do-not-receive-messages-or-message-notifications" tabindex="-1">I do not receive messages or message notifications</h3>
 <p>There may be several reasons messages are not delivered to you from your contact:</p>
