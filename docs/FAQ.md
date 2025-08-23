@@ -19,8 +19,8 @@ revision: 13.08.2025
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
-- [What each group role can do?](#what-each-group-role-can-do)
-- [I cannot share links or QR codes. How do I share my link?](#i-cannot-share-links-or-qr-codes-how-do-i-share-my-link)
+- [What do group roles mean?](#what-do-group-roles-mean)
+- [I don't want to share a web link or a QR code. How can I connect?](#i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -51,7 +51,7 @@ revision: 13.08.2025
 
 ### How do I connect to people?
 
-Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link in the app's search bar. The link will can also be opened via the browser, once the app is installed.
+Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link to the app's search bar. The link will can also be opened via the browser, once the app is installed.
 
 Alternatively, you can show the QR code when meeting in person or in a video call.
 
@@ -136,40 +136,44 @@ It is also important to remember, that even if your contact enabled "Delete for 
 
 When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
 
-### What each group role can do?
+### What do group roles mean?
 
-There are 5 roles: owner, admin, moderator, member and observer.
-- Observers can:
-  - add reactions
-  - send reports
-  - talk to admins via "chat with admins"
-- Members can send messages
-- Moderators can:
-  - approve members in review
-  - moderate messages
-  - block members temporarily
-  - participate in admin chats
-- Admins can:
-  - add and remove members
-  - change member roles
-  - create group links (but the new members will join via them, so use links of admins who are always online)
-- Owners can:
-  - edit group profile
-  - delete the group
+Groups support 5 member roles: owner, admin, moderator, member and observer.
 
-Each role can do everything that the previous roles can, except moderators and higher cannot send reports or "chat with admins".
+An observer can:
+- add reactions
+- send reports
+- talk to admins via "Chat with admins"
 
-Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote themselves).
+A member can:
+- send messages
 
-### I cannot share links or QR codes. How do I share my link?
+A moderator can:
+- approve members in review ("knocking")
+- moderate messages<sup>*</sup>
+- block members temporarily<sup>*</sup>
+- participate in "Chats with members"
 
-For this example I will use "smp18.simplex.im", but you will have to replace that with the server of your link.
+An admin can:
+- add and remove members<sup>*</sup>
+- change member roles<sup>*</sup>, including their own
+- create group links (but the new members will join via them, so use links of admins who are always online).
 
-You can replace https://smp18.simplex.im/ part of the link with simplex:/ and add ?h=smp18.simplex.im (replace it with server of your link) to the end of the link. then it will not be recognized as a link in other places, but it will be accepted by SimpleX Chat as a link.
-For example this link:
-https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ
-Becomes:
-simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im
+A group owner can:
+- edit group profile
+- delete the group
+
+Each role can do everything that the previous roles can, except moderators and higher cannot send reports or "Chat with admins".
+
+<sup>*</sup>Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote other admins and themselves, or make anybody an admin).
+
+### I don't want to share a web link or a QR code. How can I connect?
+
+You can replace the server part of the link (e.g., `https://smp18.simplex.im/`) with `simplex:/` and add `?h=smp18.simplex.im` (replace it with server of your link) to the end of the link. Then it will not be possible to use it in a web browser, but it will be recognized by SimpleX Chat app.
+
+For example, this link: `https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ`
+
+becomes: `simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im`
 
 ## Troubleshooting
 
