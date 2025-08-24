@@ -45,7 +45,7 @@
         <meta charset="UTF-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>SimpleX Directory Service</title>
+        <title></title>
         <meta name="Content-Type" content="text/html;charset=utf-8"/>
 
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
@@ -189,7 +189,7 @@
                             
                                 <li><a href="/docs/business.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX for business</a></li>
                             
-                                <li><a href="/docs/directory.html" class="active lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory Service</a></li>
                             
                                 <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
                             
@@ -326,7 +326,7 @@
                             
                                 <li>
                                     
-                                        <a href="/docs/directory.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                        <a href="/docs/trademark.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
                                             <img class="h-4" src="/img/flags/en.svg" alt="" srcset="">
                                             <p>English</p>
                                         </a>
@@ -590,7 +590,7 @@ window.addEventListener('scroll',changeHeaderBg);
                                                 </li>
                                             
                                                 <li>
-                                                    <a class="active" href="/docs/directory.html">SimpleX Directory Service</a>
+                                                    <a class="" href="/docs/directory.html">SimpleX Directory Service</a>
                                                 </li>
                                             
                                                 <li>
@@ -770,79 +770,34 @@ window.addEventListener('scroll',changeHeaderBg);
                             </div>
                         </div>
                     </div>
-                    <div><h1 id="simplex-directory-service" tabindex="-1">SimpleX Directory Service</h1>
-<p>You can use an experimental directory service to discover the groups created and registered by other users.</p>
-<h2 id="searching-for-groups" tabindex="-1">Searching for groups</h2>
-<p>Connect to the directory service via <a href="https://simplex.chat/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion">this address</a> and send the message containing the words you want to find in the group name or welcome message. You will receive up to 10 groups with the largest number of members in the response, together with the links to join these groups.</p>
-<p>Please note that your search queries can be kept by the bot as the conversation history, but you can use incognito mode when connecting to the bot, to avoid correlation with any other communications. See <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/PRIVACY.md">Privacy policy</a> for more details.</p>
-<h2 id="adding-groups-to-the-directory" tabindex="-1">Adding groups to the directory</h2>
-<h3 id="how-to-add-a-group" tabindex="-1">How to add a group</h3>
-<p>To add a group you must be its owner. Once you connect to the directory service and send <code>/help</code>, the service will guide you through the process.</p>
-<ol>
-<li>Invite SimpleX Service Directory to the group as <code>admin</code> member. You can also set the role to <code>admin</code> after inviting the directory service.</li>
-</ol>
-<p>The directory service needs to be <code>admin</code> to provide a good user experience of joining the group, as it will create a new link to join the group, which is expected to be online 99% of the time.</p>
-<ol start="2">
-<li>
-<p>Add the link sent to you by the directory service to the group welcome message. This has to be done by the same group member who invited the directory service to the group. This member will be the owner of the group record in the directory service.</p>
-</li>
-<li>
-<p>Once the link is added, the group will need to be approved by the directory service admins. This link is functional even before the group is approved, and you can continue using this link even if the group is not approved.</p>
-</li>
-</ol>
-<p>The group is usually approved within 24 hours. Please see below which groups can be added.</p>
-<p>Once the group is approved, it will appear in search results.</p>
-<p>You can list all the groups you submitted by sending <code>/list</code> to the directory service.</p>
-<h3 id="how-to-remove-the-group-from-the-directory" tabindex="-1">How to remove the group from the directory</h3>
-<p>Changing the group profile in any way (e.g., changing the group name, welcome message, or removing the link to join the group from the welcome message) will remove the group from the search results until the group is approved again by the directory service admins.</p>
-<p>If it is undesirable that the service cannot be found in search during this time, please coordinate the time of this change with the directory service admins for quick approval.</p>
-<p>Changing the role of the directory service will temporarily remove the group from the search results, and unless you changed the role to the <code>owner</code>, it will also permanently disrupt the members that were in the process of connecting to other members via the directory service.</p>
-<p>To remove the group from the directory:</p>
-<ol>
-<li>Remove the group link created by the directory service from the welcome message. This will not disrupt the members from joining the group, even via this link, but will remove the group from the search results.</li>
-<li>After some time (we recommend 3-4 days) remove the directory service from the group - it will stop receiving the messages and the group will be permanently removed from the search results.</li>
-</ol>
-<p>Removing the group does not prevent you from registering the group again in the future.</p>
-<h3 id="why-limit-which-groups-can-be-added" tabindex="-1">Why limit which groups can be added</h3>
-<p>The reason to restrict the acceptable content is to have a better experience for a wider range of the users, and to comply with the content policies of app distribution channels (App Store, Play Store, etc.), once the directory service is available via the app without additional configuration. To achieve that, the content in the listed groups should be restricted to be generally appropriate.</p>
-<p>Doesn't it go against the idea of decentralization and freedom of speech?</p>
-<p>We believe it does not, because:</p>
-<ol>
-<li>The service only restricts the content in the groups that you choose to register – we have no register of all existing groups, and no access to their content.</li>
-<li>The service itself is open-source, and can be self-hosted, so anybody can run an alternative directory service with the different content policies, or without any policies at all.</li>
-<li>Freedom of speech should respect legal rights and freedoms of others, so agreeing some boundaries seems necessary.</li>
-</ol>
-<h3 id="which-groups-can-be-added" tabindex="-1">Which groups can be added</h3>
-<p>The below is not the final policy, it is a work in progress.</p>
-<p>Currently, the group registration is limited and manual, as we have limited resources to evaluate the content of the groups, so the initial content policy is quite restrictive - we believe it is better to be able to extend what is allowed, than to have to reduce it.</p>
-<p>To be &quot;listed in the directory&quot; <sup>*</sup>, the group must have at least 10 members. Both the group and group owner profiles must include relevant, appropriate, non-offensive avatar images, that do not use the existing trademarks.</p>
-<p>Please ONLY submit the groups on the following subjects:</p>
+                    <div><h1 id="simplex-chat-trademark-policy" tabindex="-1">SimpleX Chat Trademark Policy</h1>
+<p>The SimpleX Chat name and logo are trademarks of SimpleX Chat Ltd. This policy protects the brand from confusion. All uses must follow both the context rules (permitted/prohibited) and usage guidelines below. Unauthorized uses require written permission.</p>
+<h2 id="permitted-contexts" tabindex="-1">Permitted Contexts</h2>
 <ul>
-<li>communications solutions and providers (messengers, social networks, Internet, etc.)</li>
-<li>privacy and security</li>
-<li>cryptocurrencies</li>
-<li>product and software development</li>
-<li>science and technology</li>
-<li>media and entertainment: books, music, movies and games</li>
-<li>politics, society, culture and education</li>
+<li><strong>Communities/Events</strong>: For unofficial groups or events.</li>
+<li><strong>Addresses/Entities</strong>: To indicate a SimpleX address, person, business, or community.</li>
+<li><strong>Publications</strong>: In articles, blogs, videos, social media posts and presentations about SimpleX Chat or SimpleX network.</li>
+<li><strong>Software Descriptions</strong>: To state compatibility, e.g., &quot;Compatible with SimpleX network&quot;, in docs or descriptions (not in software name/branding).</li>
 </ul>
-<p>The content in the group must be &quot;appropriate&quot; for the general audience, starting from 12 years old.</p>
-<p>The content in the listed groups must:</p>
+<h2 id="prohibited-contexts" tabindex="-1">Prohibited Contexts</h2>
 <ul>
-<li>be legal for the jurisdiction you are in.</li>
-<li>NOT contain spam and advertising.</li>
-<li>NOT contain violence, calls for violence, calls for public demonstrations, or any other disturbing content.</li>
-<li>NOT contain pornography, nudity, erotic or any sex-related content.</li>
-<li>NOT contain racism, hate speech, or any other content that promotes discrimination.</li>
-<li>NOT contain information about drugs, alcohol, or any other substances.</li>
-<li>NOT contain <a href="https://en.wikipedia.org/wiki/Not_safe_for_work">NSFW</a> content.</li>
-<li>NOT be offensive – this needs to be clarified.</li>
+<li><strong>Software Branding</strong>: As part of any software's name, branding, or logo, including forks.</li>
+<li><strong>Implied Affiliation</strong>: Suggesting endorsement, sponsorship, or official ties without permission.</li>
+<li><strong>Commercial Activities</strong>: In ads, merchandise, or promotions without permission.</li>
+<li><strong>Any Other</strong>: Uses not listed as permitted.</li>
 </ul>
-<p>Group owners are expected to moderate the content in the groups, if members post inappropriate or excessive amount of content and group owners do not moderate it, the group is likely to be removed from the directory.</p>
-<p>We reserve the right to not accept the group listing in the directory or cancel its listing, and there may be cases when we can't provide an explanation. We will certainly try to avoid it by communicating with the group owners first.</p>
-<p>The combination of display name and full name has to be unique for the listed groups. If a group uses the name or logo of SimpleX, SimpleX network or SimpleX Chat it must be consistent with <a href="/docs/trademark.html">Permitted Uses or SimpleX trademark</a>.</p>
-<p>Once the group is listed in the directory, the bot will invite you to join the group of the group owners, where you can send any ideas or suggestions for how the groups functionality should evolve, and help steer both the product and the policies.</p>
-<p><sup>*</sup> &quot;listed&quot; means discoverable via search or any other directory service functions by any connected users other than the user who submitted the registration</p>
+<h2 id="usage-guidelines" tabindex="-1">Usage Guidelines</h2>
+<p>When using in permitted contexts:</p>
+<ul>
+<li>Include &quot;Unofficial&quot; for communities/events.</li>
+<li>Use logo unchanged (shape/colors), except grayscale if needed.</li>
+<li>Use icon or icon with &quot;SimpleX&quot; word. See logos <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/media-logos">here</a>.</li>
+<li>Avoid modifications or implications of official status.</li>
+</ul>
+<h2 id="general-terms" tabindex="-1">General Terms</h2>
+<p>We reserve all trademark rights. For permissions, contact us via email or SimpleX. We may enforce against violations. Policy updates posted here.</p>
+<h2 id="note" tabindex="-1">Note</h2>
+<p>SimpleX Chat software is licensed under AGPLv3 - see <a href="https%3A//github.com/simplex-chat/simplex-chat/blob/stable/simplex-chat/LICENSE">LICENSE</a>. This policy covers only trademarks, not code use.</p>
 </div>
                 </article>
             </main>
