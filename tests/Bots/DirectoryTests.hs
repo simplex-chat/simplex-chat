@@ -186,6 +186,7 @@ testDirectoryService ps =
         superUser <## "Owner: bob"
         superUser <## "2 members"
         superUser <## "Status: pending admin approval"
+        superUser <## "/'role 1', /'filter 1'"
         superUser #> "@SimpleX-Directory /approve 1:PSA 1"
         superUser <# "SimpleX-Directory> > /approve 1:PSA 1"
         superUser <## "      Group approved!"
@@ -193,9 +194,9 @@ testDirectoryService ps =
         bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
         bob <## ""
         bob <## "Supported commands:"
-        bob <## "- /filter 1 - to configure anti-spam filter."
-        bob <## "- /role 1 - to set default member role."
-        bob <## "- /help commands - other commands."
+        bob <## "/'filter 1' - to configure anti-spam filter."
+        bob <## "/'role 1' - to set default member role."
+        bob <## "/'link 1' - to view/upgrade group link."
         search bob "privacy" welcomeWithLink'
         search bob "security" welcomeWithLink'
         cath `connectVia` dsLink
@@ -462,14 +463,14 @@ testSearchGroups ps =
         receivedGroup cath 0 3
         receivedGroup cath 1 2
         receivedGroup cath 2 2
-        cath <# "SimpleX-Directory> Send /next or just . for 4 more result(s)."
+        cath <# "SimpleX-Directory> Send /next for 4 more result(s)."
         cath #> "@SimpleX-Directory /next"
         cath <# "SimpleX-Directory> > /next"
         cath <## "      Sending 3 more group(s)."
         receivedGroup cath 3 2
         receivedGroup cath 4 2
         receivedGroup cath 5 2
-        cath <# "SimpleX-Directory> Send /next or just . for 1 more result(s)."
+        cath <# "SimpleX-Directory> Send /next for 1 more result(s)."
         -- search of another user does not affect the search of the first user
         groupFound bob "Another"
         cath #> "@SimpleX-Directory ."
@@ -482,14 +483,14 @@ testSearchGroups ps =
         receivedGroup cath 0 3
         receivedGroup cath 1 2
         receivedGroup cath 2 2
-        cath <# "SimpleX-Directory> Send /next or just . for 5 more result(s)."
+        cath <# "SimpleX-Directory> Send /next for 5 more result(s)."
         cath #> "@SimpleX-Directory /new"
         cath <# "SimpleX-Directory> > /new"
         cath <## "      8 group(s) listed, sending the most recent 3."
         receivedGroup cath 7 2
         receivedGroup cath 6 2
         receivedGroup cath 5 2
-        cath <# "SimpleX-Directory> Send /next or just . for 5 more result(s)."
+        cath <# "SimpleX-Directory> Send /next for 5 more result(s)."
         cath #> "@SimpleX-Directory term3"
         cath <# "SimpleX-Directory> > term3"
         cath <## "      Found 3 group(s)."
@@ -502,7 +503,7 @@ testSearchGroups ps =
         receivedGroup cath 1 2
         receivedGroup cath 2 2
         receivedGroup cath 3 2
-        cath <# "SimpleX-Directory> Send /next or just . for 3 more result(s)."
+        cath <# "SimpleX-Directory> Send /next for 3 more result(s)."
         cath #> "@SimpleX-Directory ."
         cath <# "SimpleX-Directory> > ."
         cath <## "      Sending 3 more group(s)."
@@ -1098,7 +1099,7 @@ testCapthaScreening ps =
         bob #> "@SimpleX-Directory /role 1"
         bob <# "SimpleX-Directory> > /role 1"
         bob <## "      The initial member role for the group privacy is set to member"
-        bob <## "Send /role 1 observer to change it."
+        bob <## "Send /'role 1 observer' to change it."
         bob <## ""
         note <- getTermLine bob
         let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
@@ -1109,7 +1110,9 @@ testCapthaScreening ps =
         bob <## "- reject long/inappropriate names: disabled"
         bob <## "- pass captcha to join: enabled"
         bob <## ""
-        bob <## "Use /filter 1 [name] [captcha] to enable and /filter 1 off to disable filter."
+        bob <## "/'filter 1 name' - enable name filter"
+        bob <## "/'filter 1 name captcha' - enable both"
+        bob <## "/'filter 1 off' - disable filter"
         -- connect with captcha screen
         _ <- join cath groupLink
         cath ##> "/_send #1(_support) text 123" -- sending incorrect captcha
@@ -1257,6 +1260,7 @@ groupListing_ su owner_ gId n fn count status = do
     su <## ("Owner: " <> ownerName)
   su <## (show count <> " members")
   su <## ("Status: " <> status)
+  su <## ("/'role " <> show gId <> "', /'filter " <> show gId <> "'")
 
 reapproveGroup :: HasCallStack => Int -> TestCC -> TestCC -> IO ()
 reapproveGroup count superUser bob = do
@@ -1275,9 +1279,9 @@ reapproveGroup count superUser bob = do
   bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
   bob <## ""
   bob <## "Supported commands:"
-  bob <## "- /filter 1 - to configure anti-spam filter."
-  bob <## "- /role 1 - to set default member role."
-  bob <## "- /help commands - other commands."
+  bob <## "/'filter 1' - to configure anti-spam filter."
+  bob <## "/'role 1' - to set default member role."
+  bob <## "/'link 1' - to view/upgrade group link."
 
 addCathAsOwner :: HasCallStack => TestCC -> TestCC -> IO ()
 addCathAsOwner bob cath = do
@@ -1425,22 +1429,22 @@ approveRegistrationId su u n gId ugId = do
   u <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
   u <## ""
   u <## "Supported commands:"
-  u <## ("- /filter " <> show ugId <> " - to configure anti-spam filter.")
-  u <## ("- /role " <> show ugId <> " - to set default member role.")
-  u <## "- /help commands - other commands."
+  u <## ("/'filter " <> show ugId <> "' - to configure anti-spam filter.")
+  u <## ("/'role " <> show ugId <> "' - to set default member role.")
+  u <## ("/'link " <> show ugId <> "' - to view/upgrade group link.")
 
 connectVia :: TestCC -> String -> IO ()
 u `connectVia` dsLink = do
   u ##> ("/c " <> dsLink)
   u <## "connection request sent!"
   u .<## ": contact is connected"
-  u .<# "> Welcome to SimpleX-Directory service!"
-  u <## "Send a search string to find groups or /help to learn how to add groups to directory."
+  u .<# "> Welcome to SimpleX-Directory!"
   u <## ""
-  u <## "For example, send privacy to find groups about privacy."
-  u <## "Or send /all or /new to list groups."
+  u <## "🔍 Send search string to find groups - try security."
+  u <## "/help - how to submit your group."
+  u <## "/new - recent groups."
   u <## ""
-  u <## "Content and privacy policy: https://simplex.chat/docs/directory.html"
+  u <## "[Directory rules](https://simplex.chat/docs/directory.html)."
 
 joinGroup :: String -> TestCC -> TestCC -> IO ()
 joinGroup gName member host = do
