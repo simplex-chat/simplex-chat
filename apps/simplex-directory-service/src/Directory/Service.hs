@@ -163,7 +163,7 @@ directoryServiceCLI st opts = do
           let cmds = fromMaybe [] $ preferences >>= commands_
           unless (cmds == directoryCommands) $ do
             let prefs = (fromMaybe emptyChatPrefs preferences) {files = Just FilesPreference {allow = FANo}, commands = Just directoryCommands} :: Preferences
-                p' = (fromLocalProfile p) {peerType = Just CPTBot, preferences = Just prefs} :: Profile
+                p' = (fromLocalProfile p) {displayName = serviceName opts, peerType = Just CPTBot, preferences = Just prefs} :: Profile
             liftIO $ sendChatCmd cc (APIUpdateProfile userId p') >>= \case
               Right CRUserProfileUpdated {} -> putStrLn "Updated directory commands"
               Right r -> putStrLn ("Error: unexpected response " <> show r) >> exitFailure
