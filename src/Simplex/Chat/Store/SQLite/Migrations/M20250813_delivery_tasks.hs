@@ -8,7 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- How columns correspond to types:
 -- - <group_id, delivery_job_scope> <-> DeliveryWorkerScope,
 -- - delivery_job_scope <-> DeliveryJobScope,
--- - forward_scope <-> GroupForwardScope,
+-- - forward_scope_tag <-> GroupForwardScopeTag,
 -- - forward_scope_group_member_id <-> GroupMemberId (for GFSMemberSupport forward scope),
 -- - delivery_job_tag <-> DeliveryJobTag,
 -- - task_status <-> DeliveryTaskStatus,
@@ -27,7 +27,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- So, each group can have up to 3 delivery task workers and 3 delivery job workers - 1 task and
 -- 1 job worker for each delivery job scope.
 --
--- Column forward_scope specifies the exact forwarding scope, in a sense it narrows down delivery scope for a job.
+-- Column forward_scope_tag specifies the exact forwarding scope, in a sense it narrows down delivery scope for a job.
 -- For example, for a DJSGroup (delivery job scope "group") forward scope may be GFSAll or GFSMain.
 -- Or, for a DJSMemberSupport (delivery job scope "member support") forward scope specifies
 -- the exact support member (forward_scope_group_member_id).
@@ -51,7 +51,7 @@ CREATE TABLE delivery_tasks (
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   delivery_job_scope TEXT NOT NULL,
   delivery_job_tag TEXT NOT NULL,
-  forward_scope TEXT,
+  forward_scope_tag TEXT,
   forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   sender_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   message_id INTEGER REFERENCES messages ON DELETE CASCADE,
@@ -73,7 +73,7 @@ CREATE TABLE delivery_jobs (
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   delivery_job_scope TEXT NOT NULL,
   delivery_job_tag TEXT NOT NULL,
-  forward_scope TEXT,
+  forward_scope_tag TEXT,
   forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   messages_batch TEXT,
   cursor_group_member_id INTEGER,

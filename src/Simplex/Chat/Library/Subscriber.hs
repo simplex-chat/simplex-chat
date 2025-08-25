@@ -3336,18 +3336,27 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
   where
     runDeliveryTaskOperation :: CM ()
     runDeliveryTaskOperation = do
-      -- TODO [channels fwd] getNextDeliveryTask - search "inside" worker scope for next task
-      withWork doWork (\db -> getNextDeliveryTask db deliveryScope) processDeliveryTask
+      withWork doWork (\db -> getNextDeliveryTasksWork db deliveryScope) processDeliveryTasksWork
       where
-        processDeliveryTask :: DeliveryTask -> CM ()
-        processDeliveryTask = do
-          -- TODO [channels fwd] converte tasks into jobs
-          -- case by task type (DeliveryTask)
-          -- for MessageForwardTask:
-          --   build encoding/list of messages
-          --   update correpsonding tasks as processed
-          -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
-          pure ()
+        -- TODO [channels fwd] convert tasks into jobs
+        processDeliveryTasksWork :: DeliveryTasksWork -> CM ()
+        processDeliveryTasksWork = \case
+          DTWMessageForward tasks -> do
+            -- build encoding/list of messages (single batch)
+            -- createMessageForwardJob
+            -- update correpsonding tasks as processed
+            -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
+            pure ()
+          DTWRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
+            let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
+            -- createRelayRemovedJob
+            -- update corresponding task as processed
+            -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
+            pure ()
+
+-- let GroupMember {memberId} = m
+-- memberName = Just $ memberShortenedName m
+-- events = L.map (\cm -> XGrpMsgForward memberId memberName cm brokerTs) fwdMsgs
 
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do

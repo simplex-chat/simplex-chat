@@ -191,6 +191,27 @@ data GroupForwardScope
   | GFSMemberSupport GroupMemberId
   deriving (Eq, Ord, Show)
 
+data GroupForwardScopeTag
+  = GFSTAll_
+  | GFSTMain_
+  | GFSTMemberSupport_
+  deriving (Eq, Show)
+
+instance FromField GroupForwardScopeTag where fromField = fromTextField_ textDecode
+
+instance ToField GroupForwardScopeTag where toField = toField . textEncode
+
+instance TextEncoding GroupForwardScopeTag where
+  textDecode = \case
+    "all" -> Just GFSTAll_
+    "main" -> Just GFSTMain_
+    "member_support" -> Just GFSTMemberSupport_
+    _ -> Nothing
+  textEncode = \case
+    GFSTAll_ -> "all"
+    GFSTMain_ -> "main"
+    GFSTMemberSupport_ -> "member_support"
+
 toGroupForwardScope :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupForwardScope
 toGroupForwardScope GroupInfo {membership} = \case
   Nothing -> GFSMain
@@ -202,6 +223,19 @@ memberEventForwardScope m@GroupMember {memberRole, memberStatus}
   | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport $ groupMemberId' m
   | memberRole >= GRModerator = Just GFSAll
   | otherwise = Just GFSMain
+
+forwardScopeToTag :: GroupForwardScope -> (GroupForwardScopeTag, Maybe GroupMemberId)
+forwardScopeToTag = \case
+  GFSAll -> (GFSTAll_, Nothing)
+  GFSMain -> (GFSTMain_, Nothing)
+  GFSMemberSupport gmId -> (GFSTMemberSupport_, Just gmId)
+
+forwardTagToScope :: GroupForwardScopeTag -> Maybe GroupMemberId -> Maybe GroupForwardScope
+forwardTagToScope tag gmId_ = case (tag, gmId_) of
+  (GFSTAll_, Nothing) -> Just GFSAll
+  (GFSTMain_, Nothing) -> Just GFSMain
+  (GFSTMemberSupport_, Just gmId) -> Just $ GFSMemberSupport gmId
+  _ -> Nothing
 
 chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
@@ -1190,23 +1224,51 @@ data DeliveryJobTag
   -- | DJTChatItemsCount
   deriving (Show)
 
+instance FromField DeliveryJobTag where fromField = fromTextField_ textDecode
+
+instance ToField DeliveryJobTag where toField = toField . textEncode
+
+instance TextEncoding DeliveryJobTag where
+  textDecode = \case
+    "message_forward" -> Just DJTMessageForward
+    "relay_removed" -> Just DJTRelayRemoved
+    _ -> Nothing
+  textEncode = \case
+    DJTMessageForward -> "message_forward"
+    DJTRelayRemoved -> "relay_removed"
+
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job
   | DTSProcessed -- processed by delivery task worker, delivery job created, task can be deleted
   deriving (Show)
 
-data DeliveryTask
-  = DTMessageForward {messageForwardTask :: MessageForwardTask}
-  -- | DTMemberProfile {memberProfileTask :: MemberProfileTask}
-  | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
-  -- | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
+instance FromField DeliveryTaskStatus where fromField = fromTextField_ textDecode
+
+instance ToField DeliveryTaskStatus where toField = toField . textEncode
+
+instance TextEncoding DeliveryTaskStatus where
+  textDecode = \case
+    "new" -> Just DTSNew
+    "processed" -> Just DTSProcessed
+    _ -> Nothing
+  textEncode = \case
+    DTSNew -> "new"
+    DTSProcessed -> "processed"
+
+data DeliveryTasksWork
+  = DTWMessageForward {messageForwardTasks :: NonEmpty MessageForwardTask, forwardScope :: GroupForwardScope}
+  -- | DTBMemberProfile {memberProfileTask :: MemberProfileTask}
+  | DTWRelayRemoved {relayRemovedTask :: RelayRemovedTask, forwardScope :: GroupForwardScope}
+  -- | DTBChatItemsCount {chatItemCountsTasks :: NonEmpty ChatItemCountsTask, forwardScope :: GroupForwardScope}}
   deriving (Show)
 
 data MessageForwardTask = MessageForwardTask
   { taskId :: Int64,
-    sender :: GroupMember,
+    senderMemberId :: MemberId,
+    senderMemberName :: ContactName,
+    brokerTs :: UTCTime,
     chatMessage :: ChatMessage 'Json,
-    messageFromChannel :: MessageFromChannel
+    messageFromChannel :: MessageFromChannel,
   }
   deriving (Show)
 
@@ -1218,6 +1280,9 @@ data MessageForwardTask = MessageForwardTask
 
 data RelayRemovedTask = RelayRemovedTask
   { taskId :: Int64,
+    senderMemberId :: MemberId,
+    senderMemberName :: ContactName,
+    brokerTs :: UTCTime,
     chatMessage :: ChatMessage 'Json
   }
   deriving (Show)
@@ -1234,6 +1299,21 @@ data DeliveryJobStatus
   | DJSComplete -- complete by delivery job worker, job can be deleted
   deriving (Show)
 
+instance FromField DeliveryJobStatus where fromField = fromTextField_ textDecode
+
+instance ToField DeliveryJobStatus where toField = toField . textEncode
+
+instance TextEncoding DeliveryJobStatus where
+  textDecode = \case
+    "new" -> Just DJSNew
+    "in_progress" -> Just DJSInProgress
+    "complete" -> Just DJSComplete
+    _ -> Nothing
+  textEncode = \case
+    DJSNew -> "new"
+    DJSInProgress -> "in_progress"
+    DJSComplete -> "complete"
+
 data DeliveryJob
   = DJMessageForward {messageForwardJob :: MessageForwardJob}
   -- | DJMemberProfile {memberProfileJob :: MemberProfileJob}
@@ -1243,6 +1323,7 @@ data DeliveryJob
 
 data MessageForwardJob = MessageForwardJob
   { jobId :: Int64,
+    forwardScope :: GroupForwardScope,
     messagesBatch :: Text,
     cursorGMId :: Maybe GroupMemberId
   }
@@ -1257,7 +1338,8 @@ data MessageForwardJob = MessageForwardJob
 
 data RelayRemovedJob = RelayRemovedJob
   { jobId :: Int64,
-    chatMessage :: ChatMessage 'Json,
+    forwardScope :: GroupForwardScope,
+    fwdChatMessage :: ChatMessage 'Json,
     cursorGMId :: Maybe GroupMemberId
   }
   deriving (Show)
