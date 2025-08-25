@@ -163,6 +163,9 @@ newChatController
     remoteCtrlSession <- newTVarIO Nothing
     filesFolder <- newTVarIO optFilesFolder
     chatStoreChanged <- newTVarIO False
+    workerSeq <- newTVarIO 0
+    deliveryTaskWorkers <- TM.emptyIO
+    deliveryJobWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
@@ -203,6 +206,9 @@ newChatController
           remoteCtrlSession,
           config,
           filesFolder,
+          workerSeq,
+          deliveryTaskWorkers,
+          deliveryJobWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,

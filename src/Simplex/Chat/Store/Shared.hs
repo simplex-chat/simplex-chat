@@ -147,6 +147,9 @@ data StoreError
   | SEUsageConditionsNotFound
   | SEInvalidQuote
   | SEInvalidMention
+  | SEDeliveryTaskNotFound {deliveryTaskId :: Int64}
+  | SEInvalidDeliveryTasksWork
+  | SEDeliveryJobNotFound {deliveryJobId :: Int64}
   deriving (Show, Exception)
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)

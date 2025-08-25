@@ -65,6 +65,7 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -899,6 +900,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
           (fwdScopesMsgs, shouldDelConns) <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, False) aChatMsgs
+          -- TODO [channels fwd] schedule forwarding tasks instead of doing forwarding synchronously
+          -- save task with DeliveryJobScope, DeliveryJobTag, GroupForwardScope
+          -- kick delivery task worker for the required delivery scope (getDeliveryTaskWorker)
           when (isUserGrpFwdRelay gInfo') $ do
             unless (blockedByAdmin m) $
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
@@ -3305,3 +3309,85 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else pure Nothing
               else pure Nothing
           _ -> pure Nothing
+
+-- TODO [channels fwd] forwarding workers implementation, below is not working code
+-- TODO [channels fwd] refactor agent Worker for export and reuse
+
+startDeliveryTaskWorkers :: CM ()
+startDeliveryTaskWorkers = do
+  -- TODO [channels fwd] getPendingDeliveryTaskScopes - retrieve [DeliveryWorkerScope] based on pending tasks
+  workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
+  lift . forM_ workerScopes resumeDeliveryTaskWork
+
+resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryTaskWork = void .: getDeliveryTaskWorker False
+
+getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryTaskWorker hasWork deliveryScope = do
+  ws <- asks deliveryTaskWorkers
+  -- TODO [channels fwd] not an **agent** worker
+  getAgentWorker "delivery_task" hasWork deliveryScope ws $ runDeliveryTaskWorker deliveryScope
+
+runDeliveryTaskWorker :: DeliveryWorkerScope -> Worker -> CM ()
+runDeliveryTaskWorker deliveryScope Worker {doWork} = do
+  forever $ do
+    lift $ waitForWork doWork
+    runDeliveryTaskOperation
+  where
+    runDeliveryTaskOperation :: CM ()
+    runDeliveryTaskOperation = do
+      withWork doWork (\db -> getNextDeliveryTasksWork db deliveryScope) processDeliveryTasksWork
+      where
+        -- TODO [channels fwd] convert tasks into jobs
+        processDeliveryTasksWork :: DeliveryTasksWork -> CM ()
+        processDeliveryTasksWork = \case
+          DTWMessageForward tasks -> do
+            -- build encoding/list of messages (single batch)
+            -- createMessageForwardJob
+            -- update correpsonding tasks as processed
+            -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
+            pure ()
+          DTWRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
+            let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
+            -- createRelayRemovedJob
+            -- update corresponding task as processed
+            -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
+            pure ()
+
+-- let GroupMember {memberId} = m
+-- memberName = Just $ memberShortenedName m
+-- events = L.map (\cm -> XGrpMsgForward memberId memberName cm brokerTs) fwdMsgs
+
+startDeliveryJobWorkers :: CM ()
+startDeliveryJobWorkers = do
+  -- TODO [channels fwd] getPendingDeliveryJobScopes - retrieve [DeliveryWorkerScope] based on pending jobs
+  workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
+  lift . forM_ workerScopes resumeDeliveryJobWork
+
+resumeDeliveryJobWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryJobWork = void .: getDeliveryJobWorker False
+
+getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryJobWorker hasWork deliveryScope = do
+  ws <- asks DeliveryJobWorkers
+  -- TODO [channels fwd] not an **agent** worker
+  getAgentWorker "delivery_job" hasWork deliveryScope ws $ runDeliveryJobWorker deliveryScope
+
+runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
+runDeliveryJobWorker deliveryScope Worker {doWork} = do
+  forever $ do
+    lift $ waitForWork doWork
+    runDeliveryJobOperation
+  where
+    runDeliveryJobOperation :: CM ()
+    runDeliveryJobOperation = do
+      -- TODO [channels fwd] getNextDeliveryJob - search "inside" worker scope for next job
+      withWork doWork (\db -> getNextDeliveryJob db deliveryScope) processDeliveryJob
+      where
+        processDeliveryJob :: DeliveryJob -> CM ()
+        processDeliveryJob = do
+          -- TODO [channels fwd] implement forwarding logic
+          -- case by job type (DeliveryJob)
+          -- iterate over members via cursor, update cursor on the job record
+          -- post forwarding operations: e.g. delete group connections (for RelayRemovedJob)
+          pure ()
