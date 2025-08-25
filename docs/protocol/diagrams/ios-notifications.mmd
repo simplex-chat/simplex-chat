@@ -1,0 +1,90 @@
+---
+title: "Notifications flow"
+---
+
+sequenceDiagram
+    participant Client
+    participant NTF
+    participant SMP
+    participant Apple
+
+    autonumber
+
+    Note over Client,NTF: iOS setup app first-time
+
+    Client->>NTF:Create token (tknCreated)
+    NTF->>Apple:Send test notification with secret to APNs
+    Apple-->>Client:Send test notification with secret to client
+    Client->>NTF:Verify iOS token (tknVerified)
+
+    Note over Client,NTF: iOS creates link
+
+    alt Create credentials for queue (new client)
+        Client->>SMP:ntfNewCreated
+    else Create credentials for queue (old client)
+        Client->>SMP:ntfCreated
+    end
+
+    Note over Client,SMP: Subscription phase
+
+    Client->>NTF:Create subscription based on credentials (subCreated)
+    
+    alt Subscription request
+        NTF->>SMP:ntfSub
+    else Subscription fail: AUTH
+        NTF->>SMP:ntfSubAuth
+    else Subscription fail: Duplicate
+        NTF->>SMP:ntfSubDuplicate
+    end
+
+    Note over Client,SMP: Notification phase
+
+    loop Every minute
+        SMP-->SMP: Queues with notification<br/>waiting to be delivered (ntfCount1)
+    end
+
+    alt SMP recevies<br/>message with notification
+        SMP->>SMP:msgRecvNtf
+    else Client asks SMP to get new message
+        Client->>SMP:msgGet
+    else Client sents message with notification flag
+        Client->>SMP:msgSentNtf
+    end
+
+    alt SMP recevies get
+        SMP-->>SMP:msgRecvGet
+    else Prohibited
+        SMP-->>SMP:msgGetProhibited
+    else Duplicate
+        SMP-->SMP:msgGetDuplicate
+    else AUTH
+        SMP-->SMP:msgGetAuth
+    else NoMsg
+        SMP-->SMP:msgGetNoMsg
+    end     
+
+    alt Send notification
+        SMP->>NTF:msgNtfs
+    else No subsciptions<br/>(will deliver)
+        SMP->>SMP:msgNtfNoSub
+    else Lost<br/>(no delivery)
+        SMP->>SMP:msgNtfLost
+    else Expired<br/>(no delivery)
+        SMP->>SMP:msgNtfExpired
+    end
+
+    NTF-->>NTF:Received notification (ntfReceived)
+
+    Note over Client,Apple: Final phase
+
+    alt Delivered notification to Apple APNs
+        NTF-->>Apple:ntfDelivered
+    else Failed to deliver
+        NTF-->>Apple:ntfFailed
+    end
+
+    Apple->>Client:Sent notification (visible only via Apple's Console)
+
+    Note over Client,SMP: Confirmation phase
+
+    Client-->>SMP:Client received (msgRecvNtf)
