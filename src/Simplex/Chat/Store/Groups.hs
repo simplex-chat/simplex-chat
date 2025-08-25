@@ -2896,42 +2896,42 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
 
--- getNextDeliveryTasks :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError [Either StoreError DeliveryTask])
--- getNextDeliveryTasks db deliveryScope = do
---   getWorkItems "delivery task" getTaskIds getTaskData (markTaskFailed db)
---   where
---     (groupId, deliveryJobScope) = deliveryScope
---     getTaskIds :: IO [Int64]
---     getTaskIds = do
---       -- 1. get next task job tag and forward scope for the delivery scope
---       --
---       --    SELECT delivery_job_tag, forward_scope, forward_scope_group_member_id
---       --    FROM delivery_tasks
---       --    WHERE group_id = ? (groupId) AND delivery_job_scope = ? (deliveryJobScope)
---       --      AND failed = 0 AND task_status = ? (DTSNew)
---       --
---       -- 2. get all task ids matching job tag and forward scope
---       --
---       --    SELECT delivery_task_id
---       --    FROM delivery_tasks
---       --    WHERE group_id = ? (groupId) AND delivery_job_scope = ? (deliveryJobScope)
---       --      AND delivery_job_tag = ? (from step 1) AND forward_scope = ? (from step 1)
---       --      AND forward_scope_group_member_id = ? (from step 1)
---       --      AND failed = 0 AND task_status = ? (DTSNew)
---     getTaskData :: Int64 -> IO (Either StoreError DeliveryTask)
---     getTaskData taskId =
---       -- firstRow toTask SETaskNotFound $
---       --   DB.query
---       --     db
---       --     [sql|
---       --       SELECT
---       --         necessary fields (depending on job tag?)
---       --       FROM delivery_tasks r
---       --       WHERE delivery_task_id = ?
---       --     |]
---       --     (Only taskId)
---     markTaskFailed :: DB.Connection -> Int64 -> IO ()
---     markTaskFailed db taskId =
---       DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
+getNextDeliveryTasks :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError [Either StoreError DeliveryTask])
+getNextDeliveryTasks db deliveryScope = do
+  getWorkItems "delivery task" getTaskIds getTaskData (markTaskFailed db)
+  where
+    (groupId, deliveryJobScope) = deliveryScope
+    getTaskIds :: IO [Int64]
+    getTaskIds = do
+      -- 1. get next task job tag and forward scope for the delivery scope
+      --
+      --    SELECT delivery_job_tag, forward_scope, forward_scope_group_member_id
+      --    FROM delivery_tasks
+      --    WHERE group_id = ? (groupId) AND delivery_job_scope = ? (deliveryJobScope)
+      --      AND failed = 0 AND task_status = ? (DTSNew)
+      --
+      -- 2. get all task ids matching job tag and forward scope
+      --
+      --    SELECT delivery_task_id
+      --    FROM delivery_tasks
+      --    WHERE group_id = ? (groupId) AND delivery_job_scope = ? (deliveryJobScope)
+      --      AND delivery_job_tag = ? (from step 1) AND forward_scope = ? (from step 1)
+      --      AND forward_scope_group_member_id = ? (from step 1)
+      --      AND failed = 0 AND task_status = ? (DTSNew)
+    getTaskData :: Int64 -> IO (Either StoreError DeliveryTask)
+    getTaskData taskId =
+      -- firstRow toTask SETaskNotFound $
+      --   DB.query
+      --     db
+      --     [sql|
+      --       SELECT
+      --         necessary fields (depending on job tag?)
+      --       FROM delivery_tasks r
+      --       WHERE delivery_task_id = ?
+      --     |]
+      --     (Only taskId)
+    markTaskFailed :: DB.Connection -> Int64 -> IO ()
+    markTaskFailed db taskId =
+      DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
 $(J.deriveJSON defaultJSON ''GroupLink)
