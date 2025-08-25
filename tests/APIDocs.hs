@@ -38,9 +38,11 @@ apiDocsTest = do
     it "should be documented" testTypesHaveDocs
     it "generate markdown" $ testGenerate typesDocFile typesDocText
   describe "TypeScript" $ do
-    it "generate responses code" $ testGenerate TS.responsesCodeFile TS.responsesCodeText
-    it "generate events code" $ testGenerate TS.eventsCodeFile TS.eventsCodeText
-    it "generate types code" $ testGenerate TS.typesCodeFile TS.typesCodeText
+    it "generate typescript package code" $ do
+      testGenerate TS.commandsCodeFile TS.commandsCodeText
+      testGenerate TS.responsesCodeFile TS.responsesCodeText
+      testGenerate TS.eventsCodeFile TS.eventsCodeText
+      testGenerate TS.typesCodeFile TS.typesCodeText
 
 documentedCmds :: [String]
 documentedCmds = concatMap (map consName' . commands) chatCommandsDocs

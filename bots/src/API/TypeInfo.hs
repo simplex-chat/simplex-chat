@@ -33,7 +33,7 @@ data APIType
 data APITypeDef = APITypeDef {typeName' :: String, typeDef :: APITypeDefinition}
 
 data APITypeDefinition
-  = ATDRecord (NonEmpty APIRecordField)
+  = ATDRecord [APIRecordField]
   | ATDUnion (NonEmpty ATUnionMember)
   | ATDEnum (NonEmpty String)
 

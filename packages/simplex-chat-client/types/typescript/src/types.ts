@@ -1546,7 +1546,7 @@ export interface ChatRef {
   chatScope?: GroupChatScope
 }
 
-export namespace ChatRef{
+export namespace ChatRef {
   export function cmdString(self: ChatRef): string {
     return self.chatType.toString() + self.chatId + (self.chatScope ? self.chatScope.toString() : '')
   }
@@ -1572,7 +1572,7 @@ export enum ChatType {
   Local = "local",
 }
 
-export namespace ChatType{
+export namespace ChatType {
   export function cmdString(self: ChatType): string {
     return self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : ''
   }
@@ -1985,7 +1985,7 @@ export interface CreatedConnLink {
   connShortLink?: string
 }
 
-export namespace CreatedConnLink{
+export namespace CreatedConnLink {
   export function cmdString(self: CreatedConnLink): string {
     return self.connFullLink + (self.connShortLink ? ' ' + self.connShortLink : '')
   }
