@@ -524,6 +524,7 @@ test-suite simplex-chat-test
       API.Docs.Commands
       API.Docs.Events
       API.Docs.Generate
+      API.Docs.Generate.TypeScript
       API.Docs.Responses
       API.Docs.Syntax
       API.Docs.Syntax.Types
