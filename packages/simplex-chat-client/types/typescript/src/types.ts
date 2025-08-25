@@ -1,4 +1,5 @@
-// API Types: This file is generated automatically.
+// API Types
+// This file is generated automatically.
 
 export interface ACIReaction {
   chatInfo: ChatInfo
@@ -28,7 +29,7 @@ export type AgentCryptoError =
   | AgentCryptoError.RATCHET_HEADER
   | AgentCryptoError.RATCHET_SYNC
 
-export namespace AgentCryptoError{
+export namespace AgentCryptoError {
   export type Tag = "DECRYPT_AES" | "DECRYPT_CB" | "RATCHET_HEADER" | "RATCHET_SYNC"
 
   interface Interface {
@@ -68,7 +69,7 @@ export type AgentErrorType =
   | AgentErrorType.CRITICAL
   | AgentErrorType.INACTIVE
 
-export namespace AgentErrorType{
+export namespace AgentErrorType {
   export type Tag = 
     | "CMD"
     | "CONN"
@@ -189,7 +190,7 @@ export type BrokerErrorType =
   | BrokerErrorType.TRANSPORT
   | BrokerErrorType.TIMEOUT
 
-export namespace BrokerErrorType{
+export namespace BrokerErrorType {
   export type Tag = 
     | "RESPONSE"
     | "UNEXPECTED"
@@ -290,7 +291,7 @@ export type CIContent =
   | CIContent.RcvGroupE2EEInfo
   | CIContent.ChatBanner
 
-export namespace CIContent{
+export namespace CIContent {
   export type Tag = 
     | "sndMsgContent"
     | "rcvMsgContent"
@@ -507,7 +508,7 @@ export enum CIDeleteMode {
 
 export type CIDeleted = CIDeleted.Deleted | CIDeleted.Blocked | CIDeleted.BlockedByAdmin | CIDeleted.Moderated
 
-export namespace CIDeleted{
+export namespace CIDeleted {
   export type Tag = "deleted" | "blocked" | "blockedByAdmin" | "moderated"
 
   interface Interface {
@@ -545,7 +546,7 @@ export type CIDirection =
   | CIDirection.LocalSnd
   | CIDirection.LocalRcv
 
-export namespace CIDirection{
+export namespace CIDirection {
   export type Tag = "directSnd" | "directRcv" | "groupSnd" | "groupRcv" | "localSnd" | "localRcv"
 
   interface Interface {
@@ -604,7 +605,7 @@ export type CIFileStatus =
   | CIFileStatus.RcvWarning
   | CIFileStatus.Invalid
 
-export namespace CIFileStatus{
+export namespace CIFileStatus {
   export type Tag = 
     | "sndStored"
     | "sndTransfer"
@@ -698,7 +699,7 @@ export namespace CIFileStatus{
 
 export type CIForwardedFrom = CIForwardedFrom.Unknown | CIForwardedFrom.Contact | CIForwardedFrom.Group
 
-export namespace CIForwardedFrom{
+export namespace CIForwardedFrom {
   export type Tag = "unknown" | "contact" | "group"
 
   interface Interface {
@@ -807,7 +808,7 @@ export type CIStatus =
   | CIStatus.RcvRead
   | CIStatus.Invalid
 
-export namespace CIStatus{
+export namespace CIStatus {
   export type Tag = 
     | "sndNew"
     | "sndSent"
@@ -873,7 +874,7 @@ export interface CITimed {
 
 export type ChatBotCommand = ChatBotCommand.Command | ChatBotCommand.Menu
 
-export namespace ChatBotCommand{
+export namespace ChatBotCommand {
   export type Tag = "command" | "menu"
 
   interface Interface {
@@ -896,7 +897,7 @@ export namespace ChatBotCommand{
 
 export type ChatDeleteMode = ChatDeleteMode.Full | ChatDeleteMode.Entity | ChatDeleteMode.Messages
 
-export namespace ChatDeleteMode{
+export namespace ChatDeleteMode {
   export type Tag = "full" | "entity" | "messages"
 
   interface Interface {
@@ -924,7 +925,7 @@ export namespace ChatDeleteMode{
 
 export type ChatError = ChatError.Error | ChatError.ErrorAgent | ChatError.ErrorStore
 
-export namespace ChatError{
+export namespace ChatError {
   export type Tag = "error" | "errorAgent" | "errorStore"
 
   interface Interface {
@@ -1024,7 +1025,7 @@ export type ChatErrorType =
   | ChatErrorType.InternalError
   | ChatErrorType.Exception
 
-export namespace ChatErrorType{
+export namespace ChatErrorType {
   export type Tag = 
     | "noActiveUser"
     | "noConnectionUser"
@@ -1482,7 +1483,7 @@ export type ChatInfo =
   | ChatInfo.ContactRequest
   | ChatInfo.ContactConnection
 
-export namespace ChatInfo{
+export namespace ChatInfo {
   export type Tag = "direct" | "group" | "local" | "contactRequest" | "contactConnection"
 
   interface Interface {
@@ -1611,7 +1612,7 @@ export type CommandError =
   | CommandError.HAS_AUTH
   | CommandError.NO_ENTITY
 
-export namespace CommandError{
+export namespace CommandError {
   export type Tag = "UNKNOWN" | "SYNTAX" | "PROHIBITED" | "NO_AUTH" | "HAS_AUTH" | "NO_ENTITY"
 
   interface Interface {
@@ -1650,7 +1651,7 @@ export type CommandErrorType =
   | CommandErrorType.SIZE
   | CommandErrorType.LARGE
 
-export namespace CommandErrorType{
+export namespace CommandErrorType {
   export type Tag = "PROHIBITED" | "SYNTAX" | "NO_CONN" | "SIZE" | "LARGE"
 
   interface Interface {
@@ -1736,7 +1737,7 @@ export type ConnectionEntity =
   | ConnectionEntity.RcvFileConnection
   | ConnectionEntity.UserContactConnection
 
-export namespace ConnectionEntity{
+export namespace ConnectionEntity {
   export type Tag = 
     | "rcvDirectMsgConnection"
     | "rcvGroupMsgConnection"
@@ -1787,7 +1788,7 @@ export type ConnectionErrorType =
   | ConnectionErrorType.NOT_ACCEPTED
   | ConnectionErrorType.NOT_AVAILABLE
 
-export namespace ConnectionErrorType{
+export namespace ConnectionErrorType {
   export type Tag = "NOT_FOUND" | "DUPLICATE" | "SIMPLEX" | "NOT_ACCEPTED" | "NOT_AVAILABLE"
 
   interface Interface {
@@ -1826,7 +1827,7 @@ export type ConnectionPlan =
   | ConnectionPlan.GroupLink
   | ConnectionPlan.Error
 
-export namespace ConnectionPlan{
+export namespace ConnectionPlan {
   export type Tag = "invitationLink" | "contactAddress" | "groupLink" | "error"
 
   interface Interface {
@@ -1888,7 +1889,7 @@ export type ContactAddressPlan =
   | ContactAddressPlan.Known
   | ContactAddressPlan.ContactViaAddress
 
-export namespace ContactAddressPlan{
+export namespace ContactAddressPlan {
   export type Tag = 
     | "ok"
     | "ownLink"
@@ -1944,7 +1945,7 @@ export enum ContactStatus {
 
 export type ContactUserPref = ContactUserPref.Contact | ContactUserPref.User
 
-export namespace ContactUserPref{
+export namespace ContactUserPref {
   export type Tag = "contact" | "user"
 
   interface Interface {
@@ -2021,7 +2022,7 @@ export type ErrorType =
   | ErrorType.INTERNAL
   | ErrorType.DUPLICATE_
 
-export namespace ErrorType{
+export namespace ErrorType {
   export type Tag = 
     | "BLOCK"
     | "SESSION"
@@ -2127,7 +2128,7 @@ export type FileError =
   | FileError.Relay
   | FileError.Other
 
-export namespace FileError{
+export namespace FileError {
   export type Tag = "auth" | "blocked" | "noFile" | "relay" | "other"
 
   interface Interface {
@@ -2166,7 +2167,7 @@ export type FileErrorType =
   | FileErrorType.FILE_IO
   | FileErrorType.NO_FILE
 
-export namespace FileErrorType{
+export namespace FileErrorType {
   export type Tag = "NOT_APPROVED" | "SIZE" | "REDIRECT" | "FILE_IO" | "NO_FILE"
 
   interface Interface {
@@ -2246,7 +2247,7 @@ export type Format =
   | Format.Email
   | Format.Phone
 
-export namespace Format{
+export namespace Format {
   export type Tag = 
     | "bold"
     | "italic"
@@ -2365,7 +2366,7 @@ export interface Group {
 
 export type GroupChatScope = GroupChatScope.MemberSupport
 
-export namespace GroupChatScope{
+export namespace GroupChatScope {
   export type Tag = "memberSupport"
 
   interface Interface {
@@ -2384,7 +2385,7 @@ export namespace GroupChatScope{
 
 export type GroupChatScopeInfo = GroupChatScopeInfo.MemberSupport
 
-export namespace GroupChatScopeInfo{
+export namespace GroupChatScopeInfo {
   export type Tag = "memberSupport"
 
   interface Interface {
@@ -2466,7 +2467,7 @@ export type GroupLinkPlan =
   | GroupLinkPlan.ConnectingProhibit
   | GroupLinkPlan.Known
 
-export namespace GroupLinkPlan{
+export namespace GroupLinkPlan {
   export type Tag = "ok" | "ownLink" | "connectingConfirmReconnect" | "connectingProhibit" | "known"
 
   interface Interface {
@@ -2630,7 +2631,7 @@ export type InvitationLinkPlan =
   | InvitationLinkPlan.Connecting
   | InvitationLinkPlan.Known
 
-export namespace InvitationLinkPlan{
+export namespace InvitationLinkPlan {
   export type Tag = "ok" | "ownLink" | "connecting" | "known"
 
   interface Interface {
@@ -2659,7 +2660,7 @@ export namespace InvitationLinkPlan{
 
 export type InvitedBy = InvitedBy.Contact | InvitedBy.User | InvitedBy.Unknown
 
-export namespace InvitedBy{
+export namespace InvitedBy {
   export type Tag = "contact" | "user" | "unknown"
 
   interface Interface {
@@ -2682,7 +2683,7 @@ export namespace InvitedBy{
 
 export type LinkContent = LinkContent.Page | LinkContent.Image | LinkContent.Video | LinkContent.Unknown
 
-export namespace LinkContent{
+export namespace LinkContent {
   export type Tag = "page" | "image" | "video" | "unknown"
 
   interface Interface {
@@ -2736,7 +2737,7 @@ export enum MemberCriteria {
 
 export type MsgChatLink = MsgChatLink.Contact | MsgChatLink.Invitation | MsgChatLink.Group
 
-export namespace MsgChatLink{
+export namespace MsgChatLink {
   export type Tag = "contact" | "invitation" | "group"
 
   interface Interface {
@@ -2774,7 +2775,7 @@ export type MsgContent =
   | MsgContent.Chat
   | MsgContent.Unknown
 
-export namespace MsgContent{
+export namespace MsgContent {
   export type Tag = "text" | "link" | "image" | "video" | "voice" | "file" | "report" | "chat" | "unknown"
 
   interface Interface {
@@ -2855,7 +2856,7 @@ export type MsgErrorType =
   | MsgErrorType.MsgBadHash
   | MsgErrorType.MsgDuplicate
 
-export namespace MsgErrorType{
+export namespace MsgErrorType {
   export type Tag = "msgSkipped" | "msgBadId" | "msgBadHash" | "msgDuplicate"
 
   interface Interface {
@@ -2890,7 +2891,7 @@ export enum MsgFilter {
 
 export type MsgReaction = MsgReaction.Emoji | MsgReaction.Unknown
 
-export namespace MsgReaction{
+export namespace MsgReaction {
   export type Tag = "emoji" | "unknown"
 
   interface Interface {
@@ -2989,7 +2990,7 @@ export type ProxyClientError =
   | ProxyClientError.UnexpectedResponse
   | ProxyClientError.ResponseError
 
-export namespace ProxyClientError{
+export namespace ProxyClientError {
   export type Tag = "protocolError" | "unexpectedResponse" | "responseError"
 
   interface Interface {
@@ -3014,7 +3015,7 @@ export namespace ProxyClientError{
 
 export type ProxyError = ProxyError.PROTOCOL | ProxyError.BROKER | ProxyError.BASIC_AUTH | ProxyError.NO_SESSION
 
-export namespace ProxyError{
+export namespace ProxyError {
   export type Tag = "PROTOCOL" | "BROKER" | "BASIC_AUTH" | "NO_SESSION"
 
   interface Interface {
@@ -3058,7 +3059,7 @@ export type RCErrorType =
   | RCErrorType.BlockSize
   | RCErrorType.Syntax
 
-export namespace RCErrorType{
+export namespace RCErrorType {
   export type Tag = 
     | "internal"
     | "identity"
@@ -3164,7 +3165,7 @@ export type RcvConnEvent =
   | RcvConnEvent.VerificationCodeReset
   | RcvConnEvent.PqEnabled
 
-export namespace RcvConnEvent{
+export namespace RcvConnEvent {
   export type Tag = "switchQueue" | "ratchetSync" | "verificationCodeReset" | "pqEnabled"
 
   interface Interface {
@@ -3196,7 +3197,7 @@ export type RcvDirectEvent =
   | RcvDirectEvent.ProfileUpdated
   | RcvDirectEvent.GroupInvLinkReceived
 
-export namespace RcvDirectEvent{
+export namespace RcvDirectEvent {
   export type Tag = "contactDeleted" | "profileUpdated" | "groupInvLinkReceived"
 
   interface Interface {
@@ -3239,7 +3240,7 @@ export type RcvFileStatus =
   | RcvFileStatus.Complete
   | RcvFileStatus.Cancelled
 
-export namespace RcvFileStatus{
+export namespace RcvFileStatus {
   export type Tag = "new" | "accepted" | "connected" | "complete" | "cancelled"
 
   interface Interface {
@@ -3302,7 +3303,7 @@ export type RcvGroupEvent =
   | RcvGroupEvent.MemberProfileUpdated
   | RcvGroupEvent.NewMemberPendingReview
 
-export namespace RcvGroupEvent{
+export namespace RcvGroupEvent {
   export type Tag = 
     | "memberAdded"
     | "memberConnected"
@@ -3428,7 +3429,7 @@ export type SMPAgentError =
   | SMPAgentError.A_DUPLICATE
   | SMPAgentError.A_QUEUE
 
-export namespace SMPAgentError{
+export namespace SMPAgentError {
   export type Tag = 
     | "A_MESSAGE"
     | "A_PROHIBITED"
@@ -3499,7 +3500,7 @@ export enum SndCIStatusProgress {
 
 export type SndConnEvent = SndConnEvent.SwitchQueue | SndConnEvent.RatchetSync | SndConnEvent.PqEnabled
 
-export namespace SndConnEvent{
+export namespace SndConnEvent {
   export type Tag = "switchQueue" | "ratchetSync" | "pqEnabled"
 
   interface Interface {
@@ -3533,7 +3534,7 @@ export type SndError =
   | SndError.ProxyRelay
   | SndError.Other
 
-export namespace SndError{
+export namespace SndError {
   export type Tag = "auth" | "quota" | "expired" | "relay" | "proxy" | "proxyRelay" | "other"
 
   interface Interface {
@@ -3600,7 +3601,7 @@ export type SndGroupEvent =
   | SndGroupEvent.MemberAccepted
   | SndGroupEvent.UserPendingReview
 
-export namespace SndGroupEvent{
+export namespace SndGroupEvent {
   export type Tag = 
     | "memberRole"
     | "memberBlocked"
@@ -3662,7 +3663,7 @@ export namespace SndGroupEvent{
 
 export type SrvError = SrvError.Host | SrvError.Version | SrvError.Other
 
-export namespace SrvError{
+export namespace SrvError {
   export type Tag = "host" | "version" | "other"
 
   interface Interface {
@@ -3762,7 +3763,7 @@ export type StoreError =
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
 
-export namespace StoreError{
+export namespace StoreError {
   export type Tag = 
     | "duplicateName"
     | "userNotFound"
@@ -4245,7 +4246,7 @@ export type TransportError =
   | TransportError.NoServerAuth
   | TransportError.Handshake
 
-export namespace TransportError{
+export namespace TransportError {
   export type Tag = "badBlock" | "version" | "largeMsg" | "badSession" | "noServerAuth" | "handshake"
 
   interface Interface {
@@ -4403,7 +4404,7 @@ export type XFTPErrorType =
   | XFTPErrorType.INTERNAL
   | XFTPErrorType.DUPLICATE_
 
-export namespace XFTPErrorType{
+export namespace XFTPErrorType {
   export type Tag = 
     | "BLOCK"
     | "SESSION"
