@@ -116,8 +116,8 @@ directoryOpts appDir defaultDbName = do
     strOption
       ( long "service-name"
           <> metavar "SERVICE_NAME"
-          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
-          <> value "SimpleX-Directory"
+          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
+          <> value "SimpleX Directory"
       )
   runCLI <-
     switch
