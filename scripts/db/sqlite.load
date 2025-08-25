@@ -10,7 +10,8 @@ LOAD DATABASE
       -- pgloader implementation doesn't find "GENERATED ALWAYS AS IDENTITY" sequences,
       -- instead we reset sequences manually via custom query after load
       reset no sequences,
-      data only
+      data only,
+      workers = {{WORKERS}}
 
  EXCLUDING TABLE NAMES LIKE 'migrations', 'sqlite_sequence'
 
