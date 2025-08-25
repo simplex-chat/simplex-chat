@@ -20,7 +20,7 @@ fi
 if [ $PLATFORM == "Darwin" ]; then
   PLATFORM="macos-x86-64"
 elif [ $PLATFORM == "Linux" ]; then
-  PLATFORM="ubuntu-22_04-x86-64"
+  PLATFORM="ubuntu-22_04-x86_64"
 else
   echo "Scripted installation on your platform is not supported."
   echo "See compiled binaries in the ${1:-latest} release: https://github.com/$APP_NAME/$APP_NAME/releases/$RELEASE"
