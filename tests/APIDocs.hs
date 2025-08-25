@@ -8,6 +8,7 @@ module APIDocs where
 import API.Docs.Commands
 import API.Docs.Events
 import API.Docs.Generate
+import API.Docs.Generate.TypeScript
 import API.Docs.Responses
 import API.Docs.Types
 import API.TypeInfo
@@ -35,6 +36,8 @@ apiDocsTest = do
   describe "API types" $ do
     it "should be documented" testTypesHaveDocs
     it "generate markdown" testGenerateTypesMD
+  describe "TypeScript" $ do
+    it "generate types" testGenerateTypesTS
 
 documentedCmds :: [String]
 documentedCmds = concatMap (map consName' . commands) chatCommandsDocs
@@ -154,3 +157,9 @@ testGenerateTypesMD = do
   typesDoc <- ifM (doesFileExist typesDocFile) (T.readFile typesDocFile) (pure "")
   T.writeFile typesDocFile typesDocText
   typesDocText `shouldBe` typesDoc
+
+testGenerateTypesTS :: IO ()
+testGenerateTypesTS = do
+  typesCode <- ifM (doesFileExist typesCodeFile) (T.readFile typesCodeFile) (pure "")
+  T.writeFile typesCodeFile typesCodeText
+  typesCodeText `shouldBe` typesCode
