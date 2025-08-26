@@ -4,13 +4,17 @@
   "description": "TypeScript types for SimpleX Chat bot libraries",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "/packages/simplex-chat-client/types/typescript"
   },
   "keywords": [
     "simplex",
