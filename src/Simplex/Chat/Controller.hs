@@ -460,8 +460,8 @@ data ChatCommand
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
-  | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, connLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
-  | Connect IncognitoEnabled (Maybe AConnectionLink)
+  | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
+  | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode

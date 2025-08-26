@@ -228,14 +228,6 @@ DECRYPT_CB:
 RATCHET_HEADER:
 - type: "RATCHET_HEADER"
 
-RATCHET_EARLIER:
-- type: "RATCHET_EARLIER"
-- : word32
-
-RATCHET_SKIPPED:
-- type: "RATCHET_SKIPPED"
-- : word32
-
 RATCHET_SYNC:
 - type: "RATCHET_SYNC"
 
@@ -1359,11 +1351,11 @@ str(chatType) + str(chatId) + ((str(chatScope)) if chatScope is not None else ''
 ```
 
 ```javascript
-self == 'contact' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // JavaScript
+self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // JavaScript
 ```
 
 ```python
-'@' if str(self) == 'contact' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else '' # Python
+'@' if str(self) == 'direct' else '#' if str(self) == 'group' else '*' if str(self) == 'local' else '' # Python
 ```
 
 
