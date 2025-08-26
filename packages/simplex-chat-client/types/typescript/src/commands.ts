@@ -89,7 +89,7 @@ export interface APISendMessages {
   sendRef: T.ChatRef
   liveMessage: boolean
   ttl?: number // int
-  composedMessages: [T.ComposedMessage] // non-empty
+  composedMessages: T.ComposedMessage[] // non-empty
 }
 
 export namespace APISendMessages {
@@ -121,7 +121,7 @@ export namespace APIUpdateChatItem {
 // Network usage: background.
 export interface APIDeleteChatItem {
   chatRef: T.ChatRef
-  chatItemIds: [number] // int64, non-empty
+  chatItemIds: number[] // int64, non-empty
   deleteMode: T.CIDeleteMode
 }
 
@@ -137,7 +137,7 @@ export namespace APIDeleteChatItem {
 // Network usage: background.
 export interface APIDeleteMemberChatItem {
   groupId: number // int64
-  chatItemIds: [number] // int64, non-empty
+  chatItemIds: number[] // int64, non-empty
 }
 
 export namespace APIDeleteMemberChatItem {
@@ -253,7 +253,7 @@ export namespace APIAcceptMember {
 // Network usage: background.
 export interface APIMembersRole {
   groupId: number // int64
-  groupMemberIds: [number] // int64, non-empty
+  groupMemberIds: number[] // int64, non-empty
   memberRole: T.GroupMemberRole
 }
 
@@ -269,7 +269,7 @@ export namespace APIMembersRole {
 // Network usage: background.
 export interface APIBlockMembersForAll {
   groupId: number // int64
-  groupMemberIds: [number] // int64, non-empty
+  groupMemberIds: number[] // int64, non-empty
   blocked: boolean
 }
 
@@ -285,7 +285,7 @@ export namespace APIBlockMembersForAll {
 // Network usage: background.
 export interface APIRemoveMembers {
   groupId: number // int64
-  groupMemberIds: [number] // int64, non-empty
+  groupMemberIds: number[] // int64, non-empty
   withMessages: boolean
 }
 

@@ -154,7 +154,7 @@ fieldsCode indent namespace = foldMap $ (indent <>) . T.pack . fieldText
       ATDef (APITypeDef t _) -> namespace <> t
       ATRef t -> namespace <> t
       ATOptional t -> typeText t
-      ATArray {elemType} -> "[" <> typeText elemType <> "]"
+      ATArray {elemType} -> typeText elemType <> "[]"
       ATMap (PT t) valueType -> "{[key: " <> typeName t <> "]: " <> typeText valueType <> "}"
     typeName = \case
       TBool -> "boolean"
