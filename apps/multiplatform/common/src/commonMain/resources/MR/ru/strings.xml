@@ -267,7 +267,7 @@
     <string name="chat_help_tap_button">Нажмите кнопку</string>
     <string name="above_then_preposition_continuation">сверху, затем:</string>
     <string name="to_connect_via_link_title">Чтобы соединиться через ссылку</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть ее в браузере:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть её в браузере:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 на компьютере: сосканируйте показанный QR-код из приложения через <b>Сканировать QR-код</b>.]]></string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 на мобильном: нажмите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.]]></string>
     <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
@@ -1608,7 +1608,7 @@
     <string name="camera_not_available">Камера недоступна</string>
     <string name="la_app_passcode">Код доступа в приложение</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Добавить контакт</b>: создать новую ссылку-приглашение или подключиться через полученную ссылку.]]></string>
-    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите ее обратно до запуска чата.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите её обратно до запуска чата.</string>
     <string name="remote_host_was_disconnected_title">Соединение остановлено</string>
     <string name="info_row_created_at">Создано</string>
     <string name="keep_invitation_link">Оставить</string>
@@ -1753,7 +1753,7 @@
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений.</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Вы <b>не должны</b> использовать одну и ту же базу данных на двух устройствах.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Проверьте подключение к Интернету и повторите попытку</string>
-    <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для ее миграции.</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для её миграции.</string>
     <string name="migrate_from_device_verify_database_passphrase">Проверка пароля базы данных</string>
     <string name="migrate_from_device_verify_passphrase">Проверить пароль</string>
     <string name="migrate_from_device_error_verifying_passphrase">Ошибка подтверждения пароля:</string>
