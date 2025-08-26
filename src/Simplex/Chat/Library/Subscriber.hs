@@ -3381,13 +3381,22 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
   where
     runDeliveryJobOperation :: CM ()
     runDeliveryJobOperation = do
-      -- TODO [channels fwd] getNextDeliveryJob - search "inside" worker scope for next job
       withWork doWork (\db -> getNextDeliveryJob db deliveryScope) processDeliveryJob
       where
+        -- TODO [channels fwd] implement forwarding logic
         processDeliveryJob :: DeliveryJob -> CM ()
-        processDeliveryJob = do
-          -- TODO [channels fwd] implement forwarding logic
-          -- case by job type (DeliveryJob)
-          -- iterate over members via cursor, update cursor on the job record
-          -- post forwarding operations: e.g. delete group connections (for RelayRemovedJob)
-          pure ()
+        processDeliveryJob = \case
+          DJMessageForward MessageForwardJob {jobId, forwardScope, messagesBatch, cursorGMId} -> do
+            sendBodyUsingCursor jobId forwardScope messagesBatch cursorGMId
+            withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
+          DJRelayRemoved RelayRemovedJob {jobId, fwdChatMessage, cursorGMId} -> do
+            sendBodyUsingCursor jobId GFSAll messagesBatch cursorGMId
+            withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
+            -- TODO [channels fwd] needs gInfo; move deleteGroupConnections out of processAgentMessageConn
+            deleteGroupConnections gInfo True
+          where
+            sendBodyUsingCursor :: Int64 -> GroupForwardScope -> ByteString -> Maybe GroupMemberId -> CM ()
+            sendBodyUsingCursor jobId forwardScope body cursorGMId = do
+              -- on first iteration, update job status to DJSInProgress
+              -- iterate over members via cursor, update cursor on the job record
+              undefined

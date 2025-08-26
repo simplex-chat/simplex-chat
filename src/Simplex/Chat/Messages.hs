@@ -1324,7 +1324,7 @@ data DeliveryJob
 data MessageForwardJob = MessageForwardJob
   { jobId :: Int64,
     forwardScope :: GroupForwardScope,
-    messagesBatch :: Text,
+    messagesBatch :: ByteString,
     cursorGMId :: Maybe GroupMemberId
   }
   deriving (Show)
@@ -1338,13 +1338,18 @@ data MessageForwardJob = MessageForwardJob
 
 data RelayRemovedJob = RelayRemovedJob
   { jobId :: Int64,
-    forwardScope :: GroupForwardScope,
-    fwdChatMessage :: ChatMessage 'Json,
+    fwdChatMessage :: ByteString,
     cursorGMId :: Maybe GroupMemberId
   }
   deriving (Show)
 
--- data ChatItemCountsJob = undefined
+-- data ChatItemCountsJob = ChatItemCountsJob
+--   { jobId :: Int64,
+--     forwardScope :: GroupForwardScope,
+--     countsBatch :: ByteString,
+--     cursorGMId :: Maybe GroupMemberId
+--   }
+--   deriving (Show)
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 

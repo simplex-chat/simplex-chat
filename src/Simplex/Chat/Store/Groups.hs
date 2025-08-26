@@ -160,6 +160,8 @@ module Simplex.Chat.Store.Groups
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
     setDeliveryTaskFailed,
+    getNextDeliveryJob,
+    updateDeliveryJobStatus,
   )
 where
 
@@ -2901,14 +2903,14 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
 
--- TODO [channels fwd] can optimize to read DJTMessageForward tasks exactly to fill up single batch
+-- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
 -- TODO [channels fwd] different "getWorkItem" implementation?
 -- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksBatch fails
 -- TODO   - issue with getWorkItems: consumer would have to prove all items are tasks of the same type (we know it by the way it's read)
 -- TODO   - ideally we want to keep knowledge that all items are tasks of the same type + only mark failed those we failed reading
 getNextDeliveryTasksBatch :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryTasksBatch))
 getNextDeliveryTasksBatch db deliveryScope = do
-  getWorkItem "delivery tasks work" getTaskIds getTasksBatch (markTasksFailed db)
+  getWorkItem "delivery tasks batch" getTaskIds getTasksBatch markTasksFailed
   where
     (groupId, jobScope) = deliveryScope
     getTaskIds :: IO (Maybe (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId))
@@ -2995,8 +2997,8 @@ getNextDeliveryTasksBatch db deliveryScope = do
               let task = RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
               in DTBRelayRemoved task
         _ -> pure $ Left SEInvalidDeliveryTasksBatch
-    markTasksFailed :: DB.Connection -> (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
-    markTasksFailed db (taskIds, _, _, _) =
+    markTasksFailed :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
+    markTasksFailed (taskIds, _, _, _) =
       forM_ taskIds $ \taskId ->
         DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
@@ -3043,5 +3045,59 @@ updateDeliveryTaskStatus db taskId status = do
 setDeliveryTaskFailed :: DB.Connection -> Int64 -> IO ()
 setDeliveryTaskFailed db taskId =
   DB.execute db "UPDATE delivery_tasks SET failed = 1 WHERE delivery_task_id = ?" (Only taskId)
+
+getNextDeliveryJob :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryJob))
+getNextDeliveryJob db deliveryScope = do
+  getWorkItem "delivery job" getJobId getJob markJobFailed
+  where
+    (groupId, jobScope) = deliveryScope
+    -- TODO [channels fwd] consider optimizing query with OR for index including job_status
+    getJobId :: IO (Maybe Int64)
+    getJobId =
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            SELECT delivery_job_id
+            FROM delivery_jobs
+            WHERE group_id = ? AND delivery_job_scope = ?
+              AND failed = 0 AND job_status IN (?, ?)
+            ORDER BY created_at ASC, delivery_job_id ASC
+            LIMIT 1
+          |]
+          (groupId, jobScope, DJSNew, DJSInProgress)
+    getJob :: Int64 -> IO (Either StoreError DeliveryJob)
+    getJob jobId =
+      firstRow toDeliveryJob (SEDeliveryJobNotFound jobId) $
+        DB.query
+          db
+          [sql|
+            SELECT
+              delivery_job_tag, forward_scope_tag, forward_scope_group_member_id,
+              delivery_body, cursor_group_member_id
+            FROM delivery_jobs
+            WHERE delivery_job_id = ?
+          |]
+          (Only jobId)
+      where
+        toDeliveryJob :: (DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> DeliveryJob
+        toDeliveryJob (jobTag, fwdScopeTag, fwdScopeGMId_, deliveryBody, cursorGMId) =
+          case jobTag of
+            DJTMessageForward -> case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
+              Nothing -> error "getNextDeliveryJob: invalid forward scope" -- TODO [channels fwd] put StoreError in return?
+              Just forwardScope -> DJMessageForward {jobId, forwardScope, messagesBatch = deliveryBody, cursorGMId}
+            DJTRelayRemoved ->
+              DJRelayRemoved {jobId, fwdChatMessage = deliveryBody, cursorGMId}
+    markJobFailed :: Int64 -> IO ()
+    markJobFailed jobId =
+      DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
+
+updateDeliveryJobStatus :: DB.Connection -> Int64 -> DeliveryJobStatus -> IO ()
+updateDeliveryJobStatus db jobId status = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE delivery_jobs SET job_status = ?, updated_at = ? WHERE delivery_job_id = ?"
+    (status, currentTs, jobId)
 
 $(J.deriveJSON defaultJSON ''GroupLink)
