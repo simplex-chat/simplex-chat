@@ -8,7 +8,7 @@ export interface ACIReaction {
 
 export interface AChat {
   chatInfo: ChatInfo
-  chatItems: [ChatItem]
+  chatItems: ChatItem[]
   chatStats: ChatStats
 }
 
@@ -781,7 +781,7 @@ export interface CIQuote {
   sharedMsgId?: string
   sentAt: string // ISO-8601 timestamp
   content: MsgContent
-  formattedText?: [FormattedText]
+  formattedText?: FormattedText[]
 }
 
 export interface CIReaction {
@@ -891,7 +891,7 @@ export namespace ChatBotCommand {
   export interface Menu extends Interface {
     type: "menu"
     label: string
-    commands: [ChatBotCommand]
+    commands: ChatBotCommand[]
   }
 }
 
@@ -1375,7 +1375,7 @@ export namespace ChatErrorType {
   export interface FileNotApproved extends Interface {
     type: "fileNotApproved"
     fileId: number // int64
-    unknownServers: [string]
+    unknownServers: string[]
   }
 
   export interface FallbackToSMPProhibited extends Interface {
@@ -1522,9 +1522,9 @@ export interface ChatItem {
   meta: CIMeta
   content: CIContent
   mentions: {[key: string]: CIMention}
-  formattedText?: [FormattedText]
+  formattedText?: FormattedText[]
   quotedItem?: CIQuote
-  reactions: [CIReactionCount]
+  reactions: CIReactionCount[]
   file?: CIFile
 }
 // Message deletion result.
@@ -1874,7 +1874,7 @@ export interface Contact {
   contactGroupMemberId?: number // int64
   contactGrpInvSent: boolean
   groupDirectInv?: GroupDirectInvitation
-  chatTags: [number] // int64
+  chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   chatDeleted: boolean
@@ -1977,7 +1977,7 @@ export interface ContactUserPreferences {
   files: ContactUserPreference
   calls: ContactUserPreference
   sessions: ContactUserPreference
-  commands?: [ChatBotCommand]
+  commands?: ChatBotCommand[]
 }
 
 export interface CreatedConnLink {
@@ -2307,7 +2307,7 @@ export namespace Format {
     showText?: string
     linkType: SimplexLinkType
     simplexUri: string
-    smpHosts: [string] // non-empty
+    smpHosts: string[] // non-empty
   }
 
   export interface Command extends Interface {
@@ -2345,7 +2345,7 @@ export interface FullGroupPreferences {
   reports: GroupPreference
   history: GroupPreference
   sessions: RoleGroupPreference
-  commands: [ChatBotCommand]
+  commands: ChatBotCommand[]
 }
 
 export interface FullPreferences {
@@ -2356,12 +2356,12 @@ export interface FullPreferences {
   files: SimplePreference
   calls: SimplePreference
   sessions: SimplePreference
-  commands: [ChatBotCommand]
+  commands: ChatBotCommand[]
 }
 
 export interface Group {
   groupInfo: GroupInfo
-  members: [GroupMember]
+  members: GroupMember[]
 }
 
 export type GroupChatScope = GroupChatScope.MemberSupport
@@ -2438,7 +2438,7 @@ export interface GroupInfo {
   chatTs?: string // ISO-8601 timestamp
   userMemberProfileSentAt?: string // ISO-8601 timestamp
   preparedGroup?: PreparedGroup
-  chatTags: [number] // int64
+  chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   customData?: object
@@ -2584,7 +2584,7 @@ export interface GroupPreferences {
   reports?: GroupPreference
   history?: GroupPreference
   sessions?: RoleGroupPreference
-  commands?: [ChatBotCommand]
+  commands?: ChatBotCommand[]
 }
 
 export interface GroupProfile {
@@ -2957,7 +2957,7 @@ export interface Preferences {
   files?: SimplePreference
   calls?: SimplePreference
   sessions?: SimplePreference
-  commands?: [ChatBotCommand]
+  commands?: ChatBotCommand[]
 }
 
 export interface PreparedContact {
@@ -4373,7 +4373,7 @@ export interface UserInfo {
 export interface UserProfileUpdateSummary {
   updateSuccesses: number // int
   updateFailures: number // int
-  changedContacts: [Contact]
+  changedContacts: Contact[]
 }
 
 export interface UserPwdHash {

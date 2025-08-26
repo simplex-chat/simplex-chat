@@ -133,7 +133,7 @@ export namespace CR {
   export interface ChatItemsDeleted extends Interface {
     type: "chatItemsDeleted"
     user: T.User
-    chatItemDeletions: [T.ChatItemDeletion]
+    chatItemDeletions: T.ChatItemDeletion[]
     byUser: boolean
     timed: boolean
   }
@@ -190,7 +190,7 @@ export namespace CR {
   export interface ContactsList extends Interface {
     type: "contactsList"
     user: T.User
-    contacts: [T.Contact]
+    contacts: T.Contact[]
   }
 
   export interface GroupDeletedUser extends Interface {
@@ -242,7 +242,7 @@ export namespace CR {
   export interface GroupsList extends Interface {
     type: "groupsList"
     user: T.User
-    groups: [T.GroupInfoSummary]
+    groups: T.GroupInfoSummary[]
   }
 
   export interface Invitation extends Interface {
@@ -269,7 +269,7 @@ export namespace CR {
     type: "membersBlockedForAllUser"
     user: T.User
     groupInfo: T.GroupInfo
-    members: [T.GroupMember]
+    members: T.GroupMember[]
     blocked: boolean
   }
 
@@ -277,14 +277,14 @@ export namespace CR {
     type: "membersRoleUser"
     user: T.User
     groupInfo: T.GroupInfo
-    members: [T.GroupMember]
+    members: T.GroupMember[]
     toRole: T.GroupMemberRole
   }
 
   export interface NewChatItems extends Interface {
     type: "newChatItems"
     user: T.User
-    chatItems: [T.AChatItem]
+    chatItems: T.AChatItem[]
   }
 
   export interface RcvFileAccepted extends Interface {
@@ -333,7 +333,7 @@ export namespace CR {
     user: T.User
     chatItem_?: T.AChatItem
     fileTransferMeta: T.FileTransferMeta
-    sndFileTransfers: [T.SndFileTransfer]
+    sndFileTransfers: T.SndFileTransfer[]
   }
 
   export interface UserAcceptedGroupSent extends Interface {
@@ -370,7 +370,7 @@ export namespace CR {
     type: "userDeletedMembers"
     user: T.User
     groupInfo: T.GroupInfo
-    members: [T.GroupMember]
+    members: T.GroupMember[]
     withMessages: boolean
   }
 
@@ -384,6 +384,6 @@ export namespace CR {
 
   export interface UsersList extends Interface {
     type: "usersList"
-    users: [T.UserInfo]
+    users: T.UserInfo[]
   }
 }

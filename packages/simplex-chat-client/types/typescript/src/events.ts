@@ -146,7 +146,7 @@ export namespace CEvt {
   export interface NewChatItems extends Interface {
     type: "newChatItems"
     user: T.User
-    chatItems: [T.AChatItem]
+    chatItems: T.AChatItem[]
   }
 
   export interface ChatItemReaction extends Interface {
@@ -159,7 +159,7 @@ export namespace CEvt {
   export interface ChatItemsDeleted extends Interface {
     type: "chatItemsDeleted"
     user: T.User
-    chatItemDeletions: [T.ChatItemDeletion]
+    chatItemDeletions: T.ChatItemDeletion[]
     byUser: boolean
     timed: boolean
   }
@@ -174,7 +174,7 @@ export namespace CEvt {
     type: "groupChatItemsDeleted"
     user: T.User
     groupInfo: T.GroupInfo
-    chatItemIDs: [number] // int64
+    chatItemIDs: number[] // int64
     byUser: boolean
     member_?: T.GroupMember
   }
@@ -182,7 +182,7 @@ export namespace CEvt {
   export interface ChatItemsStatusesUpdated extends Interface {
     type: "chatItemsStatusesUpdated"
     user: T.User
-    chatItems: [T.AChatItem]
+    chatItems: T.AChatItem[]
   }
 
   export interface ReceivedGroupInvitation extends Interface {
@@ -425,6 +425,6 @@ export namespace CEvt {
 
   export interface ChatErrors extends Interface {
     type: "chatErrors"
-    chatErrors: [T.ChatError]
+    chatErrors: T.ChatError[]
   }
 }
