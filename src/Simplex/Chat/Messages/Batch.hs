@@ -7,11 +7,13 @@
 module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
     batchMessages,
+    batchDeliveryTasks,
   )
 where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages
 
@@ -49,3 +51,38 @@ batchMessages maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
       [msg] -> body msg
       msgs -> B.concat ["[", B.intercalate "," (map body msgs), "]"]
     body SndMessage {msgBody} = msgBody
+
+-- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
+batchDeliveryTasks1 :: Int -> NonEmpty MessageForwardTask -> (ByteString, [Int64], [Int64])
+batchDeliveryTasks1 maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
+  where
+    addToBatch :: (ByteString, [Int64], [Int64], Int, Int) -> MessageForwardTask -> (ByteString, [Int64], [Int64], Int, Int)
+    addToBatch (bodies, taskIds, largeTaskIds, len, n) task =
+      -- too large: skip body, record taskId in largeTaskIds
+      | msgLen > maxLen = (bodies, taskIds, taskId : largeTaskIds, len, n)
+      -- fits: include in batch
+      | batchLen <= maxLen = (body : bodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      -- doesn’t fit: stop adding further messages
+      | otherwise = (bodies, taskIds, largeTaskIds, len, n)
+      where
+        MessageForwardTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel} = task
+        -- TODO [channels fwd] handle messageFromChannel (null memberId in XGrpMsgForward)
+        body =
+          let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
+              cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
+            in chatMsgToBody cm
+        msgLen = B.length msgBody
+        len'
+          | n == 0 = msgLen
+          | otherwise = msgLen + len + 1 -- 1 accounts for comma
+        batchLen
+          | n == 0 = len'
+          | otherwise = len' + 2 -- 2 accounts for opening and closing brackets
+    toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
+    toResult (bodies, taskIds, largeTaskIds, _, _) =
+      (encodeMessagesBodies (reverse bodies), reverse taskIds, reverse largeTaskIds)
+    encodeMessages :: [ByteString] -> ByteString
+    encodeMessages = \case
+      [] -> mempty
+      [msg] -> msg
+      msgs -> B.concat ["[", B.intercalate "," msgs, "]"]

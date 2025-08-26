@@ -1258,7 +1258,7 @@ instance TextEncoding DeliveryTaskStatus where
 data DeliveryTasksWork
   = DTWMessageForward {messageForwardTasks :: NonEmpty MessageForwardTask, forwardScope :: GroupForwardScope}
   -- | DTBMemberProfile {memberProfileTask :: MemberProfileTask}
-  | DTWRelayRemoved {relayRemovedTask :: RelayRemovedTask, forwardScope :: GroupForwardScope}
+  | DTWRelayRemoved {relayRemovedTask :: RelayRemovedTask}
   -- | DTBChatItemsCount {chatItemCountsTasks :: NonEmpty ChatItemCountsTask, forwardScope :: GroupForwardScope}}
   deriving (Show)
 

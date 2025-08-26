@@ -75,7 +75,7 @@ CREATE TABLE delivery_jobs (
   delivery_job_tag TEXT NOT NULL,
   forward_scope_tag TEXT,
   forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  messages_batch TEXT,
+  delivery_body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
   failed INTEGER DEFAULT 0,

@@ -156,6 +156,10 @@ module Simplex.Chat.Store.Groups
     getUserGroupsToExpire,
     updateGroupAlias,
     getNextDeliveryTasksWork,
+    createMessageForwardJob,
+    createRelayRemovedJob,
+    updateDeliveryTaskStatus,
+    setDeliveryTaskFailed,
   )
 where
 
@@ -2946,12 +2950,13 @@ getNextDeliveryTasksWork db deliveryScope = do
     -- TODO [channels fwd] save broker_ts on message record, read it for forward metadata instead of created_at
     getTasksWork :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO (Either StoreError DeliveryTasksWork)
     getTasksWork (taskIds, jobTag, fwdScopeTag, fwdScopeGMId_) = do
-      let fwdScope = forwardTagToScope fwdScopeTag fwdScopeGMId_
-      when (isNothing fwdScope) $ throwError SEInvalidDeliveryTasksWork
       case (taskIds, jobTag) of
         (_taskIds, DJTMessageForward) -> do
-          tasks <- traverse (ExceptT . getTask) taskIds
-          pure $ DTWMessageForward tasks fwdScope
+          case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
+            Nothing -> throwError SEInvalidDeliveryTasksWork
+            Just fwdScope -> do
+              tasks <- traverse (ExceptT . getTask) taskIds
+              pure $ DTWMessageForward tasks fwdScope
           where
             getTask :: Int64 -> IO (Either StoreError MessageForwardTask)
             getTask taskId =
@@ -2988,17 +2993,55 @@ getNextDeliveryTasksWork db deliveryScope = do
             toRelayRemovedWork :: (MemberId, ContactName, UTCTime, ChatMessage 'Json) -> DeliveryTask
             toRelayRemovedWork (senderMemberId, senderMemberName, brokerTs, chatMessage) =
               let task = RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
-              in DTWRelayRemoved task fwdScope
+              in DTWRelayRemoved task
         _ -> pure $ Left SEInvalidDeliveryTasksWork
     markTasksFailed :: DB.Connection -> (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
     markTasksFailed db (taskIds, _, _, _) =
       forM_ taskIds $ \taskId ->
         DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
-createMessageForwardJob :: DB.Connection -> IO ()
-createMessageForwardJob db = undefined
+createMessageForwardJob :: DB.Connection -> DeliveryWorkerScope -> GroupForwardScope -> ByteString -> IO ()
+createMessageForwardJob db deliveryScope fwdScope deliveryBody = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO delivery_jobs (
+        group_id, delivery_job_scope, delivery_job_tag,
+        forward_scope_tag, forward_scope_group_member_id,
+        delivery_body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?)
+    |]
+    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, deliveryBody, DJSNew, currentTs, currentTs)
+  where
+    (groupId, jobScope) = deliveryScope
+    (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag fwdScope
 
-createRelayRemovedJob :: DB.Connection -> IO ()
-createRelayRemovedJob db = undefined
+createRelayRemovedJob :: DB.Connection -> DeliveryWorkerScope -> ByteString -> IO ()
+createRelayRemovedJob db deliveryScope deliveryBody = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO delivery_jobs (
+        group_id, delivery_job_scope, delivery_job_tag,
+        delivery_body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?)
+    |]
+    (groupId, jobScope, DJTRelayRemoved, deliveryBody, DJSNew, currentTs, currentTs)
+  where
+    (groupId, jobScope) = deliveryScope
+
+updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
+updateDeliveryTaskStatus db taskId status = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE delivery_tasks SET task_status = ?, updated_at = ? WHERE delivery_task_id = ?"
+    (status, currentTs, taskId)
+
+setDeliveryTaskFailed :: DB.Connection -> Int64 -> IO ()
+setDeliveryTaskFailed db taskId =
+  DB.execute db "UPDATE delivery_tasks SET failed = 1 WHERE delivery_task_id = ?" (Only taskId)
 
 $(J.deriveJSON defaultJSON ''GroupLink)

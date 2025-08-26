@@ -3341,22 +3341,23 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
         -- TODO [channels fwd] convert tasks into jobs
         processDeliveryTasksWork :: DeliveryTasksWork -> CM ()
         processDeliveryTasksWork = \case
-          DTWMessageForward tasks -> do
-            -- build encoding/list of messages (single batch)
-            -- createMessageForwardJob
-            -- update correpsonding tasks as processed
-            -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
-            pure ()
+          DTWMessageForward tasks fwdScope -> do
+            vr <- chatVersionRange
+            (batch, taskIds, largeTaskIds) = batchDeliveryTasks maxEncodedMsgLength tasks
+            withStore' $ \db -> do
+              createMessageForwardJob db deliveryScope fwdScope batch
+              forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
+              forM_ largeTaskIds $ \taskId -> setDeliveryTaskFailed db taskId
+            lift . void $ getDeliveryJobWorker True deliveryScope
           DTWRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
+            vr <- chatVersionRange
             let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
-            -- createRelayRemovedJob
-            -- update corresponding task as processed
-            -- kick delivery job worker of the same delivery scope (getDeliveryJobWorker)
-            pure ()
-
--- let GroupMember {memberId} = m
--- memberName = Just $ memberShortenedName m
--- events = L.map (\cm -> XGrpMsgForward memberId memberName cm brokerTs) fwdMsgs
+                cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
+                body = chatMsgToBody cm
+            withStore' $ \db -> do
+              createRelayRemovedJob db deliveryScope body
+              updateDeliveryTaskStatus db taskId DTSProcessed
+            lift . void $ getDeliveryJobWorker True deliveryScope
 
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do
