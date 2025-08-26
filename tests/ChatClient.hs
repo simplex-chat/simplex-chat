@@ -41,7 +41,7 @@ import Simplex.Chat.Types
 import Simplex.FileTransfer.Description (kb, mb)
 import Simplex.FileTransfer.Server (runXFTPServerBlocking)
 import Simplex.FileTransfer.Server.Env (XFTPServerConfig (..), defaultFileExpiration)
-import Simplex.FileTransfer.Transport (supportedFileServerVRange)
+import Simplex.FileTransfer.Transport (alpnSupportedXFTPhandshakes, supportedFileServerVRange)
 import Simplex.Messaging.Agent (disposeAgentClient)
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
@@ -53,12 +53,12 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion)
+import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion, sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
-import Simplex.Messaging.Server.Env.STM (AServerStoreCfg (..), ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
-import Simplex.Messaging.Server.MsgStore.Types (SQSType (..), SMSType (..))
+import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
+import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Transport.Server (ServerCredentials (..), defaultTransportServerConfig)
+import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 import System.Directory (createDirectoryIfMissing, removeDirectoryRecursive)
@@ -67,7 +67,9 @@ import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
 #if defined(dbPostgres)
+import qualified Data.ByteString.Char8 as B
 import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
@@ -77,6 +79,15 @@ import System.FilePath ((</>))
 #endif
 
 #if defined(dbPostgres)
+schemaDumpDBOpts :: DBOpts
+schemaDumpDBOpts =
+  DBOpts
+    { connstr = B.pack testDBConnstr,
+      schema = "test_chat_schema",
+      poolSize = 3,
+      createSchema = True
+    }
+
 testDBConnstr :: String
 testDBConnstr = "postgresql://test_chat_user@/test_chat_db"
 
@@ -106,6 +117,7 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
+      createBot = Nothing,
       maintenance = False
     }
 
@@ -151,7 +163,7 @@ termSettings :: VirtualTerminalSettings
 termSettings =
   VirtualTerminalSettings
     { virtualType = "xterm",
-      virtualWindowSize = pure C.Size {height = 24, width = 2250},
+      virtualWindowSize = pure C.Size {height = 20, width = 6000},
       virtualEvent = retry,
       virtualInterrupt = retry
     }
@@ -182,6 +194,13 @@ testAgentCfgSlow =
       smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
     }
 
+testAgentCfgNoShortLinks :: AgentConfig
+testAgentCfgNoShortLinks =
+  testAgentCfg
+    { smpClientVRange = mkVersionRange (Version 1) sndAuthKeySMPClientVersion, -- v3
+      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion (Version 14)} -- before shortLinksSMPVersion
+    }
+
 testCfg :: ChatConfig
 testCfg =
   defaultChatConfig
@@ -194,6 +213,9 @@ testCfg =
 
 testCfgSlow :: ChatConfig
 testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
+
+testCfgNoShortLinks :: ChatConfig
+testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
 
 testAgentCfgVPrev :: AgentConfig
 testAgentCfgVPrev =
@@ -291,7 +313,7 @@ startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user 
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
-  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") `runReaderT` cc
+  void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
   chatAsync <- async $ runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
@@ -491,7 +513,7 @@ testChatCfg5 cfg p1 p2 p3 p4 p5 test = testChatN cfg testOpts [p1, p2, p3, p4, p
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
-smpServerCfg :: ServerConfig
+smpServerCfg :: ServerConfig STMMsgStore
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
@@ -501,13 +523,14 @@ smpServerCfg =
       maxJournalStateLines = 4,
       queueIdBytes = 24,
       msgIdBytes = 6,
-      serverStoreCfg = ASSCfg SQSMemory SMSMemory $ SSCMemory Nothing,
+      serverStoreCfg = SSCMemory Nothing,
       storeNtfsFile = Nothing,
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail
       newQueueBasicAuth = Nothing, -- Just "server_password",
       controlPortUserAuth = Nothing,
       controlPortAdminAuth = Nothing,
+      dailyBlockQueueQuota = 20,
       messageExpiration = Just defaultMessageExpiration,
       expireMessagesOnStart = False,
       idleQueueInterval = defaultIdleQueueInterval,
@@ -529,7 +552,7 @@ smpServerCfg =
       pendingENDInterval = 500000,
       ntfDeliveryInterval = 200000,
       smpServerVRange = supportedServerSMPRelayVRange,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = mkTransportServerConfig True (Just alpnSupportedSMPHandshakes) True,
       smpHandshakeTimeout = 1000000,
       controlPort = Nothing,
       smpAgentCfg = defaultSMPClientAgentConfig,
@@ -539,13 +562,13 @@ smpServerCfg =
       startOptions = StartOptions {maintenance = False, compactLog = False, logLevel = LogError, skipWarnings = False, confirmMigrations = MCYesUp}
     }
 
-persistentServerStoreCfg :: FilePath -> AServerStoreCfg
-persistentServerStoreCfg tmp = ASSCfg SQSMemory SMSMemory $ SSCMemory $ Just StorePaths {storeLogFile = tmp <> "/smp-server-store.log", storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"}
+persistentServerStoreCfg :: FilePath -> ServerStoreCfg STMMsgStore
+persistentServerStoreCfg tmp = SSCMemory $ Just StorePaths {storeLogFile = tmp <> "/smp-server-store.log", storeMsgsFile = Just $ tmp <> "/smp-server-messages.log"}
 
 withSmpServer :: IO () -> IO ()
 withSmpServer = withSmpServer' smpServerCfg
 
-withSmpServer' :: ServerConfig -> IO a -> IO a
+withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 xftpTestPort :: ServiceName
@@ -581,8 +604,10 @@ xftpServerConfig =
       logStatsStartTime = 0,
       serverStatsLogFile = "tests/tmp/xftp-server-stats.daily.log",
       serverStatsBackupFile = Nothing,
+      prometheusInterval = Nothing,
+      prometheusMetricsFile = "tests/xftp-server-metrics.txt",
       controlPort = Nothing,
-      transportConfig = defaultTransportServerConfig,
+      transportConfig = mkTransportServerConfig True (Just alpnSupportedXFTPhandshakes) False,
       responseDelay = 0
     }
 
@@ -594,7 +619,7 @@ withXFTPServer' cfg =
   serverBracket
     ( \started -> do
         createDirectoryIfMissing False xftpServerFiles
-        runXFTPServerBlocking started cfg Nothing
+        runXFTPServerBlocking started cfg
     )
 
 serverBracket :: (TMVar Bool -> IO ()) -> IO a -> IO a

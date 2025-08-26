@@ -26,7 +26,6 @@ struct GroupMemberInfoView: View {
     @State private var knownContactConnectionStats: ConnectionStats? = nil
     @State private var newRole: GroupMemberRole = .member
     @State private var alert: GroupMemberInfoViewAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
     @State private var justOpened = true
     @State private var progressIndicator = false
@@ -41,7 +40,6 @@ struct GroupMemberInfoView: View {
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
-        case planAndConnectAlert(alert: PlanAndConnectAlert)
         case queueInfo(info: String)
         case someAlert(alert: SomeAlert)
         case error(title: LocalizedStringKey, error: LocalizedStringKey?)
@@ -57,7 +55,6 @@ struct GroupMemberInfoView: View {
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
-            case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
             case let .queueInfo(info): return "queueInfo \(info)"
             case let .someAlert(alert): return "someAlert \(alert.id)"
             case let .error(title, _): return "error \(title)"
@@ -183,7 +180,7 @@ struct GroupMemberInfoView: View {
                         }
                     }
 
-                    if groupInfo.membership.memberRole >= .admin {
+                    if groupInfo.membership.memberRole >= .moderator {
                         adminDestructiveSection(member)
                     } else {
                         nonAdminBlockSection(member)
@@ -200,8 +197,9 @@ struct GroupMemberInfoView: View {
                             Button ("Debug delivery") {
                                 Task {
                                     do {
-                                        let info = queueInfoText(try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId))
-                                        await MainActor.run { alert = .queueInfo(info: info) }
+                                        if let info = try await apiGroupMemberQueueInfo(groupInfo.apiId, member.groupMemberId) {
+                                            await MainActor.run { alert = .queueInfo(info: queueInfoText(info)) }
+                                        }
                                     } catch let e {
                                         logger.error("apiContactQueueInfo error: \(responseError(e))")
                                         let a = getErrorAlert(e, "Error")
@@ -270,13 +268,11 @@ struct GroupMemberInfoView: View {
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
                 case .syncConnectionForceAlert: return syncConnectionForceAlert({ syncMemberConnection(force: true) })
-                case let .planAndConnectAlert(alert): return planAndConnectAlert(alert, dismiss: true)
                 case let .queueInfo(info): return queueInfoAlert(info)
                 case let .someAlert(a): return a.alert
                 case let .error(title, error): return mkAlert(title: title, message: error)
                 }
             }
-            .actionSheet(item: $sheet) { s in planAndConnectActionSheet(s, dismiss: true) }
 
             if progressIndicator {
                 ProgressView().scaleEffect(2)
@@ -350,10 +346,8 @@ struct GroupMemberInfoView: View {
         Button {
             planAndConnect(
                 contactLink,
-                showAlert: { alert = .planAndConnectAlert(alert: $0) },
-                showActionSheet: { sheet = $0 },
-                dismiss: true,
-                incognito: nil
+                theme: theme,
+                dismiss: true
             )
         } label: {
             Label("Connect", systemImage: "link")
@@ -450,28 +444,38 @@ struct GroupMemberInfoView: View {
             MemberProfileImage(mem, size: 192, color: Color(uiColor: .tertiarySystemFill))
                 .padding(.top, 12)
                 .padding()
+            // show alias if set, alias cannot be edited in this view
+            let displayName = mem.displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let fullName = mem.fullName.trimmingCharacters(in: .whitespacesAndNewlines)
             if mem.verified {
                 (
                     Text(Image(systemName: "checkmark.shield"))
                         .foregroundColor(theme.colors.secondary)
                         .font(.title2)
                     + textSpace
-                    + Text(mem.displayName)
+                    + Text(displayName)
                         .font(.largeTitle)
                 )
                 .multilineTextAlignment(.center)
                 .lineLimit(2)
                 .padding(.bottom, 2)
             } else {
-                Text(mem.displayName)
+                Text(displayName)
                     .font(.largeTitle)
                     .multilineTextAlignment(.center)
                     .lineLimit(2)
                     .padding(.bottom, 2)
             }
-            if mem.fullName != "" && mem.fullName != mem.displayName {
+            if fullName != "" && fullName != displayName && fullName != mem.memberProfile.displayName.trimmingCharacters(in: .whitespacesAndNewlines) {
                 Text(mem.fullName)
                     .font(.title2)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(3)
+                    .padding(.bottom, 2)
+            }
+            if let descr = mem.memberProfile.shortDescr?.trimmingCharacters(in: .whitespacesAndNewlines), descr != "" {
+                Text(descr)
+                    .font(.subheadline)
                     .multilineTextAlignment(.center)
                     .lineLimit(4)
             }

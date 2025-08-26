@@ -2,6 +2,9 @@
 
 set -e
 
+
+ARCH="$(uname -m)"
+
 function readlink() {
   echo "$(cd "$(dirname "$1")"; pwd -P)"
 }
@@ -36,14 +39,28 @@ sed -i 's|Icon=.*|Icon=simplex|g' *imple*.desktop
 cp *imple*.desktop usr/share/applications/
 cp $multiplatform_dir/desktop/src/jvmMain/resources/distribute/*.appdata.xml usr/share/metainfo
 
-if [ ! -f ../appimagetool-x86_64.AppImage ]; then
-    wget --secure-protocol=TLSv1_3 https://github.com/AppImage/appimagetool/releases/download/continuous/appimagetool-x86_64.AppImage -O ../appimagetool-x86_64.AppImage
-    chmod +x ../appimagetool-x86_64.AppImage
+if [ ! -f ../appimagetool-${ARCH}.AppImage ]; then
+    wget --secure-protocol=TLSv1_3 https://github.com/simplex-chat/appimagetool/releases/download/continuous/appimagetool-${ARCH}.AppImage -O ../appimagetool-${ARCH}.AppImage
+    chmod +x ../appimagetool-${ARCH}.AppImage
 fi
-if [ ! -f ../runtime-x86_64 ]; then
-    wget --secure-protocol=TLSv1_3 https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-x86_64 -O ../runtime-x86_64
-    chmod +x ../runtime-x86_64
+if [ ! -f ../runtime-${ARCH} ]; then
+    wget --secure-protocol=TLSv1_3 https://github.com/simplex-chat/type2-runtime/releases/download/continuous/runtime-${ARCH} -O ../runtime-${ARCH}
+    chmod +x ../runtime-${ARCH}
 fi
-../appimagetool-x86_64.AppImage --runtime-file ../runtime-x86_64 .
 
+# Determenistic build
+
+export SOURCE_DATE_EPOCH=1704067200
+
+# Delete redundant jar file and modify cfg
+rm -f ./usr/lib/app/*skiko-awt-runtime-linux*
+sed -i -e '/skiko-awt-runtime-linux/d' ./usr/lib/app/simplex.cfg
+
+# Set all files to fixed time
+find . -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
+
+../appimagetool-${ARCH}.AppImage --verbose --no-appstream --runtime-file ../runtime-${ARCH} .
 mv *imple*.AppImage ../../
+
+# Just a safeguard
+strip-nondeterminism ../../*imple*.AppImage

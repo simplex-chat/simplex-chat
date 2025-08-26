@@ -33,7 +33,7 @@ import chat.simplex.res.MR
 import java.text.DecimalFormat
 
 @Composable
-fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> Unit, close: () -> Unit) {
+fun ModalData.AdvancedNetworkSettingsView(showModal: (@Composable ModalData.() -> Unit) -> Unit, close: () -> Unit) {
   val currentRemoteHost by remember { chatModel.currentRemoteHost }
   val developerTools = remember { appPrefs.developerTools.get() }
 
@@ -48,8 +48,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   val smpProxyFallback = remember { mutableStateOf(currentCfgVal.smpProxyFallback) }
   val smpWebPortServers = remember { mutableStateOf(currentCfgVal.smpWebPortServers) }
 
-  val networkTCPConnectTimeout = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout) }
-  val networkTCPTimeout = remember { mutableStateOf(currentCfgVal.tcpTimeout) }
+  val networkTCPConnectTimeoutInteractive = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout.interactiveTimeout) }
+  val networkTCPConnectTimeoutBackground = remember { mutableStateOf(currentCfgVal.tcpConnectTimeout.backgroundTimeout) }
+  val networkTCPTimeoutInteractive = remember { mutableStateOf(currentCfgVal.tcpTimeout.interactiveTimeout) }
+  val networkTCPTimeoutBackground = remember { mutableStateOf(currentCfgVal.tcpTimeout.backgroundTimeout) }
   val networkTCPTimeoutPerKb = remember { mutableStateOf(currentCfgVal.tcpTimeoutPerKb) }
   val networkRcvConcurrency = remember { mutableStateOf(currentCfgVal.rcvConcurrency) }
   val networkSMPPingInterval = remember { mutableStateOf(currentCfgVal.smpPingInterval) }
@@ -86,8 +88,14 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       smpProxyMode = smpProxyMode.value,
       smpProxyFallback = smpProxyFallback.value,
       smpWebPortServers = smpWebPortServers.value,
-      tcpConnectTimeout = networkTCPConnectTimeout.value,
-      tcpTimeout = networkTCPTimeout.value,
+      tcpConnectTimeout = NetworkTimeout(
+        backgroundTimeout = networkTCPConnectTimeoutBackground.value,
+        interactiveTimeout = networkTCPConnectTimeoutInteractive.value
+      ) ,
+      tcpTimeout = NetworkTimeout(
+        backgroundTimeout = networkTCPTimeoutBackground.value,
+        interactiveTimeout = networkTCPTimeoutInteractive.value
+      ),
       tcpTimeoutPerKb = networkTCPTimeoutPerKb.value,
       rcvConcurrency = networkRcvConcurrency.value,
       tcpKeepAlive = tcpKeepAlive,
@@ -101,8 +109,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
     smpProxyMode.value = cfg.smpProxyMode
     smpProxyFallback.value = cfg.smpProxyFallback
     smpWebPortServers.value = cfg.smpWebPortServers
-    networkTCPConnectTimeout.value = cfg.tcpConnectTimeout
-    networkTCPTimeout.value = cfg.tcpTimeout
+    networkTCPConnectTimeoutInteractive.value = cfg.tcpConnectTimeout.interactiveTimeout
+    networkTCPConnectTimeoutBackground.value = cfg.tcpConnectTimeout.backgroundTimeout
+    networkTCPTimeoutInteractive.value = cfg.tcpTimeout.interactiveTimeout
+    networkTCPTimeoutBackground.value = cfg.tcpTimeout.backgroundTimeout
     networkTCPTimeoutPerKb.value = cfg.tcpTimeoutPerKb
     networkRcvConcurrency.value = cfg.rcvConcurrency
     networkSMPPingInterval.value = cfg.smpPingInterval
@@ -156,8 +166,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       smpProxyMode = smpProxyMode,
       smpProxyFallback = smpProxyFallback,
       smpWebPortServers,
-      networkTCPConnectTimeout,
-      networkTCPTimeout,
+      networkTCPConnectTimeoutInteractive,
+      networkTCPConnectTimeoutBackground,
+      networkTCPTimeoutInteractive,
+      networkTCPTimeoutBackground,
       networkTCPTimeoutPerKb,
       networkRcvConcurrency,
       networkSMPPingInterval,
@@ -189,8 +201,10 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   smpProxyMode: MutableState<SMPProxyMode>,
   smpProxyFallback: MutableState<SMPProxyFallback>,
   smpWebPortServers: MutableState<SMPWebPortServers>,
-  networkTCPConnectTimeout: MutableState<Long>,
-  networkTCPTimeout: MutableState<Long>,
+  networkTCPConnectTimeoutInteractive: MutableState<Long>,
+  networkTCPConnectTimeoutBackground: MutableState<Long>,
+  networkTCPTimeoutInteractive: MutableState<Long>,
+  networkTCPTimeoutBackground: MutableState<Long>,
   networkTCPTimeoutPerKb: MutableState<Long>,
   networkRcvConcurrency: MutableState<Int>,
   networkSMPPingInterval: MutableState<Long>,
@@ -202,7 +216,7 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
   updateSessionMode: (TransportSessionMode) -> Unit,
   updateSMPProxyMode: (SMPProxyMode) -> Unit,
   updateSMPProxyFallback: (SMPProxyFallback) -> Unit,
-  showModal: (ModalData.() -> Unit) -> Unit,
+  showModal: (@Composable ModalData.() -> Unit) -> Unit,
   resetDisabled: Boolean,
   reset: () -> Unit,
   saveDisabled: Boolean,
@@ -242,14 +256,26 @@ fun ModalData.AdvancedNetworkSettingsView(showModal: (ModalData.() -> Unit) -> U
       SectionView(stringResource(MR.strings.network_option_tcp_connection).uppercase()) {
         SectionItemView {
           TimeoutSettingRow(
-            stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeout,
-            listOf(10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
+            stringResource(MR.strings.network_option_tcp_connection_timeout), networkTCPConnectTimeoutInteractive,
+            listOf(10_000000, 15_000000, 20_000000, 30_000000), secondsLabel
           )
         }
         SectionItemView {
           TimeoutSettingRow(
-            stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeout,
-            listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000, 30_000_000), secondsLabel
+            stringResource(MR.strings.network_option_tcp_connection_timeout_background), networkTCPConnectTimeoutBackground,
+            listOf(30_000000, 45_000000, 60_000000, 90_000000), secondsLabel
+          )
+        }
+        SectionItemView {
+          TimeoutSettingRow(
+            stringResource(MR.strings.network_option_protocol_timeout), networkTCPTimeoutInteractive,
+            listOf(5_000000, 7_000000, 10_000000, 15_000000, 20_000_000), secondsLabel
+          )
+        }
+        SectionItemView {
+          TimeoutSettingRow(
+            stringResource(MR.strings.network_option_protocol_timeout_background), networkTCPTimeoutBackground,
+            listOf(15_000000, 20_000000, 30_000000, 45_000000, 60_000_000), secondsLabel
           )
         }
         SectionItemView {
@@ -555,8 +581,10 @@ fun PreviewAdvancedNetworkSettingsLayout() {
       smpProxyMode = remember { mutableStateOf(SMPProxyMode.Never) },
       smpProxyFallback = remember { mutableStateOf(SMPProxyFallback.Allow) },
       smpWebPortServers = remember { mutableStateOf(SMPWebPortServers.Preset) },
-      networkTCPConnectTimeout = remember { mutableStateOf(10_000000) },
-      networkTCPTimeout = remember { mutableStateOf(10_000000) },
+      networkTCPConnectTimeoutInteractive = remember { mutableStateOf(15_000000) },
+      networkTCPConnectTimeoutBackground = remember { mutableStateOf(45_000000) },
+      networkTCPTimeoutInteractive = remember { mutableStateOf(10_000000) },
+      networkTCPTimeoutBackground = remember { mutableStateOf(30_000000) },
       networkTCPTimeoutPerKb = remember { mutableStateOf(10_000) },
       networkRcvConcurrency = remember { mutableStateOf(8) },
       networkSMPPingInterval = remember { mutableStateOf(10_000000) },

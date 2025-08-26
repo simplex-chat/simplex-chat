@@ -82,7 +82,7 @@ public func foundChat(_ chat: ChatLike, _ searchStr: String) -> Bool {
 
 private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     switch cInfo {
-    case let .direct(contact): cInfo.sendMsgEnabled && !contact.nextSendGrpInv
+    case let .direct(contact): cInfo.sendMsgEnabled && !contact.sendMsgToConnect
     case .group: cInfo.sendMsgEnabled
     case .local: cInfo.sendMsgEnabled
     case .contactRequest: false
@@ -93,13 +93,8 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
 
 public func chatIconName(_ cInfo: ChatInfo) -> String {
     switch cInfo {
-    case .direct: "person.crop.circle.fill"
-    case let .group(groupInfo, _):
-        switch groupInfo.businessChat?.chatType {
-        case .none: "person.2.circle.fill"
-        case .business: "briefcase.circle.fill"
-        case .customer: "person.crop.circle.fill"
-        }
+    case let .direct(contact): contact.chatIconName
+    case let .group(groupInfo, _): groupInfo.chatIconName
     case .local: "folder.circle.fill"
     case .contactRequest: "person.crop.circle.fill"
     default:  "circle.fill"

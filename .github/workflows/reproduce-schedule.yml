@@ -25,7 +25,7 @@ jobs:
 
       - name: Execute reproduce script
         run: |
-          ${GITHUB_WORKSPACE}/scripts/reproduce-builds.sh "$TAG"
+          ${GITHUB_WORKSPACE}/scripts/simplex-chat-reproduce-builds.sh "$TAG" || :
 
       - name: Check if build has been reproduced
         env:
@@ -33,7 +33,7 @@ jobs:
           user: ${{ secrets.STATUS_SIMPLEX_WEBHOOK_USER }}
           pass: ${{ secrets.STATUS_SIMPLEX_WEBHOOK_PASS }}
         run: |
-          if [ -f "${GITHUB_WORKSPACE}/$TAG/_sha256sums" ]; then
+          if [ -f "${GITHUB_WORKSPACE}/${TAG}-simplex-chat/_sha256sums" ]; then
             exit 0
           else
             curl --proto '=https' --tlsv1.2 -sSf \

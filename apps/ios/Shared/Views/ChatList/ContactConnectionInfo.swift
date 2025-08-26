@@ -114,6 +114,7 @@ struct ContactConnectionInfo: View {
         .onAppear {
             localAlias = contactConnection.localAlias
         }
+        .onDisappear(perform: setConnectionAlias)
     }
 
     private func setConnectionAlias() {

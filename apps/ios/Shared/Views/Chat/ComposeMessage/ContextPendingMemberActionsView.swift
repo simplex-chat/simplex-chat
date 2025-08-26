@@ -14,6 +14,7 @@ struct ContextPendingMemberActionsView: View {
     @Environment(\.dismiss) var dismiss
     var groupInfo: GroupInfo
     var member: GroupMember
+    @UserDefault(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
 
     var body: some View {
         HStack(spacing: 0) {
@@ -39,7 +40,7 @@ struct ContextPendingMemberActionsView: View {
         }
         .frame(minHeight: 54)
         .frame(maxWidth: .infinity)
-        .background(.thinMaterial)
+        .background(ToolbarMaterial.material(toolbarMaterial))
     }
 }
 
@@ -71,10 +72,7 @@ func showAcceptMemberAlert(_ groupInfo: GroupInfo, _ member: GroupMember, dismis
                     acceptMember(groupInfo, member, .observer, dismiss: dismiss)
                 }
             ),
-            UIAlertAction(
-                title: NSLocalizedString("Cancel", comment: "alert action"),
-                style: .default
-            )
+            cancelAlertAction
         ]}
     )
 }

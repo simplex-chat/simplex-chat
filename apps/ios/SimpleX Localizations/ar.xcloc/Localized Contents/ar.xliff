@@ -1374,12 +1374,14 @@
         <target state="translated">خطأ في تغيير الإعدادات</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating address" xml:space="preserve">
+      <trans-unit id="Error creating address" xml:space="preserve" approved="no">
         <source>Error creating address</source>
+        <target state="translated">خطأ في إنشاء العنوان</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error creating group" xml:space="preserve">
+      <trans-unit id="Error creating group" xml:space="preserve" approved="no">
         <source>Error creating group</source>
+        <target state="translated">خطأ في إنشاء المجموعة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error creating group link" xml:space="preserve">
@@ -3618,7 +3620,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3800,8 +3802,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">نعم</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve" approved="no">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve" approved="no">
+        <source>You are invited to group</source>
         <target state="translated">أنت مدعو إلى المجموعة</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4587,8 +4589,8 @@ SimpleX servers cannot see your profile.</source>
         <source>Ask</source>
         <target state="translated">اسأل</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">إعدادات القبول التلقائي</target>
       </trans-unit>
       <trans-unit id="Better message dates." xml:space="preserve" approved="no">
@@ -5756,6 +5758,102 @@ This is your own one-time link!</source>
       <trans-unit id="Encryption re-negotiation failed." xml:space="preserve" approved="no">
         <source>Encryption re-negotiation failed.</source>
         <target state="translated">فشل إعادة التفاوض على التشفير.</target>
+      </trans-unit>
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
+        <source>Accept as member</source>
+        <target state="translated">اقبل كعضو</target>
+      </trans-unit>
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
+        <source>Accept as observer</source>
+        <target state="translated">اقبل كمراقب</target>
+      </trans-unit>
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
+        <source>Accept contact request</source>
+        <target state="translated">اقبل طلب الاتصال</target>
+      </trans-unit>
+      <trans-unit id="Accept member" xml:space="preserve" approved="no">
+        <source>Accept member</source>
+        <target state="translated">اقبل العضو</target>
+      </trans-unit>
+      <trans-unit id="Add message" xml:space="preserve" approved="no">
+        <source>Add message</source>
+        <target state="translated">أضف رسالة</target>
+      </trans-unit>
+      <trans-unit id="All servers" xml:space="preserve" approved="no">
+        <source>All servers</source>
+        <target state="translated">كل الخوادم</target>
+      </trans-unit>
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
+        <source>Bio</source>
+        <target state="translated">نبذة</target>
+      </trans-unit>
+      <trans-unit id="Bio too large" xml:space="preserve" approved="no">
+        <source>Bio too large</source>
+        <target state="translated">النبذة كبيرة جدًا</target>
+      </trans-unit>
+      <trans-unit id="Can't change profile" xml:space="preserve" approved="no">
+        <source>Can't change profile</source>
+        <target state="needs-translation">لا يمكن تغيير الحساب</target>
+      </trans-unit>
+      <trans-unit id="Chat with admins" xml:space="preserve" approved="no">
+        <source>Chat with admins</source>
+        <target state="translated">تحدث مع المدراء</target>
+      </trans-unit>
+      <trans-unit id="Chat with member" xml:space="preserve" approved="no">
+        <source>Chat with member</source>
+        <target state="translated">تحدث مع العضو</target>
+      </trans-unit>
+      <trans-unit id="Chat with members before they join." xml:space="preserve" approved="no">
+        <source>Chat with members before they join.</source>
+        <target state="translated">تحدث مع الأعضاء قبل انضمامهم.</target>
+      </trans-unit>
+      <trans-unit id="Chats with members" xml:space="preserve" approved="no">
+        <source>Chats with members</source>
+        <target state="translated">تحدث مع الأعضاء</target>
+      </trans-unit>
+      <trans-unit id="Connect faster! 🚀" xml:space="preserve" approved="no">
+        <source>Connect faster! 🚀</source>
+        <target state="translated">اتصل بسرعة! 🚀</target>
+      </trans-unit>
+      <trans-unit id="Contact requests from groups" xml:space="preserve" approved="no">
+        <source>Contact requests from groups</source>
+        <target state="translated">طلبات الاتصال من المجموعات</target>
+      </trans-unit>
+      <trans-unit id="Create your address" xml:space="preserve" approved="no">
+        <source>Create your address</source>
+        <target state="translated">أنشئ عنوانك</target>
+      </trans-unit>
+      <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
+        <source>Delete chat with member?</source>
+        <target state="translated">حذف المحادثة مع العضو؟</target>
+      </trans-unit>
+      <trans-unit id="Description too large" xml:space="preserve" approved="no">
+        <source>Description too large</source>
+        <target state="translated">الوصف كبير جدًا</target>
+      </trans-unit>
+      <trans-unit id="Empty message!" xml:space="preserve" approved="no">
+        <source>Empty message!</source>
+        <target state="translated">رسالة فارغة!</target>
+      </trans-unit>
+      <trans-unit id="Enable disappearing messages by default." xml:space="preserve" approved="no">
+        <source>Enable disappearing messages by default.</source>
+        <target state="needs-translation">فعّل حذف الرسائل تلقائيا.</target>
+      </trans-unit>
+      <trans-unit id="Error accepting member" xml:space="preserve" approved="no">
+        <source>Error accepting member</source>
+        <target state="translated">خطأ في قبول العضو</target>
+      </trans-unit>
+      <trans-unit id="Error adding short link" xml:space="preserve" approved="no">
+        <source>Error adding short link</source>
+        <target state="translated">خطأ في إضافة الرابط القصير</target>
+      </trans-unit>
+      <trans-unit id="Error changing chat profile" xml:space="preserve" approved="no">
+        <source>Error changing chat profile</source>
+        <target state="translated">خطأ في تغيير حساب المحادثات</target>
+      </trans-unit>
+      <trans-unit id="Error connecting to forwarding server %@. Please try later." xml:space="preserve" approved="no">
+        <source>Error connecting to forwarding server %@. Please try later.</source>
+        <target state="needs-translation">خطأ في الإتصال بخادم التحويل @%. حاول مجددا بعد حين.</target>
       </trans-unit>
     </body>
   </file>

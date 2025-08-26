@@ -709,9 +709,11 @@ fun WebRTCView(callCommand: SnapshotStateList<WCallCommand>, onResponse: (WVAPIM
         .filterNotNull()
         .collect {
           while (callCommand.isNotEmpty()) {
-            val cmd = callCommand.removeFirst()
+            val cmd = callCommand.removeFirstOrNull()
             Log.d(TAG, "WebRTCView LaunchedEffect executing $cmd")
-            processCommand(wv, cmd)
+            if (cmd != null) {
+              processCommand(wv, cmd)
+            }
           }
         }
     }

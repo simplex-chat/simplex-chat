@@ -34,7 +34,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chatlist.openLoadedChat
+import chat.simplex.common.views.chatlist.openDirectChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
@@ -57,6 +57,7 @@ fun GroupMemberInfoView(
   val connStats = remember { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   var progressIndicator by remember { mutableStateOf(false) }
+  val scope = rememberCoroutineScope()
 
   fun syncMemberConnection() {
     withBGApi {
@@ -86,12 +87,10 @@ fun GroupMemberInfoView(
       developerTools,
       connectionCode,
       getContactChat = { chatModel.getContactChat(it) },
-      openDirectChat = {
-        withBGApi {
-          apiLoadMessages(chatModel.chatsContext, rhId, ChatType.Direct, it, ChatPagination.Initial(ChatPagination.INITIAL_COUNT))
-          if (chatModel.getContactChat(it) != null) {
-            closeAll()
-          }
+      openDirectChat = { contactId ->
+        scope.launch {
+          openDirectChat(rhId, contactId)
+          closeAll()
         }
       },
       createMemberContact = {
@@ -104,7 +103,7 @@ fun GroupMemberInfoView(
               withContext(Dispatchers.Main) {
                 chatModel.chatsContext.addChat(memberChat)
               }
-              openLoadedChat(memberChat)
+              openDirectChat(rhId, memberContact.contactId)
               closeAll()
               chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }
@@ -568,11 +567,12 @@ fun GroupMemberInfoHeader(member: GroupMember) {
     horizontalAlignment = Alignment.CenterHorizontally
   ) {
     MemberProfileImage(size = 192.dp, member, color = if (isInDarkTheme()) GroupDark else SettingsSecondaryLight)
+    val displayName = member.displayName.trim() // alias if set
     val text = buildAnnotatedString {
       if (member.verified) {
         appendInlineContent(id = "shieldIcon")
       }
-      append(member.displayName)
+      append(displayName)
     }
     val inlineContent: Map<String, InlineTextContent> = mapOf(
       "shieldIcon" to InlineTextContent(
@@ -582,10 +582,11 @@ fun GroupMemberInfoHeader(member: GroupMember) {
       }
     )
     val clipboard = LocalClipboardManager.current
-    val copyNameToClipboard = {
-      clipboard.setText(AnnotatedString(member.displayName))
+    val copyNameToClipboard = fun(name: String) {
+      clipboard.setText(AnnotatedString(name))
       showToast(generalGetString(MR.strings.copied))
     }
+    val copyDisplayName = { copyNameToClipboard(displayName) }
     Text(
       text,
       inlineContent = inlineContent,
@@ -593,18 +594,10 @@ fun GroupMemberInfoHeader(member: GroupMember) {
       textAlign = TextAlign.Center,
       maxLines = 3,
       overflow = TextOverflow.Ellipsis,
-      modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
+      modifier = Modifier.combinedClickable(onClick = copyDisplayName, onLongClick = copyDisplayName).onRightClick(copyDisplayName)
     )
-    if (member.fullName != "" && member.fullName != member.displayName) {
-      Text(
-        member.fullName, style = MaterialTheme.typography.h2,
-        color = MaterialTheme.colors.onBackground,
-        textAlign = TextAlign.Center,
-        maxLines = 4,
-        overflow = TextOverflow.Ellipsis,
-        modifier = Modifier.combinedClickable(onClick = copyNameToClipboard, onLongClick = copyNameToClipboard).onRightClick(copyNameToClipboard)
-      )
-    }
+    // passing actual display name here, as alias is used above
+    ChatInfoDescription(member, member.memberProfile.displayName.trim(), copyNameToClipboard)
   }
 }
 
@@ -788,7 +781,7 @@ fun updateMembersRoleDialog(
 fun connectViaMemberAddressAlert(rhId: Long?, connReqUri: String) {
   try {
     withBGApi {
-      planAndConnect(rhId, connReqUri, incognito = null, close = { ModalManager.closeAllModalsEverywhere() })
+      planAndConnect(rhId, connReqUri, close = { ModalManager.closeAllModalsEverywhere() })
     }
   } catch (e: RuntimeException) {
     AlertManager.shared.showAlertMsg(

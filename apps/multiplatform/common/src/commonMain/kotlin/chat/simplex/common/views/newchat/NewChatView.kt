@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -34,6 +35,7 @@ import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -379,14 +381,7 @@ fun ActiveProfilePicker(
         }
       },
       image = {
-        Spacer(Modifier.width(8.dp))
-        Icon(
-          painterResource(MR.images.ic_theater_comedy_filled),
-          contentDescription = stringResource(MR.strings.incognito),
-          Modifier.size(32.dp),
-          tint = Indigo,
-        )
-        Spacer(Modifier.width(2.dp))
+        IncognitoOptionImage()
       },
       onInfo = { ModalManager.start.showModal { IncognitoView() } },
     )
@@ -409,7 +404,10 @@ fun ActiveProfilePicker(
         val activeProfile = filteredProfiles.firstOrNull { it.activeUser }
 
         if (activeProfile != null) {
-          val otherProfiles = filteredProfiles.filter { it.userId != activeProfile.userId }
+          val otherProfiles =
+            filteredProfiles
+              .filter { it.userId != activeProfile.userId }
+              .sortedByDescending { it.activeOrder }
           item {
             when {
               !showIncognito ->
@@ -537,14 +535,28 @@ private fun InviteView(rhId: Long?, connLinkInvitation: CreatedConnLink, contact
 
 @Composable
 fun ToggleShortLinkButton(short: MutableState<Boolean>) {
-  Text(
-    stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
-    modifier = Modifier.clickable(
-      interactionSource = remember { MutableInteractionSource() },
-      indication = null
-    ) { short.value = !short.value },
-    style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
+  if (appPrefs.developerTools.state.value) {
+    Text(
+      stringResource(if (short.value) MR.strings.full_link_button_text else MR.strings.short_link_button_text),
+      modifier = Modifier.clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null
+      ) { short.value = !short.value },
+      style = MaterialTheme.typography.body2, fontSize = 14.sp, color = MaterialTheme.colors.primary
+    )
+  }
+}
+
+@Composable
+fun IncognitoOptionImage() {
+  Spacer(Modifier.width(8.dp))
+  Icon(
+    painterResource(MR.images.ic_theater_comedy_filled),
+    contentDescription = stringResource(MR.strings.incognito),
+    Modifier.size(32.dp),
+    tint = Indigo,
   )
+  Spacer(Modifier.width(2.dp))
 }
 
 @Composable
@@ -566,6 +578,12 @@ fun AddContactLearnMoreButton() {
 
 @Composable
 private fun ConnectView(rhId: Long?, showQRCodeScanner: MutableState<Boolean>, pastedLink: MutableState<String>, close: () -> Unit) {
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
+    }
+  }
+
   SectionView(stringResource(MR.strings.paste_the_link_you_received).uppercase(), headerBottomPadding = 5.dp) {
     PasteLinkView(rhId, pastedLink, showQRCodeScanner, close)
   }
@@ -606,10 +624,25 @@ private fun PasteLinkView(rhId: Long?, pastedLink: MutableState<String>, showQRC
         )
       }
     }) {
-      Text(stringResource(MR.strings.tap_to_paste_link))
+      Box(Modifier.weight(1f)) {
+        Text(stringResource(MR.strings.tap_to_paste_link))
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
+      }
     }
   } else {
-    LinkTextView(pastedLink.value, false)
+    Row(
+      Modifier.padding(end = DEFAULT_PADDING),
+      verticalAlignment = Alignment.CenterVertically
+    ) {
+      Box(Modifier.weight(1f)) {
+        LinkTextView(pastedLink.value, false)
+      }
+      if (connectProgressManager.showConnectProgress != null) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.6f)
+      }
+    }
   }
 }
 
@@ -687,8 +720,7 @@ private suspend fun connect(rhId: Long?, link: String, close: () -> Unit, cleanu
     rhId,
     link,
     close = close,
-    cleanup = cleanup,
-    incognito = null
+    cleanup = cleanup
   ).await()
 
 private fun createInvitation(

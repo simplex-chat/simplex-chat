@@ -16,7 +16,7 @@ Client API provides types and functions to:
 
 ## Use cases
 
-- chat bots: you can implement any logic of connecting with and communicating with SimpleX Chat users. Using chat groups a chat bot can connect SimleX Chat users with each other.
+- chat bots: you can implement any logic of connecting with and communicating with SimpleX Chat users. Using chat groups a chat bot can connect SimpleX Chat users with each other.
 - control of the equipment: e.g. servers or home automation. SimpleX Chat provides secure and authorised connections, so this is more secure than using rest APIs.
 
 Please share your use cases and implementations.
@@ -37,6 +37,8 @@ See the example of a simple chat bot in [squaring-bot.js](./examples/squaring-bo
 ## Documentation
 
 Please refer to the available client API in [client.ts](./src/client.ts).
+
+This library uses [@simplex-chat/types](https://www.npmjs.com/package/@simplex-chat/types) package with auto-generated [bot API types](https://github.com/simplex-chat/simplex-chat/tree/stable/bots)
 
 ## License
 

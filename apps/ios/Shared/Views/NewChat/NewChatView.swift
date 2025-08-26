@@ -29,11 +29,9 @@ struct SomeSheet<Content: View>: Identifiable {
 }
 
 private enum NewChatViewAlert: Identifiable {
-    case planAndConnectAlert(alert: PlanAndConnectAlert)
     case newChatSomeAlert(alert: SomeAlert)
     var id: String {
         switch self {
-        case let .planAndConnectAlert(alert): return "planAndConnectAlert \(alert.id)"
         case let .newChatSomeAlert(alert): return "newChatSomeAlert \(alert.id)"
         }
     }
@@ -165,8 +163,6 @@ struct NewChatView: View {
         }
         .alert(item: $alert) { a in
             switch(a) {
-            case let .planAndConnectAlert(alert):
-                return planAndConnectAlert(alert, dismiss: true, cleanup: { pastedLink = "" })
             case let .newChatSomeAlert(a):
                 return a.alert
             }
@@ -371,7 +367,6 @@ private struct ActiveProfilePicker: View {
             .onAppear {
                 profiles = chatModel.users
                     .map { $0.user }
-                    .sorted { u, _ in u.activeUser }
             }
             .onChange(of: incognitoEnabled) { incognito in
                 if profileSwitchStatus != .switchingIncognito {
@@ -420,8 +415,8 @@ private struct ActiveProfilePicker: View {
                 }
                 Task {
                     do {
-                        if let contactConn = contactConnection {
-                            let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId)
+                        if let contactConn = contactConnection,
+                           let conn = try await apiChangeConnectionUser(connId: contactConn.pccConnId, userId: profile.userId) {
                             await MainActor.run {
                                 contactConnection = conn
                                 connLinkInvitation = conn.connLinkInv ?? CreatedConnLink(connFullLink: "", connShortLink: nil)
@@ -429,7 +424,7 @@ private struct ActiveProfilePicker: View {
                                 chatModel.updateContactConnection(conn)
                             }
                             do {
-                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil )
+                                try await changeActiveUserAsync_(profile.userId, viewPwd: profile.hidden ? trimmedSearchTextOrPassword : nil)
                                 await MainActor.run {
                                     profileSwitchStatus = .idle
                                     dismiss()
@@ -440,7 +435,7 @@ private struct ActiveProfilePicker: View {
                                     alert = SomeAlert(
                                         alert: Alert(
                                             title: Text("Error switching profile"),
-                                            message: Text("Your connection was moved to \(profile.chatViewName) but an unexpected error occurred while redirecting you to the profile.")
+                                            message: Text("Your connection was moved to \(profile.chatViewName) but an error happened when switching profile.")
                                         ),
                                         id: "switchingProfileError"
                                     )
@@ -479,8 +474,8 @@ private struct ActiveProfilePicker: View {
                 IncognitoHelp()
             }
     }
-    
-    
+
+
     @ViewBuilder private func viewBody() -> some View {
         profilePicker()
             .allowsHitTesting(!switchingProfileByTimeout)
@@ -493,11 +488,11 @@ private struct ActiveProfilePicker: View {
                 }
             }
     }
-    
+
     private func filteredProfiles() -> [User] {
         let s = trimmedSearchTextOrPassword
         let lower = s.localizedLowercase
-        
+
         return profiles.filter { u in
             if (u.activeUser || !u.hidden) && (s == "" || u.chatViewName.localizedLowercase.contains(lower)) {
                 return true
@@ -505,7 +500,7 @@ private struct ActiveProfilePicker: View {
             return correctPassword(u, s)
         }
     }
-    
+
     private func profilerPickerUserOption(_ user: User) -> some View {
         Button {
             if selectedProfile == user && incognitoEnabled {
@@ -531,7 +526,7 @@ private struct ActiveProfilePicker: View {
             }
         }
     }
-        
+
     @ViewBuilder private func profilePicker() -> some View {
         let incognitoOption = Button {
             if !incognitoEnabled {
@@ -557,14 +552,16 @@ private struct ActiveProfilePicker: View {
                 }
             }
         }
-        
+
         List {
             let filteredProfiles = filteredProfiles()
             let activeProfile = filteredProfiles.first { u in u.activeUser }
-            
+
             if let selectedProfile = activeProfile {
-                let otherProfiles = filteredProfiles.filter { u in u.userId != activeProfile?.userId }
-                
+                let otherProfiles = filteredProfiles
+                    .filter { u in u.userId != activeProfile?.userId }
+                    .sorted(using: KeyPathComparator<User>(\.activeOrder, order: .reverse))
+
                 if incognitoFirst {
                     incognitoOption
                     profilerPickerUserOption(selectedProfile)
@@ -572,7 +569,7 @@ private struct ActiveProfilePicker: View {
                     profilerPickerUserOption(selectedProfile)
                     incognitoOption
                 }
-                
+
                 ForEach(otherProfiles) { p in
                     profilerPickerUserOption(p)
                 }
@@ -588,12 +585,13 @@ private struct ActiveProfilePicker: View {
 }
 
 private struct ConnectView: View {
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Environment(\.dismiss) var dismiss: DismissAction
     @EnvironmentObject var theme: AppTheme
     @Binding var showQRCodeScanner: Bool
     @Binding var pastedLink: String
     @Binding var alert: NewChatViewAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
+    @State var scannerPaused: Bool = false
     @State private var pasteboardHasStrings = UIPasteboard.general.hasStrings
 
     var body: some View {
@@ -602,39 +600,49 @@ private struct ConnectView: View {
                 pasteLinkView()
             }
             Section(header: Text("Or scan QR code").foregroundColor(theme.colors.secondary)) {
-                ScannerInView(showQRCodeScanner: $showQRCodeScanner, processQRCode: processQRCode)
+                ScannerInView(showQRCodeScanner: $showQRCodeScanner, scannerPaused: $scannerPaused, processQRCode: processQRCode)
             }
         }
-        .actionSheet(item: $sheet) { s in
-            planAndConnectActionSheet(s, dismiss: true, cleanup: { pastedLink = "" })
+        .onDisappear {
+            connectProgressManager.cancelConnectProgress()
         }
     }
 
     @ViewBuilder private func pasteLinkView() -> some View {
         if pastedLink == "" {
-            Button {
-                if let str = UIPasteboard.general.string {
-                    if let link = strHasSingleSimplexLink(str.trimmingCharacters(in: .whitespaces)) {
-                        pastedLink = link.text
-                        // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
-                        // https://github.com/twostraws/CodeScanner/issues/121
-                        // No known tricks worked (changing view ID, wrapping it in another view, etc.)
-                        // showQRCodeScanner = false
-                        connect(pastedLink)
-                    } else {
-                        alert = .newChatSomeAlert(alert: SomeAlert(
-                            alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
-                            id: "pasteLinkView: code is not a SimpleX link"
-                        ))
+            ZStack(alignment: .trailing) {
+                Button {
+                    if let str = UIPasteboard.general.string {
+                        if let link = strHasSingleSimplexLink(str.trimmingCharacters(in: .whitespaces)) {
+                            pastedLink = link.text
+                            // It would be good to hide it, but right now it is not clear how to release camera in CodeScanner
+                            // https://github.com/twostraws/CodeScanner/issues/121
+                            // No known tricks worked (changing view ID, wrapping it in another view, etc.)
+                            // showQRCodeScanner = false
+                            connect(pastedLink)
+                        } else {
+                            alert = .newChatSomeAlert(alert: SomeAlert(
+                                alert: mkAlert(title: "Invalid link", message: "The text you pasted is not a SimpleX link."),
+                                id: "pasteLinkView: code is not a SimpleX link"
+                            ))
+                        }
                     }
+                } label: {
+                    Text("Tap to paste link")
                 }
-            } label: {
-                Text("Tap to paste link")
+                .disabled(!pasteboardHasStrings)
+                .frame(maxWidth: .infinity, alignment: .center)
+                if connectProgressManager.showConnectProgress != nil {
+                    ProgressView()
+                }
             }
-            .disabled(!pasteboardHasStrings)
-            .frame(maxWidth: .infinity, alignment: .center)
         } else {
-            linkTextView(pastedLink)
+            HStack {
+                linkTextView(pastedLink)
+                if connectProgressManager.showConnectProgress != nil {
+                    ProgressView()
+                }
+            }
         }
     }
 
@@ -660,18 +668,22 @@ private struct ConnectView: View {
     }
 
     private func connect(_ link: String) {
+        scannerPaused = true
         planAndConnect(
             link,
-            showAlert: { alert = .planAndConnectAlert(alert: $0) },
-            showActionSheet: { sheet = $0 },
+            theme: theme,
             dismiss: true,
-            incognito: nil
+            cleanup: {
+                pastedLink = ""
+                scannerPaused = false
+            }
         )
     }
 }
 
 struct ScannerInView: View {
     @Binding var showQRCodeScanner: Bool
+    var scannerPaused: Binding<Bool>? = nil
     let processQRCode: (_ resp: Result<ScanResult, ScanError>) -> Void
     @State private var cameraAuthorizationStatus: AVAuthorizationStatus?
     var scanMode: ScanMode = .continuous
@@ -679,7 +691,7 @@ struct ScannerInView: View {
     var body: some View {
         Group {
             if showQRCodeScanner, case .authorized = cameraAuthorizationStatus {
-                CodeScannerView(codeTypes: [.qr], scanMode: scanMode, completion: processQRCode)
+                CodeScannerView(codeTypes: [.qr], scanMode: scanMode, isPaused: scannerPaused?.wrappedValue ?? false, completion: processQRCode)
                     .aspectRatio(1, contentMode: .fit)
                     .cornerRadius(12)
                     .listRowBackground(Color.clear)
@@ -839,348 +851,570 @@ func sharedProfileInfo(_ incognito: Bool) -> Text {
     )
 }
 
-enum PlanAndConnectAlert: Identifiable {
-    case ownInvitationLinkConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
-    case invitationLinkConnecting(connectionLink: CreatedConnLink)
-    case ownContactAddressConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
-    case contactAddressConnectingConfirmReconnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
-    case groupLinkConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
-    case groupLinkConnectingConfirmReconnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool)
-    case groupLinkConnecting(connectionLink: CreatedConnLink, groupInfo: GroupInfo?)
-    case error(shortOrFullLink: String, alert: Alert)
-
-    var id: String {
-        switch self {
-        case let .ownInvitationLinkConfirmConnect(connectionLink, _, _): return "ownInvitationLinkConfirmConnect \(connectionLink.connFullLink)"
-        case let .invitationLinkConnecting(connectionLink): return "invitationLinkConnecting \(connectionLink.connFullLink)"
-        case let .ownContactAddressConfirmConnect(connectionLink, _, _): return "ownContactAddressConfirmConnect \(connectionLink.connFullLink)"
-        case let .contactAddressConnectingConfirmReconnect(connectionLink, _, _): return "contactAddressConnectingConfirmReconnect \(connectionLink.connFullLink)"
-        case let .groupLinkConfirmConnect(connectionLink, _, _): return "groupLinkConfirmConnect \(connectionLink.connFullLink)"
-        case let .groupLinkConnectingConfirmReconnect(connectionLink, _, _): return "groupLinkConnectingConfirmReconnect \(connectionLink.connFullLink)"
-        case let .groupLinkConnecting(connectionLink, _): return "groupLinkConnecting \(connectionLink.connFullLink)"
-        case let .error(shortOrFullLink, alert): return "error \(shortOrFullLink)"
-        }
-    }
+private func showInvitationLinkConnectingAlert(cleanup: (() -> Void)?) {
+    showAlert(
+        NSLocalizedString("Already connecting!", comment: "new chat sheet title"),
+        message: NSLocalizedString("You are already connecting via this one-time link!", comment: "new chat sheet message"),
+        actions: {[
+            okCleanupAlertAction(cleanup: cleanup)
+        ]}
+    )
 }
 
-func planAndConnectAlert(_ alert: PlanAndConnectAlert, dismiss: Bool, cleanup: (() -> Void)? = nil) -> Alert {
-    switch alert {
-    case let .ownInvitationLinkConfirmConnect(connectionLink, connectionPlan, incognito):
-        return Alert(
-            title: Text("Connect to yourself?"),
-            message: Text("This is your own one-time link!"),
-            primaryButton: .destructive(
-                Text(incognito ? "Connect incognito" : "Connect"),
-                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup) }
-            ),
-            secondaryButton: .cancel() { cleanup?() }
-        )
-    case .invitationLinkConnecting:
-        return Alert(
-            title: Text("Already connecting!"),
-            message: Text("You are already connecting via this one-time link!"),
-            dismissButton: .default(Text("OK")) { cleanup?() }
-        )
-    case let .ownContactAddressConfirmConnect(connectionLink, connectionPlan, incognito):
-        return Alert(
-            title: Text("Connect to yourself?"),
-            message: Text("This is your own SimpleX address!"),
-            primaryButton: .destructive(
-                Text(incognito ? "Connect incognito" : "Connect"),
-                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup) }
-            ),
-            secondaryButton: .cancel() { cleanup?() }
-        )
-    case let .contactAddressConnectingConfirmReconnect(connectionLink, connectionPlan, incognito):
-        return Alert(
-            title: Text("Repeat connection request?"),
-            message: Text("You have already requested connection via this address!"),
-            primaryButton: .destructive(
-                Text(incognito ? "Connect incognito" : "Connect"),
-                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup) }
-            ),
-            secondaryButton: .cancel() { cleanup?() }
-        )
-    case let .groupLinkConfirmConnect(connectionLink, connectionPlan, incognito):
-        return Alert(
-            title: Text("Join group?"),
-            message: Text("You will connect to all group members."),
-            primaryButton: .default(
-                Text(incognito ? "Join incognito" : "Join"),
-                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup) }
-            ),
-            secondaryButton: .cancel() { cleanup?() }
-        )
-    case let .groupLinkConnectingConfirmReconnect(connectionLink, connectionPlan, incognito):
-        return Alert(
-            title: Text("Repeat join request?"),
-            message: Text("You are already joining the group via this link!"),
-            primaryButton: .destructive(
-                Text(incognito ? "Join incognito" : "Join"),
-                action: { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup) }
-            ),
-            secondaryButton: .cancel() { cleanup?() }
-        )
-    case let .groupLinkConnecting(_, groupInfo):
-        if let groupInfo = groupInfo {
-            return groupInfo.businessChat == nil
-            ? Alert(
-                title: Text("Group already exists!"),
-                message: Text("You are already joining the group \(groupInfo.displayName)."),
-                dismissButton: .default(Text("OK")) { cleanup?() }
-            )
-            : Alert(
-                title: Text("Chat already exists!"),
-                message: Text("You are already connecting to \(groupInfo.displayName)."),
-                dismissButton: .default(Text("OK")) { cleanup?() }
+private func showGroupLinkConnectingAlert(groupInfo: GroupInfo?, cleanup: (() -> Void)?) {
+    if let groupInfo = groupInfo {
+        if groupInfo.businessChat == nil {
+            showAlert(
+                NSLocalizedString("Group already exists!", comment: "new chat sheet title"),
+                message:
+                    String.localizedStringWithFormat(
+                        NSLocalizedString("You are already joining the group %@.", comment: "new chat sheet message"),
+                        groupInfo.displayName
+                    ),
+                actions: {[
+                    okCleanupAlertAction(cleanup: cleanup)
+                ]}
             )
         } else {
-            return Alert(
-                title: Text("Already joining the group!"),
-                message: Text("You are already joining the group via this link."),
-                dismissButton: .default(Text("OK")) { cleanup?() }
+            showAlert(
+                NSLocalizedString("Chat already exists!", comment: "new chat sheet title"),
+                message:
+                    String.localizedStringWithFormat(
+                        NSLocalizedString("You are already connecting to %@.", comment: "new chat sheet message"),
+                        groupInfo.displayName
+                    ),
+                actions: {[
+                    okCleanupAlertAction(cleanup: cleanup)
+                ]}
             )
         }
-    case let .error(_, alert): return alert
+    } else {
+        showAlert(
+            NSLocalizedString("Already joining the group!", comment: "new chat sheet title"),
+            message: NSLocalizedString("You are already joining the group via this link.", comment: "new chat sheet message"),
+            actions: {[
+                okCleanupAlertAction(cleanup: cleanup)
+            ]}
+        )
     }
 }
 
-enum PlanAndConnectActionSheet: Identifiable {
-    case askCurrentOrIncognitoProfile(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan?, title: LocalizedStringKey)
-    case askCurrentOrIncognitoProfileDestructive(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, title: LocalizedStringKey)
-    case askCurrentOrIncognitoProfileConnectContactViaAddress(contact: Contact)
-    case ownGroupLinkConfirmConnect(connectionLink: CreatedConnLink, connectionPlan: ConnectionPlan, incognito: Bool?, groupInfo: GroupInfo)
-
-    var id: String {
-        switch self {
-        case let .askCurrentOrIncognitoProfile(connectionLink, _, _): return "askCurrentOrIncognitoProfile \(connectionLink.connFullLink)"
-        case let .askCurrentOrIncognitoProfileDestructive(connectionLink, _, _): return "askCurrentOrIncognitoProfileDestructive \(connectionLink.connFullLink)"
-        case let .askCurrentOrIncognitoProfileConnectContactViaAddress(contact): return "askCurrentOrIncognitoProfileConnectContactViaAddress \(contact.contactId)"
-        case let .ownGroupLinkConfirmConnect(connectionLink, _, _, _): return "ownGroupLinkConfirmConnect \(connectionLink.connFullLink)"
+private func okCleanupAlertAction(cleanup: (() -> Void)?) -> UIAlertAction {
+    UIAlertAction(
+        title: NSLocalizedString("Ok", comment: "new chat action"),
+        style: .default,
+        handler: { _ in
+            cleanup?()
         }
-    }
+    )
 }
 
-func planAndConnectActionSheet(_ sheet: PlanAndConnectActionSheet, dismiss: Bool, cleanup: (() -> Void)? = nil) -> ActionSheet {
-    switch sheet {
-    case let .askCurrentOrIncognitoProfile(connectionLink, connectionPlan, title):
-        return ActionSheet(
-            title: Text(title),
-            buttons: [
-                .default(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup) },
-                .default(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup) },
-                .cancel() { cleanup?() }
-            ]
-        )
-    case let .askCurrentOrIncognitoProfileDestructive(connectionLink, connectionPlan, title):
-        return ActionSheet(
-            title: Text(title),
-            buttons: [
-                .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup) },
-                .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup) },
-                .cancel() { cleanup?() }
-            ]
-        )
-    case let .askCurrentOrIncognitoProfileConnectContactViaAddress(contact):
-        return ActionSheet(
-            title: Text("Connect with \(contact.chatViewName)"),
-            buttons: [
-                .default(Text("Use current profile")) { connectContactViaAddress_(contact, dismiss: dismiss, incognito: false, cleanup: cleanup) },
-                .default(Text("Use new incognito profile")) { connectContactViaAddress_(contact, dismiss: dismiss, incognito: true, cleanup: cleanup) },
-                .cancel() { cleanup?() }
-            ]
-        )
-    case let .ownGroupLinkConfirmConnect(connectionLink, connectionPlan, incognito, groupInfo):
-        if let incognito = incognito {
-            return ActionSheet(
-                title: Text("Join your group?\nThis is your link for group \(groupInfo.displayName)!"),
-                buttons: [
-                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
-                    .destructive(Text(incognito ? "Join incognito" : "Join with current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup) },
-                    .cancel() { cleanup?() }
-                ]
+private func showAskCurrentOrIncognitoProfileSheet(
+    title: String,
+    actionStyle: UIAlertAction.Style = .default,
+    connectionLink: CreatedConnLink,
+    connectionPlan: ConnectionPlan?,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showSheet(
+        title,
+        actions: {[
+            UIAlertAction(
+                title: NSLocalizedString("Use current profile", comment: "new chat action"),
+                style: actionStyle,
+                handler: { _ in
+                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
+                style: actionStyle,
+                handler: { _ in
+                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Cancel", comment: "new chat action"),
+                style: .default,
+                handler: { _ in
+                    cleanup?()
+                }
             )
-        } else {
-            return ActionSheet(
-                title: Text("Join your group?\nThis is your link for group \(groupInfo.displayName)!"),
-                buttons: [
-                    .default(Text("Open group")) { openKnownGroup(groupInfo, dismiss: dismiss, showAlreadyExistsAlert: nil) },
-                    .destructive(Text("Use current profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup) },
-                    .destructive(Text("Use new incognito profile")) { connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup) },
-                    .cancel() { cleanup?() }
-                ]
+        ]}
+    )
+}
+
+private func showAskCurrentOrIncognitoProfileConnectContactViaAddressSheet(
+    contact: Contact,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showSheet(
+        String.localizedStringWithFormat(
+            NSLocalizedString("Connect with %@", comment: "new chat action"),
+            contact.chatViewName
+        ),
+        actions: {[
+            UIAlertAction(
+                title: NSLocalizedString("Use current profile", comment: "new chat action"),
+                style: .default,
+                handler: { _ in
+                    connectContactViaAddress_(contact, dismiss: dismiss, incognito: false, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
+                style: .default,
+                handler: { _ in
+                    connectContactViaAddress_(contact, dismiss: dismiss, incognito: true, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Cancel", comment: "new chat action"),
+                style: .default,
+                handler: { _ in
+                    cleanup?()
+                }
             )
+        ]}
+    )
+}
+
+private func showOwnGroupLinkConfirmConnectSheet(
+    groupInfo: GroupInfo,
+    connectionLink: CreatedConnLink,
+    connectionPlan: ConnectionPlan?,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showSheet(
+        String.localizedStringWithFormat(
+            NSLocalizedString("Join your group?\nThis is your link for group %@!", comment: "new chat action"),
+            groupInfo.displayName
+        ),
+        actions: {[
+            UIAlertAction(
+                title: NSLocalizedString("Open group", comment: "new chat action"),
+                style: .default,
+                handler: { _ in
+                    openKnownGroup(groupInfo, dismiss: dismiss, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Use current profile", comment: "new chat action"),
+                style: .destructive,
+                handler: { _ in
+                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: false, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Use new incognito profile", comment: "new chat action"),
+                style: .destructive,
+                handler: { _ in
+                    connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: true, cleanup: cleanup)
+                }
+            ),
+            UIAlertAction(
+                title: NSLocalizedString("Cancel", comment: "new chat action"),
+                style: .default,
+                handler: { _ in
+                    cleanup?()
+                }
+            )
+        ]}
+    )
+}
+
+private func showPrepareContactAlert(
+    connectionLink: CreatedConnLink,
+    contactShortLinkData: ContactShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: contactShortLinkData.profile.displayName,
+        profileFullName: contactShortLinkData.profile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: contactShortLinkData.profile.image,
+                iconName: contactShortLinkData.business
+                            ? "briefcase.circle.fill"
+                            : contactShortLinkData.profile.peerType == .bot
+                            ? "cube.fill"
+                            : "person.crop.circle.fill",
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open new chat", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let chat = try await apiPrepareContact(connLink: connectionLink, contactShortLinkData: contactShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chat))
+                        openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
+                    }
+                } catch let error {
+                    logger.error("showPrepareContactAlert apiPrepareContact error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error opening chat", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
+                }
+            }
         }
-    }
+    )
+}
+
+private func showPrepareGroupAlert(
+    connectionLink: CreatedConnLink,
+    groupShortLinkData: GroupShortLinkData,
+    theme: AppTheme,
+    dismiss: Bool,
+    cleanup: (() -> Void)?
+) {
+    showOpenChatAlert(
+        profileName: groupShortLinkData.groupProfile.displayName,
+        profileFullName: groupShortLinkData.groupProfile.fullName,
+        profileImage: ProfileImage(imageStr: groupShortLinkData.groupProfile.image, iconName: "person.2.circle.fill", size: alertProfileImageSize),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle: NSLocalizedString("Open new group", comment: "new chat action"),
+        onCancel: { cleanup?() },
+        onConfirm: {
+            Task {
+                do {
+                    let chat = try await apiPrepareGroup(connLink: connectionLink, groupShortLinkData: groupShortLinkData)
+                    await MainActor.run {
+                        ChatModel.shared.addChat(Chat(chat))
+                        openKnownChat(chat.id, dismiss: dismiss, cleanup: cleanup)
+                    }
+                } catch let error {
+                    logger.error("showPrepareGroupAlert apiPrepareGroup error: \(error.localizedDescription)")
+                    showAlert(NSLocalizedString("Error opening group", comment: ""), message: responseError(error))
+                    await MainActor.run {
+                        cleanup?()
+                    }
+                }
+            }
+        }
+    )
+}
+
+private func showOpenKnownContactAlert(
+    _ contact: Contact,
+    theme: AppTheme,
+    dismiss: Bool
+) {
+    showOpenChatAlert(
+        profileName: contact.profile.displayName,
+        profileFullName: contact.profile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: contact.profile.image,
+                iconName: contact.chatIconName,
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle:
+            contact.nextConnectPrepared
+            ? NSLocalizedString("Open new chat", comment: "new chat action")
+            : NSLocalizedString("Open chat", comment: "new chat action"),
+        onConfirm: {
+            openKnownContact(contact, dismiss: dismiss, cleanup: nil)
+        }
+    )
+}
+
+private func showOpenKnownGroupAlert(
+    _ groupInfo: GroupInfo,
+    theme: AppTheme,
+    dismiss: Bool
+) {
+    showOpenChatAlert(
+        profileName: groupInfo.groupProfile.displayName,
+        profileFullName: groupInfo.groupProfile.fullName,
+        profileImage:
+            ProfileImage(
+                imageStr: groupInfo.groupProfile.image,
+                iconName: groupInfo.chatIconName,
+                size: alertProfileImageSize
+            ),
+        theme: theme,
+        cancelTitle: NSLocalizedString("Cancel", comment: "new chat action"),
+        confirmTitle:
+            groupInfo.businessChat == nil
+            ? ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new group", comment: "new chat action")
+                : NSLocalizedString("Open group", comment: "new chat action")
+              )
+            : ( groupInfo.nextConnectPrepared
+                ? NSLocalizedString("Open new chat", comment: "new chat action")
+                : NSLocalizedString("Open chat", comment: "new chat action")
+              ),
+        onConfirm: {
+            openKnownGroup(groupInfo, dismiss: dismiss, cleanup: nil)
+        }
+    )
 }
 
 func planAndConnect(
     _ shortOrFullLink: String,
-    showAlert: @escaping (PlanAndConnectAlert) -> Void,
-    showActionSheet: @escaping (PlanAndConnectActionSheet) -> Void,
+    theme: AppTheme,
     dismiss: Bool,
-    incognito: Bool?,
     cleanup: (() -> Void)? = nil,
     filterKnownContact: ((Contact) -> Void)? = nil,
     filterKnownGroup: ((GroupInfo) -> Void)? = nil
 ) {
-    Task {
-        let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink)
-        if let (connectionLink, connectionPlan) = result {
-            switch connectionPlan {
-            case let .invitationLink(ilp):
-                switch ilp {
-                case .ok:
-                    logger.debug("planAndConnect, .invitationLink, .ok, incognito=\(incognito?.description ?? "nil")")
-                    if let incognito = incognito {
-                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup)
-                    } else {
-                        await MainActor.run {
-                            showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect via one-time link"))
-                        }
-                    }
-                case .ownLink:
-                    logger.debug("planAndConnect, .invitationLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let incognito = incognito {
-                            showAlert(.ownInvitationLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
+    ConnectProgressManager.shared.cancelConnectProgress()
+    let inProgress = BoxedValue(true)
+    connectTask(inProgress)
+    ConnectProgressManager.shared.startConnectProgress(NSLocalizedString("Loading profile…", comment: "in progress text")) {
+        inProgress.boxedValue = false
+        cleanup?()
+    }
+
+    func connectTask(_ inProgress: BoxedValue<Bool>) {
+        Task {
+            let (result, alert) = await apiConnectPlan(connLink: shortOrFullLink, inProgress: inProgress)
+            await MainActor.run {
+                ConnectProgressManager.shared.stopConnectProgress()
+            }
+            if !inProgress.boxedValue { return }
+            if let (connectionLink, connectionPlan) = result {
+                switch connectionPlan {
+                case let .invitationLink(ilp):
+                    switch ilp {
+                    case let .ok(contactSLinkData_):
+                        if let contactSLinkData = contactSLinkData_ {
+                            logger.debug("planAndConnect, .invitationLink, .ok, short link data present")
+                            await MainActor.run {
+                                showPrepareContactAlert(
+                                    connectionLink: connectionLink,
+                                    contactShortLinkData: contactSLinkData,
+                                    theme: theme,
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
+                            }
                         } else {
-                            showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own one-time link!"))
+                            logger.debug("planAndConnect, .invitationLink, .ok, no short link data")
+                            await MainActor.run {
+                                showAskCurrentOrIncognitoProfileSheet(
+                                    title: NSLocalizedString("Connect via one-time link", comment: "new chat sheet title"),
+                                    connectionLink: connectionLink,
+                                    connectionPlan: connectionPlan,
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
+                            }
                         }
-                    }
-                case let .connecting(contact_):
-                    logger.debug("planAndConnect, .invitationLink, .connecting, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let contact = contact_ {
+                    case .ownLink:
+                        logger.debug("planAndConnect, .invitationLink, .ownLink")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Connect to yourself?\nThis is your own one-time link!", comment: "new chat sheet title"),
+                                actionStyle: .destructive,
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    case let .connecting(contact_):
+                        logger.debug("planAndConnect, .invitationLink, .connecting")
+                        await MainActor.run {
+                            if let contact = contact_ {
+                                if let f = filterKnownContact {
+                                    f(contact)
+                                } else {
+                                    showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                                }
+                            } else {
+                                showInvitationLinkConnectingAlert(cleanup: cleanup)
+                            }
+                        }
+                    case let .known(contact):
+                        logger.debug("planAndConnect, .invitationLink, .known")
+                        await MainActor.run {
                             if let f = filterKnownContact {
                                 f(contact)
                             } else {
-                                openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                            }
+                        }
+                    }
+                case let .contactAddress(cap):
+                    switch cap {
+                    case let .ok(contactSLinkData_):
+                        if let contactSLinkData = contactSLinkData_ {
+                            logger.debug("planAndConnect, .contactAddress, .ok, short link data present")
+                            await MainActor.run {
+                                showPrepareContactAlert(
+                                    connectionLink: connectionLink,
+                                    contactShortLinkData: contactSLinkData,
+                                    theme: theme,
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
                             }
                         } else {
-                            showAlert(.invitationLinkConnecting(connectionLink: connectionLink))
+                            logger.debug("planAndConnect, .contactAddress, .ok, no short link data")
+                            await MainActor.run {
+                                showAskCurrentOrIncognitoProfileSheet(
+                                    title: NSLocalizedString("Connect via contact address", comment: "new chat sheet title"),
+                                    connectionLink: connectionLink,
+                                    connectionPlan: connectionPlan,
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
+                            }
                         }
-                    }
-                case let .known(contact):
-                    logger.debug("planAndConnect, .invitationLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let f = filterKnownContact {
-                            f(contact)
-                        } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
-                        }
-                    }
-                }
-            case let .contactAddress(cap):
-                switch cap {
-                case .ok:
-                    logger.debug("planAndConnect, .contactAddress, .ok, incognito=\(incognito?.description ?? "nil")")
-                    if let incognito = incognito {
-                        connectViaLink(connectionLink, connectionPlan: connectionPlan, dismiss: dismiss, incognito: incognito, cleanup: cleanup)
-                    } else {
+                    case .ownLink:
+                        logger.debug("planAndConnect, .contactAddress, .ownLink")
                         await MainActor.run {
-                            showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect via contact address"))
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("Connect to yourself?\nThis is your own SimpleX address!", comment: "new chat sheet title"),
+                                actionStyle: .destructive,
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
                         }
-                    }
-                case .ownLink:
-                    logger.debug("planAndConnect, .contactAddress, .ownLink, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let incognito = incognito {
-                            showAlert(.ownContactAddressConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
-                        } else {
-                            showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Connect to yourself?\nThis is your own SimpleX address!"))
-                        }
-                    }
-                case .connectingConfirmReconnect:
-                    logger.debug("planAndConnect, .contactAddress, .connectingConfirmReconnect, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let incognito = incognito {
-                            showAlert(.contactAddressConnectingConfirmReconnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
-                        } else {
-                            showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "You have already requested connection!\nRepeat connection request?"))
-                        }
-                    }
-                case let .connectingProhibit(contact):
-                    logger.debug("planAndConnect, .contactAddress, .connectingProhibit, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let f = filterKnownContact {
-                            f(contact)
-                        } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyConnectingAlert(contact)) }
-                        }
-                    }
-                case let .known(contact):
-                    logger.debug("planAndConnect, .contactAddress, .known, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let f = filterKnownContact {
-                            f(contact)
-                        } else {
-                            openKnownContact(contact, dismiss: dismiss) { AlertManager.shared.showAlert(contactAlreadyExistsAlert(contact)) }
-                        }
-                    }
-                case let .contactViaAddress(contact):
-                    logger.debug("planAndConnect, .contactAddress, .contactViaAddress, incognito=\(incognito?.description ?? "nil")")
-                    if let incognito = incognito {
-                        connectContactViaAddress_(contact, dismiss: dismiss, incognito: incognito, cleanup: cleanup)
-                    } else {
+                    case .connectingConfirmReconnect:
+                        logger.debug("planAndConnect, .contactAddress, .connectingConfirmReconnect")
                         await MainActor.run {
-                            showActionSheet(.askCurrentOrIncognitoProfileConnectContactViaAddress(contact: contact))
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("You have already requested connection!\nRepeat connection request?", comment: "new chat sheet title"),
+                                actionStyle: .destructive,
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
                         }
+                    case let .connectingProhibit(contact):
+                        logger.debug("planAndConnect, .contactAddress, .connectingProhibit")
+                        await MainActor.run {
+                            if let f = filterKnownContact {
+                                f(contact)
+                            } else {
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                            }
+                        }
+                    case let .known(contact):
+                        logger.debug("planAndConnect, .contactAddress, .known")
+                        await MainActor.run {
+                            if let f = filterKnownContact {
+                                f(contact)
+                            } else {
+                                showOpenKnownContactAlert(contact, theme: theme, dismiss: dismiss)
+                            }
+                        }
+                    case let .contactViaAddress(contact):
+                        logger.debug("planAndConnect, .contactAddress, .contactViaAddress")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileConnectContactViaAddressSheet(
+                                contact: contact,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    }
+                case let .groupLink(glp):
+                    switch glp {
+                    case let .ok(groupSLinkData_):
+                        if let groupSLinkData = groupSLinkData_ {
+                            logger.debug("planAndConnect, .groupLink, .ok, short link data present")
+                            await MainActor.run {
+                                showPrepareGroupAlert(
+                                    connectionLink: connectionLink,
+                                    groupShortLinkData: groupSLinkData,
+                                    theme: theme,
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
+                            }
+                        } else {
+                            logger.debug("planAndConnect, .groupLink, .ok, no short link data")
+                            await MainActor.run {
+                                showAskCurrentOrIncognitoProfileSheet(
+                                    title: NSLocalizedString("Join group", comment: "new chat sheet title"),
+                                    connectionLink: connectionLink,
+                                    connectionPlan: connectionPlan,
+                                    dismiss: dismiss,
+                                    cleanup: cleanup
+                                )
+                            }
+                        }
+                    case let .ownLink(groupInfo):
+                        logger.debug("planAndConnect, .groupLink, .ownLink")
+                        await MainActor.run {
+                            if let f = filterKnownGroup {
+                                f(groupInfo)
+                            }
+                            showOwnGroupLinkConfirmConnectSheet(
+                                groupInfo: groupInfo,
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    case .connectingConfirmReconnect:
+                        logger.debug("planAndConnect, .groupLink, .connectingConfirmReconnect")
+                        await MainActor.run {
+                            showAskCurrentOrIncognitoProfileSheet(
+                                title: NSLocalizedString("You are already joining the group!\nRepeat join request?", comment: "new chat sheet title"),
+                                actionStyle: .destructive,
+                                connectionLink: connectionLink,
+                                connectionPlan: connectionPlan,
+                                dismiss: dismiss,
+                                cleanup: cleanup
+                            )
+                        }
+                    case let .connectingProhibit(groupInfo_):
+                        logger.debug("planAndConnect, .groupLink, .connectingProhibit")
+                        await MainActor.run {
+                            showGroupLinkConnectingAlert(groupInfo: groupInfo_, cleanup: cleanup)
+                        }
+                    case let .known(groupInfo):
+                        logger.debug("planAndConnect, .groupLink, .known")
+                        await MainActor.run {
+                            if let f = filterKnownGroup {
+                                f(groupInfo)
+                            } else {
+                                showOpenKnownGroupAlert(groupInfo, theme: theme, dismiss: dismiss)
+                            }
+                        }
+                    }
+                case let .error(chatError):
+                    logger.debug("planAndConnect, .error \(chatErrorString(chatError))")
+                    showAskCurrentOrIncognitoProfileSheet(
+                        title: NSLocalizedString("Connect via link", comment: "new chat sheet title"),
+                        connectionLink: connectionLink,
+                        connectionPlan: nil,
+                        dismiss: dismiss,
+                        cleanup: cleanup
+                    )
+                }
+            } else {
+                await MainActor.run {
+                    if let alert {
+                        dismissAllSheets(animated: true) {
+                            AlertManager.shared.showAlert(alert)
+                            cleanup?()
+                        }
+                    } else {
+                        cleanup?()
                     }
                 }
-            case let .groupLink(glp):
-                switch glp {
-                case .ok:
-                    await MainActor.run {
-                        if let incognito = incognito {
-                            showAlert(.groupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
-                        } else {
-                            showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "Join group"))
-                        }
-                    }
-                case let .ownLink(groupInfo):
-                    logger.debug("planAndConnect, .groupLink, .ownLink, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let f = filterKnownGroup {
-                            f(groupInfo)
-                        }
-                        showActionSheet(.ownGroupLinkConfirmConnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito, groupInfo: groupInfo))
-                    }
-                case .connectingConfirmReconnect:
-                    logger.debug("planAndConnect, .groupLink, .connectingConfirmReconnect, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let incognito = incognito {
-                            showAlert(.groupLinkConnectingConfirmReconnect(connectionLink: connectionLink, connectionPlan: connectionPlan, incognito: incognito))
-                        } else {
-                            showActionSheet(.askCurrentOrIncognitoProfileDestructive(connectionLink: connectionLink, connectionPlan: connectionPlan, title: "You are already joining the group!\nRepeat join request?"))
-                        }
-                    }
-                case let .connectingProhibit(groupInfo_):
-                    logger.debug("planAndConnect, .groupLink, .connectingProhibit, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        showAlert(.groupLinkConnecting(connectionLink: connectionLink, groupInfo: groupInfo_))
-                    }
-                case let .known(groupInfo):
-                    logger.debug("planAndConnect, .groupLink, .known, incognito=\(incognito?.description ?? "nil")")
-                    await MainActor.run {
-                        if let f = filterKnownGroup {
-                            f(groupInfo)
-                        } else {
-                            openKnownGroup(groupInfo, dismiss: dismiss) { AlertManager.shared.showAlert(groupAlreadyExistsAlert(groupInfo)) }
-                        }
-                    }
-                }
-            case let .error(chatError):
-                logger.debug("planAndConnect, .error \(chatErrorString(chatError))")
-                if let incognito = incognito {
-                    connectViaLink(connectionLink, connectionPlan: nil, dismiss: dismiss, incognito: incognito, cleanup: cleanup)
-                } else {
-                    showActionSheet(.askCurrentOrIncognitoProfile(connectionLink: connectionLink, connectionPlan: nil, title: "Connect via link"))
-                }
-            }
-        } else if let alert {
-            await MainActor.run {
-                showAlert(.error(shortOrFullLink: shortOrFullLink, alert: alert))
             }
         }
     }
@@ -1239,36 +1473,28 @@ private func connectViaLink(
     }
 }
 
-func openKnownContact(_ contact: Contact, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
-    let m = ChatModel.shared
-    if let c = m.getContactChat(contact.contactId) {
-        if dismiss {
-            dismissAllSheets(animated: true) {
-                ItemsModel.shared.loadOpenChat(c.id) {
-                    showAlreadyExistsAlert?()
-                }
-            }
-        } else {
-            ItemsModel.shared.loadOpenChat(c.id) {
-                showAlreadyExistsAlert?()
-            }
-        }
+func openKnownContact(_ contact: Contact, dismiss: Bool, cleanup: (() -> Void)?) {
+    if let c = ChatModel.shared.getContactChat(contact.contactId) {
+        openKnownChat(c.id, dismiss: dismiss, cleanup: cleanup)
     }
 }
 
-func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, showAlreadyExistsAlert: (() -> Void)?) {
-    let m = ChatModel.shared
-    if let g = m.getGroupChat(groupInfo.groupId) {
-        if dismiss {
-            dismissAllSheets(animated: true) {
-                ItemsModel.shared.loadOpenChat(g.id) {
-                    showAlreadyExistsAlert?()
-                }
+func openKnownGroup(_ groupInfo: GroupInfo, dismiss: Bool, cleanup: (() -> Void)?) {
+    if let g = ChatModel.shared.getGroupChat(groupInfo.groupId) {
+        openKnownChat(g.id, dismiss: dismiss, cleanup: cleanup)
+    }
+}
+
+func openKnownChat(_ chatId: ChatId, dismiss: Bool, cleanup: (() -> Void)?) {
+    if dismiss {
+        dismissAllSheets(animated: true) {
+            ItemsModel.shared.loadOpenChat(chatId) {
+                cleanup?()
             }
-        } else {
-            ItemsModel.shared.loadOpenChat(g.id) {
-                showAlreadyExistsAlert?()
-            }
+        }
+    } else {
+        ItemsModel.shared.loadOpenChat(chatId) {
+            cleanup?()
         }
     }
 }

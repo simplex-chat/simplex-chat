@@ -172,6 +172,7 @@ struct ChatItemContentView<Content: View>: View {
         case let .rcvDirectE2EEInfo(e2eeInfo): CIEventView(eventText: directE2EEInfoText(e2eeInfo))
         case .sndGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
         case .rcvGroupE2EEInfo: CIEventView(eventText: e2eeInfoNoPQText())
+        case .chatBanner: EmptyView()
         case let .invalidJSON(json): CIInvalidJSONView(json: json)
         }
     }
@@ -241,16 +242,21 @@ struct ChatItemContentView<Content: View>: View {
     }
 
     private func directE2EEInfoText(_ info: E2EEInfo) -> Text {
-        info.pqEnabled
-        ? Text("Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.")
-            .font(.caption)
-            .foregroundColor(theme.colors.secondary)
-            .fontWeight(.light)
-        : e2eeInfoNoPQText()
+        if let pqEnabled = info.pqEnabled {
+            pqEnabled
+            ? e2eeInfoText("Messages, files and calls are protected by **quantum resistant e2e encryption** with perfect forward secrecy, repudiation and break-in recovery.")
+            : e2eeInfoNoPQText()
+        } else {
+            e2eeInfoText("Messages are protected by **end-to-end encryption**.")
+        }
     }
 
     private func e2eeInfoNoPQText() -> Text {
-        Text("Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
+        e2eeInfoText("Messages, files and calls are protected by **end-to-end encryption** with perfect forward secrecy, repudiation and break-in recovery.")
+    }
+
+    private func e2eeInfoText(_ s: LocalizedStringKey) -> Text {
+        Text(s)
             .font(.caption)
             .foregroundColor(theme.colors.secondary)
             .fontWeight(.light)

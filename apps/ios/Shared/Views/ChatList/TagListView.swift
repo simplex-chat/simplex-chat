@@ -63,10 +63,7 @@ struct TagListView: View {
                                 NSLocalizedString("Delete list?", comment: "alert title"),
                                 message: String.localizedStringWithFormat(NSLocalizedString("All chats will be removed from the list %@, and the list deleted.", comment: "alert message"), text),
                                 actions: {[
-                                    UIAlertAction(
-                                        title: NSLocalizedString("Cancel", comment: "alert action"),
-                                        style: .default
-                                    ),
+                                    cancelAlertAction,
                                     UIAlertAction(
                                         title: NSLocalizedString("Delete", comment: "alert action"),
                                         style: .destructive,

@@ -56,6 +56,7 @@ fun MemberSupportChatAppBar(
   onSearchValueChanged: (String) -> Unit
 ) {
   val oneHandUI = remember { ChatController.appPrefs.oneHandUI.state }
+  val chatBottomBar = remember { ChatController.appPrefs.chatBottomBar.state }
   val showSearch = rememberSaveable { mutableStateOf(false) }
   val onBackClicked = {
     if (!showSearch.value) {
@@ -71,7 +72,7 @@ fun MemberSupportChatAppBar(
       navigationButton = { NavigationButtonBack(onBackClicked) },
       title = { MemberSupportChatToolbarTitle(scopeMember_) },
       onTitleClick = null,
-      onTop = !oneHandUI.value,
+      onTop = !oneHandUI.value || !chatBottomBar.value,
       showSearch = showSearch.value,
       onSearchValueChanged = onSearchValueChanged,
       buttons = {
@@ -85,7 +86,7 @@ fun MemberSupportChatAppBar(
       navigationButton = { NavigationButtonBack(onBackClicked) },
       fixedTitleText = stringResource(MR.strings.support_chat),
       onTitleClick = null,
-      onTop = !oneHandUI.value,
+      onTop = !oneHandUI.value || !chatBottomBar.value,
       showSearch = showSearch.value,
       onSearchValueChanged = onSearchValueChanged,
       buttons = {

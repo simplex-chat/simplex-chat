@@ -219,13 +219,14 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "รับ";
 
 /* notification body */
 "Accept contact request from %@?" = "รับการขอติดต่อจาก %@?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "ยอมรับโหมดไม่ระบุตัวตน";
 
@@ -485,7 +486,8 @@ swipe action */
 "Can't invite contacts!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "ยกเลิก";
 
 /* feature offered item */
@@ -630,7 +632,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "เชื่อมต่อกับนักพัฒนา SimpleX Chat";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "เชื่อมต่อผ่านลิงก์";
 
 /* No comment provided by engineer. */
@@ -666,7 +668,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection" = "การเชื่อมต่อ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "การเชื่อมต่อผิดพลาด";
 
 /* No comment provided by engineer. */
@@ -678,7 +680,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection request sent!" = "ส่งคําขอเชื่อมต่อแล้ว!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "หมดเวลาการเชื่อมต่อ";
 
 /* connection information */
@@ -737,9 +739,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "สร้างคิว";
-
-/* No comment provided by engineer. */
-"Create secret group" = "สร้างกลุ่มลับ";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "สร้างที่อยู่ SimpleX";
@@ -1199,7 +1198,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "เกิดข้อผิดพลาดในการเปลี่ยนบทบาท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "เกิดข้อผิดพลาดในการเปลี่ยนการตั้งค่า";
 
 /* No comment provided by engineer. */
@@ -1214,19 +1213,19 @@ swipe action */
 /* No comment provided by engineer. */
 "Error creating profile!" = "เกิดข้อผิดพลาดในการสร้างโปรไฟล์!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลแชท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "เกิดข้อผิดพลาดในการลบแชท!";
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลเก่า";
 
 /* No comment provided by engineer. */
@@ -1244,10 +1243,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "เกิดข้อผิดพลาดในการ encrypt ฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "เกิดข้อผิดพลาดในการส่งออกฐานข้อมูลแชท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "เกิดข้อผิดพลาดในการนำเข้าฐานข้อมูลแชท";
 
 /* No comment provided by engineer. */
@@ -1703,9 +1702,9 @@ snd error text */
 "Join" = "เข้าร่วม";
 
 /* No comment provided by engineer. */
-"join as %@" = "เข้าร่วมเป็น %@";
+"Join as %@" = "เข้าร่วมเป็น %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "เข้าร่วมกลุ่ม";
 
 /* No comment provided by engineer. */
@@ -2030,7 +2029,8 @@ time to disappear */
 "offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Ok" = "ตกลง";
 
 /* No comment provided by engineer. */
@@ -2093,7 +2093,7 @@ alert button */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "เปิดแชท";
 
 /* authentication reason */
@@ -2147,7 +2147,7 @@ alert button */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "โปรดตรวจสอบว่าคุณใช้ลิงก์ที่ถูกต้องหรือขอให้ผู้ติดต่อของคุณส่งลิงก์ใหม่ให้คุณ";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ %@ แล้วลองอีกครั้ง";
 
 /* No comment provided by engineer. */
@@ -2318,11 +2318,12 @@ alert button */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "ลดการใช้แบตเตอรี่";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "ปฏิเสธ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "ปฏิเสธคำขอติดต่อ";
 
 /* call status */
@@ -2834,7 +2835,7 @@ chat item action */
 /* No comment provided by engineer. */
 "The second tick we missed! ✅" = "ขีดที่สองที่เราพลาด! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "ผู้ส่งจะไม่ได้รับแจ้ง";
 
 /* No comment provided by engineer. */
@@ -3126,9 +3127,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
 
 /* No comment provided by engineer. */
@@ -3170,7 +3168,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "คุณไม่สามารถส่งข้อความได้!";
 
 /* chat item text */

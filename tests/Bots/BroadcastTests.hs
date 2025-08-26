@@ -16,7 +16,7 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Test.Hspec hiding (it)
 #if !defined(dbPostgres)
 import System.FilePath ((</>))
@@ -33,7 +33,7 @@ withBroadcastBot opts test =
     bot = simplexChatCore testCfg (mkChatOpts opts) $ broadcastBot opts
 
 broadcastBotProfile :: Profile
-broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
+broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
 
 mkBotOpts :: TestParams -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts ps publishers =
@@ -49,6 +49,7 @@ mkBotOpts ps publishers =
 #endif
 
           },
+      botDisplayName = "broadcast_bot",
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers

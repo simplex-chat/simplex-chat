@@ -97,7 +97,7 @@ struct UserPicker: View {
         }
         .onAppear {
             // This check prevents the call of listUsers after the app is suspended, and the database is closed.
-            if case .active = scenePhase {
+            if case .active = scenePhase, hasChatCtrl() {
                 currentUser = m.currentUser?.userId
                 Task {
                     do {

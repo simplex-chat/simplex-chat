@@ -15,6 +15,7 @@ struct UserProfile: View {
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
+    @State private var shortDescr = ""
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -43,6 +44,16 @@ struct UserProfile: View {
                 if let user = chatModel.currentUser, showFullName(user) {
                     TextField("Full name (optional)", text: $profile.fullName)
                 }
+                HStack {
+                    TextField("Bio", text: $shortDescr)
+                    if !bioFitsLimit() {
+                        Button {
+                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
+                }
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }
@@ -51,7 +62,10 @@ struct UserProfile: View {
                 Button(action: getCurrentProfile) {
                     Text("Reset")
                 }
-                .disabled(currentProfileHash == profile.hashValue)
+                .disabled(
+                    currentProfileHash == profile.hashValue &&
+                    (profile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                )
                 Button(action: saveProfile) {
                     Text("Save (and notify contacts)")
                 }
@@ -116,11 +130,19 @@ struct UserProfile: View {
     private func showFullName(_ user: User) -> Bool {
         user.profile.fullName != "" && user.profile.fullName != user.profile.displayName
     }
-    
+
+    private func bioFitsLimit() -> Bool {
+        chatJsonLength(shortDescr) <= MAX_BIO_LENGTH_BYTES
+    }
+
     private var canSaveProfile: Bool {
-        currentProfileHash != profile.hashValue &&
+        (
+            currentProfileHash != profile.hashValue ||
+            (chatModel.currentUser?.profile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+        ) &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validDisplayName(profile.displayName)
+        validDisplayName(profile.displayName) &&
+        bioFitsLimit()
     }
 
     private func saveProfile() {
@@ -128,6 +150,7 @@ struct UserProfile: View {
         Task {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+                profile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     await MainActor.run {
                         chatModel.updateCurrentUser(newProfile)
@@ -146,6 +169,7 @@ struct UserProfile: View {
         if let user = chatModel.currentUser {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
+            shortDescr = profile.shortDescr ?? ""
         }
     }
 }
