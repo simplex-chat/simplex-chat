@@ -47,6 +47,7 @@ export type ChatResponse =
   | CR.UserContactLinkUpdated
   | CR.UserDeletedMembers
   | CR.UserProfileUpdated
+  | CR.UserProfileNoChange
   | CR.UsersList
 
 export namespace CR {
@@ -94,6 +95,7 @@ export namespace CR {
     | "userContactLinkUpdated"
     | "userDeletedMembers"
     | "userProfileUpdated"
+    | "userProfileNoChange"
     | "usersList"
 
   interface Interface {
@@ -380,6 +382,11 @@ export namespace CR {
     fromProfile: T.Profile
     toProfile: T.Profile
     updateSummary: T.UserProfileUpdateSummary
+  }
+
+  export interface UserProfileNoChange extends Interface {
+    type: "userProfileNoChange"
+    user: T.User
   }
 
   export interface UsersList extends Interface {

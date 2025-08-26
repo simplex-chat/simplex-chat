@@ -174,7 +174,7 @@ chatCommandsDocsData =
         ("ListUsers", [], "Get all user profiles", ["CRUsersList", "CRChatCmdError"], [], Nothing, "/users"),
         ("APISetActiveUser", [], "Set active user profile", ["CRActiveUser", "CRChatCmdError"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"),
-        ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated", "CRChatCmdError"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile"),
+        ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile"),
         ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated", "CRChatCmdError"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
       ]
     )

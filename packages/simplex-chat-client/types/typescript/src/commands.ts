@@ -624,7 +624,7 @@ export interface APIUpdateProfile {
 }
 
 export namespace APIUpdateProfile {
-  export type Response = CR.UserProfileUpdated | CR.ChatCmdError
+  export type Response = CR.UserProfileUpdated | CR.UserProfileNoChange | CR.ChatCmdError
 
   export function cmdString(self: APIUpdateProfile): string {
     return '/_profile ' + self.userId + ' ' + JSON.stringify(self.profile)

@@ -1677,6 +1677,10 @@ UserProfileUpdated: User profile updated.
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
 
+UserProfileNoChange: User profile was not changed.
+- type: "userProfileNoChange"
+- user: [User](./TYPES.md#user)
+
 ChatCmdError: Command error.
 - type: "chatCmdError"
 - chatError: [ChatError](./TYPES.md#chaterror)

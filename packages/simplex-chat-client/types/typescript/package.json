@@ -1,15 +1,20 @@
 {
   "name": "@simplex-chat/types",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "description": "TypeScript types for SimpleX Chat bot libraries",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "tsc"
+    "build": "tsc",
+    "prepublishOnly": "tsc"
   },
   "repository": {
     "type": "git",
