@@ -80,3 +80,8 @@ website/.cache
 website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
 apps/multiplatform/.kotlin/sessions
+
+# node.js
+packages/simplex-chat-nodejs/build
+packages/simplex-chat-nodejs/.vscode
+packages/simplex-chat-nodejs/libs
