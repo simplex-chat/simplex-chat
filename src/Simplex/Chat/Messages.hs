@@ -1255,10 +1255,10 @@ instance TextEncoding DeliveryTaskStatus where
     DTSNew -> "new"
     DTSProcessed -> "processed"
 
-data DeliveryTasksWork
-  = DTWMessageForward {messageForwardTasks :: NonEmpty MessageForwardTask, forwardScope :: GroupForwardScope}
+data DeliveryTasksBatch
+  = DTBMessageForward {messageForwardTasks :: NonEmpty MessageForwardTask, forwardScope :: GroupForwardScope}
   -- | DTBMemberProfile {memberProfileTask :: MemberProfileTask}
-  | DTWRelayRemoved {relayRemovedTask :: RelayRemovedTask}
+  | DTBRelayRemoved {relayRemovedTask :: RelayRemovedTask}
   -- | DTBChatItemsCount {chatItemCountsTasks :: NonEmpty ChatItemCountsTask, forwardScope :: GroupForwardScope}}
   deriving (Show)
 

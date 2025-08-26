@@ -147,8 +147,8 @@ data StoreError
   | SEUsageConditionsNotFound
   | SEInvalidQuote
   | SEInvalidMention
+  | SEInvalidDeliveryTasksBatch
   | SEDeliveryTaskNotFound {deliveryTaskId :: Int64}
-  | SEInvalidDeliveryTasksWork
   | SEDeliveryJobNotFound {deliveryJobId :: Int64}
   deriving (Show, Exception)
 

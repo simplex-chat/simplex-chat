@@ -155,7 +155,7 @@ module Simplex.Chat.Store.Groups
     getGroupChatTTL,
     getUserGroupsToExpire,
     updateGroupAlias,
-    getNextDeliveryTasksWork,
+    getNextDeliveryTasksBatch,
     createMessageForwardJob,
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
@@ -2903,12 +2903,12 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
 
 -- TODO [channels fwd] can optimize to read DJTMessageForward tasks exactly to fill up single batch
 -- TODO [channels fwd] different "getWorkItem" implementation?
--- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksWork fails
+-- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksBatch fails
 -- TODO   - issue with getWorkItems: consumer would have to prove all items are tasks of the same type (we know it by the way it's read)
 -- TODO   - ideally we want to keep knowledge that all items are tasks of the same type + only mark failed those we failed reading
-getNextDeliveryTasksWork :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryTasksWork))
-getNextDeliveryTasksWork db deliveryScope = do
-  getWorkItem "delivery tasks work" getTaskIds getTasksWork (markTasksFailed db)
+getNextDeliveryTasksBatch :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryTasksBatch))
+getNextDeliveryTasksBatch db deliveryScope = do
+  getWorkItem "delivery tasks work" getTaskIds getTasksBatch (markTasksFailed db)
   where
     (groupId, jobScope) = deliveryScope
     getTaskIds :: IO (Maybe (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId))
@@ -2948,15 +2948,15 @@ getNextDeliveryTasksWork db deliveryScope = do
                     (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, DTSNew)
               forM (L.nonEmpty taskIds) $ \taskIds' -> pure (taskIds', jobTag, fwdScopeTag, fwdScopeGMId_)
     -- TODO [channels fwd] save broker_ts on message record, read it for forward metadata instead of created_at
-    getTasksWork :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO (Either StoreError DeliveryTasksWork)
-    getTasksWork (taskIds, jobTag, fwdScopeTag, fwdScopeGMId_) = do
+    getTasksBatch :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO (Either StoreError DeliveryTasksBatch)
+    getTasksBatch (taskIds, jobTag, fwdScopeTag, fwdScopeGMId_) = do
       case (taskIds, jobTag) of
         (_taskIds, DJTMessageForward) -> do
           case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
-            Nothing -> throwError SEInvalidDeliveryTasksWork
+            Nothing -> throwError SEInvalidDeliveryTasksBatch
             Just fwdScope -> do
               tasks <- traverse (ExceptT . getTask) taskIds
-              pure $ DTWMessageForward tasks fwdScope
+              pure $ DTBMessageForward tasks fwdScope
           where
             getTask :: Int64 -> IO (Either StoreError MessageForwardTask)
             getTask taskId =
@@ -2993,8 +2993,8 @@ getNextDeliveryTasksWork db deliveryScope = do
             toRelayRemovedWork :: (MemberId, ContactName, UTCTime, ChatMessage 'Json) -> DeliveryTask
             toRelayRemovedWork (senderMemberId, senderMemberName, brokerTs, chatMessage) =
               let task = RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
-              in DTWRelayRemoved task
-        _ -> pure $ Left SEInvalidDeliveryTasksWork
+              in DTBRelayRemoved task
+        _ -> pure $ Left SEInvalidDeliveryTasksBatch
     markTasksFailed :: DB.Connection -> (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
     markTasksFailed db (taskIds, _, _, _) =
       forM_ taskIds $ \taskId ->

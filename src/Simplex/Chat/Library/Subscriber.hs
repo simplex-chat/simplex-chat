@@ -3336,12 +3336,11 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
   where
     runDeliveryTaskOperation :: CM ()
     runDeliveryTaskOperation = do
-      withWork doWork (\db -> getNextDeliveryTasksWork db deliveryScope) processDeliveryTasksWork
+      withWork doWork (\db -> getNextDeliveryTasksBatch db deliveryScope) processDeliveryTasksBatch
       where
-        -- TODO [channels fwd] convert tasks into jobs
-        processDeliveryTasksWork :: DeliveryTasksWork -> CM ()
-        processDeliveryTasksWork = \case
-          DTWMessageForward tasks fwdScope -> do
+        processDeliveryTasksBatch :: DeliveryTasksBatch -> CM ()
+        processDeliveryTasksBatch = \case
+          DTBMessageForward tasks fwdScope -> do
             vr <- chatVersionRange
             (batch, taskIds, largeTaskIds) = batchDeliveryTasks maxEncodedMsgLength tasks
             withStore' $ \db -> do
@@ -3349,7 +3348,7 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
               forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
               forM_ largeTaskIds $ \taskId -> setDeliveryTaskFailed db taskId
             lift . void $ getDeliveryJobWorker True deliveryScope
-          DTWRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
+          DTBRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
             vr <- chatVersionRange
             let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
                 cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
