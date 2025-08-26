@@ -1,6 +1,7 @@
 package chat.simplex.common.platform
 
-actual fun getWakeLock(timeout: Long): (() -> Unit) {
-  return {}
-}
+import kotlin.math.exp
 
+actual fun getWakeLock(timeout: Long): WakeLockProxy {
+  return WakeLockProxy(acquire = { _ -> })
+}
