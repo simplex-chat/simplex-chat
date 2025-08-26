@@ -1,5 +1,5 @@
 import {ABQueue, NextIter} from "./queue"
-import {ChatResponse} from "./response"
+import {ChatResponse, ChatEvent} from "@simplex-chat/types"
 
 export class TransportError extends Error {}
 
@@ -90,13 +90,17 @@ export interface ChatSrvRequest {
 }
 
 export interface ChatSrvResponse {
-  corrId?: string
+  corrId: string
   resp: ChatResponse
+}
+
+export interface ChatSrvEvent {
+  resp: ChatEvent
 }
 
 interface ParsedChatSrvResponse {
   corrId?: string
-  resp?: ChatResponse
+  resp?: ChatResponse | ChatEvent
 }
 
 export class ChatResponseError extends Error {
@@ -105,7 +109,7 @@ export class ChatResponseError extends Error {
   }
 }
 
-export class ChatTransport extends Transport<ChatSrvRequest, ChatSrvResponse | ChatResponseError> {
+export class ChatTransport extends Transport<ChatSrvRequest, ChatSrvResponse | ChatSrvEvent | ChatResponseError> {
   private constructor(private readonly ws: WSTransport, readonly timeout: number, qSize: number) {
     super(qSize)
   }
