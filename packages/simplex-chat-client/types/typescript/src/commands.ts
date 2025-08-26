@@ -450,19 +450,34 @@ export namespace APIConnectPlan {
   }
 }
 
-// Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link
+// Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
 // Network usage: interactive.
 export interface APIConnect {
   userId: number // int64
   incognito: boolean
-  connLink_?: T.CreatedConnLink
+  preparedLink_?: T.CreatedConnLink
 }
 
 export namespace APIConnect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: APIConnect): string {
-    return '/_connect ' + self.userId + (self.connLink_ ? ' ' + self.connLink_.toString() : '')
+    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + self.preparedLink_.toString() : '')
+  }
+}
+
+// Connect via SimpleX link as string in the active user profile.
+// Network usage: interactive.
+export interface Connect {
+  incognito: boolean
+  connLink_?: string
+}
+
+export namespace Connect {
+  export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
+
+  export function cmdString(self: Connect): string {
+    return '/connect' + (self.connLink_ ? ' ' + self.connLink_ : '')
   }
 }
 

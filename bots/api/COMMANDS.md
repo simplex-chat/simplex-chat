@@ -42,6 +42,7 @@ This file is generated automatically.
 - [APIAddContact](#apiaddcontact)
 - [APIConnectPlan](#apiconnectplan)
 - [APIConnect](#apiconnect)
+- [Connect](#connect)
 - [APIAcceptContact](#apiacceptcontact)
 - [APIRejectContact](#apirejectcontact)
 
@@ -1218,27 +1219,77 @@ ChatCmdError: Command error.
 
 ### APIConnect
 
-Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link
+Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
 
 *Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
 - incognito: bool
-- connLink_: [CreatedConnLink](./TYPES.md#createdconnlink)?
+- preparedLink_: [CreatedConnLink](./TYPES.md#createdconnlink)?
 
 **Syntax**:
 
 ```
-/_connect <userId>[ <str(connLink_)>]
+/_connect <userId>[ <str(preparedLink_)>]
 ```
 
 ```javascript
-'/_connect ' + userId + (connLink_ ? ' ' + connLink_.toString() : '') // JavaScript
+'/_connect ' + userId + (preparedLink_ ? ' ' + preparedLink_.toString() : '') // JavaScript
 ```
 
 ```python
-'/_connect ' + str(userId) + ((' ' + str(connLink_)) if connLink_ is not None else '') # Python
+'/_connect ' + str(userId) + ((' ' + str(preparedLink_)) if preparedLink_ is not None else '') # Python
+```
+
+**Responses**:
+
+SentConfirmation: Confirmation sent to one-time invitation.
+- type: "sentConfirmation"
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+ContactAlreadyExists: Contact already exists.
+- type: "contactAlreadyExists"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+
+SentInvitation: Invitation sent to contact address.
+- type: "sentInvitation"
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### Connect
+
+Connect via SimpleX link as string in the active user profile.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- incognito: bool
+- connLink_: string?
+
+**Syntax**:
+
+```
+/connect[ <connLink_>]
+```
+
+```javascript
+'/connect' + (connLink_ ? ' ' + connLink_ : '') // JavaScript
+```
+
+```python
+'/connect' + ((' ' + connLink_) if connLink_ is not None else '') # Python
 ```
 
 **Responses**:

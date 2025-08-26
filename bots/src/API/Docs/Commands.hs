@@ -132,7 +132,8 @@ chatCommandsDocsData =
       "These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
       [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
         ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"),
-        ("APIConnect", [], "Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "connLink_"),
+        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
+        ("Connect", [], "Connect via SimpleX link as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connLink_"),
         ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest", "CRChatCmdError"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
         ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected", "CRChatCmdError"], [], Nothing, "/_reject " <> Param "contactReqId")
       ]
@@ -193,7 +194,6 @@ cliCommands =
     "ClearContact",
     "ClearGroup",
     "ClearNoteFolder",
-    "Connect",
     "ConnectSimplex",
     "ContactInfo",
     "ContactQueueInfo",
