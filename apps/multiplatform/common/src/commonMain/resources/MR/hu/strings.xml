@@ -43,7 +43,7 @@
     <string name="network_session_mode_user_description"><![CDATA[<b>Az összes csevegési profiljához az alkalmazásban</b> külön TCP-kapcsolat (és SOCKS-hitelesítési adat) lesz használva.]]></string>
     <string name="both_you_and_your_contact_can_send_disappearing">Mindkét fél küldhet eltűnő üzeneteket.</string>
     <string name="keychain_is_storing_securely">Az Android Keystore-t a jelmondat biztonságos tárolására használják – lehetővé teszi az értesítési szolgáltatás működését.</string>
-    <string name="alert_title_msg_bad_hash">Hibás az üzenet hasítóértéke</string>
+    <string name="alert_title_msg_bad_hash">Hibás az üzenet kivonata</string>
     <string name="color_background">Háttér</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító kiszolgálók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének küldése közvetlen kapcsolatot használ.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
@@ -122,7 +122,7 @@
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
     <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
-    <string name="integrity_msg_bad_hash">hibás az üzenet hasítóértéke</string>
+    <string name="integrity_msg_bad_hash">hibás az üzenet kivonata</string>
     <string name="notifications_mode_service">Mindig fut</string>
     <string name="keychain_allows_to_receive_ntfs">Az Android Keystore biztonságosan fogja tárolni a jelmondatot az alkalmazás újraindítása, vagy a jelmondat módosítása után – lehetővé teszi az értesítések fogadását.</string>
     <string name="all_app_data_will_be_cleared">Az összes alkalmazásadat törölve.</string>
@@ -302,7 +302,7 @@
     <string name="group_member_status_complete">befejezett</string>
     <string name="chat_database_section">CSEVEGÉSI ADATBÁZIS</string>
     <string name="change_self_destruct_passcode">Önmegsemmisítő jelkód módosítása</string>
-    <string name="smp_server_test_create_queue">Sorba állítás létrehozása</string>
+    <string name="smp_server_test_create_queue">Várólista létrehozása</string>
     <string name="colored_text">színezett</string>
     <string name="callstate_connecting">kapcsolódás…</string>
     <string name="dark_theme">Sötét téma</string>
@@ -322,7 +322,7 @@
     <string name="create_group_link">Csoporthivatkozás létrehozása</string>
     <string name="chat_console">Csevegési konzol</string>
     <string name="delete_files_and_media_for_all_users">Fájlok törlése az összes csevegési profilból</string>
-    <string name="smp_server_test_delete_queue">Sorba állítás törlése</string>
+    <string name="smp_server_test_delete_queue">Várólista törlése</string>
     <string name="button_delete_contact">Partner törlése</string>
     <string name="rcv_conn_event_switch_queue_phase_changing">cím módosítása…</string>
     <string name="connected_to_mobile">Társítva a hordozható eszközhöz</string>
@@ -904,7 +904,7 @@
     <string name="refresh_qr_code">Frissítés</string>
     <string name="custom_time_picker_select">Kijelölés</string>
     <string name="only_you_can_make_calls">Csak Ön tud hívásokat indítani.</string>
-    <string name="smp_server_test_secure_queue">Biztonságos sorba állítás</string>
+    <string name="smp_server_test_secure_queue">Biztonságos várólista</string>
     <string name="rate_the_app">Értékelje az alkalmazást</string>
     <string name="share_invitation_link">Egyszer használható meghívó megosztása</string>
     <string name="database_restore_error">Hiba történt az adatbázis visszaállításakor</string>
@@ -1305,7 +1305,7 @@
     <string name="system_restricted_background_in_call_desc">Az alkalmazás 1 perc után bezárható a háttérben.</string>
     <string name="group_preview_you_are_invited">Ön meghívást kapott a csoportba</string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Engedélyezze</b> a következő párbeszédpanelen az azonnali értesítések fogadásához.]]></string>
-    <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a sorba állítás létrehozásához, ellenőrizze a jelszavát</string>
+    <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólista létrehozásához, ellenőrizze a jelszavát</string>
     <string name="you_will_join_group">Kapcsolódni fog a csoport összes tagjához.</string>
     <string name="error_smp_test_certificate">Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">A biztonsága érdekében kapcsolja be a SimpleX-zár funkciót.\nA funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</string>
@@ -1475,7 +1475,7 @@
     <string name="read_more_in_user_guide_with_link"><![CDATA[További információ a <font color="#0088ff">Használati útmutatóban</font> olvasható.]]></string>
     <string name="settings_is_storing_in_clear_text">A jelmondat a beállításokban egyszerű szövegként van tárolva.</string>
     <string name="terminal_always_visible">Konzol megjelenítése új ablakban</string>
-    <string name="alert_text_msg_bad_hash">Az előző üzenet hasítóértéke különbözik.</string>
+    <string name="alert_text_msg_bad_hash">Az előző üzenet kivonata különbözik.</string>
     <string name="receipts_section_description">Ezek a beállítások csak a jelenlegi csevegési profiljára vonatkoznak</string>
     <string name="loading_remote_file_desc">Várjon, amíg a fájl betöltődik a társított hordozható eszközről</string>
     <string name="read_more_in_github_with_link"><![CDATA[További információ a <font color="#0088ff">GitHub-tárolónkban</font>.]]></string>
@@ -1561,7 +1561,7 @@
     <string name="share_text_created_at">Létrehozva: %s</string>
     <string name="clear_note_folder_warning">Az összes üzenet törölve lesz – ez a művelet nem vonható vissza!</string>
     <string name="v5_5_message_delivery">Továbbfejlesztett üzenetkézbesítés</string>
-    <string name="v5_5_join_group_conversation">Csatlakozás csoportos beszélgetésekhez</string>
+    <string name="v5_5_join_group_conversation">Csatlakozás a csoportbeszélgetésekhez</string>
     <string name="v5_5_simpler_connect_ui">Hivatkozás beillesztése a kapcsolódáshoz!</string>
     <string name="v5_5_private_notes">Privát jegyzetek</string>
     <string name="v5_5_simpler_connect_ui_descr">A keresősáv elfogadja a meghívási hivatkozásokat.</string>
@@ -1799,10 +1799,10 @@
     <string name="v5_8_message_delivery_descr">Csökkentett akkumulátor-használattal.</string>
     <string name="error_initializing_web_view">Hiba történt a WebView előkészítésekor. Frissítse rendszerét az új verzióra. Lépjen kapcsolatba a fejlesztőkkel.\nHiba: %s</string>
     <string name="chat_theme_reset_to_user_theme">Felhasználó által létrehozott téma visszaállítása</string>
-    <string name="message_queue_info">Üzenetsorbaállítási információ</string>
+    <string name="message_queue_info">Üzenet várólista információi</string>
     <string name="message_queue_info_none">nincs</string>
     <string name="info_row_debug_delivery">Kézbesítési hibák felderítése</string>
-    <string name="message_queue_info_server_info">a kiszolgáló sorbaállítási információi: %1$s\n\nutoljára fogadott üzenet: %2$s</string>
+    <string name="message_queue_info_server_info">a kiszolgáló várólista információi: %1$s\n\nutoljára fogadott üzenet: %2$s</string>
     <string name="file_error_auth">Érvénytelen kulcs vagy ismeretlen fájltöredékcím – valószínűleg a fájl törlődött.</string>
     <string name="temporary_file_error">Ideiglenes fájlhiba</string>
     <string name="info_row_message_status">Üzenet állapota</string>
