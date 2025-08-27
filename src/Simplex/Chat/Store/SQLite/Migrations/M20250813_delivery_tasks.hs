@@ -8,9 +8,11 @@ import Database.SQLite.Simple.QQ (sql)
 -- How columns correspond to types:
 -- - <group_id, delivery_job_scope> <-> DeliveryWorkerScope,
 -- - delivery_job_scope <-> DeliveryJobScope,
+-- - delivery_job_tag <-> DeliveryJobTag,
 -- - forward_scope_tag <-> GroupForwardScopeTag,
 -- - forward_scope_group_member_id <-> GroupMemberId (for GFSMemberSupport forward scope),
--- - delivery_job_tag <-> DeliveryJobTag,
+-- - sender_group_member_id <-> GroupMemberId (sender of the original message that created task),
+-- - single_sender_group_member_id <-> GroupMemberId (set when all messages in job's delivery body are from the same sender),
 -- - task_status <-> DeliveryTaskStatus,
 -- - message_from_channel <-> MessageFromChannel (for DJTMessageForward task),
 -- - job_status <-> DeliveryJobStatus,
@@ -75,6 +77,7 @@ CREATE TABLE delivery_jobs (
   delivery_job_tag TEXT NOT NULL,
   forward_scope_tag TEXT,
   forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   delivery_body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
@@ -85,7 +88,10 @@ CREATE TABLE delivery_jobs (
 
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(forward_scope_group_member_id);
+CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(single_sender_group_member_id);
 -- TODO indexes for faster search of the next work item
+
+ALTER TABLE groups ADD COLUMN group_type TEXT NOT NULL DEFAULT 'small_group';
 
 -- ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
 -- ALTER TABLE group_members ADD COLUMN join_ts TEXT;
@@ -97,8 +103,11 @@ down_m20250813_delivery_tasks =
 -- ALTER TABLE group_members DROP COLUMN last_profile_delivery_ts;
 -- ALTER TABLE group_members DROP COLUMN join_ts;
 
+ALTER TABLE groups DROP COLUMN group_type;
+
 DROP INDEX idx_delivery_jobs_group_id;
 DROP INDEX idx_delivery_jobs_forward_scope_group_member_id;
+DROP INDEX idx_delivery_jobs_single_sender_group_member_id;
 
 DROP TABLE delivery_jobs;
 

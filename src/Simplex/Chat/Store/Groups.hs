@@ -960,7 +960,7 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
         db
         [sql|
           SELECT
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+            g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -1917,7 +1917,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
         [sql|
           SELECT
             -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+            g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -2966,7 +2966,9 @@ getNextDeliveryTasksBatch db deliveryScope = do
                 DB.query
                   db
                   [sql|
-                    SELECT m.member_id, p.display_name, msg.created_at, msg.msg_body, t.message_from_channel
+                    SELECT
+                      m.group_member_id, m.member_id, p.display_name,
+                      msg.created_at, msg.msg_body, t.message_from_channel
                     FROM delivery_tasks t
                     JOIN messages msg ON msg.message_id = t.message_id
                     JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -2975,9 +2977,9 @@ getNextDeliveryTasksBatch db deliveryScope = do
                   |]
                   (Only taskId)
               where
-                toMessageForwardTask :: (MemberId, ContactName, UTCTime, ChatMessage 'Json, MessageFromChannel) -> MessageForwardTask
-                toMessageForwardTask (senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel) =
-                  MessageForwardTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
+                toMessageForwardTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, MessageFromChannel) -> MessageForwardTask
+                toMessageForwardTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel) =
+                  MessageForwardTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
         (taskId :| [], DJTRelayRemoved) ->
           firstRow toRelayRemovedWork (SEDeliveryTaskNotFound taskId) $
             DB.query
@@ -3002,35 +3004,36 @@ getNextDeliveryTasksBatch db deliveryScope = do
       forM_ taskIds $ \taskId ->
         DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
-createMessageForwardJob :: DB.Connection -> DeliveryWorkerScope -> GroupForwardScope -> ByteString -> IO ()
-createMessageForwardJob db deliveryScope fwdScope deliveryBody = do
+createMessageForwardJob :: DB.Connection -> DeliveryWorkerScope -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> IO ()
+createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ deliveryBody = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO delivery_jobs (
         group_id, delivery_job_scope, delivery_job_tag,
-        forward_scope_tag, forward_scope_group_member_id,
+        forward_scope_tag, forward_scope_group_member_id, single_sender_group_member_id,
         delivery_body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, deliveryBody, DJSNew, currentTs, currentTs)
+    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_ deliveryBody, DJSNew, currentTs, currentTs)
   where
     (groupId, jobScope) = deliveryScope
     (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag fwdScope
 
-createRelayRemovedJob :: DB.Connection -> DeliveryWorkerScope -> ByteString -> IO ()
-createRelayRemovedJob db deliveryScope deliveryBody = do
+createRelayRemovedJob :: DB.Connection -> DeliveryWorkerScope -> GroupMemberId -> ByteString -> IO ()
+createRelayRemovedJob db deliveryScope singleSenderGMId deliveryBody = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO delivery_jobs (
         group_id, delivery_job_scope, delivery_job_tag,
+        single_sender_group_member_id,
         delivery_body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?)
     |]
-    (groupId, jobScope, DJTRelayRemoved, deliveryBody, DJSNew, currentTs, currentTs)
+    (groupId, jobScope, DJTRelayRemoved, singleSenderGMId, deliveryBody, DJSNew, currentTs, currentTs)
   where
     (groupId, jobScope) = deliveryScope
 
@@ -3073,21 +3076,22 @@ getNextDeliveryJob db deliveryScope = do
           db
           [sql|
             SELECT
-              delivery_job_tag, forward_scope_tag, forward_scope_group_member_id,
+              delivery_job_tag, forward_scope_tag, forward_scope_group_member_id, single_sender_group_member_id,
               delivery_body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
-        toDeliveryJob :: (DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> DeliveryJob
-        toDeliveryJob (jobTag, fwdScopeTag, fwdScopeGMId_, deliveryBody, cursorGMId) =
+        toDeliveryJob :: (DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> DeliveryJob
+        toDeliveryJob (jobTag, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_, deliveryBody, cursorGMId) =
           case jobTag of
             DJTMessageForward -> case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
               Nothing -> error "getNextDeliveryJob: invalid forward scope" -- TODO [channels fwd] put StoreError in return?
-              Just forwardScope -> DJMessageForward {jobId, forwardScope, messagesBatch = deliveryBody, cursorGMId}
-            DJTRelayRemoved ->
-              DJRelayRemoved {jobId, fwdChatMessage = deliveryBody, cursorGMId}
+              Just forwardScope -> DJMessageForward {jobId, forwardScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
+            DJTRelayRemoved -> case singleSenderGMId_ of
+              Nothing -> error "getNextDeliveryJob: missing singleSenderGMId" -- TODO [channels fwd] put StoreError in return?
+              Just singleSenderGMId -> DJRelayRemoved {jobId, singleSenderGMId, fwdChatMessage = deliveryBody, cursorGMId}
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)

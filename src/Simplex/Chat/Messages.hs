@@ -1264,6 +1264,7 @@ data DeliveryTasksBatch
 
 data MessageForwardTask = MessageForwardTask
   { taskId :: Int64,
+    senderGMId :: GroupMemberId,
     senderMemberId :: MemberId,
     senderMemberName :: ContactName,
     brokerTs :: UTCTime,
@@ -1324,6 +1325,7 @@ data DeliveryJob
 data MessageForwardJob = MessageForwardJob
   { jobId :: Int64,
     forwardScope :: GroupForwardScope,
+    singleSenderGMId_ :: Maybe GroupMemberId, -- Just for single-sender forwards, Nothing for multi-sender forwards
     messagesBatch :: ByteString,
     cursorGMId :: Maybe GroupMemberId
   }
@@ -1338,6 +1340,7 @@ data MessageForwardJob = MessageForwardJob
 
 data RelayRemovedJob = RelayRemovedJob
   { jobId :: Int64,
+    singleSenderGMId :: GroupMemberId,
     fwdChatMessage :: ByteString,
     cursorGMId :: Maybe GroupMemberId
   }
@@ -1346,6 +1349,7 @@ data RelayRemovedJob = RelayRemovedJob
 -- data ChatItemCountsJob = ChatItemCountsJob
 --   { jobId :: Int64,
 --     forwardScope :: GroupForwardScope,
+--     singleSenderGMId_ :: Maybe GroupMemberId,
 --     countsBatch :: ByteString,
 --     cursorGMId :: Maybe GroupMemberId
 --   }

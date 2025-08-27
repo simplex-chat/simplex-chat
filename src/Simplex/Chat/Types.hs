@@ -470,6 +470,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
+    groupType :: GroupType,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -490,6 +491,25 @@ data GroupInfo = GroupInfo
     viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
+
+data GroupType
+  = GTSmallGroup
+  | GTChannel
+  -- | GTLargeGroup
+  deriving (Eq, Show)
+
+instance TextEncoding GroupType where
+  textEncode = \case
+    GTSmallGroup -> "small_group"
+    GTChannel -> "channel"
+  textDecode = \case
+    "small_group" -> Just GTSmallGroup
+    "channel" -> Just GTChannel
+    _ -> Nothing
+
+instance FromField BusinessChatType where fromField = fromTextField_ textDecode
+
+instance ToField BusinessChatType where toField = toField . textEncode
 
 data BusinessChatType
   = BCBusiness -- used on the customer side

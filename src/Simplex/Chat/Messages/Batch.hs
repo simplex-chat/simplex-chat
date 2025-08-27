@@ -7,7 +7,7 @@
 module Simplex.Chat.Messages.Batch
   ( MsgBatch (..),
     batchMessages,
-    batchDeliveryTasks,
+    batchDeliveryTasks1,
   )
 where
 
