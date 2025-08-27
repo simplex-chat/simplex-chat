@@ -88,6 +88,7 @@ chatResponsesDocsData =
     ("CRUserContactLinkUpdated", "User contact address updated"),
     ("CRUserDeletedMembers", "Members deleted"),
     ("CRUserProfileUpdated", "User profile updated"),
+    ("CRUserProfileNoChange", "User profile was not changed"),
     ("CRUsersList", "Users")
     -- ("CRApiChat", "Chat and messages"),
     -- ("CRApiChats", "Chats with the most recent messages"),
@@ -195,7 +196,6 @@ undocumentedResponses =
     "CRUserPrivacy",
     "CRUserProfile",
     "CRUserProfileImage",
-    "CRUserProfileNoChange",
     "CRUserServers",
     "CRUserServersValidation",
     "CRVersionInfo",

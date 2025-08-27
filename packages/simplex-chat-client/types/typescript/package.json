@@ -1,0 +1,42 @@
+{
+  "name": "@simplex-chat/types",
+  "version": "0.1.0",
+  "description": "TypeScript types for SimpleX Chat bot libraries",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "prepublishOnly": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "/packages/simplex-chat-client/types/typescript"
+  },
+  "keywords": [
+    "simplex",
+    "messenger",
+    "chat",
+    "privacy",
+    "security",
+    "bots",
+    "types"
+  ],
+  "author": "SimpleX Chat",
+  "license": "AGPL-3.0",
+  "bugs": {
+    "url": "https://github.com/simplex-chat/simplex-chat/issues"
+  },
+  "homepage": "https://github.com/simplex-chat/simplex-chat#readme",
+  "dependencies": {
+    "typescript": "^5.9.2"
+  }
+}

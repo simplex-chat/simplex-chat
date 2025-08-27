@@ -974,7 +974,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpPrefs ps' -> (,False) <$> xGrpPrefs gInfo' m'' ps'
               -- TODO [knocking] why don't we forward these messages?
               XGrpDirectInv connReq mContent_ msgScope -> memberCanSend m'' msgScope $ (Nothing, False) <$ xGrpDirectInv gInfo' m'' conn' connReq mContent_ msg brokerTs
-              XGrpMsgForward memberId msg' msgTs -> (Nothing, False) <$ xGrpMsgForward gInfo' m'' memberId msg' msgTs
+              XGrpMsgForward memberId memberName msg' msgTs -> (Nothing, False) <$ xGrpMsgForward gInfo' m'' memberId memberName msg' msgTs
               XInfoProbe probe -> (Nothing, False) <$ xInfoProbe (COMGroupMember m'') probe
               XInfoProbeCheck probeHash -> (Nothing, False) <$ xInfoProbeCheck (COMGroupMember m'') probeHash
               XInfoProbeOk probe -> (Nothing, False) <$ xInfoProbeOk (COMGroupMember m'') probe
@@ -1001,7 +1001,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           forwardMsgs groupForwardScope fwdMsgs = do
             ms <- buildMemberList
             let GroupMember {memberId} = m
-                events = L.map (\cm -> XGrpMsgForward memberId cm brokerTs) fwdMsgs
+                memberName = Just $ memberShortenedName m
+                events = L.map (\cm -> XGrpMsgForward memberId memberName cm brokerTs) fwdMsgs
             unless (null ms) $ void $ sendGroupMessages_ user gInfo ms events
             where
               buildMemberList = case groupForwardScope of
@@ -2924,7 +2925,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     toView CEvtMemberBlockedForAll {user, groupInfo = gInfo', byMember = m', member = bm', blocked}
                     pure $ memberEventForwardScope bm
               Left (SEGroupMemberNotFoundByMemberId _) -> do
-                bm <- createUnknownMember gInfo memId
+                bm <- createUnknownMember gInfo memId Nothing
                 bm' <- setMemberBlocked bm
                 toView $ CEvtUnknownMemberBlocked user gInfo m bm'
                 pure $ Just GFSMain
@@ -3023,7 +3024,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         forwardToMember :: GroupMember -> CM ()
         forwardToMember member = do
           let GroupMember {memberId} = m
-              event = XGrpMsgForward memberId chatMsg brokerTs
+              memberName = Just $ memberShortenedName m
+              event = XGrpMsgForward memberId memberName chatMsg brokerTs
           sendGroupMemberMessage gInfo member event Nothing (pure ())
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
@@ -3181,13 +3183,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toViewTE $ TEContactVerificationReset user ct
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
-    xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> ChatMessage 'Json -> UTCTime -> CM ()
-    xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId chatMsg msgTs = do
+    xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> CM ()
+    xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs = do
       when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author
         Left (SEGroupMemberNotFoundByMemberId _) -> do
-          unknownAuthor <- createUnknownMember gInfo memberId
+          unknownAuthor <- createUnknownMember gInfo memberId memberName
           toView $ CEvtUnknownMemberCreated user gInfo m unknownAuthor
           processForwardedMsg unknownAuthor
         Left e -> throwError $ ChatErrorStore e
@@ -3216,9 +3218,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpPrefs ps' -> void $ xGrpPrefs gInfo author ps'
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
 
-    createUnknownMember :: GroupInfo -> MemberId -> CM GroupMember
-    createUnknownMember gInfo memberId = do
-      let name = nameFromMemberId memberId
+    createUnknownMember :: GroupInfo -> MemberId -> Maybe ContactName -> CM GroupMember
+    createUnknownMember gInfo memberId memberName = do
+      let name = fromMaybe (nameFromMemberId memberId) memberName
       withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()

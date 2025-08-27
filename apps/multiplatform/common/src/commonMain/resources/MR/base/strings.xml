@@ -1760,7 +1760,7 @@
   <string name="group_member_status_connecting">connecting</string>
   <string name="group_member_status_unknown_short">unknown</string>
 
-  <string name="past_member_vName">Past member %1$s</string>
+  <string name="past_member_vName">Member %1$s</string>
 
   <!-- AddGroupMembersView.kt -->
   <string name="no_contacts_to_add">No contacts to add</string>

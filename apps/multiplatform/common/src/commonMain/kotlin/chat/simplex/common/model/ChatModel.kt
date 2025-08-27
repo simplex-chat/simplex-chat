@@ -2247,7 +2247,7 @@ data class GroupMember (
     get() {
       val p = memberProfile
       val name = p.localAlias.ifEmpty { p.displayName }
-      return pastMember(name)
+      return unknownMember(name)
     }
   override val fullName: String get() = memberProfile.fullName
   override val shortDescr: String? get() = memberProfile.shortDescr
@@ -2262,13 +2262,19 @@ data class GroupMember (
     get() {
       val p = memberProfile
       val name = p.localAlias.ifEmpty { p.displayName + (if (p.fullName == "" || p.fullName == p.displayName) "" else " / ${p.fullName}") }
-      return pastMember(name)
+      return unknownMember(name)
     }
 
-  private fun pastMember(name: String): String {
-    return if (memberStatus == GroupMemberStatus.MemUnknown)
-      String.format(generalGetString(MR.strings.past_member_vName), name)
-    else
+  private fun unknownMember(name: String): String {
+    return if (memberStatus == GroupMemberStatus.MemUnknown) {
+      if (memberId.startsWith(name)) {
+        // unknown member was created using memberId for name
+        String.format(generalGetString(MR.strings.past_member_vName), name)
+      } else {
+        // unknown member was created with name
+        name
+      }
+    } else
       name
   }
 
@@ -2282,7 +2288,7 @@ data class GroupMember (
       } else {
         fullName
       }
-      return pastMember(name)
+      return unknownMember(name)
     }
 
   val memberActive: Boolean get() = when (this.memberStatus) {

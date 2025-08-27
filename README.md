@@ -442,7 +442,7 @@ Please do NOT report security vulnerabilities via GitHub issues.
 
 ## License
 
-[AGPL v3](./LICENSE)
+This software is licensed under the GNU Affero General Public License version 3 (AGPLv3). See the [LICENSE](./LICENSE) file for details. The SimpleX and SimpleX Chat name, logo, and associated branding materials are not covered by this license and are subject to the terms outlined in the [TRADEMARK](./docs/TRADEMARK.md) file.
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;

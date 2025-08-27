@@ -168,7 +168,13 @@ data RandomAgentServers = RandomAgentServers
 
 -- The hooks can be used to extend or customize chat core in mobile or CLI clients.
 data ChatHooks = ChatHooks
-  { -- preCmdHook can be used to process or modify the commands before they are processed.
+  { -- preStartHook can be used to verify some data,
+    -- It is called before chat controller is started, unless the core is started in maintenance mode.
+    preStartHook :: Maybe (ChatController -> IO ()),
+    -- postStartHook can be used to update some data after start (e.g. commands in bot or group profiles),
+    -- It is called after chat controller is started.
+    postStartHook :: Maybe (ChatController -> IO ()),
+    -- preCmdHook can be used to process or modify the commands before they are processed.
     -- This hook should be used to process CustomChatCommand.
     -- if this hook returns ChatResponse, the command processing will be skipped.
     preCmdHook :: Maybe (ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)),
@@ -180,7 +186,7 @@ data ChatHooks = ChatHooks
   }
 
 defaultChatHooks :: ChatHooks
-defaultChatHooks = ChatHooks Nothing Nothing Nothing
+defaultChatHooks = ChatHooks Nothing Nothing Nothing Nothing Nothing
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
@@ -454,8 +460,8 @@ data ChatCommand
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
-  | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, connLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
-  | Connect IncognitoEnabled (Maybe AConnectionLink)
+  | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
+  | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
