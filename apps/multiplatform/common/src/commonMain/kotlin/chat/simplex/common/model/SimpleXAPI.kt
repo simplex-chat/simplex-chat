@@ -654,6 +654,9 @@ object ChatController {
         }
         try {
           val release = releaseLock
+          // delaying the release of wake lock in order to:
+          // 1. avoid race condition with the incoming call activity that fails to show if called after wake lock release (primary reason),
+          // 2. allow any other necessary processing for a bit of time with wakelock held.
           launch {
             delay(30000)
             release()
