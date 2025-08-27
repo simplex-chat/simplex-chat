@@ -908,6 +908,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               forM_ (M.assocs fwdScopesMsgs) $ \(groupForwardScope, fwdMsgs) ->
                 forwardMsgs groupForwardScope (L.reverse fwdMsgs) `catchChatError` eToView
             when shouldDelConns $ deleteGroupConnections gInfo' True
+            -- TODO [channels fwd] use saveForwardTasks
           withRcpt <- checkSendRcpt $ rights aChatMsgs
           pure (withRcpt, shouldDelConns)
         where
@@ -939,6 +940,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               eToView (ChatError . CEException $ "error parsing chat message: " <> e)
               pure (fwdScopeMap, shouldDelConns)
+          -- TODO [channels fwd] should return NewGroupDeliveryTask
+          -- messageId from RcvMessage
+          -- jobTag - based on event:
+          --   - XGrpDel, XGrpMemDel depending on context -> DJTRelayRemoved (replaces ShouldDeleteGroupConns)
+          --   - otherwise -> DJTMessageForward
+          -- forwardScope - as now
+          -- messageFromChannel - TODO extension to protocol of XMsgNew
           processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [Text] -> Text -> ChatMessage e -> CM (Maybe GroupForwardScope, ShouldDeleteGroupConns)
           processEvent gInfo' m' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
             let tag = toCMEventTag chatMsgEvent
@@ -995,7 +1003,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
-          -- TODO [channels fwd] implement saving forward tasks
+          -- TODO [channels fwd] implement saving forward tasks (use createNewDeliveryTask)
           saveForwardTasks :: GroupForwardScope -> NonEmpty (ChatMessage 'Json) -> CM ()
           saveForwardTasks groupForwardScope fwdMsgs = undefined
       RCVD msgMeta msgRcpt ->
@@ -3356,6 +3364,7 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
             deleteGroupConnections gInfo True
             withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
           where
+            -- TODO [channels fwd] filter out singleSenderGMId_ if Just
             sendBodyToMembers :: Int64 -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
             sendBodyToMembers jobId forwardScope singleSenderGMId_ body cursorGroupMemberId = case groupType gInfo of
               -- TODO member retrieval for GTSmallGroup can be further optimized:

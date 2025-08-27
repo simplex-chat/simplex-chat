@@ -32,7 +32,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- Column forward_scope_tag specifies the exact forwarding scope, in a sense it narrows down delivery scope for a job.
 -- For example, for a DJSGroup (delivery job scope "group") forward scope may be GFSAll or GFSMain.
 -- Or, for a DJSMemberSupport (delivery job scope "member support") forward scope specifies
--- the exact support member (forward_scope_group_member_id).
+-- the exact support member (forward_scope_group_member_id). See also forwardToJobScope.
 --
 -- Multiple tasks of the same job tag (delivery_job_tag) and forward scope may be converted into a single job.
 -- For example, messages referenced in DJTMessageForward tasks of the same scope can be batched for a single delivery,

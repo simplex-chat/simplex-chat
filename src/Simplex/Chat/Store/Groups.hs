@@ -155,6 +155,7 @@ module Simplex.Chat.Store.Groups
     getGroupChatTTL,
     getUserGroupsToExpire,
     updateGroupAlias,
+    createNewDeliveryTask,
     getPendingDeliveryTaskScopes,
     getNextDeliveryTasksBatch,
     createMessageForwardJob,
@@ -2906,6 +2907,9 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
+
+createNewDeliveryTask :: DB.Connection -> GroupInfo -> GroupMember -> NewGroupDeliveryTask -> IO ()
+createNewDeliveryTask db GroupInfo {groupId} sender newTask = undefined
 
 getPendingDeliveryTaskScopes :: DB.Connection -> IO [DeliveryWorkerScope]
 getPendingDeliveryTaskScopes db =

@@ -1213,9 +1213,23 @@ data RcvMessage = RcvMessage
 type MessageId = Int64
 
 -- TODO [channels fwd] review types
+data NewGroupDeliveryTask = NewGroupDeliveryTask
+  { messageId :: MessageId,
+    jobTag :: DeliveryJobTag
+    forwardScope :: GroupForwardScope,
+    messageFromChannel :: MessageFromChannel
+  }
+  deriving (Show)
+
 type DeliveryWorkerScope = (GroupId, DeliveryJobScope)
 
 data DeliveryJobScope = DJSGroup | DJSMemberSupport | DJSMemberProfile
+
+forwardToJobScope :: GroupForwardScope -> DeliveryJobScope
+forwardToJobScope = \case
+  GFSAll -> DJSGroup
+  GFSMain -> DJSGroup
+  GFSMemberSupport _gmId -> DJSMemberSupport
 
 data DeliveryJobTag
   = DJTMessageForward
