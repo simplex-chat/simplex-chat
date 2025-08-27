@@ -709,7 +709,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Sok felhasználó kérdezte: <em>ha a SimpleXnek nincsenek felhasználói azonosítói, honnan tudja, hogy hová kell eljuttatni az üzeneteket?</em>
 </p>
 <p>
-    Az üzenetek kézbesítéséhez az összes többi hálózat által használt felhasználói azonosítók helyett a SimpleX az üzenetek sorbaállításához ideiglenes, névtelen, páros azonosítókat használ, külön-külön minden egyes kapcsolathoz — nincsenek hosszú távú azonosítók.
+    Az üzenetek kézbesítéséhez az összes többi hálózat által használt felhasználói azonosítók helyett a SimpleX az üzenetek várólistába rendezéséhez ideiglenes, névtelen, páros azonosítókat használ, külön-külön minden egyes kapcsolathoz — nincsenek hosszú távú azonosítók.
 </p>
 <p>
     Ön határozza meg, hogy melyik kiszolgáló(ka)t használja az üzenetek fogadására, a kapcsolatokhoz — azokat a kiszolgálókat, amelyeket az üzenetek küldésére használ. Minden beszélgetés két különböző kiszolgálót használ.
@@ -1283,7 +1283,7 @@ window.addEventListener('scroll',changeHeaderBg);
     Más üzenetküldő hálózatoktól eltérően a SimpleX <strong>nem rendel azonosítókat a felhasználókhoz</strong>. Nem támaszkodik telefonszámokra, tartomány-alapú címekre (mint az e-mail, XMPP vagy a Matrix), felhasználónevekre, nyilvános kulcsokra vagy akár véletlenszerű számokra a felhasználók azonosításához — a SimpleX kiszolgálók üzemeltetői nem tudják, hogy hányan használják a kiszolgálóikat.
 </p>
 <p>
-    Az üzenetek kézbesítéséhez a SimpleX az egyirányú üzenet várakoztatást használ <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">páronkénti névtelen címekkel</a>, külön a fogadott és külön az elküldött üzenetek számára, általában különböző kiszolgálókon keresztül.
+    Az üzenetek kézbesítéséhez a SimpleX az egyirányú üzenetvárólistákat használ <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">páronkénti névtelen címekkel</a>, külön a fogadott és külön az elküldött üzenetek számára, általában különböző kiszolgálókon keresztül.
 </p>
 <p>
     Ez a kialakítás védi partnerének adatait, elrejtve azt a SimpleX hálózat kiszolgálói és a külső megfigyelők elől. Az IP-címe elrejtésének érdekében a<strong>Tor hálózaton keresztül is kapcsolódhat a SimpleX kiszolgálókhoz</strong>.
@@ -1583,7 +1583,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Double-Ratchet-protokoll —<br>OTR-üzenetküldés, sérülés utáni titkosság-védelemmel és -helyreállítással.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">NaCL cryptobox minden egyes üzenet sorbaállításához, hogy megakadályozza a forgalom korrelációját az üzenetsorbaállítások között, ha a TLS veszélybe kerül.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">NaCL cryptobox minden egyes üzenetvárólistához, hogy megakadályozza a forgalom korrelációját az üzenetvárólisták között, ha a TLS veszélybe kerül.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Bezárás</p>
@@ -1599,7 +1599,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Üzenetintegritás<br>hitelesítés</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az integritás garantálása érdekében az üzenetek sorszámozással vannak ellátva, és tartalmazzák az előző üzenet hasítóértékét.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Az integritás garantálása érdekében az üzenetek sorszámozással vannak ellátva, és tartalmazzák az előző üzenet kivonatát.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Ha bármilyen üzenetet hozzáadnak, eltávolítanak vagy módosítanak, a címzett értesítést kap róla.</p>
                             
@@ -1684,10 +1684,10 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-9-dark.svg" alt="">
                     </div>
                     <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Egyirányú<br>üzenetsorbaállítás</h3>
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Egyirányú<br>üzenetvárólista</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Minden üzenetsorbaállítás egy irányba továbbítja az üzeneteket, a különböző küldési és vételi címekkel.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Minden üzenetvárólista egy irányba továbbítja az üzeneteket, a különböző küldési és vételi címekkel.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Kevesebb támadási felülettel rendelkezik, mint a hagyományos üzenetváltó-alkalmazások, és kevesebb metaadatot tesz elérhetővé.</p>
                             
@@ -1828,7 +1828,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
                     <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">SimpleX hálózat</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        a kiszolgálók <span class="text-active-blue">egyirányú üzenet várakoztatásokat</span> biztosítanak a felhasználók összekapcsolásához, de nem látják a hálózati kapcsolati gráfot; azt csak a felhasználók látják.
+                        a kiszolgálók <span class="text-active-blue">egyirányú üzenetvárólistákat</span> biztosítanak a felhasználók összekapcsolásához, de nem látják a hálózati kapcsolati gráfot; azt csak a felhasználók látják.
                     </p>
                 </div>
             </div>
@@ -1890,7 +1890,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             Létrehozhat kapcsolatokat és csoportokat, valamint kétirányú beszélgetéseket folytathat, ugyanúgy mint bármely más üzenetváltó-alkalmazásban.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Hogyan működhet egyirányú üzenet-sorballítással és felhasználói profilazonosítók nélkül?
+                            Hogyan működhet egyirányú üzenetvárólistával és felhasználói profilazonosítók nélkül?
                         </p>
                     </div>
                 </div>
@@ -1900,7 +1900,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-2.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Minden kapcsolathoz két különböző üzenetküldési sorbaállítást használ a különböző kiszolgálókon keresztül történő üzenetküldéshez és -fogadáshoz.
+                            Minden kapcsolathoz két különböző üzenetküldési várólistát használ a különböző kiszolgálókon keresztül történő üzenetküldéshez és -fogadáshoz.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             A kiszolgálók csak egyetlen irányba továbbítják az üzeneteket, anélkül, hogy teljes képet kapnának a felhasználók beszélgetéseiről vagy kapcsolatairól.
@@ -1913,7 +1913,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-3.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            A kiszolgálók minden egyes üzenetsorbaállításhoz külön névtelen hitelesítő-adatokkal rendelkeznek, és nem tudják, hogy melyik felhasználóhoz tartoznak.
+                            A kiszolgálók minden egyes üzenetvárólistához külön névtelen hitelesítő-adatokkal rendelkeznek, és nem tudják, hogy melyik felhasználóhoz tartoznak.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             A felhasználók tovább fokozhatják a metaadatok adatvédelmét, ha a Tor hálózat használatával férnek hozzá a kiszolgálókhoz, így megakadályozva az IP-cím szerinti korrelációt.
