@@ -3919,9 +3919,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Показати пароль";
 
-/* past/unknown group member */
-"Past member %@" = "Колишній учасник %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Вставте адресу робочого столу";
 

@@ -3739,9 +3739,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "显示密码";
 
-/* past/unknown group member */
-"Past member %@" = "前任成员 %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "粘贴桌面地址";
 

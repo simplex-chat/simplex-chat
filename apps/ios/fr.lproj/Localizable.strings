@@ -3661,9 +3661,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Mot de passe à entrer";
 
-/* past/unknown group member */
-"Past member %@" = "Ancien membre %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Coller l'adresse du bureau";
 

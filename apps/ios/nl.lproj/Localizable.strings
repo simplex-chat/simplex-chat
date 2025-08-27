@@ -3826,9 +3826,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Wachtwoord om weer te geven";
 
-/* past/unknown group member */
-"Past member %@" = "Voormalig lid %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Desktopadres plakken";
 

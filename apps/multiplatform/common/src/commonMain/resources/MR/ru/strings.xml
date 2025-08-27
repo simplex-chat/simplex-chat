@@ -267,7 +267,7 @@
     <string name="chat_help_tap_button">Нажмите кнопку</string>
     <string name="above_then_preposition_continuation">сверху, затем:</string>
     <string name="to_connect_via_link_title">Чтобы соединиться через ссылку</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть ее в браузере:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть её в браузере:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 на компьютере: сосканируйте показанный QR-код из приложения через <b>Сканировать QR-код</b>.]]></string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 на мобильном: нажмите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.]]></string>
     <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
@@ -1608,7 +1608,7 @@
     <string name="camera_not_available">Камера недоступна</string>
     <string name="la_app_passcode">Код доступа в приложение</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Добавить контакт</b>: создать новую ссылку-приглашение или подключиться через полученную ссылку.]]></string>
-    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите ее обратно до запуска чата.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите её обратно до запуска чата.</string>
     <string name="remote_host_was_disconnected_title">Соединение остановлено</string>
     <string name="info_row_created_at">Создано</string>
     <string name="keep_invitation_link">Оставить</string>
@@ -1678,7 +1678,7 @@
     <string name="or_scan_qr_code">Или отсканируйте QR-код</string>
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
-    <string name="past_member_vName">Бывший член %1$s</string>
+    <string name="past_member_vName">Член группы %1$s</string>
     <string name="saved_message_title">Сохранённое сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
@@ -1753,7 +1753,7 @@
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений.</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Вы <b>не должны</b> использовать одну и ту же базу данных на двух устройствах.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Проверьте подключение к Интернету и повторите попытку</string>
-    <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для ее миграции.</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для её миграции.</string>
     <string name="migrate_from_device_verify_database_passphrase">Проверка пароля базы данных</string>
     <string name="migrate_from_device_verify_passphrase">Проверить пароль</string>
     <string name="migrate_from_device_error_verifying_passphrase">Ошибка подтверждения пароля:</string>
@@ -2138,7 +2138,7 @@
     <string name="compose_save_messages_n">Сохранение %1$s сообщений</string>
     <string name="network_proxy_incorrect_config_desc">Убедитесь, что конфигурация прокси правильная.</string>
     <string name="network_proxy_auth">Аутентификация прокси</string>
-    <string name="network_proxy_random_credentials">Использовать случайные учетные данные</string>
+    <string name="network_proxy_random_credentials">Использовать случайные учётные данные</string>
     <string name="system_mode_toast">Режим системы</string>
     <string name="error_forwarding_messages">Ошибка пересылки сообщений</string>
     <string name="n_file_errors">%1$d ошибок файлов:\n%2$s</string>
@@ -2184,13 +2184,13 @@
     <string name="v6_1_switch_chat_profile_descr">Переключайте профиль чата для одноразовых приглашений.</string>
     <string name="v6_1_better_security_descr">Аудит SimpleX протоколов от Trail of Bits.</string>
     <string name="call_desktop_permission_denied_title">Чтобы совершать звонки, разрешите использовать микрофон. Завершите вызов и попробуйте позвонить снова.</string>
-    <string name="network_proxy_auth_mode_no_auth">Не использовать учетные данные с прокси.</string>
+    <string name="network_proxy_auth_mode_no_auth">Не использовать учётные данные с прокси.</string>
     <string name="network_proxy_incorrect_config_title">Ошибка сохранения прокси</string>
     <string name="network_proxy_password">Пароль</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Использовать разные учетные данные прокси для каждого соединения.</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_user">Использовать разные учетные данные прокси для каждого профиля.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Использовать разные учётные данные прокси для каждого соединения.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Использовать разные учётные данные прокси для каждого профиля.</string>
     <string name="network_proxy_username">Имя пользователя</string>
-    <string name="network_proxy_auth_mode_username_password">Ваши учетные данные могут быть отправлены в незашифрованном виде.</string>
+    <string name="network_proxy_auth_mode_username_password">Ваши учётные данные могут быть отправлены в незашифрованном виде.</string>
     <string name="migrate_from_device_remove_archive_question">Удалить архив?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Загруженный архив базы данных будет навсегда удален с серверов.</string>
     <string name="operator_conditions_accepted">Принятые условия</string>
@@ -2348,7 +2348,7 @@
     <string name="delete_chat_list_warning">Все чаты будут удалены из списка %s, а сам список удален</string>
     <string name="chat_list_add_list">Добавить список</string>
     <string name="chat_list_notes">Примечания</string>
-    <string name="open_with_app">Открыто с %s</string>
+    <string name="open_with_app">Открыть в %s</string>
     <string name="create_list">Создать список</string>
     <string name="add_to_list">Добавить в список</string>
     <string name="change_list">Изменить список</string>

@@ -3961,9 +3961,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Contraseña para hacerlo visible";
 
-/* past/unknown group member */
-"Past member %@" = "Miembro pasado %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Pegar dirección de ordenador";
 

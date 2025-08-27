@@ -1641,7 +1641,7 @@
     <string name="agent_internal_error_title">Interner Fehler</string>
     <string name="remote_host_error_bad_version"><![CDATA[Auf dem Mobiltelefon <b>%s</b> wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen]]></string>
     <string name="remote_host_error_busy"><![CDATA[Mobiltelefon <b>%s</b> ist besetzt]]></string>
-    <string name="past_member_vName">Ehemaliges Mitglied %1$s</string>
+    <string name="past_member_vName">Mitglied %1$s</string>
     <string name="possible_slow_function_desc">Die Ausführung dieser Funktion dauert zu lange: %1$d Sekunden: %2$s</string>
     <string name="possible_slow_function_title">Langsame Funktion</string>
     <string name="show_slow_api_calls">Langsame API-Aufrufe anzeigen</string>
