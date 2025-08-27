@@ -1305,7 +1305,7 @@
     <string name="system_restricted_background_in_call_desc">Az alkalmazás 1 perc után bezárható a háttérben.</string>
     <string name="group_preview_you_are_invited">Ön meghívást kapott a csoportba</string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Engedélyezze</b> a következő párbeszédpanelen az azonnali értesítések fogadásához.]]></string>
-    <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólista létrehozásához, ellenőrizze a jelszavát</string>
+    <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát</string>
     <string name="you_will_join_group">Kapcsolódni fog a csoport összes tagjához.</string>
     <string name="error_smp_test_certificate">Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">A biztonsága érdekében kapcsolja be a SimpleX-zár funkciót.\nA funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</string>
@@ -2450,9 +2450,9 @@
     <string name="network_option_tcp_connection_timeout_background">TCP-kapcsolat időtúllépése a háttérben</string>
     <string name="loading_profile">Profil betöltése…</string>
     <string name="group_short_descr_field">Rövid leírás:</string>
-    <string name="short_descr">Bemutatkozás:</string>
-    <string name="short_descr__field">Bemutatkozás:</string>
-    <string name="bio_too_large">A bemutatkozás túl hosszú</string>
+    <string name="short_descr">Saját névjegy:</string>
+    <string name="short_descr__field">Névjegy:</string>
+    <string name="bio_too_large">A névjegy túl hosszú</string>
     <string name="group_descr_too_large">A leírás túl hosszú</string>
     <string name="chat_banner_accept_contact_request">Partneri kapcsolatkérés elfogadása</string>
     <string name="chat_banner_business_connection">Üzleti kapcsolat</string>
@@ -2468,7 +2468,7 @@
     <string name="v6_4_1_short_address_create">Saját cím létrehozása</string>
     <string name="v6_4_1_keep_chats_clean_descr">Eltűnő üzenetek engedélyezése alapértelmezetten.</string>
     <string name="v6_4_1_keep_chats_clean">Tartsa tisztán a csevegéseit</string>
-    <string name="v6_4_1_welcome_contacts_descr">Bemutatkozószöveg és üdvözlőüzenet beállítása a profilokhoz.</string>
+    <string name="v6_4_1_welcome_contacts_descr">Névjegy és üdvözlőüzenet beállítása a profilokhoz.</string>
     <string name="v6_4_1_short_address_share">Saját cím megosztása</string>
     <string name="v6_4_1_short_address">Rövid SimpleX-cím</string>
     <string name="v6_4_1_short_address_update">Cím frissítése</string>
