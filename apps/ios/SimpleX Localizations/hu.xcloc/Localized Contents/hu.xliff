@@ -1262,14 +1262,14 @@ swipe action</note>
         <target>Továbbfejlesztett felhasználói élmény</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio" xml:space="preserve">
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
-        <target>Bemutatkozás</target>
+        <target state="translated">Névjegy</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio too large" xml:space="preserve">
+      <trans-unit id="Bio too large" xml:space="preserve" approved="no">
         <source>Bio too large</source>
-        <target>A bemutatkozás túl hosszú</target>
+        <target state="translated">A névjegy túl hosszú</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -7335,7 +7335,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password</source>
-        <target state="translated">A kiszolgálónak engedélyre van szüksége a várólista létrehozásához, ellenőrizze a jelszavát</target>
+        <target state="translated">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
@@ -7438,9 +7438,9 @@ chat item action</note>
         <target>Jelmondat beállítása az exportáláshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve" approved="no">
         <source>Set profile bio and welcome message.</source>
-        <target>Bemutatkozószöveg és üdvözlőüzenet beállítása a profilokhoz.</target>
+        <target state="translated">Névjegy és üdvözlőüzenet beállítása a profilokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
