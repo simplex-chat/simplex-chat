@@ -2348,7 +2348,7 @@
     <string name="delete_chat_list_warning">Все чаты будут удалены из списка %s, а сам список удален</string>
     <string name="chat_list_add_list">Добавить список</string>
     <string name="chat_list_notes">Примечания</string>
-    <string name="open_with_app">Открыть с %s</string>
+    <string name="open_with_app">Открыть в %s</string>
     <string name="create_list">Создать список</string>
     <string name="add_to_list">Добавить в список</string>
     <string name="change_list">Изменить список</string>
