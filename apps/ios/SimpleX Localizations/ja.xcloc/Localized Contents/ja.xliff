@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="ja" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -610,9 +610,9 @@ swipe action</note>
         <target>承諾された条件</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Acknowledged" xml:space="preserve" approved="no">
+      <trans-unit id="Acknowledged" xml:space="preserve">
         <source>Acknowledged</source>
-        <target state="translated">了承済み</target>
+        <target>了承済み</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Acknowledgement errors" xml:space="preserve">
@@ -4522,6 +4522,10 @@ This is your link for group %@!</source>
         <target>メンバー</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member %@" xml:space="preserve">
+        <source>Member %@</source>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
         <note>No comment provided by engineer.</note>
@@ -5463,10 +5467,6 @@ VPN を有効にする必要があります。</target>
         <source>Password to show</source>
         <target>パスワードを表示する</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
-        <source>Past member %@</source>
-        <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
@@ -9748,7 +9748,7 @@ last received msg: %2$@</source>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="ja" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -9784,7 +9784,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="ja" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -9806,7 +9806,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="ja" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -9833,7 +9833,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="ja" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -9852,7 +9852,7 @@ last received msg: %2$@</source>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="ja" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">

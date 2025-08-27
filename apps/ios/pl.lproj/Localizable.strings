@@ -3373,9 +3373,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Hasło do wyświetlenia";
 
-/* past/unknown group member */
-"Past member %@" = "Były członek %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Wklej adres komputera";
 

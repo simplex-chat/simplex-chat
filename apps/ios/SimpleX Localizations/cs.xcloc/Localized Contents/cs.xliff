@@ -4472,6 +4472,10 @@ This is your link for group %@!</source>
         <target>Člen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member %@" xml:space="preserve">
+        <source>Member %@</source>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
         <note>No comment provided by engineer.</note>
@@ -5411,10 +5415,6 @@ Vyžaduje povolení sítě VPN.</target>
         <source>Password to show</source>
         <target>Heslo k zobrazení</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
-        <source>Past member %@</source>
-        <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>

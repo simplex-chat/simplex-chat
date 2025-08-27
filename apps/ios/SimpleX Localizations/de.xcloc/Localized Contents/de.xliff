@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id=" (can be copied)" xml:space="preserve">
@@ -4892,6 +4892,10 @@ Das ist Ihr Link für die Gruppe %@!</target>
         <target>Mitglied</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member %@" xml:space="preserve">
+        <source>Member %@</source>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
         <target>Aufnahme von Mitgliedern</target>
@@ -5948,11 +5952,6 @@ Dies erfordert die Aktivierung eines VPNs.</target>
         <source>Password to show</source>
         <target>Passwort anzeigen</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve" approved="no">
-        <source>Past member %@</source>
-        <target state="translated">Mitglied %@</target>
-        <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
@@ -10675,7 +10674,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve">
@@ -10712,7 +10711,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10734,7 +10733,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%d new events" xml:space="preserve">
@@ -10766,7 +10765,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/InfoPlist.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve">
@@ -10788,7 +10787,7 @@ Zuletzt empfangene Nachricht: %2$@</target>
   </file>
   <file original="SimpleX SE/en.lproj/Localizable.strings" source-language="en" target-language="de" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"></tool>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="16.2" build-num="16C5032a"/>
     </header>
     <body>
       <trans-unit id="%@" xml:space="preserve">

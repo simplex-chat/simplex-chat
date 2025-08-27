@@ -2905,9 +2905,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Парола за показване";
 
-/* past/unknown group member */
-"Past member %@" = "Бивш член %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Постави адрес на настолно устройство";
 
