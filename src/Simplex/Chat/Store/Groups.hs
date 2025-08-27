@@ -155,11 +155,13 @@ module Simplex.Chat.Store.Groups
     getGroupChatTTL,
     getUserGroupsToExpire,
     updateGroupAlias,
+    getPendingDeliveryTaskScopes,
     getNextDeliveryTasksBatch,
     createMessageForwardJob,
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
     setDeliveryTaskFailed,
+    getPendingDeliveryJobScopes,
     getNextDeliveryJob,
     updateDeliveryJobStatus,
     getGroupMembersByCursor,
@@ -2905,6 +2907,17 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
 
+getPendingDeliveryTaskScopes :: DB.Connection -> IO [DeliveryWorkerScope]
+getPendingDeliveryTaskScopes db =
+  DB.query
+    db
+    [sql|
+      SELECT DISTINCT group_id, delivery_job_scope
+      FROM delivery_tasks
+      WHERE failed = 0 AND task_status = ?
+    |]
+    (Only DTSNew)
+
 -- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
 -- TODO [channels fwd] different "getWorkItem" implementation?
 -- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksBatch fails
@@ -3050,6 +3063,17 @@ updateDeliveryTaskStatus db taskId status = do
 setDeliveryTaskFailed :: DB.Connection -> Int64 -> IO ()
 setDeliveryTaskFailed db taskId =
   DB.execute db "UPDATE delivery_tasks SET failed = 1 WHERE delivery_task_id = ?" (Only taskId)
+
+getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerScope]
+getPendingDeliveryJobScopes db =
+  DB.query
+    db
+    [sql|
+      SELECT DISTINCT group_id, delivery_job_scope
+      FROM delivery_jobs
+      WHERE failed = 0 AND task_status IN (?, ?)
+    |]
+    (DJSNew, DJSInProgress)
 
 getNextDeliveryJob :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryJob))
 getNextDeliveryJob db deliveryScope = do

@@ -3266,7 +3266,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
 startDeliveryTaskWorkers :: CM ()
 startDeliveryTaskWorkers = do
-  -- TODO [channels fwd] getPendingDeliveryTaskScopes - retrieve [DeliveryWorkerScope] based on pending tasks
   workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
   lift . forM_ workerScopes resumeDeliveryTaskWork
 
@@ -3316,7 +3315,6 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
 
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do
-  -- TODO [channels fwd] getPendingDeliveryJobScopes - retrieve [DeliveryWorkerScope] based on pending jobs
   workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
   lift . forM_ workerScopes resumeDeliveryJobWork
 
