@@ -3354,12 +3354,12 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
             withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
           DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage, cursorGMId} -> do
             sendBodyToMembers jobId GFSAll (Just singleSenderGMId) messagesBatch cursorGMId
-            -- TODO [channels fwd] needs gInfo; move deleteGroupConnections out of processAgentMessageConn
+            -- TODO [channels fwd] move deleteGroupConnections out of processAgentMessageConn
             deleteGroupConnections gInfo True
             withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
           where
             sendBodyToMembers :: Int64 -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
-            sendBodyToMembers jobId forwardScope singleSenderGMId_ body cursorGMId = case groupType gInfo of
+            sendBodyToMembers jobId forwardScope singleSenderGMId_ body cursorGroupMemberId = case groupType gInfo of
               -- TODO member retrieval for GTSmallGroup can be further optimized:
               -- - move remaining filters to SQL (memberCurrentOrPending, memberCurrent)
               -- - create new GroupForwardScope for reports to avoid post-filtering moderators in msgsForwardedToMember
@@ -3456,19 +3456,25 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
                 case forwardScope of
                   -- TODO [channels fwd] review scope logic in GTChannel
                   -- there's no member review in channels, so Main and All scopes can be considered equivalent
-                  GFSAll -> sendWithCursor
-                  GFSMain -> sendWithCursor
+                  GFSAll -> sendLoop cursorGroupMemberId
+                  GFSMain -> sendLoop cursorGroupMemberId
                   -- TODO [channels fwd] for member support scope it's easier to load all needed members, without cursor
                   GFSMemberSupport scopeGMId -> do
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
                     scopeMem <- withStore $ \db -> getGroupMemberById db vr user groupMemberId
                     -- possibly also filter by groupKnockingVersion
                     let recipients = filter memberCurrent $ [scopeMem] <> modMs
-                    -- prepare MsgReq objects, sendMessagesB of body to recipients
+                    -- TODO prepare MsgReq objects, sendMessagesB of body to recipients
                     pure ()
                 where
-                  sendWithCursor :: CM ()
-                  sendWithCursor = do
-                    -- on first iteration, update job status to DJSInProgress
-                    -- iterate over members via cursor, update cursor on the job record
-                    pure ()
+                  dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
+                  sendLoop :: Maybe GroupMemberId -> CM ()
+                  sendLoop cursorGMId = do
+                    mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId dbBatchSize
+                    let cursorGMId' = groupMemberId' $ last mems
+                    -- TODO prepare MsgReq objects, sendMessagesB of body to mems
+                    withStore' $ \db -> do
+                      when (isNothing cursorGMId) $
+                        updateDeliveryJobCursor db jobId cursorGMId'
+                      updateDeliveryJobStatus db jobId DJSInProgress -- "in progress" status is informational
+                    unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')
