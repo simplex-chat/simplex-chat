@@ -4892,8 +4892,9 @@ Questo è il tuo link per il gruppo %@!</target>
         <target>Membro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member %@" xml:space="preserve">
+      <trans-unit id="Member %@" xml:space="preserve" approved="no">
         <source>Member %@</source>
+        <target state="translated">Membro %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
