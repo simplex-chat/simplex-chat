@@ -1557,7 +1557,7 @@
     <string name="failed_to_create_user_invalid_desc">显示名无效。请另选一个名称。</string>
     <string name="possible_slow_function_title">慢函数</string>
     <string name="show_slow_api_calls">显示缓慢的 API 调用</string>
-    <string name="past_member_vName">过往成员 %1$s</string>
+    <string name="past_member_vName">成员 %1$s</string>
     <string name="group_member_status_unknown_short">未知</string>
     <string name="group_member_status_unknown">未知状态</string>
     <string name="developer_options_section">开发者选项</string>

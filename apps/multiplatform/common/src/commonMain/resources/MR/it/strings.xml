@@ -1569,7 +1569,7 @@
     <string name="remote_ctrl_error_inactive">Il desktop è inattivo</string>
     <string name="remote_ctrl_error_disconnected">Il desktop è stato disconnesso</string>
     <string name="remote_ctrl_error_timeout">Tempo scaduto durante la connessione al desktop</string>
-    <string name="past_member_vName">Membro passato %1$s</string>
+    <string name="past_member_vName">Membro %1$s</string>
     <string name="possible_slow_function_desc">L\'esecuzione della funzione impiega troppo tempo: %1$d secondi: %2$s</string>
     <string name="possible_slow_function_title">Funzione lenta</string>
     <string name="show_slow_api_calls">Mostra chiamate API lente</string>

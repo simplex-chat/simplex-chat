@@ -12,8 +12,11 @@ actual fun getWakeLock(timeout: Long): (() -> Unit) {
     }
   }
   return {
-    wakeLock?.release()
-    wakeLock = null
+    val lock = wakeLock
+    if (lock != null) {
+      if (lock.isHeld) lock.release()
+      wakeLock = null
+    }
   }
 }
 

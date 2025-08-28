@@ -3919,9 +3919,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Gösterilecek şifre";
 
-/* past/unknown group member */
-"Past member %@" = "Geçmiş üye %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Bilgisayar adresini yapıştır";
 
