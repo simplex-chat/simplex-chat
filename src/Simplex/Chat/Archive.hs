@@ -158,7 +158,7 @@ sqlCipherExport DBEncryptionConfig {currentKey = DBEncryptionKey key, newKey = D
     -- closing after encryption prevents closing in case wrong encryption key was passed
     liftIO $ closeDBStore `withStores` fs
     (moveExported `withStores` fs)
-      `catchChatError` \e -> (restore `withDBs` fs) >> throwError e
+      `catchAllErrors` \e -> (restore `withDBs` fs) >> throwError e
   where
     backup f = copyFile f (f <> ".bak")
     restore f = copyFile (f <> ".bak") f
