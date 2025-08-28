@@ -5,6 +5,7 @@ from simpx.extension import ChatWrapper
 from collections import defaultdict
 import traceback
 import os
+import time
 
 chat_histories = defaultdict(list)
 
@@ -72,6 +73,7 @@ if __name__ == "__main__":
               chat_info: Chat information dictionary.
               args: User's prompt.
           """
+
           # Create a ChatWrapper instance using the provided chat_info and the bot's client.
           chat = ChatWrapper(chat_info, bot.client)
 
@@ -101,6 +103,23 @@ if __name__ == "__main__":
                   stream=True  # Enable streaming of the response.
               )
 
+              # Buffer to accumulate tokens until a sentence is complete
+              buffer = ""
+              last_update = time.time()
+              UPDATE_INTERVAL = 2  # seconds
+
+              async def flush_buffer(force: bool = False):
+                  """Push complete sentences to the live message at UPDATE_INTERVAL-second cadence."""
+                  nonlocal buffer, current_response, last_update
+                  now = time.time()
+
+                  if force or (buffer.rstrip().endswith(('.', '?', '!'))
+                              and now - last_update >= UPDATE_INTERVAL):
+                      current_response += buffer
+                      await live_msg.update_live(current_response.strip())
+                      buffer = ""
+                      last_update = now
+
               # Process each streaming chunk.
               for chunk in response:
                   # Extract text content from the current chunk.
@@ -109,13 +128,13 @@ if __name__ == "__main__":
                   if "<|eot_id|>" in chunk_text:
                       chunk_text = chunk_text.replace("<|eot_id|>", "")
                       if chunk_text:                       # keep any leftover text
-                        current_response += chunk_text
-                        await live_msg.update_live(current_response)
+                        buffer += chunk_text
                       break                               # no more data expected
-                  if chunk_text:
-                      current_response += chunk_text
-                      # Update the live message with the accumulated response.
-                      await live_msg.update_live(f"{current_response}")
+                  buffer += chunk_text
+                  await flush_buffer()
+
+              # Final flush for any remaining text
+              await flush_buffer(force=True)
               
               chat_histories[chat_id].append({"role": "assistant", "content": current_response})
               # Finalize the live message.
