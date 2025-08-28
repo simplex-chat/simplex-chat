@@ -597,7 +597,7 @@ swipe action */
 "Allow voice messages only if your contact allows them." = "Erlauben Sie Sprachnachrichten nur dann, wenn es Ihr Kontakt ebenfalls erlaubt.";
 
 /* No comment provided by engineer. */
-"Allow voice messages?" = "Sprachnachricht erlauben?";
+"Allow voice messages?" = "Sprachnachrichten erlauben?";
 
 /* No comment provided by engineer. */
 "Allow your contacts adding message reactions." = "Erlauben Sie Ihren Kontakten Reaktionen auf Nachrichten zu geben.";
@@ -3351,7 +3351,7 @@ snd error text */
 "Message may be delivered later if member becomes active." = "Die Nachricht kann später zugestellt werden, wenn das Mitglied aktiv wird.";
 
 /* No comment provided by engineer. */
-"Message queue info" = "Nachrichten-Warteschlangen-Information";
+"Message queue info" = "Information Nachrichtenwarteschlange";
 
 /* chat feature */
 "Message reactions" = "Reaktionen auf Nachrichten";
@@ -3854,7 +3854,7 @@ new chat action */
 "Open chat console" = "Chat-Konsole öffnen";
 
 /* alert action */
-"Open clean link" = "Geklärten Link öffnen";
+"Open clean link" = "Trackingfreien Link öffnen";
 
 /* No comment provided by engineer. */
 "Open conditions" = "Nutzungsbedingungen öffnen";
@@ -3960,9 +3960,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Password to show" = "Passwort anzeigen";
-
-/* past/unknown group member */
-"Past member %@" = "Ehemaliges Mitglied %@";
 
 /* No comment provided by engineer. */
 "Paste desktop address" = "Desktop-Adresse einfügen";
@@ -5114,6 +5111,9 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Die SimpleX-Protokolle wurden von Trail of Bits überprüft.";
 
+/* simplex link type */
+"SimpleX relay link" = "SimpleX Relais-Link";
+
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Vereinfachter Inkognito-Modus";
 
@@ -5440,16 +5440,16 @@ report reason */
 "They can be overridden in contact and group settings." = "Sie können in den Kontakteinstellungen überschrieben werden.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Es werden alle herunter- und hochgeladenen Dateien und Medien gelöscht. Bilder mit niedriger Auflösung bleiben erhalten. Diese Aktion kann nicht rückgängig gemacht werden!";
+"This action cannot be undone - all received and sent files and media will be deleted. Low resolution pictures will remain." = "Dieser Vorgang kann nicht rückgängig gemacht werden - alle empfangenen und gesendeten Dateien sowie Medien werden gelöscht. Bilder mit niedriger Auflösung bleiben erhalten.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Es werden alle empfangenen und gesendeten Nachrichten, die über den ausgewählten Zeitraum hinaus gehen, gelöscht. Dieser Vorgang kann mehrere Minuten dauern. Diese Aktion kann nicht rückgängig gemacht werden!";
+"This action cannot be undone - the messages sent and received earlier than selected will be deleted. It may take several minutes." = "Dieser Vorgang kann nicht rückgängig gemacht werden - die früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht. Dies kann ein paar Minuten dauern.";
 
 /* alert message */
-"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Die älteren als die ausgewählten gesendeten und empfangenen Nachrichten in diesem Chat werden gelöscht. Diese Aktion kann nicht rückgängig gemacht werden!";
+"This action cannot be undone - the messages sent and received in this chat earlier than selected will be deleted." = "Dieser Vorgang kann nicht rückgängig gemacht werden - die in diesem Chat früher als ausgewählt gesendeten und empfangenen Nachrichten werden gelöscht.";
 
 /* No comment provided by engineer. */
-"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Ihr Profil und Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!";
+"This action cannot be undone - your profile, contacts, messages and files will be irreversibly lost." = "Ihr Profil, Ihre Kontakte, Nachrichten und Dateien gehen unwiderruflich verloren. Diese Aktion kann nicht rückgängig gemacht werden!";
 
 /* E2EE info chat item */
 "This chat is protected by end-to-end encryption." = "Dieser Chat ist durch Ende-zu-Ende-Verschlüsselung geschützt.";

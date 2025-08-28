@@ -64,7 +64,7 @@ extern char *chat_recv_msg(chat_ctrl ctrl); // deprecated
 extern char *chat_recv_msg_wait(chat_ctrl ctrl, const int wait);
 extern char *chat_parse_markdown(const char *str);
 extern char *chat_parse_server(const char *str);
-extern char *chat_parse_uri(const char *str);
+extern char *chat_parse_uri(const char *str, const int safe);
 extern char *chat_password_hash(const char *pwd, const char *salt);
 extern char *chat_valid_name(const char *name);
 extern int chat_json_length(const char *str);
@@ -148,9 +148,9 @@ Java_chat_simplex_common_platform_CoreKt_chatParseServer(JNIEnv *env, __unused j
 }
 
 JNIEXPORT jstring JNICALL
-Java_chat_simplex_common_platform_CoreKt_chatParseUri(JNIEnv *env, __unused jclass clazz, jstring str) {
+Java_chat_simplex_common_platform_CoreKt_chatParseUri(JNIEnv *env, __unused jclass clazz, jstring str, jint safe) {
     const char *_str = (*env)->GetStringUTFChars(env, str, JNI_FALSE);
-    jstring res = (*env)->NewStringUTF(env, chat_parse_uri(_str));
+    jstring res = (*env)->NewStringUTF(env, chat_parse_uri(_str, safe));
     (*env)->ReleaseStringUTFChars(env, str, _str);
     return res;
 }

@@ -1196,8 +1196,14 @@ sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn
                 _ -> pure []
               let fileDescrChatMsgs = map (ChatMessage senderVRange Nothing) fileDescrEvents
                   GroupMember {memberId} = sender
-                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
+                  memberName = Just $ memberShortenedName sender
+                  msgForwardEvents = map (\cm -> XGrpMsgForward memberId memberName cm itemTs) (xMsgNewChatMsg : fileDescrChatMsgs)
               pure msgForwardEvents
+
+memberShortenedName :: GroupMember -> ContactName
+memberShortenedName GroupMember {memberProfile = LocalProfile {displayName}}
+  | T.length displayName <= 16 = displayName
+  | otherwise = T.take 16 displayName `T.snoc` '…'
 
 splitFileDescr :: Int -> RcvFileDescrText -> NonEmpty FileDescr
 splitFileDescr partSize rfdText = splitParts 1 rfdText
@@ -1326,9 +1332,9 @@ updatePeerChatVRange conn@Connection {connId, connChatVersion = v, peerChatVRang
     else pure conn'
 
 updateMemberChatVRange :: GroupMember -> Connection -> VersionRangeChat -> CM (GroupMember, Connection)
-updateMemberChatVRange mem@GroupMember {groupMemberId} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
+updateMemberChatVRange mem@GroupMember {groupMemberId, memberChatVRange} conn@Connection {connId, connChatVersion = v, peerChatVRange} msgVRange = do
   v' <- lift $ upgradedConnVersion v msgVRange
-  if msgVRange /= peerChatVRange || v' /= v
+  if msgVRange /= peerChatVRange || v' /= v || msgVRange /= memberChatVRange
     then do
       withStore' $ \db -> do
         setPeerChatVRange db connId v' msgVRange

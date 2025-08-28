@@ -1803,6 +1803,9 @@ swipe action */
 "Delivery receipts!" = "¡Confirmación de entrega!";
 
 /* No comment provided by engineer. */
+"Deprecated options" = "Opciones obsoletas";
+
+/* No comment provided by engineer. */
 "Description" = "Descripción";
 
 /* alert title */
@@ -3850,8 +3853,14 @@ new chat action */
 /* authentication reason */
 "Open chat console" = "Abrir consola de Chat";
 
+/* alert action */
+"Open clean link" = "Abrir enlace limpio";
+
 /* No comment provided by engineer. */
 "Open conditions" = "Abrir condiciones";
+
+/* alert action */
+"Open full link" = "Abrir enlace completo";
 
 /* new chat action */
 "Open group" = "Grupo abierto";
@@ -3951,9 +3960,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Password to show" = "Contraseña para hacerlo visible";
-
-/* past/unknown group member */
-"Past member %@" = "Miembro pasado %@";
 
 /* No comment provided by engineer. */
 "Paste desktop address" = "Pegar dirección de ordenador";
@@ -4364,6 +4370,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Remove image" = "Eliminar imagen";
+
+/* No comment provided by engineer. */
+"Remove link tracking" = "Limpiar enlaces de seguimiento";
 
 /* No comment provided by engineer. */
 "Remove member" = "Expulsar miembro";
@@ -5101,6 +5110,9 @@ chat item action */
 
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Protocolos de SimpleX auditados por Trail of Bits.";
+
+/* simplex link type */
+"SimpleX relay link" = "Enlace de servidor SimpleX";
 
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Modo incógnito simplificado";

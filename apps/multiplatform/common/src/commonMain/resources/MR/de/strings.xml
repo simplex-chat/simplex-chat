@@ -1641,7 +1641,7 @@
     <string name="agent_internal_error_title">Interner Fehler</string>
     <string name="remote_host_error_bad_version"><![CDATA[Auf dem Mobiltelefon <b>%s</b> wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen]]></string>
     <string name="remote_host_error_busy"><![CDATA[Mobiltelefon <b>%s</b> ist besetzt]]></string>
-    <string name="past_member_vName">Ehemaliges Mitglied %1$s</string>
+    <string name="past_member_vName">Mitglied %1$s</string>
     <string name="possible_slow_function_desc">Die Ausführung dieser Funktion dauert zu lange: %1$d Sekunden: %2$s</string>
     <string name="possible_slow_function_title">Langsame Funktion</string>
     <string name="show_slow_api_calls">Langsame API-Aufrufe anzeigen</string>
@@ -1910,7 +1910,7 @@
     <string name="v5_8_message_delivery_descr">Mit reduziertem Akkuverbrauch.</string>
     <string name="message_queue_info_none">Keine Information</string>
     <string name="info_row_debug_delivery">Debugging-Zustellung</string>
-    <string name="message_queue_info">Nachrichten-Warteschlangen-Information</string>
+    <string name="message_queue_info">Information Nachrichtenwarteschlange</string>
     <string name="message_queue_info_server_info">Server-Warteschlangen-Information: %1$s
 \n
 \nZuletzt empfangene Nachricht: %2$s</string>
@@ -2598,11 +2598,12 @@
     <string name="files_prohibited_in_this_chat">In diesem Chat sind Dateien und Medien nicht erlaubt.</string>
     <string name="only_you_can_send_files">Nur Sie können Dateien und Medien senden.</string>
     <string name="only_your_contact_can_send_files">Nur Ihr Kontakt kann Dateien und Medien senden.</string>
-    <string name="privacy_chat_list_open_clean_web_link">Geklärten Link öffnen</string>
+    <string name="privacy_chat_list_open_clean_web_link">Trackingfreien Link öffnen</string>
     <string name="privacy_chat_list_open_full_web_link">Vollständigen Link öffnen</string>
     <string name="open_to_use_bot">Bot für die Nutzung erlaubt</string>
     <string name="prohibit_sending_files_and_media">Das Senden von Dateien und Medien ist nicht erlaubt.</string>
     <string name="sanitize_links_toggle">Link-Tracking entfernen</string>
     <string name="chat_banner_connect_to_use_bot">Verbinden tippen, um den Bot zu nutzen.</string>
     <string name="cant_send_commands_alert_text">Um Befehle senden zu können, müssen Sie verbunden sein.</string>
+    <string name="simplex_link_relay">SimpleX Relais-Link</string>
 </resources>

@@ -1229,10 +1229,10 @@
     <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
     <string name="item_info_no_text">sin texto</string>
     <string name="non_fatal_errors_occured_during_import">Han ocurrido algunos errores no críticos durante la importación:</string>
-    <string name="shutdown_alert_question">¿Cerrar\?</string>
+    <string name="shutdown_alert_question">¿Salir de SimpleX?</string>
     <string name="settings_section_title_app">APLICACIÓN</string>
     <string name="settings_restart_app">Reiniciar</string>
-    <string name="settings_shutdown">Cerrar</string>
+    <string name="settings_shutdown">Salir</string>
     <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que vuelvas a iniciar la aplicación</string>
     <string name="la_mode_off">Desactivado</string>
     <string name="error_aborting_address_change">Error al cancelar cambio de dirección</string>
@@ -1609,7 +1609,7 @@
     <string name="agent_internal_error_desc">Por favor, informa a los desarrolladores:
 \n%s</string>
     <string name="restart_chat_button">Reiniciar chat</string>
-    <string name="past_member_vName">Miembro pasado %1$s</string>
+    <string name="past_member_vName">Miembro %1$s</string>
     <string name="profile_update_event_member_name_changed">el miembro %1$s ha cambiado a %2$s</string>
     <string name="profile_update_event_removed_address">dirección de contacto eliminada</string>
     <string name="profile_update_event_removed_picture">ha eliminado la imagen del perfil</string>
@@ -2526,4 +2526,9 @@
     <string name="prohibit_sending_files_and_media">Archivos y multimedia no permitidos.</string>
     <string name="chat_banner_connect_to_use_bot">Pulsa Conectar para usar el bot</string>
     <string name="cant_send_commands_alert_text">Para enviar comandos debes estar conectado.</string>
+    <string name="deprecated_options_section">Opciones obsoletas</string>
+    <string name="privacy_chat_list_open_clean_web_link">Abrir enlace limpio</string>
+    <string name="sanitize_links_toggle">Limpiar enlaces de seguimiento</string>
+    <string name="privacy_chat_list_open_full_web_link">Abrir enlace completo</string>
+    <string name="simplex_link_relay">Enlace de servidor SimpleX</string>
 </resources>

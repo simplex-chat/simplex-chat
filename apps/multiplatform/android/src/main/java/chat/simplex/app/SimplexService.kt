@@ -112,7 +112,7 @@ class SimplexService: Service() {
     val title = generalGetString(MR.strings.simplex_service_notification_title)
     val text = generalGetString(MR.strings.simplex_service_notification_text)
     notificationManager = createNotificationChannel()
-    val newNtf = createNotification(title, text)
+    val newNtf = createServiceNotification(title, text)
     serviceNotification = newNtf
     return newNtf
   }
@@ -144,11 +144,18 @@ class SimplexService: Service() {
           return@withLongRunningApi
         }
         saveServiceState(self, ServiceState.STARTED)
-        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
-          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
-            acquire()
-          }
-        }
+// Permanent wakelock prevents deep sleep and results in high battery usage.
+// Instead, the app relies on being whitelisted for unrestricted battery usage,
+// and also takes wakelock on network events and on network information changes, which allows it to reconnect.
+// Network events and information changes are delivered even when device is in deep sleep.
+// Possibly, we may need to additionally use "alarms" to wake the app periodically,
+// but in all pre-release tests the app was reliably delivering messages in deep sleep, even restored dropped connections.
+//
+//        wakeLock = (getSystemService(Context.POWER_SERVICE) as PowerManager).run {
+//          newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, WAKE_LOCK_TAG).apply {
+//            acquire()
+//          }
+//        }
       } finally {
         isCheckingNewMessages = false
       }
@@ -168,7 +175,7 @@ class SimplexService: Service() {
     return null
   }
 
-  private fun createNotification(title: String, text: String): Notification {
+  private fun createServiceNotification(title: String, text: String): Notification {
     val pendingIntent: PendingIntent = Intent(this, MainActivity::class.java).let { notificationIntent ->
       PendingIntent.getActivity(this, 0, notificationIntent, PendingIntent.FLAG_IMMUTABLE)
     }
@@ -181,6 +188,7 @@ class SimplexService: Service() {
       .setContentIntent(pendingIntent)
       .setSilent(true)
       .setShowWhen(false) // no date/time
+      .setOngoing(true) // Starting SDK 33 / Android 13, foreground notifications can be swiped away
 
     // Shows a button which opens notification channel settings
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

@@ -1557,7 +1557,7 @@
     <string name="failed_to_create_user_invalid_desc">显示名无效。请另选一个名称。</string>
     <string name="possible_slow_function_title">慢函数</string>
     <string name="show_slow_api_calls">显示缓慢的 API 调用</string>
-    <string name="past_member_vName">过往成员 %1$s</string>
+    <string name="past_member_vName">成员 %1$s</string>
     <string name="group_member_status_unknown_short">未知</string>
     <string name="group_member_status_unknown">未知状态</string>
     <string name="developer_options_section">开发者选项</string>
@@ -2514,4 +2514,9 @@
     <string name="prohibit_sending_files_and_media">禁止发送文件和媒体。</string>
     <string name="chat_banner_connect_to_use_bot">轻按“连接”使用机器人</string>
     <string name="cant_send_commands_alert_text">你必须已连接才能发送命令。</string>
+    <string name="deprecated_options_section">已废弃的选项</string>
+    <string name="privacy_chat_list_open_clean_web_link">打开干净链接</string>
+    <string name="privacy_chat_list_open_full_web_link">打开完整链接</string>
+    <string name="sanitize_links_toggle">删除链接跟踪</string>
+    <string name="simplex_link_relay">SimpleX 中继链接</string>
 </resources>

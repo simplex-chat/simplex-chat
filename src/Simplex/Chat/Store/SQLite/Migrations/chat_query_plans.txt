@@ -85,6 +85,7 @@ Query:
                 JOIN group_members mu ON g.group_id = mu.group_id
                 JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
                 WHERE m.group_member_id = ? AND g.user_id = ? AND mu.contact_id = ?
+                  AND mu.member_status NOT IN (?,?,?)
               
 Plan:
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
@@ -392,7 +393,7 @@ Query:
               c.ui_themes, c.chat_deleted, c.custom_data, c.chat_item_ttl
             FROM contacts c
             JOIN contact_profiles p ON c.contact_profile_id = p.contact_profile_id
-            WHERE c.user_id = ? AND c.contact_id = ? AND c.deleted = 0
+            WHERE c.user_id = ? AND c.contact_id = ? AND c.contact_status = ? AND c.deleted = 0
           
 Plan:
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
@@ -615,7 +616,7 @@ Query:
               created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
-            WHERE user_id = ? AND agent_conn_id = ?
+            WHERE user_id = ? AND agent_conn_id = ? AND conn_status != ?
           
 Plan:
 SEARCH connections USING INDEX sqlite_autoindex_connections_1 (agent_conn_id=?)
@@ -4547,6 +4548,14 @@ Query:
       UPDATE group_members
       SET member_status = ?, updated_at = ?
       WHERE user_id = ? AND group_member_id = ?
+    
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE group_members
+      SET peer_chat_min_version = ?, peer_chat_max_version = ?
+      WHERE group_member_id = ?
     
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)

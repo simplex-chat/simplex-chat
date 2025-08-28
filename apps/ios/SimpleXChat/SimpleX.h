@@ -24,7 +24,7 @@ extern char *chat_send_cmd_retry(chat_ctrl ctl, char *cmd, int retryNum);
 extern char *chat_recv_msg_wait(chat_ctrl ctl, int wait);
 extern char *chat_parse_markdown(char *str);
 extern char *chat_parse_server(char *str);
-extern char *chat_parse_uri(char *str);
+extern char *chat_parse_uri(char *str, int safe);
 extern char *chat_password_hash(char *pwd, char *salt);
 extern char *chat_valid_name(char *name);
 extern int chat_json_length(char *str);

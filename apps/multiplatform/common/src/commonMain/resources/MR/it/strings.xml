@@ -1569,7 +1569,7 @@
     <string name="remote_ctrl_error_inactive">Il desktop è inattivo</string>
     <string name="remote_ctrl_error_disconnected">Il desktop è stato disconnesso</string>
     <string name="remote_ctrl_error_timeout">Tempo scaduto durante la connessione al desktop</string>
-    <string name="past_member_vName">Membro passato %1$s</string>
+    <string name="past_member_vName">Membro %1$s</string>
     <string name="possible_slow_function_desc">L\'esecuzione della funzione impiega troppo tempo: %1$d secondi: %2$s</string>
     <string name="possible_slow_function_title">Funzione lenta</string>
     <string name="show_slow_api_calls">Mostra chiamate API lente</string>
@@ -2134,7 +2134,7 @@
     <string name="onboarding_choose_server_operators">Operatori del server</string>
     <string name="onboarding_select_network_operators_to_use">Seleziona gli operatori di rete da usare.</string>
     <string name="onboarding_network_operators_continue">Continua</string>
-    <string name="onboarding_network_operators_update">Aggiorna</string>
+    <string name="onboarding_network_operators_update">Aggiornamento</string>
     <string name="onboarding_network_operators_review_later">Leggi più tardi</string>
     <string name="network_preset_servers_title">Server preimpostati</string>
     <string name="operator_conditions_accepted">Condizioni accettate</string>
@@ -2534,4 +2534,5 @@
     <string name="privacy_chat_list_open_clean_web_link">Apri link pulito</string>
     <string name="privacy_chat_list_open_full_web_link">Apri link completo</string>
     <string name="sanitize_links_toggle">Rimuovi il tracciamento del link</string>
+    <string name="simplex_link_relay">Link del relay SimpleX</string>
 </resources>

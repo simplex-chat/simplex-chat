@@ -83,7 +83,7 @@ toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, cons
                 [RecordTypeInfo {fieldInfos}] ->
                   let fields = fromMaybe (error $ "Record type without fields: " <> typeName) $ L.nonEmpty fieldInfos
                       ((visited', typeDefs'), fields') = mapAccumL (toAPIField_ typeName) (S.insert typeName visited, typeDefs) fields
-                      td = APITypeDef typeName $ ATDRecord fields'
+                      td = APITypeDef typeName $ ATDRecord $ L.toList fields'
                     in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
                 _ -> error $ "Record type with " <> show (length constrs) <> " constructors: " <> typeName
               STUnion -> if length constrs > 1 then toUnionType constrs else unionError constrs
@@ -199,7 +199,7 @@ chatTypesDocsData =
     (sti @(ContactUserPreference SimplePreference), STRecord, "", [], "", ""),
     (sti @(CreatedConnLink 'CMContact), STRecord, "", [], Param "connFullLink" <> Optional "" (" " <> Param "$0") "connShortLink", ""),
     (sti @AddressSettings, STRecord, "", [], "", ""),
-    (sti @AgentCryptoError, STUnion, "", [], "", ""),
+    (sti @AgentCryptoError, STUnion, "", ["RATCHET_EARLIER", "RATCHET_SKIPPED"], "", ""), -- TODO add fields to types
     (sti @AgentErrorType, STUnion, "", [], "", ""),
     (sti @AutoAccept, STRecord, "", [], "", ""),
     (sti @BlockingInfo, STRecord, "", [], "", ""),
@@ -217,7 +217,7 @@ chatTypesDocsData =
     (sti @ChatRef, STRecord, "", [], Param "chatType" <> Param "chatId" <> Optional "" (Param "$0") "chatScope", "Used in API commands. Chat scope can only be passed with groups."),
     (sti @ChatSettings, STRecord, "", [], "", ""),
     (sti @ChatStats, STRecord, "", [], "", ""),
-    (sti @ChatType, STEnum, "CT", ["CTContactRequest", "CTContactConnection"], Choice "self" [("contact", "@"), ("group", "#"), ("local", "*")] "", ""),
+    (sti @ChatType, STEnum, "CT", ["CTContactRequest", "CTContactConnection"], Choice "self" [("direct", "@"), ("group", "#"), ("local", "*")] "", ""),
     (sti @ChatWallpaper, STRecord, "", [], "", ""),
     (sti @ChatWallpaperScale, STEnum, "CWS", [], "", ""),
     (sti @CICallStatus, STEnum, "CISCall", [], "", ""),

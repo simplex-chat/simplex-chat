@@ -348,7 +348,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMsgForward :: MemberId -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgForward :: MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -385,9 +385,9 @@ isForwardedGroupMsg ev = case ev of
   XGrpMemNew {} -> True
   XGrpMemRole {} -> True
   XGrpMemRestrict {} -> True
-  XGrpMemDel {} -> True -- TODO there should be a special logic when deleting host member (e.g., host forwards it before deleting connections)
+  XGrpMemDel {} -> True
   XGrpLeave -> True
-  XGrpDel -> True -- TODO there should be a special logic - host should forward before deleting connections
+  XGrpDel -> True
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   _ -> False
@@ -1136,7 +1136,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> p "msg" <*> p "msgTs"
+      XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> opt "memberName" <*> p "msg" <*> p "msgTs"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1152,18 +1152,13 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
 key .=? value = maybe id ((:) . (key .=)) value
 
 chatToAppMessage :: forall e. MsgEncodingI e => ChatMessage e -> AppMessage e
-chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
-  SBinary ->
-    let (binaryMsgId, body) = toBody chatMsgEvent
-     in AMBinary AppMessageBinary {msgId = binaryMsgId, tag = B.head $ strEncode tag, body}
+chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @e of
+  SBinary -> AMBinary AppMessageBinary {msgId = Nothing, tag = B.head $ strEncode tag, body = chatMsgBinaryToBody chatMsg}
   SJson -> AMJson AppMessageJson {v = Just $ ChatVersionRange chatVRange, msgId, event = textEncode tag, params = params chatMsgEvent}
   where
     tag = toCMEventTag chatMsgEvent
     o :: [(J.Key, J.Value)] -> J.Object
     o = JM.fromList
-    toBody :: ChatMsgEvent 'Binary -> (Maybe SharedMsgId, ByteString)
-    toBody = \case
-      BFileChunk (SharedMsgId msgId') chunk -> (Nothing, smpEncode (msgId', IFC chunk))
     params :: ChatMsgEvent 'Json -> J.Object
     params = \case
       XMsgNew container -> msgContainerJSON container
@@ -1200,7 +1195,7 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpMsgForward memberId msg msgTs -> o ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgForward memberId memberName msg msgTs -> o $ ("memberName" .=? memberName) ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]
@@ -1211,6 +1206,15 @@ chatToAppMessage ChatMessage {chatVRange, msgId, chatMsgEvent} = case encoding @
       XCallEnd callId -> o ["callId" .= callId]
       XOk -> JM.empty
       XUnknown _ ps -> ps
+
+chatMsgBinaryToBody :: ChatMessage 'Binary -> ByteString
+chatMsgBinaryToBody ChatMessage {chatMsgEvent} = case chatMsgEvent of
+  BFileChunk (SharedMsgId msgId) chunk -> smpEncode (msgId, IFC chunk)
+
+chatMsgToBody :: forall e. MsgEncodingI e => ChatMessage e -> ByteString
+chatMsgToBody chatMsg = case encoding @e of
+  SBinary -> chatMsgBinaryToBody chatMsg
+  SJson -> LB.toStrict $ J.encode chatMsg
 
 instance ToJSON (ChatMessage 'Json) where
   toJSON = (\(AMJson msg) -> toJSON msg) . chatToAppMessage

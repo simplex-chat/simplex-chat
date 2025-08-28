@@ -128,7 +128,7 @@ foreign export ccall "chat_parse_markdown" cChatParseMarkdown :: CString -> IO C
 
 foreign export ccall "chat_parse_server" cChatParseServer :: CString -> IO CJSONString
 
-foreign export ccall "chat_parse_uri" cChatParseUri :: CString -> IO CJSONString
+foreign export ccall "chat_parse_uri" cChatParseUri :: CString -> CInt -> IO CJSONString
 
 foreign export ccall "chat_password_hash" cChatPasswordHash :: CString -> CString -> IO CString
 
@@ -220,8 +220,8 @@ cChatParseServer :: CString -> IO CJSONString
 cChatParseServer s = newCStringFromLazyBS . chatParseServer =<< B.packCString s
 
 -- | parse web URI - returns ParsedUri JSON
-cChatParseUri :: CString -> IO CJSONString
-cChatParseUri s = newCStringFromLazyBS . chatParseUri =<< B.packCString s
+cChatParseUri :: CString -> CInt -> IO CJSONString
+cChatParseUri s safe = newCStringFromLazyBS . chatParseUri (safe /= 0) =<< B.packCString s
 
 cChatPasswordHash :: CString -> CString -> IO CString
 cChatPasswordHash cPwd cSalt = do
@@ -366,11 +366,11 @@ chatParseServer = J.encode . toServerAddress . strDecode
     enc :: StrEncoding a => a -> String
     enc = B.unpack . strEncode
 
-chatParseUri :: ByteString -> JSONByteString
-chatParseUri s = J.encode $ case parseUri s of
+chatParseUri :: Bool -> ByteString -> JSONByteString
+chatParseUri safe s = J.encode $ case parseUri s of
   Left e -> ParsedUri Nothing e
   Right uri@U.URI {uriScheme = U.Scheme sch} ->
-    let sanitized = safeDecodeUtf8 . U.serializeURIRef' <$> sanitizeUri uri
+    let sanitized = safeDecodeUtf8 . U.serializeURIRef' <$> sanitizeUri safe uri
         uriInfo = UriInfo {scheme = safeDecodeUtf8 sch, sanitized}
      in ParsedUri (Just uriInfo) ""
 

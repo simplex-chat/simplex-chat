@@ -346,11 +346,20 @@ alert action
 swipe action */
 "Accept" = "Accepter";
 
+/* alert action */
+"Accept as member" = "Accepter en tant que membre";
+
+/* alert action */
+"Accept as observer" = "Accepter en tant qu'observateur";
+
 /* No comment provided by engineer. */
 "Accept conditions" = "Accepter les conditions";
 
 /* No comment provided by engineer. */
 "Accept connection request?" = "Accepter la demande de connexion ?";
+
+/* alert title */
+"Accept contact request" = "Accepter la demande de contact";
 
 /* notification body */
 "Accept contact request from %@?" = "Accepter la demande de contact de %@ ?";
@@ -358,6 +367,9 @@ swipe action */
 /* alert action
 swipe action */
 "Accept incognito" = "Accepter en incognito";
+
+/* alert title */
+"Accept member" = "Accepter le membre";
 
 /* call status */
 "accepted call" = "appel accepté";
@@ -388,6 +400,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Add list" = "Ajouter une liste";
+
+/* placeholder for sending contact request */
+"Add message" = "Ajouter un message";
 
 /* No comment provided by engineer. */
 "Add profile" = "Ajouter un profil";
@@ -507,6 +522,9 @@ swipe action */
 "All reports will be archived for you." = "Tous les rapports seront archivés pour vous.";
 
 /* No comment provided by engineer. */
+"All servers" = "Tous les serveurs";
+
+/* No comment provided by engineer. */
 "All your contacts will remain connected." = "Tous vos contacts resteront connectés.";
 
 /* No comment provided by engineer. */
@@ -529,6 +547,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow downgrade" = "Autoriser la rétrogradation";
+
+/* No comment provided by engineer. */
+"Allow files and media only if your contact allows them." = "Permettre des fichiers et des médias seulement si votre contact les permet.";
 
 /* No comment provided by engineer. */
 "Allow irreversible message deletion only if your contact allows it to you. (24 hours)" = "Autoriser la suppression irréversible des messages uniquement si votre contact vous l'autorise. (24 heures)";
@@ -580,6 +601,9 @@ swipe action */
 
 /* No comment provided by engineer. */
 "Allow your contacts to send disappearing messages." = "Autorise votre contact à envoyer des messages éphémères.";
+
+/* No comment provided by engineer. */
+"Allow your contacts to send files and media." = "Permettre à vos contacts d'envoyer des fichiers et des médias.";
 
 /* No comment provided by engineer. */
 "Allow your contacts to send voice messages." = "Autorise vos contacts à envoyer des messages vocaux.";
@@ -3636,9 +3660,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Password to show" = "Mot de passe à entrer";
-
-/* past/unknown group member */
-"Past member %@" = "Ancien membre %@";
 
 /* No comment provided by engineer. */
 "Paste desktop address" = "Coller l'adresse du bureau";

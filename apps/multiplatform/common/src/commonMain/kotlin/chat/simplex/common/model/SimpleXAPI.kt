@@ -479,7 +479,7 @@ class AppPreferences {
   }
 }
 
-private const val MESSAGE_TIMEOUT: Int = 15_000_000
+private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
   var ctrl: ChatCtrl? = -1
@@ -642,6 +642,7 @@ object ChatController {
     if (receiverStarted) return
     receiverStarted = true
     CoroutineScope(Dispatchers.IO).launch {
+      var releaseLock: (() -> Unit) = {}
       while (true) {
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
          * to change it everywhere in code after changing a database.
@@ -652,7 +653,16 @@ object ChatController {
           break
         }
         try {
+          val release = releaseLock
+          // delaying the release of wake lock in order to:
+          // 1. avoid race condition with the incoming call activity that fails to show if called after wake lock release (primary reason),
+          // 2. allow any other necessary processing for a bit of time with wakelock held.
+          launch {
+            delay(30000)
+            release()
+          }
           val msg = recvMsg(ctrl)
+          releaseLock = getWakeLock(timeout = 60000)
           if (msg != null) {
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
               processReceivedMsg(msg)
@@ -4634,8 +4644,8 @@ data class ParsedServerAddress (
   var parseError: String
 )
 
-fun parseSanitizeUri(s: String): ParsedUri? {
-  val parsed = chatParseUri(s)
+fun parseSanitizeUri(s: String, safe: Boolean): ParsedUri? {
+  val parsed = chatParseUri(s, if (safe) 1 else 0)
   return runCatching { json.decodeFromString(ParsedUri.serializer(), parsed) }
     .onFailure { Log.d(TAG, "parseSanitizeUri decode error: $it") }
     .getOrNull()

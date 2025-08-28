@@ -2522,7 +2522,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         get {
             let p = memberProfile
             let name = p.localAlias == "" ? p.displayName : p.localAlias
-            return pastMember(name)
+            return unknownMember(name)
         }
     }
     public var fullName: String { get { memberProfile.fullName } }
@@ -2549,13 +2549,19 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
                 ? p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
                 : p.localAlias
             )
-            return pastMember(name)
+            return unknownMember(name)
         }
     }
 
-    private func pastMember(_ name: String) -> String {
+    private func unknownMember(_ name: String) -> String {
         memberStatus == .memUnknown
-        ? String.localizedStringWithFormat(NSLocalizedString("Past member %@", comment: "past/unknown group member"), name)
+        ? (
+            memberId.hasPrefix(name)
+            // unknown member was created using memberId for name
+            ? String.localizedStringWithFormat(NSLocalizedString("Member %@", comment: "past/unknown group member"), name)
+            // unknown member was created with name
+            : name
+        )
         : name
     }
 
@@ -2565,7 +2571,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
             let fullName = p.displayName + (p.fullName == "" || p.fullName == p.displayName ? "" : " / \(p.fullName)")
             let name = p.localAlias == "" ? fullName : "\(p.localAlias) (\(fullName))"
 
-            return pastMember(name)
+            return unknownMember(name)
         }
     }
 
@@ -4666,6 +4672,7 @@ public enum SimplexLinkType: String, Decodable, Hashable {
     case invitation
     case group
     case channel
+    case relay
 
     public var description: String {
         switch self {
@@ -4673,6 +4680,7 @@ public enum SimplexLinkType: String, Decodable, Hashable {
         case .invitation: return NSLocalizedString("SimpleX one-time invitation", comment: "simplex link type")
         case .group: return NSLocalizedString("SimpleX group link", comment: "simplex link type")
         case .channel: return NSLocalizedString("SimpleX channel link", comment: "simplex link type")
+        case .relay: return NSLocalizedString("SimpleX relay link", comment: "simplex link type")
         }
     }
 }
