@@ -177,17 +177,20 @@ import Crypto.Random (ChaChaDRG)
 import qualified Data.Aeson.TH as J
 import Data.Bifunctor (second)
 import Data.Bitraversable (bitraverse)
+import Data.ByteString.Char8 (ByteString)
 import Data.Char (toLower)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
+import Data.List.NonEmpty (NonEmpty)
+import qualified Data.List.NonEmpty as L
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (MsgMention (..), groupForwardVersion)
+import Simplex.Chat.Protocol (ChatMessage (..), MessageFromChannel, MsgMention (..), groupForwardVersion)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types

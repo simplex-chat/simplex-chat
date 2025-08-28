@@ -507,9 +507,9 @@ instance TextEncoding GroupType where
     "channel" -> Just GTChannel
     _ -> Nothing
 
-instance FromField BusinessChatType where fromField = fromTextField_ textDecode
+instance FromField GroupType where fromField = fromTextField_ textDecode
 
-instance ToField BusinessChatType where toField = toField . textEncode
+instance ToField GroupType where toField = toField . textEncode
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -2083,6 +2083,8 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
+
+$(JQ.deriveJSON defaultJSON ''GroupType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 

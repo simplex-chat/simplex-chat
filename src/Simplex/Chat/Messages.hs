@@ -27,6 +27,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
@@ -1215,7 +1216,7 @@ type MessageId = Int64
 -- TODO [channels fwd] review types
 data NewGroupDeliveryTask = NewGroupDeliveryTask
   { messageId :: MessageId,
-    jobTag :: DeliveryJobTag
+    jobTag :: DeliveryJobTag,
     forwardScope :: GroupForwardScope,
     messageFromChannel :: MessageFromChannel
   }
@@ -1283,7 +1284,7 @@ data MessageForwardTask = MessageForwardTask
     senderMemberName :: ContactName,
     brokerTs :: UTCTime,
     chatMessage :: ChatMessage 'Json,
-    messageFromChannel :: MessageFromChannel,
+    messageFromChannel :: MessageFromChannel
   }
   deriving (Show)
 
