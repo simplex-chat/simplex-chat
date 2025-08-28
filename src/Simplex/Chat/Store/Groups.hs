@@ -2909,7 +2909,24 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   pure (g :: GroupInfo) {localAlias = localAlias}
 
 createNewDeliveryTask :: DB.Connection -> GroupInfo -> GroupMember -> NewGroupDeliveryTask -> IO ()
-createNewDeliveryTask db GroupInfo {groupId} sender newTask = undefined
+createNewDeliveryTask
+  db
+  GroupInfo {groupId}
+  sender
+  NewGroupDeliveryTask {messageId, jobTag, forwardScope, messageFromChannel} =
+    DB.execute
+      db
+      [sql|
+        INSERT INTO delivery_tasks (
+          group_id, delivery_job_scope, delivery_job_tag,
+          forward_scope_tag, forward_scope_group_member_id, sender_group_member_id
+          message_id, message_from_channel, task_status
+        ) VALUES (?,?,?,?,?,?,?,?,?)
+      |]
+      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, groupMemberId' sender, messageId, messageFromChannel, DTSNew)
+    where
+      jobScope = forwardToJobScope forwardScope
+      (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag forwardScope
 
 getPendingDeliveryTaskScopes :: DB.Connection -> IO [DeliveryWorkerScope]
 getPendingDeliveryTaskScopes db =
