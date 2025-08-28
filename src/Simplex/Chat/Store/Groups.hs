@@ -2944,6 +2944,9 @@ getPendingDeliveryTaskScopes db =
     |]
     (Only DTSNew)
 
+-- TODO [channels fwd] getWorkItem for chat monad
+getWorkItem = undefined
+
 -- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
 -- TODO [channels fwd] different "getWorkItem" implementation?
 -- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksBatch fails
@@ -2996,10 +2999,10 @@ getNextDeliveryTasksBatch db deliveryScope = do
       case (taskIds, jobTag) of
         (_taskIds, DJTMessageForward) -> do
           case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
-            Nothing -> throwError SEInvalidDeliveryTasksBatch
+            Nothing -> pure $ Left SEInvalidDeliveryTasksBatch
             Just fwdScope -> do
               tasks <- traverse (ExceptT . getTask) taskIds
-              pure $ DTBMessageForward tasks fwdScope
+              pure $ Right $ DTBMessageForward tasks fwdScope
           where
             getTask :: Int64 -> IO (Either StoreError MessageForwardTask)
             getTask taskId =
@@ -3022,7 +3025,7 @@ getNextDeliveryTasksBatch db deliveryScope = do
                 toMessageForwardTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel) =
                   MessageForwardTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
         (taskId :| [], DJTRelayRemoved) ->
-          firstRow toRelayRemovedTask (SEDeliveryTaskNotFound taskId) $
+          firstRow (DTBRelayRemoved . toRelayRemovedTask) (SEDeliveryTaskNotFound taskId) $
             DB.query
               db
               [sql|
@@ -3037,8 +3040,7 @@ getNextDeliveryTasksBatch db deliveryScope = do
           where
             toRelayRemovedTask :: (MemberId, ContactName, UTCTime, ChatMessage 'Json) -> RelayRemovedTask
             toRelayRemovedTask (senderMemberId, senderMemberName, brokerTs, chatMessage) =
-              let task = RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
-              in DTBRelayRemoved task
+              RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
         _ -> pure $ Left SEInvalidDeliveryTasksBatch
     markTasksFailed :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
     markTasksFailed (taskIds, _, _, _) =
@@ -3057,7 +3059,7 @@ createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ deliveryBody
         delivery_body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_ deliveryBody, DJSNew, currentTs, currentTs)
+    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_, deliveryBody, DJSNew, currentTs, currentTs)
   where
     (groupId, jobScope) = deliveryScope
     (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag fwdScope
