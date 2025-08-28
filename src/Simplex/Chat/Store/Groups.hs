@@ -182,7 +182,7 @@ import Data.Char (toLower)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
@@ -190,7 +190,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (ChatMessage (..), MessageFromChannel, MsgMention (..), groupForwardVersion)
+import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -374,6 +374,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     pure
       GroupInfo
         { groupId,
+          groupType = GTSmallGroup,
           localDisplayName = ldn,
           groupProfile,
           localAlias = "",
@@ -447,6 +448,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           pure
             ( GroupInfo
                 { groupId,
+                  groupType = GTSmallGroup,
                   localDisplayName,
                   groupProfile,
                   localAlias = "",
@@ -3020,7 +3022,7 @@ getNextDeliveryTasksBatch db deliveryScope = do
                 toMessageForwardTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel) =
                   MessageForwardTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
         (taskId :| [], DJTRelayRemoved) ->
-          firstRow toRelayRemovedWork (SEDeliveryTaskNotFound taskId) $
+          firstRow toRelayRemovedTask (SEDeliveryTaskNotFound taskId) $
             DB.query
               db
               [sql|
@@ -3033,8 +3035,8 @@ getNextDeliveryTasksBatch db deliveryScope = do
               |]
               (Only taskId)
           where
-            toRelayRemovedWork :: (MemberId, ContactName, UTCTime, ChatMessage 'Json) -> DeliveryTask
-            toRelayRemovedWork (senderMemberId, senderMemberName, brokerTs, chatMessage) =
+            toRelayRemovedTask :: (MemberId, ContactName, UTCTime, ChatMessage 'Json) -> RelayRemovedTask
+            toRelayRemovedTask (senderMemberId, senderMemberName, brokerTs, chatMessage) =
               let task = RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
               in DTBRelayRemoved task
         _ -> pure $ Left SEInvalidDeliveryTasksBatch
@@ -3138,10 +3140,10 @@ getNextDeliveryJob db deliveryScope = do
           case jobTag of
             DJTMessageForward -> case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
               Nothing -> error "getNextDeliveryJob: invalid forward scope" -- TODO [channels fwd] put StoreError in return?
-              Just forwardScope -> DJMessageForward {jobId, forwardScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
+              Just forwardScope -> DJMessageForward MessageForwardJob {jobId, forwardScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
             DJTRelayRemoved -> case singleSenderGMId_ of
               Nothing -> error "getNextDeliveryJob: missing singleSenderGMId" -- TODO [channels fwd] put StoreError in return?
-              Just singleSenderGMId -> DJRelayRemoved {jobId, singleSenderGMId, fwdChatMessage = deliveryBody, cursorGMId}
+              Just singleSenderGMId -> DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage = deliveryBody, cursorGMId}
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
