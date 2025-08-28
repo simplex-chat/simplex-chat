@@ -3399,6 +3399,11 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
                 --
                 -- on another note: also if we parse here we have to prove all messages are of type ChatMessage 'Json,
                 -- and extract from XGrpMsgForward containers, which is additional complexity
+                --
+                -- another possibility is to remove optimization for report forwarding, and simply forward them
+                -- synchronously to moderators and above only, as we do for xGrpMemDel -> forwardToMember.
+                -- then we get back the accidental guarantee that there's no reports in forwarded batches
+                -- mixed with normal messages (there will be no reports in batches at all).
                 let fwdMsgs = parseChatMessages body
                 ms <- buildMemberList fwdMsgs
                 -- TODO [channels fwd] prepare agent MsgReq objects, replace with direct call to sendMessagesB
