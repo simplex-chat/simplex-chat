@@ -1314,6 +1314,7 @@ data MessageForwardTask = MessageForwardTask
 
 data RelayRemovedTask = RelayRemovedTask
   { taskId :: Int64,
+    senderGMId :: GroupMemberId,
     senderMemberId :: MemberId,
     senderMemberName :: ContactName,
     brokerTs :: UTCTime,

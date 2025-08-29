@@ -24,6 +24,7 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Composition ((.:))
 import Data.Either (lefts, partitionEithers, rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -67,6 +68,7 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork)
 import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -1457,7 +1459,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       Just MSMember {} -> a
       Nothing
         | memberRole > GRObserver || memberPending m -> a
-        | otherwise -> messageError "member is not allowed to send messages" $> (Nothing, False)
+        | otherwise -> messageError "member is not allowed to send messages" $> Nothing
 
     processConnMERR :: ConnectionEntity -> Connection -> AgentErrorType -> CM ()
     processConnMERR connEntity conn err = do
@@ -2954,10 +2956,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when withMessages $ deleteMessages gInfo membership' SMDSnd
           deleteMemberItem RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages
-          pure $ Just (DJTRelayRemoved, Just GFSAll)
+          pure $ Just (DJTRelayRemoved, GFSAll)
         else
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Left _ -> messageError "x.grp.mem.del with unknown member ID" $> Just (DJTMessageForward, Just GFSAll)
+            Left _ -> messageError "x.grp.mem.del with unknown member ID" $> Just (DJTMessageForward, GFSAll)
             Right deletedMember@GroupMember {groupMemberId, memberProfile} ->
               checkRole deletedMember $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
@@ -3309,21 +3311,21 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
           DTBMessageForward tasks fwdScope -> do
             let (batch, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength tasks
             withStore' $ \db -> do
-              createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ batch
+              createMessageForwardJob db deliveryScope fwdScope (singleSenderGMId_ tasks) batch
               forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
               forM_ largeTaskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSError
             lift . void $ getDeliveryJobWorker True deliveryScope
             where
               singleSenderGMId_ :: NonEmpty MessageForwardTask -> Maybe GroupMemberId
-              singleSenderGMId_ (t :| ts)
-                | all ((== senderGMId t) . senderGMId) ts = Just $ senderGMId t
+              singleSenderGMId_ (t@MessageForwardTask {senderGMId = senderGMId'} :| ts)
+                | all (\MessageForwardTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                 | otherwise = Nothing
-          DTBRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
-            let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
+          DTBRelayRemoved RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
+            let fwdEvt = XGrpMsgForward senderMemberId (Just senderMemberName) chatMessage brokerTs
                 cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
                 body = chatMsgToBody cm
             withStore' $ \db -> do
-              createRelayRemovedJob db deliveryScope body
+              createRelayRemovedJob db deliveryScope senderGMId body
               updateDeliveryTaskStatus db taskId DTSProcessed
             lift . void $ getDeliveryJobWorker True deliveryScope
 
@@ -3337,7 +3339,7 @@ resumeDeliveryJobWork = void .: getDeliveryJobWorker False
 
 getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryJobWorker hasWork deliveryScope = do
-  ws <- asks DeliveryJobWorkers
+  ws <- asks deliveryJobWorkers
   getAgentWorker "delivery_job" hasWork deliveryScope ws $ runDeliveryJobWorker deliveryScope
 
 runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
@@ -3367,7 +3369,7 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
             sendBodyToMembers jobId forwardScope singleSenderGMId_ messagesBatch cursorGMId
             withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage, cursorGMId} -> do
-            sendBodyToMembers jobId GFSAll (Just singleSenderGMId) messagesBatch cursorGMId
+            sendBodyToMembers jobId GFSAll (Just singleSenderGMId) fwdChatMessage cursorGMId
             deleteGroupConnections user gInfo True
             withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
@@ -3378,7 +3380,7 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
               -- - forward reports in member support scope
               -- - when retrieving a batch of tasks to convert into job, filter by the same sender (getNextDeliveryTasksBatch)
               GTSmallGroup -> case singleSenderGMId_ of
-                Nothing -> throwError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
+                Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
                 Just singleSenderGMId -> do
                   sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
                   mems <- buildMemberList sender

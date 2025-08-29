@@ -3028,7 +3028,9 @@ getNextDeliveryTasksBatch db deliveryScope = do
             DB.query
               db
               [sql|
-                SELECT m.member_id, p.display_name, msg.created_at, msg.msg_body
+                SELECT
+                  m.group_member_id, m.member_id, p.display_name,
+                  msg.created_at, msg.msg_body
                 FROM delivery_tasks t
                 JOIN messages msg ON msg.message_id = t.message_id
                 JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -3037,9 +3039,9 @@ getNextDeliveryTasksBatch db deliveryScope = do
               |]
               (Only taskId)
           where
-            toRelayRemovedTask :: (MemberId, ContactName, UTCTime, ChatMessage 'Json) -> RelayRemovedTask
-            toRelayRemovedTask (senderMemberId, senderMemberName, brokerTs, chatMessage) =
-              RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage}
+            toRelayRemovedTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json) -> RelayRemovedTask
+            toRelayRemovedTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage) =
+              RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
         _ -> pure $ Left SEInvalidDeliveryTasksBatch
     markTasksFailed :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
     markTasksFailed (taskIds, _, _, _) =
