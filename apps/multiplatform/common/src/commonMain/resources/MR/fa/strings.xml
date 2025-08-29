@@ -2527,4 +2527,5 @@
     <string name="only_you_can_send_files">فقط شما می‌توانید فایل و رسانه ارسال کنید.</string>
     <string name="only_your_contact_can_send_files">فقط مخاطب شما می‌تواند فایل‌ها و رسانه‌ها را ارسال کند.</string>
     <string name="files_prohibited_in_this_chat">ارسال فایل‌ها و رسانه‌ها در این چت ممنوع است.</string>
+    <string name="simplex_link_relay">پل ارتباطی سیمپلکس</string>
 </resources>

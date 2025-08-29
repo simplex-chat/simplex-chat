@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.4.4.1
+version:        6.4.4.2
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -525,6 +525,7 @@ test-suite simplex-chat-test
       API.Docs.Commands
       API.Docs.Events
       API.Docs.Generate
+      API.Docs.Generate.TypeScript
       API.Docs.Responses
       API.Docs.Syntax
       API.Docs.Syntax.Types

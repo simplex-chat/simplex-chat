@@ -104,7 +104,7 @@ processAgentMessage corrId connId msg = do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
     critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
-      Just user -> processAgentMessageConn vr user corrId connId msg `catchChatError` eToView
+      Just user -> processAgentMessageConn vr user corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
 -- CRITICAL error will be shown to the user as alert with restart button in Android/desktop apps.
@@ -116,7 +116,7 @@ processAgentMessage corrId connId msg = do
 -- Full app restart is likely to resolve database condition and the message will be received and processed again.
 critical :: CM a -> CM a
 critical a =
-  a `catchChatError` \case
+  a `catchAllErrors` \case
     ChatErrorStore SEDBBusyError {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
     e -> throwError e
 
@@ -157,7 +157,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPSndFileDBIds` AgentSndFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgSndFile" fileId $
     withStore' (`getUserByASndFileId` AgentSndFileId aFileId) >>= \case
-      Just user -> process user fileId `catchChatError` eToView
+      Just user -> process user fileId `catchAllErrors` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
         throwChatError $ CENoSndFileUser $ AgentSndFileId aFileId
@@ -299,7 +299,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
   (cRef_, fileId) <- withStore (`getXFTPRcvFileDBIds` AgentRcvFileId aFileId)
   withEntityLock_ cRef_ . withFileLock "processAgentMsgRcvFile" fileId $
     withStore' (`getUserByARcvFileId` AgentRcvFileId aFileId) >>= \case
-      Just user -> process user fileId `catchChatError` eToView
+      Just user -> process user fileId `catchAllErrors` eToView
       _ -> do
         lift $ withAgent' (`xftpDeleteRcvFile` aFileId)
         throwChatError $ CENoRcvFileUser $ AgentRcvFileId aFileId
@@ -473,10 +473,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withAckMessage "contact msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
             let MsgMeta {pqEncryption} = msgMeta
             (ct', conn') <- updateContactPQRcv user ct conn pqEncryption
-            checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchChatError` \_ -> pure ()
+            checkIntegrityCreateItem (CDDirectRcv ct') msgMeta `catchAllErrors` \_ -> pure ()
             forM_ aChatMsgs $ \case
               Right (ACMsg _ chatMsg) ->
-                processEvent ct' conn' tags eInfo chatMsg `catchChatError` \e -> eToView e
+                processEvent ct' conn' tags eInfo chatMsg `catchAllErrors` \e -> eToView e
               Left e -> do
                 atomically $ modifyTVar' tags ("error" :)
                 logInfo $ "contact msg=error " <> eInfo <> " " <> tshow e
@@ -538,7 +538,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- [async agent commands] no continuation needed, but command should be asynchronous for stability
               allowAgentConnectionAsync user conn'' confId XOk
             XInfo profile -> do
-              ct' <- processContactProfileUpdate ct profile False `catchChatError` const (pure ct)
+              ct' <- processContactProfileUpdate ct profile False `catchAllErrors` const (pure ct)
               -- [incognito] send incognito profile
               incognitoProfile <- forM customUserProfileId $ \profileId -> withStore $ \db -> getProfileById db userId profileId
               let p = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') True
@@ -898,7 +898,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         withAckMessage "group msg" agentConnId msgMeta True (Just tags) $ \eInfo -> do
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-          checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
+          checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
           newDeliveryTasks <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, False) aChatMsgs
           when (isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)) $
             createForwardTasks gInfo' m' newDeliveryTasks
@@ -919,12 +919,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processAChatMsg gInfo' m' tags eInfo newDeliveryTasks = \case
             Right (ACMsg SJson chatMsg) -> do
               newTask_ <-
-                processEvent gInfo' m' tags eInfo chatMsg `catchChatError` \e -> eToView e $> (Nothing, False)
+                processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> (Nothing, False)
               case newTask_ of
                 Nothing -> newDeliveryTasks
                 Just newTask -> newTask : newDeliveryTasks
             Right (ACMsg SBinary chatMsg) -> do
-              void (processEvent gInfo' m' tags eInfo chatMsg) `catchChatError` \e -> eToView e
+              void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
             Left e -> do
               atomically $ modifyTVar' tags ("error" :)
@@ -1527,7 +1527,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- 3) show screen of death to the user asking to restart
       eInfo <- eventInfo
       logInfo $ label <> ": " <> eInfo
-      tryChatError (action eInfo) >>= \case
+      tryAllErrors (action eInfo) >>= \case
         Right (withRcpt, shouldDelConns) ->
           unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
@@ -1634,7 +1634,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     sendProbeHashes :: [ContactOrMember] -> Probe -> Int64 -> CM ()
     sendProbeHashes cgms probe probeId =
-      forM_ cgms $ \cgm -> sendProbeHash cgm `catchChatError` \_ -> pure ()
+      forM_ cgms $ \cgm -> sendProbeHash cgm `catchAllErrors` \_ -> pure ()
       where
         probeHash = ProbeHash $ C.sha256Hash (unProbe probe)
         sendProbeHash :: ContactOrMember -> CM ()
@@ -1706,7 +1706,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               -- in processFDMessage some paths are programmed as errors,
               -- for example failure on not approved relays (CEFileNotApproved).
               -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage fileId aci fileDescr `catchChatError` \_ -> pure ()
+              processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
               pure $ Just $ toGroupForwardScope g scopeInfo
             else
               messageError "x.msg.file.descr: file of another member" $> Nothing
@@ -1868,7 +1868,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     catchCINotFound :: CM a -> (SharedMsgId -> CM a) -> CM a
     catchCINotFound f handle =
-      f `catchChatError` \case
+      f `catchAllErrors` \case
         ChatErrorStore (SEChatItemSharedMsgIdNotFound sharedMsgId) -> handle sharedMsgId
         e -> throwError e
 
@@ -2465,7 +2465,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         probeMatches :: [ContactOrMember] -> ContactOrMember -> CM ()
         probeMatches [] _ = pure ()
         probeMatches (cgm1' : cgm1s') cgm2' = do
-          cgm2''_ <- probeMatch cgm1' cgm2' probe `catchChatError` \_ -> pure (Just cgm2')
+          cgm2''_ <- probeMatch cgm1' cgm2' probe `catchAllErrors` \_ -> pure (Just cgm2')
           let cgm2'' = fromMaybe cgm2' cgm2''_
           probeMatches cgm1s' cgm2''
 
@@ -3193,7 +3193,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
-      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchChatError` \_ -> pure ()
+      checkIntegrityCreateItem (CDDirectRcv ct) msgMeta `catchAllErrors` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateDirectItemStatus ct conn agentMsgId $ CISSndRcvd msgRcptStatus SSPComplete
@@ -3201,7 +3201,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     groupMsgReceived :: GroupInfo -> GroupMember -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     groupMsgReceived gInfo m conn@Connection {connId} msgMeta msgRcpts = do
       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-      checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchChatError` \_ -> pure ()
+      checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
       forM_ msgRcpts $ \MsgReceipt {agentMsgId, msgRcptStatus} -> do
         withStore' $ \db -> updateSndMsgDeliveryStatus db connId agentMsgId $ MDSSndRcvd msgRcptStatus
         updateGroupItemsStatus gInfo' m' conn agentMsgId (GSSRcvd msgRcptStatus) Nothing

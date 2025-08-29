@@ -3961,9 +3961,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Пароль чтобы раскрыть";
 
-/* past/unknown group member */
-"Past member %@" = "Бывший член %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Вставить адрес компьютера";
 

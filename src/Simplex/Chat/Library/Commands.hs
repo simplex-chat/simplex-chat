@@ -232,7 +232,7 @@ startReceiveUserFiles :: User -> CM ()
 startReceiveUserFiles user = do
   filesToReceive <- withStore' (`getRcvFilesToReceive` user)
   forM_ filesToReceive $ \ft ->
-    flip catchChatError eToView $
+    flip catchAllErrors eToView $
       toView =<< receiveFileEvt' user ft False Nothing Nothing
 
 restoreCalls :: CM' ()
@@ -302,7 +302,7 @@ handleCommandError a = runExceptT a `E.catches` ioErrors
   where
     ioErrors =
       [ E.Handler $ \(e :: ExitCode) -> E.throwIO e,
-        E.Handler $ pure . Left . mkChatError
+        E.Handler $ pure . Left . fromSomeException
       ]
 
 parseChatCommand :: ByteString -> Either String ChatCommand
@@ -326,7 +326,7 @@ processChatCommand vr nm = \case
     user <- withFastStore $ \db -> do
       user <- createUserRecordAt db (AgentUserId auId) p True ts
       mapM_ (setUserServers db user ts) uss
-      createPresetContactCards db user `catchStoreError` \_ -> pure ()
+      createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
       pure user
     atomically . writeTVar u $ Just user
@@ -365,7 +365,7 @@ processChatCommand vr nm = \case
     chatWriteVar currentUser $ Just user''
     pure $ CRActiveUser user''
   SetActiveUser uName viewPwd_ -> do
-    tryChatError (withFastStore (`getUserIdByName` uName)) >>= \case
+    tryAllErrors (withFastStore (`getUserIdByName` uName)) >>= \case
       Left _ -> throwChatError CEUserUnknown
       Right userId -> processChatCommand vr nm $ APISetActiveUser userId viewPwd_
   SetAllContactReceipts onOff -> withUser $ \_ -> withFastStore' (`updateAllContactReceipts` onOff) >> ok_
@@ -1103,7 +1103,7 @@ processChatCommand vr nm = \case
       where
         sendDelDeleteConns ct notify = do
           let doSendDel = contactReady ct && contactActive ct && notify
-          when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchChatError` const (pure ())
+          when doSendDel $ void (sendDirectContactMessage user ct XDirectDel) `catchAllErrors` const (pure ())
           contactConnIds <- map aConnId <$> withFastStore' (\db -> getContactConnections db vr userId ct)
           deleteAgentConnectionsAsync' contactConnIds doSendDel
     CTContactConnection -> withConnectionLock "deleteChat contactConnection" chatId $ do
@@ -1125,7 +1125,7 @@ processChatCommand vr nm = \case
         when doSendDel . void $ sendGroupMessage' user gInfo recipients XGrpDel
         deleteGroupLinkIfExists user gInfo
         deleteMembersConnections' user members doSendDel
-        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchChatError` \_ -> pure ()
+        updateCIGroupInvitationStatus user gInfo CIGISRejected `catchAllErrors` \_ -> pure ()
         withFastStore' $ \db -> deleteGroupChatItems db user gInfo
         withFastStore' $ \db -> cleanupHostGroupLinkConn db user gInfo
         withFastStore' $ \db -> deleteGroupMembers db user gInfo
@@ -1469,7 +1469,7 @@ processChatCommand vr nm = \case
           oldTTL = fromMaybe globalTTL oldTTL_
       when (newTTL > 0 && (newTTL < oldTTL || oldTTL == 0)) $ do
         lift $ setExpireCIFlag user False
-        expireChat user globalTTL `catchChatError` eToView
+        expireChat user globalTTL `catchAllErrors` eToView
       lift $ setChatItemsExpiration user globalTTL ttlCount
       ok user
     where
@@ -1540,7 +1540,7 @@ processChatCommand vr nm = \case
         liftIO $ updateGroupSettings db user chatId chatSettings
         pure ms
       forM_ (filter memberActive ms) $ \m -> forM_ (memberConnId m) $ \connId ->
-        withAgent (\a -> toggleConnectionNtfs a connId $ chatHasNtfs chatSettings) `catchChatError` eToView
+        withAgent (\a -> toggleConnectionNtfs a connId $ chatHasNtfs chatSettings) `catchAllErrors` eToView
       ok user
     _ -> throwCmdError "not supported"
   APISetMemberSettings gId gMemberId settings -> withUser $ \user -> do
@@ -1831,7 +1831,7 @@ processChatCommand vr nm = \case
     case preparedContact of
       Nothing -> throwCmdError "contact doesn't have link to connect"
       Just PreparedContact {connLinkToConnect = ACCL SCMInvitation ccLink} -> do
-        (_, customUserProfile) <- connectViaInvitation user incognito ccLink (Just contactId) `catchChatError` \e -> do
+        (_, customUserProfile) <- connectViaInvitation user incognito ccLink (Just contactId) `catchAllErrors` \e -> do
           -- get updated contact, in case connection was started - in UI it would lock ability to change
           -- user or incognito profile for contact, in case server received request while client got network error
           ct' <- withFastStore $ \db -> getContact db vr user contactId
@@ -1854,7 +1854,7 @@ processChatCommand vr nm = \case
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForContact db contactId smId
             pure (smId, mc)
-        r <- connectViaContact user (Just $ PCEContact ct) incognito ccLink welcomeSharedMsgId msg_ `catchChatError` \e -> do
+        r <- connectViaContact user (Just $ PCEContact ct) incognito ccLink welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
           -- get updated contact, in case connection was started - in UI it would lock ability to change
           -- user or incognito profile for contact, in case server received request while client got network error
           ct' <- withFastStore $ \db -> getContact db vr user contactId
@@ -1882,7 +1882,7 @@ processChatCommand vr nm = \case
             smId <- getSharedMsgId
             withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
             pure (smId, mc)
-        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchChatError` \e -> do
+        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
           -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
           -- user or incognito profile for group or business chat, in case server received request while client got network error
           gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -1910,7 +1910,7 @@ processChatCommand vr nm = \case
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
-    (ccLink, plan) <- connectPlan user cLink `catchChatError` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
+    (ccLink, plan) <- connectPlan user cLink `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
   APIConnectContactViaAddress userId incognito contactId -> withUserId userId $ \user -> do
@@ -1921,14 +1921,14 @@ processChatCommand vr nm = \case
         (cReq, _cData) <- getShortLinkConnReq user sLnk
         pure $ CCLink cReq $ Just sLnk
       Nothing -> throwCmdError "no address in contact profile"
-    connectContactViaAddress user incognito ct ccLink `catchChatError` \e -> do
+    connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started - in UI it would lock ability to change incognito choice
       -- on next connection attempt, in case server received request while client got network error
       ct' <- withFastStore $ \db -> getContact db vr user contactId
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
       throwError e
   ConnectSimplex incognito -> withUser $ \user -> do
-    plan <- contactRequestPlan user adminContactReq Nothing `catchChatError` const (pure $ CPContactAddress (CAPOk Nothing))
+    plan <- contactRequestPlan user adminContactReq Nothing `catchAllErrors` const (pure $ CPContactAddress (CAPOk Nothing))
     connectWithPlan user incognito (ACCL SCMContact (CCLink adminContactReq Nothing)) plan
   DeleteContact cName cdm -> withContactName cName $ \ctId -> APIDeleteChat (ChatRef CTDirect ctId Nothing) cdm
   ClearContact cName -> withContactName cName $ \chatId -> APIClearChat $ ChatRef CTDirect chatId Nothing
@@ -2202,12 +2202,12 @@ processChatCommand vr nm = \case
             -- MFAll is default for new groups
             unless (enableNtfs == MFAll) $ updateGroupSettings db user groupId chatSettings {enableNtfs}
           void (withAgent $ \a -> joinConnection a nm (aUserId user) agentConnId (enableNtfs /= MFNone) connRequest dm PQSupportOff subMode)
-            `catchChatError` \e -> do
+            `catchAllErrors` \e -> do
               withFastStore' $ \db -> do
                 updateGroupMemberStatus db userId fromMember GSMemInvited
                 updateGroupMemberStatus db userId membership GSMemInvited
               throwError e
-          updateCIGroupInvitationStatus user g CIGISAccepted `catchChatError` eToView
+          updateCIGroupInvitationStatus user g CIGISAccepted `catchAllErrors` eToView
           pure $ CRUserAcceptedGroupSent user g {membership = membership {memberStatus = GSMemAccepted}} Nothing
         Nothing -> throwChatError $ CEContactNotActive ct
   APIAcceptMember groupId gmId role -> withUser $ \user@User {userId} -> do
@@ -2310,7 +2310,7 @@ processChatCommand vr nm = \case
       changeRoleInvitedMems :: User -> GroupInfo -> [GroupMember] -> CM ([ChatError], [GroupMember])
       changeRoleInvitedMems user gInfo memsToChange = do
         -- not batched, as we need to send different invitations to different connections anyway
-        mems_ <- forM memsToChange $ \m -> (Right <$> changeRole m) `catchChatError` (pure . Left)
+        mems_ <- forM memsToChange $ \m -> (Right <$> changeRole m) `catchAllErrors` (pure . Left)
         pure $ partitionEithers mems_
         where
           changeRole :: GroupMember -> CM GroupMember
@@ -2622,7 +2622,7 @@ processChatCommand vr nm = \case
   APIAcceptMemberContact contactId -> withUser $ \user -> do
     (g, mConn, ct, groupDirectInv) <- withFastStore $ \db -> getMemberContactInvited db vr user contactId
     when (groupDirectInvStartedConnection groupDirectInv) $ throwCmdError "connection already started"
-    connectMemberContact user g mConn ct groupDirectInv `catchChatError` \e -> do
+    connectMemberContact user g mConn ct groupDirectInv `catchAllErrors` \e -> do
       -- get updated contact, in case connection was started
       ct' <- withFastStore $ \db -> getContact db vr user contactId
       toView $ CEvtChatInfoUpdated user (AChatInfo SCTDirect $ DirectChat ct')
@@ -3235,7 +3235,7 @@ processChatCommand vr nm = \case
               mergedProfile' = userProfileDirect user (fromLocalProfile <$> incognitoProfile) (Just ct') False
           when (mergedProfile' /= mergedProfile) $
             withContactLock "updateContactPrefs" (contactId' ct) $ do
-              void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchChatError` eToView
+              void (sendDirectContactMessage user ct' $ XInfo mergedProfile') `catchAllErrors` eToView
               lift . when (directOrUsed ct') $ createSndFeatureItems user ct ct'
           pure $ CRContactPrefsUpdated user ct ct'
     runUpdateGroupProfile :: User -> Group -> GroupProfile -> CM ChatResponse
@@ -3413,7 +3413,7 @@ processChatCommand vr nm = \case
     drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
-      tryChatError (withStore (`getUser` userId)) >>= \case
+      tryAllErrors (withStore (`getUser` userId)) >>= \case
         Left _ -> throwChatError CEUserUnknown
         Right user -> pure user
     validateUserPassword :: User -> User -> Maybe UserPwd -> CM ()
@@ -3454,7 +3454,7 @@ processChatCommand vr nm = \case
       filesInfo <- withFastStore' (`getUserFileInfo` user)
       deleteCIFiles user filesInfo
       withAgent (\a -> deleteUser a (aUserId user) delSMPQueues)
-        `catchChatError` \case
+        `catchAllErrors` \case
           e@(ChatErrorAgent NO_USER _) -> eToView e
           e -> throwError e
       withFastStore' (`deleteUserRecord` user)
@@ -3493,11 +3493,11 @@ processChatCommand vr nm = \case
             -- deleted contact is returned as known, as invitation link cannot be re-used too connect anyway
             Nothing -> bimap inv (CPInvitationLink . ILPKnown) <$$> getContactViaShortLinkToConnect db vr user l'
         invitationReqAndPlan cReq sLnk_ contactSLinkData_ = do
-          plan <- invitationRequestPlan user cReq contactSLinkData_ `catchChatError` (pure . CPError)
+          plan <- invitationRequestPlan user cReq contactSLinkData_ `catchAllErrors` (pure . CPError)
           pure (ACCL SCMInvitation (CCLink cReq sLnk_), plan)
     connectPlan user (ACL SCMContact cLink) = case cLink of
       CLFull cReq -> do
-        plan <- contactOrGroupRequestPlan user cReq `catchChatError` (pure . CPError)
+        plan <- contactOrGroupRequestPlan user cReq `catchAllErrors` (pure . CPError)
         pure (ACCL SCMContact $ CCLink cReq Nothing, plan)
       CLShort l@(CSLContact _ ct _ _) -> do
         let l' = serverShortLink l
@@ -3877,7 +3877,7 @@ processChatCommand vr nm = \case
       case contactOrGroup of
         CGContact Contact {activeConn} -> forM_ activeConn $ \conn ->
           withFastStore' $ \db -> createSndFTDescrXFTP db user Nothing conn ft dummyFileDescr
-        CGGroup _ ms -> forM_ ms $ \m -> saveMemberFD m `catchChatError` eToView
+        CGGroup _ ms -> forM_ ms $ \m -> saveMemberFD m `catchAllErrors` eToView
           where
             -- we are not sending files to pending members, same as with inline files
             saveMemberFD m@GroupMember {activeConn = Just conn@Connection {connStatus}} =
@@ -4063,7 +4063,7 @@ startExpireCIThread user@User {userId} = do
       liftIO $ threadDelay' delay
       interval <- asks $ ciExpirationInterval . config
       forever $ do
-        flip catchChatError' (eToView') $ do
+        flip catchAllErrors' (eToView') $ do
           expireFlags <- asks expireCIFlags
           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
           lift waitChatStartedAndActivated
@@ -4105,7 +4105,7 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchChatError'` (eToView')
+        run action = action `catchAllErrors'` (eToView')
 
 type AgentBatchSubscribe = AgentClient -> [ConnId] -> ExceptT AgentErrorType IO (Map ConnId (Either AgentErrorType (Maybe ClientServiceId)))
 
@@ -4253,7 +4253,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId PendingContactConnection -> CM ()
     pendingConnSubsToView rs = toViewTE . TEPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> CM [a]
-    withStore_ a = withStore' (`a` user) `catchChatError` \e -> eToView e $> []
+    withStore_ a = withStore' (`a` user) `catchAllErrors` \e -> eToView e $> []
     filterErrors :: [(a, Maybe ChatError)] -> [(a, ChatError)]
     filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
     resultsFor :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId a -> [(a, Maybe ChatError)]
@@ -4275,40 +4275,40 @@ cleanupManager = do
   liftIO $ threadDelay' initialDelay
   stepDelay <- asks (cleanupManagerStepDelay . config)
   forever $ do
-    flip catchChatError eToView $ do
+    flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated
       users <- withStore' getUsers
       let (us, us') = partition activeUser users
       forM_ us $ cleanupUser interval stepDelay
       forM_ us' $ cleanupUser interval stepDelay
-      cleanupMessages `catchChatError` eToView
+      cleanupMessages `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
-      cleanupProbes `catchChatError` eToView
+      cleanupProbes `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
   where
-    runWithoutInitialDelay cleanupInterval = flip catchChatError eToView $ do
+    runWithoutInitialDelay cleanupInterval = flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated
       users <- withStore' getUsers
       let (us, us') = partition activeUser users
-      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchChatError` eToView
-      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchChatError` eToView
+      forM_ us $ \u -> cleanupTimedItems cleanupInterval u `catchAllErrors` eToView
+      forM_ us' $ \u -> cleanupTimedItems cleanupInterval u `catchAllErrors` eToView
     cleanupUser cleanupInterval stepDelay user = do
-      cleanupTimedItems cleanupInterval user `catchChatError` eToView
+      cleanupTimedItems cleanupInterval user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
       -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
-      cleanupDeletedContacts user `catchChatError` eToView
+      cleanupDeletedContacts user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
       timedItems <- withStore' $ \db -> getTimedItems db user startTimedThreadCutoff
-      forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchChatError` const (pure ())
+      forM_ timedItems $ \(itemRef, deleteAt) -> startTimedItemThread user itemRef deleteAt `catchAllErrors` const (pure ())
     cleanupDeletedContacts user = do
       vr <- chatVersionRange
       contacts <- withStore' $ \db -> getDeletedContacts db vr user
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
-          `catchChatError` eToView
+          `catchAllErrors` eToView
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
@@ -4334,7 +4334,7 @@ expireChatItems user@User {userId} globalTTL sync = do
     loop :: [Int64] -> (Int64 -> CM ()) -> CM ()
     loop [] _ = pure ()
     loop (a : as) process = continue $ do
-      process a `catchChatError` eToView
+      process a `catchAllErrors` eToView
       loop as process
     continue :: CM () -> CM ()
     continue a =
@@ -4349,7 +4349,7 @@ expireContactChatItems :: User -> VersionRangeChat -> Int64 -> ContactId -> CM (
 expireContactChatItems user vr globalTTL ctId =
   -- reading contacts and groups inside the loop,
   -- to allow ttl changing while processing and to reduce memory usage
-  tryChatError (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
+  tryAllErrors (withStore $ \db -> getContact db vr user ctId) >>= mapM_ process
   where
     process ct@Contact {chatItemTTL} =
       withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do
@@ -4360,7 +4360,7 @@ expireContactChatItems user vr globalTTL ctId =
 
 expireGroupChatItems :: User -> VersionRangeChat -> Int64 -> UTCTime -> GroupId -> CM ()
 expireGroupChatItems user vr globalTTL createdAtCutoff groupId =
-  tryChatError (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
+  tryAllErrors (withStore $ \db -> getGroupInfo db vr user groupId) >>= mapM_ process
   where
     process gInfo@GroupInfo {chatItemTTL} =
       withExpirationDate globalTTL chatItemTTL $ \expirationDate -> do

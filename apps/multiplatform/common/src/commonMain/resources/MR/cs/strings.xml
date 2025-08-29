@@ -254,7 +254,7 @@
     <string name="call_on_lock_screen">Hovory na uzamčené obrazovce:</string>
     <string name="open_simplex_chat_to_accept_call">Otevřete SimpleX Chat pro přijetí hovoru</string>
     <string name="allow_accepting_calls_from_lock_screen">Povolte volání ze zamčené obrazovky prostřednictvím Nastavení.</string>
-    <string name="open_verb">Otevřený</string>
+    <string name="open_verb">Otevřít</string>
     <string name="icon_descr_audio_on">Zvuk zapnut</string>
     <string name="icon_descr_speaker_off">Reproduktor vypnut</string>
     <string name="icon_descr_speaker_on">Reproduktor zapnut</string>
@@ -2450,4 +2450,20 @@
     <string name="loading_profile">Načítání profilu…</string>
     <string name="member_is_deleted_cant_accept_request">Člen je smazán - nemůže přijmout žádost</string>
     <string name="v6_4_role_moderator">Nová skupinová role: Moderátor</string>
+    <string name="deprecated_options_section">Zastaralé možnosti</string>
+    <string name="files_prohibited_in_this_chat">Soubory a média jsou zakázány v tomto chatu.</string>
+    <string name="only_you_can_send_files">Pouze vy můžete odesílat soubory a média.</string>
+    <string name="only_your_contact_can_send_files">Pouze vaše kontakty mohou posílat soubory a média.</string>
+    <string name="privacy_chat_list_open_clean_web_link">Otevřít čistý odkaz</string>
+    <string name="privacy_chat_list_open_full_web_link">Otevřít celý odkaz</string>
+    <string name="open_to_accept">Otevřít pro přijetí</string>
+    <string name="open_to_connect">Otevřít pro připojení</string>
+    <string name="group_preview_open_to_join">Otevřít pro připojení</string>
+    <string name="open_to_use_bot">Otevřít pro použítí bota</string>
+    <string name="private_routing_timeout">Vypršel čas soukromého směrování</string>
+    <string name="prohibit_sending_files_and_media">Odesílání souborů a médií zakázáno.</string>
+    <string name="network_option_protocol_timeout_background">Vypršel čas protokolu na pozadí</string>
+    <string name="reject_contact_request">Odmítnout žádost o kontakt</string>
+    <string name="sanitize_links_toggle">Odebrat sledování odkazů</string>
+    <string name="v6_4_role_moderator_descr">Odstranit zprávy a blokovat členy.</string>
 </resources>

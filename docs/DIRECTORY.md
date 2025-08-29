@@ -94,7 +94,7 @@ Group owners are expected to moderate the content in the groups, if members post
 
 We reserve the right to not accept the group listing in the directory or cancel its listing, and there may be cases when we can't provide an explanation. We will certainly try to avoid it by communicating with the group owners first.
 
-The combination of display name and full name has to be unique for the listed groups.
+The combination of display name and full name has to be unique for the listed groups. If a group uses the name or logo of SimpleX, SimpleX network or SimpleX Chat it must be consistent with [Permitted Uses or SimpleX trademark](./TRADEMARK.md).
 
 Once the group is listed in the directory, the bot will invite you to join the group of the group owners, where you can send any ideas or suggestions for how the groups functionality should evolve, and help steer both the product and the policies.
 
