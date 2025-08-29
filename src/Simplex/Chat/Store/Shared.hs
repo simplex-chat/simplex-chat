@@ -46,6 +46,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
+import Simplex.Messaging.Util (AnyError (..))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -148,6 +149,10 @@ data StoreError
   | SEInvalidQuote
   | SEInvalidMention
   deriving (Show, Exception)
+
+instance AnyError StoreError where
+  fromSomeException = SEInternalError . show
+  {-# INLINE fromSomeException #-}
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
