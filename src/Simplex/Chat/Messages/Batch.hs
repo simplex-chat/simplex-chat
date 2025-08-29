@@ -13,9 +13,14 @@ where
 
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import Data.Int (Int64)
+import Data.List (foldl')
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages
+import Simplex.Chat.Protocol
+import Simplex.Chat.Types (VersionRangeChat)
 
 data MsgBatch = MsgBatch ByteString [SndMessage]
 
@@ -53,22 +58,22 @@ batchMessages maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
     body SndMessage {msgBody} = msgBody
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
-batchDeliveryTasks1 :: Int -> NonEmpty MessageForwardTask -> (ByteString, [Int64], [Int64])
-batchDeliveryTasks1 maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
+batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageForwardTask -> (ByteString, [Int64], [Int64])
+batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
-    addToBatch :: (ByteString, [Int64], [Int64], Int, Int) -> MessageForwardTask -> (ByteString, [Int64], [Int64], Int, Int)
-    addToBatch (bodies, taskIds, largeTaskIds, len, n) task
-      -- too large: skip body, record taskId in largeTaskIds
-      | msgLen > maxLen = (bodies, taskIds, taskId : largeTaskIds, len, n)
+    addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageForwardTask -> ([ByteString], [Int64], [Int64], Int, Int)
+    addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
+      -- too large: skip msgBody, record taskId in largeTaskIds
+      | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch
-      | batchLen <= maxLen = (body : bodies, taskId : taskIds, largeTaskIds, len', n + 1)
+      | batchLen <= maxLen = (msgBody : msgBodies, taskId : taskIds, largeTaskIds, len', n + 1)
       -- doesn’t fit: stop adding further messages
-      | otherwise = (bodies, taskIds, largeTaskIds, len, n)
+      | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
         MessageForwardTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel} = task
         -- TODO [channels fwd] handle messageFromChannel (null memberId in XGrpMsgForward)
-        body =
-          let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
+        msgBody =
+          let fwdEvt = XGrpMsgForward senderMemberId (Just senderMemberName) chatMessage brokerTs
               cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
             in chatMsgToBody cm
         msgLen = B.length msgBody
@@ -79,8 +84,8 @@ batchDeliveryTasks1 maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L
           | n == 0 = len'
           | otherwise = len' + 2 -- 2 accounts for opening and closing brackets
     toResult :: ([ByteString], [Int64], [Int64], Int, Int) -> (ByteString, [Int64], [Int64])
-    toResult (bodies, taskIds, largeTaskIds, _, _) =
-      (encodeMessagesBodies (reverse bodies), reverse taskIds, reverse largeTaskIds)
+    toResult (msgBodies, taskIds, largeTaskIds, _, _) =
+      (encodeMessages (reverse msgBodies), reverse taskIds, reverse largeTaskIds)
     encodeMessages :: [ByteString] -> ByteString
     encodeMessages = \case
       [] -> mempty

@@ -3305,7 +3305,7 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
         processDeliveryTasksBatch = \case
           DTBMessageForward tasks fwdScope -> do
             vr <- chatVersionRange
-            (batch, taskIds, largeTaskIds) = batchDeliveryTasks1 maxEncodedMsgLength tasks
+            let (batch, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength tasks
             withStore' $ \db -> do
               createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ batch
               forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
