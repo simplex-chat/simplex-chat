@@ -67,7 +67,7 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork)
+import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork_)
 import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -3287,10 +3287,11 @@ getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
 getDeliveryTaskWorker hasWork deliveryScope = do
   ws <- asks deliveryTaskWorkers
   withAgent $ \a ->
-    getAgentWorker "delivery_task" hasWork a deliveryScope ws $ runDeliveryTaskWorker deliveryScope
+    getAgentWorker "delivery_task" hasWork a deliveryScope ws $
+      runDeliveryTaskWorker a deliveryScope
 
-runDeliveryTaskWorker :: DeliveryWorkerScope -> Worker -> CM ()
-runDeliveryTaskWorker deliveryScope Worker {doWork} = do
+runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
+runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
   vr <- chatVersionRange
   forever $ do
     lift $ waitForWork doWork
@@ -3298,7 +3299,7 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
   where
     runDeliveryTaskOperation :: VersionRangeChat -> CM ()
     runDeliveryTaskOperation vr = do
-      withWork doWork (\db -> getNextDeliveryTasksBatch db deliveryScope) $ \tasksBatch ->
+      withWork_ a doWork (withStore' $ \db -> getNextDeliveryTasksBatch db deliveryScope) $ \tasksBatch ->
         processDeliveryTasksBatch tasksBatch
           `catchAllErrors` \e -> do
             withStore' $ \db ->
@@ -3341,10 +3342,11 @@ getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
 getDeliveryJobWorker hasWork deliveryScope = do
   ws <- asks deliveryJobWorkers
   withAgent $ \a ->
-    getAgentWorker "delivery_job" hasWork a deliveryScope ws $ runDeliveryJobWorker deliveryScope
+    getAgentWorker "delivery_job" hasWork a deliveryScope ws $
+      runDeliveryJobWorker a deliveryScope
 
-runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
-runDeliveryJobWorker deliveryScope Worker {doWork} = do
+runDeliveryJobWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
+runDeliveryJobWorker a deliveryScope Worker {doWork} = do
   -- TODO [channels fwd] consider reading groupInfo and user on each iteration for updated state, currently doesn't matter
   vr <- chatVersionRange
   (user, gInfo) <- withFastStore $ \db -> do
@@ -3358,7 +3360,7 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
     (groupId, _jobScope) = deliveryScope
     runDeliveryJobOperation :: VersionRangeChat -> User -> GroupInfo -> CM ()
     runDeliveryJobOperation vr user gInfo = do
-      withWork doWork (\db -> getNextDeliveryJob db deliveryScope) $ \job ->
+      withWork_ a doWork (withStore' $ \db -> getNextDeliveryJob db deliveryScope) $ \job ->
         processDeliveryJob job
           `catchAllErrors` \e -> do
             withStore' $ \db -> updateDeliveryJobStatus db (deliveryJobId job) DJSError
