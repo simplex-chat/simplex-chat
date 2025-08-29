@@ -6,6 +6,7 @@ from collections import defaultdict
 import traceback
 import os
 import time
+import logging
 
 chat_histories = defaultdict(list)
 
@@ -146,4 +147,7 @@ if __name__ == "__main__":
               await live_msg.finish_live()
 
     # Start the bot
-    asyncio.run(bot.start())
+    try:
+        asyncio.run(bot.start())
+    except KeyboardInterrupt:
+        logging.info("Exiting")
