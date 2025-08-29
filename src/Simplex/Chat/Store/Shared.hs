@@ -149,8 +149,8 @@ data StoreError
   | SEInvalidQuote
   | SEInvalidMention
   | SEInvalidDeliveryTasksBatch
-  | SEDeliveryTaskNotFound {deliveryTaskId :: Int64}
-  | SEDeliveryJobNotFound {deliveryJobId :: Int64}
+  | SEDeliveryTaskNotFound {taskId :: Int64}
+  | SEDeliveryJobNotFound {jobId :: Int64}
   deriving (Show, Exception)
 
 instance AnyError StoreError where

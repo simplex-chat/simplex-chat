@@ -22,6 +22,7 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
+import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (lefts, partitionEithers, rights)
 import Data.Functor (($>))
@@ -43,6 +44,7 @@ import Simplex.Chat.Call
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Internal
 import Simplex.Chat.Messages
+import Simplex.Chat.Messages.Batch (batchDeliveryTasks1)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.ProfileGenerator (generateRandomProfile)
@@ -899,7 +901,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- foldM (processAChatMsg gInfo' m' tags eInfo) (M.empty, False) aChatMsgs
+          newDeliveryTasks <- foldM (processAChatMsg gInfo' m' tags eInfo) [] aChatMsgs
           when (isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)) $
             createForwardTasks gInfo' m' newDeliveryTasks
           let shouldDelConns = any ((== DJTRelayRemoved) . jobTag) newDeliveryTasks
@@ -918,11 +920,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -> CM [NewGroupDeliveryTask]
           processAChatMsg gInfo' m' tags eInfo newDeliveryTasks = \case
             Right (ACMsg SJson chatMsg) -> do
-              newTask_ <-
-                processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> (Nothing, False)
-              case newTask_ of
-                Nothing -> newDeliveryTasks
-                Just newTask -> newTask : newDeliveryTasks
+              newTask_ <- processEvent gInfo' m' tags eInfo chatMsg `catchAllErrors` \e -> eToView e $> Nothing
+              pure $ maybe newDeliveryTasks (: newDeliveryTasks) newTask_
             Right (ACMsg SBinary chatMsg) -> do
               void (processEvent gInfo' m' tags eInfo chatMsg) `catchAllErrors` \e -> eToView e
               pure newDeliveryTasks
@@ -931,7 +930,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               logInfo $ "group msg=error " <> eInfo <> " " <> tshow e
               eToView (ChatError . CEException $ "error parsing chat message: " <> e)
               pure newDeliveryTasks
-          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [Text] -> Text -> ChatMessage e -> Maybe NewGroupDeliveryTask
+          processEvent :: forall e. MsgEncodingI e => GroupInfo -> GroupMember -> TVar [Text] -> Text -> ChatMessage e -> CM (Maybe NewGroupDeliveryTask)
           processEvent gInfo' m' tags eInfo chatMsg@ChatMessage {chatMsgEvent} = do
             let tag = toCMEventTag chatMsgEvent
             atomically $ modifyTVar' tags (tshow tag :)
@@ -996,16 +995,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createForwardTasks :: GroupInfo -> GroupMember -> [NewGroupDeliveryTask] -> CM ()
-          createForwardTasks gInfo' m' newDeliveryTasks = do
+          createForwardTasks gInfo'@GroupInfo {groupId} m' newDeliveryTasks = do
             withStore' $ \db ->
               forM_ newDeliveryTasks $ \newTask ->
                 createNewDeliveryTask db gInfo' m' newTask
             forM_ uniqueScopes $ \scope ->
-              lift . void $ getDeliveryTaskWorker True scope
+              lift . void $ getDeliveryTaskWorker True (groupId, scope)
             where
               uniqueScopes :: [DeliveryJobScope]
               uniqueScopes =
-                let scopes = map (forwardToJobScope . forwardScope) newDeliveryTasks
+                let scopes = map (\NewGroupDeliveryTask {forwardScope} -> forwardToJobScope forwardScope) newDeliveryTasks
                  in foldr addScope [] scopes
                 where
                   addScope scope acc
@@ -2949,7 +2948,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       if membershipMemId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
-          unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo False
+          unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
@@ -3000,12 +2999,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     isUserGrpFwdRelay GroupInfo {membership = GroupMember {memberRole}} =
       memberRole >= GRAdmin
 
-    deleteGroupConnections :: GroupInfo -> Bool -> CM ()
-    deleteGroupConnections gInfo waitDelivery = do
-      -- member records are not deleted to keep history
-      members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-      deleteMembersConnections' user members waitDelivery
-
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe GroupForwardScope)
     xGrpLeave gInfo m msg brokerTs = do
       deleteMemberConnection m
@@ -3025,7 +3018,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
-      unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections gInfo False
+      unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView cInfo ci
@@ -3274,42 +3267,51 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               else pure Nothing
           _ -> pure Nothing
 
--- TODO [channels fwd] forwarding workers implementation, below is not working code
--- TODO [channels fwd] refactor agent Worker for export and reuse
+deleteGroupConnections :: User -> GroupInfo -> Bool -> CM ()
+deleteGroupConnections user gInfo waitDelivery = do
+  vr <- chatVersionRange
+  -- member records are not deleted to keep history
+  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  deleteMembersConnections' user members waitDelivery
 
 startDeliveryTaskWorkers :: CM ()
 startDeliveryTaskWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
   lift . forM_ workerScopes resumeDeliveryTaskWork
 
-resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM' ()
 resumeDeliveryTaskWork = void .: getDeliveryTaskWorker False
 
-getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryTaskWorker hasWork deliveryScope = do
   ws <- asks deliveryTaskWorkers
-  -- TODO [channels fwd] not an **agent** worker
   getAgentWorker "delivery_task" hasWork deliveryScope ws $ runDeliveryTaskWorker deliveryScope
 
 runDeliveryTaskWorker :: DeliveryWorkerScope -> Worker -> CM ()
 runDeliveryTaskWorker deliveryScope Worker {doWork} = do
+  vr <- chatVersionRange
   forever $ do
     lift $ waitForWork doWork
-    runDeliveryTaskOperation
+    runDeliveryTaskOperation vr
   where
-    runDeliveryTaskOperation :: CM ()
-    runDeliveryTaskOperation = do
-      withWork doWork (\db -> getNextDeliveryTasksBatch db deliveryScope) processDeliveryTasksBatch
+    runDeliveryTaskOperation :: VersionRangeChat -> CM ()
+    runDeliveryTaskOperation vr = do
+      withWork doWork (\db -> getNextDeliveryTasksBatch db deliveryScope) $ \tasksBatch ->
+        processDeliveryTasksBatch tasksBatch
+          `catchAllErrors` \e -> do
+            withStore' $ \db ->
+              forM_ (deliveryTaskIds tasksBatch) $ \taskId ->
+                updateDeliveryTaskStatus db taskId DTSError
+            eToView e
       where
         processDeliveryTasksBatch :: DeliveryTasksBatch -> CM ()
         processDeliveryTasksBatch = \case
           DTBMessageForward tasks fwdScope -> do
-            vr <- chatVersionRange
             let (batch, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength tasks
             withStore' $ \db -> do
               createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ batch
               forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
-              forM_ largeTaskIds $ \taskId -> setDeliveryTaskFailed db taskId
+              forM_ largeTaskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSError
             lift . void $ getDeliveryJobWorker True deliveryScope
             where
               singleSenderGMId_ :: NonEmpty MessageForwardTask -> Maybe GroupMemberId
@@ -3317,7 +3319,6 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
                 | all ((== senderGMId t) . senderGMId) ts = Just $ senderGMId t
                 | otherwise = Nothing
           DTBRelayRemoved RelayRemovedTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
-            vr <- chatVersionRange
             let fwdEvt = XGrpMsgForward senderMemberId senderMemberName chatMessage brokerTs
                 cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
                 body = chatMsgToBody cm
@@ -3331,13 +3332,12 @@ startDeliveryJobWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
   lift . forM_ workerScopes resumeDeliveryJobWork
 
-resumeDeliveryJobWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryJobWork :: DeliveryWorkerScope -> CM' ()
 resumeDeliveryJobWork = void .: getDeliveryJobWorker False
 
-getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryJobWorker hasWork deliveryScope = do
   ws <- asks DeliveryJobWorkers
-  -- TODO [channels fwd] not an **agent** worker
   getAgentWorker "delivery_job" hasWork deliveryScope ws $ runDeliveryJobWorker deliveryScope
 
 runDeliveryJobWorker :: DeliveryWorkerScope -> Worker -> CM ()
@@ -3350,148 +3350,98 @@ runDeliveryJobWorker deliveryScope Worker {doWork} = do
     pure (user, gInfo)
   forever $ do
     lift $ waitForWork doWork
-    runDeliveryJobOperation gInfo
+    runDeliveryJobOperation vr user gInfo
   where
     (groupId, _jobScope) = deliveryScope
-    runDeliveryJobOperation :: GroupInfo -> CM ()
-    runDeliveryJobOperation gInfo = do
-      withWork doWork (\db -> getNextDeliveryJob db deliveryScope) processDeliveryJob
+    runDeliveryJobOperation :: VersionRangeChat -> User -> GroupInfo -> CM ()
+    runDeliveryJobOperation vr user gInfo = do
+      withWork doWork (\db -> getNextDeliveryJob db deliveryScope) $ \job ->
+        processDeliveryJob job
+          `catchAllErrors` \e -> do
+            withStore' $ \db -> updateDeliveryJobStatus db (deliveryJobId job) DJSError
+            eToView e
       where
-        -- TODO [channels fwd] implement forwarding logic
         processDeliveryJob :: DeliveryJob -> CM ()
         processDeliveryJob = \case
           DJMessageForward MessageForwardJob {jobId, forwardScope, singleSenderGMId_, messagesBatch, cursorGMId} -> do
             sendBodyToMembers jobId forwardScope singleSenderGMId_ messagesBatch cursorGMId
-            withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
+            withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage, cursorGMId} -> do
             sendBodyToMembers jobId GFSAll (Just singleSenderGMId) messagesBatch cursorGMId
-            -- TODO [channels fwd] move deleteGroupConnections out of processAgentMessageConn
-            deleteGroupConnections gInfo True
-            withStore' $ \db -> updateDeliveryJobStatus db jobId DJSProcessed
+            deleteGroupConnections user gInfo True
+            withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
-            -- TODO [channels fwd] filter out singleSenderGMId_ if Just
             sendBodyToMembers :: Int64 -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
             sendBodyToMembers jobId forwardScope singleSenderGMId_ body cursorGroupMemberId = case groupType gInfo of
-              -- TODO member retrieval for GTSmallGroup can be further optimized:
-              -- - move remaining filters to SQL (memberCurrentOrPending, memberCurrent)
-              -- - create new GroupForwardScope for reports to avoid post-filtering moderators in msgsForwardedToMember
-              --   as an additional step, instead initially retrieve only moderators
-              --   (reuse getForwardIntroducedModerators, getForwardInvitedModerators + filters)
-              -- - new GroupForwardScope for excluding members on XGrpMemRestrict
-              GTSmallGroup -> do
-                -- TODO [channels fwd] improve to avoid double parsing; fix logic for reports
-                -- - problem: here we have to practically double parse - on receiving MSG we parsed original batch body,
-                --   and now we have to parse a different prepared batch of messages we once parsed, again
-                -- - we have to do it to filter out via msgsForwardedToMember based on chat messages
-                -- - it's only needed for 2 types of messages (see msgsForwardedToMember): reports and XGrpMemRestrict
-                -- - for XGrpMemRestrict we probably can simply ignore previous requirement to not send to restricted members
-                -- - for reports it's more complicated, unless we're with reports being forwarded to all members
-                --   - it is now clear that current re-batching solution simply doesn't work, because if we batch messages from different
-                --     original MSGs batches, here we will filter out members based on presense of reports in the new batch
-                --     (of messages re-batched from different senders), and admin will fail to forward normal messages to regular members
-                --   - one option is to add a separate job type for reports, then for it we will know to only forward to moderators
-                --   - another option is to add a separate forward scope
-                --     (and probably we'd need it even with job type, at least based on current code structure)
-                --   - delivery scope probably should also be changed from to DJSMemberSupport without gmId, to move this work
-                --     to that worker; this is orthogonal to fixing job type / forward scope
-                -- - then (by doing a fix for reports and throwing away XGrpMemRestrict requirement) we can avoid parsing here altogether,
-                --   and simply send previously prepared batch body; msgsForwardedToMember filter will be gone
-                --
-                -- on another note: also if we parse here we have to prove all messages are of type ChatMessage 'Json,
-                -- and extract from XGrpMsgForward containers, which is additional complexity
-                --
-                -- another possibility is to remove optimization for report forwarding, and simply forward them
-                -- synchronously to moderators and above only, as we do for xGrpMemDel -> forwardToMember.
-                -- then we get back the accidental guarantee that there's no reports in forwarded batches
-                -- mixed with normal messages (there will be no reports in batches at all).
-                let fwdMsgs = parseChatMessages body
-                ms <- buildMemberList fwdMsgs
-                -- TODO [channels fwd] prepare agent MsgReq objects, replace with direct call to sendMessagesB
-                unless (null ms) $ void $ sendGroupMessages_ user gInfo ms events
-                where
-                  -- TODO [channels fwd] building member list for delivery body of messages re-batched across senders
-                  -- problem: in general case we don't have a single supporting element (member) to retrieve
-                  -- introduced and invited members for, as at this point we have mixed them up in a single batch
-                  -- (the only case when we have a single member is when singleSenderGMId_ is Just).
-                  -- in old code moved here it's `m` - used in getForwardIntroducedMembers, getForwardInvitedMembers,
-                  -- "scopeGMId == groupMemberId' m", etc.
-                  -- options:
-                  -- - for each sender in batch build such lists and combine them.
-                  --   it's messy as it now requires saving all group member ids on the job record, reading
-                  --   likely many times the same members, and overall resulting members list has unclear meaning.
-                  -- - load all current and pending / current / scope members (depending on GroupForwardScope),
-                  --   without introduced / invited filtering, as planned for channels.
-                  --   it's more straighforward and may allow to unify logic for small groups and channels,
-                  --   but this will increase load on admins with mobile clients.
-                  -- - for GTSmallGroup, when building jobs, retrieve tasks only with the same sender to mimic current
-                  --   ad-hoc sending logic. we'd either have to prove in types senderGMId is Just, or throw error here
-                  --   if it's Nothing in small group.
-                  -- - revert to synchronous ad-hoc forwarding.
-                  -- option 3 seems the most optimal, although it adds complexity to task retrieval by adding optional filters.
-                  buildMemberList fwdMsgs = case forwardScope of
-                    GFSAll -> do
-                      ms <- getAllIntroducedAndInvited
-                      pure $ filter (\mem -> memberCurrentOrPending mem && msgsForwardedToMember fwdMsgs mem) ms
-                    GFSMain -> do
-                      ms <- getAllIntroducedAndInvited
-                      pure $ filter (\mem -> memberCurrent mem && msgsForwardedToMember fwdMsgs mem) ms
-                    GFSMemberSupport scopeGMId -> do
-                      -- moderators introduced to this invited member
-                      introducedModMs <-
-                        if memberCategory m == GCInviteeMember
-                          then withStore' $ \db -> getForwardIntroducedModerators db vr user m
-                          else pure []
-                      -- invited moderators to which this member was introduced
-                      invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user m
-                      let modMs = introducedModMs <> invitedModMs
-                          moderatorFilter mem =
-                            memberCurrent mem
-                            && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                            && msgsForwardedToMember fwdMsgs mem
-                          modMs' = filter moderatorFilter modMs
-                      if scopeGMId == groupMemberId' m
-                        then pure modMs'
-                        else
-                          withStore' (\db -> getForwardScopeMember db vr user m scopeGMId) >>= \case
-                            Just scopeMem | msgsForwardedToMember fwdMsgs scopeMem -> pure $ scopeMem : modMs'
-                            _ -> pure modMs'
-                    where
-                      getAllIntroducedAndInvited = do
-                        ChatConfig {highlyAvailable} <- asks config
-                        -- members introduced to this invited member
-                        introducedMembers <-
-                          if memberCategory m == GCInviteeMember
-                            then withStore' $ \db -> getForwardIntroducedMembers db vr user m highlyAvailable
+              -- TODO [channels fwd] fixes for correct re-batching in small groups:
+              -- - drop requirement on XGrpMemRestrict to not send to restricted members
+              -- - forward reports in member support scope
+              -- - when retrieving a batch of tasks to convert into job, filter by the same sender (getNextDeliveryTasksBatch)
+              GTSmallGroup -> case singleSenderGMId_ of
+                Nothing -> throwError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
+                Just singleSenderGMId -> do
+                  sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
+                  mems <- buildMemberList sender
+                  -- TODO [channels fwd] prepare agent MsgReq objects, replace with direct call to sendMessagesB
+                  -- unless (null mems) $ void $ sendGroupMessages_ user gInfo mems events
+                  pure ()
+                  where
+                    buildMemberList sender = case forwardScope of
+                      GFSAll -> filter memberCurrentOrPending <$> getAllIntroducedAndInvited
+                      GFSMain -> filter memberCurrent <$> getAllIntroducedAndInvited
+                      GFSMemberSupport scopeGMId -> do
+                        -- moderators introduced to this invited member
+                        introducedModMs <-
+                          if memberCategory sender == GCInviteeMember
+                            then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
                             else pure []
-                        -- invited members to which this member was introduced
-                        invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user m highlyAvailable
-                        pure $ introducedMembers <> invitedMembers
-              -- TODO [channels fwd] forward scope for reports?
-              -- - can be used for same purpose as for GTSmallGroup
-              -- - not necessary for MVP, as in channels only owners can post content, so there's no need for reports
+                        -- invited moderators to which this member was introduced
+                        invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
+                        let modMs = introducedModMs <> invitedModMs
+                            modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
+                        if scopeGMId == groupMemberId' sender
+                          then pure modMs'
+                          else
+                            withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
+                              Just scopeMem -> pure $ scopeMem : modMs'
+                              _ -> pure modMs'
+                      where
+                        getAllIntroducedAndInvited = do
+                          ChatConfig {highlyAvailable} <- asks config
+                          -- members introduced to this invited member
+                          introducedMembers <-
+                            if memberCategory sender == GCInviteeMember
+                              then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
+                              else pure []
+                          -- invited members to which this member was introduced
+                          invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
+                          pure $ introducedMembers <> invitedMembers
+              -- TODO [channels fwd] filter out by singleSenderGMId_ from list of recipients, if it's Just
               GTChannel ->
                 case forwardScope of
                   -- TODO [channels fwd] review scope logic in GTChannel
-                  -- there's no member review in channels, so Main and All scopes can be considered equivalent
+                  -- there's no member review in channels, so Main and All scopes are treated the same
                   GFSAll -> sendLoop cursorGroupMemberId
                   GFSMain -> sendLoop cursorGroupMemberId
-                  -- TODO [channels fwd] for member support scope it's easier to load all needed members, without cursor
                   GFSMemberSupport scopeGMId -> do
+                    -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-                    scopeMem <- withStore $ \db -> getGroupMemberById db vr user groupMemberId
-                    -- possibly also filter by groupKnockingVersion
-                    let recipients = filter memberCurrent $ [scopeMem] <> modMs
-                    -- TODO prepare MsgReq objects, sendMessagesB of body to recipients
+                    scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
+                    -- TODO [channels fwd] possibly also filter by groupKnockingVersion
+                    let mems = filter memberCurrent $ [scopeMem] <> modMs
+                    -- TODO [channels fwd] prepare MsgReq objects, sendMessagesB of body to mems
                     pure ()
                 where
-                  dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
+                  -- TODO [channels fwd] review, make configurable
+                  dbBatchSize = 1000
                   sendLoop :: Maybe GroupMemberId -> CM ()
                   sendLoop cursorGMId = do
                     mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId dbBatchSize
                     let cursorGMId' = groupMemberId' $ last mems
-                    -- TODO prepare MsgReq objects, sendMessagesB of body to mems
+                    -- TODO [channels fwd] prepare MsgReq objects, sendMessagesB of body to mems
                     withStore' $ \db -> do
                       when (isNothing cursorGMId) $
                         updateDeliveryJobCursor db jobId cursorGMId'
-                      updateDeliveryJobStatus db jobId DJSInProgress -- "in progress" status is informational
+                      -- job status "in progress" is informational
+                      updateDeliveryJobStatus db jobId DJSInProgress
                     unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')

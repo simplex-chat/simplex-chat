@@ -32,7 +32,8 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
+import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -1213,7 +1214,6 @@ data RcvMessage = RcvMessage
 
 type MessageId = Int64
 
--- TODO [channels fwd] review types
 data NewGroupDeliveryTask = NewGroupDeliveryTask
   { messageId :: MessageId,
     jobTag :: DeliveryJobTag,
@@ -1270,6 +1270,7 @@ instance TextEncoding DeliveryJobTag where
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job
   | DTSProcessed -- processed by delivery task worker, delivery job created, task can be deleted
+  | DTSError -- permanent error
   deriving (Show)
 
 instance FromField DeliveryTaskStatus where fromField = fromTextField_ textDecode
@@ -1280,10 +1281,12 @@ instance TextEncoding DeliveryTaskStatus where
   textDecode = \case
     "new" -> Just DTSNew
     "processed" -> Just DTSProcessed
+    "error" -> Just DTSError
     _ -> Nothing
   textEncode = \case
     DTSNew -> "new"
     DTSProcessed -> "processed"
+    DTSError -> "error"
 
 data DeliveryTasksBatch
   = DTBMessageForward {messageForwardTasks :: NonEmpty MessageForwardTask, forwardScope :: GroupForwardScope}
@@ -1324,10 +1327,16 @@ data RelayRemovedTask = RelayRemovedTask
 --   }
 --   deriving (Show)
 
+deliveryTaskIds :: DeliveryTasksBatch -> NonEmpty Int64
+deliveryTaskIds = \case
+  DTBMessageForward {messageForwardTasks} -> L.map (\MessageForwardTask {taskId} -> taskId) messageForwardTasks
+  DTBRelayRemoved {relayRemovedTask = RelayRemovedTask {taskId}} -> taskId :| []
+
 data DeliveryJobStatus
   = DJSNew -- created for delivery job worker to pick up
   | DJSInProgress -- being processed by delivery job worker
   | DJSComplete -- complete by delivery job worker, job can be deleted
+  | DJSError -- permanent error
   deriving (Show)
 
 instance FromField DeliveryJobStatus where fromField = fromTextField_ textDecode
@@ -1339,11 +1348,13 @@ instance TextEncoding DeliveryJobStatus where
     "new" -> Just DJSNew
     "in_progress" -> Just DJSInProgress
     "complete" -> Just DJSComplete
+    "error" -> Just DJSError
     _ -> Nothing
   textEncode = \case
     DJSNew -> "new"
     DJSInProgress -> "in_progress"
     DJSComplete -> "complete"
+    DJSError -> "error"
 
 data DeliveryJob
   = DJMessageForward {messageForwardJob :: MessageForwardJob}
@@ -1384,6 +1395,11 @@ data RelayRemovedJob = RelayRemovedJob
 --     cursorGMId :: Maybe GroupMemberId
 --   }
 --   deriving (Show)
+
+deliveryJobId :: DeliveryJob -> Int64
+deliveryJobId = \case
+  DJMessageForward {messageForwardJob = MessageForwardJob {jobId}} -> jobId
+  DJRelayRemoved {relayRemovedJob = RelayRemovedJob {jobId}} -> jobId
 
 data ConnOrGroupId = ConnectionId Int64 | GroupId Int64
 

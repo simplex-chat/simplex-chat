@@ -161,7 +161,6 @@ module Simplex.Chat.Store.Groups
     createMessageForwardJob,
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
-    setDeliveryTaskFailed,
     getPendingDeliveryJobScopes,
     getNextDeliveryJob,
     updateDeliveryJobStatus,
@@ -3087,10 +3086,6 @@ updateDeliveryTaskStatus db taskId status = do
     db
     "UPDATE delivery_tasks SET task_status = ?, updated_at = ? WHERE delivery_task_id = ?"
     (status, currentTs, taskId)
-
-setDeliveryTaskFailed :: DB.Connection -> Int64 -> IO ()
-setDeliveryTaskFailed db taskId =
-  DB.execute db "UPDATE delivery_tasks SET failed = 1 WHERE delivery_task_id = ?" (Only taskId)
 
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerScope]
 getPendingDeliveryJobScopes db =
