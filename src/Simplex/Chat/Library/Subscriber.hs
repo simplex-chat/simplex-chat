@@ -3286,7 +3286,8 @@ resumeDeliveryTaskWork = void . getDeliveryTaskWorker False
 getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
 getDeliveryTaskWorker hasWork deliveryScope = do
   ws <- asks deliveryTaskWorkers
-  withAgent $ \a ->
+  a <- asks smpAgent
+  lift $
     getAgentWorker "delivery_task" hasWork a deliveryScope ws $
       runDeliveryTaskWorker a deliveryScope
 
@@ -3341,7 +3342,8 @@ resumeDeliveryJobWork = void . getDeliveryJobWorker False
 getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
 getDeliveryJobWorker hasWork deliveryScope = do
   ws <- asks deliveryJobWorkers
-  withAgent $ \a ->
+  a <- asks smpAgent
+  lift $
     getAgentWorker "delivery_job" hasWork a deliveryScope ws $
       runDeliveryJobWorker a deliveryScope
 
