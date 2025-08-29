@@ -2,7 +2,7 @@ import asyncio
 from simpx import BotProfile, SimpleXBot
 from simpx.download import SimpleXDaemon
 from simpx.extension import ChatWrapper
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 import traceback
 import os
 import time
@@ -88,7 +88,7 @@ if __name__ == "__main__":
             else:
                 return
 
-            now = datetime.utcnow()
+            now = datetime.now(UTC)
 
             # Initialize history entry if it doesn't exist
             if chat_id not in chat_histories:
