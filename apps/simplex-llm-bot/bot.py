@@ -30,11 +30,15 @@ if __name__ == "__main__":
 
     # Create a bot profile
     profile = BotProfile(
-        display_name="Hello World",
-        full_name="SimpleX Bot",
-        description="An example bot using SimpX-py framework",
-        welcome_message="Hello {name}! I'm an example bot. Try !help to see what I can do.",
-        auto_accept_message="This is the example bot!",
+        display_name="SimpleX Chat AI bot",
+        full_name="",
+        description="",
+        welcome_message="""This is a test chatbot connected to [FluxAI](https://ai.runonflux.com/). You can use it for technical and other questions.
+
+                           Use /reset command to start a new session. Session will automatically reset after 5 minutes without messages.
+
+                           Do NOT share private or security-sensitive information!""",
+        auto_accept_message="",
         command_prefix="/",
     )
 
