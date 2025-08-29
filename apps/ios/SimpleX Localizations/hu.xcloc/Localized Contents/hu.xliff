@@ -1012,9 +1012,9 @@ swipe action</note>
         <target>Bárki üzemeltethet kiszolgálókat.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App build: %@" xml:space="preserve">
+      <trans-unit id="App build: %@" xml:space="preserve" approved="no">
         <source>App build: %@</source>
-        <target>Az alkalmazás összeállítási száma: %@</target>
+        <target state="translated">Alkalmazás összeállítási száma: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App data migration" xml:space="preserve">
@@ -1052,14 +1052,14 @@ swipe action</note>
         <target>Alkalmazás munkamenete</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version" xml:space="preserve">
+      <trans-unit id="App version" xml:space="preserve" approved="no">
         <source>App version</source>
-        <target>Az alkalmazás verziója</target>
+        <target state="translated">Alkalmazás verziója</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="App version: v%@" xml:space="preserve">
+      <trans-unit id="App version: v%@" xml:space="preserve" approved="no">
         <source>App version: v%@</source>
-        <target>Az alkalmazás verziója: v%@</target>
+        <target state="translated">Alkalmazás verziója: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -4892,8 +4892,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Tag</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member %@" xml:space="preserve">
+      <trans-unit id="Member %@" xml:space="preserve" approved="no">
         <source>Member %@</source>
+        <target state="translated">%@ ismeretlen vagy már nem tag</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -7593,9 +7594,9 @@ chat item action</note>
         <target>Százalék megjelenítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Show preview" xml:space="preserve">
+      <trans-unit id="Show preview" xml:space="preserve" approved="no">
         <source>Show preview</source>
-        <target>Értesítések előnézetének megjelenítése</target>
+        <target state="translated">Értesítésekben megjelenő információk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">
