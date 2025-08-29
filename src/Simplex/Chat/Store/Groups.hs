@@ -3000,9 +3000,9 @@ getNextDeliveryTasksBatch db deliveryScope = do
         (_taskIds, DJTMessageForward) -> do
           case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
             Nothing -> pure $ Left SEInvalidDeliveryTasksBatch
-            Just fwdScope -> do
+            Just fwdScope -> runExceptT $ do
               tasks <- traverse (ExceptT . getTask) taskIds
-              pure $ Right $ DTBMessageForward tasks fwdScope
+              pure $ DTBMessageForward tasks fwdScope
           where
             getTask :: Int64 -> IO (Either StoreError MessageForwardTask)
             getTask taskId =
@@ -3111,7 +3111,7 @@ getNextDeliveryJob db deliveryScope = do
     -- TODO [channels fwd] consider optimizing query with OR for index including job_status
     getJobId :: IO (Maybe Int64)
     getJobId =
-      maybeFirstRow id $
+      maybeFirstRow fromOnly $
         DB.query
           db
           [sql|

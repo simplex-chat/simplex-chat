@@ -57,7 +57,7 @@ batchDeliveryTasks1 :: Int -> NonEmpty MessageForwardTask -> (ByteString, [Int64
 batchDeliveryTasks1 maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
     addToBatch :: (ByteString, [Int64], [Int64], Int, Int) -> MessageForwardTask -> (ByteString, [Int64], [Int64], Int, Int)
-    addToBatch (bodies, taskIds, largeTaskIds, len, n) task =
+    addToBatch (bodies, taskIds, largeTaskIds, len, n) task
       -- too large: skip body, record taskId in largeTaskIds
       | msgLen > maxLen = (bodies, taskIds, taskId : largeTaskIds, len, n)
       -- fits: include in batch

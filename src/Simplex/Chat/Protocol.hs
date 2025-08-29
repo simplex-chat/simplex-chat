@@ -1224,6 +1224,12 @@ instance ToJSON (ChatMessage 'Json) where
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
 
+instance ToField (ChatMessage 'Json) where
+  toField = toField . encodeJSON
+
+instance FromField (ChatMessage 'Json) where
+  fromField = fromTextField_ decodeJSON
+
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
     message :: Maybe MsgContent,

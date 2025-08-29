@@ -1226,6 +1226,21 @@ type DeliveryWorkerScope = (GroupId, DeliveryJobScope)
 
 data DeliveryJobScope = DJSGroup | DJSMemberSupport | DJSMemberProfile
 
+instance FromField DeliveryJobScope where fromField = fromTextField_ textDecode
+
+instance ToField DeliveryJobScope where toField = toField . textEncode
+
+instance TextEncoding DeliveryJobScope where
+  textDecode = \case
+    "group" -> Just DJSGroup
+    "member_support" -> Just DJSMemberSupport
+    "member_profile" -> Just DJSMemberProfile
+    _ -> Nothing
+  textEncode = \case
+    DJSGroup -> "group"
+    DJSMemberSupport -> "member_support"
+    DJSMemberProfile -> "member_profile"
+
 forwardToJobScope :: GroupForwardScope -> DeliveryJobScope
 forwardToJobScope = \case
   GFSAll -> DJSGroup
