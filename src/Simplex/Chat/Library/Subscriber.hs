@@ -24,7 +24,6 @@ import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Composition ((.:))
 import Data.Either (lefts, partitionEithers, rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -3279,10 +3278,10 @@ deleteGroupConnections user gInfo waitDelivery = do
 startDeliveryTaskWorkers :: CM ()
 startDeliveryTaskWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
-  lift . forM_ workerScopes resumeDeliveryTaskWork
+  lift $ forM_ workerScopes resumeDeliveryTaskWork
 
 resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM' ()
-resumeDeliveryTaskWork = void .: getDeliveryTaskWorker False
+resumeDeliveryTaskWork = void . getDeliveryTaskWorker False
 
 getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryTaskWorker hasWork deliveryScope = do
@@ -3332,10 +3331,10 @@ runDeliveryTaskWorker deliveryScope Worker {doWork} = do
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
-  lift . forM_ workerScopes resumeDeliveryJobWork
+  lift $ forM_ workerScopes resumeDeliveryJobWork
 
 resumeDeliveryJobWork :: DeliveryWorkerScope -> CM' ()
-resumeDeliveryJobWork = void .: getDeliveryJobWorker False
+resumeDeliveryJobWork = void . getDeliveryJobWorker False
 
 getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryJobWorker hasWork deliveryScope = do
