@@ -66,7 +66,7 @@ if __name__ == "__main__":
         else:
             return
 
-        chat_histories[chat_id] = []  # wipe the list
+        chat_histories[chat_id]["messages"] = []  # wipe the list
         await bot.send_message(chat_info, "Conversation history has been reset.")
 
     if aiclient is not None:
