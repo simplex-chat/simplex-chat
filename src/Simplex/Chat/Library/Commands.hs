@@ -181,8 +181,7 @@ startChatController mainApp enableSndFiles = do
         then do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
-          startDeliveryTaskWorkers
-          startDeliveryJobWorkers
+          startDeliveryWorkers
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
@@ -191,6 +190,10 @@ startChatController mainApp enableSndFiles = do
       tmp <- readTVarIO =<< asks tempDirectory
       runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
         Left e -> liftIO $ putStrLn $ "Error starting XFTP workers: " <> show e
+        Right _ -> pure ()
+    startDeliveryWorkers =
+      runExceptT (startDeliveryTaskWorkers >> startDeliveryJobWorkers) >>= \case
+        Left e -> liftIO $ putStrLn $ "Error starting delivery workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
