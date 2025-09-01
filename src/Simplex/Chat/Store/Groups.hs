@@ -2923,7 +2923,7 @@ createNewDeliveryTask
       [sql|
         INSERT INTO delivery_tasks (
           group_id, delivery_job_scope, delivery_job_tag,
-          forward_scope_tag, forward_scope_group_member_id, sender_group_member_id
+          forward_scope_tag, forward_scope_group_member_id, sender_group_member_id,
           message_id, message_from_channel, task_status
         ) VALUES (?,?,?,?,?,?,?,?,?)
       |]
