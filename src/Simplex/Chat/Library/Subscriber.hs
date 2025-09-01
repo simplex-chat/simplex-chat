@@ -3417,7 +3417,6 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
               -- TODO [channels fwd] filter out by singleSenderGMId_ from list of recipients, if it's Just
               GTChannel ->
                 case forwardScope of
-                  -- TODO [channels fwd] review scope logic in GTChannel
                   -- there's no member review in channels, so Main and All scopes are treated the same
                   GFSAll -> sendLoop cursorGroupMemberId
                   GFSMain -> sendLoop cursorGroupMemberId
@@ -3429,8 +3428,7 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                     let mems = scopeMem : modMs'
                     unless (null mems) $ deliver fwdBody mems
                 where
-                  -- TODO [channels fwd] review, make configurable
-                  dbBatchSize = 1000
+                  dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
                   sendLoop :: Maybe GroupMemberId -> CM ()
                   sendLoop cursorGMId = do
                     mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId dbBatchSize

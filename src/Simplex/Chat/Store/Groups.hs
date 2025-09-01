@@ -3131,10 +3131,10 @@ getNextDeliveryJob db deliveryScope = do
           |]
           (Only jobId)
       where
-        toDeliveryJob :: (DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> DeliveryJob
-        toDeliveryJob (jobTag, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_, deliveryBody, cursorGMId) =
+        toDeliveryJob :: (DeliveryJobTag, Maybe GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> DeliveryJob
+        toDeliveryJob (jobTag, fwdScopeTag_, fwdScopeGMId_, singleSenderGMId_, deliveryBody, cursorGMId) =
           case jobTag of
-            DJTMessageForward -> case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
+            DJTMessageForward -> case fwdScopeTag_ >>= (`forwardTagToScope` fwdScopeGMId_) of
               Nothing -> error "getNextDeliveryJob: invalid forward scope" -- TODO [channels fwd] put StoreError in return?
               Just forwardScope -> DJMessageForward MessageForwardJob {jobId, forwardScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
             DJTRelayRemoved -> case singleSenderGMId_ of
