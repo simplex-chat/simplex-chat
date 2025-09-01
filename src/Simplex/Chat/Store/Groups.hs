@@ -197,7 +197,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), UserId)
-import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, getWorkItem, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -2942,9 +2942,6 @@ getPendingDeliveryTaskScopes db =
       WHERE failed = 0 AND task_status = ?
     |]
     (Only DTSNew)
-
--- TODO [channels fwd] getWorkItem for chat monad
-getWorkItem = undefined
 
 -- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
 -- TODO [channels fwd] different "getWorkItem" implementation?

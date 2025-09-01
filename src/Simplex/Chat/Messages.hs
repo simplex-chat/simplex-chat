@@ -1225,6 +1225,7 @@ data NewGroupDeliveryTask = NewGroupDeliveryTask
 type DeliveryWorkerScope = (GroupId, DeliveryJobScope)
 
 data DeliveryJobScope = DJSGroup | DJSMemberSupport | DJSMemberProfile
+  deriving (Eq, Ord, Show)
 
 instance FromField DeliveryJobScope where fromField = fromTextField_ textDecode
 
@@ -1252,7 +1253,7 @@ data DeliveryJobTag
   -- | DJTMemberProfile
   | DJTRelayRemoved
   -- | DJTChatItemsCount
-  deriving (Show)
+  deriving (Eq, Show)
 
 instance FromField DeliveryJobTag where fromField = fromTextField_ textDecode
 

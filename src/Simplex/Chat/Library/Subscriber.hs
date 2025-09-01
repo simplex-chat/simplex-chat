@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (foldl')
-import Data.List.NonEmpty (NonEmpty (..), (<|))
+import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
@@ -996,12 +996,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createForwardTasks :: GroupInfo -> GroupMember -> [NewGroupDeliveryTask] -> CM ()
-          createForwardTasks gInfo'@GroupInfo {groupId} m' newDeliveryTasks = do
+          createForwardTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
             withStore' $ \db ->
               forM_ newDeliveryTasks $ \newTask ->
                 createNewDeliveryTask db gInfo' m' newTask
             forM_ uniqueScopes $ \scope ->
-              getDeliveryTaskWorker True (groupId, scope)
+              getDeliveryTaskWorker True (gId, scope)
             where
               uniqueScopes :: [DeliveryJobScope]
               uniqueScopes =
@@ -3319,7 +3319,7 @@ runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
             void $ getDeliveryJobWorker True deliveryScope
             where
               singleSenderGMId_ :: NonEmpty MessageForwardTask -> Maybe GroupMemberId
-              singleSenderGMId_ (t@MessageForwardTask {senderGMId = senderGMId'} :| ts)
+              singleSenderGMId_ (MessageForwardTask {senderGMId = senderGMId'} :| ts)
                 | all (\MessageForwardTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                 | otherwise = Nothing
           DTBRelayRemoved RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do

@@ -46,7 +46,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..))
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Parsers (dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (AnyError (..))
+import Simplex.Messaging.Util (AnyError (..), AnyStoreError (..))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
@@ -151,11 +151,19 @@ data StoreError
   | SEInvalidDeliveryTasksBatch
   | SEDeliveryTaskNotFound {taskId :: Int64}
   | SEDeliveryJobNotFound {jobId :: Int64}
+  | -- | Error when reading work item that suspends worker - do not use!
+    SEWorkItemError {errContext :: String}
   deriving (Show, Exception)
 
 instance AnyError StoreError where
   fromSomeException = SEInternalError . show
   {-# INLINE fromSomeException #-}
+
+instance AnyStoreError StoreError where
+  isWorkItemError = \case
+    SEWorkItemError {} -> True
+    _ -> False
+  mkWorkItemError errContext = SEWorkItemError {errContext}
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
