@@ -52,7 +52,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
-import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -1197,11 +1197,8 @@ instance ToJSON (ChatMessage 'Json) where
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
 
-instance ToField (ChatMessage 'Json) where
-  toField = toField . encodeJSON
-
 instance FromField (ChatMessage 'Json) where
-  fromField = fromTextField_ decodeJSON
+  fromField = blobFieldDecoder J.eitherDecodeStrict'
 
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,
