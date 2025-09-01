@@ -1869,7 +1869,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     newGroupContentMessage :: GroupInfo -> GroupMember -> MsgContainer -> RcvMessage -> UTCTime -> Bool -> CM (Maybe GroupForwardScope)
     newGroupContentMessage gInfo m@GroupMember {memberId, memberRole} mc msg@RcvMessage {sharedMsgId_} brokerTs forwarded = do
-      (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
+      (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m content msgScope_
       if blockedByAdmin m'
         then createBlockedByAdmin gInfo' m' scopeInfo $> Nothing
         else
@@ -1940,7 +1940,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             -- Chat item and update message which created it will have different sharedMsgId in this case...
             let timed_ = rcvGroupCITimed gInfo ttl_
                 mentions' = if memberBlocked m then [] else mentions
-            (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m msgScope_
+            (gInfo', m', scopeInfo) <- mkGetMessageChatScope vr user gInfo m mc msgScope_
             (ci, cInfo) <- saveRcvChatItem' user (CDGroupRcv gInfo' scopeInfo m') msg (Just sharedMsgId) brokerTs (content, ts) Nothing timed_ live mentions'
             ci' <- withStore' $ \db -> do
               createChatItemVersion db (chatItemId' ci) brokerTs mc
@@ -3376,8 +3376,6 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
           where
             sendBodyToMembers :: Int64 -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
             sendBodyToMembers jobId forwardScope singleSenderGMId_ fwdBody cursorGroupMemberId = case groupType gInfo of
-              -- TODO [channels fwd] fixes for correct re-batching in small groups:
-              -- - forward reports in member support scope
               GTSmallGroup -> case singleSenderGMId_ of
                 Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
                 Just singleSenderGMId -> do
@@ -3438,8 +3436,7 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                     withStore' $ \db -> do
                       when (isNothing cursorGMId) $
                         updateDeliveryJobCursor db jobId cursorGMId'
-                      -- job status "in progress" is informational
-                      updateDeliveryJobStatus db jobId DJSInProgress
+                      updateDeliveryJobStatus db jobId DJSInProgress -- job status "in progress" is informational
                     unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()

@@ -1441,21 +1441,26 @@ mkGroupChatScope gInfo@GroupInfo {membership} m
   | otherwise =
       pure (gInfo, m, Nothing)
 
-mkGetMessageChatScope :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> Maybe MsgScope -> CM (GroupInfo, GroupMember, Maybe GroupChatScopeInfo)
-mkGetMessageChatScope vr user gInfo@GroupInfo {membership} m msgScope_ =
+mkGetMessageChatScope :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> MsgContent -> Maybe MsgScope -> CM (GroupInfo, GroupMember, Maybe GroupChatScopeInfo)
+mkGetMessageChatScope vr user gInfo@GroupInfo {membership} m mc msgScope_ =
   mkGroupChatScope gInfo m >>= \case
     groupScope@(_gInfo', _m', Just _scopeInfo) -> pure groupScope
-    (_, _, Nothing) -> case msgScope_ of
-      Nothing -> pure (gInfo, m, Nothing)
-      Just (MSMember mId)
-        | sameMemberId mId membership -> do
-            (gInfo', scopeInfo) <- mkGroupSupportChatInfo gInfo
-            pure (gInfo', m, Just scopeInfo)
-        | otherwise -> do
-            referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
-            -- TODO [knocking] return patched _referredMember' too?
-            (_referredMember', scopeInfo) <- mkMemberSupportChatInfo referredMember
-            pure (gInfo, m, Just scopeInfo)
+    (_, _, Nothing)
+      | isReport mc -> do
+          -- TODO [knocking] return patched _m'?
+          (_m', scopeInfo) <- mkMemberSupportChatInfo m -- only support scope member can send a report (m is sender)
+          pure (gInfo, m, Just scopeInfo)
+      | otherwise -> case msgScope_ of
+          Nothing -> pure (gInfo, m, Nothing)
+          Just (MSMember mId)
+            | sameMemberId mId membership -> do
+                (gInfo', scopeInfo) <- mkGroupSupportChatInfo gInfo
+                pure (gInfo', m, Just scopeInfo)
+            | otherwise -> do
+                referredMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo mId
+                -- TODO [knocking] return patched _referredMember'?
+                (_referredMember', scopeInfo) <- mkMemberSupportChatInfo referredMember
+                pure (gInfo, m, Just scopeInfo)
 
 mkGroupSupportChatInfo :: GroupInfo -> CM (GroupInfo, GroupChatScopeInfo)
 mkGroupSupportChatInfo gInfo@GroupInfo {membership} =
