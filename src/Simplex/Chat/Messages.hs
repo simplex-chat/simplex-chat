@@ -1214,6 +1214,15 @@ data RcvMessage = RcvMessage
 
 type MessageId = Int64
 
+-- TODO [channels fwd] consider alternative types (don't use GroupForwardScope)
+-- type DeliveryWorkerKey = (GroupId, DeliveryJobScopeType)
+-- data DeliveryJobScope = DJSGroup {all :: Bool} | DJSMemberSupport {memberId :: GroupMemberId} |  DJSMemberProfile
+-- data DeliveryJobScopeType = DJSTGroup | DJSTMemberSupport | DJSTMemberProfile
+-- data DeliveryTaskType = DTTMsgForward | DTTRelayRemoved
+-- data DeliveryTask (t :: DeliveryTaskType) where
+--   DTMessageForward :: {...} ->  DeliveryTask 'DTTMsgForward
+--   DTRelayRemoved :: {...} -> DeliveryTask 'DTTRelayRemoved
+
 data NewGroupDeliveryTask = NewGroupDeliveryTask
   { messageId :: MessageId,
     jobTag :: DeliveryJobTag,
