@@ -5,6 +5,10 @@ module Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
+-- TODO [channels fwd] indexes for faster search of the next work item
+-- TODO ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
+-- TODO ALTER TABLE group_members ADD COLUMN join_ts TEXT;
+
 -- How columns correspond to types:
 -- - <group_id, delivery_job_scope> <-> DeliveryWorkerScope,
 -- - delivery_job_scope <-> DeliveryJobScope,
@@ -68,7 +72,6 @@ CREATE INDEX idx_delivery_tasks_group_id ON delivery_tasks(group_id);
 CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(sender_group_member_id);
 CREATE INDEX idx_delivery_tasks_forward_scope_group_member_id ON delivery_tasks(forward_scope_group_member_id);
 CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
--- TODO indexes for faster search of the next work item
 
 CREATE TABLE delivery_jobs (
   delivery_job_id INTEGER PRIMARY KEY,
@@ -89,20 +92,13 @@ CREATE TABLE delivery_jobs (
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(forward_scope_group_member_id);
 CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(single_sender_group_member_id);
--- TODO indexes for faster search of the next work item
 
 ALTER TABLE groups ADD COLUMN group_type TEXT NOT NULL DEFAULT 'small_group';
-
--- ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
--- ALTER TABLE group_members ADD COLUMN join_ts TEXT;
 |]
 
 down_m20250813_delivery_tasks :: Query
 down_m20250813_delivery_tasks =
   [sql|
--- ALTER TABLE group_members DROP COLUMN last_profile_delivery_ts;
--- ALTER TABLE group_members DROP COLUMN join_ts;
-
 ALTER TABLE groups DROP COLUMN group_type;
 
 DROP INDEX idx_delivery_jobs_group_id;

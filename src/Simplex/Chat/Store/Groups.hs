@@ -3093,7 +3093,7 @@ getPendingDeliveryJobScopes db =
     [sql|
       SELECT DISTINCT group_id, delivery_job_scope
       FROM delivery_jobs
-      WHERE failed = 0 AND task_status IN (?, ?)
+      WHERE failed = 0 AND job_status IN (?, ?)
     |]
     (DJSNew, DJSInProgress)
 

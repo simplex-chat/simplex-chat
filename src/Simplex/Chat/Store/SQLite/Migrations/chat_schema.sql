@@ -156,7 +156,8 @@ CREATE TABLE groups(
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
-  via_group_link_uri BLOB, -- received
+  via_group_link_uri BLOB,
+  group_type TEXT NOT NULL DEFAULT 'small_group', -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -696,7 +697,7 @@ CREATE TABLE delivery_tasks(
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   delivery_job_scope TEXT NOT NULL,
   delivery_job_tag TEXT NOT NULL,
-  forward_scope TEXT,
+  forward_scope_tag TEXT,
   forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   sender_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   message_id INTEGER REFERENCES messages ON DELETE CASCADE,
@@ -711,9 +712,10 @@ CREATE TABLE delivery_jobs(
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   delivery_job_scope TEXT NOT NULL,
   delivery_job_tag TEXT NOT NULL,
-  forward_scope TEXT,
+  forward_scope_tag TEXT,
   forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  messages_batch TEXT,
+  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  delivery_body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
   failed INTEGER DEFAULT 0,
@@ -1143,4 +1145,7 @@ CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(
   forward_scope_group_member_id
+);
+CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
+  single_sender_group_member_id
 );
