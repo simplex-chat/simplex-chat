@@ -1000,7 +1000,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             withStore' $ \db ->
               forM_ newDeliveryTasks $ \newTask ->
                 createNewDeliveryTask db gInfo' m' newTask
-            forM_ uniqueScopes $ \scope ->
+            lift $ forM_ uniqueScopes $ \scope ->
               getDeliveryTaskWorker True (gId, scope)
             where
               uniqueScopes :: [DeliveryJobScope]
@@ -3278,18 +3278,17 @@ deleteGroupConnections user gInfo waitDelivery = do
 startDeliveryTaskWorkers :: CM ()
 startDeliveryTaskWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryTaskScopes db
-  forM_ workerScopes resumeDeliveryTaskWork
+  lift $ forM_ workerScopes resumeDeliveryTaskWork
 
-resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryTaskWork :: DeliveryWorkerScope -> CM' ()
 resumeDeliveryTaskWork = void . getDeliveryTaskWorker False
 
-getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryTaskWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryTaskWorker hasWork deliveryScope = do
   ws <- asks deliveryTaskWorkers
   a <- asks smpAgent
-  lift $
-    getAgentWorker "delivery_task" hasWork a deliveryScope ws $
-      runDeliveryTaskWorker a deliveryScope
+  getAgentWorker "delivery_task" hasWork a deliveryScope ws $
+    runDeliveryTaskWorker a deliveryScope
 
 runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
@@ -3316,7 +3315,7 @@ runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
               createMessageForwardJob db deliveryScope fwdScope (singleSenderGMId_ tasks) batch
               forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
               forM_ largeTaskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSError
-            void $ getDeliveryJobWorker True deliveryScope
+            lift . void $ getDeliveryJobWorker True deliveryScope
             where
               singleSenderGMId_ :: NonEmpty MessageForwardTask -> Maybe GroupMemberId
               singleSenderGMId_ (MessageForwardTask {senderGMId = senderGMId'} :| ts)
@@ -3329,23 +3328,22 @@ runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
             withStore' $ \db -> do
               createRelayRemovedJob db deliveryScope senderGMId body
               updateDeliveryTaskStatus db taskId DTSProcessed
-            void $ getDeliveryJobWorker True deliveryScope
+            lift . void $ getDeliveryJobWorker True deliveryScope
 
 startDeliveryJobWorkers :: CM ()
 startDeliveryJobWorkers = do
   workerScopes <- withStore' $ \db -> getPendingDeliveryJobScopes db
-  forM_ workerScopes resumeDeliveryJobWork
+  lift $ forM_ workerScopes resumeDeliveryJobWork
 
-resumeDeliveryJobWork :: DeliveryWorkerScope -> CM ()
+resumeDeliveryJobWork :: DeliveryWorkerScope -> CM' ()
 resumeDeliveryJobWork = void . getDeliveryJobWorker False
 
-getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM Worker
+getDeliveryJobWorker :: Bool -> DeliveryWorkerScope -> CM' Worker
 getDeliveryJobWorker hasWork deliveryScope = do
   ws <- asks deliveryJobWorkers
   a <- asks smpAgent
-  lift $
-    getAgentWorker "delivery_job" hasWork a deliveryScope ws $
-      runDeliveryJobWorker a deliveryScope
+  getAgentWorker "delivery_job" hasWork a deliveryScope ws $
+    runDeliveryJobWorker a deliveryScope
 
 runDeliveryJobWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
 runDeliveryJobWorker a deliveryScope Worker {doWork} = do
