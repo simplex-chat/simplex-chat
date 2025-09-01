@@ -2354,7 +2354,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
             Left _ -> messageError "x.grp.link.acpt error: referenced member does not exist"
             Right referencedMember -> do
-              (referencedMember', gInfo') <- withFastStore' $ \db -> do
+              (referencedMember', gInfo') <- withStore' $ \db -> do
                 referencedMember' <- updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
                 gInfo' <- updateGroupMembersRequireAttention db user gInfo referencedMember referencedMember'
                 pure (referencedMember', gInfo')
@@ -2869,9 +2869,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       MemberRestrictions {restriction}
       msg
       brokerTs
-        | membershipMemId == memId =
-            -- member shouldn't receive this message about themselves
-            messageError "x.grp.mem.restrict: admin blocks you" $> Nothing
+        | membershipMemId == memId = pure Nothing -- ignore - XGrpMemRestrict can be sent to restricted member for efficiency
         | otherwise =
             withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
               Right bm@GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp}
@@ -3288,13 +3286,19 @@ getDeliveryTaskWorker hasWork deliveryScope = do
 runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
   vr <- chatVersionRange
+  -- TODO [channels fwd] consider reading groupInfo and user on each iteration for updated state
+  -- currently doesn't matter; same for delivery jobs (runDeliveryJobWorker)
+  GroupInfo {groupType} <- withStore $ \db -> do
+    user <- getUserByGroupId db groupId
+    getGroupInfo db vr user groupId
   forever $ do
     lift $ waitForWork doWork
-    runDeliveryTaskOperation vr
+    runDeliveryTaskOperation vr groupType
   where
-    runDeliveryTaskOperation :: VersionRangeChat -> CM ()
-    runDeliveryTaskOperation vr = do
-      withWork_ a doWork (withStore' $ \db -> getNextDeliveryTasksBatch db deliveryScope) $ \tasksBatch ->
+    (groupId, _jobScope) = deliveryScope
+    runDeliveryTaskOperation :: VersionRangeChat -> GroupType -> CM ()
+    runDeliveryTaskOperation vr groupType = do
+      withWork_ a doWork (withStore' $ \db -> getNextDeliveryTasksBatch db deliveryScope groupType) $ \tasksBatch ->
         processDeliveryTasksBatch tasksBatch
           `catchAllErrors` \e -> do
             withStore' $ \db ->
@@ -3342,9 +3346,8 @@ getDeliveryJobWorker hasWork deliveryScope = do
 
 runDeliveryJobWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
 runDeliveryJobWorker a deliveryScope Worker {doWork} = do
-  -- TODO [channels fwd] consider reading groupInfo and user on each iteration for updated state, currently doesn't matter
   vr <- chatVersionRange
-  (user, gInfo) <- withFastStore $ \db -> do
+  (user, gInfo) <- withStore $ \db -> do
     user <- getUserByGroupId db groupId
     gInfo <- getGroupInfo db vr user groupId
     pure (user, gInfo)
@@ -3374,9 +3377,7 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
             sendBodyToMembers :: Int64 -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
             sendBodyToMembers jobId forwardScope singleSenderGMId_ fwdBody cursorGroupMemberId = case groupType gInfo of
               -- TODO [channels fwd] fixes for correct re-batching in small groups:
-              -- - drop requirement on XGrpMemRestrict to not send to restricted members
               -- - forward reports in member support scope
-              -- - when retrieving a batch of tasks to convert into job, filter by the same sender (getNextDeliveryTasksBatch)
               GTSmallGroup -> case singleSenderGMId_ of
                 Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
                 Just singleSenderGMId -> do

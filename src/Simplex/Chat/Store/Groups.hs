@@ -2948,19 +2948,22 @@ getPendingDeliveryTaskScopes db =
 -- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksBatch fails
 -- TODO   - issue with getWorkItems: consumer would have to prove all items are tasks of the same type (we know it by the way it's read)
 -- TODO   - ideally we want to keep knowledge that all items are tasks of the same type + only mark failed those we failed reading
-getNextDeliveryTasksBatch :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryTasksBatch))
-getNextDeliveryTasksBatch db deliveryScope = do
+getNextDeliveryTasksBatch :: DB.Connection -> DeliveryWorkerScope -> GroupType -> IO (Either StoreError (Maybe DeliveryTasksBatch))
+getNextDeliveryTasksBatch db deliveryScope groupType = do
   getWorkItem "delivery tasks batch" getTaskIds getTasksBatch markTasksFailed
   where
     (groupId, jobScope) = deliveryScope
     getTaskIds :: IO (Maybe (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId))
     getTaskIds = do
-      nextTaskFilter_ :: Maybe (Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId)  <-
+      nextTaskFilter_ :: Maybe (Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId, GroupMemberId)  <-
         maybeFirstRow id $
           DB.query
             db
             [sql|
-              SELECT delivery_task_id, delivery_job_tag, forward_scope_tag, forward_scope_group_member_id
+              SELECT
+                delivery_task_id, delivery_job_tag,
+                forward_scope_tag, forward_scope_group_member_id,
+                sender_group_member_id
               FROM delivery_tasks
               WHERE group_id = ? AND delivery_job_scope = ?
                 AND failed = 0 AND task_status = ?
@@ -2970,24 +2973,44 @@ getNextDeliveryTasksBatch db deliveryScope = do
             (groupId, jobScope, DTSNew)
       case nextTaskFilter_ of
         Nothing -> pure Nothing
-        Just (nextTaskId, jobTag, fwdScopeTag, fwdScopeGMId_) ->
+        Just (nextTaskId, jobTag, fwdScopeTag, fwdScopeGMId_, senderGMId) ->
           case jobTag of
             DJTRelayRemoved -> pure $ Just (nextTaskId :| [], jobTag, fwdScopeTag, fwdScopeGMId_)
             DJTMessageForward -> do
-              taskIds <-
-                map fromOnly <$>
-                  DB.query
-                    db
-                    [sql|
-                      SELECT delivery_task_id
-                      FROM delivery_tasks
-                      WHERE group_id = ? AND delivery_job_scope = ?
-                        AND delivery_job_tag = ? AND forward_scope_tag = ?
-                        AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
-                        AND failed = 0 AND task_status = ?
-                      ORDER BY created_at ASC, delivery_task_id ASC
-                    |]
-                    (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, DTSNew)
+              taskIds <- case groupType of
+                GTChannel ->
+                  map fromOnly <$>
+                    DB.query
+                      db
+                      [sql|
+                        SELECT delivery_task_id
+                        FROM delivery_tasks
+                        WHERE group_id = ? AND delivery_job_scope = ?
+                          AND delivery_job_tag = ? AND forward_scope_tag = ?
+                          AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
+                          AND failed = 0 AND task_status = ?
+                        ORDER BY created_at ASC, delivery_task_id ASC
+                      |]
+                      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, DTSNew)
+                -- For GTSmallGroup we guarantee a singleSenderGMId for a delivery job by additionally filtering
+                -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
+                -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
+                -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
+                GTSmallGroup ->
+                  map fromOnly <$>
+                    DB.query
+                      db
+                      [sql|
+                        SELECT delivery_task_id
+                        FROM delivery_tasks
+                        WHERE group_id = ? AND delivery_job_scope = ?
+                          AND delivery_job_tag = ? AND forward_scope_tag = ?
+                          AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
+                          AND sender_group_member_id = ?
+                          AND failed = 0 AND task_status = ?
+                        ORDER BY created_at ASC, delivery_task_id ASC
+                      |]
+                      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, senderGMId, DTSNew)
               forM (L.nonEmpty taskIds) $ \taskIds' -> pure (taskIds', jobTag, fwdScopeTag, fwdScopeGMId_)
     -- TODO [channels fwd] save broker_ts on message record, read it for forward metadata instead of created_at
     getTasksBatch :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO (Either StoreError DeliveryTasksBatch)

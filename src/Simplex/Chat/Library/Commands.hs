@@ -2350,6 +2350,7 @@ processChatCommand vr nm = \case
     withGroupLock "blockForAll" groupId $ do
       Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
       when (selfSelected gInfo) $ throwCmdError "can't block/unblock self"
+      -- TODO consider sending restriction to all members (don't build remainingMems list), as we do in delivery jobs
       let (blockMems, remainingMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && anyAdmin) $ throwCmdError "can't block/unblock multiple members when admins selected"
