@@ -25,6 +25,7 @@ import Control.Monad.Reader
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
 import Data.Either (lefts, partitionEithers, rights)
+import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
 import Data.List (foldl')
@@ -232,14 +233,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
                           where
-                            mConns' = mapMaybe useMember ms
+                            mConns' = mapMaybe readyMemberConn ms
                             sfts' = mapMaybe (\sft@SndFileTransfer {groupMemberId} -> (,sft) <$> groupMemberId) sfts
-                            -- Should match memberSendAction logic
-                            useMember GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
-                              | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) && not (connInactive conn) =
-                                  Just (groupMemberId, conn)
-                              | otherwise = Nothing
-                            useMember _ = Nothing
                     _ -> pure ()
                 _ -> pure () -- TODO error?
         SFWARN e -> do
@@ -3377,7 +3372,7 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
             withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
             sendBodyToMembers :: Int64 -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
-            sendBodyToMembers jobId forwardScope singleSenderGMId_ body cursorGroupMemberId = case groupType gInfo of
+            sendBodyToMembers jobId forwardScope singleSenderGMId_ fwdBody cursorGroupMemberId = case groupType gInfo of
               -- TODO [channels fwd] fixes for correct re-batching in small groups:
               -- - drop requirement on XGrpMemRestrict to not send to restricted members
               -- - forward reports in member support scope
@@ -3387,9 +3382,7 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                 Just singleSenderGMId -> do
                   sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
                   mems <- buildMemberList sender
-                  -- TODO [channels fwd] prepare agent MsgReq objects, replace with direct call to sendMessagesB
-                  -- unless (null mems) $ void $ sendGroupMessages_ user gInfo mems events
-                  pure ()
+                  unless (null mems) $ deliver fwdBody mems
                   where
                     buildMemberList sender = case forwardScope of
                       GFSAll -> filter memberCurrentOrPending <$> getAllIntroducedAndInvited
@@ -3431,11 +3424,10 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                   GFSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+                    let modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
                     scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
-                    -- TODO [channels fwd] possibly also filter by groupKnockingVersion
-                    let mems = filter memberCurrent $ [scopeMem] <> modMs
-                    -- TODO [channels fwd] prepare MsgReq objects, sendMessagesB of body to mems
-                    pure ()
+                    let mems = scopeMem : modMs'
+                    unless (null mems) $ deliver fwdBody mems
                 where
                   -- TODO [channels fwd] review, make configurable
                   dbBatchSize = 1000
@@ -3443,10 +3435,30 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                   sendLoop cursorGMId = do
                     mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId dbBatchSize
                     let cursorGMId' = groupMemberId' $ last mems
-                    -- TODO [channels fwd] prepare MsgReq objects, sendMessagesB of body to mems
+                    unless (null mems) $ deliver fwdBody mems
                     withStore' $ \db -> do
                       when (isNothing cursorGMId) $
                         updateDeliveryJobCursor db jobId cursorGMId'
                       -- job status "in progress" is informational
                       updateDeliveryJobStatus db jobId DJSInProgress
                     unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')
+              where
+                deliver :: ByteString -> [GroupMember] -> CM ()
+                deliver body mems =
+                  let mConns = mapMaybe (fmap snd . readyMemberConn) mems
+                      msgReqs = foldMemConns mConns
+                   in void $ withAgent (`sendMessages` msgReqs)
+                  where
+                    foldMemConns :: [Connection] -> [MsgReq]
+                    foldMemConns mConns = snd $ foldr' addReq (lastMemIdx_, []) mConns
+                      where
+                        lastMemIdx_ = let len = length mConns in if len > 1 then Just len else Nothing
+                        addReq :: Connection -> (Maybe Int, [MsgReq]) -> (Maybe Int, [MsgReq])
+                        addReq conn (memIdx_, reqs) =
+                          (subtract 1 <$> memIdx_, req : reqs)
+                          where
+                            req = (aConnId conn, PQEncOff, MsgFlags False, vrValue_)
+                            vrValue_ = case memIdx_ of
+                              Nothing -> VRValue Nothing body -- sending to one member, do not reference body
+                              Just 1 -> VRValue (Just 1) body
+                              Just _ -> VRRef 1
