@@ -3176,27 +3176,29 @@ updateDeliveryJobStatus db jobId status = do
     (status, currentTs, jobId)
 
 -- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
-getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user GroupInfo {groupId} cursorGMId_ count = do
+getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
+getGroupMembersByCursor db vr user GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
   memberIds <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
         DB.query
           db
           (query <> orderLimit)
-          (groupId, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, count)
+          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, count)
       Just cursorGMId ->
         DB.query
           db
           (query <> " AND group_member_id > ?" <> orderLimit)
-          (groupId, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, cursorGMId, count)
+          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, cursorGMId, count)
   rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     query =
       [sql|
         SELECT group_member_id
         FROM group_members
-        WHERE group_id = ? AND member_status IN (?,?,?,?,?,?)
+        WHERE group_id = ?
+          AND group_member_id IS DISTINCT FROM ?
+          AND member_status IN (?,?,?,?,?,?)
       |]
     orderLimit = " ORDER BY group_member_id ASC LIMIT ?"
 

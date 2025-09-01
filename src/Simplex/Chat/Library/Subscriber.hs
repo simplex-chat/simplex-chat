@@ -3413,7 +3413,6 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                           -- invited members to which this member was introduced
                           invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
                           pure $ introducedMembers <> invitedMembers
-              -- TODO [channels fwd] filter out by singleSenderGMId_ from list of recipients, if it's Just
               GTChannel ->
                 case forwardScope of
                   -- there's no member review in channels, so Main and All scopes are treated the same
@@ -3422,15 +3421,23 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
                   GFSMemberSupport scopeGMId -> do
                     -- for member support scope we just load all recipients in one go, without cursor
                     modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-                    let modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
-                    scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
-                    let mems = scopeMem : modMs'
+                    let moderatorFilter mem =
+                          memberCurrent mem
+                          && maxVersion (memberChatVRange mem) >= groupKnockingVersion
+                          && Just (groupMemberId' mem) /= singleSenderGMId_
+                        modMs' = filter moderatorFilter modMs
+                    mems <-
+                      if Just scopeGMId == singleSenderGMId_
+                        then pure modMs'
+                        else do
+                          scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
+                          pure $ scopeMem : modMs'
                     unless (null mems) $ deliver fwdBody mems
                 where
                   dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
                   sendLoop :: Maybe GroupMemberId -> CM ()
                   sendLoop cursorGMId = do
-                    mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId dbBatchSize
+                    mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId singleSenderGMId_ dbBatchSize
                     let cursorGMId' = groupMemberId' $ last mems
                     unless (null mems) $ deliver fwdBody mems
                     withStore' $ \db -> do
