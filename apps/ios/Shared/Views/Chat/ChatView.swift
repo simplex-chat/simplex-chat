@@ -60,6 +60,7 @@ struct ChatView: View {
     @State private var animatedScrollingInProgress: Bool = false
     @State private var showUserSupportChatSheet = false
     @State private var showCommandsMenu = false
+    @State private var supportChatMemberInfoLinkActive = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
@@ -118,6 +119,19 @@ struct ChatView: View {
                             scrollView.updateItems(mergedItems.boxedValue.items)
                         }
                     )
+                    if case let .group(groupInfo, _) = chat.chatInfo,
+                       case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+                       case let .memberSupport(groupMember_) = groupScopeInfo,
+                       let groupMember = groupMember_ {
+                        NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
+                            GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: GMember(groupMember), scrollToItemId: $scrollToItemId)
+                                .navigationBarHidden(false)
+                        } label: {
+                            EmptyView()
+                        }
+                        .frame(width: 1, height: 1)
+                        .hidden()
+                    }
                 }
                 if let connectInProgressText = connectProgressManager.showConnectProgress {
                     connectInProgressView(connectInProgressText)
@@ -556,20 +570,15 @@ struct ChatView: View {
     @ViewBuilder private func secondaryPrincipalToolbarContent() -> some View {
         if selectedChatItems != nil {
             SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
-        } else if case let .group(groupInfo, _) = chat.chatInfo {
+        } else {
             switch im.secondaryIMFilter {
             case let .groupChatScopeContext(groupScopeInfo):
                 switch groupScopeInfo {
                 case let .memberSupport(groupMember_):
                     if let groupMember = groupMember_ {
-                        ZStack {
-                            NavigationLink {
-                                GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: GMember(groupMember), scrollToItemId: $scrollToItemId)
-                                    .navigationBarHidden(false)
-                            } label: {
-                                EmptyView()
-                            }
-                            .opacity(0)
+                        Button {
+                            supportChatMemberInfoLinkActive = true
+                        } label: {
                             MemberSupportChatToolbar(groupMember: groupMember)
                         }
                     } else {
