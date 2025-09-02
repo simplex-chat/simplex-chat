@@ -95,11 +95,15 @@ CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(fo
 CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(single_sender_group_member_id);
 
 ALTER TABLE groups ADD COLUMN group_type TEXT NOT NULL DEFAULT 'small_group';
+
+ALTER TABLE messages ADD COLUMN broker_ts TEXT;
 |]
 
 down_m20250813_delivery_tasks :: Query
 down_m20250813_delivery_tasks =
   [sql|
+ALTER TABLE messages DROP COLUMN broker_ts;
+
 ALTER TABLE groups DROP COLUMN group_type;
 
 DROP INDEX idx_delivery_jobs_group_id;

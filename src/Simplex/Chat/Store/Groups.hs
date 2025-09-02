@@ -3012,7 +3012,6 @@ getNextDeliveryTasksBatch db deliveryScope groupType = do
                       |]
                       (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, senderGMId, DTSNew)
               forM (L.nonEmpty taskIds) $ \taskIds' -> pure (taskIds', jobTag, fwdScopeTag, fwdScopeGMId_)
-    -- TODO [channels fwd] save broker_ts on message record, read it for forward metadata instead of created_at
     getTasksBatch :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO (Either StoreError DeliveryTasksBatch)
     getTasksBatch (taskIds, jobTag, fwdScopeTag, fwdScopeGMId_) = do
       case (taskIds, jobTag) of
@@ -3031,7 +3030,7 @@ getNextDeliveryTasksBatch db deliveryScope groupType = do
                   [sql|
                     SELECT
                       m.group_member_id, m.member_id, p.display_name,
-                      msg.created_at, msg.msg_body, t.message_from_channel
+                      msg.broker_ts, msg.msg_body, t.message_from_channel
                     FROM delivery_tasks t
                     JOIN messages msg ON msg.message_id = t.message_id
                     JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -3050,7 +3049,7 @@ getNextDeliveryTasksBatch db deliveryScope groupType = do
               [sql|
                 SELECT
                   m.group_member_id, m.member_id, p.display_name,
-                  msg.created_at, msg.msg_body
+                  msg.broker_ts, msg.msg_body
                 FROM delivery_tasks t
                 JOIN messages msg ON msg.message_id = t.message_id
                 JOIN group_members m ON m.group_member_id = t.sender_group_member_id

@@ -1199,7 +1199,8 @@ data SndMessage = SndMessage
 
 data NewRcvMessage e = NewRcvMessage
   { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    brokerTs :: UTCTime
   }
   deriving (Show)
 
