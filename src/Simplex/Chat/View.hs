@@ -1509,7 +1509,7 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> sShow testError]
       brokerErr = case testError of
-        BROKER _ NETWORK -> True
+        BROKER _ (NETWORK _) -> True
         _ -> False
   _ -> [pName <> " server test passed"]
   where
@@ -2536,7 +2536,7 @@ viewChatError isCmd logLevel testView = \case
         reasonStr = case reason of
           BRSpam -> "spam"
           BRContent -> "content violates conditions of use"
-    BROKER _ NETWORK | not isCmd -> []
+    BROKER _ (NETWORK _) | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
     AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]

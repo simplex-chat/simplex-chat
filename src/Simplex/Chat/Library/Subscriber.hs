@@ -1601,7 +1601,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       e -> SndErrOther $ tshow e
       where
         brokerError srvErr = \case
-          NETWORK -> SndErrExpired
+          NETWORK _ -> SndErrExpired
           TIMEOUT -> SndErrExpired
           HOST -> srvErr SrvErrHost
           SMP.TRANSPORT TEVersion -> srvErr SrvErrVersion

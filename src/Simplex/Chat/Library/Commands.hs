@@ -4209,7 +4209,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
             netStatus = maybe NSConnected $ NSError . errorNetworkStatus
             errorNetworkStatus :: ChatError -> String
             errorNetworkStatus = \case
-              ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
+              ChatErrorAgent (BROKER _ (NETWORK _)) _ -> "network"
               ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
     -- TODO possibly below could be replaced with less noisy events for API
