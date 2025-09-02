@@ -992,6 +992,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
           createForwardTasks :: GroupInfo -> GroupMember -> [NewGroupDeliveryTask] -> CM ()
           createForwardTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
+            -- TODO [channels fwd] if any task is DJTRelayRemoved, remove all tasks for worker scope and only create that one
             withStore' $ \db ->
               forM_ newDeliveryTasks $ \newTask ->
                 createNewDeliveryTask db gInfo' m' newTask
@@ -2942,6 +2943,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       if membershipMemId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
+          -- TODO [channels fwd] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
           unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
@@ -3012,6 +3014,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
+      -- TODO [channels fwd] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
       unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEGroupDeleted)

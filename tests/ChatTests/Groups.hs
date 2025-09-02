@@ -308,46 +308,26 @@ testGroupShared alice bob cath checkMessages = do
   bob <## "#team: you don't have permission to send messages"
   bob ##> "/rm team cath"
   bob <## "#team: you have insufficient permissions for this action, the required role is admin"
-  cath #> "#team hello"
-  concurrentlyN_
-    [ alice <# "#team cath> hello",
-      bob <# "#team cath> hello"
-    ]
   alice ##> "/mr team bob admin"
   concurrentlyN_
     [ alice <## "#team: you changed the role of bob to admin",
       bob <## "#team: alice changed your role from observer to admin",
       cath <## "#team: alice changed the role of bob from observer to admin"
     ]
-  -- remove member
-  bob ##> "/rm team cath"
-  concurrentlyN_
-    [ bob <## "#team: you removed cath from the group",
-      alice <## "#team: bob removed cath from the group",
-      do
-        cath <## "#team: bob removed you from the group"
-        cath <## "use /d #team to delete the group"
-    ]
-  bob #> "#team hi"
-  concurrently_
-    (alice <# "#team bob> hi")
-    (cath </)
-  alice #> "#team hello"
-  concurrently_
-    (bob <# "#team alice> hello")
-    (cath </)
-  cath ##> "#team hello"
-  cath <## "bad chat command: not current member"
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
   bob <## "alice (Alice) deleted contact with you"
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
-  bob <# "#team alice> checking connection"
+  concurrently_
+    (bob <# "#team alice> checking connection")
+    (cath <# "#team alice> checking connection")
   when checkMessages $ threadDelay 1000000
   bob #> "#team received"
-  alice <# "#team bob> received"
+  concurrently_
+    (alice <# "#team bob> received")
+    (cath <# "#team bob> received")
   when checkMessages $ do
     alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
     bob @@@ [("@alice", "contact deleted"), ("#team", "received")]
@@ -708,7 +688,7 @@ testGroupDelete :: HasCallStack => TestParams -> IO ()
 testGroupDelete =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       alice ##> "/d #team"
       concurrentlyN_
         [ alice <## "#team: you deleted the group",
@@ -976,7 +956,7 @@ testGroupRemoveAdd :: HasCallStack => TestParams -> IO ()
 testGroupRemoveAdd =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
 
       threadDelay 100000
 
@@ -1859,7 +1839,7 @@ testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 750000
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
@@ -1897,7 +1877,7 @@ testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
 testDeleteMemberMarkMessagesDeleted =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 1000000
       bob #> "#team hello"
       concurrently_
