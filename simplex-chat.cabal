@@ -295,7 +295,7 @@ library
     , stm ==2.5.*
     , terminal ==0.2.*
     , time ==1.12.*
-    , tls >=1.9.0 && <1.10
+    , tls ==2.1.6.*
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
     , uri-bytestring >=0.3.3.1 && <0.4
