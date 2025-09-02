@@ -3569,6 +3569,10 @@ DeliveryTaskNotFound:
 - type: "deliveryTaskNotFound"
 - taskId: int64
 
+InvalidDeliveryJob:
+- type: "invalidDeliveryJob"
+- jobId: int64
+
 DeliveryJobNotFound:
 - type: "deliveryJobNotFound"
 - jobId: int64

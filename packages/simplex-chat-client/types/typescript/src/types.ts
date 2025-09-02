@@ -3770,6 +3770,7 @@ export type StoreError =
   | StoreError.InvalidMention
   | StoreError.InvalidDeliveryTasksBatch
   | StoreError.DeliveryTaskNotFound
+  | StoreError.InvalidDeliveryJob
   | StoreError.DeliveryJobNotFound
   | StoreError.WorkItemError
 
@@ -3854,6 +3855,7 @@ export namespace StoreError {
     | "invalidMention"
     | "invalidDeliveryTasksBatch"
     | "deliveryTaskNotFound"
+    | "invalidDeliveryJob"
     | "deliveryJobNotFound"
     | "workItemError"
 
@@ -4241,6 +4243,11 @@ export namespace StoreError {
   export interface DeliveryTaskNotFound extends Interface {
     type: "deliveryTaskNotFound"
     taskId: number // int64
+  }
+
+  export interface InvalidDeliveryJob extends Interface {
+    type: "invalidDeliveryJob"
+    jobId: number // int64
   }
 
   export interface DeliveryJobNotFound extends Interface {
