@@ -2082,9 +2082,9 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "GT") ''GroupType)
 
-$(JQ.deriveJSON defaultJSON ''GroupType)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
