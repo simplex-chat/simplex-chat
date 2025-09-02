@@ -1172,7 +1172,7 @@
     <string name="share_address_with_contacts_question">Sdílet adresu s kontakty\?</string>
     <string name="stop_sharing_address">Přestat sdílet adresu\?</string>
     <string name="create_address_and_let_people_connect">Vytvořit adresu, aby se s vámi lidé mohli spojit.</string>
-    <string name="save_auto_accept_settings">Uložit nastavení automatického přijímání</string>
+    <string name="save_auto_accept_settings">Uložit nastavení SimpleX adresy</string>
     <string name="stop_sharing">Přestat sdílet</string>
     <string name="auto_accept_contact">Automaticky přijmout</string>
     <string name="you_can_create_it_later">Můžete vytvořit později</string>
@@ -1363,7 +1363,7 @@
     <string name="v5_3_new_interface_languages">6 nových jazyků pro rozhraní</string>
     <string name="v5_3_encrypt_local_files_descr">Aplikace šifruje nové místní soubory (kromě videí)</string>
     <string name="v5_3_new_interface_languages_descr">Arabština, bulharština, finština, hebrejština, thajština a ukrajinština - díky uživatelům a Weblate.</string>
-    <string name="rcv_group_event_member_created_contact">propojeno napřímo</string>
+    <string name="rcv_group_event_member_created_contact">požádáno o připojení</string>
     <string name="rcv_group_event_open_chat">Otevřít</string>
     <string name="v5_3_encrypt_local_files">Šifrování uložených souborů a médií</string>
     <string name="error_creating_member_contact">Chyba vytváření kontaktu</string>
@@ -1573,7 +1573,7 @@
     <string name="v5_5_simpler_connect_ui_descr">Vyhledávání přijímá pozvánky.</string>
     <string name="show_slow_api_calls">Zobrazit pomalé API volání</string>
     <string name="profile_update_event_removed_address">odstraněna kontaktní adresa</string>
-    <string name="past_member_vName">Vložte člena %1$s</string>
+    <string name="past_member_vName">Člen %1$s</string>
     <string name="v5_5_simpler_connect_ui">Vložte odkaz na připojení!</string>
     <string name="v5_5_join_group_conversation_descr">Nejnovější historie a vylepšený directory bot.</string>
     <string name="v5_5_private_notes">Soukromé poznámky</string>
@@ -2282,7 +2282,7 @@
     <string name="notification_group_report">Report: %s</string>
     <string name="report_compose_reason_header_other">Nahlásit další: uvidí pouze skupinový moderátoři.</string>
     <string name="you_can_set_connection_name_to_remember">Můžete nastavit název připojení, pro pamatování, s kým byl odkaz sdílen.</string>
-    <string name="switching_profile_error_message">Vaše připojení bylo přesunuto na %s, ale došlo k neočekávané chybě při přesměrování na profil.</string>
+    <string name="switching_profile_error_message">Vaše připojení bylo přesunuto na %s, ale nastala chyba při přepínání profilu.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Pro každý profil použijte různé přihlašovací údaje</string>
     <string name="network_smp_proxy_mode_unknown">Neznámé servery</string>
     <string name="private_routing_explanation">Pro ochranu vaší IP adresy, soukromé směrování používá vaše servery SMP k doručování zpráv.</string>
@@ -2396,7 +2396,7 @@
     <string name="accept_pending_member_button">Přijmout</string>
     <string name="accept_pending_member_alert_title">Přijmout člena</string>
     <string name="reviewed_by_admins">schválen adminy</string>
-    <string name="add_short_link">Přidat krátký odkaz</string>
+    <string name="add_short_link">Upgradovat adresu</string>
     <string name="rcv_group_event_member_accepted">přijat %1$s</string>
     <string name="rcv_group_event_user_accepted">Vás přijal</string>
     <string name="group_member_status_pending_review_short">schválení</string>
@@ -2466,4 +2466,7 @@
     <string name="reject_contact_request">Odmítnout žádost o kontakt</string>
     <string name="sanitize_links_toggle">Odebrat sledování odkazů</string>
     <string name="v6_4_role_moderator_descr">Odstranit zprávy a blokovat členy.</string>
+    <string name="e2ee_info_e2ee">&lt;![CDATA[Zprávy jsou chráněny &lt;b&gt;koncovým šifrováním&lt;/b&gt;.] &gt;</string>
+    <string name="simplex_link_relay">SimpleX relé odkaz</string>
+    <string name="private_routing_no_session">Bez soukromého směrování sezení</string>
 </resources>
