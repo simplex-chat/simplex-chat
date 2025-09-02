@@ -105,6 +105,7 @@ This file is generated automatically.
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
+- [GroupType](#grouptype)
 - [HandshakeError](#handshakeerror)
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
@@ -2129,6 +2130,7 @@ MemberSupport:
 
 **Record type**:
 - groupId: int64
+- groupType: [GroupType](#grouptype)
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2361,6 +2363,15 @@ Known:
 - memberAttention: int64
 - mentions: int64
 - lastMsgFromMemberTs: UTCTime?
+
+
+---
+
+## GroupType
+
+**Enum type**:
+- "smallGroup"
+- "channel"
 
 
 ---
@@ -3550,6 +3561,21 @@ InvalidQuote:
 
 InvalidMention:
 - type: "invalidMention"
+
+InvalidDeliveryTasksBatch:
+- type: "invalidDeliveryTasksBatch"
+
+DeliveryTaskNotFound:
+- type: "deliveryTaskNotFound"
+- taskId: int64
+
+DeliveryJobNotFound:
+- type: "deliveryJobNotFound"
+- jobId: int64
+
+WorkItemError:
+- type: "workItemError"
+- errContext: string
 
 
 ---
