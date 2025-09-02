@@ -44,7 +44,7 @@ directoryServiceTests = do
     it "should de-list if owner leaves the group" testDelistedOwnerLeaves
     it "should de-list if owner is removed from the group" testDelistedOwnerRemoved
     it "should NOT de-list if another member leaves the group" testNotDelistedMemberLeaves
-    fit "should NOT de-list if another member is removed from the group" testNotDelistedMemberRemoved
+    it "should NOT de-list if another member is removed from the group" testNotDelistedMemberRemoved
     it "should de-list if service is removed from the group" testDelistedServiceRemoved
     it "should de-list if group is deleted" testDelistedGroupDeleted
     it "should de-list/re-list when service/owner roles change" testDelistedRoleChanges
