@@ -3290,7 +3290,8 @@ runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerScope -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
   vr <- chatVersionRange
   -- TODO [channels fwd] consider reading groupInfo and user on each iteration for updated state
-  -- currently doesn't matter; same for delivery jobs (runDeliveryJobWorker)
+  -- TODO   - currently doesn't matter
+  -- TODO   - same for delivery jobs (runDeliveryJobWorker)
   GroupInfo {groupType} <- withStore $ \db -> do
     user <- getUserByGroupId db groupId
     getGroupInfo db vr user groupId
