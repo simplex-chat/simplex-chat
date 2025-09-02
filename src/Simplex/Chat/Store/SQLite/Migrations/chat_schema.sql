@@ -396,7 +396,8 @@ CREATE TABLE messages(
   shared_msg_id BLOB,
   shared_msg_id_user INTEGER,
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  broker_ts TEXT
 );
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
