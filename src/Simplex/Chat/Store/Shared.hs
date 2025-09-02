@@ -150,6 +150,7 @@ data StoreError
   | SEInvalidMention
   | SEInvalidDeliveryTasksBatch
   | SEDeliveryTaskNotFound {taskId :: Int64}
+  | SEInvalidDeliveryJob {jobId :: Int64}
   | SEDeliveryJobNotFound {jobId :: Int64}
   | -- | Error when reading work item that suspends worker - do not use!
     SEWorkItemError {errContext :: String}

@@ -6,7 +6,7 @@ import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
 -- TODO [channels fwd] indexes for faster search of the next work item
--- TODO [channels fwd] add for "member profile" delivery jobs:
+-- TODO [channels fwd] add later for "member profile" delivery jobs:
 -- TODO   - ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
 -- TODO   - ALTER TABLE group_members ADD COLUMN join_ts TEXT;
 

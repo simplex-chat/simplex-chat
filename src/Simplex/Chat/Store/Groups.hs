@@ -3141,7 +3141,7 @@ getNextDeliveryJob db deliveryScope = do
           (groupId, jobScope, DJSNew, DJSInProgress)
     getJob :: Int64 -> IO (Either StoreError DeliveryJob)
     getJob jobId =
-      firstRow toDeliveryJob (SEDeliveryJobNotFound jobId) $
+      firstRow' toDeliveryJob (SEDeliveryJobNotFound jobId) $
         DB.query
           db
           [sql|
@@ -3153,15 +3153,15 @@ getNextDeliveryJob db deliveryScope = do
           |]
           (Only jobId)
       where
-        toDeliveryJob :: (DeliveryJobTag, Maybe GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> DeliveryJob
+        toDeliveryJob :: (DeliveryJobTag, Maybe GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> Either StoreError DeliveryJob
         toDeliveryJob (jobTag, fwdScopeTag_, fwdScopeGMId_, singleSenderGMId_, deliveryBody, cursorGMId) =
           case jobTag of
             DJTMessageForward -> case fwdScopeTag_ >>= (`forwardTagToScope` fwdScopeGMId_) of
-              Nothing -> error "getNextDeliveryJob: invalid forward scope" -- TODO [channels fwd] put StoreError in return?
-              Just forwardScope -> DJMessageForward MessageForwardJob {jobId, forwardScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
+              Nothing -> Left $ SEInvalidDeliveryJob jobId
+              Just forwardScope -> Right $ DJMessageForward MessageForwardJob {jobId, forwardScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
             DJTRelayRemoved -> case singleSenderGMId_ of
-              Nothing -> error "getNextDeliveryJob: missing singleSenderGMId" -- TODO [channels fwd] put StoreError in return?
-              Just singleSenderGMId -> DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage = deliveryBody, cursorGMId}
+              Nothing -> Left $ SEInvalidDeliveryJob jobId
+              Just singleSenderGMId -> Right $ DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage = deliveryBody, cursorGMId}
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
