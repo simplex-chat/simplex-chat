@@ -3030,7 +3030,7 @@ getNextDeliveryTasksBatch db deliveryScope groupType = do
                   [sql|
                     SELECT
                       m.group_member_id, m.member_id, p.display_name,
-                      msg.broker_ts, msg.msg_body, t.message_from_channel
+                      COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
                     FROM delivery_tasks t
                     JOIN messages msg ON msg.message_id = t.message_id
                     JOIN group_members m ON m.group_member_id = t.sender_group_member_id
@@ -3049,7 +3049,7 @@ getNextDeliveryTasksBatch db deliveryScope groupType = do
               [sql|
                 SELECT
                   m.group_member_id, m.member_id, p.display_name,
-                  msg.broker_ts, msg.msg_body
+                  COALESCE(msg.broker_ts, msg.created_at), msg.msg_body
                 FROM delivery_tasks t
                 JOIN messages msg ON msg.message_id = t.message_id
                 JOIN group_members m ON m.group_member_id = t.sender_group_member_id
