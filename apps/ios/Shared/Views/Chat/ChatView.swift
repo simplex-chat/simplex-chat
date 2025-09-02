@@ -556,13 +556,22 @@ struct ChatView: View {
     @ViewBuilder private func secondaryPrincipalToolbarContent() -> some View {
         if selectedChatItems != nil {
             SelectedItemsTopToolbar(selectedChatItems: $selectedChatItems)
-        } else {
+        } else if case let .group(groupInfo, _) = chat.chatInfo {
             switch im.secondaryIMFilter {
             case let .groupChatScopeContext(groupScopeInfo):
                 switch groupScopeInfo {
                 case let .memberSupport(groupMember_):
                     if let groupMember = groupMember_ {
-                        MemberSupportChatToolbar(groupMember: groupMember)
+                        ZStack {
+                            NavigationLink {
+                                GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: GMember(groupMember), scrollToItemId: $scrollToItemId)
+                                    .navigationBarHidden(false)
+                            } label: {
+                                EmptyView()
+                            }
+                            .opacity(0)
+                            MemberSupportChatToolbar(groupMember: groupMember)
+                        }
                     } else {
                         textChatToolbar("Chat with admins")
                     }
