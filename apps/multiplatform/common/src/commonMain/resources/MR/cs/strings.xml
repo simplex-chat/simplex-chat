@@ -548,8 +548,8 @@
     <string name="for_me_only">Smazat pro mě</string>
     <string name="icon_descr_edited">upraveno</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">neautorizované odeslání</string>
-    <string name="group_preview_you_are_invited">jste pozváni do skupiny</string>
-    <string name="group_preview_join_as">připojit jako %s</string>
+    <string name="group_preview_you_are_invited">Jste pozváni do skupiny</string>
+    <string name="group_preview_join_as">Připojit jako %s</string>
     <string name="group_connection_pending">připojuji…</string>
     <string name="tap_to_start_new_chat">Začněte nový chat</string>
     <string name="chat_with_developers">Chat s vývojáři</string>
@@ -1374,7 +1374,7 @@
     <string name="v5_3_new_desktop_app_descr">Vytvořit nový profil v desktopové aplikaci. 💻</string>
     <string name="v5_3_simpler_incognito_mode_descr">Změnit inkognito při připojování.</string>
     <string name="v5_3_discover_join_groups_descr">- připojení k adresáři skupin (BETA)!\n- doručenky (až 20 členů).\n- rychlejší a stabilnější.</string>
-    <string name="member_contact_send_direct_message">odeslat přímou zprávu</string>
+    <string name="member_contact_send_direct_message">odeslat pro připojení</string>
     <string name="rcv_direct_event_contact_deleted">smazaný kontakt</string>
     <string name="error_alert_title">Chyba</string>
     <string name="create_another_profile_button">Vytvořit profil</string>
