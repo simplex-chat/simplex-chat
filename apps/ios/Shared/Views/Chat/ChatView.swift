@@ -184,7 +184,6 @@ struct ChatView: View {
                case let .memberSupport(groupMember_) = groupScopeInfo,
                let groupMember = groupMember_ {
                 NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
-                    
                     GroupMemberInfoView(
                         groupInfo: groupInfo,
                         chat: chat,
@@ -193,6 +192,19 @@ struct ChatView: View {
                         openedFromSupportChat: true
                     )
                     .navigationBarHidden(false)
+                    .navigationBarBackButtonHidden(true)
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarLeading) {
+                            Button {
+                                supportChatMemberInfoLinkActive = false
+                            } label: {
+                                HStack {
+                                    Image(systemName: "chevron.backward")
+                                    Text("Back")
+                                }
+                            }
+                        }
+                    }
                 } label: {
                     EmptyView()
                 }

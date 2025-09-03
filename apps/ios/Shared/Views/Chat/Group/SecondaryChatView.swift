@@ -27,11 +27,14 @@ struct SecondaryChatView: View {
             .navigationBarBackButtonHidden(true)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: {
+                    Button {
                         chatModel.secondaryIM = nil
                         dismiss()
-                    }) {
-                        Image(systemName: "chevron.backward")
+                    } label: {
+                        HStack {
+                            Image(systemName: "chevron.backward")
+                            Text("Back")
+                        }
                     }
                 }
             }
