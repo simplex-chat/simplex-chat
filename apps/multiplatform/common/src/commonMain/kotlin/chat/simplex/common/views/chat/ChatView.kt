@@ -453,7 +453,7 @@ fun ChatView(
                 }
                 ModalManager.end.showModalCloseable(true) { close ->
                   remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, close, close)
+                    GroupMemberInfoView(chatRh, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, close, close)
                   }
                 }
               }
