@@ -598,6 +598,8 @@ struct ChatView: View {
                     } else {
                         textChatToolbar("Chat with admins")
                     }
+                case .reports:
+                    textChatToolbar("Member reports")
                 }
             case let .msgContentTagContext(contentTag):
                 switch contentTag {

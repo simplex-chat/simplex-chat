@@ -667,20 +667,27 @@ final class ChatModel: ObservableObject {
 
     func getCIItemsModel(_ cInfo: ChatInfo, _ ci: ChatItem) -> ItemsModel? {
         let cInfoScope = cInfo.groupChatScope()
-        if let cInfoScope = cInfoScope {
+        return if let cInfoScope = cInfoScope {
             switch cInfoScope {
             case .memberSupport:
                 switch secondaryIM?.secondaryIMFilter {
                 case .none:
-                    return nil
+                    nil
                 case let .groupChatScopeContext(groupScopeInfo):
-                    return (cInfo.id == chatId && sameChatScope(cInfoScope, groupScopeInfo.toChatScope())) ? secondaryIM : nil
+                    (cInfo.id == chatId && sameChatScope(cInfoScope, groupScopeInfo.toChatScope())) ? secondaryIM : nil
                 case let .msgContentTagContext(contentTag):
-                    return (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+                    (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+                }
+            case .reports:
+                switch secondaryIM?.secondaryIMFilter {
+                case let .msgContentTagContext(contentTag):
+                    (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+                default:
+                    nil
                 }
             }
         } else {
-            return cInfo.id == chatId ? im : nil
+            cInfo.id == chatId ? im : nil
         }
     }
 

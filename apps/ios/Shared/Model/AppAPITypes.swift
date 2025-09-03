@@ -574,6 +574,8 @@ enum ChatCommand: ChatCmdProtocol {
             } else {
                 "(_support)"
             }
+        case .reports:
+            "(reports, prohibited)" // can't use surrogate Reports scope
         }
     }
 
