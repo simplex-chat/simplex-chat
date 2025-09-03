@@ -119,19 +119,6 @@ struct ChatView: View {
                             scrollView.updateItems(mergedItems.boxedValue.items)
                         }
                     )
-                    if case let .group(groupInfo, _) = chat.chatInfo,
-                       case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
-                       case let .memberSupport(groupMember_) = groupScopeInfo,
-                       let groupMember = groupMember_ {
-                        NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
-                            GroupMemberInfoView(groupInfo: groupInfo, chat: chat, groupMember: GMember(groupMember), scrollToItemId: $scrollToItemId)
-                                .navigationBarHidden(false)
-                        } label: {
-                            EmptyView()
-                        }
-                        .frame(width: 1, height: 1)
-                        .hidden()
-                    }
                 }
                 if let connectInProgressText = connectProgressManager.showConnectProgress {
                     connectInProgressView(connectInProgressText)
@@ -192,6 +179,27 @@ struct ChatView: View {
             if im.showLoadingProgress == chat.id {
                 ProgressView().scaleEffect(2)
             }
+            NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
+                if case let .group(groupInfo, _) = chat.chatInfo,
+                   case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+                   case let .memberSupport(groupMember_) = groupScopeInfo,
+                   let groupMember = groupMember_ {
+                    GroupMemberInfoView(
+                        groupInfo: groupInfo,
+                        chat: chat,
+                        groupMember: GMember(groupMember),
+                        scrollToItemId: $scrollToItemId,
+                        openedFromSupportChat: true
+                    )
+                    .navigationBarHidden(false)
+                } else {
+                    EmptyView()
+                }
+            } label: {
+                EmptyView()
+            }
+            .frame(width: 1, height: 1)
+            .hidden()
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: .zero) {

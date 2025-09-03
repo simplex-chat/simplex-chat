@@ -23,9 +23,9 @@ struct SecondaryChatView: View {
                 floatingButtonModel: FloatingButtonModel(im: im),
                 scrollToItemId: $scrollToItemId
             )
-            .onDisappear {
-                chatModel.secondaryIM = nil
-            }
+//            .onDisappear {
+//                chatModel.secondaryIM = nil
+//            }
         }
     }
 }
