@@ -2634,7 +2634,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
     }
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
-        if !canBeRemoved(groupInfo: groupInfo) { return nil }
+        if !canBeRemoved(groupInfo: groupInfo) || memberPending { return nil }
         let userRole = groupInfo.membership.memberRole
         return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
     }
@@ -2643,6 +2643,7 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         let userRole = groupInfo.membership.memberRole
         return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
+            && !memberPending
     }
 
     public var canReceiveReports: Bool {

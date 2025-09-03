@@ -18,6 +18,7 @@ struct GroupMemberInfoView: View {
     @ObservedObject var groupMember: GMember
     @Binding var scrollToItemId: ChatItem.ID?
     var navigation: Bool = false
+    var openedFromSupportChat: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
@@ -101,7 +102,8 @@ struct GroupMemberInfoView: View {
 
                     if member.memberActive {
                         Section {
-                            if groupInfo.membership.memberRole >= .moderator
+                            if !openedFromSupportChat
+                                && groupInfo.membership.memberRole >= .moderator
                                 && (member.memberRole < .moderator || member.supportChat != nil) {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
