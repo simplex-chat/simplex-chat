@@ -10,6 +10,7 @@ import SwiftUI
 import SimpleXChat
 
 struct SecondaryChatView: View {
+    @Environment(\.dismiss) var dismiss
     @EnvironmentObject var chatModel: ChatModel
     @ObservedObject var chat: Chat
     @Binding var scrollToItemId: ChatItem.ID?
@@ -23,9 +24,17 @@ struct SecondaryChatView: View {
                 floatingButtonModel: FloatingButtonModel(im: im),
                 scrollToItemId: $scrollToItemId
             )
-//            .onDisappear {
-//                chatModel.secondaryIM = nil
-//            }
+            .navigationBarBackButtonHidden(true)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: {
+                        chatModel.secondaryIM = nil
+                        dismiss()
+                    }) {
+                        Image(systemName: "chevron.backward")
+                    }
+                }
+            }
         }
     }
 }
