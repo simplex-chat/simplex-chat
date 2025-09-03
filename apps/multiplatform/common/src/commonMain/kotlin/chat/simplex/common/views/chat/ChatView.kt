@@ -2941,12 +2941,6 @@ private fun archiveReports(chatRh: Long?, chatInfo: ChatInfo, itemIds: List<Long
       if (deleted != null) {
         withContext(Dispatchers.Main) {
           for (di in deleted) {
-            val toChatItem = di.toChatItem?.chatItem
-            if (toChatItem != null) {
-              chatModel.chatsContext.upsertChatItem(chatRh, chatInfo, toChatItem)
-            } else {
-              chatModel.chatsContext.removeChatItem(chatRh, chatInfo, di.deletedChatItem.chatItem)
-            }
             val deletedItem = di.deletedChatItem.chatItem
             if (deletedItem.isActiveReport) {
               chatModel.chatsContext.decreaseGroupReportsCounter(chatRh, chatInfo.id)
