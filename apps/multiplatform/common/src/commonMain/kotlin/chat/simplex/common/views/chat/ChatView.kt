@@ -1005,7 +1005,9 @@ fun ChatLayout(
                 Column(if (oneHandUI.value && chatBottomBar.value) Modifier.align(Alignment.BottomStart).imePadding() else Modifier) {
                   Box {
                     if (selectedChatItems.value == null) {
-                      MemberSupportChatAppBar(chatsCtx, chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_, { ModalManager.end.closeModal() }, onSearchValueChanged)
+                      if (chat != null) {
+                        MemberSupportChatAppBar(chatsCtx, remoteHostId, chat, chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_, scrollToItemId, { ModalManager.end.closeModal() }, onSearchValueChanged)
+                      }
                     } else {
                       SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value)
                     }
