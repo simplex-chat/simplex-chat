@@ -255,7 +255,9 @@ struct ChatView: View {
                 }
             }
         }
-        .appSheet(item: $selectedMember) { member in
+        .appSheet(item: $selectedMember, onDismiss: {
+            chatModel.secondaryIM = nil
+        }) { member in
             if case let .group(groupInfo, _) = chat.chatInfo {
                 GroupMemberInfoView(
                     groupInfo: groupInfo,
@@ -492,7 +494,10 @@ struct ChatView: View {
                 ChatInfoToolbar(chat: chat)
                     .tint(theme.colors.primary)
             }
-            .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
+            .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
+                chatModel.secondaryIM = nil
+                theme = buildTheme()
+            }) {
                 GroupChatInfoView(
                     chat: chat,
                     groupInfo: Binding(
