@@ -2343,7 +2343,7 @@ data class GroupMember (
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
-    if (!canBeRemoved(groupInfo)) null
+    if (!canBeRemoved(groupInfo) || memberPending) null
     else groupInfo.membership.memberRole.let { userRole ->
       GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
@@ -2352,6 +2352,7 @@ data class GroupMember (
     val userRole = groupInfo.membership.memberRole
     return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
         && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
+        && !memberPending
   }
 
   val versionRange: VersionRange = activeConn?.peerChatVRange ?: memberChatVRange
