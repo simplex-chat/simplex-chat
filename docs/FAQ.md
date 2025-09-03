@@ -79,7 +79,7 @@ When "Incognito Mode” is turned on, your currently chosen profile name and ima
 
 ### How do invitations work?
 
-It is quite a complex process, but fortunately all of this happens in the background, so it's simply to use.
+It is quite a complex process, but fortunately all of this happens in the background, so it's simple to use.
 
 Whenever somebody connects to you via your address, they basically ask your client whether they want to establish connection. After that, you can either agree or disagree.
 If interested, please read more: [Addresses and invitations](./guide/making-connections.md).
@@ -126,7 +126,7 @@ You can also revoke the files you send. If the recipients did not yet receive th
 This is different from most other messengers that allow deleting messages from the recipients' devices without any agreement with the recipients.
 
 We believe that allowing deleting information from your device to your contacts is a very wrong design decision for several reasons:
-1) it violates your data sovereignty as the device owner - once your are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not possible if users don't have sovereignty over their devices.
+1) it violates your data sovereignty as the device owner - once you are in possession of any information, you have the rights to retain it, and any deletion should be agreed with you. And security and privacy is not possible if users don't have sovereignty over their devices.
 2) it may be a business communication, and either your organization policy or a compliance requirement is that every message you receive must be preserved for some time.
 3) the message can contain a legally binding promise, effectively a contract between you and your contact, in which case you both need to keep it.
 4) the messages may contain threat or abuse and you may want to keep them as a proof.
