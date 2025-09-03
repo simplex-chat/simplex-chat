@@ -192,19 +192,9 @@ struct ChatView: View {
                         openedFromSupportChat: true
                     )
                     .navigationBarHidden(false)
-                    .navigationBarBackButtonHidden(true)
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button {
-                                supportChatMemberInfoLinkActive = false
-                            } label: {
-                                HStack {
-                                    Image(systemName: "chevron.backward")
-                                    Text("Back")
-                                }
-                            }
-                        }
-                    }
+                    .modifier(BackButton(disabled: Binding.constant(false)) {
+                        supportChatMemberInfoLinkActive = false
+                    })
                 } label: {
                     EmptyView()
                 }

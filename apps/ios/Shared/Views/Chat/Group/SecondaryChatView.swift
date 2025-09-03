@@ -24,20 +24,10 @@ struct SecondaryChatView: View {
                 floatingButtonModel: FloatingButtonModel(im: im),
                 scrollToItemId: $scrollToItemId
             )
-            .navigationBarBackButtonHidden(true)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button {
-                        chatModel.secondaryIM = nil
-                        dismiss()
-                    } label: {
-                        HStack {
-                            Image(systemName: "chevron.backward")
-                            Text("Back")
-                        }
-                    }
-                }
-            }
+            .modifier(BackButton(disabled: Binding.constant(false)) {
+                chatModel.secondaryIM = nil
+                dismiss()
+            })
         }
     }
 }
