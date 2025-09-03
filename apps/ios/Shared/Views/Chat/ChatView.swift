@@ -179,11 +179,12 @@ struct ChatView: View {
             if im.showLoadingProgress == chat.id {
                 ProgressView().scaleEffect(2)
             }
-            NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
-                if case let .group(groupInfo, _) = chat.chatInfo,
-                   case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
-                   case let .memberSupport(groupMember_) = groupScopeInfo,
-                   let groupMember = groupMember_ {
+            if case let .group(groupInfo, _) = chat.chatInfo,
+               case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+               case let .memberSupport(groupMember_) = groupScopeInfo,
+               let groupMember = groupMember_ {
+                NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
+                    
                     GroupMemberInfoView(
                         groupInfo: groupInfo,
                         chat: chat,
@@ -192,14 +193,12 @@ struct ChatView: View {
                         openedFromSupportChat: true
                     )
                     .navigationBarHidden(false)
-                } else {
+                } label: {
                     EmptyView()
                 }
-            } label: {
-                EmptyView()
+                .frame(width: 1, height: 1)
+                .hidden()
             }
-            .frame(width: 1, height: 1)
-            .hidden()
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: .zero) {
