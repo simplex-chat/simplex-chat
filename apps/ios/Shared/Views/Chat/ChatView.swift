@@ -60,6 +60,7 @@ struct ChatView: View {
     @State private var animatedScrollingInProgress: Bool = false
     @State private var showUserSupportChatSheet = false
     @State private var showCommandsMenu = false
+    @State private var supportChatMemberInfoLinkActive = false
 
     @State private var scrollView: EndlessScrollView<MergedItem> = EndlessScrollView(frame: .zero)
 
@@ -178,6 +179,28 @@ struct ChatView: View {
             if im.showLoadingProgress == chat.id {
                 ProgressView().scaleEffect(2)
             }
+            if case let .group(groupInfo, _) = chat.chatInfo,
+               case let .groupChatScopeContext(groupScopeInfo) = im.secondaryIMFilter,
+               case let .memberSupport(groupMember_) = groupScopeInfo,
+               let groupMember = groupMember_ {
+                NavigationLink(isActive: $supportChatMemberInfoLinkActive) {
+                    GroupMemberInfoView(
+                        groupInfo: groupInfo,
+                        chat: chat,
+                        groupMember: GMember(groupMember),
+                        scrollToItemId: $scrollToItemId,
+                        openedFromSupportChat: true
+                    )
+                    .navigationBarHidden(false)
+                    .modifier(BackButton(disabled: Binding.constant(false)) {
+                        supportChatMemberInfoLinkActive = false
+                    })
+                } label: {
+                    EmptyView()
+                }
+                .frame(width: 1, height: 1)
+                .hidden()
+            }
         }
         .safeAreaInset(edge: .top) {
             VStack(spacing: .zero) {
@@ -222,7 +245,9 @@ struct ChatView: View {
                 }
             }
         }
-        .appSheet(item: $selectedMember) { member in
+        .appSheet(item: $selectedMember, onDismiss: {
+            chatModel.secondaryIM = nil
+        }) { member in
             if case let .group(groupInfo, _) = chat.chatInfo {
                 GroupMemberInfoView(
                     groupInfo: groupInfo,
@@ -459,7 +484,10 @@ struct ChatView: View {
                 ChatInfoToolbar(chat: chat)
                     .tint(theme.colors.primary)
             }
-            .appSheet(isPresented: $showChatInfoSheet, onDismiss: { theme = buildTheme() }) {
+            .appSheet(isPresented: $showChatInfoSheet, onDismiss: {
+                chatModel.secondaryIM = nil
+                theme = buildTheme()
+            }) {
                 GroupChatInfoView(
                     chat: chat,
                     groupInfo: Binding(
@@ -562,7 +590,11 @@ struct ChatView: View {
                 switch groupScopeInfo {
                 case let .memberSupport(groupMember_):
                     if let groupMember = groupMember_ {
-                        MemberSupportChatToolbar(groupMember: groupMember)
+                        Button {
+                            supportChatMemberInfoLinkActive = true
+                        } label: {
+                            MemberSupportChatToolbar(groupMember: groupMember)
+                        }
                     } else {
                         textChatToolbar("Chat with admins")
                     }
