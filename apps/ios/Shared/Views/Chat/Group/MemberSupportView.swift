@@ -101,6 +101,14 @@ struct MemberSupportView: View {
                     }
                     .tint(theme.colors.primary)
                 } else {
+                    if memberWithChat.wrapped.supportChatNotRead {
+                        Button {
+                            Task { await markSupportChatRead(groupInfo, memberWithChat.wrapped) }
+                        } label: {
+                            Label("Read", systemImage: "checkmark")
+                        }
+                        .tint(theme.colors.primary)
+                    }
                     Button {
                         showDeleteMemberSupportChatAlert(groupInfo, memberWithChat.wrapped)
                     } label: {

@@ -1754,6 +1754,25 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
     }
 }
 
+func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
+    do {
+        if let supportChat = member.supportChat, member.supportChatNotRead {
+            try await apiChatRead(type: .group, id: groupInfo.apiId, scope: .memberSupport(groupMemberId_: member.groupMemberId))
+            await MainActor.run {
+                var updatedSupportChat = supportChat
+                updatedSupportChat.memberAttention = 0
+                updatedSupportChat.mentions = 0
+                updatedSupportChat.unread = 0
+                var updatedMember = member
+                updatedMember.supportChat = updatedSupportChat
+                _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
+            }
+        }
+    } catch {
+        logger.error("markChatRead apiChatRead error: \(responseError(error))")
+    }
+}
+
 func apiMarkChatItemsRead(_ im: ItemsModel, _ cInfo: ChatInfo, _ itemIds: [ChatItem.ID], mentionsRead: Int) async {
     do {
         let updatedChatInfo = try await apiChatItemsRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope(), itemIds: itemIds)
