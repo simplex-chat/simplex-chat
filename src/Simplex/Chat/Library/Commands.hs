@@ -1043,7 +1043,7 @@ processChatCommand vr nm = \case
         pure (user, gInfo)
       ts <- liftIO getCurrentTime
       timedItems <- withFastStore' $ \db -> do
-        timedItems <- getGroupUnreadTimedItems db user chatId
+        timedItems <- getGroupUnreadTimedItems db user chatId scope
         updateGroupChatItemsRead db user gInfo scope
         setGroupChatItemsDeleteAt db user chatId timedItems ts
       forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt

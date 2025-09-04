@@ -2021,16 +2021,26 @@ setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM i
 updateGroupChatItemsRead :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScope -> IO ()
 updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope = do
   currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE chat_items SET item_status = ?, updated_at = ?
-      WHERE user_id = ? AND group_id = ? AND item_status = ?
-    |]
-    (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
   case scope of
-    Nothing -> pure ()
+    Nothing ->
+      DB.execute
+        db
+        [sql|
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ?
+            AND item_status = ?
+        |]
+        (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
     Just GCSMemberSupport {groupMemberId_} -> do
+      DB.execute
+        db
+        [sql|
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+            AND item_status = ?
+        |]
+        (CISRcvRead, currentTs, userId, groupId, GCSTMemberSupport_, groupMemberId_, CISRcvNew)
       let gmId = fromMaybe (groupMemberId' membership) groupMemberId_
       DB.execute
         db
@@ -2043,16 +2053,30 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope 
         |]
         (Only gmId)
 
-getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> IO [(ChatItemId, Int)]
-getGroupUnreadTimedItems db User {userId} groupId =
-  DB.query
-    db
-    [sql|
-      SELECT chat_item_id, timed_ttl
-      FROM chat_items
-      WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
-    |]
-    (userId, groupId, CISRcvNew)
+getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> Maybe GroupChatScope -> IO [(ChatItemId, Int)]
+getGroupUnreadTimedItems db User {userId} groupId scope =
+  case scope of
+    Nothing ->
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id, timed_ttl
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ?
+            AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        |]
+        (userId, groupId, CISRcvNew)
+    Just GCSMemberSupport {groupMemberId_} ->
+      DB.query
+        db
+        [sql|
+          SELECT chat_item_id, timed_ttl
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+            AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        |]
+        (userId, groupId, GCSTMemberSupport_, groupMemberId_, CISRcvNew)
 
 updateGroupChatItemsReadList :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> NonEmpty ChatItemId -> ExceptT StoreError IO ([(ChatItemId, Int)], GroupInfo)
 updateGroupChatItemsReadList db vr user@User {userId} g@GroupInfo {groupId} scopeInfo_ itemIds = do
