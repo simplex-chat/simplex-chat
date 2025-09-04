@@ -1999,7 +1999,7 @@
     <string name="invite_to_chat_button">Convidar a xatejar</string>
     <string name="new_member_role">Nou rol de membre</string>
     <string name="no_contacts_to_add">No hi ha contactes per afegir</string>
-    <string name="past_member_vName">Membre anterior %1$s</string>
+    <string name="past_member_vName">Membre %1$s</string>
     <string name="skip_inviting_button">Ometre convidar membres</string>
     <string name="group_member_status_unknown_short">desconegut</string>
     <string name="button_add_members">Convidar membres</string>
@@ -2496,4 +2496,5 @@
     <string name="privacy_chat_list_open_full_web_link">Obrir enllaç complet</string>
     <string name="sanitize_links_toggle">Eliminar el seguiment de l\'enllaç</string>
     <string name="deprecated_options_section">Opcions obsoletes</string>
+    <string name="simplex_link_relay">Enllaç de servidor SimpleX</string>
 </resources>
