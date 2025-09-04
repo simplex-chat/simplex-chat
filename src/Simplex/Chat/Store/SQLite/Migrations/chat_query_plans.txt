@@ -1193,6 +1193,25 @@ SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
+          SELECT chat_item_id, timed_ttl
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+            AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: 
+          SELECT chat_item_id, timed_ttl
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ?
+            AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+
+Query: 
           SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at
           FROM chat_item_moderations
           WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
@@ -1433,6 +1452,23 @@ Plan:
 SEARCH r USING INDEX idx_received_probes_user_id (user_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+            AND item_status = ?
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: 
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ?
+            AND item_status = ?
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: 
           UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
@@ -4280,14 +4316,6 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
 
 Query: 
-      SELECT chat_item_id, timed_ttl
-      FROM chat_items
-      WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
-    
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
-
-Query: 
       SELECT group_snd_item_status, COUNT(1)
       FROM group_snd_item_statuses
       WHERE chat_item_id = ?
@@ -4370,13 +4398,6 @@ Query:
     
 Plan:
 SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE chat_items SET item_status = ?, updated_at = ?
-      WHERE user_id = ? AND group_id = ? AND item_status = ?
-    
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, updated_at = ?
