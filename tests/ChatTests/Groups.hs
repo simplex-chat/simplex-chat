@@ -8046,28 +8046,46 @@ testScopedSupportUnreadStatsOnDelete =
 
 testScopedSupportUnreadStatsCorrectOnOpen :: HasCallStack => TestParams -> IO ()
 testScopedSupportUnreadStatsCorrectOnOpen =
-  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
-    createGroup2 "team" alice bob
+  testChatOpts3 opts aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRModerator)
 
     bob #> "#team (support) 1"
-    alice <# "#team (support: bob) bob> 1"
+    [alice, cath] *<# "#team (support: bob) bob> 1"
 
     bob #> "#team (support) 2"
-    alice <# "#team (support: bob) bob> 2"
+    [alice, cath] *<# "#team (support: bob) bob> 2"
 
     alice ##> "/member support chats #team"
     alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    threadDelay 1000000
+
+    cath #> "#team (support: bob) 3"
+    alice <# "#team (support: bob) cath> 3"
+    bob <# "#team (support) cath> 3"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 3, require attention: 0, mentions: 0"
+
+    bob #> "#team (support) 4"
+    [alice, cath] *<# "#team (support: bob) bob> 4"
+
+    bob #> "#team (support) 5"
+    [alice, cath] *<# "#team (support: bob) bob> 5"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 5, require attention: 2, mentions: 0"
 
     void $ withCCTransaction alice $ \db ->
       DB.execute db "UPDATE group_members SET support_chat_items_member_attention=100 WHERE group_member_id=?" (Only (2 :: Int64))
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 2, require attention: 100, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 5, require attention: 100, mentions: 0"
 
-    alice #$> ("/_get chat #1(_support:2) count=100", chat, [(0, "1"), (0, "2")])
+    alice #$> ("/_get chat #1(_support:2) count=100", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
     alice ##> "/member support chats #team"
-    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+    alice <## "bob (Bob) (id 2): unread: 5, require attention: 2, mentions: 0"
   where
     opts =
       testOpts
