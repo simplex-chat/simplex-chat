@@ -18,6 +18,7 @@ import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
 import qualified Data.ByteString.Char8 as B
+import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
@@ -219,6 +220,7 @@ chatGroupTests = do
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
+    it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8036,6 +8038,36 @@ testScopedSupportUnreadStatsOnDelete =
 
     alice ##> "/member support chats #team"
     alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUnreadStatsCorrectOnOpen :: HasCallStack => TestParams -> IO ()
+testScopedSupportUnreadStatsCorrectOnOpen =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2 "team" alice bob
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    void $ withCCTransaction alice $ \db ->
+      DB.execute db "UPDATE group_members SET support_chat_items_member_attention=100 WHERE group_member_id=?" (Only (2 :: Int64))
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 100, mentions: 0"
+
+    alice #$> ("/_get chat #1(_support:2) count=100", chat, [(0, "1"), (0, "2")])
+
+    alice ##> "/member support chats #team"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
   where
     opts =
       testOpts

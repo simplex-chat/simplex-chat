@@ -38,6 +38,7 @@ module Simplex.Chat.Store.Messages
     MemberAttention (..),
     updateChatTsStats,
     setSupportChatTs,
+    setSupportChatMemberAttention,
     createNewSndChatItem,
     createNewRcvChatItem,
     createNewChatItemNoMsg,
@@ -495,6 +496,10 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
 setSupportChatTs :: DB.Connection -> GroupMemberId -> UTCTime -> IO ()
 setSupportChatTs db groupMemberId chatTs =
   DB.execute db "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?" (chatTs, groupMemberId)
+
+setSupportChatMemberAttention :: DB.Connection -> GroupMemberId -> Int64 -> IO ()
+setSupportChatMemberAttention db groupMemberId memberAttention =
+  DB.execute db "UPDATE group_members SET support_chat_items_member_attention = ? WHERE group_member_id = ?" (memberAttention, groupMemberId)
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =

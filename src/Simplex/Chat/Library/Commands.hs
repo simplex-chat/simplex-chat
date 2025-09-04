@@ -517,13 +517,41 @@ processChatCommand vr nm = \case
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
       (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ contentFilter pagination search)
-      pure $ CRApiChat user (AChat SCTGroup groupChat) navInfo
+      groupChat' <- checkSupportChatAttention user groupChat
+      pure $ CRApiChat user (AChat SCTGroup groupChat') navInfo
     CTLocal -> do
       when (isJust contentFilter) $ throwCmdError "content filter not supported"
       (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> throwCmdError "not implemented"
     CTContactConnection -> throwCmdError "not supported"
+    where
+      checkSupportChatAttention :: User -> Chat 'CTGroup -> CM (Chat 'CTGroup)
+      checkSupportChatAttention user groupChat@Chat {chatInfo, chatItems} =
+        case chatInfo of
+          GroupChat gInfo (Just GCSIMemberSupport {groupMember_ = Just scopeMem}) -> do
+            case correctedMemAttention scopeMem chatItems of
+              Just newMemAttention -> do
+                scopeMem' <- withFastStore $ \db -> do
+                  liftIO $ setSupportChatMemberAttention db (groupMemberId' scopeMem) newMemAttention
+                  getGroupMemberById db vr user (groupMemberId' scopeMem)
+                pure $ groupChat {chatInfo = GroupChat gInfo (Just $ GCSIMemberSupport (Just scopeMem'))}
+              Nothing -> pure groupChat
+          _ -> pure groupChat
+        where
+          correctedMemAttention :: GroupMember -> [CChatItem 'CTGroup] -> Maybe Int64
+          correctedMemAttention scopeMem@GroupMember {supportChat} items =
+            let numNewFromMember = fromIntegral . length . takeWhile newFromMember $ reverse items
+                memAttention = maybe 0 memberAttention supportChat
+            in
+              if numNewFromMember /= memAttention
+                then Just numNewFromMember
+                else Nothing
+            where
+              newFromMember :: CChatItem 'CTGroup -> Bool
+              newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}})
+                | groupMemberId' m == groupMemberId' scopeMem = True
+              newFromMember _ = False
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
