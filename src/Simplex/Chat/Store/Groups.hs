@@ -1497,7 +1497,10 @@ decreaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
     db
     [sql|
       UPDATE groups
-      SET members_require_attention = members_require_attention - 1
+      SET members_require_attention = CASE
+            WHEN members_require_attention >= 1 THEN members_require_attention - 1
+            ELSE 0
+          END
       WHERE user_id = ? AND group_id = ?
     |]
     (userId, groupId)

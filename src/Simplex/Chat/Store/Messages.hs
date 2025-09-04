@@ -427,11 +427,14 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
                 [sql|
                   UPDATE groups
                   SET chat_ts = ?,
-                      members_require_attention = members_require_attention - 1
+                      members_require_attention = CASE
+                        WHEN members_require_attention >= 1 THEN members_require_attention - 1
+                        ELSE 0
+                      END
                   WHERE user_id = ? AND group_id = ?
                 |]
                 (chatTs, userId, groupId)
-              pure $ GroupChat g {membersRequireAttention = membersRequireAttention - 1, chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
+              pure $ GroupChat g {membersRequireAttention = max 0 (membersRequireAttention - 1), chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
           | otherwise -> do
               DB.execute
                 db
@@ -2117,13 +2120,22 @@ updateGroupScopeUnreadStats db vr user g@GroupInfo {membership} scopeInfo (unrea
         db
         [sql|
           UPDATE group_members
-          SET support_chat_items_unread = support_chat_items_unread - ?,
-              support_chat_items_member_attention = support_chat_items_member_attention - ?,
-              support_chat_items_mentions = support_chat_items_mentions - ?,
+          SET support_chat_items_unread = CASE
+                WHEN support_chat_items_unread >= ? THEN support_chat_items_unread - ?
+                ELSE 0
+              END,
+              support_chat_items_member_attention = CASE
+                WHEN support_chat_items_member_attention >= ? THEN support_chat_items_member_attention - ?
+                ELSE 0
+              END,
+              support_chat_items_mentions = CASE
+                WHEN support_chat_items_mentions >= ? THEN support_chat_items_mentions - ?
+                ELSE 0
+              END,
               updated_at = ?
           WHERE group_member_id = ?
         |]
-        (unread, unanswered, mentions, currentTs, groupMemberId)
+        (unread, unread, unanswered, unanswered, mentions, mentions, currentTs, groupMemberId)
       m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
