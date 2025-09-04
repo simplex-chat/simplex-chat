@@ -1504,7 +1504,7 @@ decreaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, memb
       WHERE user_id = ? AND group_id = ?
     |]
     (userId, groupId)
-  pure g {membersRequireAttention = membersRequireAttention - 1}
+  pure g {membersRequireAttention = max 0 (membersRequireAttention - 1)}
 
 increaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
 increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
