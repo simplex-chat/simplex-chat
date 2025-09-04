@@ -1769,7 +1769,7 @@ func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
             }
         }
     } catch {
-        logger.error("markChatRead apiChatRead error: \(responseError(error))")
+        logger.error("markSupportChatRead apiChatRead error: \(responseError(error))")
     }
 }
 
