@@ -25,7 +25,10 @@ SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
                   UPDATE groups
                   SET chat_ts = ?,
-                      members_require_attention = members_require_attention + 1
+                      members_require_attention = CASE
+                        WHEN members_require_attention >= 1 THEN members_require_attention - 1
+                        ELSE 0
+                      END
                   WHERE user_id = ? AND group_id = ?
                 
 Plan:
@@ -34,7 +37,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
                   UPDATE groups
                   SET chat_ts = ?,
-                      members_require_attention = members_require_attention - 1
+                      members_require_attention = members_require_attention + 1
                   WHERE user_id = ? AND group_id = ?
                 
 Plan:
@@ -1482,9 +1485,18 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE group_members
-          SET support_chat_items_unread = support_chat_items_unread - ?,
-              support_chat_items_member_attention = support_chat_items_member_attention - ?,
-              support_chat_items_mentions = support_chat_items_mentions - ?,
+          SET support_chat_items_unread = CASE
+                WHEN support_chat_items_unread >= ? THEN support_chat_items_unread - ?
+                ELSE 0
+              END,
+              support_chat_items_member_attention = CASE
+                WHEN support_chat_items_member_attention >= ? THEN support_chat_items_member_attention - ?
+                ELSE 0
+              END,
+              support_chat_items_mentions = CASE
+                WHEN support_chat_items_mentions >= ? THEN support_chat_items_mentions - ?
+                ELSE 0
+              END,
               updated_at = ?
           WHERE group_member_id = ?
         
@@ -4623,7 +4635,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE groups
-      SET members_require_attention = members_require_attention + 1
+      SET members_require_attention = CASE
+            WHEN members_require_attention >= 1 THEN members_require_attention - 1
+            ELSE 0
+          END
       WHERE user_id = ? AND group_id = ?
     
 Plan:
@@ -4631,7 +4646,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE groups
-      SET members_require_attention = members_require_attention - 1
+      SET members_require_attention = members_require_attention + 1
       WHERE user_id = ? AND group_id = ?
     
 Plan:
@@ -6274,6 +6289,14 @@ Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET support_chat_items_member_attention = ? WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET support_chat_items_member_attention=100 WHERE group_member_id=?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
