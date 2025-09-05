@@ -1762,7 +1762,7 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 
 func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
     do {
-        if let supportChat = member.supportChat, member.supportChatNotRead {
+        if member.supportChatNotRead {
             let (updatedGroupInfo, updatedMember) = try await apiSupportChatRead(type: .group, id: groupInfo.apiId, scope: .memberSupport(groupMemberId_: member.groupMemberId))
             await MainActor.run {
                 _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
