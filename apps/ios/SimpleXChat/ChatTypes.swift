@@ -1584,6 +1584,8 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                         return nil
                     case .some(.memberSupport(groupMember_: .none)):
                         return nil
+                    case .some(.reports):
+                        return ("can't send messages", nil)
                     }
                 } else if groupInfo.nextConnectPrepared {
                     return nil
@@ -1895,26 +1897,35 @@ public struct ChatStats: Decodable, Hashable {
 
 public enum GroupChatScope: Decodable {
     case memberSupport(groupMemberId_: Int64?)
+    case reports // surrogate scope used for matching new items to opened Reports "chat scope" in UI, this type is not present in backend
 }
 
 public func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) -> Bool {
-    switch (scope1, scope2) {
+    return switch (scope1, scope2) {
     case let (.memberSupport(groupMemberId1_), .memberSupport(groupMemberId2_)):
-        return groupMemberId1_ == groupMemberId2_
+        groupMemberId1_ == groupMemberId2_
+    case (.reports, .reports):
+        true
+    case (.reports, .memberSupport):
+        false
+    case (.memberSupport(groupMemberId_: let groupMemberId_), .reports):
+        false
     }
 }
 
 public enum GroupChatScopeInfo: Decodable, Hashable {
     case memberSupport(groupMember_: GroupMember?)
+    case reports // surrogate scope used for matching new items to opened Reports "chat scope" in UI, this type is not present in backend
 
     public func toChatScope() -> GroupChatScope {
-        switch self {
+        return switch self {
         case let .memberSupport(groupMember_):
             if let groupMember = groupMember_ {
-                return .memberSupport(groupMemberId_: groupMember.groupMemberId)
+                .memberSupport(groupMemberId_: groupMember.groupMemberId)
             } else {
-                return .memberSupport(groupMemberId_: nil)
+                .memberSupport(groupMemberId_: nil)
             }
+        case .reports: .reports
         }
     }
 }

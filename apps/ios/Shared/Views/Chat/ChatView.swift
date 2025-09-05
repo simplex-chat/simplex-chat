@@ -234,13 +234,13 @@ struct ChatView: View {
         .confirmationDialog(selectedChatItems?.count == 1 ? "Archive report?" : "Archive \((selectedChatItems?.count ?? 0)) reports?", isPresented: $showArchiveSelectedReports, titleVisibility: .visible) {
             Button("For me", role: .destructive) {
                 if let selected = selectedChatItems {
-                    archiveReports(chat.chatInfo, selected.sorted(), false, deletedSelectedMessages)
+                    archiveReports(chat, selected.sorted(), false, deletedSelectedMessages)
                 }
             }
             if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, groupInfo.membership.memberActive {
                 Button("For all moderators", role: .destructive) {
                     if let selected = selectedChatItems {
-                        archiveReports(chat.chatInfo, selected.sorted(), true, deletedSelectedMessages)
+                        archiveReports(chat, selected.sorted(), true, deletedSelectedMessages)
                     }
                 }
             }
@@ -598,6 +598,8 @@ struct ChatView: View {
                     } else {
                         textChatToolbar("Chat with admins")
                     }
+                case .reports:
+                    textChatToolbar("Member reports")
                 }
             case let .msgContentTagContext(contentTag):
                 switch contentTag {
@@ -1913,14 +1915,14 @@ struct ChatView: View {
                 .confirmationDialog(archivingReports?.count == 1 ? "Archive report?" : "Archive \(archivingReports?.count ?? 0) reports?", isPresented: $showArchivingReports, titleVisibility: .visible) {
                     Button("For me", role: .destructive) {
                         if let reports = self.archivingReports {
-                            archiveReports(chat.chatInfo, reports.sorted(), false)
+                            archiveReports(chat, reports.sorted(), false)
                             self.archivingReports = []
                         }
                     }
                     if case let ChatInfo.group(groupInfo, _) = chat.chatInfo, groupInfo.membership.memberActive {
                         Button("For all moderators", role: .destructive) {
                             if let reports = self.archivingReports {
-                                archiveReports(chat.chatInfo, reports.sorted(), true)
+                                archiveReports(chat, reports.sorted(), true)
                                 self.archivingReports = []
                             }
                         }
@@ -2712,13 +2714,13 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
                 await MainActor.run {
                     for di in deletedItems {
                         if let toItem = di.toChatItem {
-                            _ = ChatModel.shared.upsertChatItem(chat.chatInfo, toItem.chatItem)
+                            _ = ChatModel.shared.upsertChatItem(chatInfo, toItem.chatItem)
                         } else {
                             ChatModel.shared.removeChatItem(chatInfo, di.deletedChatItem.chatItem)
                         }
                         let deletedItem = di.deletedChatItem.chatItem
                         if deletedItem.isActiveReport {
-                            ChatModel.shared.decreaseGroupReportsCounter(chat.chatInfo.id)
+                            ChatModel.shared.decreaseGroupReportsCounter(chatInfo.id)
                         }
                     }
                     if let updatedChatInfo = deletedItems.last?.deletedChatItem.chatInfo {
@@ -2733,8 +2735,9 @@ private func deleteMessages(_ chat: Chat, _ deletingItems: [Int64], _ mode: CIDe
     }
 }
 
-func archiveReports(_ chatInfo: ChatInfo, _ itemIds: [Int64], _ forAll: Bool, _ onSuccess: @escaping () async -> Void = {}) {
+func archiveReports(_ chat: Chat, _ itemIds: [Int64], _ forAll: Bool, _ onSuccess: @escaping () async -> Void = {}) {
     if itemIds.count > 0 {
+        let chatInfo = chat.chatInfo
         Task {
             do {
                 let deleted = try await apiDeleteReceivedReports(
