@@ -1495,14 +1495,19 @@ decreaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO
 decreaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
   DB.execute
     db
+#if defined(dbPostgres)
     [sql|
       UPDATE groups
-      SET members_require_attention = CASE
-            WHEN members_require_attention >= 1 THEN members_require_attention - 1
-            ELSE 0
-          END
+      SET members_require_attention = GREATEST(0, members_require_attention - 1)
       WHERE user_id = ? AND group_id = ?
     |]
+#else
+    [sql|
+      UPDATE groups
+      SET members_require_attention = MAX(0, members_require_attention - 1)
+      WHERE user_id = ? AND group_id = ?
+    |]
+#endif
     (userId, groupId)
   pure g {membersRequireAttention = max 0 (membersRequireAttention - 1)}
 

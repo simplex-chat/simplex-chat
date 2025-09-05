@@ -529,8 +529,8 @@ processChatCommand vr nm = \case
       checkSupportChatAttention :: User -> Chat 'CTGroup -> CM (Chat 'CTGroup)
       checkSupportChatAttention user groupChat@Chat {chatInfo, chatItems} =
         case chatInfo of
-          GroupChat gInfo (Just GCSIMemberSupport {groupMember_ = Just scopeMem}) -> do
-            case correctedMemAttention scopeMem chatItems of
+          GroupChat gInfo (Just GCSIMemberSupport {groupMember_ = Just scopeMem@GroupMember {supportChat = Just suppChat}}) -> do
+            case correctedMemAttention (groupMemberId' scopeMem) suppChat chatItems of
               Just newMemAttention -> do
                 (gInfo', scopeMem') <-
                   withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
@@ -538,18 +538,14 @@ processChatCommand vr nm = \case
               Nothing -> pure groupChat
           _ -> pure groupChat
         where
-          correctedMemAttention :: GroupMember -> [CChatItem 'CTGroup] -> Maybe Int64
-          correctedMemAttention scopeMem@GroupMember {supportChat} items =
+          correctedMemAttention :: GroupMemberId -> GroupSupportChat -> [CChatItem 'CTGroup] -> Maybe Int64
+          correctedMemAttention scopeGMId GroupSupportChat {memberAttention} items =
             let numNewFromMember = fromIntegral . length . takeWhile newFromMember $ reverse items
-                memAttention = maybe 0 memberAttention supportChat
-            in
-              if numNewFromMember /= memAttention
-                then Just numNewFromMember
-                else Nothing
+             in if numNewFromMember == memberAttention then Nothing else Just numNewFromMember
             where
               newFromMember :: CChatItem 'CTGroup -> Bool
-              newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}})
-                | groupMemberId' m == groupMemberId' scopeMem = True
+              newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
+                groupMemberId' m == scopeGMId
               newFromMember _ = False
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
@@ -1025,7 +1021,7 @@ processChatCommand vr nm = \case
             pure $ prefix <> formattedDate <> ext
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
-  APIChatRead chatRef@(ChatRef cType chatId scope) -> withUser $ \_ -> case cType of
+  APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       ts <- liftIO getCurrentTime
@@ -1041,18 +1037,18 @@ processChatCommand vr nm = \case
         gInfo <- getGroupInfo db vr user chatId
         pure (user, gInfo)
       ts <- liftIO getCurrentTime
-      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
-      case chatScopeInfo of
+      case scope_ of
         Nothing -> do
           timedItems <- withFastStore' $ \db -> do
-            timedItems <- getGroupUnreadTimedItems db user chatId scope
+            timedItems <- getGroupUnreadTimedItems db user chatId Nothing
             updateGroupChatItemsRead db user gInfo
             setGroupChatItemsDeleteAt db user chatId timedItems ts
           forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
           ok user
-        Just scopeInfo -> do
+        Just scope -> do
+          scopeInfo <- getChatScopeInfo vr user scope
           (gInfo', m', timedItems) <- withFastStore' $ \db -> do
-            timedItems <- getGroupUnreadTimedItems db user chatId scope
+            timedItems <- getGroupUnreadTimedItems db user chatId (Just scope)
             (gInfo', m') <- updateSupportChatItemsRead db vr user gInfo scopeInfo
             timedItems' <- setGroupChatItemsDeleteAt db user chatId timedItems ts
             pure (gInfo', m', timedItems')

@@ -425,15 +425,21 @@ updateChatTsStats db vr user@User {userId} chatDirection chatTs chatStats_ = cas
           | not nowRequires && didRequire -> do
               DB.execute
                 db
+#if defined(dbPostgres)
                 [sql|
                   UPDATE groups
                   SET chat_ts = ?,
-                      members_require_attention = CASE
-                        WHEN members_require_attention >= 1 THEN members_require_attention - 1
-                        ELSE 0
-                      END
+                      members_require_attention = GREATEST(0, members_require_attention - 1)
                   WHERE user_id = ? AND group_id = ?
                 |]
+#else
+                [sql|
+                  UPDATE groups
+                  SET chat_ts = ?,
+                      members_require_attention = MAX(0, members_require_attention - 1)
+                  WHERE user_id = ? AND group_id = ?
+                |]
+#endif
                 (chatTs, userId, groupId)
               pure $ GroupChat g {membersRequireAttention = max 0 (membersRequireAttention - 1), chatTs = Just chatTs} (Just $ GCSIMemberSupport (Just member'))
           | otherwise -> do
@@ -2172,24 +2178,26 @@ updateGroupScopeUnreadStats db vr user g@GroupInfo {membership} scopeInfo (unrea
       currentTs <- getCurrentTime
       DB.execute
         db
+#if defined(dbPostgres)
         [sql|
           UPDATE group_members
-          SET support_chat_items_unread = CASE
-                WHEN support_chat_items_unread >= ? THEN support_chat_items_unread - ?
-                ELSE 0
-              END,
-              support_chat_items_member_attention = CASE
-                WHEN support_chat_items_member_attention >= ? THEN support_chat_items_member_attention - ?
-                ELSE 0
-              END,
-              support_chat_items_mentions = CASE
-                WHEN support_chat_items_mentions >= ? THEN support_chat_items_mentions - ?
-                ELSE 0
-              END,
+          SET support_chat_items_unread = GREATEST(0, support_chat_items_unread - ?),
+              support_chat_items_member_attention = GREATEST(0, support_chat_items_member_attention - ?),
+              support_chat_items_mentions = GREATEST(0, support_chat_items_mentions - ?),
               updated_at = ?
           WHERE group_member_id = ?
         |]
-        (unread, unread, unanswered, unanswered, mentions, mentions, currentTs, groupMemberId)
+#else
+        [sql|
+          UPDATE group_members
+          SET support_chat_items_unread = MAX(0, support_chat_items_unread - ?),
+              support_chat_items_member_attention = MAX(0, support_chat_items_member_attention - ?),
+              support_chat_items_mentions = MAX(0, support_chat_items_mentions - ?),
+              updated_at = ?
+          WHERE group_member_id = ?
+        |]
+#endif
+        (unread, unanswered, mentions, currentTs, groupMemberId)
       m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
