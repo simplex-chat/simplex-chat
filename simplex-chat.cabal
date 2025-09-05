@@ -34,6 +34,11 @@ flag client_postgres
   manual: True
   default: False
 
+flag picolisp
+  description: Build with Picolisp support.
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Simplex.Chat
@@ -433,6 +438,8 @@ executable simplex-chat
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
+  if flag(picolisp)
+    extra-libraries: picolisp
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
