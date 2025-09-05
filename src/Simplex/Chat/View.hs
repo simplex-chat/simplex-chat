@@ -231,7 +231,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRMemberAccepted u g m -> ttyUser u $ viewMemberAccepted g m
-  CRMemberSupportChatRead u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " support chat read"]
+  CRMemberSupportChatRead u g m -> ttyUser u $ viewSupportChatRead g m
   CRMemberSupportChatDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " support chat deleted"]
   CRMembersRoleUser u g members r' -> ttyUser u $ viewMemberRoleUserChanged g members r'
   CRMembersBlockedForAllUser u g members blocked -> ttyUser u $ viewMembersBlockedForAllUser g members blocked
@@ -1229,6 +1229,11 @@ viewMemberAccepted :: GroupInfo -> GroupMember -> [StyledString]
 viewMemberAccepted g m@GroupMember {memberStatus} = case memberStatus of
   GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted and pending review (will introduce moderators)"]
   _ -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted"]
+
+viewSupportChatRead :: GroupInfo -> GroupMember -> [StyledString]
+viewSupportChatRead g@GroupInfo {membership = GroupMember {groupMemberId = membershipId}} m
+  | groupMemberId' m == membershipId = [ttyGroup' g <> ": support chat read"]
+  | otherwise = [ttyGroup' g <> ": " <> ttyMember m <> " support chat read"]
 
 viewMemberAcceptedByOther :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
 viewMemberAcceptedByOther g acceptingMember m@GroupMember {memberCategory, memberStatus} = case memberCategory of

@@ -8023,7 +8023,7 @@ testScopedSupportUnreadStatsOnRead =
     dan <## "bob (Bob) (id 3): unread: 0, require attention: 0, mentions: 0"
 
     bob ##> "/_read chat #1(_support)"
-    bob <## "#team: bob support chat read"
+    bob <## "#team: support chat read"
 
     bob ##> "/member support chats #team"
     bob <## "support: unread: 0, require attention: 0, mentions: 0"
