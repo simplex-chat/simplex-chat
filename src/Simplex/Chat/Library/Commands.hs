@@ -532,10 +532,9 @@ processChatCommand vr nm = \case
           GroupChat gInfo (Just GCSIMemberSupport {groupMember_ = Just scopeMem}) -> do
             case correctedMemAttention scopeMem chatItems of
               Just newMemAttention -> do
-                scopeMem' <- withFastStore $ \db -> do
-                  liftIO $ setSupportChatMemberAttention db (groupMemberId' scopeMem) newMemAttention
-                  getGroupMemberById db vr user (groupMemberId' scopeMem)
-                pure $ groupChat {chatInfo = GroupChat gInfo (Just $ GCSIMemberSupport (Just scopeMem'))}
+                (gInfo', scopeMem') <-
+                  withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
+                pure $ groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))}
               Nothing -> pure groupChat
           _ -> pure groupChat
         where
@@ -1042,12 +1041,23 @@ processChatCommand vr nm = \case
         gInfo <- getGroupInfo db vr user chatId
         pure (user, gInfo)
       ts <- liftIO getCurrentTime
-      timedItems <- withFastStore' $ \db -> do
-        timedItems <- getGroupUnreadTimedItems db user chatId
-        updateGroupChatItemsRead db user gInfo scope
-        setGroupChatItemsDeleteAt db user chatId timedItems ts
-      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      ok user
+      chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
+      case chatScopeInfo of
+        Nothing -> do
+          timedItems <- withFastStore' $ \db -> do
+            timedItems <- getGroupUnreadTimedItems db user chatId scope
+            updateGroupChatItemsRead db user gInfo
+            setGroupChatItemsDeleteAt db user chatId timedItems ts
+          forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
+          ok user
+        Just scopeInfo -> do
+          (gInfo', m', timedItems) <- withFastStore' $ \db -> do
+            timedItems <- getGroupUnreadTimedItems db user chatId scope
+            (gInfo', m') <- updateSupportChatItemsRead db vr user gInfo scopeInfo
+            timedItems' <- setGroupChatItemsDeleteAt db user chatId timedItems ts
+            pure (gInfo', m', timedItems')
+          forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
+          pure $ CRMemberSupportChatRead user gInfo' m'
     CTLocal -> do
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
       withFastStore' $ \db -> updateLocalChatItemsRead db user chatId

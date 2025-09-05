@@ -2650,6 +2650,15 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
         memberRole >= .moderator && versionRange.maxVersion >= REPORTS_VERSION
     }
 
+    public var supportChatNotRead: Bool {
+        if let supportChat = supportChat,
+           supportChat.memberAttention > 0 || supportChat.mentions > 0 || supportChat.unread > 0 {
+            true
+        } else {
+            false
+        }
+    }
+
     public var versionRange: VersionRange {
         if let activeConn {
             activeConn.peerChatVRange
