@@ -434,8 +434,8 @@ getTermLine cc@TestCC {printOutput} =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      -- when True $ do
-      when printOutput $ do
+      when True $ do
+      -- when printOutput $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
@@ -476,9 +476,6 @@ testChat3 = testChatCfgOpts3 testCfg testOpts
 
 testChatCfg3 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
-
-testChatOpts3 :: HasCallStack => ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
-testChatOpts3 = testChatCfgOpts3 testCfg
 
 testChatCfgOpts3 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_

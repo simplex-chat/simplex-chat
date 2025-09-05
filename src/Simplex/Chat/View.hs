@@ -1324,8 +1324,12 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       | otherwise = []
 
 viewMemberSupportChats :: GroupInfo -> [GroupMember] -> [StyledString]
-viewMemberSupportChats GroupInfo {membership} ms = support <> map groupMember ms
+viewMemberSupportChats GroupInfo {membership = membership@GroupMember {memberRole = membershipRole}, membersRequireAttention} ms =
+  memsAttention <> support <> map groupMember ms
   where
+    memsAttention
+      | membershipRole >= GRModerator = ["members require attention: " <> sShow membersRequireAttention]
+      | otherwise = []
     support = case supportChat membership of
       Just sc -> ["support: " <> chatStats sc]
       Nothing -> []
