@@ -1391,8 +1391,14 @@ func apiRejectContactRequest(contactReqId: Int64) async throws -> Contact? {
     throw r.unexpected
 }
 
-func apiChatRead(type: ChatType, id: Int64, scope: GroupChatScope?) async throws {
-    try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: scope))
+func apiChatRead(type: ChatType, id: Int64) async throws {
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: nil))
+}
+
+func apiSupportChatRead(type: ChatType, id: Int64, scope: GroupChatScope) async throws -> (GroupInfo, GroupMember) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiChatRead(type: type, id: id, scope: scope))
+    if case let .memberSupportChatRead(_, groupInfo, member) = r { return (groupInfo, member) }
+    throw r.unexpected
 }
 
 func apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws -> ChatInfo {
@@ -1729,7 +1735,7 @@ func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
             let cInfo = chat.chatInfo
-            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope())
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
             await MainActor.run {
                 withAnimation { ChatModel.shared.markAllChatItemsRead(im, cInfo) }
             }
@@ -1751,6 +1757,20 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
         }
     } catch {
         logger.error("markChatUnread apiChatUnread error: \(responseError(error))")
+    }
+}
+
+func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
+    do {
+        if member.supportChatNotRead {
+            let (updatedGroupInfo, updatedMember) = try await apiSupportChatRead(type: .group, id: groupInfo.apiId, scope: .memberSupport(groupMemberId_: member.groupMemberId))
+            await MainActor.run {
+                _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
+                ChatModel.shared.updateGroup(updatedGroupInfo)
+            }
+        }
+    } catch {
+        logger.error("markSupportChatRead apiChatRead error: \(responseError(error))")
     }
 }
 
