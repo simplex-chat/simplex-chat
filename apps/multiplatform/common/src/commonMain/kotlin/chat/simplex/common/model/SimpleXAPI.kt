@@ -2913,6 +2913,7 @@ object ChatController {
             && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)
             && chatModel.secondaryChatsContext.value?.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
           ) {
+            delay(650L)
             withContext(Dispatchers.Main) {
               chatModel.secondaryChatsContext.value = null
             }
