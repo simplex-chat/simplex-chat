@@ -707,8 +707,7 @@ fun ChatView(
                   chatModel.controller.apiChatRead(
                     chatRh,
                     chatInfo.chatType,
-                    chatInfo.apiId,
-                    chatInfo.groupChatScope()
+                    chatInfo.apiId
                   )
                 }
                 withContext(Dispatchers.Main) {
