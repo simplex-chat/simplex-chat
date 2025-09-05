@@ -1463,14 +1463,6 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
 
 Query: 
-          UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ?
-            AND item_status = ?
-        
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
-
-Query: 
           UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
           WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
             SELECT contact_id
@@ -4401,6 +4393,14 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ?
+        AND item_status = ?
+    
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+
+Query: 
+      UPDATE chat_items SET item_status = ?, updated_at = ?
       WHERE user_id = ? AND note_folder_id = ? AND item_status = ?
     
 Plan:
@@ -6313,7 +6313,7 @@ Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_memb
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE group_members SET support_chat_items_member_attention = ? WHERE group_member_id = ?
+Query: UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -6358,6 +6358,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET members_require_attention=1 WHERE group_id=?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
