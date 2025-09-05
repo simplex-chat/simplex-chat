@@ -92,6 +92,16 @@ struct MemberSupportView: View {
                 .frame(width: 1, height: 1)
                 .hidden()
             }
+            .if(!memberWithChat.wrapped.memberPending && memberWithChat.wrapped.supportChatNotRead) { v in
+                v.swipeActions(edge: .leading, allowsFullSwipe: true) {
+                    Button {
+                        Task { await markSupportChatRead(groupInfo, memberWithChat.wrapped) }
+                    } label: {
+                        Label("Read", systemImage: "checkmark")
+                    }
+                    .tint(theme.colors.primary)
+                }
+            }
             .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                 if memberWithChat.wrapped.memberPending {
                     Button {
@@ -101,14 +111,6 @@ struct MemberSupportView: View {
                     }
                     .tint(theme.colors.primary)
                 } else {
-                    if memberWithChat.wrapped.supportChatNotRead {
-                        Button {
-                            Task { await markSupportChatRead(groupInfo, memberWithChat.wrapped) }
-                        } label: {
-                            Label("Read", systemImage: "checkmark")
-                        }
-                        .tint(theme.colors.primary)
-                    }
                     Button {
                         showDeleteMemberSupportChatAlert(groupInfo, memberWithChat.wrapped)
                     } label: {

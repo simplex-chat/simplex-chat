@@ -1391,8 +1391,14 @@ func apiRejectContactRequest(contactReqId: Int64) async throws -> Contact? {
     throw r.unexpected
 }
 
-func apiChatRead(type: ChatType, id: Int64, scope: GroupChatScope?) async throws {
-    try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: scope))
+func apiChatRead(type: ChatType, id: Int64) async throws {
+    try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: nil))
+}
+
+func apiSupportChatRead(type: ChatType, id: Int64, scope: GroupChatScope?) async throws -> (GroupInfo, GroupMember) {
+    let r: ChatResponse2 = try await chatSendCmd(.apiChatRead(type: type, id: id, scope: scope))
+    if case let .memberSupportChatRead(_, groupInfo, member) = r { return (groupInfo, member) }
+    throw r.unexpected
 }
 
 func apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64]) async throws -> ChatInfo {
@@ -1729,7 +1735,7 @@ func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
     do {
         if chat.chatStats.unreadCount > 0 {
             let cInfo = chat.chatInfo
-            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId, scope: cInfo.groupChatScope())
+            try await apiChatRead(type: cInfo.chatType, id: cInfo.apiId)
             await MainActor.run {
                 withAnimation { ChatModel.shared.markAllChatItemsRead(im, cInfo) }
             }
@@ -1757,15 +1763,10 @@ func markChatUnread(_ chat: Chat, unreadChat: Bool = true) async {
 func markSupportChatRead(_ groupInfo: GroupInfo, _ member: GroupMember) async {
     do {
         if let supportChat = member.supportChat, member.supportChatNotRead {
-            try await apiChatRead(type: .group, id: groupInfo.apiId, scope: .memberSupport(groupMemberId_: member.groupMemberId))
+            let (updatedGroupInfo, updatedMember) = try await apiSupportChatRead(type: .group, id: groupInfo.apiId, scope: .memberSupport(groupMemberId_: member.groupMemberId))
             await MainActor.run {
-                var updatedSupportChat = supportChat
-                updatedSupportChat.memberAttention = 0
-                updatedSupportChat.mentions = 0
-                updatedSupportChat.unread = 0
-                var updatedMember = member
-                updatedMember.supportChat = updatedSupportChat
-                _ = ChatModel.shared.upsertGroupMember(groupInfo, updatedMember)
+                _ = ChatModel.shared.upsertGroupMember(updatedGroupInfo, updatedMember)
+                ChatModel.shared.updateGroup(updatedGroupInfo)
             }
         }
     } catch {
