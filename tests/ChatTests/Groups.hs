@@ -8104,6 +8104,7 @@ testScopedSupportUnreadStatsCorrectOnOpen =
     alice <## "members require attention: 1"
     alice <## "bob (Bob) (id 2): unread: 3, require attention: 3, mentions: 0"
 
+    -- opening chat should correct group_members.support_chat_items_member_attention value if it got out of sync
     void $ withCCTransaction alice $ \db ->
       DB.execute db "UPDATE group_members SET support_chat_items_member_attention=100 WHERE group_member_id=?" (Only (2 :: Int64))
 
@@ -8119,6 +8120,21 @@ testScopedSupportUnreadStatsCorrectOnOpen =
 
     alice ##> "/_read chat #1(_support:2)"
     alice <## "#team: bob support chat read"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+
+    -- opening chat should also correct groups.members_require_attention value if corrected member no longer requires attention
+    void $ withCCTransaction alice $ \db -> do
+      DB.execute db "UPDATE group_members SET support_chat_items_member_attention=100 WHERE group_member_id=?" (Only (2 :: Int64))
+      DB.execute db "UPDATE groups SET members_require_attention=1 WHERE group_id=?" (Only (1 :: Int64))
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 0, require attention: 100, mentions: 0"
+
+    alice #$> ("/_get chat #1(_support:2) count=100", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
     alice ##> "/member support chats #team"
     alice <## "members require attention: 0"

@@ -501,9 +501,20 @@ setSupportChatTs :: DB.Connection -> GroupMemberId -> UTCTime -> IO ()
 setSupportChatTs db groupMemberId chatTs =
   DB.execute db "UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?" (chatTs, groupMemberId)
 
-setSupportChatMemberAttention :: DB.Connection -> GroupMemberId -> Int64 -> IO ()
-setSupportChatMemberAttention db groupMemberId memberAttention =
-  DB.execute db "UPDATE group_members SET support_chat_items_member_attention = ? WHERE group_member_id = ?" (memberAttention, groupMemberId)
+setSupportChatMemberAttention :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> Int64 -> IO (GroupInfo, GroupMember)
+setSupportChatMemberAttention db vr user g m memberAttention = do
+  m' <- updateGMAttention m
+  g' <- updateGroupMembersRequireAttention db user g m m'
+  pure (g', m')
+  where
+    updateGMAttention m@GroupMember {groupMemberId} = do
+      currentTs <- getCurrentTime
+      DB.execute
+        db
+        "UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?"
+        (memberAttention, currentTs, groupMemberId' m)
+      m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
+      pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
 createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live createdAt =

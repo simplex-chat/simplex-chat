@@ -532,10 +532,9 @@ processChatCommand vr nm = \case
           GroupChat gInfo (Just GCSIMemberSupport {groupMember_ = Just scopeMem}) -> do
             case correctedMemAttention scopeMem chatItems of
               Just newMemAttention -> do
-                scopeMem' <- withFastStore $ \db -> do
-                  liftIO $ setSupportChatMemberAttention db (groupMemberId' scopeMem) newMemAttention
-                  getGroupMemberById db vr user (groupMemberId' scopeMem)
-                pure $ groupChat {chatInfo = GroupChat gInfo (Just $ GCSIMemberSupport (Just scopeMem'))}
+                (gInfo', scopeMem') <-
+                  withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
+                pure $ groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))}
               Nothing -> pure groupChat
           _ -> pure groupChat
         where
