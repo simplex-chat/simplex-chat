@@ -1,7 +1,7 @@
 {
   description = "nix flake for simplex-chat";
   inputs.haskellNix.url = "github:input-output-hk/haskell.nix/armv7a";
-  inputs.nixpkgs.follows = "haskellNix/nixpkgs-2305";
+  inputs.nixpkgs.follows = "haskellNix/nixpkgs-2411";
   inputs.mac2ios.url = "github:zw3rk/mobile-core-tools";
   inputs.hackage = {
     url = "github:input-output-hk/hackage.nix";
@@ -31,7 +31,7 @@
       let pkgs = haskellNix.legacyPackages.${system}.appendOverlays [android26]; in
       let drv' = { extra-modules, pkgs', ... }: pkgs'.haskell-nix.project {
         compiler-nix-name = "ghc963";
-        index-state = "2023-12-12T00:00:00Z";
+        index-state = "2025-07-01T00:00:00Z";
         # We need this, to specify we want the cabal project.
         # If the stack.yaml was dropped, this would not be necessary.
         projectFileName = "cabal.project";
