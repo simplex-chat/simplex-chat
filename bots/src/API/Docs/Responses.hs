@@ -162,6 +162,7 @@ undocumentedResponses =
     "CRGroupUserChanged",
     "CRItemsReadForChat",
     "CRJoinedGroupMember",
+    "CRMemberSupportChatRead",
     "CRMemberSupportChatDeleted",
     "CRMemberSupportChats",
     "CRNetworkConfig",

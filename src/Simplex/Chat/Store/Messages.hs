@@ -80,6 +80,7 @@ module Simplex.Chat.Store.Messages
     setDirectChatItemRead,
     setDirectChatItemsDeleteAt,
     updateGroupChatItemsRead,
+    updateSupportChatItemsRead,
     getGroupUnreadTimedItems,
     updateGroupChatItemsReadList,
     updateGroupScopeUnreadStats,
@@ -2018,20 +2019,23 @@ setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM i
     (deleteAt, userId, contactId, chatItemId)
   pure (chatItemId, deleteAt)
 
-updateGroupChatItemsRead :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatScope -> IO ()
-updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope = do
+updateGroupChatItemsRead :: DB.Connection -> User -> GroupInfo -> IO ()
+updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} = do
   currentTs <- getCurrentTime
-  case scope of
-    Nothing ->
-      DB.execute
-        db
-        [sql|
-          UPDATE chat_items SET item_status = ?, updated_at = ?
-          WHERE user_id = ? AND group_id = ?
-            AND item_status = ?
-        |]
-        (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
-    Just GCSMemberSupport {groupMemberId_} -> do
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_items SET item_status = ?, updated_at = ?
+      WHERE user_id = ? AND group_id = ?
+        AND item_status = ?
+    |]
+    (CISRcvRead, currentTs, userId, groupId, CISRcvNew)
+
+updateSupportChatItemsRead :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupChatScopeInfo -> IO (GroupInfo, GroupMember)
+updateSupportChatItemsRead db vr user@User {userId} g@GroupInfo {groupId, membership} scopeInfo = do
+  currentTs <- getCurrentTime
+  case scopeInfo of
+    GCSIMemberSupport {groupMember_} -> do
       DB.execute
         db
         [sql|
@@ -2040,8 +2044,21 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope 
             AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
             AND item_status = ?
         |]
-        (CISRcvRead, currentTs, userId, groupId, GCSTMemberSupport_, groupMemberId_, CISRcvNew)
-      let gmId = fromMaybe (groupMemberId' membership) groupMemberId_
+        (CISRcvRead, currentTs, userId, groupId, GCSTMemberSupport_, groupMemberId' <$> groupMember_, CISRcvNew)
+      case groupMember_ of
+        Nothing -> do
+          membership' <- updateGMStats membership
+          pure (g {membership = membership'}, membership')
+        Just member -> do
+          member' <- updateGMStats member
+          let didRequire = gmRequiresAttention member
+              nowRequires = gmRequiresAttention member'
+          if (not nowRequires && didRequire)
+            then (,member') <$> decreaseGroupMembersRequireAttention db user g
+            else pure (g, member')
+  where
+    updateGMStats m@GroupMember {groupMemberId} = do
+      currentTs <- getCurrentTime
       DB.execute
         db
         [sql|
@@ -2051,7 +2068,9 @@ updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} scope 
               support_chat_items_mentions = 0
           WHERE group_member_id = ?
         |]
-        (Only gmId)
+        (Only groupMemberId)
+      m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
+      pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 getGroupUnreadTimedItems :: DB.Connection -> User -> GroupId -> Maybe GroupChatScope -> IO [(ChatItemId, Int)]
 getGroupUnreadTimedItems db User {userId} groupId scope =
