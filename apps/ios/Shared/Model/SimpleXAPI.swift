@@ -1395,7 +1395,7 @@ func apiChatRead(type: ChatType, id: Int64) async throws {
     try await sendCommandOkResp(.apiChatRead(type: type, id: id, scope: nil))
 }
 
-func apiSupportChatRead(type: ChatType, id: Int64, scope: GroupChatScope?) async throws -> (GroupInfo, GroupMember) {
+func apiSupportChatRead(type: ChatType, id: Int64, scope: GroupChatScope) async throws -> (GroupInfo, GroupMember) {
     let r: ChatResponse2 = try await chatSendCmd(.apiChatRead(type: type, id: id, scope: scope))
     if case let .memberSupportChatRead(_, groupInfo, member) = r { return (groupInfo, member) }
     throw r.unexpected
