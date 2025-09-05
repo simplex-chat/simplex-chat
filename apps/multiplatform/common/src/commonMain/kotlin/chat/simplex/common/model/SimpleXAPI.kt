@@ -2914,7 +2914,7 @@ object ChatController {
             && chatModel.secondaryChatsContext.value?.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
           ) {
             CoroutineScope(Dispatchers.Default).launch {
-              delay(650L)
+              delay(1000L)
               withContext(Dispatchers.Main) {
                 chatModel.secondaryChatsContext.value = null
               }
