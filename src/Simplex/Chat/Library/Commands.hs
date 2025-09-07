@@ -534,7 +534,7 @@ processChatCommand vr nm = \case
               Just newMemAttention -> do
                 (gInfo', scopeMem') <-
                   withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
-                pure $ groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))}
+                pure (groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))} :: Chat 'CTGroup)
               Nothing -> pure groupChat
           _ -> pure groupChat
         where
