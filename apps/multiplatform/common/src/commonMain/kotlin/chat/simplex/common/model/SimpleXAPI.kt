@@ -2913,10 +2913,13 @@ object ChatController {
             && ModalManager.end.hasModalOpen(ModalViewId.SECONDARY_CHAT)
             && chatModel.secondaryChatsContext.value?.secondaryContextFilter is SecondaryContextFilter.GroupChatScopeContext
           ) {
-            withContext(Dispatchers.Main) {
-              chatModel.secondaryChatsContext.value = null
+            CoroutineScope(Dispatchers.Default).launch {
+              delay(1000L)
+              withContext(Dispatchers.Main) {
+                chatModel.secondaryChatsContext.value = null
+              }
+              ModalManager.end.closeModals()
             }
-            ModalManager.end.closeModals()
           }
         }
       is CR.JoinedGroupMember ->
