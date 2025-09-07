@@ -171,7 +171,7 @@
     <string name="button_remove_member">Elimină membru</string>
     <string name="button_remove_member_question">Eliminați membrul?</string>
     <string name="network_options_reset_to_defaults">Resetează la valorile implicite</string>
-    <string name="reset_single_color">Resetați culoarea</string>
+    <string name="reset_single_color">Resetezi culoarea</string>
     <string name="reset_color">Resetați culorile</string>
     <string name="theme_remove_image">Elimină imaginea</string>
     <string name="migrate_from_device_repeat_upload">Repetă încărcarea</string>
@@ -283,7 +283,7 @@
     <string name="error_xftp_test_server_auth">Serverul necesită autorizare pentru a încărca fișiere. Verifică parola</string>
     <string name="notification_preview_mode_message_desc">Afișează contactul și mesajul</string>
     <string name="share_file">Partajează fișier…</string>
-    <string name="text_field_set_contact_placeholder">Nume contact…</string>
+    <string name="text_field_set_contact_placeholder">Setează numele contactului…</string>
     <string name="icon_descr_send_message">Trimite mesaj</string>
     <string name="send_disappearing_message">Trimiteți un mesaj care dispare</string>
     <string name="connect_via_link_or_qr_from_clipboard_or_in_person">(scanează sau lipește din clipboard)</string>
@@ -386,7 +386,7 @@
     <string name="info_row_created_at">Creat la</string>
     <string name="migrate_from_device_choose_migrate_from_another_device"><![CDATA[Alegeți <i>Migrează de pe alt dispozitiv</i> pe noul dispozitiv și scanați codul QR.]]></string>
     <string name="connect_via_contact_link">Te conectezi prin adresa de contact?</string>
-    <string name="connect_via_invitation_link">Doriți să vă conectați printr-un link de unică folosință?</string>
+    <string name="connect_via_invitation_link">Vrei să te conectezi printr-un link unic?</string>
     <string name="connect_via_link_incognito">Conectare incognito</string>
     <string name="contact_already_exists">Contactul deja există</string>
     <string name="la_change_app_passcode">Schimbă codul de acces</string>
@@ -405,7 +405,7 @@
     <string name="connect_with_contact_name_question">Te conectezi cu %1$s?</string>
     <string name="icon_descr_cancel_image_preview">Anulează previzualizarea imaginii</string>
     <string name="chat_with_developers">Conversează cu dezvoltatorii</string>
-    <string name="you_have_to_enter_passphrase_every_time">Trebuie să introduci parola de fiecare dată când pornești aplicația, deoarece nu este stocată pe dispozitiv.</string>
+    <string name="you_have_to_enter_passphrase_every_time">Trebuie să introduci parola de fiecare dată când pornești aplicația - aceasta nu este stocată pe dispozitiv.</string>
     <string name="member_info_member_blocked">blocat</string>
     <string name="chat_preferences">Preferințe conversație</string>
     <string name="chat_theme_apply_to_dark_mode">Mod întunecat</string>
@@ -579,7 +579,7 @@
     <string name="display_name_connecting">se conectează…</string>
     <string name="connection_error_auth">Eroare de conexiune (AUTENTIFICARE)</string>
     <string name="turning_off_service_and_periodic">Optimizarea bateriei este activă, dezactivând serviciul de fundal și cererile periodice pentru mesaje noi. Le puteți reactiva din setări.</string>
-    <string name="icon_descr_server_status_connected">conectat</string>
+    <string name="icon_descr_server_status_connected">Conectat</string>
     <string name="create_group_button_to_create_new_group"><![CDATA[<b>Creează grup:</b>: pentru a crea un nou grup.]]></string>
     <string name="clear_chat_question">Ștergeți conversația?</string>
     <string name="clear_chat_menu_action">Șterge</string>
@@ -595,7 +595,7 @@
     <string name="rcv_group_event_changed_your_role">rolul tău a fost schimbat în %s</string>
     <string name="server_connected">conectat</string>
     <string name="server_connecting">se conectează</string>
-    <string name="notification_contact_connected">conectat</string>
+    <string name="notification_contact_connected">Conectat</string>
     <string name="clear_verb">Ștergeți</string>
     <string name="icon_descr_close_button">Buton de închidere</string>
     <string name="clear_verification">Ștergeți verificarea</string>
@@ -638,7 +638,7 @@
     <string name="simplex_link_mode_description">Descriere</string>
     <string name="smp_server_test_delete_file">Șterge fișierul</string>
     <string name="smp_server_test_delete_queue">Șterge coada</string>
-    <string name="delete_contact_question">Ștergeți contactul?</string>
+    <string name="delete_contact_question">Ștergi contactul?</string>
     <string name="delete_contact_menu_action">Șterge</string>
     <string name="delete_group_menu_action">Șterge</string>
     <string name="delete_files_and_media_question">Ștergi fișierele și conținutul media?</string>
@@ -688,7 +688,7 @@
     <string name="settings_section_title_chat_database">BAZĂ DE DATE CONVERSAȚIE</string>
     <string name="v6_0_connect_faster_descr">Conectează-te cu prietenii mai ușor.</string>
     <string name="attempts_label">încercări</string>
-    <string name="completed">Completat</string>
+    <string name="completed">Finalizat</string>
     <string name="developer_options">ID-urile bazei de date și opțiunea de izolare a transportului.</string>
     <string name="info_row_database_id">ID bază de date</string>
     <string name="share_text_database_id">ID bază de date: %d</string>
@@ -735,7 +735,7 @@
     <string name="v6_1_better_calls">Apeluri îmbunătățite</string>
     <string name="incoming_audio_call">Apel audio primit</string>
     <string name="call_service_notification_end_call">Încheie apelul</string>
-    <string name="marked_deleted_description">marcajele şterse</string>
+    <string name="marked_deleted_description">marcat ca șters</string>
     <string name="marked_deleted_items_description">%d mesaje marcate șterse</string>
     <string name="moderated_item_description">moderat de %s</string>
     <string name="n_other_file_errors">%1$d alte erori de fișier.</string>
@@ -799,7 +799,7 @@
     <string name="moderated_description">moderat</string>
     <string name="invalid_chat">conversație nevalidă</string>
     <string name="invalid_data">date nevalide</string>
-    <string name="e2ee_info_pq_short">Acest chat este protejat prin criptare end-to-end rezistentă la detecții cuantice.</string>
+    <string name="e2ee_info_pq_short">Această conversație este protejată prin criptare end-to-end rezistentă la atacuri cuantice.</string>
     <string name="note_folder_local_display_name">Note private</string>
     <string name="error_reading_passphrase">Eroare la citirea parolei bazei de date</string>
     <string name="incompatible_database_version">Versiunea bazei de date este incompatibilă</string>
@@ -1066,9 +1066,9 @@
     <string name="no_selected_chat">Nicio conversație selectată</string>
     <string name="loading_remote_file_title">Încărcarea fișierului</string>
     <string name="error_saving_file">Eroare la salvarea fișierului</string>
-    <string name="delete_without_notification">Ștergeți fără notificare</string>
+    <string name="delete_without_notification">Șterge fără notificare</string>
     <string name="icon_descr_server_status_disconnected">Deconectat</string>
-    <string name="sync_connection_question">Remediați conexiunea?</string>
+    <string name="sync_connection_question">Repari conexiunea?</string>
     <string name="disappearing_message">Mesaj care dispare</string>
     <string name="icon_descr_more_button">Mai mult</string>
     <string name="network_session_mode_server_description">Pentru fiecare server vor fi utilizate acreditări noi SOCKS.</string>
@@ -1634,7 +1634,7 @@
     <string name="prohibit_sending_voice_messages">Interziceți trimiterea de mesaje vocale.</string>
     <string name="v5_6_picture_in_picture_calls">Apeluri cu funcție picture-in-picture</string>
     <string name="v5_8_persian_ui">Interfață persană</string>
-    <string name="proxied">Proxiat</string>
+    <string name="proxied">Prin proxy</string>
     <string name="users_delete_with_connections">Conexiuni de profil și server</string>
     <string name="callstate_received_answer">răspuns primit…</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Politica de confidențialitate și condițiile de utilizare.</string>
@@ -1744,7 +1744,7 @@
     <string name="info_view_search_button">caută</string>
     <string name="text_field_set_chat_placeholder">Setează numele conversației…</string>
     <string name="relay_server_if_necessary">Serverul de retransmisie este utilizat doar dacă este necesar. O altă parte poate observa adresa ta IP.</string>
-    <string name="servers_info_reset_stats_alert_title">Resetați toate statisticile?</string>
+    <string name="servers_info_reset_stats_alert_title">Resetezi toate statisticile?</string>
     <string name="reset_all_hints">Resetați toate sugestiile</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Trimite mesaje direct atunci când adresa IP este protejată, iar serverul tău sau cel de destinație nu acceptă rutare privată.</string>
     <string name="self_destruct_passcode_enabled">Parola de autodistrugere activată!</string>
@@ -1841,7 +1841,7 @@
     <string name="migrate_from_device_upload_failed">Încărcarea a eșuat</string>
     <string name="system_restricted_background_in_call_desc">Aplicația se poate închide după 1 minut în fundal.</string>
     <string name="unmute_chat">Cu sunet</string>
-    <string name="messages_section_description">Această setare se aplică mesajelor din profilul tău de chat actual</string>
+    <string name="messages_section_description">Această setare se aplică mesajelor din profilul de conversație actual</string>
     <string name="use_simplex_chat_servers__question">Folosiți servere SimpleX Chat?</string>
     <string name="network_socks_proxy">Proxy SOCKS</string>
     <string name="network_proxy_username">Nume de utilizator</string>
@@ -1857,7 +1857,7 @@
     <string name="uploaded_files">Fișiere încărcate</string>
     <string name="connect_use_current_profile">Folosește profilul curent</string>
     <string name="connect_use_new_incognito_profile">Folosește noul profil incognito</string>
-    <string name="app_was_crashed">Vizualizarea s-a blocat</string>
+    <string name="app_was_crashed">Vizualizarea a eșuat</string>
     <string name="possible_slow_function_title">Funcție lentă</string>
     <string name="chat_lock">Blocare SimpleX</string>
     <string name="unblock_for_all">Deblocați pentru toți</string>
@@ -1953,7 +1953,7 @@
     <string name="stop_sharing_address">Oprești partajarea adresei?</string>
     <string name="onboarding_notifications_mode_off">Când aplicația rulează</string>
     <string name="onboarding_network_operators_app_will_use_different_operators">Aplicația vă protejează confidențialitatea utilizând operatori diferiți în fiecare conversație.</string>
-    <string name="view_conditions">Vizualizați condițiile</string>
+    <string name="view_conditions">Vizualizează condițiile</string>
     <string name="notification_preview_mode_contact_desc">Afișează doar contactul</string>
     <string name="auth_unlock">Deblocare</string>
     <string name="la_notice_turn_on">Porniți</string>
@@ -1964,7 +1964,7 @@
     <string name="stop_rcv_file__title">Opriți primirea fișierului?</string>
     <string name="waiting_for_file">Se așteaptă fișierul</string>
     <string name="change_automatic_chat_deletion_message">Această acțiune nu poate fi anulată - mesajele trimise și primite în această conversație, mai vechi decât data selectată, vor fi șterse.</string>
-    <string name="view_security_code">Vizualizați codul de securitate</string>
+    <string name="view_security_code">Vizualizează codul de securitate</string>
     <string name="tap_to_paste_link">Atinge pentru a lipi linkul</string>
     <string name="the_text_you_pasted_is_not_a_link">Textul pe care l-ai lipit nu este un link SimpleX.</string>
     <string name="app_check_for_updates_stable">Stabil</string>
@@ -2178,7 +2178,7 @@
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Codul scanat nu este un cod QR de tip link SimpleX.</string>
     <string name="smp_servers_test_server">Server de testare</string>
     <string name="smp_servers_test_servers">Servere de testare</string>
-    <string name="network_proxy_random_credentials">Folosește acreditări aleatorii</string>
+    <string name="network_proxy_random_credentials">Folosește credențiale aleatorii</string>
     <string name="app_check_for_updates_update_available">Actualizare disponibilă: %s</string>
     <string name="use_chat">Folosește chatul</string>
     <string name="alert_text_msg_bad_hash">Hash-ul mesajului anterior este diferit.</string>
@@ -2497,4 +2497,5 @@
     <string name="context_user_picker_your_profile">Profilul tău</string>
     <string name="simplex_link_relay">Link de releu SimpleX</string>
     <string name="chat_banner_group">Grup</string>
+    <string name="error_marking_member_support_chat_read">Eroare la marcarea conversației cu membrul ca fiind citită</string>
 </resources>
