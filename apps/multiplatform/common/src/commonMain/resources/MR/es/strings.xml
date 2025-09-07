@@ -2425,7 +2425,7 @@
     <string name="member_support">Chat con miembros</string>
     <string name="support_chat">Chat con administradores</string>
     <string name="delete_member_support_chat_button">Eliminar chat</string>
-    <string name="delete_member_support_chat_alert_title">¿Eliminar chat con el miembro?</string>
+    <string name="delete_member_support_chat_alert_title">¿Eliminar chat con miembro?</string>
     <string name="reject_pending_member_button">Rechazar</string>
     <string name="reject_pending_member_alert_title">¿Rechazar al miembro?</string>
     <string name="admission_stage_review">Revisar miembros</string>
@@ -2531,4 +2531,5 @@
     <string name="sanitize_links_toggle">Limpiar enlaces de seguimiento</string>
     <string name="privacy_chat_list_open_full_web_link">Abrir enlace completo</string>
     <string name="simplex_link_relay">Enlace de servidor SimpleX</string>
+    <string name="error_marking_member_support_chat_read">Error al marcar el chat con miembro como leído</string>
 </resources>
