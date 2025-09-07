@@ -68,7 +68,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -1515,11 +1515,11 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
     result
       <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && (case testError of SMP _ SMP.AUTH -> True; _ -> False)]
       <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
-      <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
+      <> ["Certificate fingerprint in " <> pName <> " server address does not match server certificate" | testStep == TSConnect && unknownCA]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> sShow testError]
-      brokerErr = case testError of
-        BROKER _ NETWORK -> True
+      unknownCA = case testError of
+        BROKER _ (NETWORK NEUnknownCAError) -> True
         _ -> False
   _ -> [pName <> " server test passed"]
   where
@@ -2546,7 +2546,7 @@ viewChatError isCmd logLevel testView = \case
         reasonStr = case reason of
           BRSpam -> "spam"
           BRContent -> "content violates conditions of use"
-    BROKER _ NETWORK | not isCmd -> []
+    BROKER _ (NETWORK _) | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
     AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]
