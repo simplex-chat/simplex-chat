@@ -1161,8 +1161,8 @@ testTestSMPServerConnection =
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJU@localhost:7001"
-      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK}"
-      alice <## "Possibly, certificate fingerprint in SMP server address is incorrect"
+      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice <## "Certificate fingerprint in SMP server address does not match server certificate"
 
 testGetSetXFTPServers :: HasCallStack => TestParams -> IO ()
 testGetSetXFTPServers =
@@ -1203,8 +1203,8 @@ testTestXFTPServer =
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice <## "XFTP server test passed"
       alice ##> "/xftp test xftp://LcJU@localhost:7002"
-      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK}"
-      alice <## "Possibly, certificate fingerprint in XFTP server address is incorrect"
+      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice <## "Certificate fingerprint in XFTP server address does not match server certificate"
 
 testOperators  :: HasCallStack => TestParams -> IO ()
 testOperators =

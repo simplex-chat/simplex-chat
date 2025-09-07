@@ -126,7 +126,7 @@ fun ModalData.GroupChatInfoView(
           }
           ModalManager.end.showModalCloseable(true) { closeCurrent ->
             remember { derivedStateOf { chatModel.getGroupMember(member.groupMemberId) } }.value?.let { mem ->
-              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, closeCurrent) {
+              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = false, closeCurrent) {
                 closeCurrent()
                 close()
               }

@@ -193,7 +193,7 @@ toggleNtf :: GroupMember -> Bool -> CM ()
 toggleNtf m ntfOn =
   when (memberActive m) $
     forM_ (memberConnId m) $ \connId ->
-      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchChatError` eToView
+      withAgent (\a -> toggleConnectionNtfs a connId ntfOn) `catchAllErrors` eToView
 
 prepareGroupMsg :: DB.Connection -> User -> GroupInfo -> Maybe MsgScope -> MsgContent -> Map MemberName MsgMention -> Maybe ChatItemId -> Maybe CIForwardedFrom -> Maybe FileInvitation -> Maybe CITimed -> Bool -> ExceptT StoreError IO (ChatMsgEvent 'Json, Maybe (CIQuote 'CTGroup))
 prepareGroupMsg db user g@GroupInfo {membership} msgScope mc mentions quotedItemId_ itemForwarded fInv_ timed_ live = case (quotedItemId_, itemForwarded) of
@@ -385,7 +385,7 @@ cancelFilesInProgress :: User -> [CIFileInfo] -> CM ()
 cancelFilesInProgress user filesInfo = do
   let filesInfo' = filter (not . fileEnded) filesInfo
   (sfs, rfs) <- lift $ splitFTTypes <$> withStoreBatch (\db -> map (getFT db) filesInfo')
-  forM_ rfs $ \RcvFileTransfer {fileId} -> lift (closeFileHandle fileId rcvFiles) `catchChatError` \_ -> pure ()
+  forM_ rfs $ \RcvFileTransfer {fileId} -> lift (closeFileHandle fileId rcvFiles) `catchAllErrors` \_ -> pure ()
   lift . void . withStoreBatch' $ \db -> map (updateSndFileCancelled db) sfs
   lift . void . withStoreBatch' $ \db -> map (updateRcvFileCancelled db) rfs
   let xsfIds = mapMaybe (\(FileTransferMeta {fileId, xftpSndFile}, _) -> (,fileId) <$> xftpSndFile) sfs
@@ -655,7 +655,7 @@ setFileToEncrypt ft@RcvFileTransfer {fileId} = do
 
 receiveFile' :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM ChatResponse
 receiveFile' user ft userApprovedRelays rcvInline_ filePath_ = do
-  (CRRcvFileAccepted user <$> acceptFileReceive user ft userApprovedRelays rcvInline_ filePath_) `catchChatError` processError
+  (CRRcvFileAccepted user <$> acceptFileReceive user ft userApprovedRelays rcvInline_ filePath_) `catchAllErrors` processError
   where
     -- TODO AChatItem in Cancelled events
     processError e
@@ -664,7 +664,7 @@ receiveFile' user ft userApprovedRelays rcvInline_ filePath_ = do
 
 receiveFileEvt' :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM ChatEvent
 receiveFileEvt' user ft userApprovedRelays rcvInline_ filePath_ = do
-  (CEvtRcvFileAccepted user <$> acceptFileReceive user ft userApprovedRelays rcvInline_ filePath_) `catchChatError` processError
+  (CEvtRcvFileAccepted user <$> acceptFileReceive user ft userApprovedRelays rcvInline_ filePath_) `catchAllErrors` processError
   where
     -- TODO AChatItem in Cancelled events
     processError e
@@ -788,7 +788,7 @@ receiveViaCompleteFD user fileId RcvFileDescr {fileDescrText, fileDescrComplete}
 cleanupACIFile :: AChatItem -> CM ()
 cleanupACIFile (AChatItem _ _ _ ChatItem {file = Just CIFile {fileSource = Just CryptoFile {filePath}}}) = do
   fsFilePath <- lift $ toFSFilePath filePath
-  removeFile fsFilePath `catchChatError` \_ -> pure ()
+  removeFile fsFilePath `catchAllErrors` \_ -> pure ()
 cleanupACIFile _ = pure ()
 
 getKnownAgentServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> User -> CM (NonEmpty (ServerCfg p))
@@ -1089,7 +1089,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Ju
           forM_ (L.nonEmpty events) $ \events' ->
             sendGroupMemberMessages user conn events' groupId
         else forM_ shuffledIntros $ \intro ->
-          processIntro intro `catchChatError` eToView
+          processIntro intro `catchAllErrors` eToView
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
       let mInfo = memberInfo reMember
@@ -1113,7 +1113,7 @@ sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternal
 sendHistory user gInfo@GroupInfo {groupId, membership} m@GroupMember {activeConn = Just conn} =
   when (m `supportsVersion` batchSendVersion) $ do
     (errs, items) <- partitionEithers <$> withStore' (\db -> getGroupHistoryItems db user gInfo m 100)
-    (errs', events) <- partitionEithers <$> mapM (tryChatError . itemForwardEvents) items
+    (errs', events) <- partitionEithers <$> mapM (tryAllErrors . itemForwardEvents) items
     let errors = map ChatErrorStore errs <> errs'
     unless (null errors) $ toView $ CEvtChatErrors errors
     let events' = concat events
@@ -1286,7 +1286,7 @@ metaBrokerTs MsgMeta {broker = (_, brokerTs)} = brokerTs
 
 createContactPQSndItem :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
-  flip catchChatError (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
+  flip catchAllErrors (const $ pure (ct, conn)) $ case (pqSndEnabled, pqSndEnabled') of
     (Just b, b') | b' /= b -> createPQItem $ CISndConnEvent (SCEPqEnabled pqSndEnabled')
     (Nothing, PQEncOn) -> createPQItem $ CISndDirectE2EEInfo (E2EInfo $ Just pqSndEnabled')
     _ -> pure (ct, conn)
@@ -1301,7 +1301,7 @@ createContactPQSndItem user ct conn@Connection {pqSndEnabled} pqSndEnabled' =
 
 updateContactPQRcv :: User -> Contact -> Connection -> PQEncryption -> CM (Contact, Connection)
 updateContactPQRcv user ct conn@Connection {connId, pqRcvEnabled} pqRcvEnabled' =
-  flip catchChatError (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
+  flip catchAllErrors (const $ pure (ct, conn)) $ case (pqRcvEnabled, pqRcvEnabled') of
     (Just b, b') | b' /= b -> updatePQ $ CIRcvConnEvent (RCEPqEnabled pqRcvEnabled')
     (Nothing, PQEncOn) -> updatePQ $ CIRcvDirectE2EEInfo (E2EInfo $ Just pqRcvEnabled')
     _ -> pure (ct, conn)
@@ -1539,13 +1539,13 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
         lift $ closeFileHandle fileId rcvFiles
         forM_ cryptoArgs $ \cfArgs -> do
           tmpFile <- lift getChatTempDirectory >>= liftIO . (`uniqueCombine` fileName)
-          tryChatError (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
+          tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
             Right () -> do
-              removeFile fsFilePath `catchChatError` \_ -> pure ()
+              removeFile fsFilePath `catchAllErrors` \_ -> pure ()
               renameFile tmpFile fsFilePath
             Left e -> do
               eToView e
-              removeFile tmpFile `catchChatError` \_ -> pure ()
+              removeFile tmpFile `catchAllErrors` \_ -> pure ()
               withStore' (`removeFileCryptoArgs` fileId)
       where
         encryptErr e = fileErr $ e <> ", received file not encrypted"
@@ -1569,7 +1569,7 @@ isFileActive fileId files = do
 
 cancelRcvFileTransfer :: User -> RcvFileTransfer -> CM (Maybe ConnId)
 cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInline} =
-  cancel' `catchChatError` (\e -> eToView e $> fileConnId)
+  cancel' `catchAllErrors` (\e -> eToView e $> fileConnId)
   where
     cancel' = do
       lift $ closeFileHandle fileId rcvFiles
@@ -1587,13 +1587,13 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInlin
 cancelSndFile :: User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> CM [ConnId]
 cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
   withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
-    `catchChatError` eToView
+    `catchAllErrors` eToView
   case xftpSndFile of
     Nothing ->
       catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
     Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
-      lift (agentXFTPDeleteSndFileRemote user xsf fileId) `catchChatError` eToView
+      lift (agentXFTPDeleteSndFileRemote user xsf fileId) `catchAllErrors` eToView
       pure []
 
 -- TODO v6.0 remove
@@ -1601,7 +1601,7 @@ cancelSndFileTransfer :: User -> SndFileTransfer -> Bool -> CM (Maybe ConnId)
 cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
   if fileStatus == FSCancelled || fileStatus == FSComplete
     then pure Nothing
-    else cancel' `catchChatError` (\e -> eToView e $> fileConnId)
+    else cancel' `catchAllErrors` (\e -> eToView e $> fileConnId)
   where
     cancel' = do
       withStore' $ \db -> do
@@ -1661,7 +1661,7 @@ sendDirectContactMessages user ct events = do
   if v >= batchSend2Version
     then sendDirectContactMessages' user ct events
     else forM (L.toList events) $ \evt ->
-      (Right . fst <$> sendDirectContactMessage user ct evt) `catchChatError` \e -> pure (Left e)
+      (Right . fst <$> sendDirectContactMessage user ct evt) `catchAllErrors` \e -> pure (Left e)
 
 sendDirectContactMessages' :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages' user ct events = do
@@ -1856,7 +1856,7 @@ sendGroupMessages :: MsgEncodingI e => User -> GroupInfo -> Maybe GroupChatScope
 sendGroupMessages user gInfo scope members events = do
   -- TODO [knocking] send current profile to pending member after approval?
   when shouldSendProfileUpdate $
-    sendProfileUpdate `catchChatError` eToView
+    sendProfileUpdate `catchAllErrors` eToView
   sendGroupMessages_ user gInfo members events
   where
     User {profile = p, userMemberProfileUpdatedAt} = user
@@ -2013,7 +2013,7 @@ memberSendAction gInfo events members m@GroupMember {memberRole, memberStatus} =
 sendGroupMemberMessage :: MsgEncodingI e => GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe Int64 -> CM () -> CM ()
 sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent introId_ postDeliver = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
-  messageMember msg `catchChatError` eToView
+  messageMember msg `catchAllErrors` eToView
   where
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
@@ -2054,7 +2054,7 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
       rcvMsgDelivery = RcvMsgDelivery {connId, agentMsgId, agentMsgMeta}
   msg <-
     withStore (\db -> createNewMessageAndRcvMsgDelivery db (GroupId groupId) newMsg sharedMsgId_ rcvMsgDelivery $ Just amGroupMemId)
-      `catchChatError` \e -> case e of
+      `catchAllErrors` \e -> case e of
         ChatErrorStore (SEDuplicateGroupMessage _ _ _ (Just forwardedByGroupMemberId)) -> do
           vr <- chatVersionRange
           fm <- withStore $ \db -> getGroupMember db vr user groupId forwardedByGroupMemberId
@@ -2070,7 +2070,7 @@ saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember@GroupMember {me
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = Just $ groupMemberId' refAuthorMember
   withStore (\db -> createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId)
-    `catchChatError` \e -> case e of
+    `catchAllErrors` \e -> case e of
       ChatErrorStore (SEDuplicateGroupMessage _ _ (Just authorGroupMemberId) Nothing) -> do
         vr <- chatVersionRange
         am@GroupMember {memberId = amMemberId} <- withStore $ \db -> getGroupMember db vr user groupId authorGroupMemberId
@@ -2213,7 +2213,7 @@ deleteAgentConnectionAsync acId = deleteAgentConnectionAsync' acId False
 
 deleteAgentConnectionAsync' :: ConnId -> Bool -> CM ()
 deleteAgentConnectionAsync' acId waitDelivery = do
-  withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchChatError` eToView
+  withAgent (\a -> deleteConnectionAsync a waitDelivery acId) `catchAllErrors` eToView
 
 deleteAgentConnectionsAsync :: [ConnId] -> CM ()
 deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
@@ -2222,7 +2222,7 @@ deleteAgentConnectionsAsync acIds = deleteAgentConnectionsAsync' acIds False
 deleteAgentConnectionsAsync' :: [ConnId] -> Bool -> CM ()
 deleteAgentConnectionsAsync' [] _ = pure ()
 deleteAgentConnectionsAsync' acIds waitDelivery = do
-  withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchChatError` eToView
+  withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do
@@ -2271,7 +2271,7 @@ agentXFTPDeleteSndFilesRemote user sndFiles = do
       case privateSndFileDescr of
         Nothing -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
         Just sfdText ->
-          tryChatError' (parseFileDescription sfdText) >>= \case
+          tryAllErrors' (parseFileDescription sfdText) >>= \case
             Left _ -> partitionSndDescr xsfs (aFileId : filesWithoutDescr) filesWithDescr
             Right sfd -> partitionSndDescr xsfs filesWithoutDescr ((aFileId, sfd) : filesWithDescr)
 

@@ -19,7 +19,7 @@ module Simplex.Chat.Controller where
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
-import Control.Exception (Exception, SomeException)
+import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -88,7 +88,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Msg
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
+import Simplex.Messaging.Util (AnyError (..), catchAllErrors, (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -726,6 +726,7 @@ data ChatResponse
   | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
@@ -1419,6 +1420,10 @@ data ArchiveError
   | AEFileError {file :: String, fileError :: String}
   deriving (Show, Exception)
 
+instance AnyError ChatError where
+  fromSomeException = ChatError . CEException . show
+  {-# INLINE fromSomeException #-}
+
 -- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession
   = RCSessionStarting
@@ -1505,45 +1510,9 @@ setContactNetworkStatus :: Contact -> NetworkStatus -> CM' ()
 setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
 setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar' connNetworkStatuses $ M.insert agentConnId status
 
-tryChatError :: CM a -> CM (Either ChatError a)
-tryChatError = tryAllErrors mkChatError
-{-# INLINE tryChatError #-}
-
-tryChatError' :: CM a -> CM' (Either ChatError a)
-tryChatError' = tryAllErrors' mkChatError
-{-# INLINE tryChatError' #-}
-
-catchChatError :: CM a -> (ChatError -> CM a) -> CM a
-catchChatError = catchAllErrors mkChatError
-{-# INLINE catchChatError #-}
-
-catchChatError' :: CM a -> (ChatError -> CM' a) -> CM' a
-catchChatError' = catchAllErrors' mkChatError
-{-# INLINE catchChatError' #-}
-
-chatFinally :: CM a -> CM b -> CM a
-chatFinally = allFinally mkChatError
-{-# INLINE chatFinally #-}
-
 onChatError :: CM a -> CM b -> CM a
-a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
+a `onChatError` onErr = a `catchAllErrors` \e -> onErr >> throwError e
 {-# INLINE onChatError #-}
-
-mkChatError :: SomeException -> ChatError
-mkChatError = ChatError . CEException . show
-{-# INLINE mkChatError #-}
-
-catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError IO a) -> ExceptT StoreError IO a
-catchStoreError = catchAllErrors mkStoreError
-{-# INLINE catchStoreError #-}
-
-tryStoreError' :: ExceptT StoreError IO a -> IO (Either StoreError a)
-tryStoreError' = tryAllErrors' mkStoreError
-{-# INLINE tryStoreError' #-}
-
-mkStoreError :: SomeException -> StoreError
-mkStoreError = SEInternalError . show
-{-# INLINE mkStoreError #-}
 
 throwCmdError :: String -> CM a
 throwCmdError = throwError . ChatError . CECommandError

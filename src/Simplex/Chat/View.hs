@@ -68,7 +68,7 @@ import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (dropPrefix, taggedObjectJSON)
-import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
+import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType, BlockingInfo (..), BlockingReason (..), NetworkError (..), ProtocolServer (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
@@ -231,6 +231,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRMemberAccepted u g m -> ttyUser u $ viewMemberAccepted g m
+  CRMemberSupportChatRead u g m -> ttyUser u $ viewSupportChatRead g m
   CRMemberSupportChatDeleted u g m -> ttyUser u [ttyGroup' g <> ": " <> ttyMember m <> " support chat deleted"]
   CRMembersRoleUser u g members r' -> ttyUser u $ viewMemberRoleUserChanged g members r'
   CRMembersBlockedForAllUser u g members blocked -> ttyUser u $ viewMembersBlockedForAllUser g members blocked
@@ -1229,6 +1230,11 @@ viewMemberAccepted g m@GroupMember {memberStatus} = case memberStatus of
   GSMemPendingReview -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted and pending review (will introduce moderators)"]
   _ -> [ttyGroup' g <> ": " <> ttyMember m <> " accepted"]
 
+viewSupportChatRead :: GroupInfo -> GroupMember -> [StyledString]
+viewSupportChatRead g@GroupInfo {membership = GroupMember {groupMemberId = membershipId}} m
+  | groupMemberId' m == membershipId = [ttyGroup' g <> ": support chat read"]
+  | otherwise = [ttyGroup' g <> ": " <> ttyMember m <> " support chat read"]
+
 viewMemberAcceptedByOther :: GroupInfo -> GroupMember -> GroupMember -> [StyledString]
 viewMemberAcceptedByOther g acceptingMember m@GroupMember {memberCategory, memberStatus} = case memberCategory of
   GCUserMember -> case memberStatus of
@@ -1324,8 +1330,12 @@ viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filt
       | otherwise = []
 
 viewMemberSupportChats :: GroupInfo -> [GroupMember] -> [StyledString]
-viewMemberSupportChats GroupInfo {membership} ms = support <> map groupMember ms
+viewMemberSupportChats GroupInfo {membership = membership@GroupMember {memberRole = membershipRole}, membersRequireAttention} ms =
+  memsAttention <> support <> map groupMember ms
   where
+    memsAttention
+      | membershipRole >= GRModerator = ["members require attention: " <> sShow membersRequireAttention]
+      | otherwise = []
     support = case supportChat membership of
       Just sc -> ["support: " <> chatStats sc]
       Nothing -> []
@@ -1505,11 +1515,11 @@ viewServerTestResult (AProtoServerWithAuth p _) = \case
     result
       <> [pName <> " server requires authorization to create queues, check password" | testStep == TSCreateQueue && (case testError of SMP _ SMP.AUTH -> True; _ -> False)]
       <> [pName <> " server requires authorization to upload files, check password" | testStep == TSCreateFile && (case testError of XFTP _ XFTP.AUTH -> True; _ -> False)]
-      <> ["Possibly, certificate fingerprint in " <> pName <> " server address is incorrect" | testStep == TSConnect && brokerErr]
+      <> ["Certificate fingerprint in " <> pName <> " server address does not match server certificate" | testStep == TSConnect && unknownCA]
     where
       result = [pName <> " server test failed at " <> plain (drop 2 $ show testStep) <> ", error: " <> sShow testError]
-      brokerErr = case testError of
-        BROKER _ NETWORK -> True
+      unknownCA = case testError of
+        BROKER _ (NETWORK NEUnknownCAError) -> True
         _ -> False
   _ -> [pName <> " server test passed"]
   where
@@ -2536,7 +2546,7 @@ viewChatError isCmd logLevel testView = \case
         reasonStr = case reason of
           BRSpam -> "spam"
           BRContent -> "content violates conditions of use"
-    BROKER _ NETWORK | not isCmd -> []
+    BROKER _ (NETWORK _) | not isCmd -> []
     BROKER _ TIMEOUT | not isCmd -> []
     AGENT A_DUPLICATE -> [withConnEntity <> "error: AGENT A_DUPLICATE" | logLevel == CLLDebug || isCmd]
     AGENT (A_PROHIBITED e) -> [withConnEntity <> "error: AGENT A_PROHIBITED, " <> plain e | logLevel <= CLLWarning || isCmd]

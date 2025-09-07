@@ -66,7 +66,7 @@ crDirectoryEvent :: Either ChatError ChatEvent -> Maybe DirectoryEvent
 crDirectoryEvent = \case
   Right evt -> crDirectoryEvent_ evt
   Left e -> case e of
-    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
+    ChatErrorAgent {agentError = BROKER _ (NETWORK _)} -> Nothing
     ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
     _ -> Just $ DELogChatResponse $ "chat error: " <> tshow e
 

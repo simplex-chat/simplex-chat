@@ -49,9 +49,13 @@ fun GroupMemberInfoView(
   connectionStats: ConnectionStats?,
   connectionCode: String?,
   chatModel: ChatModel,
+  openedFromSupportChat: Boolean,
   close: () -> Unit,
   closeAll: () -> Unit, // Close all open windows up to ChatView
 ) {
+  KeyChangeEffect(chat.simplex.common.platform.chatModel.chatId.value) {
+    ModalManager.end.closeModals()
+  }
   BackHandler(onBack = close)
   val chat = chatModel.chats.value.firstOrNull { ch -> ch.id == chatModel.chatId.value && ch.remoteHostId == rhId }
   val connStats = remember { mutableStateOf(connectionStats) }
@@ -225,7 +229,8 @@ fun GroupMemberInfoView(
             )
           }
         }
-      }
+      },
+      openedFromSupportChat = openedFromSupportChat
     )
 
     if (progressIndicator) {
@@ -291,6 +296,7 @@ fun GroupMemberInfoLayout(
   syncMemberConnection: () -> Unit,
   syncMemberConnectionForce: () -> Unit,
   verifyClicked: () -> Unit,
+  openedFromSupportChat: Boolean
 ) {
   val cStats = connStats.value
   fun knownDirectChat(contactId: Long): Pair<Chat, Contact>? {
@@ -440,6 +446,7 @@ fun GroupMemberInfoLayout(
     if (member.memberActive) {
       SectionView {
         if (
+          !openedFromSupportChat &&
           groupInfo.membership.memberRole >= GroupMemberRole.Moderator &&
           (member.memberRole < GroupMemberRole.Moderator || member.supportChat != null)
         ) {
@@ -924,6 +931,7 @@ fun PreviewGroupMemberInfoLayout() {
       syncMemberConnection = {},
       syncMemberConnectionForce = {},
       verifyClicked = {},
+      openedFromSupportChat = false,
     )
   }
 }

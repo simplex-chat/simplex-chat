@@ -98,7 +98,7 @@ struct GroupChatInfoView: View {
                             memberSupportButton()
                         }
                         if groupInfo.canModerate {
-                            GroupReportsChatNavLink(chat: chat, scrollToItemId: $scrollToItemId)
+                            GroupReportsChatNavLink(chat: chat, groupInfo: groupInfo, scrollToItemId: $scrollToItemId)
                         }
                         if groupInfo.membership.memberActive
                             && (groupInfo.membership.memberRole < .moderator || groupInfo.membership.supportChat != nil) {
@@ -612,15 +612,19 @@ struct GroupChatInfoView: View {
     }
 
     struct GroupReportsChatNavLink: View {
-        @EnvironmentObject var chatModel: ChatModel
-        @EnvironmentObject var theme: AppTheme
-        @State private var navLinkActive = false
         @ObservedObject var chat: Chat
+        @EnvironmentObject var theme: AppTheme
+        var groupInfo: GroupInfo
+        @EnvironmentObject var chatModel: ChatModel
         @Binding var scrollToItemId: ChatItem.ID?
+        @State private var navLinkActive = false
 
         var body: some View {
             NavigationLink(isActive: $navLinkActive) {
-                SecondaryChatView(chat: chat, scrollToItemId: $scrollToItemId)
+                SecondaryChatView(
+                    chat: Chat(chatInfo: .group(groupInfo: groupInfo, groupChatScope: .reports), chatItems: [], chatStats: ChatStats()),
+                    scrollToItemId: $scrollToItemId
+                )
             } label: {
                 HStack {
                     Label {
