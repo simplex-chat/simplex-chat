@@ -2484,9 +2484,9 @@ swipe action</note>
         <target>¿Eliminar perfil?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat with member?" xml:space="preserve">
+      <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
         <source>Delete chat with member?</source>
-        <target>¿Eliminar chat con el miembro?</target>
+        <target state="translated">¿Eliminar chat con miembro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
