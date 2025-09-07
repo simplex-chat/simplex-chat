@@ -533,6 +533,7 @@ smpServerCfg =
       dailyBlockQueueQuota = 20,
       messageExpiration = Just defaultMessageExpiration,
       expireMessagesOnStart = False,
+      expireMessagesOnSend = False,
       idleQueueInterval = defaultIdleQueueInterval,
       notificationExpiration = defaultNtfExpiration,
       inactiveClientExpiration = Just defaultInactiveClientExpiration,
