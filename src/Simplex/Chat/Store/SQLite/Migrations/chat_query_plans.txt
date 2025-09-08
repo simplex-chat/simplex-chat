@@ -4056,6 +4056,22 @@ SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
 
 Query: 
+      DELETE FROM delivery_jobs
+      WHERE created_at <= ?
+        AND (job_status IN (?,?) OR failed = 1)
+    
+Plan:
+SEARCH delivery_jobs USING INDEX idx_delivery_jobs_created_at (created_at<?)
+
+Query: 
+      DELETE FROM delivery_tasks
+      WHERE created_at <= ?
+        AND (task_status IN (?,?) OR failed = 1)
+    
+Plan:
+SEARCH delivery_tasks USING INDEX idx_delivery_tasks_created_at (created_at<?)
+
+Query: 
       DELETE FROM display_names
       WHERE
         user_id = ?
@@ -5642,6 +5658,14 @@ SEARCH files USING COVERING INDEX idx_files_contact_id (contact_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by (invited_by=?)
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
+
+Query: DELETE FROM delivery_jobs WHERE group_id = ?
+Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_group_id (group_id=?)
+
+Query: DELETE FROM delivery_tasks WHERE group_id = ?
+Plan:
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_group_id (group_id=?)
 
 Query: DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?
 Plan:
