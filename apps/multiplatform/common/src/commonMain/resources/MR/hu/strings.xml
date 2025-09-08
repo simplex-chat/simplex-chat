@@ -2393,7 +2393,7 @@
     <string name="cant_send_message_rejected">csatlakozási kérés elutasítva</string>
     <string name="cant_send_message_you_left">Ön elhagyta a csoportot</string>
     <string name="cant_send_message_member_has_old_version">a tag régi verziót használ</string>
-    <string name="error_deleting_member_support_chat">Hiba a taggal való csevegés törlésekor</string>
+    <string name="error_deleting_member_support_chat">Hiba a csevegés törlésekor</string>
     <string name="cant_send_message_alert_title">Ön nem tud üzeneteket küldeni!</string>
     <string name="cant_send_message_contact_not_ready">a partner nem áll készen</string>
     <string name="cant_send_message_contact_not_synchronized">nincs szinkronizálva</string>
@@ -2499,5 +2499,7 @@
     <string name="privacy_chat_list_open_full_web_link">Teljes hivatkozás megnyitása</string>
     <string name="sanitize_links_toggle">Nyomonkövetési paraméterek eltávolítása a hivatkozásokból</string>
     <string name="simplex_link_relay">SimpleX továbbítókiszolgáló-hivatkozás</string>
-    <string name="error_marking_member_support_chat_read">Hiba a taggal folytatott csevegés olvasottként való megjelölésekor</string>
+    <string name="error_marking_member_support_chat_read">Hiba a csevegés olvasottként való megjelölésekor</string>
+    <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
 </resources>

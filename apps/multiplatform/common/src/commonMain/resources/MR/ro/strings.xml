@@ -191,7 +191,7 @@
     <string name="reset_verb">Resetare</string>
     <string name="reject">Respinge</string>
     <string name="save_passphrase_in_settings">Salvează parola în setări</string>
-    <string name="save_and_update_group_profile">Salvați și actualizați profilul grupului</string>
+    <string name="save_and_update_group_profile">Salvează și actualizează profilul grupului</string>
     <string name="connect_plan_repeat_join_request">Repetă cererea de alăturare?</string>
     <string name="restart_chat_button">Reporniți conversația</string>
     <string name="saved_description">salvat</string>
@@ -200,7 +200,7 @@
     <string name="saved_chat_item_info_tab">Salvat</string>
     <string name="saved_from_chat_item_info_title">Salvat din</string>
     <string name="sync_connection_force_confirm">Renegociază</string>
-    <string name="smp_servers_save">Salvați serverele</string>
+    <string name="smp_servers_save">Salvează serverele</string>
     <string name="saved_ICE_servers_will_be_removed">Serverele ICE WebRTC salvate vor fi eliminate.</string>
     <string name="save_profile_password">Salvează parola profilului</string>
     <string name="save_passphrase_and_open_chat">Salvează parola și deschide conversația</string>
@@ -225,12 +225,12 @@
     <string name="network_options_save">Salvează</string>
     <string name="reveal_verb">Arată</string>
     <string name="reject_contact_button">Respinge</string>
-    <string name="smp_save_servers_question">Salvați serverele?</string>
+    <string name="smp_save_servers_question">Salvezi serverele?</string>
     <string name="icon_descr_call_rejected">Apel respins</string>
     <string name="saved_message_title">Mesaj salvat</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Repornește aplicația pentru a crea un profil de conversație nou.</string>
     <string name="save_passphrase_in_keychain">Salvează parola în Keystore</string>
-    <string name="save_group_profile">Salvați profilul grupului</string>
+    <string name="save_group_profile">Salvează profilul grupului</string>
     <string name="wallpaper_scale_repeat">Repetă</string>
     <string name="send_link_previews">Trimite previzualizări de linkuri</string>
     <string name="set_passphrase">Setează parola</string>
@@ -263,7 +263,7 @@
     <string name="icon_descr_sent_msg_status_send_failed">trimitere eșuată</string>
     <string name="search_or_paste_simplex_link">Caută sau lipește linkul SimpleX</string>
     <string name="set_contact_name">Setează numele contactului</string>
-    <string name="save_welcome_message_question">Salvați mesajul de bun venit?</string>
+    <string name="save_welcome_message_question">Salvezi mesajul de bun venit?</string>
     <string name="v4_2_security_assessment">Evaluarea securității</string>
     <string name="scan_qr_code_from_desktop">Scanează codul QR de pe desktop</string>
     <string name="search_verb">Caută</string>
@@ -1216,7 +1216,7 @@
     <string name="v5_4_better_groups_descr">Conectare mai rapidă și mesaje mai de încredere.</string>
     <string name="v5_1_japanese_portuguese_interface">Interfață în japoneză și portugheză</string>
     <string name="v5_5_new_interface_languages">Interfață de utilizator maghiară și turcă</string>
-    <string name="v5_7_forward">Redirecționați și salvați mesajele</string>
+    <string name="v5_7_forward">Redirecționează și salvează mesajele</string>
     <string name="v6_2_network_decentralization_enable_flux">Activează Flux în setările Rețea și servere pentru o mai bună confidențialitate a metadatelor.</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">pentru o mai bună confidențialitate a metadatelor.</string>
     <string name="v6_1_forward_many_messages_descr">Redirecționați până la 20 de mesaje simultan.</string>
@@ -1801,7 +1801,7 @@
     <string name="cant_send_message_rejected">cererea de înscriere a fost respinsă</string>
     <string name="select_chat_profile">Selectează profilul de conversație</string>
     <string name="save_auto_accept_settings">Salvează setările adresei SimpleX</string>
-    <string name="save_list">Salvați lista</string>
+    <string name="save_list">Salvează lista</string>
     <string name="settings_section_title_delivery_receipts">TRIMITE CONFIRMĂRI DE LIVRARE LA</string>
     <string name="self_destruct_passcode_changed">Parola de autodistrugere a fost schimbată!</string>
     <string name="info_row_updated_at">Înregistrare actualizată la</string>
@@ -2166,7 +2166,7 @@
     <string name="waiting_for_image">Se așteaptă imaginea</string>
     <string name="icon_descr_waiting_for_video">Se așteaptă videoclipul</string>
     <string name="temporary_file_error">Eroare temporară de fișier</string>
-    <string name="unfavorite_chat">Eliminare favorit</string>
+    <string name="unfavorite_chat">Elimină din favorite</string>
     <string name="unread_mentions">Mențiuni necitite</string>
     <string name="connection_you_accepted_will_be_cancelled">Conexiunea pe care ați acceptat-o va fi anulată!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Contactul cu care ați partajat acest link NU se va putea conecta!</string>
@@ -2241,7 +2241,7 @@
     <string name="you_can_still_view_conversation_with_contact">Puteți vizualiza în continuare conversația cu %1$s în lista de conversații.</string>
     <string name="operator_conditions_accepted">Condiții acceptate</string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Aceleași condiții se vor aplica operatorului(ilor): <b>%s</b>.]]></string>
-    <string name="n_file_errors">%1$d eroare(erori) de fișier:\n%2$s</string>
+    <string name="n_file_errors">%1$d erori de fișier:\n%2$s</string>
     <string name="connection_error_blocked">Conexiune blocată</string>
     <string name="connection_error_blocked_desc">Conexiunea este blocată de operatorul serverului:\n%1$s.</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Toate mesajele și fișierele sunt trimise <b>criptate end-to-end</b>, cu securitate post-cuantică în mesajele directe.]]></string>
