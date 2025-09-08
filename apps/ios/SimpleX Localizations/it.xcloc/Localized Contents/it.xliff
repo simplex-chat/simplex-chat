@@ -3355,14 +3355,14 @@ chat item action</note>
         <target>Errore decifrando il file</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error deleting chat" xml:space="preserve">
+        <source>Error deleting chat</source>
+        <target>Errore di eliminazione della chat con il membro</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Errore nell'eliminazione del database della chat</target>
-        <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
-        <source>Error deleting chat with member</source>
-        <target>Errore di eliminazione della chat con il membro</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
@@ -3642,6 +3642,10 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
+      <trans-unit id="Error: %@." xml:space="preserve">
+        <source>Error: %@.</source>
+        <note>server test error</note>
+      </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
         <target>Errore: l'URL non è valido</target>
@@ -3864,6 +3868,23 @@ snd error text</note>
       <trans-unit id="Find chats faster" xml:space="preserve">
         <source>Find chats faster</source>
         <target>Trova le chat più velocemente</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
+        <target>Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate: %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -6112,11 +6133,6 @@ Errore: %@</target>
         <source>Port</source>
         <target>Porta</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
-        <source>Fingerprint in server address does not match certificate.</source>
-        <target>Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata</target>
-        <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>

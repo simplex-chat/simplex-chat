@@ -281,7 +281,7 @@ func deleteMemberSupportChat(_ groupInfo: GroupInfo, _ member: GroupMember) {
             logger.error("apiDeleteMemberSupportChat error: \(responseError(error))")
             await MainActor.run {
                 showAlert(
-                    NSLocalizedString("Error deleting chat with member", comment: "alert title"),
+                    NSLocalizedString("Error deleting chat", comment: "alert title"),
                     message: responseError(error)
                 )
             }
