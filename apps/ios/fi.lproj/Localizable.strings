@@ -2241,7 +2241,7 @@ new chat action */
 "Polish interface" = "Puolalainen käyttöliittymä";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
+"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
@@ -2652,10 +2652,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Lähetetyt viestit poistetaan asetetun ajan kuluttua.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
+"Server requires authorization to create queues, check password." = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
+"Server requires authorization to upload, check password." = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Palvelintesti epäonnistui!";
@@ -3401,4 +3401,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
-

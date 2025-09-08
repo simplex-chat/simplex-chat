@@ -534,7 +534,7 @@ processChatCommand vr nm = \case
               Just newMemAttention -> do
                 (gInfo', scopeMem') <-
                   withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
-                pure $ groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))}
+                pure (groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))} :: Chat 'CTGroup)
               Nothing -> pure groupChat
           _ -> pure groupChat
         where
@@ -4243,7 +4243,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
             netStatus = maybe NSConnected $ NSError . errorNetworkStatus
             errorNetworkStatus :: ChatError -> String
             errorNetworkStatus = \case
-              ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
+              ChatErrorAgent (BROKER _ (NETWORK _)) _ -> "network"
               ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
     -- TODO possibly below could be replaced with less noisy events for API

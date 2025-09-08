@@ -2251,7 +2251,7 @@ chat item action */
 "Error deleting chat database" = "Помилка видалення бази даних чату";
 
 /* alert title */
-"Error deleting chat with member" = "Помилка при видаленні чату з учасником";
+"Error deleting chat" = "Помилка при видаленні чату з учасником";
 
 /* alert title */
 "Error deleting chat!" = "Помилка видалення чату!";
@@ -4031,7 +4031,7 @@ new chat action */
 "Port" = "Порт";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Можливо, в адресі сервера неправильно вказано відбиток сертифіката";
+"Fingerprint in server address does not match certificate." = "Можливо, в адресі сервера неправильно вказано відбиток сертифіката";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Зберегти чернетку останнього повідомлення з вкладеннями.";
@@ -4826,10 +4826,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "інформація про чергу на сервері: %1$@\n\nостаннє отримане повідомлення: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Сервер вимагає авторизації для створення черг, перевірте пароль";
+"Server requires authorization to create queues, check password." = "Сервер вимагає авторизації для створення черг, перевірте пароль";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Сервер вимагає авторизації для завантаження, перевірте пароль";
+"Server requires authorization to upload, check password." = "Сервер вимагає авторизації для завантаження, перевірте пароль";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Тест сервера завершився невдало!";
@@ -6287,4 +6287,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
-

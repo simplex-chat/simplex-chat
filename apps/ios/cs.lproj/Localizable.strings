@@ -2337,7 +2337,7 @@ new chat action */
 "Polish interface" = "Polské rozhraní";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
+"Fingerprint in server address does not match certificate." = "Je možné, že otisk certifikátu v adrese serveru je nesprávný";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Zachování posledního návrhu zprávy s přílohami.";
@@ -2751,10 +2751,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Odeslané zprávy se po uplynutí nastavené doby odstraní.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
+"Server requires authorization to create queues, check password." = "Server vyžaduje autorizaci pro vytváření front, zkontrolujte heslo";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
+"Server requires authorization to upload, check password." = "Server vyžaduje autorizaci pro nahrávání, zkontrolujte heslo";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serveru se nezdařil!";
@@ -3506,4 +3506,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Vaše SimpleX adresa";
-

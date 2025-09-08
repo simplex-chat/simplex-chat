@@ -169,6 +169,7 @@ func retryableNetworkErrorAlert(_ e: ChatError) -> (title: String, message: Stri
         title: NSLocalizedString("Connection timeout", comment: "alert title"),
         message: serverErrorAlertMessage(addr)
     )
+    case let .errorAgent(.BROKER(addr, .NETWORK(.unknownCAError))): nil
     case let .errorAgent(.BROKER(addr, .NETWORK)): (
         title: NSLocalizedString("Connection error", comment: "alert title"),
         message: serverErrorAlertMessage(addr)
@@ -177,6 +178,7 @@ func retryableNetworkErrorAlert(_ e: ChatError) -> (title: String, message: Stri
         title: NSLocalizedString("Private routing timeout", comment: "alert title"),
         message: proxyErrorAlertMessage(serverAddress)
     )
+    case let .errorAgent(.SMP(serverAddress, .PROXY(.BROKER(.NETWORK(.unknownCAError))))): nil
     case let .errorAgent(.SMP(serverAddress, .PROXY(.BROKER(.NETWORK)))): (
         title: NSLocalizedString("Private routing error", comment: "alert title"),
         message: proxyErrorAlertMessage(serverAddress)
@@ -185,6 +187,7 @@ func retryableNetworkErrorAlert(_ e: ChatError) -> (title: String, message: Stri
         title: NSLocalizedString("Private routing timeout", comment: "alert title"),
         message: proxyDestinationErrorAlertMessage(proxyServer: proxyServer, destServer: destServer)
     )
+    case let .errorAgent(.PROXY(proxyServer, destServer, .protocolError(.PROXY(.BROKER(.NETWORK(.unknownCAError)))))): nil
     case let .errorAgent(.PROXY(proxyServer, destServer, .protocolError(.PROXY(.BROKER(.NETWORK))))): (
         title: NSLocalizedString("Private routing error", comment: "alert title"),
         message: proxyDestinationErrorAlertMessage(proxyServer: proxyServer, destServer: destServer)

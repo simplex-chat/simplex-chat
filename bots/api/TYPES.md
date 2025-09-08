@@ -121,6 +121,7 @@ This file is generated automatically.
 - [MsgFilter](#msgfilter)
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
+- [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [PendingContactConnection](#pendingcontactconnection)
@@ -343,6 +344,7 @@ UNEXPECTED:
 
 NETWORK:
 - type: "NETWORK"
+- networkError: [NetworkError](#networkerror)
 
 HOST:
 - type: "HOST"
@@ -2633,6 +2635,34 @@ Unknown:
 **Enum type**:
 - "ok"
 - "badMsgHash"
+
+
+---
+
+## NetworkError
+
+**Discriminated union type**:
+
+ConnectError:
+- type: "connectError"
+- connectError: string
+
+TLSError:
+- type: "tLSError"
+- tlsError: string
+
+UnknownCAError:
+- type: "unknownCAError"
+
+FailedError:
+- type: "failedError"
+
+TimeoutError:
+- type: "timeoutError"
+
+SubscribeError:
+- type: "subscribeError"
+- subscribeError: string
 
 
 ---
