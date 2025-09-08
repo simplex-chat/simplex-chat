@@ -2254,7 +2254,7 @@ chat item action */
 "Error deleting chat database" = "Sohbet veritabanı silinirken sorun oluştu";
 
 /* alert title */
-"Error deleting chat with member" = "Üye ile sohbet silme hatası";
+"Error deleting chat" = "Üye ile sohbet silme hatası";
 
 /* alert title */
 "Error deleting chat!" = "Sohbet silinirken hata oluştu!";

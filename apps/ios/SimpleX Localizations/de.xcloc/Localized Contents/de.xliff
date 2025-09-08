@@ -3360,8 +3360,8 @@ chat item action</note>
         <target>Fehler beim Löschen der Chat-Datenbank</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
-        <source>Error deleting chat with member</source>
+      <trans-unit id="Error deleting chat" xml:space="preserve">
+        <source>Error deleting chat</source>
         <target>Fehler beim Löschen des Chats mit dem Mitglied</target>
         <note>alert title</note>
       </trans-unit>

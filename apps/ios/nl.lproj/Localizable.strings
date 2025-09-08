@@ -2206,7 +2206,7 @@ chat item action */
 "Error deleting chat database" = "Fout bij het verwijderen van de chat database";
 
 /* alert title */
-"Error deleting chat with member" = "Fout bij het verwijderen van chat met lid";
+"Error deleting chat" = "Fout bij het verwijderen van chat met lid";
 
 /* alert title */
 "Error deleting chat!" = "Fout bij verwijderen gesprek!";
