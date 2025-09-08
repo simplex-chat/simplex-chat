@@ -805,7 +805,7 @@
     <string name="incompatible_database_version">Versiunea bazei de date este incompatibilă</string>
     <string name="alert_message_group_invitation_expired">Invitația la grup nu mai este validă, a fost eliminată de expeditor.</string>
     <string name="joining_group">Se alătură grupului</string>
-    <string name="button_leave_group">Părăsiți grupul</string>
+    <string name="button_leave_group">Părăsește grupul</string>
     <string name="error_deleting_link_for_group">Eroare la ștergerea linkului de grup</string>
     <string name="error_sending_message_contact_invitation">Eroare la trimiterea invitației</string>
     <string name="send_receipts_disabled">dezactivat</string>
@@ -1385,7 +1385,7 @@
     <string name="receipts_contacts_disable_keep_overrides">Dezactivează (păstrează suprascrierile)</string>
     <string name="if_you_enter_self_destruct_code">Dacă introduceți parola de autodistrugere în timp ce deschideți aplicația:</string>
     <string name="privacy_media_blur_radius_medium">Mediu</string>
-    <string name="button_leave_chat">Părăsiți conversația</string>
+    <string name="button_leave_chat">Părăsește conversația</string>
     <string name="no_support_chats">Fără conversații cu membrii</string>
     <string name="v5_2_message_delivery_receipts">Confirmare de primire a mesajelor!</string>
     <string name="custom_time_unit_minutes">minute</string>
@@ -1429,7 +1429,7 @@
     <string name="privacy_chat_list_open_web_link">Deschide linkul</string>
     <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">Baza de date va fi criptată, iar parola va fi stocată în setări.</string>
     <string name="error_with_info">Eroare: %s</string>
-    <string name="leave_group_question">Părăsiți grupul?</string>
+    <string name="leave_group_question">Părăsești grupul?</string>
     <string name="alert_title_no_group">Grupul nu a fost găsit!</string>
     <string name="error_creating_member_contact">Eroare la crearea contactului membrului</string>
     <string name="only_chat_owners_can_change_prefs">Doar proprietarii conversației pot schimba preferințele.</string>
@@ -1518,8 +1518,8 @@
     <string name="join_group_question">Vrei să te alături grupului?</string>
     <string name="database_migrations">Migrații: %s</string>
     <string name="join_group_button">Alătură-te</string>
-    <string name="leave_group_button">Părăsiți</string>
-    <string name="leave_chat_question">Părăsiți conversația?</string>
+    <string name="leave_group_button">Părăsește</string>
+    <string name="leave_chat_question">Părăsești conversația?</string>
     <string name="rcv_group_event_member_left">a părăsit</string>
     <string name="rcv_group_event_invited_via_your_group_link">invitat prin linkul tău de grup</string>
     <string name="rcv_group_event_new_member_pending_review">Un membru nou vrea să se alăture grupului.</string>
@@ -2286,7 +2286,7 @@
     <string name="add_short_link">Actualizează adresa</string>
     <string name="onboarding_conditions_configure_server_operators">Configurați operatorii serverului</string>
     <string name="onboarding_network_operators_conditions_will_be_accepted">Condițiile vor fi acceptate pentru operatorii activați după 30 de zile.</string>
-    <string name="call_desktop_permission_denied_chrome">Faceți clic pe butonul de informații de lângă câmpul de adresă pentru a permite utilizarea microfonului.</string>
+    <string name="call_desktop_permission_denied_chrome">Apasă pe butonul de informații de lângă bara de adrese pentru a permite accesul la microfon.</string>
     <string name="settings_message_shape_corner">Colţ</string>
     <string name="chat_database_exported_save">Puteți salva arhiva exportată.</string>
     <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Nu veți mai primi mesaje de la acest chat. Istoricul conversației va fi păstrat.</string>
@@ -2294,7 +2294,7 @@
     <string name="invite_prohibited_description">Încercați să invitați persoana de contact cu care ați partajat un profil incognito în grupul în care utilizați profilul principal</string>
     <string name="you_can_share_group_link_anybody_will_be_able_to_connect">Poți partaja un link sau un cod QR - oricine se va putea alătura grupului. Nu vei pierde membrii grupului dacă îl ștergi ulterior.</string>
     <string name="block_members_for_all_question">Blocați membrii pentru toți?</string>
-    <string name="info_row_chat">Chat</string>
+    <string name="info_row_chat">Conversație</string>
     <string name="operators_conditions_accepted_for"><![CDATA[Condițiile au fost acceptate pentru operatorul: <b>%s</b>.]]></string>
     <string name="operator_conditions_accepted_on">Condiții acceptate pe: %s.</string>
     <string name="operator_conditions_accepted_for_enabled_operators_on">Condițiile vor fi acceptate automat pentru operatorii activați pe: %s.</string>
