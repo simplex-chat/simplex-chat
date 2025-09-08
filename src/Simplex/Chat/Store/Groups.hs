@@ -2929,7 +2929,7 @@ createNewDeliveryTask
           message_id, message_from_channel, task_status
         ) VALUES (?,?,?,?,?,?,?,?,?)
       |]
-      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, groupMemberId' sender, messageId, messageFromChannel, DTSNew)
+      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, groupMemberId' sender, messageId, BI messageFromChannel, DTSNew)
     where
       jobScope = forwardToJobScope forwardScope
       (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag forwardScope
@@ -3041,8 +3041,8 @@ getNextDeliveryTasksBatch db deliveryScope groupType = do
                   |]
                   (Only taskId)
               where
-                toMessageForwardTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, MessageFromChannel) -> MessageForwardTask
-                toMessageForwardTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel) =
+                toMessageForwardTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt) -> MessageForwardTask
+                toMessageForwardTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel) =
                   MessageForwardTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
         (taskId :| [], DJTRelayRemoved) ->
           firstRow (DTBRelayRemoved . toRelayRemovedTask) (SEDeliveryTaskNotFound taskId) $

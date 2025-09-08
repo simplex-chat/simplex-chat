@@ -115,6 +115,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250729_member_contact_requests
           Simplex.Chat.Store.Postgres.Migrations.M20250801_via_group_link_uri
           Simplex.Chat.Store.Postgres.Migrations.M20250802_chat_peer_type
+          Simplex.Chat.Store.Postgres.Migrations.M20250813_delivery_tasks
   else
       exposed-modules:
           Simplex.Chat.Archive
