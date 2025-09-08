@@ -52,7 +52,7 @@
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új, véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
-    <string name="app_version_code">Az alkalmazás összeállítási száma: %s</string>
+    <string name="app_version_code">Alkalmazás összeállítási száma: %s</string>
     <string name="audio_video_calls">Hang- és videóhívások</string>
     <string name="network_settings">Speciális hálózati beállítások</string>
     <string name="allow_your_contacts_to_send_voice_messages">A hangüzenetek küldése engedélyezve van a partnerei számára.</string>
@@ -63,7 +63,7 @@
     <string name="connect_plan_already_connecting">Kapcsolódás folyamatban!</string>
     <string name="cannot_receive_file">Nem lehet fogadni a fájlt</string>
     <string name="auth_unavailable">Hitelesítés elérhetetlen</string>
-    <string name="app_version_title">Az alkalmazás verziója</string>
+    <string name="app_version_title">Alkalmazás verziója</string>
     <string name="button_add_welcome_message">Üdvözlőüzenet hozzáadása</string>
     <string name="snd_conn_event_ratchet_sync_started">titkosítás elfogadása %s számára…</string>
     <string name="available_in_v51">\nElérhető az v5.1-es kiadásban</string>
@@ -161,7 +161,7 @@
     <string name="both_you_and_your_contact_can_make_calls">Mindkét fél tud hívásokat kezdeményezni.</string>
     <string name="la_auth_failed">Sikertelen hitelesítés</string>
     <string name="block_member_desc">%s összes új üzenete el lesz rejtve!</string>
-    <string name="app_version_name">Az alkalmazás verziója: v%s</string>
+    <string name="app_version_name">Alkalmazás verziója: v%s</string>
     <string name="allow_calls_only_if">A hívások kezdeményezése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
     <string name="smp_servers_add">Kiszolgáló hozzáadása</string>
     <string name="icon_descr_audio_on">Hang bekapcsolva</string>
@@ -882,7 +882,7 @@
     <string name="rcv_group_event_open_chat">Megnyitás</string>
     <string name="network_option_protocol_timeout">Protokoll időtúllépése</string>
     <string name="secret_text">titok</string>
-    <string name="settings_notification_preview_mode_title">Értesítések előnézetének megjelenítése</string>
+    <string name="settings_notification_preview_mode_title">Értesítésekben megjelenő információk</string>
     <string name="callstate_waiting_for_confirmation">várakozás a visszaigazolásra…</string>
     <string name="stop_file__action">Fájl megállítása</string>
     <string name="description_via_group_link">a csoporthivatkozáson keresztül</string>
@@ -1543,7 +1543,7 @@
     <string name="developer_options_section">Fejlesztői beállítások</string>
     <string name="possible_slow_function_desc">A funkció végrehajtása túl sokáig tart: %1$d másodperc: %2$s</string>
     <string name="remote_host_error_busy"><![CDATA[A(z) <b>%s</b> hordozható eszköz elfoglalt]]></string>
-    <string name="past_member_vName">%1$s tag</string>
+    <string name="past_member_vName">%1$s ismeretlen vagy már nem tag</string>
     <string name="group_member_status_unknown">ismeretlen állapot</string>
     <string name="profile_update_event_member_name_changed">%1$s a következőre módosította a nevét: %2$s</string>
     <string name="profile_update_event_removed_address">eltávolította a kapcsolattartási címet</string>
@@ -2393,7 +2393,7 @@
     <string name="cant_send_message_rejected">csatlakozási kérés elutasítva</string>
     <string name="cant_send_message_you_left">Ön elhagyta a csoportot</string>
     <string name="cant_send_message_member_has_old_version">a tag régi verziót használ</string>
-    <string name="error_deleting_member_support_chat">Hiba a taggal való csevegés törlésekor</string>
+    <string name="error_deleting_member_support_chat">Hiba a csevegés törlésekor</string>
     <string name="cant_send_message_alert_title">Ön nem tud üzeneteket küldeni!</string>
     <string name="cant_send_message_contact_not_ready">a partner nem áll készen</string>
     <string name="cant_send_message_contact_not_synchronized">nincs szinkronizálva</string>
@@ -2499,4 +2499,7 @@
     <string name="privacy_chat_list_open_full_web_link">Teljes hivatkozás megnyitása</string>
     <string name="sanitize_links_toggle">Nyomonkövetési paraméterek eltávolítása a hivatkozásokból</string>
     <string name="simplex_link_relay">SimpleX továbbítókiszolgáló-hivatkozás</string>
+    <string name="error_marking_member_support_chat_read">Hiba a csevegés olvasottként való megjelölésekor</string>
+    <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
 </resources>

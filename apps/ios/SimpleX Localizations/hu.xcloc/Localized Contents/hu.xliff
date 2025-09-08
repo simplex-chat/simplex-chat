@@ -1014,7 +1014,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="App build: %@" xml:space="preserve">
         <source>App build: %@</source>
-        <target>Az alkalmazás összeállítási száma: %@</target>
+        <target>Alkalmazás összeállítási száma: %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App data migration" xml:space="preserve">
@@ -1054,12 +1054,12 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="App version" xml:space="preserve">
         <source>App version</source>
-        <target>Az alkalmazás verziója</target>
+        <target>Alkalmazás verziója</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="App version: v%@" xml:space="preserve">
         <source>App version: v%@</source>
-        <target>Az alkalmazás verziója: v%@</target>
+        <target>Alkalmazás verziója: v%@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Appearance" xml:space="preserve">
@@ -4915,6 +4915,7 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
       </trans-unit>
       <trans-unit id="Member %@" xml:space="preserve">
         <source>Member %@</source>
+        <target>%@ ismeretlen vagy már nem tag</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -7611,7 +7612,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Show preview" xml:space="preserve">
         <source>Show preview</source>
-        <target>Értesítések előnézetének megjelenítése</target>
+        <target>Értesítésekben megjelenő információk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Show → on messages sent via private routing." xml:space="preserve">

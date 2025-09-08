@@ -3644,6 +3644,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Error: %@." xml:space="preserve">
         <source>Error: %@.</source>
+        <target>Ошибка: %@.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
@@ -3872,10 +3873,12 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
         <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <target>Хэш в адресе сервера назначения не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <target>Хэш в адресе пересылающего сервера не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
@@ -3885,6 +3888,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
         <source>Fingerprint in server address does not match certificate: %@.</source>
+        <target>Хэш в адресе сервера не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -4914,6 +4918,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Member %@" xml:space="preserve">
         <source>Member %@</source>
+        <target>Член группы %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -7730,6 +7735,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX relay link" xml:space="preserve">
         <source>SimpleX relay link</source>
+        <target>Ссылка SimpleX relay</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">

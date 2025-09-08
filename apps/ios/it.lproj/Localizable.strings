@@ -2266,10 +2266,10 @@ chat item action */
 "Error decrypting file" = "Errore decifrando il file";
 
 /* alert title */
-"Error deleting chat database" = "Errore nell'eliminazione del database della chat";
+"Error deleting chat" = "Errore di eliminazione della chat con il membro";
 
 /* alert title */
-"Error deleting chat" = "Errore di eliminazione della chat con il membro";
+"Error deleting chat database" = "Errore nell'eliminazione del database della chat";
 
 /* alert title */
 "Error deleting chat!" = "Errore nell'eliminazione della chat!";
@@ -2572,6 +2572,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Trova le chat più velocemente";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
 
 /* No comment provided by engineer. */
 "Fix" = "Correggi";
@@ -3256,6 +3259,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member" = "Membro";
+
+/* past/unknown group member */
+"Member %@" = "Membro %@";
 
 /* profile update event chat item */
 "member %@ changed to %@" = "il membro %1$@ è diventato %2$@";
@@ -4071,9 +4077,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Porta";
-
-/* server test error */
-"Fingerprint in server address does not match certificate." = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserva la bozza dell'ultimo messaggio, con gli allegati.";
@@ -6350,3 +6353,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Il tuo indirizzo SimpleX";
+

@@ -692,7 +692,7 @@
     <string name="invalid_qr_code">Kode QR tidak valid</string>
     <string name="switching_profile_error_title">Kesalahan saat mengganti profil</string>
     <string name="tap_to_paste_link">Ketuk untuk tempel tautan</string>
-    <string name="switching_profile_error_message">Koneksi Anda dipindahkan ke %s tetapi terjadi kesalahan tak terduga saat mengarahkan Anda ke profil.</string>
+    <string name="switching_profile_error_message">Koneksi Anda dipindahkan ke %s tetapi gagal saat mengarahkan Anda ke profil.</string>
     <string name="send_us_an_email">Kirim kami email</string>
     <string name="chat_with_the_founder">Kirim pertanyaan dan ide</string>
     <string name="chat_lock">Kunci SimpleX</string>
@@ -2375,7 +2375,7 @@
     <string name="cant_send_message_group_deleted">grup telah dihapus</string>
     <string name="snd_group_event_user_pending_review">Silakan tunggu pengurus grup untuk meninjau permintaanmu untuk bergabung ke grup</string>
     <string name="reviewed_by_admins">ditinjau oleh pengurus</string>
-    <string name="add_short_link">Tambah tautan singkat</string>
+    <string name="add_short_link">Tingkatkan tautan</string>
     <string name="rcv_group_event_user_accepted">menerimamu</string>
     <string name="rcv_group_event_member_accepted">diterima %1$s</string>
     <string name="set_member_admission">Atur penerimaan anggota</string>
@@ -2478,4 +2478,29 @@
     <string name="group_short_descr_field">Deskripsi singkat:</string>
     <string name="v6_4_1_short_address">Alamat singkat SimpleX</string>
     <string name="simplex_link_relay">Tautan relay SimpleX</string>
+    <string name="v6_4_1_welcome_contacts">Sambut kontak Anda 👋</string>
+    <string name="short_descr">Bio Anda:</string>
+    <string name="chat_banner_your_business_contact">Kontak bisnis Anda</string>
+    <string name="chat_banner_your_contact">Kontak Anda</string>
+    <string name="chat_banner_your_group">Grup Anda</string>
+    <string name="context_user_picker_your_profile">Profil Anda</string>
+    <string name="chat_banner_connect_to_chat">Ketuk Hubungkan untuk chat</string>
+    <string name="chat_banner_send_request_to_connect">Tekan Hubungkan untuk kirim permintaan</string>
+    <string name="chat_banner_connect_to_use_bot">Tekan Hubungkan untuk gunakan bot</string>
+    <string name="chat_banner_join_group">Tekan Gabung grup</string>
+    <string name="network_option_tcp_connection_timeout_background">Batas waktu koneksi TCP bg</string>
+    <string name="share_profile_via_link_alert_text">Alamat akan singkat, dan profil Anda akan dibagikan melalui alamat tersebut.</string>
+    <string name="share_group_profile_via_link_alert_text">Tautan akan singkat, dan profil grup akan dibagikan melalui tautan tersebut.</string>
+    <string name="the_sender_will_not_be_notified">Pengirim TIDAK akan diberi tahu.</string>
+    <string name="this_setting_is_for_your_current_profile">Pengaturan ini untuk profil Anda saat ini</string>
+    <string name="time_to_disappear_is_set_only_for_new_contacts">Waktu menghilang hanya diatur untuk kontak baru.</string>
+    <string name="cant_send_commands_alert_text">Untuk mengirim perintah, Anda harus terhubung.</string>
+    <string name="context_user_picker_cant_change_profile_alert_message">Untuk menggunakan profil lain setelah mencoba hubungkan, hapus chat dan gunakan tautan lagi.</string>
+    <string name="v6_4_1_short_address_update">Perbarui alamat Anda</string>
+    <string name="share_profile_via_link_alert_confirm">Tingkatkan</string>
+    <string name="share_profile_via_link">Tingkatkan alamat?</string>
+    <string name="upgrade_group_link">Tingkatkan tautan grup</string>
+    <string name="share_group_profile_via_link">Tingkatkan tautan grup?</string>
+    <string name="connect_use_incognito_profile">Gunakan profil samaran</string>
+    <string name="address_welcome_message">Pesan sambutan</string>
 </resources>

@@ -2486,7 +2486,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete chat with member?" xml:space="preserve">
         <source>Delete chat with member?</source>
-        <target>¿Eliminar chat con el miembro?</target>
+        <target>¿Eliminar chat con miembro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -3062,7 +3062,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
-        <target>¿Activar notificación instantánea?</target>
+        <target>¿Activar notificaciones instantáneas?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
@@ -4915,6 +4915,7 @@ This is your link for group %@!</source>
       </trans-unit>
       <trans-unit id="Member %@" xml:space="preserve">
         <source>Member %@</source>
+        <target>Miembro %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -7984,7 +7985,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
-        <target>Tomar foto</target>
+        <target>Hacer foto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">

@@ -2248,10 +2248,10 @@ chat item action */
 "Error decrypting file" = "Помилка розшифрування файлу";
 
 /* alert title */
-"Error deleting chat database" = "Помилка видалення бази даних чату";
+"Error deleting chat" = "Помилка при видаленні чату з учасником";
 
 /* alert title */
-"Error deleting chat" = "Помилка при видаленні чату з учасником";
+"Error deleting chat database" = "Помилка видалення бази даних чату";
 
 /* alert title */
 "Error deleting chat!" = "Помилка видалення чату!";
@@ -2548,6 +2548,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Швидше знаходьте чати";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Можливо, в адресі сервера неправильно вказано відбиток сертифіката";
 
 /* No comment provided by engineer. */
 "Fix" = "Виправити";
@@ -4029,9 +4032,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Порт";
-
-/* server test error */
-"Fingerprint in server address does not match certificate." = "Можливо, в адресі сервера неправильно вказано відбиток сертифіката";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Зберегти чернетку останнього повідомлення з вкладеннями.";
@@ -6287,3 +6287,4 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваша адреса SimpleX";
+

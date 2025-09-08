@@ -869,6 +869,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow files and media only if your contact allows them." xml:space="preserve">
         <source>Allow files and media only if your contact allows them.</source>
+        <target>Dosyalara ve medyaya yalnızca iletişiminiz izin verdiğinde izin verin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow irreversible message deletion only if your contact allows it to you. (24 hours)" xml:space="preserve">
@@ -958,6 +959,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send files and media." xml:space="preserve">
         <source>Allow your contacts to send files and media.</source>
+        <target>Kişilerinizin dosya ve medya göndermesine izin verin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Allow your contacts to send voice messages." xml:space="preserve">
@@ -1322,6 +1324,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Bot" xml:space="preserve">
         <source>Bot</source>
+        <target>Bot</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can add message reactions." xml:space="preserve">
@@ -1346,6 +1349,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send files and media." xml:space="preserve">
         <source>Both you and your contact can send files and media.</source>
+        <target>Sen de kişilerin de medya ve dosya gönderebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Both you and your contact can send voice messages." xml:space="preserve">
@@ -2682,6 +2686,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Deprecated options" xml:space="preserve">
         <source>Deprecated options</source>
+        <target>Kullanımdan kaldırılan seçenekler</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Description" xml:space="preserve">
@@ -3552,6 +3557,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error setting auto-accept" xml:space="preserve">
         <source>Error setting auto-accept</source>
+        <target>Otomatik kabul ayarında hata</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error setting delivery receipts!" xml:space="preserve">
@@ -3821,6 +3827,7 @@ snd error text</note>
       </trans-unit>
       <trans-unit id="Files and media are prohibited in this chat." xml:space="preserve">
         <source>Files and media are prohibited in this chat.</source>
+        <target>Bu sohbette dosyalar ve medya yasaktır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Files and media are prohibited." xml:space="preserve">
@@ -4708,6 +4715,7 @@ Bu senin grup için bağlantın %@!</target>
       </trans-unit>
       <trans-unit id="Keep your chats clean" xml:space="preserve">
         <source>Keep your chats clean</source>
+        <target>Sohbetlerinizi temiz tutun</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep your connections" xml:space="preserve">
@@ -4907,6 +4915,7 @@ Bu senin grup için bağlantın %@!</target>
       </trans-unit>
       <trans-unit id="Member %@" xml:space="preserve">
         <source>Member %@</source>
+        <target>Üye%@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -4921,6 +4930,7 @@ Bu senin grup için bağlantın %@!</target>
       </trans-unit>
       <trans-unit id="Member is deleted - can't accept request" xml:space="preserve">
         <source>Member is deleted - can't accept request</source>
+        <target>Üye silinmiş - istek kabul edilemez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Member reports" xml:space="preserve">
@@ -5735,6 +5745,7 @@ VPN'nin etkinleştirilmesi gerekir.</target>
       </trans-unit>
       <trans-unit id="Only you can send files and media." xml:space="preserve">
         <source>Only you can send files and media.</source>
+        <target>Sadece sen dosya ve medya gönderebilirsin.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only you can send voice messages." xml:space="preserve">
@@ -5764,6 +5775,7 @@ VPN'nin etkinleştirilmesi gerekir.</target>
       </trans-unit>
       <trans-unit id="Only your contact can send files and media." xml:space="preserve">
         <source>Only your contact can send files and media.</source>
+        <target>Sadece kişilerin dosya ve medya gönderebilir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Only your contact can send voice messages." xml:space="preserve">
@@ -5798,6 +5810,7 @@ VPN'nin etkinleştirilmesi gerekir.</target>
       </trans-unit>
       <trans-unit id="Open clean link" xml:space="preserve">
         <source>Open clean link</source>
+        <target>Temiz linki aç</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open conditions" xml:space="preserve">
@@ -5807,6 +5820,7 @@ VPN'nin etkinleştirilmesi gerekir.</target>
       </trans-unit>
       <trans-unit id="Open full link" xml:space="preserve">
         <source>Open full link</source>
+        <target>Tam linki aç</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Open group" xml:space="preserve">
@@ -5851,6 +5865,7 @@ VPN'nin etkinleştirilmesi gerekir.</target>
       </trans-unit>
       <trans-unit id="Open to use bot" xml:space="preserve">
         <source>Open to use bot</source>
+        <target>Botu kullanmak için aç</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Opening app…" xml:space="preserve">
@@ -6590,6 +6605,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Remove link tracking" xml:space="preserve">
         <source>Remove link tracking</source>
+        <target>Bağlantı izlemeyi kaldır</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Remove member" xml:space="preserve">
@@ -7440,6 +7456,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
         <source>Set profile bio and welcome message.</source>
+        <target>Profil biyografisi ve hoşgeldiniz mesajı düzenle.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
@@ -7515,10 +7532,12 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share old address" xml:space="preserve">
         <source>Share old address</source>
+        <target>Eski adresi paylaş</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share old link" xml:space="preserve">
         <source>Share old link</source>
+        <target>Eski bağlantıyı paylaş</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Share profile" xml:space="preserve">
@@ -7543,10 +7562,12 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Share your address" xml:space="preserve">
         <source>Share your address</source>
+        <target>Adresini paylaş</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short SimpleX address" xml:space="preserve">
         <source>Short SimpleX address</source>
+        <target>Kısa SimpleX adresi</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Short description" xml:space="preserve">
@@ -7711,6 +7732,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="SimpleX relay link" xml:space="preserve">
         <source>SimpleX relay link</source>
+        <target>SimpleX aktarıcı bağlantısı</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
@@ -7978,6 +8000,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Tap Connect to use bot" xml:space="preserve">
         <source>Tap Connect to use bot</source>
+        <target>Botu kullanmak için Bağlan tuşuna bas</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">
@@ -8079,6 +8102,7 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
       </trans-unit>
       <trans-unit id="The address will be short, and your profile will be shared via the address." xml:space="preserve">
         <source>The address will be short, and your profile will be shared via the address.</source>
+        <target>Adres kısa olacak ve profiliniz bu adres üzerinden paylaşılacaktır.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The app can notify you when you receive messages or contact requests - please open settings to enable." xml:space="preserve">
@@ -8143,6 +8167,7 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
       </trans-unit>
       <trans-unit id="The link will be short, and group profile will be shared via the link." xml:space="preserve">
         <source>The link will be short, and group profile will be shared via the link.</source>
+        <target>Bağlantı kısa olacak ve grup profili bağlantı üzerinden paylaşılacaktır.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The message will be deleted for all members." xml:space="preserve">
@@ -8302,10 +8327,12 @@ Bazı hatalar nedeniyle veya bağlantı tehlikeye girdiğinde meydana gelebilir.
       </trans-unit>
       <trans-unit id="This setting is for your current profile **%@**." xml:space="preserve">
         <source>This setting is for your current profile **%@**.</source>
+        <target>Bu ayar, mevcut profiliniz içindir.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Time to disappear is set only for new contacts." xml:space="preserve">
         <source>Time to disappear is set only for new contacts.</source>
+        <target>Kaybolma süresi yalnızca yeni kişiler için ayarlanır.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Title" xml:space="preserve">
@@ -8392,6 +8419,7 @@ Bu özellik etkinleştirilmeden önce kimlik doğrulamayı tamamlamanız istenec
       </trans-unit>
       <trans-unit id="To send commands you must be connected." xml:space="preserve">
         <source>To send commands you must be connected.</source>
+        <target>Komut göndermek için bağlı olmanız gerekir.</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
@@ -8643,14 +8671,17 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       </trans-unit>
       <trans-unit id="Upgrade" xml:space="preserve">
         <source>Upgrade</source>
+        <target>Yükseltme</target>
         <note>alert button</note>
       </trans-unit>
       <trans-unit id="Upgrade address" xml:space="preserve">
         <source>Upgrade address</source>
+        <target>Adres güncelleme</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade address?" xml:space="preserve">
         <source>Upgrade address?</source>
+        <target>Adres güncellensin mi?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade and open chat" xml:space="preserve">
@@ -8660,14 +8691,17 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       </trans-unit>
       <trans-unit id="Upgrade group link?" xml:space="preserve">
         <source>Upgrade group link?</source>
+        <target>Grub linki güncellensin mi?</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="Upgrade link" xml:space="preserve">
         <source>Upgrade link</source>
+        <target>Linki güncelle</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upgrade your address" xml:space="preserve">
         <source>Upgrade your address</source>
+        <target>Adresini yükselt</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Upload errors" xml:space="preserve">
@@ -8767,6 +8801,7 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       </trans-unit>
       <trans-unit id="Use incognito profile" xml:space="preserve">
         <source>Use incognito profile</source>
+        <target>Gizli profil kullan</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Use new incognito profile" xml:space="preserve">
@@ -9006,6 +9041,7 @@ Bağlanmak için lütfen kişinizden başka bir bağlantı oluşturmasını iste
       </trans-unit>
       <trans-unit id="Welcome your contacts 👋" xml:space="preserve">
         <source>Welcome your contacts 👋</source>
+        <target>Kişilerine hoş geldin👋</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="What's new" xml:space="preserve">
@@ -10374,10 +10410,12 @@ time to disappear</note>
       </trans-unit>
       <trans-unit id="requested connection" xml:space="preserve">
         <source>requested connection</source>
+        <target>istenilen bağlantı</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="requested connection from group %@" xml:space="preserve">
         <source>requested connection from group %@</source>
+        <target>%@ grubundan bağlantı isteği</target>
         <note>rcv direct event chat item</note>
       </trans-unit>
       <trans-unit id="requested to connect" xml:space="preserve">

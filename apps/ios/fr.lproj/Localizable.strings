@@ -2465,6 +2465,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Recherche de message plus rapide";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
+
 /* No comment provided by engineer. */
 "Fix" = "Réparer";
 
@@ -3750,9 +3753,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Port";
-
-/* server test error */
-"Fingerprint in server address does not match certificate." = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserver le brouillon du dernier message, avec les pièces jointes.";
@@ -5743,3 +5743,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
+

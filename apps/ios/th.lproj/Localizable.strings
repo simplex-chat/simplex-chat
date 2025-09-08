@@ -1380,6 +1380,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "ค้นหาแชทได้เร็วขึ้น";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
+
 /* No comment provided by engineer. */
 "Fix" = "แก้ไข";
 
@@ -2179,9 +2182,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Polish interface" = "อินเตอร์เฟซภาษาโปแลนด์";
-
-/* server test error */
-"Fingerprint in server address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "เก็บข้อความที่ร่างไว้ล่าสุดพร้อมไฟล์แนบ";
@@ -3305,3 +3305,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "ที่อยู่ SimpleX ของคุณ";
+
