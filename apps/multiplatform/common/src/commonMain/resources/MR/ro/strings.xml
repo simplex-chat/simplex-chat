@@ -200,7 +200,7 @@
     <string name="saved_chat_item_info_tab">Salvat</string>
     <string name="saved_from_chat_item_info_title">Salvat din</string>
     <string name="sync_connection_force_confirm">Renegociază</string>
-    <string name="smp_servers_save">Salvați serverele</string>
+    <string name="smp_servers_save">Salvează serverele</string>
     <string name="saved_ICE_servers_will_be_removed">Serverele ICE WebRTC salvate vor fi eliminate.</string>
     <string name="save_profile_password">Salvează parola profilului</string>
     <string name="save_passphrase_and_open_chat">Salvează parola și deschide conversația</string>
@@ -225,7 +225,7 @@
     <string name="network_options_save">Salvează</string>
     <string name="reveal_verb">Arată</string>
     <string name="reject_contact_button">Respinge</string>
-    <string name="smp_save_servers_question">Salvați serverele?</string>
+    <string name="smp_save_servers_question">Salvezi serverele?</string>
     <string name="icon_descr_call_rejected">Apel respins</string>
     <string name="saved_message_title">Mesaj salvat</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Repornește aplicația pentru a crea un profil de conversație nou.</string>
