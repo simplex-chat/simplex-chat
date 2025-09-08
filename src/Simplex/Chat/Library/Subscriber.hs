@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (foldl')
+import Data.List (find, foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -898,9 +898,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
           newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' m' tags eInfo) [] aChatMsgs
-          when (isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)) $
-            createForwardTasks gInfo' m' newDeliveryTasks
-          let shouldDelConns = any ((== DJTRelayRemoved) . jobTag) newDeliveryTasks
+          shouldDelConns <-
+            if isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)
+              then createForwardTasks gInfo' m' newDeliveryTasks
+              else pure False
           withRcpt <- checkSendRcpt $ rights aChatMsgs
           pure (withRcpt, shouldDelConns)
         where
@@ -990,18 +991,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               aChatMsgHasReceipt (ACMsg _ ChatMessage {chatMsgEvent}) =
                 hasDeliveryReceipt (toCMEventTag chatMsgEvent)
-          createForwardTasks :: GroupInfo -> GroupMember -> [NewGroupDeliveryTask] -> CM ()
+          createForwardTasks :: GroupInfo -> GroupMember -> [NewGroupDeliveryTask] -> CM ShouldDeleteGroupConns
           createForwardTasks gInfo'@GroupInfo {groupId = gId} m' newDeliveryTasks = do
-            -- TODO [channels fwd] if any task is DJTRelayRemoved, remove all tasks for worker scope and only create that one
-            withStore' $ \db ->
-              forM_ newDeliveryTasks $ \newTask ->
-                createNewDeliveryTask db gInfo' m' newTask
-            lift $ forM_ uniqueScopes $ \scope ->
+            let relayRemovedTask_ = find ((== DJTRelayRemoved) . jobTag) newDeliveryTasks
+            createdDeliveryTasks <- case relayRemovedTask_ of
+              Nothing -> do
+                withStore' $ \db ->
+                  forM_ newDeliveryTasks $ \newTask ->
+                    createNewDeliveryTask db gInfo' m' newTask
+                pure newDeliveryTasks
+              Just relayRemovedTask -> do
+                -- if relay is removed, delete all other tasks and jobs
+                withStore' $ \db -> do
+                  deleteGroupDeliveryTasks db gInfo'
+                  deleteGroupDeliveryJobs db gInfo'
+                  createNewDeliveryTask db gInfo' m' relayRemovedTask
+                pure [relayRemovedTask]
+            lift $ forM_ (uniqueScopes createdDeliveryTasks) $ \scope ->
               getDeliveryTaskWorker True (gId, scope)
+            pure $ isJust relayRemovedTask_
             where
-              uniqueScopes :: [DeliveryJobScope]
-              uniqueScopes =
-                let scopes = map (\NewGroupDeliveryTask {forwardScope} -> forwardToJobScope forwardScope) newDeliveryTasks
+              uniqueScopes :: [NewGroupDeliveryTask] -> [DeliveryJobScope]
+              uniqueScopes createdDeliveryTasks =
+                let scopes = map (\NewGroupDeliveryTask {forwardScope} -> forwardToJobScope forwardScope) createdDeliveryTasks
                  in foldr addScope [] scopes
                 where
                   addScope scope acc

@@ -156,6 +156,8 @@ module Simplex.Chat.Store.Groups
     getUserGroupsToExpire,
     updateGroupAlias,
     createNewDeliveryTask,
+    deleteGroupDeliveryTasks,
+    deleteGroupDeliveryJobs,
     getPendingDeliveryTaskScopes,
     getNextDeliveryTasksBatch,
     createMessageForwardJob,
@@ -2933,6 +2935,14 @@ createNewDeliveryTask
     where
       jobScope = forwardToJobScope forwardScope
       (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag forwardScope
+
+deleteGroupDeliveryTasks :: DB.Connection -> GroupInfo -> IO ()
+deleteGroupDeliveryTasks db GroupInfo {groupId} =
+  DB.execute db "DELETE FROM delivery_tasks WHERE group_id = ?" (Only groupId)
+
+deleteGroupDeliveryJobs :: DB.Connection -> GroupInfo -> IO ()
+deleteGroupDeliveryJobs db GroupInfo {groupId} =
+  DB.execute db "DELETE FROM delivery_jobs WHERE group_id = ?" (Only groupId)
 
 getPendingDeliveryTaskScopes :: DB.Connection -> IO [DeliveryWorkerScope]
 getPendingDeliveryTaskScopes db =
