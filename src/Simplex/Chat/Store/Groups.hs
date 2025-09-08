@@ -3081,7 +3081,7 @@ createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ deliveryBody
         delivery_body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_, deliveryBody, DJSNew, currentTs, currentTs)
+    (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, singleSenderGMId_, Binary deliveryBody, DJSNew, currentTs, currentTs)
   where
     (groupId, jobScope) = deliveryScope
     (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag fwdScope
@@ -3098,7 +3098,7 @@ createRelayRemovedJob db deliveryScope singleSenderGMId deliveryBody = do
         delivery_body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?)
     |]
-    (groupId, jobScope, DJTRelayRemoved, singleSenderGMId, deliveryBody, DJSNew, currentTs, currentTs)
+    (groupId, jobScope, DJTRelayRemoved, singleSenderGMId, Binary deliveryBody, DJSNew, currentTs, currentTs)
   where
     (groupId, jobScope) = deliveryScope
 
@@ -3166,8 +3166,8 @@ getNextDeliveryJob db deliveryScope = do
           |]
           (Only jobId)
       where
-        toDeliveryJob :: (DeliveryJobTag, Maybe GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, ByteString, Maybe GroupMemberId) -> Either StoreError DeliveryJob
-        toDeliveryJob (jobTag, fwdScopeTag_, fwdScopeGMId_, singleSenderGMId_, deliveryBody, cursorGMId) =
+        toDeliveryJob :: (DeliveryJobTag, Maybe GroupForwardScopeTag, Maybe GroupMemberId, Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId) -> Either StoreError DeliveryJob
+        toDeliveryJob (jobTag, fwdScopeTag_, fwdScopeGMId_, singleSenderGMId_, Binary deliveryBody, cursorGMId) =
           case jobTag of
             DJTMessageForward -> case fwdScopeTag_ >>= (`forwardTagToScope` fwdScopeGMId_) of
               Nothing -> Left $ SEInvalidDeliveryJob jobId
