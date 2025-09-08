@@ -150,9 +150,9 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
-  -- TODO [channels fwd] test forwarding batched messages
   describe "group message forwarding" $ do
-    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
+    it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
@@ -4834,8 +4834,8 @@ testMemberContactAcceptIncognito =
       cath ?#> ("@" <> bobIncognito <> " hey")
       bob ?<# (cathIncognito <> "> hey")
 
-testGroupMsgForward :: HasCallStack => TestParams -> IO ()
-testGroupMsgForward =
+testGroupMsgForwardMessage :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
@@ -4862,6 +4862,61 @@ testGroupMsgForward =
       cath ##> "/tail #team 2"
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
+
+testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardBatched =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 3\"}}]"
+      bob <# "#team test 1"
+      bob <# "#team test 2"
+      bob <# "#team test 3"
+      alice <# "#team bob> test 1"
+      alice <# "#team bob> test 2"
+      alice <# "#team bob> test 3"
+      cath <# "#team bob> test 1 [>>]"
+      cath <# "#team bob> test 2 [>>]"
+      cath <# "#team bob> test 3 [>>]"
+
+      threadDelay 1000000
+
+      cath ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 4\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 5\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 6\"}}]"
+      cath <# "#team test 4"
+      cath <# "#team test 5"
+      cath <# "#team test 6"
+      alice <# "#team cath> test 4"
+      alice <# "#team cath> test 5"
+      alice <# "#team cath> test 6"
+      bob <# "#team cath> test 4 [>>]"
+      bob <# "#team cath> test 5 [>>]"
+      bob <# "#team cath> test 6 [>>]"
+
+      alice ##> "/tail #team 6"
+      alice <# "#team bob> test 1"
+      alice <# "#team bob> test 2"
+      alice <# "#team bob> test 3"
+      alice <# "#team cath> test 4"
+      alice <# "#team cath> test 5"
+      alice <# "#team cath> test 6"
+
+      bob ##> "/tail #team 6"
+      bob <# "#team test 1"
+      bob <# "#team test 2"
+      bob <# "#team test 3"
+      bob <# "#team cath> test 4 [>>]"
+      bob <# "#team cath> test 5 [>>]"
+      bob <# "#team cath> test 6 [>>]"
+
+      cath ##> "/tail #team 6"
+      cath <# "#team bob> test 1 [>>]"
+      cath <# "#team bob> test 2 [>>]"
+      cath <# "#team bob> test 3 [>>]"
+      cath <# "#team test 4"
+      cath <# "#team test 5"
+      cath <# "#team test 6"
 
 testGroupMsgForwardReport :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReport =

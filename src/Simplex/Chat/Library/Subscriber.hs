@@ -897,7 +897,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- possible improvement is to choose scope based on event (some events specify scope)
           (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
           checkIntegrityCreateItem (CDGroupRcv gInfo' scopeInfo m') msgMeta `catchAllErrors` \_ -> pure ()
-          newDeliveryTasks <- foldM (processAChatMsg gInfo' m' tags eInfo) [] aChatMsgs
+          newDeliveryTasks <- reverse <$> foldM (processAChatMsg gInfo' m' tags eInfo) [] aChatMsgs
           when (isUserGrpFwdRelay gInfo' && not (blockedByAdmin m)) $
             createForwardTasks gInfo' m' newDeliveryTasks
           let shouldDelConns = any ((== DJTRelayRemoved) . jobTag) newDeliveryTasks
