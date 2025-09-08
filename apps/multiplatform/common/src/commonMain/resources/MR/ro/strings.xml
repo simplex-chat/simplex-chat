@@ -1216,7 +1216,7 @@
     <string name="v5_4_better_groups_descr">Conectare mai rapidă și mesaje mai de încredere.</string>
     <string name="v5_1_japanese_portuguese_interface">Interfață în japoneză și portugheză</string>
     <string name="v5_5_new_interface_languages">Interfață de utilizator maghiară și turcă</string>
-    <string name="v5_7_forward">Redirecționați și salvați mesajele</string>
+    <string name="v5_7_forward">Redirecționează și salvează mesajele</string>
     <string name="v6_2_network_decentralization_enable_flux">Activează Flux în setările Rețea și servere pentru o mai bună confidențialitate a metadatelor.</string>
     <string name="v6_2_network_decentralization_enable_flux_reason">pentru o mai bună confidențialitate a metadatelor.</string>
     <string name="v6_1_forward_many_messages_descr">Redirecționați până la 20 de mesaje simultan.</string>
@@ -2241,7 +2241,7 @@
     <string name="you_can_still_view_conversation_with_contact">Puteți vizualiza în continuare conversația cu %1$s în lista de conversații.</string>
     <string name="operator_conditions_accepted">Condiții acceptate</string>
     <string name="operator_same_conditions_will_apply_to_operators"><![CDATA[Aceleași condiții se vor aplica operatorului(ilor): <b>%s</b>.]]></string>
-    <string name="n_file_errors">%1$d eroare(erori) de fișier:\n%2$s</string>
+    <string name="n_file_errors">%1$d erori de fișier:\n%2$s</string>
     <string name="connection_error_blocked">Conexiune blocată</string>
     <string name="connection_error_blocked_desc">Conexiunea este blocată de operatorul serverului:\n%1$s.</string>
     <string name="all_message_and_files_e2e_encrypted"><![CDATA[Toate mesajele și fișierele sunt trimise <b>criptate end-to-end</b>, cu securitate post-cuantică în mesajele directe.]]></string>
