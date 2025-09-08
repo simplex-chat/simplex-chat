@@ -2981,7 +2981,7 @@ new chat action */
 "Polish interface" = "Полски интерфейс";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
+"Fingerprint in server address does not match certificate." = "Въжможно е пръстовият отпечатък на сертификата в адреса на сървъра да е неправилен";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Запазете последната чернова на съобщението с прикачени файлове.";
@@ -3470,10 +3470,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Изпратените съобщения ще бъдат изтрити след зададеното време.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Сървърът изисква оторизация за създаване на опашки, проверете паролата";
+"Server requires authorization to create queues, check password." = "Сървърът изисква оторизация за създаване на опашки, проверете паролата";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Сървърът изисква оторизация за качване, проверете паролата";
+"Server requires authorization to upload, check password." = "Сървърът изисква оторизация за качване, проверете паролата";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Тестът на сървъра е неуспешен!";
@@ -4453,4 +4453,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Вашият адрес в SimpleX";
-

@@ -6069,8 +6069,8 @@ Fout: %@</target>
         <target>Poort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
         <target>Mogelijk is de certificaat vingerafdruk in het server adres onjuist</target>
         <note>server test error</note>
       </trans-unit>
@@ -7278,13 +7278,13 @@ chat item action</note>
         <target>Serverprotocol gewijzigd.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <target>Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
-        <source>Server requires authorization to upload, check password</source>
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+        <source>Server requires authorization to upload, check password.</source>
         <target>Server vereist autorisatie om te uploaden, wachtwoord controleren</target>
         <note>server test error</note>
       </trans-unit>

@@ -4073,7 +4073,7 @@ new chat action */
 "Port" = "Порт";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Возможно, хэш сертификата в адресе сервера неверный";
+"Fingerprint in server address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Сохранить последний черновик, вместе с вложениями.";
@@ -4877,10 +4877,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "информация сервера об очереди: %1$@\n\nпоследнее полученное сообщение: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Сервер требует авторизации для создания очередей, проверьте пароль";
+"Server requires authorization to create queues, check password." = "Сервер требует авторизации для создания очередей, проверьте пароль";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Сервер требует авторизации для загрузки, проверьте пароль";
+"Server requires authorization to upload, check password." = "Сервер требует авторизации для загрузки, проверьте пароль";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Ошибка теста сервера!";
@@ -6347,4 +6347,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Ваш адрес SimpleX";
-

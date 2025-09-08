@@ -4073,7 +4073,7 @@ new chat action */
 "Port" = "Puerto";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Posiblemente la huella del certificado en la dirección del servidor es incorrecta";
+"Fingerprint in server address does not match certificate." = "Posiblemente la huella del certificado en la dirección del servidor es incorrecta";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserva el último borrador del mensaje con los datos adjuntos.";
@@ -4877,10 +4877,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "información cola del servidor: %1$@\n\núltimo mensaje recibido: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "El servidor requiere autorización para crear colas, comprueba la contraseña";
+"Server requires authorization to create queues, check password." = "El servidor requiere autorización para crear colas, comprueba la contraseña";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "El servidor requiere autorización para subir, comprueba la contraseña";
+"Server requires authorization to upload, check password." = "El servidor requiere autorización para subir, comprueba la contraseña";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "¡Prueba no superada!";
@@ -6350,4 +6350,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Mi dirección SimpleX";
-

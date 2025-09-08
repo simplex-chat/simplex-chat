@@ -6112,8 +6112,8 @@ Error: %@</target>
         <target>Puerto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
         <target>Posiblemente la huella del certificado en la dirección del servidor es incorrecta</target>
         <note>server test error</note>
       </trans-unit>
@@ -7332,13 +7332,13 @@ chat item action</note>
         <target>El protocolo del servidor ha cambiado.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <target>El servidor requiere autorización para crear colas, comprueba la contraseña</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
-        <source>Server requires authorization to upload, check password</source>
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+        <source>Server requires authorization to upload, check password.</source>
         <target>El servidor requiere autorización para subir, comprueba la contraseña</target>
         <note>server test error</note>
       </trans-unit>
