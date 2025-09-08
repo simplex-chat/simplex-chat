@@ -161,11 +161,13 @@ module Simplex.Chat.Store.Groups
     createMessageForwardJob,
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
+    deleteDoneDeliveryTasks,
     getPendingDeliveryJobScopes,
     getNextDeliveryJob,
     updateDeliveryJobStatus,
     getGroupMembersByCursor,
     updateDeliveryJobCursor,
+    deleteDoneDeliveryJobs,
   )
 where
 
@@ -3108,6 +3110,17 @@ updateDeliveryTaskStatus db taskId status = do
     "UPDATE delivery_tasks SET task_status = ?, updated_at = ? WHERE delivery_task_id = ?"
     (status, currentTs, taskId)
 
+deleteDoneDeliveryTasks :: DB.Connection -> UTCTime -> IO ()
+deleteDoneDeliveryTasks db createdAtCutoff = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM delivery_tasks
+      WHERE created_at <= ?
+        AND (task_status IN (?,?) OR failed = 1)
+    |]
+    (createdAtCutoff, DTSProcessed, DTSError)
+
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerScope]
 getPendingDeliveryJobScopes db =
   DB.query
@@ -3208,5 +3221,16 @@ updateDeliveryJobCursor db jobId cursorGMId = do
     db
     "UPDATE delivery_jobs SET cursor_group_member_id = ?, updated_at = ? WHERE delivery_job_id = ?"
     (cursorGMId, currentTs, jobId)
+
+deleteDoneDeliveryJobs :: DB.Connection -> UTCTime -> IO ()
+deleteDoneDeliveryJobs db createdAtCutoff = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM delivery_jobs
+      WHERE created_at <= ?
+        AND (job_status IN (?,?) OR failed = 1)
+    |]
+    (createdAtCutoff, DJSComplete, DJSError)
 
 $(J.deriveJSON defaultJSON ''GroupLink)

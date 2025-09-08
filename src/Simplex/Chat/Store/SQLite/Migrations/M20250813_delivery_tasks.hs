@@ -74,7 +74,7 @@ CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(sender_
 CREATE INDEX idx_delivery_tasks_forward_scope_group_member_id ON delivery_tasks(forward_scope_group_member_id);
 CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
 
-CREATE INDEX idx_delivery_tasks_created_at_task_status ON delivery_tasks(created_at, task_status);
+CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 
 
 
@@ -98,7 +98,7 @@ CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(forward_scope_group_member_id);
 CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(single_sender_group_member_id);
 
-CREATE INDEX idx_delivery_jobs_created_at_job_status ON delivery_jobs(created_at, job_status);
+CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 
 
 
@@ -119,7 +119,7 @@ ALTER TABLE groups DROP COLUMN group_type;
 DROP INDEX idx_delivery_jobs_group_id;
 DROP INDEX idx_delivery_jobs_forward_scope_group_member_id;
 DROP INDEX idx_delivery_jobs_single_sender_group_member_id;
-DROP INDEX idx_delivery_jobs_created_at_job_status;
+DROP INDEX idx_delivery_jobs_created_at;
 
 DROP TABLE delivery_jobs;
 
@@ -129,7 +129,7 @@ DROP INDEX idx_delivery_tasks_group_id;
 DROP INDEX idx_delivery_tasks_sender_group_member_id;
 DROP INDEX idx_delivery_tasks_forward_scope_group_member_id;
 DROP INDEX idx_delivery_tasks_message_id;
-DROP INDEX idx_delivery_tasks_created_at_task_status;
+DROP INDEX idx_delivery_tasks_created_at;
 
 DROP TABLE delivery_tasks;
 |]
