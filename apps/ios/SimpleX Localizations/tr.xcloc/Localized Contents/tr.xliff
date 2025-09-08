@@ -3355,8 +3355,8 @@ chat item action</note>
         <target>Sohbet veritabanı silinirken sorun oluştu</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
-        <source>Error deleting chat with member</source>
+      <trans-unit id="Error deleting chat" xml:space="preserve">
+        <source>Error deleting chat</source>
         <target>Üye ile sohbet silme hatası</target>
         <note>alert title</note>
       </trans-unit>

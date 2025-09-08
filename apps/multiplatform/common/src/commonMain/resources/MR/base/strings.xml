@@ -170,8 +170,8 @@
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="error_accepting_member">Error accepting member</string>
-  <string name="error_marking_member_support_chat_read">Error marking chat with member as read</string>
-  <string name="error_deleting_member_support_chat">Error deleting chat with member</string>
+  <string name="error_marking_member_support_chat_read">Error marking read</string>
+  <string name="error_deleting_member_support_chat">Error deleting chat</string>
   <string name="cannot_receive_file">Cannot receive file</string>
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
   <string name="file_not_approved_title">Unknown servers!</string>

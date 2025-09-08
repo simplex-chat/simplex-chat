@@ -2269,7 +2269,7 @@ chat item action */
 "Error deleting chat database" = "Error al eliminar base de datos";
 
 /* alert title */
-"Error deleting chat with member" = "Error al eliminar el chat con el miembro";
+"Error deleting chat" = "Error al eliminar el chat con el miembro";
 
 /* alert title */
 "Error deleting chat!" = "¡Error al eliminar chat!";

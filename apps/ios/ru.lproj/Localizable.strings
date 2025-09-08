@@ -2269,7 +2269,7 @@ chat item action */
 "Error deleting chat database" = "Ошибка при удалении данных чата";
 
 /* alert title */
-"Error deleting chat with member" = "Ошибка при удалении чата с членом группы";
+"Error deleting chat" = "Ошибка при удалении чата с членом группы";
 
 /* alert title */
 "Error deleting chat!" = "Ошибка при удалении чата!";

@@ -2251,7 +2251,7 @@ chat item action */
 "Error deleting chat database" = "Помилка видалення бази даних чату";
 
 /* alert title */
-"Error deleting chat with member" = "Помилка при видаленні чату з учасником";
+"Error deleting chat" = "Помилка при видаленні чату з учасником";
 
 /* alert title */
 "Error deleting chat!" = "Помилка видалення чату!";

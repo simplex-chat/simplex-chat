@@ -3340,8 +3340,8 @@ chat item action</note>
         <target>Fout bij het verwijderen van de chat database</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
-        <source>Error deleting chat with member</source>
+      <trans-unit id="Error deleting chat" xml:space="preserve">
+        <source>Error deleting chat</source>
         <target>Fout bij het verwijderen van chat met lid</target>
         <note>alert title</note>
       </trans-unit>

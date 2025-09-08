@@ -2269,7 +2269,7 @@ chat item action */
 "Error deleting chat database" = "Hiba történt a csevegési adatbázis törlésekor";
 
 /* alert title */
-"Error deleting chat with member" = "Hiba a taggal való csevegés törlésekor";
+"Error deleting chat" = "Hiba a taggal való csevegés törlésekor";
 
 /* alert title */
 "Error deleting chat!" = "Hiba történt a csevegés törlésekor!";
