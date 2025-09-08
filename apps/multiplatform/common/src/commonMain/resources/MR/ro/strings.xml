@@ -1801,7 +1801,7 @@
     <string name="cant_send_message_rejected">cererea de înscriere a fost respinsă</string>
     <string name="select_chat_profile">Selectează profilul de conversație</string>
     <string name="save_auto_accept_settings">Salvează setările adresei SimpleX</string>
-    <string name="save_list">Salvați lista</string>
+    <string name="save_list">Salvează lista</string>
     <string name="settings_section_title_delivery_receipts">TRIMITE CONFIRMĂRI DE LIVRARE LA</string>
     <string name="self_destruct_passcode_changed">Parola de autodistrugere a fost schimbată!</string>
     <string name="info_row_updated_at">Înregistrare actualizată la</string>
@@ -2166,7 +2166,7 @@
     <string name="waiting_for_image">Se așteaptă imaginea</string>
     <string name="icon_descr_waiting_for_video">Se așteaptă videoclipul</string>
     <string name="temporary_file_error">Eroare temporară de fișier</string>
-    <string name="unfavorite_chat">Eliminare favorit</string>
+    <string name="unfavorite_chat">Elimină din favorite</string>
     <string name="unread_mentions">Mențiuni necitite</string>
     <string name="connection_you_accepted_will_be_cancelled">Conexiunea pe care ați acceptat-o va fi anulată!</string>
     <string name="contact_you_shared_link_with_wont_be_able_to_connect">Contactul cu care ați partajat acest link NU se va putea conecta!</string>
