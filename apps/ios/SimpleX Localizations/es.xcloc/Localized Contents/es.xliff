@@ -2484,9 +2484,9 @@ swipe action</note>
         <target>¿Eliminar perfil?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete chat with member?" xml:space="preserve" approved="no">
+      <trans-unit id="Delete chat with member?" xml:space="preserve">
         <source>Delete chat with member?</source>
-        <target state="translated">¿Eliminar chat con miembro?</target>
+        <target>¿Eliminar chat con miembro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -3060,9 +3060,9 @@ chat item action</note>
         <target>¡Activar en chats directos (BETA)!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Enable instant notifications?" xml:space="preserve" approved="no">
+      <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
-        <target state="translated">¿Activar notificaciones instantáneas?</target>
+        <target>¿Activar notificaciones instantáneas?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
@@ -4913,9 +4913,9 @@ This is your link for group %@!</source>
         <target>Miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member %@" xml:space="preserve" approved="no">
+      <trans-unit id="Member %@" xml:space="preserve">
         <source>Member %@</source>
-        <target state="translated">Miembro %@</target>
+        <target>Miembro %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -7983,9 +7983,9 @@ report reason</note>
         <target>Cola</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Take picture" xml:space="preserve" approved="no">
+      <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
-        <target state="translated">Hacer foto</target>
+        <target>Hacer foto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">

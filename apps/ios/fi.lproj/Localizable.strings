@@ -1428,6 +1428,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Löydä keskustelut nopeammin";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
+
 /* No comment provided by engineer. */
 "Fix" = "Korjaa";
 
@@ -2239,9 +2242,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Polish interface" = "Puolalainen käyttöliittymä";
-
-/* server test error */
-"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
@@ -3401,3 +3401,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "SimpleX-osoitteesi";
+

@@ -2441,6 +2441,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "更快地查找聊天记录";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "服务器地址中的证书指纹可能不正确";
+
 /* No comment provided by engineer. */
 "Fix" = "修复";
 
@@ -3825,9 +3828,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Polish interface" = "波兰语界面";
-
-/* server test error */
-"Fingerprint in server address does not match certificate." = "服务器地址中的证书指纹可能不正确";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "保留最后的消息草稿及其附件。";
@@ -5668,3 +5668,4 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
+

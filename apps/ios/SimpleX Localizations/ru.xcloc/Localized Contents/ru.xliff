@@ -3642,9 +3642,9 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
-      <trans-unit id="Error: %@." xml:space="preserve" approved="no">
+      <trans-unit id="Error: %@." xml:space="preserve">
         <source>Error: %@.</source>
-        <target state="translated">Ошибка: %@.</target>
+        <target>Ошибка: %@.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
@@ -3871,14 +3871,14 @@ snd error text</note>
         <target>Быстро найти чаты</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve" approved="no">
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
         <source>Fingerprint in destination server address does not match certificate: %@.</source>
-        <target state="translated">Хэш в адресе сервера назначения не соответствует сертификату: %@.</target>
+        <target>Хэш в адресе сервера назначения не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve" approved="no">
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
-        <target state="translated">Хэш в адресе пересылающего сервера не соответствует сертификату: %@.</target>
+        <target>Хэш в адресе пересылающего сервера не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
@@ -3886,9 +3886,9 @@ snd error text</note>
         <target>Возможно, хэш сертификата в адресе сервера неверный</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve" approved="no">
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
         <source>Fingerprint in server address does not match certificate: %@.</source>
-        <target state="translated">Хэш в адресе сервера не соответствует сертификату: %@.</target>
+        <target>Хэш в адресе сервера не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -4916,9 +4916,9 @@ This is your link for group %@!</source>
         <target>Член группы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Member %@" xml:space="preserve" approved="no">
+      <trans-unit id="Member %@" xml:space="preserve">
         <source>Member %@</source>
-        <target state="translated">Член группы %@</target>
+        <target>Член группы %@</target>
         <note>past/unknown group member</note>
       </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
@@ -7733,9 +7733,9 @@ chat item action</note>
         <target>Аудит SimpleX протоколов от Trail of Bits.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX relay link" xml:space="preserve" approved="no">
+      <trans-unit id="SimpleX relay link" xml:space="preserve">
         <source>SimpleX relay link</source>
-        <target state="translated">Ссылка SimpleX relay</target>
+        <target>Ссылка SimpleX relay</target>
         <note>simplex link type</note>
       </trans-unit>
       <trans-unit id="Simplified incognito mode" xml:space="preserve">
