@@ -35,6 +35,8 @@ module Simplex.Chat.Store.Messages
     getPendingGroupMessages,
     deletePendingGroupMessage,
     deleteOldMessages,
+    deleteDoneDeliveryTasks,
+    deleteDoneDeliveryJobs,
     MemberAttention (..),
     updateChatTsStats,
     setSupportChatTs,
@@ -368,6 +370,28 @@ deletePendingGroupMessage db groupMemberId messageId =
 deleteOldMessages :: DB.Connection -> UTCTime -> IO ()
 deleteOldMessages db createdAtCutoff = do
   DB.execute db "DELETE FROM messages WHERE created_at <= ?" (Only createdAtCutoff)
+
+deleteDoneDeliveryTasks :: DB.Connection -> UTCTime -> IO ()
+deleteDoneDeliveryTasks db createdAtCutoff = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM delivery_tasks
+      WHERE created_at <= ?
+        AND task_status IN (?,?)
+    |]
+    (createdAtCutoff, DTSProcessed, DTSError)
+
+deleteDoneDeliveryJobs :: DB.Connection -> UTCTime -> IO ()
+deleteDoneDeliveryJobs db createdAtCutoff = do
+  DB.execute
+    db
+    [sql|
+      DELETE FROM delivery_jobs
+      WHERE created_at <= ?
+        AND job_status IN (?,?)
+    |]
+    (createdAtCutoff, DJSComplete, DJSError)
 
 type NewQuoteRow = (Maybe SharedMsgId, Maybe UTCTime, Maybe MsgContent, Maybe Bool, Maybe MemberId)
 

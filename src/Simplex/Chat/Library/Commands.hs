@@ -4285,6 +4285,8 @@ cleanupManager = do
       forM_ us $ cleanupUser interval stepDelay
       forM_ us' $ cleanupUser interval stepDelay
       cleanupMessages `catchAllErrors` eToView
+      cleanupDeliveryTasks `catchAllErrors` eToView
+      cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
@@ -4316,6 +4318,14 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
       withStore' (`deleteOldMessages` cutoffTs)
+    cleanupDeliveryTasks = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
+      withStore' (`deleteDoneDeliveryTasks` cutoffTs)
+    cleanupDeliveryJobs = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
+      withStore' (`deleteDoneDeliveryJobs` cutoffTs)
     cleanupProbes = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
