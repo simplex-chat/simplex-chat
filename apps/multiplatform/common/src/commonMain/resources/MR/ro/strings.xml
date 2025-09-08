@@ -191,7 +191,7 @@
     <string name="reset_verb">Resetare</string>
     <string name="reject">Respinge</string>
     <string name="save_passphrase_in_settings">Salvează parola în setări</string>
-    <string name="save_and_update_group_profile">Salvați și actualizați profilul grupului</string>
+    <string name="save_and_update_group_profile">Salvează și actualizează profilul grupului</string>
     <string name="connect_plan_repeat_join_request">Repetă cererea de alăturare?</string>
     <string name="restart_chat_button">Reporniți conversația</string>
     <string name="saved_description">salvat</string>
@@ -230,7 +230,7 @@
     <string name="saved_message_title">Mesaj salvat</string>
     <string name="restart_the_app_to_create_a_new_chat_profile">Repornește aplicația pentru a crea un profil de conversație nou.</string>
     <string name="save_passphrase_in_keychain">Salvează parola în Keystore</string>
-    <string name="save_group_profile">Salvați profilul grupului</string>
+    <string name="save_group_profile">Salvează profilul grupului</string>
     <string name="wallpaper_scale_repeat">Repetă</string>
     <string name="send_link_previews">Trimite previzualizări de linkuri</string>
     <string name="set_passphrase">Setează parola</string>
@@ -263,7 +263,7 @@
     <string name="icon_descr_sent_msg_status_send_failed">trimitere eșuată</string>
     <string name="search_or_paste_simplex_link">Caută sau lipește linkul SimpleX</string>
     <string name="set_contact_name">Setează numele contactului</string>
-    <string name="save_welcome_message_question">Salvați mesajul de bun venit?</string>
+    <string name="save_welcome_message_question">Salvezi mesajul de bun venit?</string>
     <string name="v4_2_security_assessment">Evaluarea securității</string>
     <string name="scan_qr_code_from_desktop">Scanează codul QR de pe desktop</string>
     <string name="search_verb">Caută</string>
