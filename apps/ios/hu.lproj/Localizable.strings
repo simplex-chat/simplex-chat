@@ -651,7 +651,7 @@ swipe action */
 "Anybody can host servers." = "Bárki üzemeltethet kiszolgálókat.";
 
 /* No comment provided by engineer. */
-"App build: %@" = "Az alkalmazás összeállítási száma: %@";
+"App build: %@" = "Alkalmazás összeállítási száma: %@";
 
 /* No comment provided by engineer. */
 "App data migration" = "Alkalmazásadatok átköltöztetése";
@@ -675,10 +675,10 @@ swipe action */
 "App session" = "Alkalmazás munkamenete";
 
 /* No comment provided by engineer. */
-"App version" = "Az alkalmazás verziója";
+"App version" = "Alkalmazás verziója";
 
 /* No comment provided by engineer. */
-"App version: v%@" = "Az alkalmazás verziója: v%@";
+"App version: v%@" = "Alkalmazás verziója: v%@";
 
 /* No comment provided by engineer. */
 "Appearance" = "Megjelenés";
@@ -2266,10 +2266,10 @@ chat item action */
 "Error decrypting file" = "Hiba történt a fájl visszafejtésekor";
 
 /* alert title */
-"Error deleting chat database" = "Hiba történt a csevegési adatbázis törlésekor";
+"Error deleting chat" = "Hiba a taggal való csevegés törlésekor";
 
 /* alert title */
-"Error deleting chat with member" = "Hiba a taggal való csevegés törlésekor";
+"Error deleting chat database" = "Hiba történt a csevegési adatbázis törlésekor";
 
 /* alert title */
 "Error deleting chat!" = "Hiba történt a csevegés törlésekor!";
@@ -2572,6 +2572,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Csevegési üzenetek gyorsabb megtalálása";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen";
 
 /* No comment provided by engineer. */
 "Fix" = "Javítás";
@@ -3256,6 +3259,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member" = "Tag";
+
+/* past/unknown group member */
+"Member %@" = "%@ ismeretlen vagy már nem tag";
 
 /* profile update event chat item */
 "member %@ changed to %@" = "%1$@ a következőre módosította a nevét: %2$@";
@@ -4072,9 +4078,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Port" = "Port";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.";
 
@@ -4877,10 +4880,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "a kiszolgáló várólista információi: %1$@\n\nutoljára fogadott üzenet: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát";
+"Server requires authorization to create queues, check password." = "A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát";
+"Server requires authorization to upload, check password." = "A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Sikertelen kiszolgáló teszt!";
@@ -5040,7 +5043,7 @@ chat item action */
 "Show percentage" = "Százalék megjelenítése";
 
 /* No comment provided by engineer. */
-"Show preview" = "Értesítések előnézetének megjelenítése";
+"Show preview" = "Értesítésekben megjelenő információk";
 
 /* No comment provided by engineer. */
 "Show QR code" = "QR-kód megjelenítése";

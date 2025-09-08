@@ -1662,6 +1662,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "チャットを素早く検索";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "サーバアドレスの証明証IDが正しくないかもしれません";
+
 /* No comment provided by engineer. */
 "Fix" = "修正";
 
@@ -2486,9 +2489,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Polish interface" = "ポーランド語UI";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "サーバアドレスの証明証IDが正しくないかもしれません";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "添付を含めて、下書きを保存する。";
 
@@ -2877,10 +2877,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "一定時間が経ったら送信されたメッセージが削除されます。";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to upload, check password." = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "サーバテスト失敗！";

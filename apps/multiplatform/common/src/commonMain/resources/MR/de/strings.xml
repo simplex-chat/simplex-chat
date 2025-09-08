@@ -2606,4 +2606,5 @@
     <string name="chat_banner_connect_to_use_bot">Verbinden tippen, um den Bot zu nutzen.</string>
     <string name="cant_send_commands_alert_text">Um Befehle senden zu können, müssen Sie verbunden sein.</string>
     <string name="simplex_link_relay">SimpleX Relais-Link</string>
+    <string name="error_marking_member_support_chat_read">Fehler beim Versuch, den Chat mit einem Mitglied als gelesen zu markieren</string>
 </resources>

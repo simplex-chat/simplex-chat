@@ -2203,10 +2203,10 @@ chat item action */
 "Error decrypting file" = "Fout bij het ontsleutelen van bestand";
 
 /* alert title */
-"Error deleting chat database" = "Fout bij het verwijderen van de chat database";
+"Error deleting chat" = "Fout bij het verwijderen van chat met lid";
 
 /* alert title */
-"Error deleting chat with member" = "Fout bij het verwijderen van chat met lid";
+"Error deleting chat database" = "Fout bij het verwijderen van de chat database";
 
 /* alert title */
 "Error deleting chat!" = "Fout bij verwijderen gesprek!";
@@ -2497,6 +2497,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Vind chats sneller";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
 
 /* No comment provided by engineer. */
 "Fix" = "Herstel";
@@ -3937,9 +3940,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Port" = "Poort";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Bewaar het laatste berichtconcept, met bijlagen.";
 
@@ -4700,10 +4700,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "informatie over serverwachtrij: %1$@\n\nlaatst ontvangen bericht: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
+"Server requires authorization to create queues, check password." = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Server vereist autorisatie om te uploaden, wachtwoord controleren";
+"Server requires authorization to upload, check password." = "Server vereist autorisatie om te uploaden, wachtwoord controleren";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Servertest mislukt!";
