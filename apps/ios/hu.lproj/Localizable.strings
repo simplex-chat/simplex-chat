@@ -4073,7 +4073,7 @@ new chat action */
 "Port" = "Port";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen";
+"Fingerprint in server address does not match certificate." = "Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.";
@@ -4877,10 +4877,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "a kiszolgáló várólista információi: %1$@\n\nutoljára fogadott üzenet: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát";
+"Server requires authorization to create queues, check password." = "A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát";
+"Server requires authorization to upload, check password." = "A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Sikertelen kiszolgáló teszt!";
@@ -6350,4 +6350,3 @@ report reason */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Profil SimpleX-címe";
-

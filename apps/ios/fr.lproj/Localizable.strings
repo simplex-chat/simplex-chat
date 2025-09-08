@@ -3752,7 +3752,7 @@ new chat action */
 "Port" = "Port";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
+"Fingerprint in server address does not match certificate." = "Il est possible que l'empreinte du certificat dans l'adresse du serveur soit incorrecte";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Conserver le brouillon du dernier message, avec les pièces jointes.";
@@ -4427,10 +4427,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "info sur la file d'attente du serveur : %1$@\n\ndernier message reçu : %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Le serveur requiert une autorisation pour créer des files d'attente, vérifiez le mot de passe";
+"Server requires authorization to create queues, check password." = "Le serveur requiert une autorisation pour créer des files d'attente, vérifiez le mot de passe";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Le serveur requiert une autorisation pour téléverser, vérifiez le mot de passe";
+"Server requires authorization to upload, check password." = "Le serveur requiert une autorisation pour téléverser, vérifiez le mot de passe";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Échec du test du serveur !";
@@ -5743,4 +5743,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "Votre adresse SimpleX";
-

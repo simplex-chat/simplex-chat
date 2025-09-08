@@ -1990,13 +1990,13 @@ struct ProtocolTestFailure: Decodable, Error, Equatable {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
         case .SMP(_, .AUTH):
-            return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
+            return err + " " + NSLocalizedString("Server requires authorization to create queues, check password.", comment: "server test error")
         case .XFTP(.AUTH):
-            return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
-        case .BROKER(_, .NETWORK):
-            return err + " " + NSLocalizedString("Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
+            return err + " " + NSLocalizedString("Server requires authorization to upload, check password.", comment: "server test error")
+        case .BROKER(_, .NETWORK(.unknownCAError)):
+            return err + " " + NSLocalizedString("Fingerprint in server address does not match certificate.", comment: "server test error")
         default:
-            return err
+            return err + " " + String.localizedStringWithFormat(NSLocalizedString("Error: %@.", comment: "server test error"), String(describing: testError))
         }
     }
 }

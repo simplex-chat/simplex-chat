@@ -3827,7 +3827,7 @@ new chat action */
 "Polish interface" = "波兰语界面";
 
 /* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "服务器地址中的证书指纹可能不正确";
+"Fingerprint in server address does not match certificate." = "服务器地址中的证书指纹可能不正确";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "保留最后的消息草稿及其附件。";
@@ -4478,10 +4478,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "服务器队列信息： %1$@\n\n上次收到的消息： %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "服务器需要授权才能创建队列，检查密码";
+"Server requires authorization to create queues, check password." = "服务器需要授权才能创建队列，检查密码";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "服务器需要授权来上传，检查密码";
+"Server requires authorization to upload, check password." = "服务器需要授权来上传，检查密码";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "服务器测试失败！";
@@ -5668,4 +5668,3 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "您的 SimpleX 地址";
-

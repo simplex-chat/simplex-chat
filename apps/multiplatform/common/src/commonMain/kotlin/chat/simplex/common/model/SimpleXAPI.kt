@@ -740,7 +740,7 @@ object ChatController {
         val message = { String.format(generalGetString(MR.strings.network_error_desc), serverHostname(e.brokerAddress)) }
         return when (e.brokerErr) {
           is BrokerErrorType.TIMEOUT -> MR.strings.connection_timeout to message()
-          is BrokerErrorType.NETWORK -> MR.strings.connection_error to message()
+          is BrokerErrorType.NETWORK -> if (e.brokerErr.networkError is NetworkError.UnknownCAError) null else MR.strings.connection_error to message()
           else -> null
         }
       }
@@ -749,7 +749,7 @@ object ChatController {
           val message = { String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(e.serverAddress)) }
           return when (e.smpErr.proxyErr.brokerErr) {
             is BrokerErrorType.TIMEOUT -> MR.strings.private_routing_timeout to message()
-            is BrokerErrorType.NETWORK -> MR.strings.private_routing_error to message()
+            is BrokerErrorType.NETWORK -> if (e.smpErr.proxyErr.brokerErr.networkError is NetworkError.UnknownCAError) null else MR.strings.private_routing_error to message()
             else -> null
           }
         }
@@ -760,7 +760,7 @@ object ChatController {
             is ProxyError.BROKER ->
               when (e.proxyErr.protocolErr.proxyErr.brokerErr) {
                 is BrokerErrorType.TIMEOUT -> MR.strings.private_routing_timeout to message()
-                is BrokerErrorType.NETWORK -> MR.strings.private_routing_error to message()
+                is BrokerErrorType.NETWORK -> if (e.proxyErr.protocolErr.proxyErr.brokerErr.networkError is NetworkError.UnknownCAError) null else MR.strings.private_routing_error to message()
                 else -> null
               }
             is ProxyError.NO_SESSION -> MR.strings.private_routing_no_session to message()
@@ -2385,7 +2385,10 @@ object ChatController {
           && e.agentError.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.connection_error),
-          String.format(generalGetString(MR.strings.network_error_desc), serverHostname(e.agentError.brokerAddress))
+          String.format(
+            generalGetString(if (e.agentError.brokerErr.networkError is NetworkError.UnknownCAError) MR.strings.network_error_unknown_ca else MR.strings.network_error_desc),
+            serverHostname(e.agentError.brokerAddress)
+          )
         )
         true
       }
@@ -2439,7 +2442,10 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.smp_proxy_error_connecting), serverHostname(srvAddr))
+          String.format(
+            generalGetString(if (pe.brokerErr.networkError is NetworkError.UnknownCAError) MR.strings.smp_proxy_error_unknown_ca else MR.strings.smp_proxy_error_connecting),
+            serverHostname(srvAddr)
+          )
         )
         true
       }
@@ -2478,7 +2484,8 @@ object ChatController {
           && pe.brokerErr is BrokerErrorType.NETWORK -> {
         AlertManager.shared.showAlertMsg(
           generalGetString(MR.strings.private_routing_error),
-          String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
+          if (pe.brokerErr.networkError is NetworkError.UnknownCAError) String.format(generalGetString(MR.strings.proxy_destination_error_unknown_ca), serverHostname(relayServer))
+          else String.format(generalGetString(MR.strings.proxy_destination_error_failed_to_connect), serverHostname(proxyServer), serverHostname(relayServer))
         )
         true
       }
@@ -4601,9 +4608,10 @@ data class ProtocolTestFailure(
         err + " " + generalGetString(MR.strings.error_smp_test_server_auth)
       testError is AgentErrorType.XFTP && testError.xftpErr is XFTPErrorType.AUTH ->
         err + " " + generalGetString(MR.strings.error_xftp_test_server_auth)
-      testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK ->
+      testError is AgentErrorType.BROKER && testError.brokerErr is BrokerErrorType.NETWORK && testError.brokerErr.networkError is NetworkError.UnknownCAError ->
         err + " " + generalGetString(MR.strings.error_smp_test_certificate)
-      else -> err
+      else ->
+        err + " " + String.format(generalGetString(MR.strings.error_with_info), testError.toString())
     }
   }
 }
@@ -7408,7 +7416,7 @@ sealed class BrokerErrorType {
   }
   @Serializable @SerialName("RESPONSE") class RESPONSE(val smpErr: String): BrokerErrorType()
   @Serializable @SerialName("UNEXPECTED") object UNEXPECTED: BrokerErrorType()
-  @Serializable @SerialName("NETWORK") object NETWORK: BrokerErrorType()
+  @Serializable @SerialName("NETWORK") class NETWORK(val networkError: NetworkError): BrokerErrorType()
   @Serializable @SerialName("HOST") object HOST: BrokerErrorType()
   @Serializable @SerialName("TRANSPORT") class TRANSPORT(val transportErr: SMPTransportError): BrokerErrorType()
   @Serializable @SerialName("TIMEOUT") object TIMEOUT: BrokerErrorType()
@@ -7493,6 +7501,16 @@ sealed class ProtocolCommandError {
   @Serializable @SerialName("NO_AUTH") object NO_AUTH: ProtocolCommandError()
   @Serializable @SerialName("HAS_AUTH") object HAS_AUTH: ProtocolCommandError()
   @Serializable @SerialName("NO_QUEUE") object NO_QUEUE: ProtocolCommandError()
+}
+
+@Serializable
+sealed class NetworkError {
+  @Serializable @SerialName("connectError") class ConnectError(val connectError: String): NetworkError()
+  @Serializable @SerialName("tLSError") class TLSError(val tlsError: String): NetworkError()
+  @Serializable @SerialName("unknownCAError") object UnknownCAError: NetworkError()
+  @Serializable @SerialName("failedError") object FailedError: NetworkError()
+  @Serializable @SerialName("timeoutError") object TimeoutError: NetworkError()
+  @Serializable @SerialName("subscribeError") class SubscribeError(val subscribeError: String): NetworkError()
 }
 
 @Serializable
