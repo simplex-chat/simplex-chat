@@ -164,10 +164,12 @@ module Simplex.Chat.Store.Groups
     createMessageForwardJob,
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
+    setDeliveryTaskErrStatus,
     deleteDoneDeliveryTasks,
     getPendingDeliveryJobScopes,
     getNextDeliveryJob,
     updateDeliveryJobStatus,
+    setDeliveryJobErrStatus,
     getGroupMembersByCursor,
     updateDeliveryJobCursor,
     deleteDoneDeliveryJobs,
@@ -3114,12 +3116,18 @@ createRelayRemovedJob db deliveryScope singleSenderGMId deliveryBody = do
     (groupId, jobScope) = deliveryScope
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
-updateDeliveryTaskStatus db taskId status = do
+updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
+
+setDeliveryTaskErrStatus :: DB.Connection -> Int64 -> Text -> IO ()
+setDeliveryTaskErrStatus db taskId errReason = updateDeliveryTaskStatus_ db taskId DTSError (Just errReason)
+
+updateDeliveryTaskStatus_ :: DB.Connection -> Int64 -> DeliveryTaskStatus -> Maybe Text -> IO ()
+updateDeliveryTaskStatus_ db taskId status errReason_ = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "UPDATE delivery_tasks SET task_status = ?, updated_at = ? WHERE delivery_task_id = ?"
-    (status, currentTs, taskId)
+    "UPDATE delivery_tasks SET task_status = ?, task_err_reason = ?, updated_at = ? WHERE delivery_task_id = ?"
+    (status, errReason_, currentTs, taskId)
 
 deleteDoneDeliveryTasks :: DB.Connection -> UTCTime -> IO ()
 deleteDoneDeliveryTasks db createdAtCutoff = do
@@ -3191,12 +3199,18 @@ getNextDeliveryJob db deliveryScope = do
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)
 
 updateDeliveryJobStatus :: DB.Connection -> Int64 -> DeliveryJobStatus -> IO ()
-updateDeliveryJobStatus db jobId status = do
+updateDeliveryJobStatus db jobId status = updateDeliveryJobStatus_ db jobId status Nothing
+
+setDeliveryJobErrStatus :: DB.Connection -> Int64 -> Text -> IO ()
+setDeliveryJobErrStatus db jobId errReason = updateDeliveryJobStatus_ db jobId DJSError (Just errReason)
+
+updateDeliveryJobStatus_ :: DB.Connection -> Int64 -> DeliveryJobStatus -> Maybe Text -> IO ()
+updateDeliveryJobStatus_ db jobId status errReason_ = do
   currentTs <- getCurrentTime
   DB.execute
     db
-    "UPDATE delivery_jobs SET job_status = ?, updated_at = ? WHERE delivery_job_id = ?"
-    (status, currentTs, jobId)
+    "UPDATE delivery_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE delivery_job_id = ?"
+    (status, errReason_, currentTs, jobId)
 
 -- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]

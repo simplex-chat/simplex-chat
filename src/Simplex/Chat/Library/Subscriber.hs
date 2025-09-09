@@ -3317,7 +3317,7 @@ runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
       withWork_ a doWork (withStore' $ \db -> getNextDeliveryTask db deliveryScope) $ \task ->
         processDeliveryTask task
           `catchAllErrors` \e -> do
-            withStore' $ \db -> updateDeliveryTaskStatus db (deliveryTaskId task) DTSError
+            withStore' $ \db -> setDeliveryTaskErrStatus db (deliveryTaskId task) (tshow e)
             eToView e
       where
         processDeliveryTask :: DeliveryTask -> CM ()
@@ -3328,7 +3328,7 @@ runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
               withStore' $ \db -> do
                 createMessageForwardJob db deliveryScope forwardScope (singleSenderGMId_ nextTasks) batch
                 forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
-                forM_ largeTaskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSError
+                forM_ largeTaskIds $ \taskId -> setDeliveryTaskErrStatus db taskId "large"
               lift . void $ getDeliveryJobWorker True deliveryScope
             where
               singleSenderGMId_ :: NonEmpty MessageForwardTask -> Maybe GroupMemberId
@@ -3376,7 +3376,7 @@ runDeliveryJobWorker a deliveryScope Worker {doWork} = do
       withWork_ a doWork (withStore' $ \db -> getNextDeliveryJob db deliveryScope) $ \job ->
         processDeliveryJob job
           `catchAllErrors` \e -> do
-            withStore' $ \db -> updateDeliveryJobStatus db (deliveryJobId job) DJSError
+            withStore' $ \db -> setDeliveryJobErrStatus db (deliveryJobId job) (tshow e)
             eToView e
       where
         processDeliveryJob :: DeliveryJob -> CM ()

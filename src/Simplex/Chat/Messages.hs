@@ -1280,7 +1280,7 @@ instance TextEncoding DeliveryJobTag where
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job
   | DTSProcessed -- processed by delivery task worker, delivery job created, task can be deleted
-  | DTSError -- permanent error -- TODO [channels fwd] encode error
+  | DTSError -- permanent error
   deriving (Show)
 
 instance FromField DeliveryTaskStatus where fromField = fromTextField_ textDecode

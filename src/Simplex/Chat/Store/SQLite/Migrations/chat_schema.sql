@@ -704,6 +704,7 @@ CREATE TABLE delivery_tasks(
   message_id INTEGER REFERENCES messages ON DELETE CASCADE,
   message_from_channel INTEGER NOT NULL DEFAULT 0,
   task_status TEXT NOT NULL,
+  task_err_reason TEXT,
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
@@ -719,6 +720,7 @@ CREATE TABLE delivery_jobs(
   delivery_body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
+  job_err_reason TEXT,
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))

@@ -11,17 +11,26 @@ import Database.SQLite.Simple.QQ (sql)
 -- TODO   - ALTER TABLE group_members ADD COLUMN join_ts TEXT;
 
 -- How columns correspond to types:
+
+-- both tables:
 -- - <group_id, delivery_job_scope> <-> DeliveryWorkerScope,
 -- - delivery_job_scope <-> DeliveryJobScope,
 -- - delivery_job_tag <-> DeliveryJobTag,
 -- - forward_scope_tag <-> GroupForwardScopeTag,
 -- - forward_scope_group_member_id <-> GroupMemberId (for GFSMemberSupport forward scope),
+-- - failed <-> Bool (for internal worker use, to mark failed work items).
+
+-- delivery_tasks table:
 -- - sender_group_member_id <-> GroupMemberId (sender of the original message that created task),
--- - single_sender_group_member_id <-> GroupMemberId (set when all messages in job's delivery body are from the same sender),
--- - task_status <-> DeliveryTaskStatus,
 -- - message_from_channel <-> MessageFromChannel (for DJTMessageForward task),
+-- - task_status <-> DeliveryTaskStatus,
+-- - task_err_reason <-> Text (set when task status is DTSError, not encoded in status to allow filtering by DTSError in queries).
+
+-- delivery_jobs table:
+-- - single_sender_group_member_id <-> GroupMemberId (set when all messages in job's delivery body are from the same sender),
+-- - cursor_group_member_id <-> GroupMemberId (for tracking progress of job processing buckets of recipient members),
 -- - job_status <-> DeliveryJobStatus,
--- - cursor_group_member_id <-> GroupMemberId (for tracking progress of job processing buckets of recipient members).
+-- - job_err_reason <-> Text (set when job status is DJSError, not encoded in status to allow filtering by DJSError in queries).
 --
 -- Pair of columns <group_id, delivery_job_scope> defines the scope of work for a worker.
 --
@@ -64,6 +73,7 @@ CREATE TABLE delivery_tasks (
   message_id INTEGER REFERENCES messages ON DELETE CASCADE,
   message_from_channel INTEGER NOT NULL DEFAULT 0,
   task_status TEXT NOT NULL,
+  task_err_reason TEXT,
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
@@ -89,6 +99,7 @@ CREATE TABLE delivery_jobs (
   delivery_body BLOB,
   cursor_group_member_id INTEGER,
   job_status TEXT NOT NULL,
+  job_err_reason TEXT,
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
