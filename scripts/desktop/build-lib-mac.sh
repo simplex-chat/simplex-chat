@@ -41,12 +41,12 @@ mkdir deps 2> /dev/null || true
 #cp $GHC_LIBS_DIR/libffi.dylib ./deps
 (
   BUILD=$PWD
-  cp /tmp/libffi-3.4.4/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
+  cp /tmp/libffi-3.5.2/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
     ( \
     cd /tmp && \
-    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/libffi-3.4.4/libffi-3.4.4.tar.gz?inline=false" -o libffi.tar.gz && \
+    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/3914c27381526ce586ea0ac0359a332fd82987af/libffi-3.5.2.tar.gz?inline=false" -o libffi.tar.gz && \
     tar -xzvf libffi.tar.gz && \
-    cd "libffi-3.4.4" && \
+    cd "libffi-3.5.2" && \
     ./configure && \
     make && \
     cp *-apple-darwin*/.libs/libffi.dylib $BUILD/deps \
