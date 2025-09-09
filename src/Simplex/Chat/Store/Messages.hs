@@ -511,17 +511,17 @@ setSupportChatTs db groupMemberId chatTs =
 
 setSupportChatMemberAttention :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> Int64 -> IO (GroupInfo, GroupMember)
 setSupportChatMemberAttention db vr user g m memberAttention = do
-  m' <- updateGMAttention m
+  m' <- updateGMAttention
   g' <- updateGroupMembersRequireAttention db user g m m'
   pure (g', m')
   where
-    updateGMAttention m@GroupMember {groupMemberId} = do
+    updateGMAttention = do
       currentTs <- getCurrentTime
       DB.execute
         db
         "UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?"
         (memberAttention, currentTs, groupMemberId' m)
-      m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
+      m_ <- runExceptT $ getGroupMemberById db vr user (groupMemberId' m)
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
@@ -2039,7 +2039,7 @@ setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM i
   pure (chatItemId, deleteAt)
 
 updateGroupChatItemsRead :: DB.Connection -> User -> GroupInfo -> IO ()
-updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} = do
+updateGroupChatItemsRead db User {userId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -2084,10 +2084,11 @@ updateSupportChatItemsRead db vr user@User {userId} g@GroupInfo {groupId, member
           UPDATE group_members
           SET support_chat_items_unread = 0,
               support_chat_items_member_attention = 0,
-              support_chat_items_mentions = 0
+              support_chat_items_mentions = 0,
+              updated_at = ?
           WHERE group_member_id = ?
         |]
-        (Only groupMemberId)
+        (currentTs, groupMemberId)
       m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
