@@ -6400,11 +6400,11 @@ Query: UPDATE contacts SET xcontact_id = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE delivery_jobs SET job_status = ?, updated_at = ? WHERE delivery_job_id = ?
+Query: UPDATE delivery_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE delivery_job_id = ?
 Plan:
 SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE delivery_tasks SET task_status = ?, updated_at = ? WHERE delivery_task_id = ?
+Query: UPDATE delivery_tasks SET task_status = ?, task_err_reason = ?, updated_at = ? WHERE delivery_task_id = ?
 Plan:
 SEARCH delivery_tasks USING INTEGER PRIMARY KEY (rowid=?)
 
