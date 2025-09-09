@@ -55,7 +55,7 @@ SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
                   UPDATE groups
                   SET chat_ts = ?,
-                      members_require_attention = members_require_attention + 1
+                      members_require_attention = MAX(0, members_require_attention - 1)
                   WHERE user_id = ? AND group_id = ?
                 
 Plan:
@@ -64,7 +64,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
                   UPDATE groups
                   SET chat_ts = ?,
-                      members_require_attention = members_require_attention - 1
+                      members_require_attention = members_require_attention + 1
                   WHERE user_id = ? AND group_id = ?
                 
 Plan:
@@ -1274,6 +1274,25 @@ SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
+          SELECT chat_item_id, timed_ttl
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+            AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: 
+          SELECT chat_item_id, timed_ttl
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ?
+            AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
+
+Query: 
           SELECT chat_item_moderation_id, moderator_member_id, created_by_msg_id, moderated_at
           FROM chat_item_moderations
           WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
@@ -1516,6 +1535,15 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
+          UPDATE chat_items SET item_status = ?, updated_at = ?
+          WHERE user_id = ? AND group_id = ?
+            AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ?
+            AND item_status = ?
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_scope_stats_all (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
+
+Query: 
           UPDATE connections SET via_contact_uri = NULL, via_contact_uri_hash = NULL, xcontact_id = NULL
           WHERE user_id = ? AND via_group_link = 1 AND contact_id IN (
             SELECT contact_id
@@ -1566,9 +1594,9 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           UPDATE group_members
-          SET support_chat_items_unread = support_chat_items_unread - ?,
-              support_chat_items_member_attention = support_chat_items_member_attention - ?,
-              support_chat_items_mentions = support_chat_items_mentions - ?,
+          SET support_chat_items_unread = MAX(0, support_chat_items_unread - ?),
+              support_chat_items_member_attention = MAX(0, support_chat_items_member_attention - ?),
+              support_chat_items_mentions = MAX(0, support_chat_items_mentions - ?),
               updated_at = ?
           WHERE group_member_id = ?
         
@@ -4413,14 +4441,6 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts (user_id=? AND contact_id=? AND item_status=?)
 
 Query: 
-      SELECT chat_item_id, timed_ttl
-      FROM chat_items
-      WHERE user_id = ? AND group_id = ? AND item_status = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
-    
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
-
-Query: 
       SELECT group_snd_item_status, COUNT(1)
       FROM group_snd_item_statuses
       WHERE chat_item_id = ?
@@ -4506,7 +4526,8 @@ SEARCH chat_items USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE chat_items SET item_status = ?, updated_at = ?
-      WHERE user_id = ? AND group_id = ? AND item_status = ?
+      WHERE user_id = ? AND group_id = ?
+        AND item_status = ?
     
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=? AND item_status=?)
@@ -4768,7 +4789,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE groups
-      SET members_require_attention = members_require_attention + 1
+      SET members_require_attention = MAX(0, members_require_attention - 1)
       WHERE user_id = ? AND group_id = ?
     
 Plan:
@@ -4776,7 +4797,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE groups
-      SET members_require_attention = members_require_attention - 1
+      SET members_require_attention = members_require_attention + 1
       WHERE user_id = ? AND group_id = ?
     
 Plan:
@@ -6453,6 +6474,14 @@ Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_memb
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET support_chat_items_member_attention=100 WHERE group_member_id=?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE group_members SET support_chat_ts = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -6490,6 +6519,10 @@ Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET local_display_name = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE groups SET members_require_attention=1 WHERE group_id=?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 

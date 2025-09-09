@@ -43,6 +43,13 @@ fun ModalData.NewServerView(
             if (isActive) {
               newServer.value = res.first
               testing.value = false
+              val failure = res.second
+              if (failure != null) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.smp_servers_test_failed),
+                  text = failure.localizedDescription
+                )
+              }
             }
           }
         },

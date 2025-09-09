@@ -648,8 +648,7 @@ fun markChatRead(c: Chat) {
       chatModel.controller.apiChatRead(
         chat.remoteHostId,
         chat.chatInfo.chatType,
-        chat.chatInfo.apiId,
-        chat.chatInfo.groupChatScope()
+        chat.chatInfo.apiId
       )
       chat = chatModel.getChat(chat.id) ?: return@withApi
     }

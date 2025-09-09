@@ -76,8 +76,8 @@
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
     <string name="error_changing_address">Ошибка при изменении адреса</string>
     <string name="error_smp_test_failed_at_step">Ошибка теста на шаге %s.</string>
-    <string name="error_smp_test_server_auth">Сервер требует авторизации для создания очередей, проверьте пароль</string>
-    <string name="error_smp_test_certificate">Возможно, хэш сертификата в адресе сервера неверный</string>
+    <string name="error_smp_test_server_auth">Сервер требует авторизации для создания очередей, проверьте пароль.</string>
+    <string name="error_smp_test_certificate">Хэш в адресе сервера не соответствует сертификату.</string>
     <string name="smp_server_test_connect">Соединение</string>
     <string name="smp_server_test_create_queue">Создание очереди</string>
     <string name="smp_server_test_secure_queue">Защита очереди</string>
@@ -2479,7 +2479,7 @@
     <string name="group_member_status_pending_review">ожидает одобрения</string>
     <string name="reject_pending_member_button">Отклонить</string>
     <string name="reject_pending_member_alert_title">Отклонить члена группы?</string>
-    <string name="error_deleting_member_support_chat">Ошибка при удалении чата с членом группы</string>
+    <string name="error_deleting_member_support_chat">Ошибка при удалении чата</string>
     <string name="full_link_button_text">Полная ссылка</string>
     <string name="error_accepting_member">Ошибка при вступлении члена группы</string>
     <string name="unsupported_connection_link">Ссылка не поддерживается</string>
@@ -2610,4 +2610,9 @@
     <string name="privacy_chat_list_open_clean_web_link">Открыть очищенную ссылку</string>
     <string name="privacy_chat_list_open_full_web_link">Открыть полную ссылку</string>
     <string name="sanitize_links_toggle">Удалять параметры отслеживания</string>
+    <string name="error_marking_member_support_chat_read">Ошибка прочтения чата</string>
+    <string name="smp_proxy_error_unknown_ca">Хэш в адресе пересылающего сервера не соответствует сертификату: %1$s.</string>
+    <string name="network_error_unknown_ca">Хэш в адресе сервера не соответствует сертификату: %1$s.</string>
+    <string name="simplex_link_relay">Ссылка SimpleX relay</string>
+    <string name="proxy_destination_error_unknown_ca">Хэш в адресе сервера назначения не соответствует сертификату: %1$s.</string>
 </resources>

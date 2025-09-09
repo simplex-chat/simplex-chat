@@ -667,20 +667,24 @@ final class ChatModel: ObservableObject {
 
     func getCIItemsModel(_ cInfo: ChatInfo, _ ci: ChatItem) -> ItemsModel? {
         let cInfoScope = cInfo.groupChatScope()
-        if let cInfoScope = cInfoScope {
-            switch cInfoScope {
-            case .memberSupport:
-                switch secondaryIM?.secondaryIMFilter {
-                case .none:
-                    return nil
-                case let .groupChatScopeContext(groupScopeInfo):
-                    return (cInfo.id == chatId && sameChatScope(cInfoScope, groupScopeInfo.toChatScope())) ? secondaryIM : nil
-                case let .msgContentTagContext(contentTag):
-                    return (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
-                }
+        return if let cInfoScope = cInfoScope {
+            switch (cInfoScope, secondaryIM?.secondaryIMFilter) {
+            case let (.memberSupport, .some(.groupChatScopeContext(groupScopeInfo))):
+                // Chat with member or Chat with admins opened (secondaryIM has .groupChatScopeContext filter), cInfo has matching scope
+                (cInfo.id == chatId && sameChatScope(cInfoScope, groupScopeInfo.toChatScope())) ? secondaryIM : nil
+
+            case let (.memberSupport, .some(.msgContentTagContext(contentTag))):
+                // Reports view opened (secondaryIM has .msgContentTagContext(.report) filter), we process event (cInfo has proper .memberSupport scope)
+                (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+
+            case let (.reports, .some(.msgContentTagContext(contentTag))):
+                // Reports view opened (secondaryIM has .msgContentTagContext(.report) filter), we process user action (cInfo has surrogate .reports scope)
+                (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+            default:
+                nil
             }
         } else {
-            return cInfo.id == chatId ? im : nil
+            cInfo.id == chatId ? im : nil
         }
     }
 

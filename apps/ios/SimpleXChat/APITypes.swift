@@ -858,7 +858,7 @@ public enum ConnectionErrorType: Decodable, Hashable {
 public enum BrokerErrorType: Decodable, Hashable {
     case RESPONSE(smpErr: String)
     case UNEXPECTED
-    case NETWORK
+    case NETWORK(networkError: NetworkError)
     case HOST
     case TRANSPORT(transportErr: ProtocolTransportError)
     case TIMEOUT
@@ -952,6 +952,15 @@ public enum ProtocolCommandError: Decodable, Hashable {
     case NO_AUTH
     case HAS_AUTH
     case NO_ENTITY
+}
+
+public enum NetworkError: Decodable, Hashable {
+    case connectError(connectError: String)
+    case tLSError(tlsError: String)
+    case unknownCAError
+    case failedError
+    case timeoutError
+    case subscribeError(subscribeError: String)
 }
 
 public enum ProtocolTransportError: Decodable, Hashable {

@@ -216,6 +216,7 @@ export namespace BrokerErrorType {
 
   export interface NETWORK extends Interface {
     type: "NETWORK"
+    networkError: NetworkError
   }
 
   export interface HOST extends Interface {
@@ -2919,6 +2920,55 @@ export namespace MsgReaction {
 export enum MsgReceiptStatus {
   Ok = "ok",
   BadMsgHash = "badMsgHash",
+}
+
+export type NetworkError = 
+  | NetworkError.ConnectError
+  | NetworkError.TLSError
+  | NetworkError.UnknownCAError
+  | NetworkError.FailedError
+  | NetworkError.TimeoutError
+  | NetworkError.SubscribeError
+
+export namespace NetworkError {
+  export type Tag = 
+    | "connectError"
+    | "tLSError"
+    | "unknownCAError"
+    | "failedError"
+    | "timeoutError"
+    | "subscribeError"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface ConnectError extends Interface {
+    type: "connectError"
+    connectError: string
+  }
+
+  export interface TLSError extends Interface {
+    type: "tLSError"
+    tlsError: string
+  }
+
+  export interface UnknownCAError extends Interface {
+    type: "unknownCAError"
+  }
+
+  export interface FailedError extends Interface {
+    type: "failedError"
+  }
+
+  export interface TimeoutError extends Interface {
+    type: "timeoutError"
+  }
+
+  export interface SubscribeError extends Interface {
+    type: "subscribeError"
+    subscribeError: string
+  }
 }
 
 export interface NewUser {

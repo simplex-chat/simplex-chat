@@ -2516,4 +2516,5 @@
     <string name="privacy_chat_list_open_full_web_link">افتح الرابط الكامل</string>
     <string name="sanitize_links_toggle">أزل تتبع الروابط</string>
     <string name="simplex_link_relay">رابط مُرحل SimpleX</string>
+    <string name="error_marking_member_support_chat_read">خطأ في وضع علامة \"مقروءة\" على الدردشة مع العضو</string>
 </resources>
