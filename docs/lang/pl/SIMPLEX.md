@@ -3,7 +3,7 @@ title: Platfoma SimpleX
 revision: 07.02.2023
 ---
 
-| Updated 07.02.2023 | Języki: PL, [EN](/docs/SIMPLEX.md), [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md) |
+| Updated 07.02.2023 | Języki: PL, [EN](/docs/SIMPLEX.md), [FR](/docs/lang/fr/SIMPLEX.md), [CZ](/docs/lang/cs/SIMPLEX.md), [JA](/docs/lang/ja/SIMPLEX.md) |
 # Platfoma SimpleX - motywacja i porównanie
 
 ## Problemy
