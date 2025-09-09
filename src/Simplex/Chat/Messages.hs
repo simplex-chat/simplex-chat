@@ -1215,6 +1215,7 @@ data RcvMessage = RcvMessage
 type MessageId = Int64
 
 -- TODO [channels fwd] consider alternative types (don't use GroupForwardScope)
+-- TODO   - issue with this approach: space of processEvent result will have impossible values (can never return DJSMemberProfile)
 -- type DeliveryWorkerKey = (GroupId, DeliveryJobScopeType)
 -- data DeliveryJobScope = DJSGroup {all :: Bool} | DJSMemberSupport {memberId :: GroupMemberId} |  DJSMemberProfile
 -- data DeliveryJobScopeType = DJSTGroup | DJSTMemberSupport | DJSTMemberProfile
