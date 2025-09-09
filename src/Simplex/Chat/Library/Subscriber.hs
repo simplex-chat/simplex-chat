@@ -68,7 +68,7 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork_)
+import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork_, withWorkItems)
 import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
@@ -3304,45 +3304,44 @@ runDeliveryTaskWorker a deliveryScope Worker {doWork} = do
   -- TODO [channels fwd] consider reading groupInfo and user on each iteration for updated state
   -- TODO   - currently doesn't matter
   -- TODO   - same for delivery jobs (runDeliveryJobWorker)
-  GroupInfo {groupType} <- withStore $ \db -> do
+  gInfo <- withStore $ \db -> do
     user <- getUserByGroupId db groupId
     getGroupInfo db vr user groupId
   forever $ do
     lift $ waitForWork doWork
-    runDeliveryTaskOperation vr groupType
+    runDeliveryTaskOperation vr gInfo
   where
     (groupId, _jobScope) = deliveryScope
-    runDeliveryTaskOperation :: VersionRangeChat -> GroupType -> CM ()
-    runDeliveryTaskOperation vr groupType = do
-      withWork_ a doWork (withStore' $ \db -> getNextDeliveryTasksBatch db deliveryScope groupType) $ \tasksBatch ->
-        processDeliveryTasksBatch tasksBatch
+    runDeliveryTaskOperation :: VersionRangeChat -> GroupInfo -> CM ()
+    runDeliveryTaskOperation vr GroupInfo {groupType} = do
+      withWork_ a doWork (withStore' $ \db -> getNextDeliveryTask db deliveryScope) $ \task ->
+        processDeliveryTask task
           `catchAllErrors` \e -> do
-            withStore' $ \db ->
-              forM_ (deliveryTaskIds tasksBatch) $ \taskId ->
-                updateDeliveryTaskStatus db taskId DTSError
+            withStore' $ \db -> updateDeliveryTaskStatus db (deliveryTaskId task) DTSError
             eToView e
       where
-        processDeliveryTasksBatch :: DeliveryTasksBatch -> CM ()
-        processDeliveryTasksBatch = \case
-          DTBMessageForward tasks fwdScope -> do
-            let (batch, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength tasks
-            withStore' $ \db -> do
-              createMessageForwardJob db deliveryScope fwdScope (singleSenderGMId_ tasks) batch
-              forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
-              forM_ largeTaskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSError
-            lift . void $ getDeliveryJobWorker True deliveryScope
+        processDeliveryTask :: DeliveryTask -> CM ()
+        processDeliveryTask task = case task of
+          DTMessageForward mfTask@MessageForwardTask {forwardScope} ->
+            withWorkItems a doWork (withStore' $ \db -> getNextMsgFwdTasks db deliveryScope groupType mfTask) $ \nextTasks -> do
+              let (batch, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
+              withStore' $ \db -> do
+                createMessageForwardJob db deliveryScope forwardScope (singleSenderGMId_ nextTasks) batch
+                forM_ taskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSProcessed
+                forM_ largeTaskIds $ \taskId -> updateDeliveryTaskStatus db taskId DTSError
+              lift . void $ getDeliveryJobWorker True deliveryScope
             where
               singleSenderGMId_ :: NonEmpty MessageForwardTask -> Maybe GroupMemberId
               singleSenderGMId_ (MessageForwardTask {senderGMId = senderGMId'} :| ts)
                 | all (\MessageForwardTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                 | otherwise = Nothing
-          DTBRelayRemoved RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
+          DTRelayRemoved RelayRemovedTask {senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage} -> do
             let fwdEvt = XGrpMsgForward senderMemberId (Just senderMemberName) chatMessage brokerTs
                 cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
                 body = chatMsgToBody cm
             withStore' $ \db -> do
               createRelayRemovedJob db deliveryScope senderGMId body
-              updateDeliveryTaskStatus db taskId DTSProcessed
+              updateDeliveryTaskStatus db (deliveryTaskId task) DTSProcessed
             lift . void $ getDeliveryJobWorker True deliveryScope
 
 startDeliveryJobWorkers :: CM ()

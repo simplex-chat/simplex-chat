@@ -149,7 +149,7 @@ data StoreError
   | SEUsageConditionsNotFound
   | SEInvalidQuote
   | SEInvalidMention
-  | SEInvalidDeliveryTasksBatch
+  | SEInvalidDeliveryTask {taskId :: Int64}
   | SEDeliveryTaskNotFound {taskId :: Int64}
   | SEInvalidDeliveryJob {jobId :: Int64}
   | SEDeliveryJobNotFound {jobId :: Int64}

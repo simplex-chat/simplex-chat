@@ -33,7 +33,6 @@ import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -1299,15 +1298,16 @@ instance TextEncoding DeliveryTaskStatus where
     DTSProcessed -> "processed"
     DTSError -> "error"
 
-data DeliveryTasksBatch
-  = DTBMessageForward {messageForwardTasks :: NonEmpty MessageForwardTask, forwardScope :: GroupForwardScope}
-  -- | DTBMemberProfile {memberProfileTask :: MemberProfileTask}
-  | DTBRelayRemoved {relayRemovedTask :: RelayRemovedTask}
-  -- | DTBChatItemsCount {chatItemCountsTasks :: NonEmpty ChatItemCountsTask, forwardScope :: GroupForwardScope}}
+data DeliveryTask
+  = DTMessageForward {messageForwardTask :: MessageForwardTask}
+  -- | DTMemberProfile {memberProfileTask :: MemberProfileTask}
+  | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
+  -- | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
   deriving (Show)
 
 data MessageForwardTask = MessageForwardTask
   { taskId :: Int64,
+    forwardScope :: GroupForwardScope,
     senderGMId :: GroupMemberId,
     senderMemberId :: MemberId,
     senderMemberName :: ContactName,
@@ -1317,6 +1317,7 @@ data MessageForwardTask = MessageForwardTask
   }
   deriving (Show)
 
+-- planned for sending member profiles
 -- data MemberProfileTask = ProfileDeliveryTask
 --   { taskId :: Int64,
 --     member :: GroupMember -- use last_profile_delivery_ts to filter list of recipients
@@ -1333,16 +1334,22 @@ data RelayRemovedTask = RelayRemovedTask
   }
   deriving (Show)
 
+-- planned for reactions/comments
 -- data ChatItemCountsTask = ChatItemCountsTask
 --   { taskId :: Int64,
+--     forwardScope :: GroupForwardScope,
+--     senderGMId :: GroupMemberId,
+--     senderMemberId :: MemberId,
+--     senderMemberName :: ContactName,
+--     brokerTs :: UTCTime,
 --     chatMessage :: ChatMessage 'Json
 --   }
 --   deriving (Show)
 
-deliveryTaskIds :: DeliveryTasksBatch -> NonEmpty Int64
-deliveryTaskIds = \case
-  DTBMessageForward {messageForwardTasks} -> L.map (\MessageForwardTask {taskId} -> taskId) messageForwardTasks
-  DTBRelayRemoved {relayRemovedTask = RelayRemovedTask {taskId}} -> taskId :| []
+deliveryTaskId :: DeliveryTask -> Int64
+deliveryTaskId = \case
+  DTMessageForward {messageForwardTask = MessageForwardTask {taskId}} -> taskId
+  DTRelayRemoved {relayRemovedTask = RelayRemovedTask {taskId}} -> taskId
 
 data DeliveryJobStatus
   = DJSNew -- created for delivery job worker to pick up

@@ -159,7 +159,8 @@ module Simplex.Chat.Store.Groups
     deleteGroupDeliveryTasks,
     deleteGroupDeliveryJobs,
     getPendingDeliveryTaskScopes,
-    getNextDeliveryTasksBatch,
+    getNextDeliveryTask,
+    getNextMsgFwdTasks,
     createMessageForwardJob,
     createRelayRemovedJob,
     updateDeliveryTaskStatus,
@@ -185,8 +186,6 @@ import Data.Char (toLower)
 import Data.Either (rights)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
-import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as L
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
@@ -201,7 +200,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), UserId)
-import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, getWorkItem, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, getWorkItem, getWorkItems, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -2963,129 +2962,123 @@ getPendingDeliveryTaskScopes db =
     |]
     (Only DTSNew)
 
--- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
--- TODO [channels fwd] different "getWorkItem" implementation?
--- TODO   - issue with getWorkItem: all tasks are marked failed if getTasksBatch fails
--- TODO   - issue with getWorkItems: consumer would have to prove all items are tasks of the same type (we know it by the way it's read)
--- TODO   - ideally we want to keep knowledge that all items are tasks of the same type + only mark failed those we failed reading
-getNextDeliveryTasksBatch :: DB.Connection -> DeliveryWorkerScope -> GroupType -> IO (Either StoreError (Maybe DeliveryTasksBatch))
-getNextDeliveryTasksBatch db deliveryScope groupType = do
-  getWorkItem "delivery tasks batch" getTaskIds getTasksBatch markTasksFailed
+getNextDeliveryTask :: DB.Connection -> DeliveryWorkerScope -> IO (Either StoreError (Maybe DeliveryTask))
+getNextDeliveryTask db deliveryScope = do
+  getWorkItem "delivery task" getTaskId getTask (markDeliveryTaskFailed_ db . fst)
   where
     (groupId, jobScope) = deliveryScope
-    getTaskIds :: IO (Maybe (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId))
-    getTaskIds = do
-      nextTaskFilter_ :: Maybe (Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId, GroupMemberId)  <-
-        maybeFirstRow id $
-          DB.query
-            db
-            [sql|
-              SELECT
-                delivery_task_id, delivery_job_tag,
-                forward_scope_tag, forward_scope_group_member_id,
-                sender_group_member_id
-              FROM delivery_tasks
-              WHERE group_id = ? AND delivery_job_scope = ?
-                AND failed = 0 AND task_status = ?
-              ORDER BY created_at ASC, delivery_task_id ASC
-              LIMIT 1
-            |]
-            (groupId, jobScope, DTSNew)
-      case nextTaskFilter_ of
-        Nothing -> pure Nothing
-        Just (nextTaskId, jobTag, fwdScopeTag, fwdScopeGMId_, senderGMId) ->
-          case jobTag of
-            DJTRelayRemoved -> pure $ Just (nextTaskId :| [], jobTag, fwdScopeTag, fwdScopeGMId_)
-            DJTMessageForward -> do
-              taskIds <- case groupType of
-                GTChannel ->
-                  map fromOnly <$>
-                    DB.query
-                      db
-                      [sql|
-                        SELECT delivery_task_id
-                        FROM delivery_tasks
-                        WHERE group_id = ? AND delivery_job_scope = ?
-                          AND delivery_job_tag = ? AND forward_scope_tag = ?
-                          AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
-                          AND failed = 0 AND task_status = ?
-                        ORDER BY created_at ASC, delivery_task_id ASC
-                      |]
-                      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, DTSNew)
-                -- For GTSmallGroup we guarantee a singleSenderGMId for a delivery job by additionally filtering
-                -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
-                -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
-                -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
-                GTSmallGroup ->
-                  map fromOnly <$>
-                    DB.query
-                      db
-                      [sql|
-                        SELECT delivery_task_id
-                        FROM delivery_tasks
-                        WHERE group_id = ? AND delivery_job_scope = ?
-                          AND delivery_job_tag = ? AND forward_scope_tag = ?
-                          AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
-                          AND sender_group_member_id = ?
-                          AND failed = 0 AND task_status = ?
-                        ORDER BY created_at ASC, delivery_task_id ASC
-                      |]
-                      (groupId, jobScope, jobTag, fwdScopeTag, fwdScopeGMId_, senderGMId, DTSNew)
-              forM (L.nonEmpty taskIds) $ \taskIds' -> pure (taskIds', jobTag, fwdScopeTag, fwdScopeGMId_)
-    getTasksBatch :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO (Either StoreError DeliveryTasksBatch)
-    getTasksBatch (taskIds, jobTag, fwdScopeTag, fwdScopeGMId_) = do
-      case (taskIds, jobTag) of
-        (_taskIds, DJTMessageForward) -> do
-          case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
-            Nothing -> pure $ Left SEInvalidDeliveryTasksBatch
-            Just fwdScope -> runExceptT $ do
-              tasks <- traverse (ExceptT . getTask) taskIds
-              pure $ DTBMessageForward tasks fwdScope
-          where
-            getTask :: Int64 -> IO (Either StoreError MessageForwardTask)
-            getTask taskId =
-              firstRow toMessageForwardTask (SEDeliveryTaskNotFound taskId) $
-                DB.query
-                  db
-                  [sql|
-                    SELECT
-                      m.group_member_id, m.member_id, p.display_name,
-                      COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
-                    FROM delivery_tasks t
-                    JOIN messages msg ON msg.message_id = t.message_id
-                    JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-                    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-                    WHERE t.delivery_task_id = ?
-                  |]
-                  (Only taskId)
-              where
-                toMessageForwardTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt) -> MessageForwardTask
-                toMessageForwardTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel) =
-                  MessageForwardTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
-        (taskId :| [], DJTRelayRemoved) ->
-          firstRow (DTBRelayRemoved . toRelayRemovedTask) (SEDeliveryTaskNotFound taskId) $
+    getTaskId :: IO (Maybe (Int64, DeliveryJobTag))
+    getTaskId =
+      maybeFirstRow id $
+        DB.query
+          db
+          [sql|
+            SELECT delivery_task_id, delivery_job_tag
+            FROM delivery_tasks
+            WHERE group_id = ? AND delivery_job_scope = ?
+              AND failed = 0 AND task_status = ?
+            ORDER BY created_at ASC, delivery_task_id ASC
+            LIMIT 1
+          |]
+          (groupId, jobScope, DTSNew)
+    getTask :: (Int64, DeliveryJobTag) -> IO (Either StoreError DeliveryTask)
+    getTask (taskId, jobTag) =
+      case jobTag of
+        DJTMessageForward -> (DTMessageForward <$>) <$> getMessageForwardTask_ db taskId
+        DJTRelayRemoved -> (DTRelayRemoved <$>) <$> getRelayRemovedTask_ db taskId
+
+markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
+markDeliveryTaskFailed_ db taskId =
+  DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
+
+getMessageForwardTask_ :: DB.Connection -> Int64 -> IO (Either StoreError MessageForwardTask)
+getMessageForwardTask_ db taskId =
+  firstRow' toMsgFwdTask (SEDeliveryTaskNotFound taskId) $
+    DB.query
+      db
+      [sql|
+        SELECT
+          t.forward_scope_tag, t.forward_scope_group_member_id,
+          m.group_member_id, m.member_id, p.display_name,
+          COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      |]
+      (Only taskId)
+  where
+    toMsgFwdTask :: (GroupForwardScopeTag, Maybe GroupMemberId, GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt) -> Either StoreError MessageForwardTask
+    toMsgFwdTask (fwdScopeTag, fwdScopeGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel) =
+      case forwardTagToScope fwdScopeTag fwdScopeGMId_ of
+        Nothing -> Left $ SEInvalidDeliveryTask taskId
+        Just forwardScope -> Right $ MessageForwardTask {taskId, forwardScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
+
+getRelayRemovedTask_ :: DB.Connection -> Int64 -> IO (Either StoreError RelayRemovedTask)
+getRelayRemovedTask_ db taskId =
+  firstRow toRelayRmvdTask (SEDeliveryTaskNotFound taskId) $
+    DB.query
+      db
+      [sql|
+        SELECT
+          m.group_member_id, m.member_id, p.display_name,
+          COALESCE(msg.broker_ts, msg.created_at), msg.msg_body
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      |]
+      (Only taskId)
+  where
+    toRelayRmvdTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json) -> RelayRemovedTask
+    toRelayRmvdTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage) =
+      RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
+
+-- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
+-- passed MessageForwardTask defines the scope to search for
+getNextMsgFwdTasks :: DB.Connection -> DeliveryWorkerScope -> GroupType -> MessageForwardTask -> IO (Either StoreError [Either StoreError MessageForwardTask])
+getNextMsgFwdTasks db deliveryScope groupType task =
+  getWorkItems "message forward task" getTaskIds (getMessageForwardTask_ db) (markDeliveryTaskFailed_ db)
+  where
+    (groupId, jobScope) = deliveryScope
+    MessageForwardTask {forwardScope, senderGMId} = task
+    (fwdScopeTag, fwdScopeGMId_) = forwardScopeToTag forwardScope
+    getTaskIds :: IO [Int64]
+    getTaskIds =
+      case groupType of
+        GTChannel ->
+          map fromOnly <$>
             DB.query
               db
               [sql|
-                SELECT
-                  m.group_member_id, m.member_id, p.display_name,
-                  COALESCE(msg.broker_ts, msg.created_at), msg.msg_body
-                FROM delivery_tasks t
-                JOIN messages msg ON msg.message_id = t.message_id
-                JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-                JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-                WHERE t.delivery_task_id = ?
+                SELECT delivery_task_id
+                FROM delivery_tasks
+                WHERE group_id = ? AND delivery_job_scope = ? AND delivery_job_tag = ?
+                  AND forward_scope_tag = ? AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
+                  AND failed = 0 AND task_status = ?
+                ORDER BY created_at ASC, delivery_task_id ASC
               |]
-              (Only taskId)
-          where
-            toRelayRemovedTask :: (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json) -> RelayRemovedTask
-            toRelayRemovedTask (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage) =
-              RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
-        _ -> pure $ Left SEInvalidDeliveryTasksBatch
-    markTasksFailed :: (NonEmpty Int64, DeliveryJobTag, GroupForwardScopeTag, Maybe GroupMemberId) -> IO ()
-    markTasksFailed (taskIds, _, _, _) =
-      forM_ taskIds $ \taskId ->
-        DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
+              (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, DTSNew)
+        -- For GTSmallGroup we guarantee a singleSenderGMId for a delivery job by additionally filtering
+        -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
+        -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
+        -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
+        GTSmallGroup ->
+          map fromOnly <$>
+            DB.query
+              db
+              [sql|
+                SELECT delivery_task_id
+                FROM delivery_tasks
+                WHERE group_id = ? AND delivery_job_scope = ? AND delivery_job_tag = ?
+                  AND forward_scope_tag = ? AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
+                  AND sender_group_member_id = ?
+                  AND failed = 0 AND task_status = ?
+                ORDER BY created_at ASC, delivery_task_id ASC
+              |]
+              (groupId, jobScope, DJTMessageForward, fwdScopeTag, fwdScopeGMId_, senderGMId, DTSNew)
 
 createMessageForwardJob :: DB.Connection -> DeliveryWorkerScope -> GroupForwardScope -> Maybe GroupMemberId -> ByteString -> IO ()
 createMessageForwardJob db deliveryScope fwdScope singleSenderGMId_ deliveryBody = do
