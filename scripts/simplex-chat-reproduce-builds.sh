@@ -165,6 +165,9 @@ done
 
 # If everything is still okay, compute checksums file
 if [ "${bad}" = 0 ]; then
+	curl -L "${repo}/archive/refs/tags/${TAG}.tar.gz" -o "$init_dir/$TAG-$repo_name/from-source/source_code.tar.gz"
+	curl -L "${repo}/archive/refs/tags/${TAG}.zip" -o "$init_dir/$TAG-$repo_name/from-source/source_code.zip"
+
 	sha256sum "${path_bin}"/from-source/* | sed -e "s|$PWD/||g" -e 's|from-source/||g' -e "s|-$repo_name||g" > "${path_bin}/_sha256sums"
 
 	printf 'Checksums computed - %s\n' "${path_bin}/_sha256sums"
