@@ -1289,7 +1289,7 @@
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">A partnereinek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a kapcsolatot és eltávolíthatja a partnert (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelmondat nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">A partnerei továbbra is kapcsolódva maradnak.</string>
-    <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát</string>
+    <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát.</string>
     <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további információkért</string>
     <string name="stop_snd_file__message">A fájl küldése le fog állni.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.</string>
@@ -1305,9 +1305,9 @@
     <string name="system_restricted_background_in_call_desc">Az alkalmazás 1 perc után bezárható a háttérben.</string>
     <string name="group_preview_you_are_invited">Ön meghívást kapott a csoportba</string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Engedélyezze</b> a következő párbeszédpanelen az azonnali értesítések fogadásához.]]></string>
-    <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát</string>
+    <string name="error_smp_test_server_auth">A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát.</string>
     <string name="you_will_join_group">Kapcsolódni fog a csoport összes tagjához.</string>
-    <string name="error_smp_test_certificate">Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen</string>
+    <string name="error_smp_test_certificate">A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal.</string>
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">A biztonsága érdekében kapcsolja be a SimpleX-zár funkciót.\nA funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beállítására az eszközén.</string>
     <string name="video_will_be_received_when_contact_is_online">A videó akkor érkezik meg, amikor a küldője elérhető lesz, várjon, vagy ellenőrizze később!</string>
     <string name="network_error_desc">Ellenőrizze a hálózati kapcsolatát vele: %1$s, és próbálja újra.</string>
@@ -2502,4 +2502,5 @@
     <string name="error_marking_member_support_chat_read">Hiba a csevegés olvasottként való megjelölésekor</string>
     <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
+    <string name="network_error_unknown_ca">A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
 </resources>
