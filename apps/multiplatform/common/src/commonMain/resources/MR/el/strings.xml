@@ -395,4 +395,5 @@
     <string name="onboarding_notifications_mode_off_desc"><![CDATA[<b> Καλύτερο για τη ζωή της μπαταρίας </b>. Θα λαμβάνετε ειδοποιήσεις μόνο όταν εκτελείται η εφαρμογή (ΧΩΡΙΣ υπηρεσία παρασκηνίου).]]></string>
     <string name="app_check_for_updates_beta">Beta</string>
     <string name="v6_1_better_calls">Καλύτερες κλήσεις</string>
+    <string name="n_file_errors">%1$d σφάλμα/τα αρχείου/ων:\n%2$s</string>
 </resources>
