@@ -3592,8 +3592,9 @@ InvalidQuote:
 InvalidMention:
 - type: "invalidMention"
 
-InvalidDeliveryTasksBatch:
-- type: "invalidDeliveryTasksBatch"
+InvalidDeliveryTask:
+- type: "invalidDeliveryTask"
+- taskId: int64
 
 DeliveryTaskNotFound:
 - type: "deliveryTaskNotFound"

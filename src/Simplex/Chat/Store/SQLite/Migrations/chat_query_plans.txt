@@ -1,18 +1,4 @@
 Query: 
-                        SELECT delivery_task_id
-                        FROM delivery_tasks
-                        WHERE group_id = ? AND delivery_job_scope = ?
-                          AND delivery_job_tag = ? AND forward_scope_tag = ?
-                          AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
-                          AND sender_group_member_id = ?
-                          AND failed = 0 AND task_status = ?
-                        ORDER BY created_at ASC, delivery_task_id ASC
-                      
-Plan:
-SEARCH delivery_tasks USING INDEX idx_delivery_tasks_forward_scope_group_member_id (forward_scope_group_member_id=?)
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
                         UPDATE contacts
                         SET local_display_name = ?, updated_at = ?
                         WHERE contact_id = ?
@@ -27,22 +13,6 @@ Query:
                     
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-                    SELECT
-                      m.group_member_id, m.member_id, p.display_name,
-                      COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
-                    FROM delivery_tasks t
-                    JOIN messages msg ON msg.message_id = t.message_id
-                    JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-                    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-                    WHERE t.delivery_task_id = ?
-                  
-Plan:
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
                     UPDATE contact_requests
@@ -126,20 +96,17 @@ SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-                SELECT
-                  m.group_member_id, m.member_id, p.display_name,
-                  COALESCE(msg.broker_ts, msg.created_at), msg.msg_body
-                FROM delivery_tasks t
-                JOIN messages msg ON msg.message_id = t.message_id
-                JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-                JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-                WHERE t.delivery_task_id = ?
+                SELECT delivery_task_id
+                FROM delivery_tasks
+                WHERE group_id = ? AND delivery_job_scope = ? AND delivery_job_tag = ?
+                  AND forward_scope_tag = ? AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
+                  AND sender_group_member_id = ?
+                  AND failed = 0 AND task_status = ?
+                ORDER BY created_at ASC, delivery_task_id ASC
               
 Plan:
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH delivery_tasks USING INDEX idx_delivery_tasks_forward_scope_group_member_id (forward_scope_group_member_id=?)
+USE TEMP B-TREE FOR ORDER BY
 
 Query: 
                 UPDATE contact_profiles
@@ -262,21 +229,6 @@ Plan:
 SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
-USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-              SELECT
-                delivery_task_id, delivery_job_tag,
-                forward_scope_tag, forward_scope_group_member_id,
-                sender_group_member_id
-              FROM delivery_tasks
-              WHERE group_id = ? AND delivery_job_scope = ?
-                AND failed = 0 AND task_status = ?
-              ORDER BY created_at ASC, delivery_task_id ASC
-              LIMIT 1
-            
-Plan:
-SEARCH delivery_tasks USING INDEX idx_delivery_tasks_group_id (group_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -729,6 +681,18 @@ Query:
           
 Plan:
 SEARCH delivery_jobs USING INDEX idx_delivery_jobs_group_id (group_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+            SELECT delivery_task_id, delivery_job_tag
+            FROM delivery_tasks
+            WHERE group_id = ? AND delivery_job_scope = ?
+              AND failed = 0 AND task_status = ?
+            ORDER BY created_at ASC, delivery_task_id ASC
+            LIMIT 1
+          
+Plan:
+SEARCH delivery_tasks USING INDEX idx_delivery_tasks_group_id (group_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1586,7 +1550,8 @@ Query:
           UPDATE group_members
           SET support_chat_items_unread = 0,
               support_chat_items_member_attention = 0,
-              support_chat_items_mentions = 0
+              support_chat_items_mentions = 0,
+              updated_at = ?
           WHERE group_member_id = ?
         
 Plan:
@@ -2759,6 +2724,22 @@ SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND
 
 Query: 
         SELECT
+          m.group_member_id, m.member_id, p.display_name,
+          COALESCE(msg.broker_ts, msg.created_at), msg.msg_body
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      
+Plan:
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT
           nf.note_folder_id,
           nf.chat_ts,
           (
@@ -3088,6 +3069,23 @@ SEARCH ChatStats USING AUTOMATIC COVERING INDEX (note_folder_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
 USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+        SELECT
+          t.forward_scope_tag, t.forward_scope_group_member_id,
+          m.group_member_id, m.member_id, p.display_name,
+          COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      
+Plan:
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT COUNT(1)

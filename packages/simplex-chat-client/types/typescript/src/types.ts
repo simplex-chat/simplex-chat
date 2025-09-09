@@ -3818,7 +3818,7 @@ export type StoreError =
   | StoreError.UsageConditionsNotFound
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
-  | StoreError.InvalidDeliveryTasksBatch
+  | StoreError.InvalidDeliveryTask
   | StoreError.DeliveryTaskNotFound
   | StoreError.InvalidDeliveryJob
   | StoreError.DeliveryJobNotFound
@@ -3903,7 +3903,7 @@ export namespace StoreError {
     | "usageConditionsNotFound"
     | "invalidQuote"
     | "invalidMention"
-    | "invalidDeliveryTasksBatch"
+    | "invalidDeliveryTask"
     | "deliveryTaskNotFound"
     | "invalidDeliveryJob"
     | "deliveryJobNotFound"
@@ -4286,8 +4286,9 @@ export namespace StoreError {
     type: "invalidMention"
   }
 
-  export interface InvalidDeliveryTasksBatch extends Interface {
-    type: "invalidDeliveryTasksBatch"
+  export interface InvalidDeliveryTask extends Interface {
+    type: "invalidDeliveryTask"
+    taskId: number // int64
   }
 
   export interface DeliveryTaskNotFound extends Interface {
