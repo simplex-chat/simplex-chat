@@ -3642,8 +3642,9 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
-      <trans-unit id="Error: %@." xml:space="preserve">
+      <trans-unit id="Error: %@." xml:space="preserve" approved="no">
         <source>Error: %@.</source>
+        <target state="translated">Errore: %@.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
@@ -3870,21 +3871,24 @@ snd error text</note>
         <target>Trova le chat più velocemente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <target state="translated">L'impronta digitale nell'indirizzo del server di destinazione non corrisponde al certificato: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <target state="translated">L'impronta digitale nell'indirizzo del server di inoltro non corrisponde al certificato: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata</target>
+        <target state="translated">L'impronta digitale nell'indirizzo del server non corrisponde al certificato.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate: %@.</source>
+        <target state="translated">L'impronta digitale nell'indirizzo del server non corrisponde al certificato: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -7349,14 +7353,14 @@ chat item action</note>
         <target>Il protocollo del server è cambiato.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>Il server richiede l'autorizzazione di creare code, controlla la password</target>
+        <target state="translated">Il server richiede l'autorizzazione di creare code, controlla la password.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target>Il server richiede l'autorizzazione per il caricamento, controllare la password</target>
+        <target state="translated">Il server richiede l'autorizzazione per l'invio, controlla la password.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
