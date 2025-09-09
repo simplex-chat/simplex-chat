@@ -2086,7 +2086,7 @@ saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember@GroupMember {me
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = Just $ groupMemberId' refAuthorMember
   -- TODO [channels fwd] recipient should deduplicate its own messages if they are forwarded back
-  --   - it can happen when chat relay forwards a batch of messages of different senders
+  -- TODO   - it can happen when chat relay forwards a batch of messages of different senders
   withStore (\db -> createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId)
     `catchAllErrors` \e -> case e of
       ChatErrorStore (SEDuplicateGroupMessage _ _ (Just authorGroupMemberId) Nothing) -> do
