@@ -937,7 +937,7 @@
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y se comparte sólo con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
     <string name="button_add_welcome_message">Añadir mensaje de bienvenida</string>
     <string name="v4_6_audio_video_calls">Llamadas y videollamadas</string>
