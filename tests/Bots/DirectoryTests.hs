@@ -575,7 +575,6 @@ testDelistedOwnerRemoved ps =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         removeMember "privacy" cath bob
-        _err <- getTermLine bob -- TODO [channels fwd] delete rcv queues immediately on xGrpMemDel
         bob <# "'SimpleX Directory'> You are removed from the group ID 1 (privacy)."
         bob <## ""
         bob <## "The group is no longer listed in the directory."
@@ -609,7 +608,6 @@ testNotDelistedMemberRemoved ps =
         registerGroup superUser bob "privacy" "Privacy"
         addCathAsOwner bob cath
         removeMember "privacy" bob cath
-        _err <- getTermLine cath -- TODO [channels fwd] delete rcv queues immediately on xGrpMemDel
         (superUser </)
         cath `connectVia` dsLink
         cath #> "@'SimpleX Directory_1' privacy"
