@@ -3462,9 +3462,9 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     let cursorGMId' = groupMemberId' $ last mems
                     unless (null mems) $ deliver fwdBody mems
                     withStore' $ \db -> do
+                      updateDeliveryJobCursor db jobId cursorGMId'
                       when (isNothing cursorGMId) $
-                        updateDeliveryJobCursor db jobId cursorGMId'
-                      updateDeliveryJobStatus db jobId DJSInProgress -- job status "in progress" is informational
+                        updateDeliveryJobStatus db jobId DJSInProgress -- job status "in progress" is informational
                     unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
