@@ -1,3 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="send_disappearing_message_1_minute">1 minūte</string>
+    <string name="chat_item_ttl_month">1 mēnesis</string>
 </resources>
