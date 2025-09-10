@@ -98,10 +98,14 @@ SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
                 SELECT delivery_task_id
                 FROM delivery_tasks
-                WHERE group_id = ? AND delivery_scope_type = ? AND delivery_job_type = ?
-                  AND forward_scope_tag = ? AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
+                WHERE group_id = ?
+                  AND delivery_scope_type = ?
+                  AND delivery_scope_include_pending IS NOT DISTINCT FROM ?
+                  AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
+                  AND delivery_job_type = ?
                   AND sender_group_member_id = ?
-                  AND failed = 0 AND task_status = ?
+                  AND failed = 0
+                  AND task_status = ?
                 ORDER BY created_at ASC, delivery_task_id ASC
               
 Plan:
@@ -432,8 +436,8 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT
-              delivery_job_type, forward_scope_tag, delivery_scope_support_gm_id, single_sender_group_member_id,
-              delivery_body, cursor_group_member_id
+              delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
+              delivery_job_type, single_sender_group_member_id, delivery_body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           
@@ -1617,9 +1621,8 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
         INSERT INTO delivery_tasks (
-          group_id, delivery_scope_type, delivery_job_type,
-          forward_scope_tag, delivery_scope_support_gm_id, sender_group_member_id,
-          message_id, message_from_channel, task_status
+          group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
+          delivery_job_type, sender_group_member_id, message_id, message_from_channel, task_status
         ) VALUES (?,?,?,?,?,?,?,?,?)
       
 Plan:
@@ -2724,22 +2727,6 @@ SEARCH ci USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND
 
 Query: 
         SELECT
-          m.group_member_id, m.member_id, p.display_name,
-          COALESCE(msg.broker_ts, msg.created_at), msg.msg_body
-        FROM delivery_tasks t
-        JOIN messages msg ON msg.message_id = t.message_id
-        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        WHERE t.delivery_task_id = ?
-      
-Plan:
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT
           nf.note_folder_id,
           nf.chat_ts,
           (
@@ -3069,23 +3056,6 @@ SEARCH ChatStats USING AUTOMATIC COVERING INDEX (note_folder_id=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
 USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-        SELECT
-          t.forward_scope_tag, t.delivery_scope_support_gm_id,
-          m.group_member_id, m.member_id, p.display_name,
-          COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
-        FROM delivery_tasks t
-        JOIN messages msg ON msg.message_id = t.message_id
-        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-        WHERE t.delivery_task_id = ?
-      
-Plan:
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT COUNT(1)
@@ -4350,19 +4320,9 @@ SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profil
 
 Query: 
       INSERT INTO delivery_jobs (
-        group_id, delivery_scope_type, delivery_job_type,
-        forward_scope_tag, delivery_scope_support_gm_id, single_sender_group_member_id,
-        delivery_body, job_status, created_at, updated_at
+        group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
+        delivery_job_type, single_sender_group_member_id, delivery_body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
-    
-Plan:
-
-Query: 
-      INSERT INTO delivery_jobs (
-        group_id, delivery_scope_type, delivery_job_type,
-        single_sender_group_member_id,
-        delivery_body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5179,6 +5139,23 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
+
+Query: 
+    SELECT
+      t.delivery_scope_type, t.delivery_scope_include_pending, t.delivery_scope_support_gm_id,
+      m.group_member_id, m.member_id, p.display_name,
+      COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
+    FROM delivery_tasks t
+    JOIN messages msg ON msg.message_id = t.message_id
+    JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+    WHERE t.delivery_task_id = ?
+  
+Plan:
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
