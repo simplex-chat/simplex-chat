@@ -2955,8 +2955,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       if membershipMemId == memId
         then checkRole membership $ do
           deleteGroupLinkIfExists user gInfo
-          -- TODO [channels fwd] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
-          unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
+          if isUserGrpFwdRelay gInfo
+            then deleteGroupRcvQueues user gInfo
+            else deleteGroupConnections user gInfo False
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
@@ -3026,8 +3027,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpDel gInfo@GroupInfo {membership} m@GroupMember {memberRole} msg brokerTs = do
       when (memberRole /= GROwner) $ throwChatError $ CEGroupUserRole gInfo GROwner
       withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemGroupDeleted
-      -- TODO [channels fwd] possible improvement is to immediately delete rcv queues if isUserGrpFwdRelay
       unless (isUserGrpFwdRelay gInfo) $ deleteGroupConnections user gInfo False
+      if isUserGrpFwdRelay gInfo
+        then deleteGroupRcvQueues user gInfo
+        else deleteGroupConnections user gInfo False
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEGroupDeleted)
       groupMsgToView cInfo ci
@@ -3282,6 +3285,12 @@ deleteGroupConnections user gInfo waitDelivery = do
   -- member records are not deleted to keep history
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
   deleteMembersConnections' user members waitDelivery
+
+deleteGroupRcvQueues :: User -> GroupInfo -> CM ()
+deleteGroupRcvQueues user gInfo = do
+  vr <- chatVersionRange
+  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  deleteMemberRcvQueues user members
 
 startDeliveryTaskWorkers :: CM ()
 startDeliveryTaskWorkers = do

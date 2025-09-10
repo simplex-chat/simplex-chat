@@ -1636,6 +1636,11 @@ deleteMembersConnections' user members waitDelivery = do
   deleteAgentConnectionsAsync' (map aConnId memberConns) waitDelivery
   lift . void . withStoreBatch' $ \db -> map (\Connection {connId} -> deleteConnectionRecord db user connId) memberConns
 
+deleteMemberRcvQueues :: User -> [GroupMember] -> CM ()
+deleteMemberRcvQueues user members = do
+  let memberConns = mapMaybe (\GroupMember {activeConn} -> activeConn) members
+  deleteAgentRcvQueuesAsync $ map aConnId memberConns
+
 deleteMemberConnection :: GroupMember -> CM ()
 deleteMemberConnection mem = deleteMemberConnection' mem False
 
@@ -2241,6 +2246,11 @@ deleteAgentConnectionsAsync' :: [ConnId] -> Bool -> CM ()
 deleteAgentConnectionsAsync' [] _ = pure ()
 deleteAgentConnectionsAsync' acIds waitDelivery = do
   withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
+
+deleteAgentRcvQueuesAsync :: [ConnId] -> CM ()
+deleteAgentRcvQueuesAsync [] = pure ()
+deleteAgentRcvQueuesAsync acIds =
+  withAgent (\a -> deleteRcvQueuesAsync a acIds) `catchAllErrors` eToView
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do
