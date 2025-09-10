@@ -2013,10 +2013,10 @@ Das ist Ihr eigener Einmal-Link!</target>
         <target>Verbindungsfehler (AUTH)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve">
+      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
         <source>Connection is blocked by server operator:
 %@</source>
-        <target>Die Verbindung wurde vom Server-Betreiber blockiert:
+        <target state="translated">Die Verbindung wurde vom Serverbetreiber blockiert:
 %@</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3642,8 +3642,9 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
-      <trans-unit id="Error: %@." xml:space="preserve">
+      <trans-unit id="Error: %@." xml:space="preserve" approved="no">
         <source>Error: %@.</source>
+        <target state="translated">Fehler: %@.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
@@ -3763,10 +3764,10 @@ snd error text</note>
 %@</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve">
+      <trans-unit id="File is blocked by server operator:&#10;%@." xml:space="preserve" approved="no">
         <source>File is blocked by server operator:
 %@.</source>
-        <target>Datei wurde vom Server-Betreiber blockiert:
+        <target state="translated">Die Datei wurde vom Serverbetreiber blockiert:
 %@.</target>
         <note>file error text</note>
       </trans-unit>
@@ -3870,21 +3871,24 @@ snd error text</note>
         <target>Chats schneller finden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <target state="translated">Fingerabdruck in der Zielserveradresse stimmt nicht mit dem Zertifikat überein: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <target state="translated">Fingerabdruck in der Weiterleitungsserveradresse stimmt nicht mit dem Zertifikat überein: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig</target>
+        <target state="translated">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate: %@.</source>
+        <target state="translated">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -7349,14 +7353,14 @@ chat item action</note>
         <target>Das Server-Protokoll wurde geändert.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort</target>
+        <target state="translated">Der Server erfordert zum Erstellen von Warteschlangen eine Autorisierung. Bitte überprüfen Sie das Passwort.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target>Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung</target>
+        <target state="translated">Der Server erfordert zum Hochladen eine Autorisierung. Bitte überprüfen Sie das Passwort.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -9728,9 +9732,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Blockiert</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
-      <trans-unit id="blocked %@" xml:space="preserve">
+      <trans-unit id="blocked %@" xml:space="preserve" approved="no">
         <source>blocked %@</source>
-        <target>%@ wurde blockiert</target>
+        <target state="translated">hat %@ blockiert</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="blocked by admin" xml:space="preserve">
@@ -10507,9 +10511,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Dieser Kontakt</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="unblocked %@" xml:space="preserve">
+      <trans-unit id="unblocked %@" xml:space="preserve" approved="no">
         <source>unblocked %@</source>
-        <target>%@ wurde freigegeben</target>
+        <target state="translated">hat %@ freigegeben</target>
         <note>rcv group event chat item</note>
       </trans-unit>
       <trans-unit id="unknown" xml:space="preserve">
@@ -10741,9 +10745,9 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>SimpleX NSE</target>
         <note>Bundle name</note>
       </trans-unit>
-      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
+      <trans-unit id="NSHumanReadableCopyright" xml:space="preserve" approved="no">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
-        <target>Copyright © 2024 SimpleX Chat. All rights reserved.</target>
+        <target state="translated">Copyright © 2025 SimpleX Chat. All rights reserved.</target>
         <note>Copyright (human-readable)</note>
       </trans-unit>
     </body>
@@ -10937,14 +10941,14 @@ Zuletzt empfangene Nachricht: %2$@</target>
         <target>Passwort</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve">
+      <trans-unit id="Please create a profile in the SimpleX app" xml:space="preserve" approved="no">
         <source>Please create a profile in the SimpleX app</source>
-        <target>Bitte erstellen Sie ein Profil in der SimpleX-App</target>
+        <target state="translated">Bitte erstellen Sie in der SimpleX-App ein Profil</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve">
+      <trans-unit id="Selected chat preferences prohibit this message." xml:space="preserve" approved="no">
         <source>Selected chat preferences prohibit this message.</source>
-        <target>Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.</target>
+        <target state="translated">Die gewählten Chat-Einstellungen erlauben diese Nachricht nicht.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Sending a message takes longer than expected." xml:space="preserve">
