@@ -3355,9 +3355,9 @@ chat item action</note>
         <target>Error al descifrar el archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat" xml:space="preserve">
+      <trans-unit id="Error deleting chat" xml:space="preserve" approved="no">
         <source>Error deleting chat</source>
-        <target>Error al eliminar el chat con el miembro</target>
+        <target state="translated">Error al eliminar el chat</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
@@ -3642,8 +3642,9 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
-      <trans-unit id="Error: %@." xml:space="preserve">
+      <trans-unit id="Error: %@." xml:space="preserve" approved="no">
         <source>Error: %@.</source>
+        <target state="translated">Error: %@.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
@@ -3870,21 +3871,24 @@ snd error text</note>
         <target>Encuentra chats mas rápido</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <target state="translated">La huella en la dirección del servidor de destino no coincide con el certificado: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <target state="translated">La huella en la dirección del servidor de reenvío no coincide con el certificado: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Posiblemente la huella del certificado en la dirección del servidor es incorrecta</target>
+        <target state="translated">La huella en la dirección del servidor no coincide con el certificado.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate: %@.</source>
+        <target state="translated">La huella en la dirección del servidor no coincide con el certificado: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -7349,14 +7353,14 @@ chat item action</note>
         <target>El protocolo del servidor ha cambiado.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>El servidor requiere autorización para crear colas, comprueba la contraseña</target>
+        <target state="translated">El servidor requiere autorización para crear colas, comprueba la contraseña.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target>El servidor requiere autorización para subir, comprueba la contraseña</target>
+        <target state="translated">El servidor requiere autorización para subir, comprueba la contraseña.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -9573,9 +9577,9 @@ Repeat connection request?</source>
         <target>El perfil sólo se comparte con tus contactos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
+      <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve" approved="no">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
-        <target>Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</target>
+        <target state="translated">Tu perfil se almacena en tu dispositivo y se comparte sólo con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
