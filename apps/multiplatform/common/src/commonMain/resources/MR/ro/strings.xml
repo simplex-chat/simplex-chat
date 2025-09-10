@@ -1902,7 +1902,7 @@
     <string name="personal_welcome">Bun venit, %1$s!</string>
     <string name="tap_to_start_new_chat">Atinge pentru a începe o conversație nouă</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Folosește acreditări proxy diferite pentru fiecare conexiune.</string>
-    <string name="simplex_address_or_1_time_link">Adresă SimpleX sau link unic?</string>
+    <string name="simplex_address_or_1_time_link">Adresă SimpleX sau link de unică folosință?</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Pentru a-ți proteja confidențialitatea, SimpleX folosește ID-uri separate pentru fiecare persoană de contact.</string>
     <string name="you_are_invited_to_group">Ai fost invitat în grup</string>
     <string name="operator_use_for_messages_receiving">Pentru a primi</string>
@@ -1933,7 +1933,7 @@
     <string name="group_member_status_unknown_short">necunoscut</string>
     <string name="you_can_hide_or_mute_user_profile">Poți ascunde sau dezactiva notificările unui profil de utilizator – ține apăsat pentru meniu.</string>
     <string name="chat_preferences_you_allow">Ați permis</string>
-    <string name="share_1_time_link_with_a_friend">Partajează linkul unic cu un prieten</string>
+    <string name="share_1_time_link_with_a_friend">Partajează link de unică folosință cu un prieten</string>
     <string name="v4_3_voice_messages">Mesaje vocale</string>
     <string name="voice_message_send_text">Mesaj vocal…</string>
     <string name="network_socks_proxy_settings">Setări proxy SOCKS</string>
@@ -1946,7 +1946,7 @@
     <string name="voice_messages_prohibited">Mesajele vocale sunt interzise!</string>
     <string name="you_accepted_connection">Ați acceptat conexiunea</string>
     <string name="share_address_publicly">Partajează adresa public</string>
-    <string name="share_this_1_time_link">Partajează acest link de invitație unic</string>
+    <string name="share_this_1_time_link">Partajează acest link de invitație de unică folosință</string>
     <string name="to_verify_compare">Pentru a verifica criptarea end-to-end, compară (sau scanează) codul de pe dispozitivele voastre cu persoana de contact.</string>
     <string name="smp_servers_use_server_for_new_conn">Utilizare pentru conexiuni noi</string>
     <string name="network_socks_toggle_use_socks_proxy">Utilizați proxy SOCKS</string>
@@ -1989,7 +1989,7 @@
     <string name="v5_0_large_files_support">Videoclipuri și fișiere de până la 1 GB</string>
     <string name="v5_3_simpler_incognito_mode_descr">Comută modul incognito la conectare.</string>
     <string name="v5_7_shape_profile_images">Formă imagine de profil</string>
-    <string name="v6_1_switch_chat_profile_descr">Schimbă profilul de conversații pentru invitații unice.</string>
+    <string name="v6_1_switch_chat_profile_descr">Schimbă profilul de conversație pentru invitații de unică folosință.</string>
     <string name="you_can_enable_delivery_receipts_later">Puteți activa mai târziu prin Setări</string>
     <string name="custom_time_unit_weeks">săptămâni</string>
     <string name="connect_plan_this_is_your_own_one_time_link">Acesta este linkul tău unic, valabil o singură dată!</string>
@@ -2099,7 +2099,7 @@
     <string name="to_share_with_your_contact">(pentru a partaja cu persoana de contact)</string>
     <string name="to_start_a_new_chat_help_header">Pentru a începe o nouă conversație</string>
     <string name="gallery_video_button">Video</string>
-    <string name="share_invitation_link">Partajează link unic</string>
+    <string name="share_invitation_link">Partajează link de unică folosință</string>
     <string name="this_link_is_not_a_valid_connection_link">Acest link nu este un link de conectare valid!</string>
     <string name="this_QR_code_is_not_a_link">Acest cod QR nu este un link!</string>
     <string name="short_link_button_text">Link scurt</string>
@@ -2174,7 +2174,7 @@
     <string name="share_simplex_address_on_social_media">Partajează adresa SimpleX pe rețelele de socializare.</string>
     <string name="scan_qr_to_connect_to_contact">Pentru a te conecta, persoana ta de contact poate scana codul QR sau poate folosi linkul din aplicație.</string>
     <string name="you_can_set_connection_name_to_remember">Poți seta numele conexiunii, ca să-ți amintești cu cine ai partajat linkul.</string>
-    <string name="simplex_address_and_1_time_links_are_safe_to_share">Adresa SimpleX și linkurile unice pot fi partajate în siguranță prin orice aplicație de mesagerie.</string>
+    <string name="simplex_address_and_1_time_links_are_safe_to_share">Adresa SimpleX și linkurile de unică folosință pot fi partajate în siguranță prin orice aplicație de mesagerie.</string>
     <string name="code_you_scanned_is_not_simplex_link_qr_code">Codul scanat nu este un cod QR de tip link SimpleX.</string>
     <string name="smp_servers_test_server">Server de testare</string>
     <string name="smp_servers_test_servers">Servere de testare</string>
@@ -2257,7 +2257,7 @@
     <string name="privacy_chat_list_open_links_ask">Întreabă</string>
     <string name="operator_same_conditions_will_be_applied"><![CDATA[Aceleași condiții se vor aplica și operatorului <b>%s</b>.]]></string>
     <string name="change_automatic_deletion_question">Schimbați ștergerea automată a mesajelor?</string>
-    <string name="address_or_1_time_link">Adresă sau link unic?</string>
+    <string name="address_or_1_time_link">Adresă sau link de unică folosință?</string>
     <string name="network_session_mode_session">Sesiune de aplicație</string>
     <string name="contact_list_header_title">Contactele tale</string>
     <string name="network_proxy_auth_mode_username_password">Datele tale de conectare pot fi trimise necriptat.</string>
@@ -2270,7 +2270,7 @@
     <string name="chat_list_contacts">Contacte</string>
     <string name="sync_connection_desc">Conexiunea necesită renegocierea criptării.</string>
     <string name="your_simplex_contact_address">Adresa ta SimpleX</string>
-    <string name="create_1_time_link">Creează link unic</string>
+    <string name="create_1_time_link">Creează un link de unică folosință</string>
     <string name="your_current_profile">Profilul tău actual</string>
     <string name="onboarding_notifications_mode_service_desc_short">Aplicația rulează întotdeauna în fundal</string>
     <string name="rcv_group_event_member_accepted">acceptat %1$s</string>
@@ -2388,7 +2388,7 @@
     <string name="member_criteria_all">toți</string>
     <string name="chat_list_businesses">Afaceri</string>
     <string name="onboarding_conditions_by_using_you_agree">Prin utilizarea SimpleX Chat ești de acord să:\n- trimiți doar conținut legal în grupurile publice.\n- respecți ceilalți utilizatori – fără spam.</string>
-    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Linkul unic poate fi folosit <i>doar cu un singur contact</i> - partajează-l personal sau prin orice altă aplicație de mesagerie.]]></string>
+    <string name="one_time_link_can_be_used_with_one_contact_only"><![CDATA[Un link de unică folosință poate fi folosit <i>doar cu un singur contact</i> - partajează-l personal sau prin orice aplicație de mesagerie.]]></string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device">Nu trebuie să utilizați aceeași bază de date pe două dispozitive.</string>
     <string name="if_you_cannot_meet_in_person_show_QR_in_video_call_or_via_another_channel"><![CDATA[Dacă nu vă puteți întâlni în persoană, <b>arătați codul QR în apelul video</b> sau distribuiți linkul.]]></string>
     <string name="open_on_mobile_and_scan_qr_code"><![CDATA[Deschide <i>Utilizare de pe desktop</i> în aplicația mobilă și scanează codul QR.]]></string>
