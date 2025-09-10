@@ -74,6 +74,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
+import Simplex.Chat.Store.Delivery
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups

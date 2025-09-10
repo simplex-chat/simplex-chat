@@ -98,14 +98,14 @@ SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
                 SELECT delivery_task_id
                 FROM delivery_tasks
-                WHERE group_id = ? AND delivery_job_scope = ? AND delivery_job_tag = ?
-                  AND forward_scope_tag = ? AND forward_scope_group_member_id IS NOT DISTINCT FROM ?
+                WHERE group_id = ? AND delivery_scope_type = ? AND delivery_job_type = ?
+                  AND forward_scope_tag = ? AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
                   AND sender_group_member_id = ?
                   AND failed = 0 AND task_status = ?
                 ORDER BY created_at ASC, delivery_task_id ASC
               
 Plan:
-SEARCH delivery_tasks USING INDEX idx_delivery_tasks_forward_scope_group_member_id (forward_scope_group_member_id=?)
+SEARCH delivery_tasks USING INDEX idx_delivery_tasks_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -432,7 +432,7 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT
-              delivery_job_tag, forward_scope_tag, forward_scope_group_member_id, single_sender_group_member_id,
+              delivery_job_type, forward_scope_tag, delivery_scope_support_gm_id, single_sender_group_member_id,
               delivery_body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
@@ -674,7 +674,7 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
             SELECT delivery_job_id
             FROM delivery_jobs
-            WHERE group_id = ? AND delivery_job_scope = ?
+            WHERE group_id = ? AND delivery_scope_type = ?
               AND failed = 0 AND job_status IN (?, ?)
             ORDER BY created_at ASC, delivery_job_id ASC
             LIMIT 1
@@ -684,9 +684,9 @@ SEARCH delivery_jobs USING INDEX idx_delivery_jobs_group_id (group_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
-            SELECT delivery_task_id, delivery_job_tag
+            SELECT delivery_task_id, delivery_job_type
             FROM delivery_tasks
-            WHERE group_id = ? AND delivery_job_scope = ?
+            WHERE group_id = ? AND delivery_scope_type = ?
               AND failed = 0 AND task_status = ?
             ORDER BY created_at ASC, delivery_task_id ASC
             LIMIT 1
@@ -1617,8 +1617,8 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
         INSERT INTO delivery_tasks (
-          group_id, delivery_job_scope, delivery_job_tag,
-          forward_scope_tag, forward_scope_group_member_id, sender_group_member_id,
+          group_id, delivery_scope_type, delivery_job_type,
+          forward_scope_tag, delivery_scope_support_gm_id, sender_group_member_id,
           message_id, message_from_channel, task_status
         ) VALUES (?,?,?,?,?,?,?,?,?)
       
@@ -3072,7 +3072,7 @@ USE TEMP B-TREE FOR ORDER BY
 
 Query: 
         SELECT
-          t.forward_scope_tag, t.forward_scope_group_member_id,
+          t.forward_scope_tag, t.delivery_scope_support_gm_id,
           m.group_member_id, m.member_id, p.display_name,
           COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
         FROM delivery_tasks t
@@ -4350,8 +4350,8 @@ SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profil
 
 Query: 
       INSERT INTO delivery_jobs (
-        group_id, delivery_job_scope, delivery_job_tag,
-        forward_scope_tag, forward_scope_group_member_id, single_sender_group_member_id,
+        group_id, delivery_scope_type, delivery_job_type,
+        forward_scope_tag, delivery_scope_support_gm_id, single_sender_group_member_id,
         delivery_body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     
@@ -4359,7 +4359,7 @@ Plan:
 
 Query: 
       INSERT INTO delivery_jobs (
-        group_id, delivery_job_scope, delivery_job_tag,
+        group_id, delivery_scope_type, delivery_job_type,
         single_sender_group_member_id,
         delivery_body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?)
@@ -4413,7 +4413,7 @@ Plan:
 SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 
 Query: 
-      SELECT DISTINCT group_id, delivery_job_scope
+      SELECT DISTINCT group_id, delivery_scope_type
       FROM delivery_jobs
       WHERE failed = 0 AND job_status IN (?, ?)
     
@@ -4422,7 +4422,7 @@ SCAN delivery_jobs USING INDEX idx_delivery_jobs_group_id
 USE TEMP B-TREE FOR DISTINCT
 
 Query: 
-      SELECT DISTINCT group_id, delivery_job_scope
+      SELECT DISTINCT group_id, delivery_scope_type
       FROM delivery_tasks
       WHERE failed = 0 AND task_status = ?
     
@@ -5707,9 +5707,9 @@ Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_forward_scope_group_member_id (forward_scope_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_forward_scope_group_member_id (forward_scope_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
@@ -5736,9 +5736,9 @@ Query: DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_forward_scope_group_member_id (forward_scope_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_forward_scope_group_member_id (forward_scope_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)

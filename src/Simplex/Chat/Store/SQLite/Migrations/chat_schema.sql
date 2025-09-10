@@ -696,10 +696,10 @@ CREATE TABLE chat_item_mentions(
 CREATE TABLE delivery_tasks(
   delivery_task_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  delivery_job_scope TEXT NOT NULL,
-  delivery_job_tag TEXT NOT NULL,
-  forward_scope_tag TEXT,
-  forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  delivery_scope_type TEXT NOT NULL,
+  delivery_scope_include_pending INTEGER,
+  delivery_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  delivery_job_type TEXT NOT NULL,
   sender_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   message_id INTEGER REFERENCES messages ON DELETE CASCADE,
   message_from_channel INTEGER NOT NULL DEFAULT 0,
@@ -712,10 +712,10 @@ CREATE TABLE delivery_tasks(
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
-  delivery_job_scope TEXT NOT NULL,
-  delivery_job_tag TEXT NOT NULL,
-  forward_scope_tag TEXT,
-  forward_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  delivery_scope_type TEXT NOT NULL,
+  delivery_scope_include_pending INTEGER,
+  delivery_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  delivery_job_type TEXT NOT NULL,
   single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   delivery_body BLOB,
   cursor_group_member_id INTEGER,
@@ -1141,14 +1141,14 @@ CREATE INDEX idx_delivery_tasks_group_id ON delivery_tasks(group_id);
 CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(
   sender_group_member_id
 );
-CREATE INDEX idx_delivery_tasks_forward_scope_group_member_id ON delivery_tasks(
-  forward_scope_group_member_id
+CREATE INDEX idx_delivery_tasks_delivery_scope_support_gm_id ON delivery_tasks(
+  delivery_scope_support_gm_id
 );
 CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
 CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
-CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON delivery_jobs(
-  forward_scope_group_member_id
+CREATE INDEX idx_delivery_jobs_delivery_scope_support_gm_id ON delivery_jobs(
+  delivery_scope_support_gm_id
 );
 CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
   single_sender_group_member_id

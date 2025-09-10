@@ -54,6 +54,7 @@ import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
+import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -244,8 +245,8 @@ data ChatController = ChatController
     remoteCtrlSession :: TVar (Maybe (SessionSeq, RemoteCtrlSession)), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
-    deliveryTaskWorkers :: TMap DeliveryWorkerScope Worker,
-    deliveryJobWorkers :: TMap DeliveryWorkerScope Worker,
+    deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
+    deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),

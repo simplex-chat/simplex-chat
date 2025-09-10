@@ -40,6 +40,7 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Call
       Simplex.Chat.Controller
+      Simplex.Chat.Delivery
       Simplex.Chat.Files
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
@@ -72,6 +73,7 @@ library
       Simplex.Chat.Store.AppSettings
       Simplex.Chat.Store.Connections
       Simplex.Chat.Store.ContactRequest
+      Simplex.Chat.Store.Delivery
       Simplex.Chat.Store.Direct
       Simplex.Chat.Store.Files
       Simplex.Chat.Store.Groups

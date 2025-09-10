@@ -18,6 +18,7 @@ import Data.List (foldl')
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
+import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types (VersionRangeChat)

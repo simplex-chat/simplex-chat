@@ -435,14 +435,15 @@ ALTER TABLE test_chat_schema.contacts ALTER COLUMN contact_id ADD GENERATED ALWA
 CREATE TABLE test_chat_schema.delivery_jobs (
     delivery_job_id bigint NOT NULL,
     group_id bigint NOT NULL,
-    delivery_job_scope text NOT NULL,
-    delivery_job_tag text NOT NULL,
-    forward_scope_tag text,
-    forward_scope_group_member_id bigint,
+    delivery_scope_type text NOT NULL,
+    delivery_scope_include_pending smallint,
+    delivery_scope_support_gm_id bigint,
+    delivery_job_type text NOT NULL,
     single_sender_group_member_id bigint,
     delivery_body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
+    job_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -464,14 +465,15 @@ ALTER TABLE test_chat_schema.delivery_jobs ALTER COLUMN delivery_job_id ADD GENE
 CREATE TABLE test_chat_schema.delivery_tasks (
     delivery_task_id bigint NOT NULL,
     group_id bigint NOT NULL,
-    delivery_job_scope text NOT NULL,
-    delivery_job_tag text NOT NULL,
-    forward_scope_tag text,
-    forward_scope_group_member_id bigint,
+    delivery_scope_type text NOT NULL,
+    delivery_scope_include_pending smallint,
+    delivery_scope_support_gm_id bigint,
+    delivery_job_type text NOT NULL,
     sender_group_member_id bigint NOT NULL,
     message_id bigint,
     message_from_channel smallint DEFAULT 0 NOT NULL,
     task_status text NOT NULL,
+    task_err_reason text,
     failed smallint DEFAULT 0,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
@@ -1911,7 +1913,7 @@ CREATE INDEX idx_delivery_jobs_created_at ON test_chat_schema.delivery_jobs USIN
 
 
 
-CREATE INDEX idx_delivery_jobs_forward_scope_group_member_id ON test_chat_schema.delivery_jobs USING btree (forward_scope_group_member_id);
+CREATE INDEX idx_delivery_jobs_delivery_scope_support_gm_id ON test_chat_schema.delivery_jobs USING btree (delivery_scope_support_gm_id);
 
 
 
@@ -1927,7 +1929,7 @@ CREATE INDEX idx_delivery_tasks_created_at ON test_chat_schema.delivery_tasks US
 
 
 
-CREATE INDEX idx_delivery_tasks_forward_scope_group_member_id ON test_chat_schema.delivery_tasks USING btree (forward_scope_group_member_id);
+CREATE INDEX idx_delivery_tasks_delivery_scope_support_gm_id ON test_chat_schema.delivery_tasks USING btree (delivery_scope_support_gm_id);
 
 
 
@@ -2497,7 +2499,7 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 
 ALTER TABLE ONLY test_chat_schema.delivery_jobs
-    ADD CONSTRAINT delivery_jobs_forward_scope_group_member_id_fkey FOREIGN KEY (forward_scope_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+    ADD CONSTRAINT delivery_jobs_delivery_scope_support_gm_id_fkey FOREIGN KEY (delivery_scope_support_gm_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 
@@ -2512,7 +2514,7 @@ ALTER TABLE ONLY test_chat_schema.delivery_jobs
 
 
 ALTER TABLE ONLY test_chat_schema.delivery_tasks
-    ADD CONSTRAINT delivery_tasks_forward_scope_group_member_id_fkey FOREIGN KEY (forward_scope_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+    ADD CONSTRAINT delivery_tasks_delivery_scope_support_gm_id_fkey FOREIGN KEY (delivery_scope_support_gm_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 
