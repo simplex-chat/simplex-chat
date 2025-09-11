@@ -109,8 +109,7 @@ Query:
                 ORDER BY created_at ASC, delivery_task_id ASC
               
 Plan:
-SEARCH delivery_tasks USING INDEX idx_delivery_tasks_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
-USE TEMP B-TREE FOR ORDER BY
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_type_sender (group_id=? AND delivery_scope_type=? AND delivery_scope_include_pending=? AND delivery_scope_support_gm_id=? AND delivery_job_type=? AND sender_group_member_id=? AND failed=? AND task_status=?)
 
 Query: 
                 UPDATE contact_profiles
@@ -684,7 +683,7 @@ Query:
             LIMIT 1
           
 Plan:
-SEARCH delivery_jobs USING INDEX idx_delivery_jobs_group_id (group_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND delivery_scope_type=? AND failed=? AND job_status=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -696,8 +695,7 @@ Query:
             LIMIT 1
           
 Plan:
-SEARCH delivery_tasks USING INDEX idx_delivery_tasks_group_id (group_id=?)
-USE TEMP B-TREE FOR ORDER BY
+SEARCH delivery_tasks USING INDEX idx_delivery_tasks_next (group_id=? AND delivery_scope_type=? AND failed=? AND task_status=?)
 
 Query: 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image, gp.preferences, gp.member_admission
@@ -4378,8 +4376,7 @@ Query:
       WHERE failed = 0 AND job_status IN (?, ?)
     
 Plan:
-SCAN delivery_jobs USING INDEX idx_delivery_jobs_group_id
-USE TEMP B-TREE FOR DISTINCT
+SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
 
 Query: 
       SELECT DISTINCT group_id, delivery_scope_type
@@ -4387,8 +4384,7 @@ Query:
       WHERE failed = 0 AND task_status = ?
     
 Plan:
-SCAN delivery_tasks USING INDEX idx_delivery_tasks_group_id
-USE TEMP B-TREE FOR DISTINCT
+SCAN delivery_tasks USING COVERING INDEX idx_delivery_tasks_next
 
 Query: 
       SELECT chat_item_id, timed_ttl
@@ -6073,10 +6069,6 @@ Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AN
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
 
-Query: SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING INDEX idx_settings_user_id (user_id=?)
@@ -6318,10 +6310,6 @@ Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
-Plan:
-SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
