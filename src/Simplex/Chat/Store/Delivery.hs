@@ -103,18 +103,20 @@ getPendingDeliveryTaskScopes db =
     |]
     (Only DTSNew)
 
+type DeliveryTaskRow = (Int64, DeliveryJobType, GroupDeliveryScopeType, Maybe BoolInt, Maybe GroupMemberId, GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt)
+
 getNextDeliveryTask :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe DeliveryTask))
 getNextDeliveryTask db deliveryKey = do
-  getWorkItem "delivery task" getTaskId getTask (markDeliveryTaskFailed_ db . fst)
+  getWorkItem "delivery task" getTaskId getTask (markDeliveryTaskFailed_ db)
   where
     (groupId, scopeType) = deliveryKey
-    getTaskId :: IO (Maybe (Int64, DeliveryJobType))
+    getTaskId :: IO (Maybe Int64)
     getTaskId =
-      maybeFirstRow id $
+      maybeFirstRow fromOnly $
         DB.query
           db
           [sql|
-            SELECT delivery_task_id, delivery_job_type
+            SELECT delivery_task_id
             FROM delivery_tasks
             WHERE group_id = ? AND delivery_scope_type = ?
               AND failed = 0 AND task_status = ?
@@ -122,42 +124,22 @@ getNextDeliveryTask db deliveryKey = do
             LIMIT 1
           |]
           (groupId, scopeType, DTSNew)
-    getTask :: (Int64, DeliveryJobType) -> IO (Either StoreError DeliveryTask)
-    getTask (taskId, jobType) =
-      case jobType of
-        DJTMessageForward -> (DTMessageForward <$>) <$> getMessageForwardTask_ db taskId
-        DJTRelayRemoved -> (DTRelayRemoved <$>) <$> getRelayRemovedTask_ db taskId
-
-markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
-markDeliveryTaskFailed_ db taskId =
-  DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
-
-getMessageForwardTask_ :: DB.Connection -> Int64 -> IO (Either StoreError MessageForwardTask)
-getMessageForwardTask_ db taskId =
-  firstRow' toMsgFwdTask (SEDeliveryTaskNotFound taskId) $
-    DB.query db deliveryTaskQuery (Only taskId)
-  where
-    toMsgFwdTask :: (GroupDeliveryScopeType, Maybe BoolInt, Maybe GroupMemberId, GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt) -> Either StoreError MessageForwardTask
-    toMsgFwdTask (scopeType, scopeIncludePending_, scopeSupportGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel) =
-      case toDeliveryScope_ scopeType scopeIncludePending_ scopeSupportGMId_ of
-        Just deliveryScope -> Right $ MessageForwardTask {taskId, deliveryScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
-        Nothing -> Left $ SEInvalidDeliveryTask taskId
-
-getRelayRemovedTask_ :: DB.Connection -> Int64 -> IO (Either StoreError RelayRemovedTask)
-getRelayRemovedTask_ db taskId =
-  firstRow' toRelayRmvdTask (SEDeliveryTaskNotFound taskId) $
-    DB.query db deliveryTaskQuery (Only taskId)
-  where
-    toRelayRmvdTask :: (GroupDeliveryScopeType, Maybe BoolInt, Maybe GroupMemberId, GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt) -> Either StoreError RelayRemovedTask
-    toRelayRmvdTask (scopeType, scopeIncludePending_, scopeSupportGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI _messageFromChannel) =
-      case toDeliveryScope_ scopeType scopeIncludePending_ scopeSupportGMId_ of
-        Just GDSGroup {includePending = True} -> Right $ RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
-        _ -> Left $ SEInvalidDeliveryTask taskId
+    getTask :: Int64 -> IO (Either StoreError DeliveryTask)
+    getTask taskId =
+      firstRow' toDeliveryTask (SEDeliveryJobNotFound taskId) $
+        DB.query db deliveryTaskQuery (Only taskId)
+      where
+        toDeliveryTask :: DeliveryTaskRow -> Either StoreError DeliveryTask
+        toDeliveryTask taskRow@(_, jobType, _, _, _, _, _, _, _, _, _) =
+          case jobType of
+            DJTMessageForward -> DTMessageForward <$> toMsgFwdTask_ taskRow
+            DJTRelayRemoved -> DTRelayRemoved <$> toRelayRmvdTask_ taskRow
 
 deliveryTaskQuery :: Query
 deliveryTaskQuery =
   [sql|
     SELECT
+      t.delivery_task_id, t.delivery_job_type,
       t.delivery_scope_type, t.delivery_scope_include_pending, t.delivery_scope_support_gm_id,
       m.group_member_id, m.member_id, p.display_name,
       COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
@@ -168,11 +150,27 @@ deliveryTaskQuery =
     WHERE t.delivery_task_id = ?
   |]
 
+toMsgFwdTask_ :: DeliveryTaskRow -> Either StoreError MessageForwardTask
+toMsgFwdTask_ (taskId, _jobType, scopeType, scopeIncludePending_, scopeSupportGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel) =
+  case toDeliveryScope_ scopeType scopeIncludePending_ scopeSupportGMId_ of
+    Just deliveryScope -> Right $ MessageForwardTask {taskId, deliveryScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
+    Nothing -> Left $ SEInvalidDeliveryTask taskId
+
+toRelayRmvdTask_ :: DeliveryTaskRow -> Either StoreError RelayRemovedTask
+toRelayRmvdTask_ (taskId, _jobType, scopeType, scopeIncludePending_, scopeSupportGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI _messageFromChannel) =
+  case toDeliveryScope_ scopeType scopeIncludePending_ scopeSupportGMId_ of
+    Just GDSGroup {includePending = True} -> Right $ RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
+    _ -> Left $ SEInvalidDeliveryTask taskId
+
+markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
+markDeliveryTaskFailed_ db taskId =
+  DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
+
 -- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
 -- passed MessageForwardTask defines the scope to search for
 getNextMsgFwdTasks :: DB.Connection -> GroupInfo -> MessageForwardTask -> IO (Either StoreError [Either StoreError MessageForwardTask])
 getNextMsgFwdTasks db gInfo task =
-  getWorkItems "message forward task" getTaskIds (getMessageForwardTask_ db) (markDeliveryTaskFailed_ db)
+  getWorkItems "message forward task" getTaskIds getMsgFwdTask (markDeliveryTaskFailed_ db)
   where
     GroupInfo {groupId, groupType} = gInfo
     MessageForwardTask {deliveryScope, senderGMId} = task
@@ -222,6 +220,10 @@ getNextMsgFwdTasks db gInfo task =
                 ORDER BY created_at ASC, delivery_task_id ASC
               |]
               (groupId, scopeType, BI <$> scopeInclPending_, scopeSupportGMId_, DJTMessageForward, senderGMId, DTSNew)
+    getMsgFwdTask :: Int64 -> IO (Either StoreError MessageForwardTask)
+    getMsgFwdTask taskId =
+      firstRow' toMsgFwdTask_ (SEDeliveryTaskNotFound taskId) $
+        DB.query db deliveryTaskQuery (Only taskId)
 
 createMessageForwardJob :: DB.Connection -> GroupInfo -> GroupDeliveryScope -> Maybe GroupMemberId -> ByteString -> IO ()
 createMessageForwardJob db gInfo deliveryScope singleSenderGMId_ deliveryBody =
