@@ -32,6 +32,34 @@ CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(sender_
 CREATE INDEX idx_delivery_tasks_delivery_scope_support_gm_id ON delivery_tasks(delivery_scope_support_gm_id);
 CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
 
+CREATE INDEX idx_delivery_tasks_next ON delivery_tasks(
+  group_id,
+  delivery_scope_type,
+  failed,
+  task_status,
+  created_at
+);
+CREATE INDEX idx_delivery_tasks_next_for_job_type ON delivery_tasks(
+  group_id,
+  delivery_scope_type,
+  delivery_scope_include_pending,
+  delivery_scope_support_gm_id,
+  delivery_job_type,
+  failed,
+  task_status,
+  created_at
+);
+CREATE INDEX idx_delivery_tasks_next_for_job_type_sender ON delivery_tasks(
+  group_id,
+  delivery_scope_type,
+  delivery_scope_include_pending,
+  delivery_scope_support_gm_id,
+  delivery_job_type,
+  sender_group_member_id,
+  failed,
+  task_status,
+  created_at
+);
 CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 
 
@@ -57,6 +85,13 @@ CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_delivery_scope_support_gm_id ON delivery_jobs(delivery_scope_support_gm_id);
 CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(single_sender_group_member_id);
 
+CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
+  group_id,
+  delivery_scope_type,
+  failed,
+  job_status,
+  created_at
+);
 CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 
 
@@ -79,6 +114,8 @@ ALTER TABLE groups DROP COLUMN group_type;
 DROP INDEX idx_delivery_jobs_group_id;
 DROP INDEX idx_delivery_jobs_delivery_scope_support_gm_id;
 DROP INDEX idx_delivery_jobs_single_sender_group_member_id;
+
+DROP INDEX idx_delivery_jobs_next;
 DROP INDEX idx_delivery_jobs_created_at;
 
 DROP TABLE delivery_jobs;
@@ -89,6 +126,10 @@ DROP INDEX idx_delivery_tasks_group_id;
 DROP INDEX idx_delivery_tasks_sender_group_member_id;
 DROP INDEX idx_delivery_tasks_delivery_scope_support_gm_id;
 DROP INDEX idx_delivery_tasks_message_id;
+
+DROP INDEX idx_delivery_tasks_next;
+DROP INDEX idx_delivery_tasks_next_for_job_type;
+DROP INDEX idx_delivery_tasks_next_for_job_type_sender;
 DROP INDEX idx_delivery_tasks_created_at;
 
 DROP TABLE delivery_tasks;

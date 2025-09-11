@@ -184,6 +184,8 @@ getNextMsgFwdTasks db gInfo task =
           map fromOnly
             <$> DB.query
               db
+              -- `AND sender_group_member_id IS NOT NULL` is a dummy condition to trick sqlite
+              -- to use covering index idx_delivery_tasks_next_for_job_type
               [sql|
                 SELECT delivery_task_id
                 FROM delivery_tasks
@@ -192,6 +194,7 @@ getNextMsgFwdTasks db gInfo task =
                   AND delivery_scope_include_pending IS NOT DISTINCT FROM ?
                   AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
                   AND delivery_job_type = ?
+                  AND sender_group_member_id IS NOT NULL
                   AND failed = 0
                   AND task_status = ?
                 ORDER BY created_at ASC, delivery_task_id ASC
