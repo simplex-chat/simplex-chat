@@ -172,13 +172,12 @@ getNextMsgFwdTasks :: DB.Connection -> GroupInfo -> MessageForwardTask -> IO (Ei
 getNextMsgFwdTasks db gInfo task =
   getWorkItems "message forward task" getTaskIds getMsgFwdTask (markDeliveryTaskFailed_ db)
   where
-    GroupInfo {groupId, groupType} = gInfo
+    GroupInfo {groupId, useRelays} = gInfo
     MessageForwardTask {deliveryScope, senderGMId} = task
     (scopeType, scopeInclPending_, scopeSupportGMId_) = deliveryScopeFields_ deliveryScope
     getTaskIds :: IO [Int64]
-    getTaskIds =
-      case groupType of
-        GTChannel ->
+    getTaskIds
+      | useRelays =
           map fromOnly
             <$> DB.query
               db
@@ -192,17 +191,16 @@ getNextMsgFwdTasks db gInfo task =
                   AND delivery_scope_include_pending IS NOT DISTINCT FROM ?
                   AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
                   AND delivery_job_type = ?
-                  AND sender_group_member_id IS NOT NULL
                   AND failed = 0
                   AND task_status = ?
                 ORDER BY created_at ASC, delivery_task_id ASC
               |]
               (groupId, scopeType, BI <$> scopeInclPending_, scopeSupportGMId_, DJTMessageForward, DTSNew)
-        -- For GTSmallGroup we guarantee a singleSenderGMId for a delivery job by additionally filtering
-        -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
-        -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
-        -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
-        GTSmallGroup ->
+      | otherwise =
+          -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
+          -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
+          -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
+          -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
           map fromOnly
             <$> DB.query
               db

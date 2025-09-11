@@ -470,7 +470,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
-    groupType :: GroupType,
+    useRelays :: Bool,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -491,25 +491,6 @@ data GroupInfo = GroupInfo
     viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
-
-data GroupType
-  = GTSmallGroup
-  | GTChannel
-  -- | GTLargeGroup
-  deriving (Eq, Show)
-
-instance TextEncoding GroupType where
-  textEncode = \case
-    GTSmallGroup -> "small_group"
-    GTChannel -> "channel"
-  textDecode = \case
-    "small_group" -> Just GTSmallGroup
-    "channel" -> Just GTChannel
-    _ -> Nothing
-
-instance FromField GroupType where fromField = fromTextField_ textDecode
-
-instance ToField GroupType where toField = toField . textEncode
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -2081,8 +2062,6 @@ $(JQ.deriveJSON defaultJSON ''GroupMember)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
-
-$(JQ.deriveJSON (enumJSON $ dropPrefix "GT") ''GroupType)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 

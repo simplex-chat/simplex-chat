@@ -2427,7 +2427,7 @@ export enum GroupFeatureEnabled {
 
 export interface GroupInfo {
   groupId: number // int64
-  groupType: GroupType
+  useRelays: boolean
   localDisplayName: string
   groupProfile: GroupProfile
   localAlias: string
@@ -2613,11 +2613,6 @@ export interface GroupSupportChat {
   memberAttention: number // int64
   mentions: number // int64
   lastMsgFromMemberTs?: string // ISO-8601 timestamp
-}
-
-export enum GroupType {
-  SmallGroup = "smallGroup",
-  Channel = "channel",
 }
 
 export enum HandshakeError {

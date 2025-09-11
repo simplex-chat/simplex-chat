@@ -283,7 +283,6 @@ chatTypesDocsData =
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
-    (sti @GroupType, STEnum, "GT", [], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
     (sti @InlineFileMode, STEnum, "IFM", [], "", ""),
     (sti @InvitationLinkPlan, STUnion, "ILP", [], "", ""),
@@ -472,7 +471,6 @@ deriving instance Generic GroupProfile
 deriving instance Generic GroupShortLinkData
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
-deriving instance Generic GroupType
 deriving instance Generic HandshakeError
 deriving instance Generic InlineFileMode
 deriving instance Generic InvitationLinkPlan

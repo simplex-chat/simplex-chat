@@ -96,8 +96,6 @@ CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 
 
 
-ALTER TABLE groups ADD COLUMN group_type TEXT NOT NULL DEFAULT 'small_group';
-
 ALTER TABLE messages ADD COLUMN broker_ts TIMESTAMPTZ;
 |]
 
@@ -106,8 +104,6 @@ down_m20250813_delivery_tasks =
   T.pack
     [r|
 ALTER TABLE messages DROP COLUMN broker_ts;
-
-ALTER TABLE groups DROP COLUMN group_type;
 
 
 

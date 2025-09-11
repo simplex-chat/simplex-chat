@@ -105,7 +105,6 @@ This file is generated automatically.
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
-- [GroupType](#grouptype)
 - [HandshakeError](#handshakeerror)
 - [InlineFileMode](#inlinefilemode)
 - [InvitationLinkPlan](#invitationlinkplan)
@@ -2132,7 +2131,7 @@ MemberSupport:
 
 **Record type**:
 - groupId: int64
-- groupType: [GroupType](#grouptype)
+- useRelays: bool
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2365,15 +2364,6 @@ Known:
 - memberAttention: int64
 - mentions: int64
 - lastMsgFromMemberTs: UTCTime?
-
-
----
-
-## GroupType
-
-**Enum type**:
-- "smallGroup"
-- "channel"
 
 
 ---

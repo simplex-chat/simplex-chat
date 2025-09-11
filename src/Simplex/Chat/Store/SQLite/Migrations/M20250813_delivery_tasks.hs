@@ -141,8 +141,6 @@ CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 
 
 
-ALTER TABLE groups ADD COLUMN group_type TEXT NOT NULL DEFAULT 'small_group';
-
 ALTER TABLE messages ADD COLUMN broker_ts TEXT;
 |]
 
@@ -150,8 +148,6 @@ down_m20250813_delivery_tasks :: Query
 down_m20250813_delivery_tasks =
   [sql|
 ALTER TABLE messages DROP COLUMN broker_ts;
-
-ALTER TABLE groups DROP COLUMN group_type;
 
 
 

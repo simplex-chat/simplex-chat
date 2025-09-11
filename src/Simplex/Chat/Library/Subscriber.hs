@@ -3397,75 +3397,76 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                 withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
           where
             sendBodyToMembers :: Int64 -> GroupDeliveryScope -> Maybe GroupMemberId -> ByteString -> Maybe GroupMemberId -> CM ()
-            sendBodyToMembers jobId deliveryScope singleSenderGMId_ fwdBody cursorGroupMemberId = case groupType gInfo of
-              GTSmallGroup -> case singleSenderGMId_ of
-                Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
-                Just singleSenderGMId -> do
-                  sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
-                  mems <- buildMemberList sender
-                  unless (null mems) $ deliver fwdBody mems
-                  where
-                    buildMemberList sender = case deliveryScope of
-                      GDSGroup {includePending = True} -> filter memberCurrentOrPending <$> getAllIntroducedAndInvited
-                      GDSGroup {includePending = False} -> filter memberCurrent <$> getAllIntroducedAndInvited
-                      GDSMemberSupport scopeGMId -> do
-                        -- moderators introduced to this invited member
-                        introducedModMs <-
-                          if memberCategory sender == GCInviteeMember
-                            then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
-                            else pure []
-                        -- invited moderators to which this member was introduced
-                        invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
-                        let modMs = introducedModMs <> invitedModMs
-                            modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
-                        if scopeGMId == groupMemberId' sender
-                          then pure modMs'
-                          else
-                            withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
-                              Just scopeMem -> pure $ scopeMem : modMs'
-                              _ -> pure modMs'
+            sendBodyToMembers jobId deliveryScope singleSenderGMId_ fwdBody cursorGroupMemberId
+              | useRelays gInfo = -- channel
+                  case deliveryScope of
+                    -- there's no member review in channels, so includePending is ignored
+                    GDSGroup _includePending -> sendLoop cursorGroupMemberId
                       where
-                        getAllIntroducedAndInvited = do
-                          ChatConfig {highlyAvailable} <- asks config
-                          -- members introduced to this invited member
-                          introducedMembers <-
-                            if memberCategory sender == GCInviteeMember
-                              then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
-                              else pure []
-                          -- invited members to which this member was introduced
-                          invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
-                          pure $ introducedMembers <> invitedMembers
-              GTChannel ->
-                case deliveryScope of
-                  -- there's no member review in channels, so includePending is ignored
-                  GDSGroup _includePending -> sendLoop cursorGroupMemberId
-                  GDSMemberSupport scopeGMId -> do
-                    -- for member support scope we just load all recipients in one go, without cursor
-                    modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-                    let moderatorFilter mem =
-                          memberCurrent mem
-                          && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                          && Just (groupMemberId' mem) /= singleSenderGMId_
-                        modMs' = filter moderatorFilter modMs
-                    mems <-
-                      if Just scopeGMId == singleSenderGMId_
-                        then pure modMs'
-                        else do
-                          scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
-                          pure $ scopeMem : modMs'
-                    unless (null mems) $ deliver fwdBody mems
-                where
-                  dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
-                  sendLoop :: Maybe GroupMemberId -> CM ()
-                  sendLoop cursorGMId = do
-                    mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId singleSenderGMId_ dbBatchSize
-                    let cursorGMId' = groupMemberId' $ last mems
-                    unless (null mems) $ deliver fwdBody mems
-                    withStore' $ \db -> do
-                      updateDeliveryJobCursor db jobId cursorGMId'
-                      when (isNothing cursorGMId) $
-                        updateDeliveryJobStatus db jobId DJSInProgress -- job status "in progress" is informational
-                    unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')
+                        dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
+                        sendLoop :: Maybe GroupMemberId -> CM ()
+                        sendLoop cursorGMId = do
+                          mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId singleSenderGMId_ dbBatchSize
+                          let cursorGMId' = groupMemberId' $ last mems
+                          unless (null mems) $ deliver fwdBody mems
+                          withStore' $ \db -> do
+                            updateDeliveryJobCursor db jobId cursorGMId'
+                            when (isNothing cursorGMId) $
+                              updateDeliveryJobStatus db jobId DJSInProgress -- job status "in progress" is informational
+                          unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId')
+                    GDSMemberSupport scopeGMId -> do
+                      -- for member support scope we just load all recipients in one go, without cursor
+                      modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+                      let moderatorFilter mem =
+                            memberCurrent mem
+                            && maxVersion (memberChatVRange mem) >= groupKnockingVersion
+                            && Just (groupMemberId' mem) /= singleSenderGMId_
+                          modMs' = filter moderatorFilter modMs
+                      mems <-
+                        if Just scopeGMId == singleSenderGMId_
+                          then pure modMs'
+                          else do
+                            scopeMem <- withStore $ \db -> getGroupMemberById db vr user scopeGMId
+                            pure $ scopeMem : modMs'
+                      unless (null mems) $ deliver fwdBody mems
+              | otherwise = -- fully connected group
+                  case singleSenderGMId_ of
+                    Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required for GTSmallGroup"
+                    Just singleSenderGMId -> do
+                      sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
+                      mems <- buildMemberList sender
+                      unless (null mems) $ deliver fwdBody mems
+                      where
+                        buildMemberList sender = case deliveryScope of
+                          GDSGroup {includePending = True} -> filter memberCurrentOrPending <$> getAllIntroducedAndInvited
+                          GDSGroup {includePending = False} -> filter memberCurrent <$> getAllIntroducedAndInvited
+                          GDSMemberSupport scopeGMId -> do
+                            -- moderators introduced to this invited member
+                            introducedModMs <-
+                              if memberCategory sender == GCInviteeMember
+                                then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
+                                else pure []
+                            -- invited moderators to which this member was introduced
+                            invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
+                            let modMs = introducedModMs <> invitedModMs
+                                modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
+                            if scopeGMId == groupMemberId' sender
+                              then pure modMs'
+                              else
+                                withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
+                                  Just scopeMem -> pure $ scopeMem : modMs'
+                                  _ -> pure modMs'
+                          where
+                            getAllIntroducedAndInvited = do
+                              ChatConfig {highlyAvailable} <- asks config
+                              -- members introduced to this invited member
+                              introducedMembers <-
+                                if memberCategory sender == GCInviteeMember
+                                  then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
+                                  else pure []
+                              -- invited members to which this member was introduced
+                              invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
+                              pure $ introducedMembers <> invitedMembers
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver body mems =
