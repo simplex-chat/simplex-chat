@@ -2528,7 +2528,7 @@ viewChatError isCmd logLevel testView = \case
       | otherwise -> []
     SEUserNoteFolderNotFound -> ["no notes folder"]
     SEInternalError {message}
-      | message == "referenced group member not found" -> []
+      | testView && message == "referenced group member not found" -> []
     e -> ["chat db error: " <> sShow e]
   ChatErrorDatabase err -> case err of
     DBErrorEncrypted -> ["error: chat database is already encrypted"]
