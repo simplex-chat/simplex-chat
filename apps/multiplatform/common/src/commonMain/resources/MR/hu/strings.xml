@@ -1289,7 +1289,7 @@
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">A partnereinek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a kapcsolatot és eltávolíthatja a partnert (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelmondat nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="your_contacts_will_remain_connected">A partnerei továbbra is kapcsolódva maradnak.</string>
-    <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát.</string>
+    <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze a jelszavát.</string>
     <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további információkért</string>
     <string name="stop_snd_file__message">A fájl küldése le fog állni.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.</string>
