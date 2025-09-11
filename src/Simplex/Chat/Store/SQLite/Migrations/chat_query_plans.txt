@@ -6069,6 +6069,10 @@ Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AN
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
 
+Query: SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT chat_item_ttl FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING INDEX idx_settings_user_id (user_id=?)
@@ -6310,6 +6314,10 @@ Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contacts SET chat_deleted = ?, updated_at = ? WHERE user_id = ? AND contact_id = ?
+Plan:
+SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE contacts SET chat_item_ttl = ?, updated_at = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 
