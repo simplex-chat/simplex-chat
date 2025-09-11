@@ -290,7 +290,6 @@ getNextDeliveryJob db deliveryKey = do
   getWorkItem "delivery job" getJobId getJob markJobFailed
   where
     (groupId, scopeType) = deliveryKey
-    -- TODO [channels fwd] consider optimizing query with OR for index including job_status
     getJobId :: IO (Maybe Int64)
     getJobId =
       maybeFirstRow fromOnly $
