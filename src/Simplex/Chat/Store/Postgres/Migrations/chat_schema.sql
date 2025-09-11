@@ -1921,6 +1921,10 @@ CREATE INDEX idx_delivery_jobs_group_id ON test_chat_schema.delivery_jobs USING 
 
 
 
+CREATE INDEX idx_delivery_jobs_next ON test_chat_schema.delivery_jobs USING btree (group_id, delivery_scope_type, failed, job_status, created_at);
+
+
+
 CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON test_chat_schema.delivery_jobs USING btree (single_sender_group_member_id);
 
 
@@ -1938,6 +1942,18 @@ CREATE INDEX idx_delivery_tasks_group_id ON test_chat_schema.delivery_tasks USIN
 
 
 CREATE INDEX idx_delivery_tasks_message_id ON test_chat_schema.delivery_tasks USING btree (message_id);
+
+
+
+CREATE INDEX idx_delivery_tasks_next ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, failed, task_status, created_at);
+
+
+
+CREATE INDEX idx_delivery_tasks_next_for_job_type ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id, delivery_job_type, failed, task_status, created_at);
+
+
+
+CREATE INDEX idx_delivery_tasks_next_for_job_type_sender ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id, delivery_job_type, sender_group_member_id, failed, task_status, created_at);
 
 
 
