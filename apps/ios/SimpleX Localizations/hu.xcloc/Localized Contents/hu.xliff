@@ -7360,7 +7360,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target state="translated">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát.</target>
+        <target state="translated">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze a jelszavát.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
