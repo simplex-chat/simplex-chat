@@ -687,7 +687,7 @@ SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
-            SELECT delivery_task_id, delivery_job_type
+            SELECT delivery_task_id
             FROM delivery_tasks
             WHERE group_id = ? AND delivery_scope_type = ?
               AND failed = 0 AND task_status = ?
@@ -695,7 +695,7 @@ Query:
             LIMIT 1
           
 Plan:
-SEARCH delivery_tasks USING INDEX idx_delivery_tasks_next (group_id=? AND delivery_scope_type=? AND failed=? AND task_status=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next (group_id=? AND delivery_scope_type=? AND failed=? AND task_status=?)
 
 Query: 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image, gp.preferences, gp.member_admission
@@ -5138,6 +5138,7 @@ SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group
 
 Query: 
     SELECT
+      t.delivery_task_id, t.delivery_job_type,
       t.delivery_scope_type, t.delivery_scope_include_pending, t.delivery_scope_support_gm_id,
       m.group_member_id, m.member_id, p.display_name,
       COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
