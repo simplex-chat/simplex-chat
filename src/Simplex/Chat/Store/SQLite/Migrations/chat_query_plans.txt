@@ -678,15 +678,13 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
             SELECT delivery_job_id
             FROM delivery_jobs
-            INDEXED BY idx_delivery_jobs_next
             WHERE group_id = ? AND worker_scope = ?
-              AND failed = 0 AND job_status IN (?, ?)
+              AND failed = 0 AND job_status = ?
             ORDER BY delivery_job_id ASC
             LIMIT 1
           
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND worker_scope=? AND failed=? AND job_status=?)
-USE TEMP B-TREE FOR ORDER BY
 
 Query: 
             SELECT delivery_task_id
@@ -4395,7 +4393,7 @@ SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 Query: 
       SELECT DISTINCT group_id, worker_scope
       FROM delivery_jobs
-      WHERE failed = 0 AND job_status IN (?, ?)
+      WHERE failed = 0 AND job_status = ?
     
 Plan:
 SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
