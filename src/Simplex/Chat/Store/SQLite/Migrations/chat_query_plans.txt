@@ -60,7 +60,7 @@ Plan:
 Query: 
                 SELECT
                   -- GroupInfo
-                  g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+                  g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -99,17 +99,17 @@ Query:
                 SELECT delivery_task_id
                 FROM delivery_tasks
                 WHERE group_id = ?
-                  AND delivery_scope_type = ?
-                  AND delivery_scope_include_pending IS NOT DISTINCT FROM ?
-                  AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
-                  AND delivery_job_type = ?
+                  AND worker_scope = ?
+                  AND job_scope_spec_tag IS NOT DISTINCT FROM ?
+                  AND job_scope_include_pending IS NOT DISTINCT FROM ?
+                  AND job_scope_support_gm_id IS NOT DISTINCT FROM ?
                   AND sender_group_member_id = ?
                   AND failed = 0
                   AND task_status = ?
-                ORDER BY created_at ASC, delivery_task_id ASC
+                ORDER BY delivery_task_id ASC
               
 Plan:
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_scope_sender (group_id=? AND delivery_scope_type=? AND delivery_scope_include_pending=? AND delivery_scope_support_gm_id=? AND delivery_job_type=? AND sender_group_member_id=? AND failed=? AND task_status=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_scope_sender (group_id=? AND worker_scope=? AND job_scope_spec_tag=? AND job_scope_include_pending=? AND job_scope_support_gm_id=? AND sender_group_member_id=? AND failed=? AND task_status=?)
 
 Query: 
                 UPDATE contact_profiles
@@ -435,8 +435,9 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT
-              delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-              delivery_job_type, single_sender_group_member_id, body, cursor_group_member_id
+              delivery_job_id,
+              worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+              single_sender_group_member_id, body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           
@@ -677,25 +678,26 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
             SELECT delivery_job_id
             FROM delivery_jobs
-            WHERE group_id = ? AND delivery_scope_type = ?
+            INDEXED BY idx_delivery_jobs_next
+            WHERE group_id = ? AND worker_scope = ?
               AND failed = 0 AND job_status IN (?, ?)
-            ORDER BY created_at ASC, delivery_job_id ASC
+            ORDER BY delivery_job_id ASC
             LIMIT 1
           
 Plan:
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND delivery_scope_type=? AND failed=? AND job_status=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND worker_scope=? AND failed=? AND job_status=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
             SELECT delivery_task_id
             FROM delivery_tasks
-            WHERE group_id = ? AND delivery_scope_type = ?
+            WHERE group_id = ? AND worker_scope = ?
               AND failed = 0 AND task_status = ?
-            ORDER BY created_at ASC, delivery_task_id ASC
+            ORDER BY delivery_task_id ASC
             LIMIT 1
           
 Plan:
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next (group_id=? AND delivery_scope_type=? AND failed=? AND task_status=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next (group_id=? AND worker_scope=? AND failed=? AND task_status=?)
 
 Query: 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image, gp.preferences, gp.member_admission
@@ -1019,7 +1021,7 @@ USE TEMP B-TREE FOR ORDER BY
 Query: 
           SELECT
             -- GroupInfo
-            g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -1069,7 +1071,7 @@ SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group
 
 Query: 
           SELECT
-            g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
             g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -1616,14 +1618,6 @@ Query:
       
 Plan:
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
-
-Query: 
-        INSERT INTO delivery_tasks (
-          group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-          delivery_job_type, sender_group_member_id, message_id, message_from_channel, task_status
-        ) VALUES (?,?,?,?,?,?,?,?,?)
-      
-Plan:
 
 Query: 
         INSERT INTO group_members
@@ -3056,6 +3050,23 @@ SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND no
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
+        SELECT
+          t.delivery_task_id,
+          t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, t.message_from_channel
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      
+Plan:
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT COUNT(1)
         FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
@@ -4318,9 +4329,20 @@ SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profil
 
 Query: 
       INSERT INTO delivery_jobs (
-        group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-        delivery_job_type, single_sender_group_member_id, body, job_status, created_at, updated_at
+        group_id,
+        worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+        single_sender_group_member_id, body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO delivery_tasks (
+        group_id,
+        worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+        sender_group_member_id, message_id, message_from_channel, task_status,
+        created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4371,7 +4393,7 @@ Plan:
 SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 
 Query: 
-      SELECT DISTINCT group_id, delivery_scope_type
+      SELECT DISTINCT group_id, worker_scope
       FROM delivery_jobs
       WHERE failed = 0 AND job_status IN (?, ?)
     
@@ -4379,7 +4401,7 @@ Plan:
 SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
 
 Query: 
-      SELECT DISTINCT group_id, delivery_scope_type
+      SELECT DISTINCT group_id, worker_scope
       FROM delivery_tasks
       WHERE failed = 0 AND task_status = ?
     
@@ -4874,7 +4896,7 @@ SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_me
 Query: 
     SELECT
       -- GroupInfo
-      g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -4900,7 +4922,7 @@ SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
     SELECT
       -- GroupInfo
-      g.group_id, g.group_type, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
@@ -5135,24 +5157,6 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 CORRELATED SCALAR SUBQUERY 1
 SEARCH cc USING COVERING INDEX idx_connections_group_member (user_id=? AND group_member_id=?)
-
-Query: 
-    SELECT
-      t.delivery_task_id, t.delivery_job_type,
-      t.delivery_scope_type, t.delivery_scope_include_pending, t.delivery_scope_support_gm_id,
-      m.group_member_id, m.member_id, p.display_name,
-      COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
-    FROM delivery_tasks t
-    JOIN messages msg ON msg.message_id = t.message_id
-    JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-    WHERE t.delivery_task_id = ?
-  
-Plan:
-SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT f.file_id, f.ci_file_status, f.file_path
@@ -5681,9 +5685,9 @@ Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
@@ -5710,9 +5714,9 @@ Query: DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
