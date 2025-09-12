@@ -395,7 +395,8 @@ CREATE TABLE messages(
   shared_msg_id BLOB,
   shared_msg_id_user INTEGER,
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  broker_ts TEXT
 );
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
@@ -690,6 +691,38 @@ CREATE TABLE chat_item_mentions(
   member_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
+);
+CREATE TABLE delivery_tasks(
+  delivery_task_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  worker_scope TEXT NOT NULL,
+  job_scope_spec_tag TEXT,
+  job_scope_include_pending INTEGER,
+  job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  sender_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  message_id INTEGER REFERENCES messages ON DELETE CASCADE,
+  message_from_channel INTEGER NOT NULL DEFAULT 0,
+  task_status TEXT NOT NULL,
+  task_err_reason TEXT,
+  failed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE delivery_jobs(
+  delivery_job_id INTEGER PRIMARY KEY,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  worker_scope TEXT NOT NULL,
+  job_scope_spec_tag TEXT,
+  job_scope_include_pending INTEGER,
+  job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  body BLOB,
+  cursor_group_member_id INTEGER,
+  job_status TEXT NOT NULL,
+  job_err_reason TEXT,
+  failed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -1103,3 +1136,51 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON contacts(
 CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON contacts(
   grp_direct_inv_from_member_conn_id
 );
+CREATE INDEX idx_delivery_tasks_group_id ON delivery_tasks(group_id);
+CREATE INDEX idx_delivery_tasks_job_scope_support_gm_id ON delivery_tasks(
+  job_scope_support_gm_id
+);
+CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(
+  sender_group_member_id
+);
+CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
+CREATE INDEX idx_delivery_tasks_next ON delivery_tasks(
+  group_id,
+  worker_scope,
+  failed,
+  task_status
+);
+CREATE INDEX idx_delivery_tasks_next_for_job_scope ON delivery_tasks(
+  group_id,
+  worker_scope,
+  job_scope_spec_tag,
+  job_scope_include_pending,
+  job_scope_support_gm_id,
+  failed,
+  task_status
+);
+CREATE INDEX idx_delivery_tasks_next_for_job_scope_sender ON delivery_tasks(
+  group_id,
+  worker_scope,
+  job_scope_spec_tag,
+  job_scope_include_pending,
+  job_scope_support_gm_id,
+  sender_group_member_id,
+  failed,
+  task_status
+);
+CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
+CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
+CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(
+  job_scope_support_gm_id
+);
+CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
+  single_sender_group_member_id
+);
+CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
+  group_id,
+  worker_scope,
+  failed,
+  job_status
+);
+CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);

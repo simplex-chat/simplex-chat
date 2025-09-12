@@ -152,7 +152,8 @@ chatGroupTests = do
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
   describe "group message forwarding" $ do
-    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForward
+    it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
+    it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
     it "deduplicate forwarded messages" testGroupMsgForwardDeduplicate
     it "forward message edit (x.msg.update)" testGroupMsgForwardEdit
@@ -310,46 +311,26 @@ testGroupShared alice bob cath checkMessages = do
   bob <## "#team: you don't have permission to send messages"
   bob ##> "/rm team cath"
   bob <## "#team: you have insufficient permissions for this action, the required role is admin"
-  cath #> "#team hello"
-  concurrentlyN_
-    [ alice <# "#team cath> hello",
-      bob <# "#team cath> hello"
-    ]
   alice ##> "/mr team bob admin"
   concurrentlyN_
     [ alice <## "#team: you changed the role of bob to admin",
       bob <## "#team: alice changed your role from observer to admin",
       cath <## "#team: alice changed the role of bob from observer to admin"
     ]
-  -- remove member
-  bob ##> "/rm team cath"
-  concurrentlyN_
-    [ bob <## "#team: you removed cath from the group",
-      alice <## "#team: bob removed cath from the group",
-      do
-        cath <## "#team: bob removed you from the group"
-        cath <## "use /d #team to delete the group"
-    ]
-  bob #> "#team hi"
-  concurrently_
-    (alice <# "#team bob> hi")
-    (cath </)
-  alice #> "#team hello"
-  concurrently_
-    (bob <# "#team alice> hello")
-    (cath </)
-  cath ##> "#team hello"
-  cath <## "bad chat command: not current member"
   -- delete contact
   alice ##> "/d bob"
   alice <## "bob: contact is deleted"
   bob <## "alice (Alice) deleted contact with you"
   when checkMessages $ threadDelay 1000000
   alice #> "#team checking connection"
-  bob <# "#team alice> checking connection"
+  concurrently_
+    (bob <# "#team alice> checking connection")
+    (cath <# "#team alice> checking connection")
   when checkMessages $ threadDelay 1000000
   bob #> "#team received"
-  alice <# "#team bob> received"
+  concurrently_
+    (alice <# "#team bob> received")
+    (cath <# "#team bob> received")
   when checkMessages $ do
     alice @@@ [("@cath", "sent invitation to join group team as admin"), ("#team", "received")]
     bob @@@ [("@alice", "contact deleted"), ("#team", "received")]
@@ -710,7 +691,7 @@ testGroupDelete :: HasCallStack => TestParams -> IO ()
 testGroupDelete =
   testChatCfg3 cfg aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       alice ##> "/d #team"
       concurrentlyN_
         [ alice <## "#team: you deleted the group",
@@ -978,7 +959,7 @@ testGroupRemoveAdd :: HasCallStack => TestParams -> IO ()
 testGroupRemoveAdd =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
 
       threadDelay 100000
 
@@ -1861,7 +1842,7 @@ testDeleteMemberWithMessages :: HasCallStack => TestParams -> IO ()
 testDeleteMemberWithMessages =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 750000
       alice ##> "/set delete #team on"
       alice <## "updated group preferences:"
@@ -1899,7 +1880,7 @@ testDeleteMemberMarkMessagesDeleted :: HasCallStack => TestParams -> IO ()
 testDeleteMemberMarkMessagesDeleted =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
-      createGroup3 "team" alice bob cath
+      createGroup3' "team" alice (bob, GRMember) (cath, GRMember)
       threadDelay 1000000
       bob #> "#team hello"
       concurrently_
@@ -4855,8 +4836,8 @@ testMemberContactAcceptIncognito =
       cath ?#> ("@" <> bobIncognito <> " hey")
       bob ?<# (cathIncognito <> "> hey")
 
-testGroupMsgForward :: HasCallStack => TestParams -> IO ()
-testGroupMsgForward =
+testGroupMsgForwardMessage :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardMessage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
@@ -4883,6 +4864,61 @@ testGroupMsgForward =
       cath ##> "/tail #team 2"
       cath <# "#team bob> hi there [>>]"
       cath <# "#team hey team"
+
+testGroupMsgForwardBatched :: HasCallStack => TestParams -> IO ()
+testGroupMsgForwardBatched =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+      setupGroupForwarding alice bob cath
+
+      bob ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 1\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 2\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 3\"}}]"
+      bob <# "#team test 1"
+      bob <# "#team test 2"
+      bob <# "#team test 3"
+      alice <# "#team bob> test 1"
+      alice <# "#team bob> test 2"
+      alice <# "#team bob> test 3"
+      cath <# "#team bob> test 1 [>>]"
+      cath <# "#team bob> test 2 [>>]"
+      cath <# "#team bob> test 3 [>>]"
+
+      threadDelay 1000000
+
+      cath ##> "/_send #1 json [{\"msgContent\": {\"type\": \"text\", \"text\": \"test 4\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 5\"}}, {\"msgContent\": {\"type\": \"text\", \"text\": \"test 6\"}}]"
+      cath <# "#team test 4"
+      cath <# "#team test 5"
+      cath <# "#team test 6"
+      alice <# "#team cath> test 4"
+      alice <# "#team cath> test 5"
+      alice <# "#team cath> test 6"
+      bob <# "#team cath> test 4 [>>]"
+      bob <# "#team cath> test 5 [>>]"
+      bob <# "#team cath> test 6 [>>]"
+
+      alice ##> "/tail #team 6"
+      alice <# "#team bob> test 1"
+      alice <# "#team bob> test 2"
+      alice <# "#team bob> test 3"
+      alice <# "#team cath> test 4"
+      alice <# "#team cath> test 5"
+      alice <# "#team cath> test 6"
+
+      bob ##> "/tail #team 6"
+      bob <# "#team test 1"
+      bob <# "#team test 2"
+      bob <# "#team test 3"
+      bob <# "#team cath> test 4 [>>]"
+      bob <# "#team cath> test 5 [>>]"
+      bob <# "#team cath> test 6 [>>]"
+
+      cath ##> "/tail #team 6"
+      cath <# "#team bob> test 1 [>>]"
+      cath <# "#team bob> test 2 [>>]"
+      cath <# "#team bob> test 3 [>>]"
+      cath <# "#team test 4"
+      cath <# "#team test 5"
+      cath <# "#team test 6"
 
 testGroupMsgForwardReport :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardReport =

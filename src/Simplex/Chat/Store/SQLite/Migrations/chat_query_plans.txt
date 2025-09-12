@@ -96,6 +96,22 @@ SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+                SELECT delivery_task_id
+                FROM delivery_tasks
+                WHERE group_id = ?
+                  AND worker_scope = ?
+                  AND job_scope_spec_tag IS NOT DISTINCT FROM ?
+                  AND job_scope_include_pending IS NOT DISTINCT FROM ?
+                  AND job_scope_support_gm_id IS NOT DISTINCT FROM ?
+                  AND sender_group_member_id = ?
+                  AND failed = 0
+                  AND task_status = ?
+                ORDER BY delivery_task_id ASC
+              
+Plan:
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_scope_sender (group_id=? AND worker_scope=? AND job_scope_spec_tag=? AND job_scope_include_pending=? AND job_scope_support_gm_id=? AND sender_group_member_id=? AND failed=? AND task_status=?)
+
+Query: 
                 UPDATE contact_profiles
                 SET user_id = ?, updated_at = ?
                 WHERE contact_profile_id = ?
@@ -418,6 +434,17 @@ SEARCH cr USING INDEX idx_contact_requests_xcontact_id (user_id=? AND xcontact_i
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+            SELECT
+              delivery_job_id,
+              worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+              single_sender_group_member_id, body, cursor_group_member_id
+            FROM delivery_jobs
+            WHERE delivery_job_id = ?
+          
+Plan:
+SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
             SELECT COUNT(1)
             FROM (
               SELECT 1
@@ -649,6 +676,28 @@ SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+            SELECT delivery_job_id
+            FROM delivery_jobs
+            WHERE group_id = ? AND worker_scope = ?
+              AND failed = 0 AND job_status = ?
+            ORDER BY delivery_job_id ASC
+            LIMIT 1
+          
+Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_next (group_id=? AND worker_scope=? AND failed=? AND job_status=?)
+
+Query: 
+            SELECT delivery_task_id
+            FROM delivery_tasks
+            WHERE group_id = ? AND worker_scope = ?
+              AND failed = 0 AND task_status = ?
+            ORDER BY delivery_task_id ASC
+            LIMIT 1
+          
+Plan:
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next (group_id=? AND worker_scope=? AND failed=? AND task_status=?)
+
+Query: 
             SELECT gp.display_name, gp.full_name, gp.short_descr, gp.description, gp.image, gp.preferences, gp.member_admission
             FROM group_profiles gp
             JOIN groups g ON gp.group_profile_id = g.group_profile_id
@@ -822,8 +871,9 @@ Plan:
 
 Query: 
           INSERT INTO messages
-            (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+            (msg_sent, chat_msg_event, msg_body, broker_ts, created_at, updated_at, connection_id, group_id,
+             shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -1502,7 +1552,8 @@ Query:
           UPDATE group_members
           SET support_chat_items_unread = 0,
               support_chat_items_member_attention = 0,
-              support_chat_items_mentions = 0
+              support_chat_items_mentions = 0,
+              updated_at = ?
           WHERE group_member_id = ?
         
 Plan:
@@ -2997,6 +3048,23 @@ SEARCH ci USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND no
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
+        SELECT
+          t.delivery_task_id,
+          t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, t.message_from_channel
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      
+Plan:
+SEARCH t USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH msg USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT COUNT(1)
         FROM chat_items
         WHERE user_id = ? AND contact_id = ? AND item_status = ?
@@ -3991,6 +4059,22 @@ SEARCH group_members USING COVERING INDEX idx_group_members_contact_profile_id (
 SEARCH contacts USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_id=?)
 
 Query: 
+      DELETE FROM delivery_jobs
+      WHERE created_at <= ?
+        AND (job_status IN (?,?) OR failed = 1)
+    
+Plan:
+SEARCH delivery_jobs USING INDEX idx_delivery_jobs_created_at (created_at<?)
+
+Query: 
+      DELETE FROM delivery_tasks
+      WHERE created_at <= ?
+        AND (task_status IN (?,?) OR failed = 1)
+    
+Plan:
+SEARCH delivery_tasks USING INDEX idx_delivery_tasks_created_at (created_at<?)
+
+Query: 
       DELETE FROM display_names
       WHERE
         user_id = ?
@@ -4242,6 +4326,25 @@ Plan:
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
 
 Query: 
+      INSERT INTO delivery_jobs (
+        group_id,
+        worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+        single_sender_group_member_id, body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO delivery_tasks (
+        group_id,
+        worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+        sender_group_member_id, message_id, message_from_channel, task_status,
+        created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
       INSERT INTO files
         ( user_id, note_folder_id,
           file_name, file_path, file_size,
@@ -4286,6 +4389,22 @@ Query:
     
 Plan:
 SEARCH group_members USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+
+Query: 
+      SELECT DISTINCT group_id, worker_scope
+      FROM delivery_jobs
+      WHERE failed = 0 AND job_status = ?
+    
+Plan:
+SCAN delivery_jobs USING COVERING INDEX idx_delivery_jobs_next
+
+Query: 
+      SELECT DISTINCT group_id, worker_scope
+      FROM delivery_tasks
+      WHERE failed = 0 AND task_status = ?
+    
+Plan:
+SCAN delivery_tasks USING COVERING INDEX idx_delivery_tasks_next
 
 Query: 
       SELECT chat_item_id, timed_ttl
@@ -4764,6 +4883,7 @@ Plan:
 SEARCH messages USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
 SEARCH chat_item_messages USING COVERING INDEX sqlite_autoindex_chat_item_messages_2 (chat_item_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
 SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
@@ -5534,6 +5654,14 @@ SEARCH group_members USING COVERING INDEX idx_group_members_contact_id (contact_
 SEARCH group_members USING COVERING INDEX idx_group_members_invited_by (invited_by=?)
 SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
+Query: DELETE FROM delivery_jobs WHERE group_id = ?
+Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_group_id (group_id=?)
+
+Query: DELETE FROM delivery_tasks WHERE group_id = ?
+Plan:
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_group_id (group_id=?)
+
 Query: DELETE FROM display_names WHERE user_id = ? AND local_display_name = ?
 Plan:
 SEARCH display_names USING PRIMARY KEY (user_id=? AND local_display_name=?)
@@ -5554,6 +5682,10 @@ SEARCH files USING COVERING INDEX idx_files_redirect_file_id (redirect_file_id=?
 Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
@@ -5579,6 +5711,10 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
@@ -5604,6 +5740,8 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: DELETE FROM groups WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_group_id (group_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_group_id (group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_group_id (group_id=?)
 SEARCH chat_tags_chats USING COVERING INDEX idx_chat_tags_chats_chat_tag_id_group_id (group_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_group_id (group_id=?)
@@ -5621,6 +5759,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_via_group (via_group=?)
 Query: DELETE FROM messages WHERE connection_id = ?
 Plan:
 SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
 SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
@@ -5631,6 +5770,7 @@ SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_me
 Query: DELETE FROM messages WHERE connection_id = ? AND created_at <= ?
 Plan:
 SEARCH messages USING INDEX idx_messages_connection_id (connection_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
 SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
@@ -5641,6 +5781,7 @@ SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_me
 Query: DELETE FROM messages WHERE created_at <= ?
 Plan:
 SEARCH messages USING COVERING INDEX idx_messages_created_at (created_at<?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
 SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
@@ -5651,6 +5792,7 @@ SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_me
 Query: DELETE FROM messages WHERE group_id = ?
 Plan:
 SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_message_id (message_id=?)
 SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_message_id (message_id=?)
 SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_created_by_msg_id (created_by_msg_id=?)
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_created_by_msg_id (created_by_msg_id=?)
@@ -6233,6 +6375,14 @@ SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE contacts SET xcontact_id = ? WHERE contact_id = ?
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE delivery_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE delivery_job_id = ?
+Plan:
+SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE delivery_tasks SET task_status = ?, task_err_reason = ?, updated_at = ? WHERE delivery_task_id = ?
+Plan:
+SEARCH delivery_tasks USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE files SET agent_snd_file_deleted = 1, updated_at = ? WHERE user_id = ? AND file_id = ?
 Plan:

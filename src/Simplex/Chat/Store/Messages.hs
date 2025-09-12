@@ -286,7 +286,7 @@ getLastRcvMsgInfo db connId =
       RcvMsgInfo {msgId, msgDeliveryId, msgDeliveryStatus, agentMsgId, agentMsgMeta}
 
 createNewRcvMessage :: forall e. MsgEncodingI e => DB.Connection -> ConnOrGroupId -> NewRcvMessage e -> Maybe SharedMsgId -> Maybe GroupMemberId -> Maybe GroupMemberId -> ExceptT StoreError IO RcvMessage
-createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody} sharedMsgId_ authorMember forwardedByMember =
+createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody, brokerTs} sharedMsgId_ authorMember forwardedByMember =
   case connOrGroupId of
     ConnectionId connId -> liftIO $ insertRcvMsg (Just connId) Nothing
     GroupId groupId -> case sharedMsgId_ of
@@ -314,10 +314,12 @@ createNewRcvMessage db connOrGroupId NewRcvMessage {chatMsgEvent, msgBody} share
         db
         [sql|
           INSERT INTO messages
-            (msg_sent, chat_msg_event, msg_body, created_at, updated_at, connection_id, group_id, shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+            (msg_sent, chat_msg_event, msg_body, broker_ts, created_at, updated_at, connection_id, group_id,
+             shared_msg_id, author_group_member_id, forwarded_by_group_member_id)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?)
         |]
-        (MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, currentTs, currentTs, connId_, groupId_, sharedMsgId_, authorMember, forwardedByMember)
+        ((MDRcv, toCMEventTag chatMsgEvent, DB.Binary msgBody, brokerTs, currentTs, currentTs, connId_, groupId_)
+         :. (sharedMsgId_, authorMember, forwardedByMember))
       msgId <- insertedRowId db
       pure RcvMessage {msgId, chatMsgEvent = ACME (encoding @e) chatMsgEvent, sharedMsgId_, msgBody, authorMember, forwardedByMember}
 
@@ -509,17 +511,17 @@ setSupportChatTs db groupMemberId chatTs =
 
 setSupportChatMemberAttention :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMember -> Int64 -> IO (GroupInfo, GroupMember)
 setSupportChatMemberAttention db vr user g m memberAttention = do
-  m' <- updateGMAttention m
+  m' <- updateGMAttention
   g' <- updateGroupMembersRequireAttention db user g m m'
   pure (g', m')
   where
-    updateGMAttention m@GroupMember {groupMemberId} = do
+    updateGMAttention = do
       currentTs <- getCurrentTime
       DB.execute
         db
         "UPDATE group_members SET support_chat_items_member_attention = ?, updated_at = ? WHERE group_member_id = ?"
         (memberAttention, currentTs, groupMemberId' m)
-      m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
+      m_ <- runExceptT $ getGroupMemberById db vr user (groupMemberId' m)
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
 createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> UTCTime -> IO ChatItemId
@@ -2037,7 +2039,7 @@ setDirectChatItemsDeleteAt db User {userId} contactId itemIds currentTs = forM i
   pure (chatItemId, deleteAt)
 
 updateGroupChatItemsRead :: DB.Connection -> User -> GroupInfo -> IO ()
-updateGroupChatItemsRead db User {userId} GroupInfo {groupId, membership} = do
+updateGroupChatItemsRead db User {userId} GroupInfo {groupId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -2082,10 +2084,11 @@ updateSupportChatItemsRead db vr user@User {userId} g@GroupInfo {groupId, member
           UPDATE group_members
           SET support_chat_items_unread = 0,
               support_chat_items_member_attention = 0,
-              support_chat_items_mentions = 0
+              support_chat_items_mentions = 0,
+              updated_at = ?
           WHERE group_member_id = ?
         |]
-        (Only groupMemberId)
+        (currentTs, groupMemberId)
       m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 

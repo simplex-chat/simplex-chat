@@ -175,7 +175,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (MsgMention (..), groupForwardVersion)
+import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -359,6 +359,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     pure
       GroupInfo
         { groupId,
+          useRelays = False,
           localDisplayName = ldn,
           groupProfile,
           localAlias = "",
@@ -432,6 +433,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           pure
             ( GroupInfo
                 { groupId,
+                  useRelays = False,
                   localDisplayName,
                   groupProfile,
                   localAlias = "",

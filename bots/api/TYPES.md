@@ -2131,6 +2131,7 @@ MemberSupport:
 
 **Record type**:
 - groupId: int64
+- useRelays: bool
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -3580,6 +3581,26 @@ InvalidQuote:
 
 InvalidMention:
 - type: "invalidMention"
+
+InvalidDeliveryTask:
+- type: "invalidDeliveryTask"
+- taskId: int64
+
+DeliveryTaskNotFound:
+- type: "deliveryTaskNotFound"
+- taskId: int64
+
+InvalidDeliveryJob:
+- type: "invalidDeliveryJob"
+- jobId: int64
+
+DeliveryJobNotFound:
+- type: "deliveryJobNotFound"
+- jobId: int64
+
+WorkItemError:
+- type: "workItemError"
+- errContext: string
 
 
 ---

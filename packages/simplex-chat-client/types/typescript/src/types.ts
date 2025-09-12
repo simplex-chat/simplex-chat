@@ -2427,6 +2427,7 @@ export enum GroupFeatureEnabled {
 
 export interface GroupInfo {
   groupId: number // int64
+  useRelays: boolean
   localDisplayName: string
   groupProfile: GroupProfile
   localAlias: string
@@ -3812,6 +3813,11 @@ export type StoreError =
   | StoreError.UsageConditionsNotFound
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
+  | StoreError.InvalidDeliveryTask
+  | StoreError.DeliveryTaskNotFound
+  | StoreError.InvalidDeliveryJob
+  | StoreError.DeliveryJobNotFound
+  | StoreError.WorkItemError
 
 export namespace StoreError {
   export type Tag = 
@@ -3892,6 +3898,11 @@ export namespace StoreError {
     | "usageConditionsNotFound"
     | "invalidQuote"
     | "invalidMention"
+    | "invalidDeliveryTask"
+    | "deliveryTaskNotFound"
+    | "invalidDeliveryJob"
+    | "deliveryJobNotFound"
+    | "workItemError"
 
   interface Interface {
     type: Tag
@@ -4268,6 +4279,31 @@ export namespace StoreError {
 
   export interface InvalidMention extends Interface {
     type: "invalidMention"
+  }
+
+  export interface InvalidDeliveryTask extends Interface {
+    type: "invalidDeliveryTask"
+    taskId: number // int64
+  }
+
+  export interface DeliveryTaskNotFound extends Interface {
+    type: "deliveryTaskNotFound"
+    taskId: number // int64
+  }
+
+  export interface InvalidDeliveryJob extends Interface {
+    type: "invalidDeliveryJob"
+    jobId: number // int64
+  }
+
+  export interface DeliveryJobNotFound extends Interface {
+    type: "deliveryJobNotFound"
+    jobId: number // int64
+  }
+
+  export interface WorkItemError extends Interface {
+    type: "workItemError"
+    errContext: string
   }
 }
 
