@@ -268,6 +268,7 @@ getNextDeliveryJob db deliveryKey = do
       maybeFirstRow fromOnly $
         DB.query
           db
+#if defined(dbPostgres)
           [sql|
             SELECT delivery_job_id
             FROM delivery_jobs
@@ -276,6 +277,17 @@ getNextDeliveryJob db deliveryKey = do
             ORDER BY delivery_job_id ASC
             LIMIT 1
           |]
+#else
+          [sql|
+            SELECT delivery_job_id
+            FROM delivery_jobs
+            INDEXED BY idx_delivery_jobs_next
+            WHERE group_id = ? AND worker_scope = ?
+              AND failed = 0 AND job_status IN (?, ?)
+            ORDER BY delivery_job_id ASC
+            LIMIT 1
+          |]
+#endif
           (groupId, workerScope, DJSNew, DJSInProgress)
     getJob :: Int64 -> IO (Either StoreError MessageDeliveryJob)
     getJob jobId =
