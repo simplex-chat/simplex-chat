@@ -963,7 +963,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 SJson -> xGrpMemDel gInfo' m'' memId withMessages chatMsg msg brokerTs False
                 SBinary -> pure Nothing -- impossible
               XGrpLeave -> xGrpLeave gInfo' m'' msg brokerTs
-              XGrpDel -> Just (DJSGroup {jobSpec = DJSpecRelayRemoved}) <$ xGrpDel gInfo' m'' msg brokerTs
+              XGrpDel -> Just (DJSGroup {jobSpec = DJRelayRemoved}) <$ xGrpDel gInfo' m'' msg brokerTs
               XGrpInfo p' -> xGrpInfo gInfo' m'' p' msg brokerTs
               XGrpPrefs ps' -> xGrpPrefs gInfo' m'' ps'
               -- TODO [knocking] why don't we forward these messages?
@@ -1848,7 +1848,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> pure Nothing
                 Nothing -> do
                   withStore' $ \db -> setGroupReaction db g m itemMemberId sharedMsgId False reaction add msgId brokerTs
-                  pure $ Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
+                  pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
             else pure Nothing
       | otherwise = pure Nothing
       where
@@ -2021,7 +2021,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user gInfo m scopeMemberId
               Nothing -> do
                 withStore' $ \db -> createCIModeration db gInfo m msgMemberId sharedMsgId msgId brokerTs
-                pure $ Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
+                pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
       where
         moderate :: GroupMember -> CChatItem 'CTGroup -> CM (Maybe DeliveryJobScope)
         moderate mem cci = case sndMemberId_ of
@@ -2757,7 +2757,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         deliveryJobScope GroupMember {groupMemberId, memberStatus}
           | memberStatus == GSMemPendingApproval = Nothing
           | memberStatus == GSMemPendingReview = Just $ DJSMemberSupport groupMemberId
-          | otherwise = Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
+          | otherwise = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
         memberAnnouncedToView announcedMember@GroupMember {groupMemberId, memberProfile} gInfo' = do
           (announcedMember', scopeInfo) <- getMemNewChatScope announcedMember
           let event = RGEMemberAdded groupMemberId (fromLocalProfile memberProfile)
@@ -2899,7 +2899,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 bm <- createUnknownMember gInfo memId Nothing
                 bm' <- setMemberBlocked bm
                 toView $ CEvtUnknownMemberBlocked user gInfo m bm'
-                pure $ Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
+                pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
               Left e -> throwError $ ChatErrorStore e
         where
           setMemberBlocked bm = withStore' $ \db -> updateGroupMemberBlocked db user gInfo restriction bm
@@ -2959,12 +2959,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           when withMessages $ deleteMessages gInfo membership' SMDSnd
           deleteMemberItem RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages
-          pure $ Just DJSGroup {jobSpec = DJSpecRelayRemoved}
+          pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
         else
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> do
               messageError "x.grp.mem.del with unknown member ID"
-              pure $ Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = True}}
+              pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
             Right deletedMember@GroupMember {groupMemberId, memberProfile} ->
               checkRole deletedMember $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
@@ -3047,12 +3047,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 groupMsgToView cInfo ci
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
             Just _ -> updateGroupPrefs_ g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
-          pure $ Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = True}}
+          pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
     xGrpPrefs :: GroupInfo -> GroupMember -> GroupPreferences -> CM (Maybe DeliveryJobScope)
     xGrpPrefs g m@GroupMember {memberRole} ps'
       | memberRole < GROwner = messageError "x.grp.prefs with insufficient member permissions" $> Nothing
-      | otherwise = updateGroupPrefs_ g m ps' $> Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = True}}
+      | otherwise = updateGroupPrefs_ g m ps' $> Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
     updateGroupPrefs_ :: GroupInfo -> GroupMember -> GroupPreferences -> CM ()
     updateGroupPrefs_ g@GroupInfo {groupProfile = p} m ps' =
@@ -3321,7 +3321,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
         processDeliveryTask :: MessageDeliveryTask -> CM ()
         processDeliveryTask task@MessageDeliveryTask {jobScope} =
           case jobScopeImpliedSpec jobScope of
-            DJSpecDeliveryJob _includePending ->
+            DJDeliveryJob _includePending ->
               withWorkItems a doWork (withStore' $ \db -> getNextDeliveryTasks db gInfo task) $ \nextTasks -> do
                 let (body, taskIds, largeTaskIds) = batchDeliveryTasks1 vr maxEncodedMsgLength nextTasks
                 withStore' $ \db -> do
@@ -3334,7 +3334,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
                 singleSenderGMId_ (MessageDeliveryTask {senderGMId = senderGMId'} :| ts)
                   | all (\MessageDeliveryTask {senderGMId} -> senderGMId == senderGMId') ts = Just senderGMId'
                   | otherwise = Nothing
-            DJSpecRelayRemoved
+            DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery task worker: relay removed task in wrong worker scope"
               | otherwise -> do
@@ -3385,10 +3385,10 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob :: MessageDeliveryJob -> CM ()
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
-            DJSpecDeliveryJob _includePending -> do
+            DJDeliveryJob _includePending -> do
               sendBodyToMembers
               withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
-            DJSpecRelayRemoved
+            DJRelayRemoved
               | workerScope /= DWSGroup ->
                   throwChatError $ CEInternalError "delivery job worker: relay removed job in wrong worker scope"
               | otherwise -> do

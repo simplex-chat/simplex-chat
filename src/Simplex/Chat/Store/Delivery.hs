@@ -56,14 +56,14 @@ type DeliveryJobScopeRow = (DeliveryWorkerScope, Maybe DeliveryJobSpecTag, Maybe
 jobScopeRow_ :: DeliveryJobScope -> DeliveryJobScopeRow
 jobScopeRow_ = \case
   DJSGroup {jobSpec} -> case jobSpec of
-    DJSpecDeliveryJob {includePending} -> (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing)
-    DJSpecRelayRemoved -> (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing)
+    DJDeliveryJob {includePending} -> (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing)
+    DJRelayRemoved -> (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing)
   DJSMemberSupport {supportGMId} -> (DWSMemberSupport, Nothing, Nothing, Just supportGMId)
 
 toJobScope_ :: DeliveryJobScopeRow -> Maybe DeliveryJobScope
 toJobScope_ = \case
-  (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing) -> Just $ DJSGroup {jobSpec = DJSpecDeliveryJob {includePending}}
-  (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJSpecRelayRemoved}
+  (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing) -> Just $ DJSGroup {jobSpec = DJDeliveryJob {includePending}}
+  (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJRelayRemoved}
   (DWSMemberSupport, Nothing, Nothing, Just supportGMId) -> Just $ DJSMemberSupport {supportGMId}
   _ -> Nothing
 

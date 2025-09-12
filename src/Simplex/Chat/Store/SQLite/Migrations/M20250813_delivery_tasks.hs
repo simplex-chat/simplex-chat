@@ -14,7 +14,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- both tables:
 -- - <group_id, worker_scope> <-> DeliveryWorkerKey = (GroupId, DeliveryWorkerScope),
 -- - job_scope_spec_tag <-> Maybe DeliveryJobSpecTag (for DJSGroup job scope),
--- - job_scope_include_pending <-> Maybe Bool (for DJSpecDeliveryJob job spec),
+-- - job_scope_include_pending <-> Maybe Bool (for DJDeliveryJob job spec),
 -- - job_scope_support_gm_id <-> Maybe GroupMemberId (for DJSMemberSupport job scope),
 -- - failed <-> Bool (for internal worker use, to mark failed work items).
 
@@ -43,8 +43,8 @@ import Database.SQLite.Simple.QQ (sql)
 -- See DeliveryJobScope.
 --
 -- In some cases multiple tasks of the same job scope may be converted into a single job.
--- For example, messages referenced in DJSpecDeliveryJob tasks of the same scope/spec can be batched for a single delivery.
--- Some tasks, for example of DJSpecRelayRemoved specialization, are converted one-to-one into jobs.
+-- For example, messages referenced in DJDeliveryJob tasks of the same scope/spec can be batched for a single delivery.
+-- Some tasks, for example of DJRelayRemoved specialization, are converted one-to-one into jobs.
 --
 -- Delivery scopes can be expanded to create more specialized jobs.
 -- For example DWSMemberProfileUpdate workers are planned to deliver senders' profiles to

@@ -48,8 +48,8 @@ data DeliveryJobScope
   deriving (Show)
 
 data DeliveryJobSpec
-  = DJSpecDeliveryJob {includePending :: Bool}
-  | DJSpecRelayRemoved
+  = DJDeliveryJob {includePending :: Bool}
+  | DJRelayRemoved
   deriving (Show)
 
 data DeliveryJobSpecTag
@@ -79,23 +79,23 @@ toWorkerScope = \case
 isRelayRemoved :: DeliveryJobScope -> Bool
 isRelayRemoved = \case
   DJSGroup {jobSpec} -> case jobSpec of
-    DJSpecRelayRemoved -> True
+    DJRelayRemoved -> True
     _ -> False
   _ -> False
 
 jobScopeImpliedSpec :: DeliveryJobScope -> DeliveryJobSpec
 jobScopeImpliedSpec = \case
   DJSGroup {jobSpec} -> jobSpec
-  DJSMemberSupport {} -> DJSpecDeliveryJob {includePending = False}
+  DJSMemberSupport {} -> DJDeliveryJob {includePending = False}
 
 jobSpecImpliedPending :: DeliveryJobSpec -> Bool
 jobSpecImpliedPending = \case
-  DJSpecDeliveryJob {includePending} -> includePending
-  DJSpecRelayRemoved -> True
+  DJDeliveryJob {includePending} -> includePending
+  DJRelayRemoved -> True
 
 infoToDeliveryScope :: GroupInfo -> Maybe GroupChatScopeInfo -> DeliveryJobScope
 infoToDeliveryScope GroupInfo {membership} = \case
-  Nothing -> DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
+  Nothing -> DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
   Just GCSIMemberSupport {groupMember_} ->
     let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
      in DJSMemberSupport {supportGMId}
@@ -104,8 +104,8 @@ memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
 memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
   | memberStatus == GSMemPendingApproval = Nothing
   | memberStatus == GSMemPendingReview = Just $ DJSMemberSupport {supportGMId = groupMemberId' m}
-  | memberRole >= GRModerator = Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = True}}
-  | otherwise = Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
+  | memberRole >= GRModerator = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
+  | otherwise = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
 
 data NewMessageDeliveryTask = NewMessageDeliveryTask
   { messageId :: MessageId,
