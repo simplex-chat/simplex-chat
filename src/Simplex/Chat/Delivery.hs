@@ -18,97 +18,105 @@ import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
 
-type DeliveryWorkerKey = (GroupId, GroupDeliveryScopeType)
+type DeliveryWorkerKey = (GroupId, DeliveryWorkerScope)
 
-data GroupDeliveryScope
-  = GDSGroup {includePending :: Bool}
-  | GDSMemberSupport {supportGMId :: GroupMemberId}
-  -- | GDSMemberProfile -- planned for sending member profiles -- TODO comment
+data DeliveryWorkerScope
+  = DWSGroup
+  | DWSMemberSupport
+  -- | DWSMemberProfileUpdate
   deriving (Eq, Ord, Show)
 
-data GroupDeliveryScopeType
-  = GDSTGroup
-  | GDSTMemberSupport
-  -- | GDSTMemberProfile
-  deriving (Eq, Ord, Show)
+instance FromField DeliveryWorkerScope where fromField = fromTextField_ textDecode
 
-instance FromField GroupDeliveryScopeType where fromField = fromTextField_ textDecode
+instance ToField DeliveryWorkerScope where toField = toField . textEncode
 
-instance ToField GroupDeliveryScopeType where toField = toField . textEncode
-
-instance TextEncoding GroupDeliveryScopeType where
+instance TextEncoding DeliveryWorkerScope where
   textDecode = \case
-    "group" -> Just GDSTGroup
-    "member_support" -> Just GDSTMemberSupport
-    -- "member_profile" -> Just GDSTMemberProfile
+    "group" -> Just DWSGroup
+    "member_support" -> Just DWSMemberSupport
+    -- "member_profile_update" -> Just DWSMemberProfileUpdate
     _ -> Nothing
   textEncode = \case
-    GDSTGroup -> "group"
-    GDSTMemberSupport -> "member_support"
-    -- GDSTMemberProfile -> "member_profile"
+    DWSGroup -> "group"
+    DWSMemberSupport -> "member_support"
+    -- DWSMemberProfileUpdate -> "member_profile_update"
 
-deliveryScopeType :: GroupDeliveryScope -> GroupDeliveryScopeType
-deliveryScopeType = \case
-  GDSGroup {} -> GDSTGroup
-  GDSMemberSupport {} -> GDSTMemberSupport
-  -- GDSMemberProfile -> GDSTMemberProfile
+data DeliveryJobScope
+  = DJSGroup {jobSpec :: DeliveryJobSpec}
+  | DJSMemberSupport {supportGMId :: GroupMemberId}
+  -- | DJSMemberProfileUpdate
+  deriving (Show)
 
-infoToDeliveryScope :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupDeliveryScope
+data DeliveryJobSpec
+  = DJSpecDeliveryJob {includePending :: Bool}
+  | DJSpecRelayRemoved
+  deriving (Show)
+
+data DeliveryJobSpecTag
+  = DJSTDeliveryJob
+  | DJSTRelayRemoved
+  deriving (Show)
+
+instance FromField DeliveryJobSpecTag where fromField = fromTextField_ textDecode
+
+instance ToField DeliveryJobSpecTag where toField = toField . textEncode
+
+instance TextEncoding DeliveryJobSpecTag where
+  textDecode = \case
+    "delivery_job" -> Just DJSTDeliveryJob
+    "relay_removed" -> Just DJSTRelayRemoved
+    _ -> Nothing
+  textEncode = \case
+    DJSTDeliveryJob -> "delivery_job"
+    DJSTRelayRemoved -> "relay_removed"
+
+toWorkerScope :: DeliveryJobScope -> DeliveryWorkerScope
+toWorkerScope = \case
+  DJSGroup _ -> DWSGroup
+  DJSMemberSupport _ -> DWSMemberSupport
+  -- DJSMemberProfileUpdate -> DWSMemberProfileUpdate
+
+isRelayRemoved :: DeliveryJobScope -> Bool
+isRelayRemoved = \case
+  DJSGroup {jobSpec} -> case jobSpec of
+    DJSpecRelayRemoved -> True
+    _ -> False
+  _ -> False
+
+jobScopeImpliedSpec :: DeliveryJobScope -> DeliveryJobSpec
+jobScopeImpliedSpec = \case
+  DJSGroup {jobSpec} -> jobSpec
+  DJSMemberSupport {} -> DJSpecDeliveryJob {includePending = False}
+
+jobSpecImpliedPending :: DeliveryJobSpec -> Bool
+jobSpecImpliedPending = \case
+  DJSpecDeliveryJob {includePending} -> includePending
+  DJSpecRelayRemoved -> True
+
+infoToDeliveryScope :: GroupInfo -> Maybe GroupChatScopeInfo -> DeliveryJobScope
 infoToDeliveryScope GroupInfo {membership} = \case
-  Nothing -> GDSGroup {includePending = False}
+  Nothing -> DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
   Just GCSIMemberSupport {groupMember_} ->
     let supportGMId = groupMemberId' $ fromMaybe membership groupMember_
-     in GDSMemberSupport {supportGMId}
+     in DJSMemberSupport {supportGMId}
 
-memberEventDeliveryScope :: GroupMember -> Maybe GroupDeliveryScope
+memberEventDeliveryScope :: GroupMember -> Maybe DeliveryJobScope
 memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
   | memberStatus == GSMemPendingApproval = Nothing
-  | memberStatus == GSMemPendingReview = Just $ GDSMemberSupport {supportGMId = groupMemberId' m}
-  | memberRole >= GRModerator = Just GDSGroup {includePending = True}
-  | otherwise = Just GDSGroup {includePending = False}
+  | memberStatus == GSMemPendingReview = Just $ DJSMemberSupport {supportGMId = groupMemberId' m}
+  | memberRole >= GRModerator = Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = True}}
+  | otherwise = Just DJSGroup {jobSpec = DJSpecDeliveryJob {includePending = False}}
 
-data NewGroupDeliveryTask = NewGroupDeliveryTask
+data NewMessageDeliveryTask = NewMessageDeliveryTask
   { messageId :: MessageId,
-    deliveryScope :: GroupDeliveryScope,
-    jobType :: DeliveryJobType,
+    jobScope :: DeliveryJobScope,
     messageFromChannel :: MessageFromChannel
   }
   deriving (Show)
 
-data DeliveryJobType
-  = DJTMessageForward
-  | DJTRelayRemoved
-  -- | DJTChatItemsCount -- planned for batching reactions/comments (ChatItemCountsJob)
-  -- | DJTMemberProfile -- planned for sending member profiles (MemberProfileJob)
-  deriving (Eq, Show)
-
-instance FromField DeliveryJobType where fromField = fromTextField_ textDecode
-
-instance ToField DeliveryJobType where toField = toField . textEncode
-
-instance TextEncoding DeliveryJobType where
-  textDecode = \case
-    "message_forward" -> Just DJTMessageForward
-    "relay_removed" -> Just DJTRelayRemoved
-    -- "chat_items_count" -> Just DJTChatItemsCount
-    -- "member_profile" -> Just DJTMemberProfile
-    _ -> Nothing
-  textEncode = \case
-    DJTMessageForward -> "message_forward"
-    DJTRelayRemoved -> "relay_removed"
-    -- DJTChatItemsCount -> "chat_items_count"
-    -- DJTMemberProfile -> "member_profile"
-
-data DeliveryTask
-  = DTMessageForward {messageForwardTask :: MessageForwardTask}
-  | DTRelayRemoved {relayRemovedTask :: RelayRemovedTask}
-  -- | DTChatItemsCount {chatItemCountsTask :: ChatItemCountsTask}
-  -- | DTMemberProfile {memberProfileTask :: MemberProfileTask}
-  deriving (Show)
-
-data MessageForwardTask = MessageForwardTask
+data MessageDeliveryTask = MessageDeliveryTask
   { taskId :: Int64,
-    deliveryScope :: GroupDeliveryScope,
+    jobScope :: DeliveryJobScope,
     senderGMId :: GroupMemberId,
     senderMemberId :: MemberId,
     senderMemberName :: ContactName,
@@ -118,39 +126,8 @@ data MessageForwardTask = MessageForwardTask
   }
   deriving (Show)
 
-data RelayRemovedTask = RelayRemovedTask
-  { taskId :: Int64,
-    senderGMId :: GroupMemberId,
-    senderMemberId :: MemberId,
-    senderMemberName :: ContactName,
-    brokerTs :: UTCTime,
-    chatMessage :: ChatMessage 'Json
-  }
-  deriving (Show)
-
--- data ChatItemCountsTask = ChatItemCountsTask
---   { taskId :: Int64,
---     deliveryScope :: GroupDeliveryScope,
---     senderGMId :: GroupMemberId,
---     senderMemberId :: MemberId,
---     senderMemberName :: ContactName,
---     brokerTs :: UTCTime,
---     chatMessage :: ChatMessage 'Json
---   }
---   deriving (Show)
-
--- data MemberProfileTask = ProfileDeliveryTask
---   { taskId :: Int64,
---     member :: GroupMember -- use last_profile_delivery_ts to filter list of recipients
---   }
---   deriving (Show)
-
-deliveryTaskId :: DeliveryTask -> Int64
-deliveryTaskId = \case
-  DTMessageForward {messageForwardTask = MessageForwardTask {taskId}} -> taskId
-  DTRelayRemoved {relayRemovedTask = RelayRemovedTask {taskId}} -> taskId
-  -- DTChatItemsCount {chatItemCountsTask = ChatItemCountsTask {taskId}} -> taskId
-  -- DTMemberProfile {memberProfileTask = ProfileDeliveryTask {taskId}} -> taskId
+deliveryTaskId :: MessageDeliveryTask -> Int64
+deliveryTaskId = taskId
 
 data DeliveryTaskStatus
   = DTSNew -- created for delivery task worker to pick up and convert into a delivery job
@@ -173,52 +150,17 @@ instance TextEncoding DeliveryTaskStatus where
     DTSProcessed -> "processed"
     DTSError -> "error"
 
-data DeliveryJob
-  = DJMessageForward {messageForwardJob :: MessageForwardJob}
-  | DJRelayRemoved {relayRemovedJob :: RelayRemovedJob}
-  -- | DJChatItemsCount {chatItemCountsJob :: ChatItemCountsJob}
-  -- | DJMemberProfile {memberProfileJob :: MemberProfileJob}
-  deriving (Show)
-
-data MessageForwardJob = MessageForwardJob
+data MessageDeliveryJob = MessageDeliveryJob
   { jobId :: Int64,
-    deliveryScope :: GroupDeliveryScope,
+    jobScope :: DeliveryJobScope,
     singleSenderGMId_ :: Maybe GroupMemberId, -- Just for single-sender deliveries, Nothing for multi-sender deliveries
-    messagesBatch :: ByteString,
-    cursorGMId :: Maybe GroupMemberId
+    body :: ByteString,
+    cursorGMId_ :: Maybe GroupMemberId
   }
   deriving (Show)
 
-data RelayRemovedJob = RelayRemovedJob
-  { jobId :: Int64,
-    singleSenderGMId :: GroupMemberId,
-    fwdChatMessage :: ByteString,
-    cursorGMId :: Maybe GroupMemberId
-  }
-  deriving (Show)
-
--- data ChatItemCountsJob = ChatItemCountsJob
---   { jobId :: Int64,
---     deliveryScope :: GroupDeliveryScope,
---     singleSenderGMId_ :: Maybe GroupMemberId, -- Just for single-sender deliveries, Nothing for multi-sender deliveries
---     countsBatch :: ByteString,
---     cursorGMId :: Maybe GroupMemberId
---   }
---   deriving (Show)
-
--- data MemberProfileJob = ProfileDeliveryJob
---   { jobId :: Int64,
---     member :: GroupMember, -- use last_profile_delivery_ts to filter list of recipients
---     cursorGMId :: Maybe GroupMemberId
---   }
---   deriving (Show)
-
-deliveryJobId :: DeliveryJob -> Int64
-deliveryJobId = \case
-  DJMessageForward {messageForwardJob = MessageForwardJob {jobId}} -> jobId
-  DJRelayRemoved {relayRemovedJob = RelayRemovedJob {jobId}} -> jobId
-  -- DJChatItemsCount {chatItemCountsJob = ChatItemCountsJob {jobId}} -> jobId
-  -- DJMemberProfile {memberProfileJob = ProfileDeliveryJob {jobId}} -> jobId
+deliveryJobId :: MessageDeliveryJob -> Int64
+deliveryJobId = jobId
 
 data DeliveryJobStatus
   = DJSNew -- created for delivery job worker to pick up
@@ -243,3 +185,7 @@ instance TextEncoding DeliveryJobStatus where
     DJSInProgress -> "in_progress"
     DJSComplete -> "complete"
     DJSError -> "error"
+
+-- data MemberProfileUpdateTask = undefined
+
+-- data MemberProfileUpdateJob = undefined

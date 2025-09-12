@@ -59,10 +59,10 @@ batchMessages maxLen = addBatch . foldr addToBatch ([], [], 0, 0)
     body SndMessage {msgBody} = msgBody
 
 -- | Batches delivery tasks into (batch, [taskIds], [largeTaskIds]).
-batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageForwardTask -> (ByteString, [Int64], [Int64])
+batchDeliveryTasks1 :: VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
 batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) . L.toList
   where
-    addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageForwardTask -> ([ByteString], [Int64], [Int64], Int, Int)
+    addToBatch :: ([ByteString], [Int64], [Int64], Int, Int) -> MessageDeliveryTask -> ([ByteString], [Int64], [Int64], Int, Int)
     addToBatch (msgBodies, taskIds, largeTaskIds, len, n) task
       -- too large: skip msgBody, record taskId in largeTaskIds
       | msgLen > maxLen = (msgBodies, taskIds, taskId : largeTaskIds, len, n)
@@ -71,7 +71,7 @@ batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) 
       -- doesn’t fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageForwardTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel = _messageFromChannel} = task
+        MessageDeliveryTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel = _messageFromChannel} = task
         -- TODO [channels fwd] handle messageFromChannel (null memberId in XGrpMsgForward)
         msgBody =
           let fwdEvt = XGrpMsgForward senderMemberId (Just senderMemberName) chatMessage brokerTs

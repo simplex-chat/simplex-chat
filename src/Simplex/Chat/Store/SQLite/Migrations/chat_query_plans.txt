@@ -109,7 +109,7 @@ Query:
                 ORDER BY created_at ASC, delivery_task_id ASC
               
 Plan:
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_type_sender (group_id=? AND delivery_scope_type=? AND delivery_scope_include_pending=? AND delivery_scope_support_gm_id=? AND delivery_job_type=? AND sender_group_member_id=? AND failed=? AND task_status=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_scope_sender (group_id=? AND delivery_scope_type=? AND delivery_scope_include_pending=? AND delivery_scope_support_gm_id=? AND delivery_job_type=? AND sender_group_member_id=? AND failed=? AND task_status=?)
 
 Query: 
                 UPDATE contact_profiles
@@ -436,7 +436,7 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
             SELECT
               delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-              delivery_job_type, single_sender_group_member_id, delivery_body, cursor_group_member_id
+              delivery_job_type, single_sender_group_member_id, body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           
@@ -4319,7 +4319,7 @@ SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profil
 Query: 
       INSERT INTO delivery_jobs (
         group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-        delivery_job_type, single_sender_group_member_id, delivery_body, job_status, created_at, updated_at
+        delivery_job_type, single_sender_group_member_id, body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     
 Plan:
@@ -5681,9 +5681,9 @@ Query: DELETE FROM group_members WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH group_members USING COVERING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
@@ -5710,9 +5710,9 @@ Query: DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
-SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
-SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_delivery_scope_support_gm_id (delivery_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (delivery_scope_support_gm_id=?)
 SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)

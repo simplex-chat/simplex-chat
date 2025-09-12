@@ -5,19 +5,19 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Delivery
-  ( createNewDeliveryTask,
+  ( createMsgDeliveryTask,
     deleteGroupDeliveryTasks,
     deleteGroupDeliveryJobs,
     getPendingDeliveryTaskScopes,
     getNextDeliveryTask,
-    getNextMsgFwdTasks,
-    createMessageForwardJob,
-    createRelayRemovedJob,
+    getNextDeliveryTasks,
     updateDeliveryTaskStatus,
     setDeliveryTaskErrStatus,
     deleteDoneDeliveryTasks,
+    createMsgDeliveryJob,
     getPendingDeliveryJobScopes,
     getNextDeliveryJob,
     updateDeliveryJobStatus,
@@ -44,45 +44,46 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (firstRow')
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
-import Database.SQLite.Simple (Only (..), Query, (:.) (..))
+import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-deliveryScopeFields_ :: GroupDeliveryScope -> (GroupDeliveryScopeType, Maybe Bool, Maybe GroupMemberId)
-deliveryScopeFields_ = \case
-  GDSGroup {includePending = True} -> (GDSTGroup, Just True, Nothing)
-  GDSGroup {includePending = False} -> (GDSTGroup, Just False, Nothing)
-  GDSMemberSupport {supportGMId} -> (GDSTMemberSupport, Nothing, Just supportGMId)
+type DeliveryJobScopeRow = (DeliveryWorkerScope, Maybe DeliveryJobSpecTag, Maybe BoolInt, Maybe GroupMemberId)
 
-toDeliveryScope_ :: GroupDeliveryScopeType -> Maybe BoolInt -> Maybe GroupMemberId -> Maybe GroupDeliveryScope
-toDeliveryScope_ scopeType includePending_ supportGMId_ = case (scopeType, includePending_, supportGMId_) of
-  (GDSTGroup, Just (BI True), Nothing) -> Just $ GDSGroup {includePending = True}
-  (GDSTGroup, Just (BI False), Nothing) -> Just $ GDSGroup {includePending = False}
-  (GDSTMemberSupport, Nothing, Just supportGMId) -> Just $ GDSMemberSupport {supportGMId}
+jobScopeRow_ :: DeliveryJobScope -> DeliveryJobScopeRow
+jobScopeRow_ = \case
+  DJSGroup {jobSpec} -> case jobSpec of
+    DJSpecDeliveryJob {includePending} -> (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing)
+    DJSpecRelayRemoved -> (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing)
+  DJSMemberSupport {supportGMId} -> (DWSMemberSupport, Nothing, Nothing, Just supportGMId)
+
+toJobScope_ :: DeliveryJobScopeRow -> Maybe DeliveryJobScope
+toJobScope_ = \case
+  (DWSGroup, Just DJSTDeliveryJob, Just (BI includePending), Nothing) -> Just $ DJSGroup {jobSpec = DJSpecDeliveryJob {includePending}}
+  (DWSGroup, Just DJSTRelayRemoved, Nothing, Nothing) -> Just $ DJSGroup {jobSpec = DJSpecRelayRemoved}
+  (DWSMemberSupport, Nothing, Nothing, Just supportGMId) -> Just $ DJSMemberSupport {supportGMId}
   _ -> Nothing
 
-createNewDeliveryTask :: DB.Connection -> GroupInfo -> GroupMember -> NewGroupDeliveryTask -> IO ()
-createNewDeliveryTask
-  db
-  GroupInfo {groupId}
-  sender
-  NewGroupDeliveryTask {messageId, deliveryScope, jobType, messageFromChannel} =
-    DB.execute
-      db
-      [sql|
-        INSERT INTO delivery_tasks (
-          group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-          delivery_job_type, sender_group_member_id, message_id, message_from_channel, task_status
-        ) VALUES (?,?,?,?,?,?,?,?,?)
-      |]
-      ( (groupId, scopeType, BI <$> scopeInclPending_, scopeSupportGMId_)
-          :. (jobType, groupMemberId' sender, messageId, BI messageFromChannel, DTSNew)
-      )
-    where
-      (scopeType, scopeInclPending_, scopeSupportGMId_) = deliveryScopeFields_ deliveryScope
+createMsgDeliveryTask :: DB.Connection -> GroupInfo -> GroupMember -> NewMessageDeliveryTask -> IO ()
+createMsgDeliveryTask db gInfo sender newTask = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO delivery_tasks (
+        group_id,
+        worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+        sender_group_member_id, message_id, message_from_channel, task_status,
+        created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
+    |]
+    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI messageFromChannel, DTSNew, currentTs, currentTs))
+  where
+    GroupInfo {groupId} = gInfo
+    NewMessageDeliveryTask {messageId, jobScope, messageFromChannel} = newTask
 
 deleteGroupDeliveryTasks :: DB.Connection -> GroupInfo -> IO ()
 deleteGroupDeliveryTasks db GroupInfo {groupId} =
@@ -97,19 +98,17 @@ getPendingDeliveryTaskScopes db =
   DB.query
     db
     [sql|
-      SELECT DISTINCT group_id, delivery_scope_type
+      SELECT DISTINCT group_id, worker_scope
       FROM delivery_tasks
       WHERE failed = 0 AND task_status = ?
     |]
     (Only DTSNew)
 
-type DeliveryTaskRow = (Int64, DeliveryJobType, GroupDeliveryScopeType, Maybe BoolInt, Maybe GroupMemberId, GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt)
-
-getNextDeliveryTask :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe DeliveryTask))
+getNextDeliveryTask :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryTask))
 getNextDeliveryTask db deliveryKey = do
-  getWorkItem "delivery task" getTaskId getTask (markDeliveryTaskFailed_ db)
+  getWorkItem "delivery task" getTaskId (getMsgDeliveryTask_ db) (markDeliveryTaskFailed_ db)
   where
-    (groupId, scopeType) = deliveryKey
+    (groupId, workerScope) = deliveryKey
     getTaskId :: IO (Maybe Int64)
     getTaskId =
       maybeFirstRow fromOnly $
@@ -118,84 +117,70 @@ getNextDeliveryTask db deliveryKey = do
           [sql|
             SELECT delivery_task_id
             FROM delivery_tasks
-            WHERE group_id = ? AND delivery_scope_type = ?
+            WHERE group_id = ? AND worker_scope = ?
               AND failed = 0 AND task_status = ?
-            ORDER BY created_at ASC, delivery_task_id ASC
+            ORDER BY delivery_task_id ASC
             LIMIT 1
           |]
-          (groupId, scopeType, DTSNew)
-    getTask :: Int64 -> IO (Either StoreError DeliveryTask)
-    getTask taskId =
-      firstRow' toDeliveryTask (SEDeliveryJobNotFound taskId) $
-        DB.query db deliveryTaskQuery (Only taskId)
-      where
-        toDeliveryTask :: DeliveryTaskRow -> Either StoreError DeliveryTask
-        toDeliveryTask taskRow@(_, jobType, _, _, _, _, _, _, _, _, _) =
-          case jobType of
-            DJTMessageForward -> DTMessageForward <$> toMsgFwdTask_ taskRow
-            DJTRelayRemoved -> DTRelayRemoved <$> toRelayRmvdTask_ taskRow
+          (groupId, workerScope, DTSNew)
 
-deliveryTaskQuery :: Query
-deliveryTaskQuery =
-  [sql|
-    SELECT
-      t.delivery_task_id, t.delivery_job_type,
-      t.delivery_scope_type, t.delivery_scope_include_pending, t.delivery_scope_support_gm_id,
-      m.group_member_id, m.member_id, p.display_name,
-      COALESCE(msg.broker_ts, msg.created_at), msg.msg_body, t.message_from_channel
-    FROM delivery_tasks t
-    JOIN messages msg ON msg.message_id = t.message_id
-    JOIN group_members m ON m.group_member_id = t.sender_group_member_id
-    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-    WHERE t.delivery_task_id = ?
-  |]
+type MessageDeliveryTaskRow = (Only Int64) :. DeliveryJobScopeRow :. (GroupMemberId, MemberId, ContactName, UTCTime, ChatMessage 'Json, BoolInt)
 
-toMsgFwdTask_ :: DeliveryTaskRow -> Either StoreError MessageForwardTask
-toMsgFwdTask_ (taskId, _jobType, scopeType, scopeIncludePending_, scopeSupportGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel) =
-  case toDeliveryScope_ scopeType scopeIncludePending_ scopeSupportGMId_ of
-    Just deliveryScope -> Right $ MessageForwardTask {taskId, deliveryScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
-    Nothing -> Left $ SEInvalidDeliveryTask taskId
-
-toRelayRmvdTask_ :: DeliveryTaskRow -> Either StoreError RelayRemovedTask
-toRelayRmvdTask_ (taskId, _jobType, scopeType, scopeIncludePending_, scopeSupportGMId_, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI _messageFromChannel) =
-  case toDeliveryScope_ scopeType scopeIncludePending_ scopeSupportGMId_ of
-    Just GDSGroup {includePending = True} -> Right $ RelayRemovedTask {taskId, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
-    _ -> Left $ SEInvalidDeliveryTask taskId
+getMsgDeliveryTask_ :: DB.Connection -> Int64 -> IO (Either StoreError MessageDeliveryTask)
+getMsgDeliveryTask_ db taskId =
+  firstRow' toTask (SEDeliveryTaskNotFound taskId) $
+    DB.query
+      db
+      [sql|
+        SELECT
+          t.delivery_task_id,
+          t.worker_scope, t.job_scope_spec_tag, t.job_scope_include_pending, t.job_scope_support_gm_id,
+          m.group_member_id, m.member_id, p.display_name, msg.broker_ts, msg.msg_body, t.message_from_channel
+        FROM delivery_tasks t
+        JOIN messages msg ON msg.message_id = t.message_id
+        JOIN group_members m ON m.group_member_id = t.sender_group_member_id
+        JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+        WHERE t.delivery_task_id = ?
+      |]
+      (Only taskId)
+  where
+    toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
+    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel)) =
+      case toJobScope_ jobScopeRow of
+        Just jobScope -> Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
+        Nothing -> Left $ SEInvalidDeliveryTask taskId'
 
 markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
 markDeliveryTaskFailed_ db taskId =
   DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
--- TODO [channels fwd] can optimize to read DJTMessageForward tasks so that message batch exactly fits into single transport message
--- passed MessageForwardTask defines the scope to search for
-getNextMsgFwdTasks :: DB.Connection -> GroupInfo -> MessageForwardTask -> IO (Either StoreError [Either StoreError MessageForwardTask])
-getNextMsgFwdTasks db gInfo task =
-  getWorkItems "message forward task" getTaskIds getMsgFwdTask (markDeliveryTaskFailed_ db)
+-- TODO [channels fwd] possible optimization is to read and add tasks to batch iteratively to avoid reading too many tasks
+-- passed MessageDeliveryTask defines the jobScope to search for
+getNextDeliveryTasks :: DB.Connection -> GroupInfo -> MessageDeliveryTask -> IO (Either StoreError [Either StoreError MessageDeliveryTask])
+getNextDeliveryTasks db gInfo task =
+  getWorkItems "message delivery task" getTaskIds (getMsgDeliveryTask_ db) (markDeliveryTaskFailed_ db)
   where
     GroupInfo {groupId, useRelays} = gInfo
-    MessageForwardTask {deliveryScope, senderGMId} = task
-    (scopeType, scopeInclPending_, scopeSupportGMId_) = deliveryScopeFields_ deliveryScope
+    MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
       | useRelays =
           map fromOnly
             <$> DB.query
               db
-              -- `AND sender_group_member_id IS NOT NULL` is a dummy condition to trick sqlite
-              -- to use covering index idx_delivery_tasks_next_for_job_type
               [sql|
                 SELECT delivery_task_id
                 FROM delivery_tasks
                 WHERE group_id = ?
-                  AND delivery_scope_type = ?
-                  AND delivery_scope_include_pending IS NOT DISTINCT FROM ?
-                  AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
-                  AND delivery_job_type = ?
+                  AND worker_scope = ?
+                  AND job_scope_spec_tag IS NOT DISTINCT FROM ?
+                  AND job_scope_include_pending IS NOT DISTINCT FROM ?
+                  AND job_scope_support_gm_id IS NOT DISTINCT FROM ?
                   AND failed = 0
                   AND task_status = ?
-                ORDER BY created_at ASC, delivery_task_id ASC
+                ORDER BY delivery_task_id ASC
               |]
-              (groupId, scopeType, BI <$> scopeInclPending_, scopeSupportGMId_, DJTMessageForward, DTSNew)
+              ((Only groupId) :. jobScopeRow_ jobScope :.  (Only DTSNew))
       | otherwise =
           -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
           -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
@@ -208,46 +193,16 @@ getNextMsgFwdTasks db gInfo task =
                 SELECT delivery_task_id
                 FROM delivery_tasks
                 WHERE group_id = ?
-                  AND delivery_scope_type = ?
-                  AND delivery_scope_include_pending IS NOT DISTINCT FROM ?
-                  AND delivery_scope_support_gm_id IS NOT DISTINCT FROM ?
-                  AND delivery_job_type = ?
+                  AND worker_scope = ?
+                  AND job_scope_spec_tag IS NOT DISTINCT FROM ?
+                  AND job_scope_include_pending IS NOT DISTINCT FROM ?
+                  AND job_scope_support_gm_id IS NOT DISTINCT FROM ?
                   AND sender_group_member_id = ?
                   AND failed = 0
                   AND task_status = ?
-                ORDER BY created_at ASC, delivery_task_id ASC
+                ORDER BY delivery_task_id ASC
               |]
-              (groupId, scopeType, BI <$> scopeInclPending_, scopeSupportGMId_, DJTMessageForward, senderGMId, DTSNew)
-    getMsgFwdTask :: Int64 -> IO (Either StoreError MessageForwardTask)
-    getMsgFwdTask taskId =
-      firstRow' toMsgFwdTask_ (SEDeliveryTaskNotFound taskId) $
-        DB.query db deliveryTaskQuery (Only taskId)
-
-createMessageForwardJob :: DB.Connection -> GroupInfo -> GroupDeliveryScope -> Maybe GroupMemberId -> ByteString -> IO ()
-createMessageForwardJob db gInfo deliveryScope singleSenderGMId_ deliveryBody =
-  createNewDeliveryJob_ db gInfo deliveryScope DJTMessageForward singleSenderGMId_ deliveryBody
-
-createRelayRemovedJob :: DB.Connection -> GroupInfo -> GroupDeliveryScope -> GroupMemberId -> ByteString -> IO ()
-createRelayRemovedJob db gInfo deliveryScope singleSenderGMId deliveryBody =
-  createNewDeliveryJob_ db gInfo deliveryScope DJTRelayRemoved (Just singleSenderGMId) deliveryBody
-
-createNewDeliveryJob_ :: DB.Connection -> GroupInfo -> GroupDeliveryScope -> DeliveryJobType -> Maybe GroupMemberId -> ByteString -> IO ()
-createNewDeliveryJob_ db gInfo deliveryScope jobType singleSenderGMId_ deliveryBody = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      INSERT INTO delivery_jobs (
-        group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-        delivery_job_type, single_sender_group_member_id, delivery_body, job_status, created_at, updated_at
-      ) VALUES (?,?,?,?,?,?,?,?,?,?)
-    |]
-    ( (groupId, scopeType, BI <$> scopeInclPending_, scopeSupportGMId_)
-        :. (jobType, singleSenderGMId_, Binary deliveryBody, DJSNew, currentTs, currentTs)
-    )
-  where
-    GroupInfo {groupId} = gInfo
-    (scopeType, scopeInclPending_, scopeSupportGMId_) = deliveryScopeFields_ deliveryScope
+              ((Only groupId) :. jobScopeRow_ jobScope :.  (senderGMId, DTSNew))
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
 updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
@@ -274,22 +229,40 @@ deleteDoneDeliveryTasks db createdAtCutoff = do
     |]
     (createdAtCutoff, DTSProcessed, DTSError)
 
+createMsgDeliveryJob :: DB.Connection -> GroupInfo -> DeliveryJobScope -> Maybe GroupMemberId -> ByteString -> IO ()
+createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO delivery_jobs (
+        group_id,
+        worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+        single_sender_group_member_id, body, job_status, created_at, updated_at
+      ) VALUES (?,?,?,?,?,?,?,?,?,?)
+    |]
+    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, DJSNew, currentTs, currentTs))
+  where
+    GroupInfo {groupId} = gInfo
+
 getPendingDeliveryJobScopes :: DB.Connection -> IO [DeliveryWorkerKey]
 getPendingDeliveryJobScopes db =
   DB.query
     db
     [sql|
-      SELECT DISTINCT group_id, delivery_scope_type
+      SELECT DISTINCT group_id, worker_scope
       FROM delivery_jobs
       WHERE failed = 0 AND job_status IN (?, ?)
     |]
     (DJSNew, DJSInProgress)
 
-getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe DeliveryJob))
+type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId)
+
+getNextDeliveryJob :: DB.Connection -> DeliveryWorkerKey -> IO (Either StoreError (Maybe MessageDeliveryJob))
 getNextDeliveryJob db deliveryKey = do
   getWorkItem "delivery job" getJobId getJob markJobFailed
   where
-    (groupId, scopeType) = deliveryKey
+    (groupId, workerScope) = deliveryKey
     getJobId :: IO (Maybe Int64)
     getJobId =
       maybeFirstRow fromOnly $
@@ -298,35 +271,32 @@ getNextDeliveryJob db deliveryKey = do
           [sql|
             SELECT delivery_job_id
             FROM delivery_jobs
-            WHERE group_id = ? AND delivery_scope_type = ?
+            WHERE group_id = ? AND worker_scope = ?
               AND failed = 0 AND job_status IN (?, ?)
-            ORDER BY created_at ASC, delivery_job_id ASC
+            ORDER BY delivery_job_id ASC
             LIMIT 1
           |]
-          (groupId, scopeType, DJSNew, DJSInProgress)
-    getJob :: Int64 -> IO (Either StoreError DeliveryJob)
+          (groupId, workerScope, DJSNew, DJSInProgress)
+    getJob :: Int64 -> IO (Either StoreError MessageDeliveryJob)
     getJob jobId =
       firstRow' toDeliveryJob (SEDeliveryJobNotFound jobId) $
         DB.query
           db
           [sql|
             SELECT
-              delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id,
-              delivery_job_type, single_sender_group_member_id, delivery_body, cursor_group_member_id
+              delivery_job_id,
+              worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id,
+              single_sender_group_member_id, body, cursor_group_member_id
             FROM delivery_jobs
             WHERE delivery_job_id = ?
           |]
           (Only jobId)
       where
-        toDeliveryJob :: (GroupDeliveryScopeType, Maybe BoolInt, Maybe GroupMemberId, DeliveryJobType, Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId) -> Either StoreError DeliveryJob
-        toDeliveryJob (scopeType', scopeIncludePending_, scopeSupportGMId_, jobType, singleSenderGMId_, Binary deliveryBody, cursorGMId) =
-          case jobType of
-            DJTMessageForward -> case toDeliveryScope_ scopeType' scopeIncludePending_ scopeSupportGMId_ of
-              Just deliveryScope -> Right $ DJMessageForward MessageForwardJob {jobId, deliveryScope, singleSenderGMId_, messagesBatch = deliveryBody, cursorGMId}
-              Nothing -> Left $ SEInvalidDeliveryJob jobId
-            DJTRelayRemoved -> case (singleSenderGMId_, toDeliveryScope_ scopeType' scopeIncludePending_ scopeSupportGMId_) of
-              (Just singleSenderGMId, Just GDSGroup {includePending = True}) -> Right $ DJRelayRemoved RelayRemovedJob {jobId, singleSenderGMId, fwdChatMessage = deliveryBody, cursorGMId}
-              _ -> Left $ SEInvalidDeliveryJob jobId
+        toDeliveryJob :: MessageDeliveryJobRow -> Either StoreError MessageDeliveryJob
+        toDeliveryJob ((Only jobId') :. jobScopeRow :. (singleSenderGMId_, Binary body, cursorGMId_)) =
+          case toJobScope_ jobScopeRow of
+            Just jobScope -> Right $ MessageDeliveryJob {jobId = jobId', jobScope, singleSenderGMId_, body, cursorGMId_}
+            Nothing -> Left $ SEInvalidDeliveryJob jobId'
     markJobFailed :: Int64 -> IO ()
     markJobFailed jobId =
       DB.execute db "UPDATE delivery_jobs SET failed = 1 where delivery_job_id = ?" (Only jobId)

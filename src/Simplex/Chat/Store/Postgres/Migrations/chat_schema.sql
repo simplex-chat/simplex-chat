@@ -440,7 +440,7 @@ CREATE TABLE test_chat_schema.delivery_jobs (
     delivery_scope_support_gm_id bigint,
     delivery_job_type text NOT NULL,
     single_sender_group_member_id bigint,
-    delivery_body bytea,
+    body bytea,
     cursor_group_member_id bigint,
     job_status text NOT NULL,
     job_err_reason text,
@@ -1913,7 +1913,7 @@ CREATE INDEX idx_delivery_jobs_created_at ON test_chat_schema.delivery_jobs USIN
 
 
 
-CREATE INDEX idx_delivery_jobs_delivery_scope_support_gm_id ON test_chat_schema.delivery_jobs USING btree (delivery_scope_support_gm_id);
+CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON test_chat_schema.delivery_jobs USING btree (delivery_scope_support_gm_id);
 
 
 
@@ -1933,7 +1933,7 @@ CREATE INDEX idx_delivery_tasks_created_at ON test_chat_schema.delivery_tasks US
 
 
 
-CREATE INDEX idx_delivery_tasks_delivery_scope_support_gm_id ON test_chat_schema.delivery_tasks USING btree (delivery_scope_support_gm_id);
+CREATE INDEX idx_delivery_tasks_job_scope_support_gm_id ON test_chat_schema.delivery_tasks USING btree (delivery_scope_support_gm_id);
 
 
 
@@ -1949,11 +1949,11 @@ CREATE INDEX idx_delivery_tasks_next ON test_chat_schema.delivery_tasks USING bt
 
 
 
-CREATE INDEX idx_delivery_tasks_next_for_job_type ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id, delivery_job_type, failed, task_status, created_at);
+CREATE INDEX idx_delivery_tasks_next_for_job_scope ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id, delivery_job_type, failed, task_status, created_at);
 
 
 
-CREATE INDEX idx_delivery_tasks_next_for_job_type_sender ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id, delivery_job_type, sender_group_member_id, failed, task_status, created_at);
+CREATE INDEX idx_delivery_tasks_next_for_job_scope_sender ON test_chat_schema.delivery_tasks USING btree (group_id, delivery_scope_type, delivery_scope_include_pending, delivery_scope_support_gm_id, delivery_job_type, sender_group_member_id, failed, task_status, created_at);
 
 
 
