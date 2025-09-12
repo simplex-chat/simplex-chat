@@ -3410,10 +3410,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                           mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ dbBatchSize
                           let cursorGMId_' = groupMemberId' $ last mems
                           unless (null mems) $ deliver body mems
-                          withStore' $ \db -> do
-                            updateDeliveryJobCursor db jobId cursorGMId_'
-                            when (isNothing cursorGMId_) $
-                              updateDeliveryJobStatus db jobId DJSInProgress -- job status "in progress" is informational
+                          withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId_'
                           unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId_')
                     DJSMemberSupport scopeGMId -> do
                       -- for member support scope we just load all recipients in one go, without cursor

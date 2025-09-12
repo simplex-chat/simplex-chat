@@ -241,7 +241,7 @@ createMsgDeliveryJob db gInfo jobScope singleSenderGMId_ body = do
         single_sender_group_member_id, body, job_status, created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, DJSNew, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (singleSenderGMId_, Binary body, DJSPending, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
 
@@ -252,9 +252,9 @@ getPendingDeliveryJobScopes db =
     [sql|
       SELECT DISTINCT group_id, worker_scope
       FROM delivery_jobs
-      WHERE failed = 0 AND job_status IN (?, ?)
+      WHERE failed = 0 AND job_status = ?
     |]
-    (DJSNew, DJSInProgress)
+    (Only DJSPending)
 
 type MessageDeliveryJobRow = (Only Int64) :. DeliveryJobScopeRow :. (Maybe GroupMemberId, Binary ByteString, Maybe GroupMemberId)
 
@@ -268,27 +268,15 @@ getNextDeliveryJob db deliveryKey = do
       maybeFirstRow fromOnly $
         DB.query
           db
-#if defined(dbPostgres)
           [sql|
             SELECT delivery_job_id
             FROM delivery_jobs
             WHERE group_id = ? AND worker_scope = ?
-              AND failed = 0 AND job_status IN (?, ?)
+              AND failed = 0 AND job_status = ?
             ORDER BY delivery_job_id ASC
             LIMIT 1
           |]
-#else
-          [sql|
-            SELECT delivery_job_id
-            FROM delivery_jobs
-            INDEXED BY idx_delivery_jobs_next
-            WHERE group_id = ? AND worker_scope = ?
-              AND failed = 0 AND job_status IN (?, ?)
-            ORDER BY delivery_job_id ASC
-            LIMIT 1
-          |]
-#endif
-          (groupId, workerScope, DJSNew, DJSInProgress)
+          (groupId, workerScope, DJSPending)
     getJob :: Int64 -> IO (Either StoreError MessageDeliveryJob)
     getJob jobId =
       firstRow' toDeliveryJob (SEDeliveryJobNotFound jobId) $

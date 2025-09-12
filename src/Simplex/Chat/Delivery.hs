@@ -163,8 +163,7 @@ deliveryJobId :: MessageDeliveryJob -> Int64
 deliveryJobId = jobId
 
 data DeliveryJobStatus
-  = DJSNew -- created for delivery job worker to pick up
-  | DJSInProgress -- being processed by delivery job worker
+  = DJSPending -- created for delivery job worker to pick up
   | DJSComplete -- complete by delivery job worker, job can be deleted
   | DJSError -- permanent error
   deriving (Show)
@@ -175,14 +174,12 @@ instance ToField DeliveryJobStatus where toField = toField . textEncode
 
 instance TextEncoding DeliveryJobStatus where
   textDecode = \case
-    "new" -> Just DJSNew
-    "in_progress" -> Just DJSInProgress
+    "pending" -> Just DJSPending
     "complete" -> Just DJSComplete
     "error" -> Just DJSError
     _ -> Nothing
   textEncode = \case
-    DJSNew -> "new"
-    DJSInProgress -> "in_progress"
+    DJSPending -> "pending"
     DJSComplete -> "complete"
     DJSError -> "error"
 
