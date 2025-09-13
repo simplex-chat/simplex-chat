@@ -34,6 +34,11 @@ flag client_postgres
   manual: True
   default: False
 
+flag server_postgres
+  description: Build server with support of PostgreSQL.
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Simplex.Chat
@@ -601,6 +606,10 @@ test-suite simplex-chat-test
   else
     build-depends:
         sqlcipher-simple ==0.4.*
+  if flag(server_postgres)
+    build-depends:
+        postgresql-simple ==0.7.*
+    cpp-options: -DdbServerPostgres
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*

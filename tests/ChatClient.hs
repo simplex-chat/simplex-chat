@@ -57,6 +57,7 @@ import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion, sndAuthKeySMPCl
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
+import Simplex.Messaging.Server.MsgStore.Types
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Transport.Server (ServerCredentials (..), mkTransportServerConfig)
 import Simplex.Messaging.Version
@@ -66,16 +67,28 @@ import qualified System.Terminal as C
 import System.Terminal.Internal (VirtualTerminal (..), VirtualTerminalSettings (..), withVirtualTerminal)
 import System.Timeout (timeout)
 import Test.Hspec (Expectation, HasCallStack, shouldReturn)
+
 #if defined(dbPostgres)
 import qualified Data.ByteString.Char8 as B
-import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
-import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 #else
 import Data.ByteArray (ScrubbedBytes)
 import qualified Data.Map.Strict as M
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import System.FilePath ((</>))
+#endif
+
+#if defined(dbServerPostgres)
+import qualified Control.Exception as E
+import Simplex.Messaging.Server.MsgStore.Postgres (PostgresMsgStore)
+import Simplex.Messaging.Server.QueueStore.Postgres.Config (PostgresStoreCfg (..))
+#endif
+
+#if defined(dbPostgres) || defined(dbServerPostgres)
+import Data.ByteString.Char8 (ByteString)
+import Database.PostgreSQL.Simple (ConnectInfo (..), defaultConnectInfo)
+import Simplex.Messaging.Agent.Store.Postgres.Options (DBOpts (..))
+import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
 #endif
 
 #if defined(dbPostgres)
@@ -97,6 +110,35 @@ testDBConnectInfo =
     connectUser = "test_chat_user",
     connectDatabase = "test_chat_db"
   }
+#endif
+
+#if defined(dbServerPostgres)
+testServerDBOpts :: DBOpts
+testServerDBOpts =
+  DBOpts
+    { connstr = testServerDBConnstr,
+      schema = "smp_server",
+      poolSize = 3,
+      createSchema = True
+    }
+
+testServerDBConnstr :: ByteString
+testServerDBConnstr = "postgresql://test_server_user@/test_server_db"
+
+testServerDBConnectInfo :: ConnectInfo
+testServerDBConnectInfo =
+  defaultConnectInfo {
+    connectUser = "test_server_user",
+    connectDatabase = "test_server_db"
+  }
+#endif
+
+#if defined(dbPostgres) || defined(dbServerPostgres)
+postgressBracket :: ConnectInfo -> IO a -> IO a
+postgressBracket connInfo =
+  E.bracket_
+    (print ("postgressBracket" <> show connInfo) >> dropDatabaseAndUser connInfo >> createDBAndUserIfNotExists connInfo)
+    (dropDatabaseAndUser connInfo)
 #endif
 
 serverPort :: ServiceName
@@ -513,7 +555,11 @@ testChatCfg5 cfg p1 p2 p3 p4 p5 test = testChatN cfg testOpts [p1, p2, p3, p4, p
 concurrentlyN_ :: [IO a] -> IO ()
 concurrentlyN_ = mapConcurrently_ id
 
+#if defined(dbServerPostgres)
+smpServerCfg :: ServerConfig PostgresMsgStore
+#else
 smpServerCfg :: ServerConfig STMMsgStore
+#endif
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
@@ -523,7 +569,11 @@ smpServerCfg =
       maxJournalStateLines = 4,
       queueIdBytes = 24,
       msgIdBytes = 6,
+#if defined(dbServerPostgres)
+      serverStoreCfg = SSCDatabase PostgresStoreCfg {dbOpts = testServerDBOpts, dbStoreLogPath = Nothing, confirmMigrations = MCYesUp, deletedTTL = 86400},
+#else
       serverStoreCfg = SSCMemory Nothing,
+#endif
       storeNtfsFile = Nothing,
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail
@@ -569,7 +619,7 @@ persistentServerStoreCfg tmp = SSCMemory $ Just StorePaths {storeLogFile = tmp <
 withSmpServer :: IO () -> IO ()
 withSmpServer = withSmpServer' smpServerCfg
 
-withSmpServer' :: ServerConfig STMMsgStore -> IO a -> IO a
+withSmpServer' :: MsgStoreClass s => ServerConfig s -> IO a -> IO a
 withSmpServer' cfg = serverBracket (\started -> runSMPServerBlocking started cfg Nothing)
 
 xftpTestPort :: ServiceName
