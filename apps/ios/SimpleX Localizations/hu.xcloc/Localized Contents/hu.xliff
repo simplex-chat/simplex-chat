@@ -3355,9 +3355,9 @@ chat item action</note>
         <target>Hiba történt a fájl visszafejtésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error deleting chat" xml:space="preserve">
+      <trans-unit id="Error deleting chat" xml:space="preserve" approved="no">
         <source>Error deleting chat</source>
-        <target>Hiba a taggal való csevegés törlésekor</target>
+        <target state="translated">Hiba a csevegés törlésekor</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
