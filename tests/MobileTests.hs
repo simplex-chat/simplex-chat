@@ -38,7 +38,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
@@ -167,7 +167,7 @@ testChatApi ps = do
   let tmp = tmpPath ps
       dbPrefix = tmp </> "1"
       f = dbPrefix <> chatSuffix
-  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) MCYesUp
+  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) (MigrationConfig MCYesUp Nothing)
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"

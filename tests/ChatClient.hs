@@ -47,7 +47,7 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.Protocol (currentSMPAgentVersion, duplexHandshakeSMPAgentVersion, pqdrSMPAgentVersion, supportedSMPAgentVRange)
 import Simplex.Messaging.Agent.RetryInterval
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
@@ -151,7 +151,8 @@ testCoreOpts =
       tbqSize = 16,
       deviceName = Nothing,
       highlyAvailable = False,
-      yesToUpMigrations = False
+      yesToUpMigrations = False,
+      migrationBackupPath = Nothing
     }
 
 #if !defined(dbPostgres)
@@ -302,7 +303,7 @@ insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")
 #else
 createDatabase TestParams {tmpPath} CoreChatOpts {dbOptions} dbPrefix = do
-  createChatDatabase dbOptions {dbFilePrefix = tmpPath </> dbPrefix} MCError
+  createChatDatabase dbOptions {dbFilePrefix = tmpPath </> dbPrefix} (MigrationConfig MCError Nothing)
 
 insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) VALUES (1)")
