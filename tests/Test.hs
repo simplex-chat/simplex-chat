@@ -27,7 +27,6 @@ import ViewTests
 import Control.Exception (bracket_)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
-import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
 import System.Directory (createDirectory, removePathForcibly)
 #else
 import qualified Simplex.Messaging.TMap as TM
@@ -44,9 +43,11 @@ main = do
   agentQueryStats <- TM.emptyIO
 #endif
   withGlobalLogging logCfg . hspec
+#if defined(dbServerPostgres)
+    . aroundAll_ (postgressBracket testServerDBConnectInfo)
+#endif
 #if defined(dbPostgres)
-    . beforeAll_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    . afterAll_ (dropDatabaseAndUser testDBConnectInfo)
+    . aroundAll_ (postgressBracket testDBConnectInfo)
 #endif
     $ do
 #if defined(dbPostgres)
