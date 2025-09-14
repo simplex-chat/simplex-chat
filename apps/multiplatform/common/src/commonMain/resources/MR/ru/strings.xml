@@ -42,7 +42,7 @@
     <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
     <string name="simplex_link_group">SimpleX ссылка группы</string>
     <string name="simplex_link_connection">через %1$s</string>
-    <string name="simplex_link_mode">SimpleX ссылки</string>
+    <string name="simplex_link_mode">Ссылки SimpleX</string>
     <string name="simplex_link_mode_description">Описание</string>
     <string name="simplex_link_mode_full">Полная ссылка</string>
     <string name="simplex_link_mode_browser">В браузере</string>
@@ -379,12 +379,12 @@
     <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
-    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
-    <string name="your_ICE_servers">Ваши ICE серверы</string>
-    <string name="configure_ICE_servers">Настройка ICE серверов</string>
-    <string name="enter_one_ICE_server_per_line">ICE серверы (один на строке)</string>
-    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE серверов</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
+    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE-серверы будут удалены.</string>
+    <string name="your_ICE_servers">Ваши ICE-серверы</string>
+    <string name="configure_ICE_servers">Настройка ICE-серверов</string>
+    <string name="enter_one_ICE_server_per_line">ICE-серверы (один на строке)</string>
+    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE-серверов</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
@@ -503,8 +503,8 @@
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
-    <string name="your_ice_servers">Ваши ICE серверы</string>
-    <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
+    <string name="your_ice_servers">Ваши ICE-серверы</string>
+    <string name="webrtc_ice_servers">WebRTC ICE-серверы</string>
     <string name="relay_server_protects_ip">Relay-сервер защищает Ваш IP-адрес, но может отслеживать продолжительность звонка.</string>
     <string name="relay_server_if_necessary">Relay-сервер используется только при необходимости. Другая сторона может видеть Ваш IP-адрес.</string>
     <!-- Call Lock Screen -->
@@ -641,8 +641,8 @@
     <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранен в Keystore.</string>
     <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
-    <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
-    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
+    <string name="store_passphrase_securely">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
+    <string name="store_passphrase_securely_without_recover">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
     <!-- DatabaseErrorView.kt -->
     <string name="wrong_passphrase">Неправильный пароль базы данных</string>
     <string name="encrypted_database">База данных зашифрована</string>
@@ -1496,7 +1496,7 @@
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%1$d сообщений отмодерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
-    <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
+    <string name="v5_4_better_groups_descr">Быстрое вступление и надёжная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
     <string name="linked_mobiles">Связанные мобильные</string>
     <string name="desktop_device">Компьютер</string>
@@ -1739,7 +1739,7 @@
     <string name="migrate_from_device_stopping_chat">Остановка чата</string>
     <string name="migrate_from_device_archive_and_upload">Архивировать и загрузить</string>
     <string name="migrate_from_device_confirm_upload">Подтвердить загрузку</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP-серверы.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надёжно зашифрованы и загружены на выбранные XFTP-серверы.</string>
     <string name="migrate_from_device_upload_failed">Ошибка загрузки</string>
     <string name="migrate_from_device_repeat_upload">Повторить загрузку</string>
     <string name="migrate_from_device_try_again">Вы можете попробовать ещё раз.</string>
@@ -1801,7 +1801,7 @@
     <string name="audio_device_wired_headphones">Наушники</string>
     <string name="audio_device_speaker">Громкоговоритель</string>
     <string name="v5_7_call_sounds">Звуки во время звонков</string>
-    <string name="v5_7_network_descr">Более надежное соединение с сетью.</string>
+    <string name="v5_7_network_descr">Более надёжное соединение с сетью.</string>
     <string name="v5_7_network">Статус сети</string>
     <string name="saved_description">сохранено</string>
     <string name="saved_from_description">сохранено из %s</string>
@@ -1815,7 +1815,7 @@
     <string name="simplex_links">Ссылки SimpleX</string>
     <string name="allow_to_send_simplex_links">Разрешить отправлять ссылки SimpleX.</string>
     <string name="prohibit_sending_simplex_links">Запретить отправку ссылок SimpleX</string>
-    <string name="group_members_can_send_simplex_links">Члены могут отправлять ссылки SimpleX</string>
+    <string name="group_members_can_send_simplex_links">Члены могут отправлять SimpleX ссылки.</string>
     <string name="feature_roles_admins">админы</string>
     <string name="feature_roles_all_members">все члены</string>
     <string name="feature_roles_owners">владельцы</string>
