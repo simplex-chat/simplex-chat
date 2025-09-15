@@ -3012,6 +3012,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- member record is not deleted to allow creation of "member left" chat item
       gInfo' <- withStore' $ \db -> do
         updateGroupMemberStatus db userId m GSMemLeft
+        when (isJust $ supportChat m) $ void $ deleteGroupMemberSupportChat db m
         if gmRequiresAttention m
           then decreaseGroupMembersRequireAttention db user gInfo
           else pure gInfo

@@ -1646,18 +1646,22 @@ deleteMemberConnection' GroupMember {activeConn} waitDelivery = do
     withStore' $ \db -> updateConnectionStatus db conn ConnDeleted
 
 deleteOrUpdateMemberRecord :: User -> GroupInfo -> GroupMember -> CM GroupInfo
-deleteOrUpdateMemberRecord user gInfo member =
-  withStore' $ \db -> deleteOrUpdateMemberRecordIO db user gInfo member
+deleteOrUpdateMemberRecord user gInfo m =
+  withStore' $ \db -> deleteOrUpdateMemberRecordIO db user gInfo m
 
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
-deleteOrUpdateMemberRecordIO db user@User {userId} gInfo member = do
+deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
   gInfo' <-
-    if gmRequiresAttention member
+    if gmRequiresAttention m
       then decreaseGroupMembersRequireAttention db user gInfo
       else pure gInfo
-  checkGroupMemberHasItems db user member >>= \case
-    Just _ -> updateGroupMemberStatus db userId member GSMemRemoved
-    Nothing -> deleteGroupMember db user member
+  m' <-
+    if isJust (supportChat m)
+      then deleteGroupMemberSupportChat db m
+      else pure m
+  checkGroupMemberHasItems db user m' >>= \case
+    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
+    Nothing -> deleteGroupMember db user m'
   pure gInfo'
 
 sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
