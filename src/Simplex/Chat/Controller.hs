@@ -32,6 +32,8 @@ import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (first)
 import Data.ByteArray (ScrubbedBytes)
+import qualified Database.SQLite3 as SQLite3
+import qualified Database.SQLite.Simple as SQL
 import qualified Data.ByteArray as BA
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
@@ -1579,10 +1581,51 @@ withFastStore :: (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withFastStore = withStorePriority True
 {-# INLINE withFastStore #-}
 
+-- withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
+-- withStorePriority priority action = do
+--   ChatController {chatStore} <- ask
+--   liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+
+-- withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
+-- withStorePriority priority action = do
+--   ChatController {chatStore} <- ask
+--   liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action') `E.catches` handleDBErrors
+--   where
+--     action' db = do
+--       r <- action db
+--       rows :: [(String, Int, String, Int)]
+--         <- liftIO $ DB.query_ db "PRAGMA foreign_key_check;"
+--       liftIO $ mapM_ print rows
+--       pure r
+
+-- withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
+-- withStorePriority priority action = do
+--   ChatController {chatStore} <- ask
+--   r <- liftIO $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+--   case r of
+--     Right r' -> pure r'
+--     Left e -> do
+--       liftIO $ print $ "withStorePriority error " <> show e
+--       rows :: [(String, Int, String, Int)]
+--         <- liftIO $ withTransactionPriority chatStore priority (\db -> DB.query_ db "PRAGMA foreign_key_check;")
+--       liftIO $ print $ "withStorePriority rows:"
+--       liftIO $ mapM_ print rows
+--       throwError e
+
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  r <- liftIO $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  case r of
+    Right r' -> pure r'
+    Left e -> do
+      let exec = \db -> SQLite3.exec $ SQL.connectionHandle $ DB.conn db
+      rows :: [(String, Int, String, Int)] <- liftIO $ withTransactionPriority chatStore priority $ \db -> do
+        exec db "PRAGMA foreign_keys = OFF;"
+        _ <- runExceptT (withExceptT ChatErrorStore (action db))
+        DB.query_ db "PRAGMA foreign_key_check;"
+      liftIO $ mapM_ print rows
+      throwError e
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do

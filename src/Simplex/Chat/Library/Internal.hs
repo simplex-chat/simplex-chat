@@ -1650,7 +1650,7 @@ deleteOrUpdateMemberRecord user gInfo m =
   withStore' $ \db -> deleteOrUpdateMemberRecordIO db user gInfo m
 
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
-deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
+deleteOrUpdateMemberRecordIO db user@User {userId, localDisplayName = un} gInfo m@GroupMember {localDisplayName = mn} = do
   gInfo' <-
     if gmRequiresAttention m
       then decreaseGroupMembersRequireAttention db user gInfo
@@ -1659,9 +1659,12 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
     if isJust (supportChat m)
       then deleteGroupMemberSupportChat db m
       else pure m
+  when (un == "alice") $ print $ show un <> " :: deleteOrUpdateMemberRecordIO " <> show mn
   checkGroupMemberHasItems db user m' >>= \case
     Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-    Nothing -> deleteGroupMember db user m'
+    Nothing -> do
+      when (un == "alice") $ print $ show un <> " :: deleteGroupMember"
+      deleteGroupMember db user m'
   pure gInfo'
 
 sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]

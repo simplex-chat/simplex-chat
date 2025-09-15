@@ -2976,10 +2976,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     deleteMemberConnection' deletedMember True
                   else deleteMemberConnection deletedMember
                 -- undeleted "member connected" chat item will prevent deletion of member record
+                let User {localDisplayName = un} = user
+                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 1"
                 gInfo' <- deleteOrUpdateMemberRecord user gInfo deletedMember
+                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 2"
                 let deletedMember' = deletedMember {memberStatus = GSMemRemoved}
+                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 3"
                 when withMessages $ deleteMessages gInfo' deletedMember' SMDRcv
+                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 4"
                 deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 5"
                 toView $ CEvtDeletedMember user gInfo' m deletedMember' withMessages
                 pure $ memberEventDeliveryScope deletedMember
       where

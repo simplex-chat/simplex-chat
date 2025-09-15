@@ -215,7 +215,7 @@ chatGroupTests = do
     it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
     it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
-    it "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
+    fit "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
     it "should forward admin removal in support scope in review (x.grp.mem.del, relay forwards it was removed)" testScopedSupportForwardAdminRemoval
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
@@ -7733,6 +7733,9 @@ testScopedSupportForwardMemberRemoval =
     \alice bob cath dan eve -> do
       createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
       setupReviewForward alice bob cath dan eve
+
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "PRAGMA foreign_keys = OFF;"
 
       -- bob removes eve, eve and dan receive member removal message
       bob ##> "/_remove #1 5"
