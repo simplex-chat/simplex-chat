@@ -52,6 +52,9 @@ chatDbOptsP _appDir defaultDbName = do
       )
   pure ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize, dbCreateSchema}
 
+migrationBackupPathP :: Parser (Maybe FilePath)
+migrationBackupPathP = pure Nothing
+
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbConnstr} = dbConnstr
 
