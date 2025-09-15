@@ -2503,4 +2503,8 @@
     <string name="share_group_profile_via_link">Tingkatkan tautan grup?</string>
     <string name="connect_use_incognito_profile">Gunakan profil samaran</string>
     <string name="address_welcome_message">Pesan sambutan</string>
+    <string name="error_marking_member_support_chat_read">Gagal menandai dibaca</string>
+    <string name="proxy_destination_error_unknown_ca">Sidik jari di alamat server tujuan tidak cocok dengan sertifikat: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">Sidik jari pada alamat server penerusan tidak cocok dengan sertifikat: %1$s.</string>
+    <string name="network_error_unknown_ca">Sidik jari di alamat server tidak cocok dengan sertifikat: %1$s.</string>
 </resources>
