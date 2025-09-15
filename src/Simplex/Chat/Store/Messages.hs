@@ -1645,7 +1645,7 @@ getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatSco
 getGroupUnreadCount_ db user g scopeInfo_ contentFilter =
   head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter baseQuery ""
   where
-    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL "
+    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? "
 
 getGroupReportsCount_ :: DB.Connection -> User -> GroupInfo -> Bool -> IO Int
 getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =
