@@ -360,7 +360,10 @@ struct ChatView: View {
         }
         .onChange(of: chatModel.secondaryPendingInviteeChatOpened) { opened in
             if im.secondaryIMFilter != nil && !opened {
-                dismiss()
+                Task {
+                    try? await Task.sleep(nanoseconds: 650_000000)
+                    dismiss()
+                }
             }
         }
         .onChange(of: chatModel.openAroundItemId) { openAround in

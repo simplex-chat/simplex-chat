@@ -1657,11 +1657,11 @@ testJoinGroupIncognito =
       alice <## "group #secret_club is created"
       alice <## "to add members use /a secret_club <name> or /create link #secret_club"
       -- alice invites bob
-      alice ##> "/a secret_club bob admin"
+      alice ##> "/a secret_club bob member"
       concurrentlyN_
         [ alice <## "invitation to join the group #secret_club sent to bob",
           do
-            bob <## "#secret_club: alice invites you to join the group as admin"
+            bob <## "#secret_club: alice invites you to join the group as member"
             bob <## "use /j secret_club to accept"
         ]
       bob ##> "/j secret_club"
@@ -1669,11 +1669,11 @@ testJoinGroupIncognito =
         (alice <## "#secret_club: bob joined the group")
         (bob <## "#secret_club: you joined the group")
       -- alice invites cath
-      alice ##> ("/a secret_club " <> cathIncognito <> " admin")
+      alice ##> ("/a secret_club " <> cathIncognito <> " member")
       concurrentlyN_
         [ alice <## ("invitation to join the group #secret_club sent to " <> cathIncognito),
           do
-            cath <## "#secret_club: alice invites you to join the group as admin"
+            cath <## "#secret_club: alice invites you to join the group as member"
             cath <## ("use /j secret_club to join incognito as " <> cathIncognito)
         ]
       -- cath uses the same incognito profile when joining group, cath and bob don't merge contacts
@@ -1687,15 +1687,12 @@ testJoinGroupIncognito =
             bob <## ("#secret_club: alice added " <> cathIncognito <> " to the group (connecting...)")
             bob <## ("#secret_club: new member " <> cathIncognito <> " is connected")
         ]
-      -- cath cannot invite to the group because her membership is incognito
-      cath ##> "/a secret_club dan"
-      cath <## "you are using an incognito profile for this group - prohibited to invite contacts"
       -- alice invites dan
-      alice ##> "/a secret_club dan admin"
+      alice ##> "/a secret_club dan member"
       concurrentlyN_
         [ alice <## "invitation to join the group #secret_club sent to dan",
           do
-            dan <## "#secret_club: alice invites you to join the group as admin"
+            dan <## "#secret_club: alice invites you to join the group as member"
             dan <## "use /j secret_club to accept"
         ]
       dan ##> "/j secret_club"
@@ -1754,39 +1751,39 @@ testJoinGroupIncognito =
       alice ##> "/ms secret_club"
       alice
         <### [ "alice (Alice): owner, you, created group",
-               "bob (Bob): admin, invited, connected",
-               ConsoleString $ cathIncognito <> ": admin, invited, connected",
-               "dan (Daniel): admin, invited, connected"
+               "bob (Bob): member, invited, connected",
+               ConsoleString $ cathIncognito <> ": member, invited, connected",
+               "dan (Daniel): member, invited, connected"
              ]
       bob ##> "/ms secret_club"
       bob
         <### [ "alice (Alice): owner, host, connected",
-               "bob (Bob): admin, you, connected",
-               ConsoleString $ cathIncognito <> ": admin, connected",
-               "dan (Daniel): admin, connected"
+               "bob (Bob): member, you, connected",
+               ConsoleString $ cathIncognito <> ": member, connected",
+               "dan (Daniel): member, connected"
              ]
       cath ##> "/ms secret_club"
       cath
         <### [ "alice (Alice): owner, host, connected",
-               "bob_1 (Bob): admin, connected",
-               ConsoleString $ "i " <> cathIncognito <> ": admin, you, connected",
-               "dan_1 (Daniel): admin, connected"
+               "bob_1 (Bob): member, connected",
+               ConsoleString $ "i " <> cathIncognito <> ": member, you, connected",
+               "dan_1 (Daniel): member, connected"
              ]
       dan ##> "/ms secret_club"
       dan
         <### [ "alice (Alice): owner, host, connected",
-               "bob (Bob): admin, connected",
-               ConsoleString $ cathIncognito <> ": admin, connected",
-               "dan (Daniel): admin, you, connected"
+               "bob (Bob): member, connected",
+               ConsoleString $ cathIncognito <> ": member, connected",
+               "dan (Daniel): member, you, connected"
              ]
       -- remove member
-      bob ##> ("/rm secret_club " <> cathIncognito)
+      alice ##> ("/rm secret_club " <> cathIncognito)
       concurrentlyN_
-        [ bob <## ("#secret_club: you removed " <> cathIncognito <> " from the group"),
-          alice <## ("#secret_club: bob removed " <> cathIncognito <> " from the group"),
-          dan <## ("#secret_club: bob removed " <> cathIncognito <> " from the group"),
+        [ alice <## ("#secret_club: you removed " <> cathIncognito <> " from the group"),
+          bob <## ("#secret_club: alice removed " <> cathIncognito <> " from the group"),
+          dan <## ("#secret_club: alice removed " <> cathIncognito <> " from the group"),
           do
-            cath <## "#secret_club: bob_1 removed you from the group"
+            cath <## "#secret_club: alice removed you from the group"
             cath <## "use /d #secret_club to delete the group"
         ]
       bob #> "#secret_club hi"

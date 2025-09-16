@@ -146,15 +146,18 @@
   <!-- API Error Responses - SimpleXAPI.kt -->
   <string name="connection_timeout">Connection timeout</string>
   <string name="connection_error">Connection error</string>
+  <string name="network_error_unknown_ca">Fingerprint in server address does not match certificate: %1$s.</string>
   <string name="network_error_desc">Please check your network connection with %1$s and try again.</string>
   <string name="network_error_broker_host_desc">Server address is incompatible with network settings: %1$s.</string>
   <string name="network_error_broker_version_desc">Server version is incompatible with your app: %1$s.</string>
   <string name="private_routing_timeout">Private routing timeout</string>
   <string name="private_routing_error">Private routing error</string>
   <string name="private_routing_no_session">No private routing session</string>
+  <string name="smp_proxy_error_unknown_ca">Fingerprint in forwarding server address does not match certificate: %1$s.</string>
   <string name="smp_proxy_error_connecting">Error connecting to forwarding server %1$s. Please try later.</string>
   <string name="smp_proxy_error_broker_host">Forwarding server address is incompatible with network settings: %1$s.</string>
   <string name="smp_proxy_error_broker_version">Forwarding server version is incompatible with network settings: %1$s.</string>
+  <string name="proxy_destination_error_unknown_ca">Fingerprint in destination server address does not match certificate: %1$s.</string>
   <string name="proxy_destination_error_failed_to_connect">Forwarding server %1$s failed to connect to destination server %2$s. Please try later.</string>
   <string name="proxy_destination_error_broker_host">Destination server address of %1$s is incompatible with forwarding server %2$s settings.</string>
   <string name="proxy_destination_error_broker_version">Destination server version of %1$s is incompatible with forwarding server %2$s.</string>
@@ -167,7 +170,8 @@
   <string name="error_adding_members">Error adding member(s)</string>
   <string name="error_joining_group">Error joining group</string>
   <string name="error_accepting_member">Error accepting member</string>
-  <string name="error_deleting_member_support_chat">Error deleting chat with member</string>
+  <string name="error_marking_member_support_chat_read">Error marking read</string>
+  <string name="error_deleting_member_support_chat">Error deleting chat</string>
   <string name="cannot_receive_file">Cannot receive file</string>
   <string name="sender_cancelled_file_transfer">Sender cancelled file transfer.</string>
   <string name="file_not_approved_title">Unknown servers!</string>
@@ -200,9 +204,9 @@
   <string name="error_aborting_address_change">Error aborting address change</string>
   <string name="error_synchronizing_connection">Error synchronizing connection</string>
   <string name="error_smp_test_failed_at_step">Test failed at step %s.</string>
-  <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password</string>
-  <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password</string>
-  <string name="error_smp_test_certificate">Possibly, certificate fingerprint in server address is incorrect</string>
+  <string name="error_smp_test_server_auth">Server requires authorization to create queues, check password.</string>
+  <string name="error_xftp_test_server_auth">Server requires authorization to upload, check password.</string>
+  <string name="error_smp_test_certificate">Fingerprint in server address does not match certificate.</string>
   <string name="error_setting_address">Error setting address</string>
   <string name="error_alert_title">Error</string>
   <string name="smp_server_test_connect">Connect</string>

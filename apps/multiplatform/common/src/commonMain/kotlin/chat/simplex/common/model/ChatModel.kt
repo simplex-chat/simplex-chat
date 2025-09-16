@@ -2355,6 +2355,12 @@ data class GroupMember (
         && !memberPending
   }
 
+  val supportChatNotRead: Boolean get() =
+    if (supportChat != null)
+      supportChat.memberAttention > 0 || supportChat.mentions > 0 || supportChat.unread > 0
+    else
+      false
+
   val versionRange: VersionRange = activeConn?.peerChatVRange ?: memberChatVRange
 
   val memberIncognito = memberProfile.profileId != memberContactProfileId

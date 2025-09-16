@@ -2503,4 +2503,10 @@
     <string name="group_descr_too_large">Açıklama çok büyük</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Kaybolma süresi yalnızca yeni kişiler için ayarlanır.</string>
     <string name="connect_use_incognito_profile">Gizli profil kullan</string>
+    <string name="open_to_use_bot">Botu kullanmak için açın</string>
+    <string name="chat_banner_connect_to_use_bot">Botu kullanmak için Bağlan tuşuna basın.</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="cant_send_commands_alert_text">Komutlar gönderebilmek için bağlanmanış olmanız gereklidir.</string>
+    <string name="member_is_deleted_cant_accept_request">Üye silinmiş - isteği kabul edemeyecek</string>
+    <string name="upgrade_group_link">Grup linkini güncelle</string>
 </resources>

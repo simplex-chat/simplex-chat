@@ -175,7 +175,7 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
-import Simplex.Chat.Protocol (MsgMention (..), groupForwardVersion)
+import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -359,6 +359,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     pure
       GroupInfo
         { groupId,
+          useRelays = False,
           localDisplayName = ldn,
           groupProfile,
           localAlias = "",
@@ -432,6 +433,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           pure
             ( GroupInfo
                 { groupId,
+                  useRelays = False,
                   localDisplayName,
                   groupProfile,
                   localAlias = "",
@@ -1495,13 +1497,21 @@ decreaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO
 decreaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do
   DB.execute
     db
+#if defined(dbPostgres)
     [sql|
       UPDATE groups
-      SET members_require_attention = members_require_attention - 1
+      SET members_require_attention = GREATEST(0, members_require_attention - 1)
       WHERE user_id = ? AND group_id = ?
     |]
+#else
+    [sql|
+      UPDATE groups
+      SET members_require_attention = MAX(0, members_require_attention - 1)
+      WHERE user_id = ? AND group_id = ?
+    |]
+#endif
     (userId, groupId)
-  pure g {membersRequireAttention = membersRequireAttention - 1}
+  pure g {membersRequireAttention = max 0 (membersRequireAttention - 1)}
 
 increaseGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> IO GroupInfo
 increaseGroupMembersRequireAttention db User {userId} g@GroupInfo {groupId, membersRequireAttention} = do

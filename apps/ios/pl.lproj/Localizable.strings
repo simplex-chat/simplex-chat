@@ -2273,6 +2273,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Szybciej znajduj czaty";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy";
+
 /* No comment provided by engineer. */
 "Fix" = "Napraw";
 
@@ -3463,9 +3466,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Port" = "Port";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Zachowaj ostatnią wersję roboczą wiadomości wraz z załącznikami.";
 
@@ -4115,10 +4115,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "Informacje kolejki serwera: %1$@\n\nostatnia otrzymana wiadomość: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Serwer wymaga autoryzacji do tworzenia kolejek, sprawdź hasło";
+"Server requires authorization to create queues, check password." = "Serwer wymaga autoryzacji do tworzenia kolejek, sprawdź hasło";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Serwer wymaga autoryzacji do przesłania, sprawdź hasło";
+"Server requires authorization to upload, check password." = "Serwer wymaga autoryzacji do przesłania, sprawdź hasło";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serwera nie powiódł się!";

@@ -470,6 +470,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
+    useRelays :: Bool,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,

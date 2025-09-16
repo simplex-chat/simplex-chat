@@ -67,7 +67,8 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     highlyAvailable :: Bool,
-    yesToUpMigrations :: Bool
+    yesToUpMigrations :: Bool,
+    migrationBackupPath :: Maybe FilePath
   }
 
 data CreateBotOpts = CreateBotOpts
@@ -243,6 +244,7 @@ coreChatOptsP appDir defaultDbName = do
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )
+  migrationBackupPath <- migrationBackupPathP
   pure
     CoreChatOpts
       { dbOptions,
@@ -268,7 +270,8 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         highlyAvailable,
-        yesToUpMigrations
+        yesToUpMigrations,
+        migrationBackupPath
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p

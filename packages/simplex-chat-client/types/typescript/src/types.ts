@@ -216,6 +216,7 @@ export namespace BrokerErrorType {
 
   export interface NETWORK extends Interface {
     type: "NETWORK"
+    networkError: NetworkError
   }
 
   export interface HOST extends Interface {
@@ -2426,6 +2427,7 @@ export enum GroupFeatureEnabled {
 
 export interface GroupInfo {
   groupId: number // int64
+  useRelays: boolean
   localDisplayName: string
   groupProfile: GroupProfile
   localAlias: string
@@ -2913,6 +2915,55 @@ export namespace MsgReaction {
 export enum MsgReceiptStatus {
   Ok = "ok",
   BadMsgHash = "badMsgHash",
+}
+
+export type NetworkError = 
+  | NetworkError.ConnectError
+  | NetworkError.TLSError
+  | NetworkError.UnknownCAError
+  | NetworkError.FailedError
+  | NetworkError.TimeoutError
+  | NetworkError.SubscribeError
+
+export namespace NetworkError {
+  export type Tag = 
+    | "connectError"
+    | "tLSError"
+    | "unknownCAError"
+    | "failedError"
+    | "timeoutError"
+    | "subscribeError"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface ConnectError extends Interface {
+    type: "connectError"
+    connectError: string
+  }
+
+  export interface TLSError extends Interface {
+    type: "tLSError"
+    tlsError: string
+  }
+
+  export interface UnknownCAError extends Interface {
+    type: "unknownCAError"
+  }
+
+  export interface FailedError extends Interface {
+    type: "failedError"
+  }
+
+  export interface TimeoutError extends Interface {
+    type: "timeoutError"
+  }
+
+  export interface SubscribeError extends Interface {
+    type: "subscribeError"
+    subscribeError: string
+  }
 }
 
 export interface NewUser {
@@ -3762,6 +3813,11 @@ export type StoreError =
   | StoreError.UsageConditionsNotFound
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
+  | StoreError.InvalidDeliveryTask
+  | StoreError.DeliveryTaskNotFound
+  | StoreError.InvalidDeliveryJob
+  | StoreError.DeliveryJobNotFound
+  | StoreError.WorkItemError
 
 export namespace StoreError {
   export type Tag = 
@@ -3842,6 +3898,11 @@ export namespace StoreError {
     | "usageConditionsNotFound"
     | "invalidQuote"
     | "invalidMention"
+    | "invalidDeliveryTask"
+    | "deliveryTaskNotFound"
+    | "invalidDeliveryJob"
+    | "deliveryJobNotFound"
+    | "workItemError"
 
   interface Interface {
     type: Tag
@@ -4218,6 +4279,31 @@ export namespace StoreError {
 
   export interface InvalidMention extends Interface {
     type: "invalidMention"
+  }
+
+  export interface InvalidDeliveryTask extends Interface {
+    type: "invalidDeliveryTask"
+    taskId: number // int64
+  }
+
+  export interface DeliveryTaskNotFound extends Interface {
+    type: "deliveryTaskNotFound"
+    taskId: number // int64
+  }
+
+  export interface InvalidDeliveryJob extends Interface {
+    type: "invalidDeliveryJob"
+    jobId: number // int64
+  }
+
+  export interface DeliveryJobNotFound extends Interface {
+    type: "deliveryJobNotFound"
+    jobId: number // int64
+  }
+
+  export interface WorkItemError extends Interface {
+    type: "workItemError"
+    errContext: string
   }
 }
 

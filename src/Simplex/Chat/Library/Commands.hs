@@ -74,6 +74,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.AppSettings
 import Simplex.Chat.Store.ContactRequest
 import Simplex.Chat.Store.Connections
+import Simplex.Chat.Store.Delivery
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
@@ -181,6 +182,7 @@ startChatController mainApp enableSndFiles = do
         then do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
+          startDeliveryWorkers
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
@@ -189,6 +191,10 @@ startChatController mainApp enableSndFiles = do
       tmp <- readTVarIO =<< asks tempDirectory
       runExceptT (withAgent $ \a -> startWorkers a tmp) >>= \case
         Left e -> liftIO $ putStrLn $ "Error starting XFTP workers: " <> show e
+        Right _ -> pure ()
+    startDeliveryWorkers =
+      runExceptT (startDeliveryTaskWorkers >> startDeliveryJobWorkers) >>= \case
+        Left e -> liftIO $ putStrLn $ "Error starting delivery workers: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync
@@ -517,13 +523,36 @@ processChatCommand vr nm = \case
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
       (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ contentFilter pagination search)
-      pure $ CRApiChat user (AChat SCTGroup groupChat) navInfo
+      groupChat' <- checkSupportChatAttention user groupChat
+      pure $ CRApiChat user (AChat SCTGroup groupChat') navInfo
     CTLocal -> do
       when (isJust contentFilter) $ throwCmdError "content filter not supported"
       (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> throwCmdError "not implemented"
     CTContactConnection -> throwCmdError "not supported"
+    where
+      checkSupportChatAttention :: User -> Chat 'CTGroup -> CM (Chat 'CTGroup)
+      checkSupportChatAttention user groupChat@Chat {chatInfo, chatItems} =
+        case chatInfo of
+          GroupChat gInfo (Just GCSIMemberSupport {groupMember_ = Just scopeMem@GroupMember {supportChat = Just suppChat}}) -> do
+            case correctedMemAttention (groupMemberId' scopeMem) suppChat chatItems of
+              Just newMemAttention -> do
+                (gInfo', scopeMem') <-
+                  withFastStore' $ \db -> setSupportChatMemberAttention db vr user gInfo scopeMem newMemAttention
+                pure (groupChat {chatInfo = GroupChat gInfo' (Just $ GCSIMemberSupport (Just scopeMem'))} :: Chat 'CTGroup)
+              Nothing -> pure groupChat
+          _ -> pure groupChat
+        where
+          correctedMemAttention :: GroupMemberId -> GroupSupportChat -> [CChatItem 'CTGroup] -> Maybe Int64
+          correctedMemAttention scopeGMId GroupSupportChat {memberAttention} items =
+            let numNewFromMember = fromIntegral . length . takeWhile newFromMember $ reverse items
+             in if numNewFromMember == memberAttention then Nothing else Just numNewFromMember
+            where
+              newFromMember :: CChatItem 'CTGroup -> Bool
+              newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
+                groupMemberId' m == scopeGMId
+              newFromMember _ = False
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
@@ -584,7 +613,6 @@ processChatCommand vr nm = \case
       gInfo <- withFastStore $ \db -> getGroupInfo db vr user gId
       let mc = MCReport reportText reportReason
           cm = ComposedMessage {fileSource = Nothing, quotedItemId = Just reportedItemId, msgContent = mc, mentions = M.empty}
-      -- TODO [knocking] reports sent to support scope may be wrong
       sendGroupContentMessages user gInfo (Just $ GCSMemberSupport Nothing) False Nothing [composedMessageReq cm]
   ReportMessage {groupName, contactName_, reportReason, reportedMessage} -> withUser $ \user -> do
     gId <- withFastStore $ \db -> getGroupIdByName db user groupName
@@ -998,7 +1026,7 @@ processChatCommand vr nm = \case
             pure $ prefix <> formattedDate <> ext
   APIUserRead userId -> withUserId userId $ \user -> withFastStore' (`setUserChatsRead` user) >> ok user
   UserRead -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUserRead userId
-  APIChatRead chatRef@(ChatRef cType chatId scope) -> withUser $ \_ -> case cType of
+  APIChatRead chatRef@(ChatRef cType chatId scope_) -> withUser $ \_ -> case cType of
     CTDirect -> do
       user <- withFastStore $ \db -> getUserByContactId db chatId
       ts <- liftIO getCurrentTime
@@ -1014,12 +1042,23 @@ processChatCommand vr nm = \case
         gInfo <- getGroupInfo db vr user chatId
         pure (user, gInfo)
       ts <- liftIO getCurrentTime
-      timedItems <- withFastStore' $ \db -> do
-        timedItems <- getGroupUnreadTimedItems db user chatId
-        updateGroupChatItemsRead db user gInfo scope
-        setGroupChatItemsDeleteAt db user chatId timedItems ts
-      forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
-      ok user
+      case scope_ of
+        Nothing -> do
+          timedItems <- withFastStore' $ \db -> do
+            timedItems <- getGroupUnreadTimedItems db user chatId Nothing
+            updateGroupChatItemsRead db user gInfo
+            setGroupChatItemsDeleteAt db user chatId timedItems ts
+          forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
+          ok user
+        Just scope -> do
+          scopeInfo <- getChatScopeInfo vr user scope
+          (gInfo', m', timedItems) <- withFastStore' $ \db -> do
+            timedItems <- getGroupUnreadTimedItems db user chatId (Just scope)
+            (gInfo', m') <- updateSupportChatItemsRead db vr user gInfo scopeInfo
+            timedItems' <- setGroupChatItemsDeleteAt db user chatId timedItems ts
+            pure (gInfo', m', timedItems')
+          forM_ timedItems $ \(itemId, deleteAt) -> startProximateTimedItemThread user (chatRef, itemId) deleteAt
+          pure $ CRMemberSupportChatRead user gInfo' m'
     CTLocal -> do
       user <- withFastStore $ \db -> getUserByNoteFolderId db chatId
       withFastStore' $ \db -> updateLocalChatItemsRead db user chatId
@@ -2345,6 +2384,7 @@ processChatCommand vr nm = \case
     withGroupLock "blockForAll" groupId $ do
       Group gInfo members <- withFastStore $ \db -> getGroup db vr user groupId
       when (selfSelected gInfo) $ throwCmdError "can't block/unblock self"
+      -- TODO [channels fwd] consider sending restriction to all members (remove filtering), as we do in delivery jobs
       let (blockMems, remainingMems, maxRole, anyAdmin, anyPending) = selectMembers members
       when (length blockMems /= length memberIds) $ throwChatError CEGroupMemberNotFound
       when (length memberIds > 1 && anyAdmin) $ throwCmdError "can't block/unblock multiple members when admins selected"
@@ -4209,7 +4249,7 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
             netStatus = maybe NSConnected $ NSError . errorNetworkStatus
             errorNetworkStatus :: ChatError -> String
             errorNetworkStatus = \case
-              ChatErrorAgent (BROKER _ NETWORK) _ -> "network"
+              ChatErrorAgent (BROKER _ (NETWORK _)) _ -> "network"
               ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
     -- TODO possibly below could be replaced with less noisy events for API
@@ -4280,6 +4320,8 @@ cleanupManager = do
       forM_ us $ cleanupUser interval stepDelay
       forM_ us' $ cleanupUser interval stepDelay
       cleanupMessages `catchAllErrors` eToView
+      cleanupDeliveryTasks `catchAllErrors` eToView
+      cleanupDeliveryJobs `catchAllErrors` eToView
       -- TODO possibly, also cleanup async commands
       cleanupProbes `catchAllErrors` eToView
     liftIO $ threadDelay' $ diffToMicroseconds interval
@@ -4311,6 +4353,14 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
       withStore' (`deleteOldMessages` cutoffTs)
+    cleanupDeliveryTasks = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
+      withStore' (`deleteDoneDeliveryTasks` cutoffTs)
+    cleanupDeliveryJobs = do
+      ts <- liftIO getCurrentTime
+      let cutoffTs = addUTCTime (-(7 * nominalDay)) ts
+      withStore' (`deleteDoneDeliveryJobs` cutoffTs)
     cleanupProbes = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts

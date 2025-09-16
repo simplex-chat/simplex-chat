@@ -2266,10 +2266,10 @@ chat item action */
 "Error decrypting file" = "Fehler beim Entschlüsseln der Datei";
 
 /* alert title */
-"Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
+"Error deleting chat" = "Fehler beim Löschen des Chats mit dem Mitglied";
 
 /* alert title */
-"Error deleting chat with member" = "Fehler beim Löschen des Chats mit dem Mitglied";
+"Error deleting chat database" = "Fehler beim Löschen der Chat-Datenbank";
 
 /* alert title */
 "Error deleting chat!" = "Fehler beim Löschen des Chats!";
@@ -2572,6 +2572,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Chats schneller finden";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig";
 
 /* No comment provided by engineer. */
 "Fix" = "Reparieren";
@@ -3256,6 +3259,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Member" = "Mitglied";
+
+/* past/unknown group member */
+"Member %@" = "Mitglied %@";
 
 /* profile update event chat item */
 "member %@ changed to %@" = "Der Mitgliedsname von %1$@ wurde auf %2$@ geändert";
@@ -4072,9 +4078,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Port" = "Port";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Den letzten Nachrichtenentwurf, auch mit seinen Anhängen, aufbewahren.";
 
@@ -4877,10 +4880,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "Server-Warteschlangen-Information: %1$@\n\nZuletzt empfangene Nachricht: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort";
+"Server requires authorization to create queues, check password." = "Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung";
+"Server requires authorization to upload, check password." = "Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Server Test ist fehlgeschlagen!";

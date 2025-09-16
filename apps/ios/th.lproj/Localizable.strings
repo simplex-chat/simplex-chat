@@ -1380,6 +1380,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "ค้นหาแชทได้เร็วขึ้น";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
+
 /* No comment provided by engineer. */
 "Fix" = "แก้ไข";
 
@@ -2180,9 +2183,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Polish interface" = "อินเตอร์เฟซภาษาโปแลนด์";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "เก็บข้อความที่ร่างไว้ล่าสุดพร้อมไฟล์แนบ";
 
@@ -2580,10 +2580,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "ข้อความที่ส่งจะถูกลบหลังเกินเวลาที่กําหนด";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
+"Server requires authorization to create queues, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
+"Server requires authorization to upload, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "การทดสอบเซิร์ฟเวอร์ล้มเหลว!";

@@ -2535,4 +2535,5 @@
     <string name="privacy_chat_list_open_full_web_link">Apri link completo</string>
     <string name="sanitize_links_toggle">Rimuovi il tracciamento del link</string>
     <string name="simplex_link_relay">Link del relay SimpleX</string>
+    <string name="error_marking_member_support_chat_read">Errore nel segnare la chat con il membro come letta</string>
 </resources>

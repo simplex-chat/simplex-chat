@@ -31,7 +31,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace)
 import Data.Int (Int64)
 import Data.Kind (Constraint)
-import Data.List.NonEmpty (NonEmpty)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Map.Strict (Map)
 import Data.Maybe (fromMaybe, isJust, isNothing)
 import Data.Text (Text)
@@ -184,24 +184,6 @@ toChatScope = \case
 toMsgScope :: GroupInfo -> GroupChatScopeInfo -> MsgScope
 toMsgScope GroupInfo {membership} = \case
   GCSIMemberSupport {groupMember_} -> MSMember $ memberId' $ fromMaybe membership groupMember_
-
-data GroupForwardScope
-  = GFSAll -- message should be forwarded to all group members, even pending (e.g. XGrpDel, XGrpInfo)
-  | GFSMain -- message should be forwarded to current group members only (e.g. regular messages in group)
-  | GFSMemberSupport GroupMemberId
-  deriving (Eq, Ord, Show)
-
-toGroupForwardScope :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupForwardScope
-toGroupForwardScope GroupInfo {membership} = \case
-  Nothing -> GFSMain
-  Just GCSIMemberSupport {groupMember_} -> GFSMemberSupport $ groupMemberId' $ fromMaybe membership groupMember_
-
-memberEventForwardScope :: GroupMember -> Maybe GroupForwardScope
-memberEventForwardScope m@GroupMember {memberRole, memberStatus}
-  | memberStatus == GSMemPendingApproval = Nothing
-  | memberStatus == GSMemPendingReview = Just $ GFSMemberSupport $ groupMemberId' m
-  | memberRole >= GRModerator = Just GFSAll
-  | otherwise = Just GFSMain
 
 chatInfoToRef :: ChatInfo c -> Maybe ChatRef
 chatInfoToRef = \case
@@ -1163,7 +1145,8 @@ data SndMessage = SndMessage
 
 data NewRcvMessage e = NewRcvMessage
   { chatMsgEvent :: ChatMsgEvent e,
-    msgBody :: MsgBody
+    msgBody :: MsgBody,
+    brokerTs :: UTCTime
   }
   deriving (Show)
 

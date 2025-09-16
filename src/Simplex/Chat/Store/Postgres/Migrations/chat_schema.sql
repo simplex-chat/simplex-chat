@@ -432,6 +432,66 @@ ALTER TABLE test_chat_schema.contacts ALTER COLUMN contact_id ADD GENERATED ALWA
 
 
 
+CREATE TABLE test_chat_schema.delivery_jobs (
+    delivery_job_id bigint NOT NULL,
+    group_id bigint NOT NULL,
+    worker_scope text NOT NULL,
+    job_scope_spec_tag text,
+    job_scope_include_pending smallint,
+    job_scope_support_gm_id bigint,
+    single_sender_group_member_id bigint,
+    body bytea,
+    cursor_group_member_id bigint,
+    job_status text NOT NULL,
+    job_err_reason text,
+    failed smallint DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.delivery_jobs ALTER COLUMN delivery_job_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.delivery_jobs_delivery_job_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
+CREATE TABLE test_chat_schema.delivery_tasks (
+    delivery_task_id bigint NOT NULL,
+    group_id bigint NOT NULL,
+    worker_scope text NOT NULL,
+    job_scope_spec_tag text,
+    job_scope_include_pending smallint,
+    job_scope_support_gm_id bigint,
+    sender_group_member_id bigint NOT NULL,
+    message_id bigint,
+    message_from_channel smallint DEFAULT 0 NOT NULL,
+    task_status text NOT NULL,
+    task_err_reason text,
+    failed smallint DEFAULT 0,
+    created_at timestamp with time zone DEFAULT now() NOT NULL,
+    updated_at timestamp with time zone DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.delivery_tasks ALTER COLUMN delivery_task_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.delivery_tasks_delivery_task_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.display_names (
     user_id bigint NOT NULL,
     local_display_name text NOT NULL,
@@ -707,7 +767,8 @@ CREATE TABLE test_chat_schema.messages (
     shared_msg_id bytea,
     shared_msg_id_user smallint,
     author_group_member_id bigint,
-    forwarded_by_group_member_id bigint
+    forwarded_by_group_member_id bigint,
+    broker_ts timestamp with time zone
 );
 
 
@@ -1274,6 +1335,16 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 
 
+ALTER TABLE ONLY test_chat_schema.delivery_jobs
+    ADD CONSTRAINT delivery_jobs_pkey PRIMARY KEY (delivery_job_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_tasks
+    ADD CONSTRAINT delivery_tasks_pkey PRIMARY KEY (delivery_task_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.display_names
     ADD CONSTRAINT display_names_pkey PRIMARY KEY (user_id, local_display_name);
 
@@ -1837,6 +1908,58 @@ CREATE INDEX idx_contacts_xcontact_id ON test_chat_schema.contacts USING btree (
 
 
 
+CREATE INDEX idx_delivery_jobs_created_at ON test_chat_schema.delivery_jobs USING btree (created_at);
+
+
+
+CREATE INDEX idx_delivery_jobs_group_id ON test_chat_schema.delivery_jobs USING btree (group_id);
+
+
+
+CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON test_chat_schema.delivery_jobs USING btree (job_scope_support_gm_id);
+
+
+
+CREATE INDEX idx_delivery_jobs_next ON test_chat_schema.delivery_jobs USING btree (group_id, worker_scope, failed, job_status);
+
+
+
+CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON test_chat_schema.delivery_jobs USING btree (single_sender_group_member_id);
+
+
+
+CREATE INDEX idx_delivery_tasks_created_at ON test_chat_schema.delivery_tasks USING btree (created_at);
+
+
+
+CREATE INDEX idx_delivery_tasks_group_id ON test_chat_schema.delivery_tasks USING btree (group_id);
+
+
+
+CREATE INDEX idx_delivery_tasks_job_scope_support_gm_id ON test_chat_schema.delivery_tasks USING btree (job_scope_support_gm_id);
+
+
+
+CREATE INDEX idx_delivery_tasks_message_id ON test_chat_schema.delivery_tasks USING btree (message_id);
+
+
+
+CREATE INDEX idx_delivery_tasks_next ON test_chat_schema.delivery_tasks USING btree (group_id, worker_scope, failed, task_status);
+
+
+
+CREATE INDEX idx_delivery_tasks_next_for_job_scope ON test_chat_schema.delivery_tasks USING btree (group_id, worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id, failed, task_status);
+
+
+
+CREATE INDEX idx_delivery_tasks_next_for_job_scope_sender ON test_chat_schema.delivery_tasks USING btree (group_id, worker_scope, job_scope_spec_tag, job_scope_include_pending, job_scope_support_gm_id, sender_group_member_id, failed, task_status);
+
+
+
+CREATE INDEX idx_delivery_tasks_sender_group_member_id ON test_chat_schema.delivery_tasks USING btree (sender_group_member_id);
+
+
+
 CREATE INDEX idx_extra_xftp_file_descriptions_file_id ON test_chat_schema.extra_xftp_file_descriptions USING btree (file_id);
 
 
@@ -2387,6 +2510,41 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 ALTER TABLE ONLY test_chat_schema.contacts
     ADD CONSTRAINT contacts_user_id_local_display_name_fkey FOREIGN KEY (user_id, local_display_name) REFERENCES test_chat_schema.display_names(user_id, local_display_name) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_jobs
+    ADD CONSTRAINT delivery_jobs_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_jobs
+    ADD CONSTRAINT delivery_jobs_job_scope_support_gm_id_fkey FOREIGN KEY (job_scope_support_gm_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_jobs
+    ADD CONSTRAINT delivery_jobs_single_sender_group_member_id_fkey FOREIGN KEY (single_sender_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_tasks
+    ADD CONSTRAINT delivery_tasks_group_id_fkey FOREIGN KEY (group_id) REFERENCES test_chat_schema.groups(group_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_tasks
+    ADD CONSTRAINT delivery_tasks_job_scope_support_gm_id_fkey FOREIGN KEY (job_scope_support_gm_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_tasks
+    ADD CONSTRAINT delivery_tasks_message_id_fkey FOREIGN KEY (message_id) REFERENCES test_chat_schema.messages(message_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.delivery_tasks
+    ADD CONSTRAINT delivery_tasks_sender_group_member_id_fkey FOREIGN KEY (sender_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 

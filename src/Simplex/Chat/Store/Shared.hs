@@ -38,6 +38,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), AConnShortLink (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Store (AnyStoreError (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -148,11 +149,23 @@ data StoreError
   | SEUsageConditionsNotFound
   | SEInvalidQuote
   | SEInvalidMention
+  | SEInvalidDeliveryTask {taskId :: Int64}
+  | SEDeliveryTaskNotFound {taskId :: Int64}
+  | SEInvalidDeliveryJob {jobId :: Int64}
+  | SEDeliveryJobNotFound {jobId :: Int64}
+  | -- | Error when reading work item that suspends worker - do not use!
+    SEWorkItemError {errContext :: String}
   deriving (Show, Exception)
 
 instance AnyError StoreError where
   fromSomeException = SEInternalError . show
   {-# INLINE fromSomeException #-}
+
+instance AnyStoreError StoreError where
+  isWorkItemError = \case
+    SEWorkItemError {} -> True
+    _ -> False
+  mkWorkItemError errContext = SEWorkItemError {errContext}
 
 $(J.deriveJSON (sumTypeJSON $ dropPrefix "SE") ''StoreError)
 
@@ -657,7 +670,7 @@ toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, 
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
-   in GroupInfo {groupId, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention, viaGroupLinkUri}
+   in GroupInfo {groupId, useRelays = False, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention, viaGroupLinkUri}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case

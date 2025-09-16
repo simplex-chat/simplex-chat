@@ -121,6 +121,7 @@ This file is generated automatically.
 - [MsgFilter](#msgfilter)
 - [MsgReaction](#msgreaction)
 - [MsgReceiptStatus](#msgreceiptstatus)
+- [NetworkError](#networkerror)
 - [NewUser](#newuser)
 - [NoteFolder](#notefolder)
 - [PendingContactConnection](#pendingcontactconnection)
@@ -343,6 +344,7 @@ UNEXPECTED:
 
 NETWORK:
 - type: "NETWORK"
+- networkError: [NetworkError](#networkerror)
 
 HOST:
 - type: "HOST"
@@ -2129,6 +2131,7 @@ MemberSupport:
 
 **Record type**:
 - groupId: int64
+- useRelays: bool
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2633,6 +2636,34 @@ Unknown:
 **Enum type**:
 - "ok"
 - "badMsgHash"
+
+
+---
+
+## NetworkError
+
+**Discriminated union type**:
+
+ConnectError:
+- type: "connectError"
+- connectError: string
+
+TLSError:
+- type: "tLSError"
+- tlsError: string
+
+UnknownCAError:
+- type: "unknownCAError"
+
+FailedError:
+- type: "failedError"
+
+TimeoutError:
+- type: "timeoutError"
+
+SubscribeError:
+- type: "subscribeError"
+- subscribeError: string
 
 
 ---
@@ -3550,6 +3581,26 @@ InvalidQuote:
 
 InvalidMention:
 - type: "invalidMention"
+
+InvalidDeliveryTask:
+- type: "invalidDeliveryTask"
+- taskId: int64
+
+DeliveryTaskNotFound:
+- type: "deliveryTaskNotFound"
+- taskId: int64
+
+InvalidDeliveryJob:
+- type: "invalidDeliveryJob"
+- jobId: int64
+
+DeliveryJobNotFound:
+- type: "deliveryJobNotFound"
+- jobId: int64
+
+WorkItemError:
+- type: "workItemError"
+- errContext: string
 
 
 ---

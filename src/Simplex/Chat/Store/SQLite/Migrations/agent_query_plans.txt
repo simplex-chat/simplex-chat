@@ -328,16 +328,6 @@ SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT
-          user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
-          last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
-        FROM connections
-        WHERE conn_id = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
-Query: 
         SELECT DISTINCT
           s.xftp_host, s.xftp_port, s.xftp_key_hash
         FROM deleted_snd_chunk_replicas r
@@ -384,13 +374,13 @@ SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR DISTINCT
 
 Query: 
-        SELECT DISTINCT c.host, c.port, COALESCE(c.server_key_hash, s.key_hash)
+        SELECT DISTINCT c.conn_id, c.host, c.port, COALESCE(c.server_key_hash, s.key_hash)
         FROM commands c
         LEFT JOIN servers s ON s.host = c.host AND s.port = c.port
-        WHERE conn_id = ?
+        ORDER BY c.conn_id
       
 Plan:
-SEARCH c USING INDEX idx_commands_conn_id (conn_id=?)
+SCAN c USING INDEX idx_commands_conn_id
 SEARCH s USING PRIMARY KEY (host=? AND port=?) LEFT-JOIN
 USE TEMP B-TREE FOR DISTINCT
 
@@ -468,6 +458,15 @@ Query:
 Plan:
 SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
+
+Query: 
+        SELECT user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
+          last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
+        FROM connections
+        WHERE conn_id = ? AND deleted = ?
+      
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
       DELETE FROM conn_confirmations
