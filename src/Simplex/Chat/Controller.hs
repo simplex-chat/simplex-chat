@@ -156,6 +156,7 @@ data ChatConfig = ChatConfig
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
     coreApi :: Bool,
+    relayDeliveryBucketSize :: Int,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     chatHooks :: ChatHooks

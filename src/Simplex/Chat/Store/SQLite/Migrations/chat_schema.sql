@@ -156,7 +156,9 @@ CREATE TABLE groups(
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
-  via_group_link_uri BLOB, -- received
+  via_group_link_uri BLOB,
+  group_type TEXT NOT NULL DEFAULT 'group',
+  use_relays INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

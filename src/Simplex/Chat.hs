@@ -108,6 +108,7 @@ defaultChatConfig =
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
       coreApi = False,
       highlyAvailable = False,
+      relayDeliveryBucketSize = 10000,
       deviceNameForRemote = "",
       chatHooks = defaultChatHooks
     }

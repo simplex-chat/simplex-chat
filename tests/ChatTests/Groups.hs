@@ -222,6 +222,15 @@ chatGroupTests = do
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+  -- TODO [channels fwd] add tests for channels
+  -- TODO   - tests with multiple relays (all relays should forward, members should deduplicate)
+  -- TODO   - tests with messages batched from multiple senders (senders should deduplicate their own messages)
+  -- TODO   - tests with delivery loop over members restored after restart
+  -- TODO   - forwarding in support scopes inside channels
+  fdescribe "channels" $ do
+    describe "relay forwarding" $ do
+      it "should forward messages to members" testChannelsRelayForward
+      it "should forward messages to members in a loop" testChannelsRelayForwardLoop
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8180,3 +8189,107 @@ testScopedSupportUnreadStatsCorrectOnOpen =
       testOpts
         { markRead = False
         }
+
+testChannelsRelayForward :: HasCallStack => TestParams -> IO ()
+testChannelsRelayForward =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
+    createChannel5 alice bob cath dan eve
+
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    [cath, dan, eve] *<# "#team alice> hi [>>]"
+
+    cath ##> "+1 #team hi"
+    cath <## "added 👍"
+    bob <# "#team cath> > alice hi"
+    bob <## "    + 👍"
+    alice <# "#team cath> > alice hi"
+    alice <## "    + 👍"
+    dan <# "#team cath> > alice hi"
+    dan <## "    + 👍"
+    eve <# "#team cath> > alice hi"
+    eve <## "    + 👍"
+
+-- TODO [channels fwd] correctly setup channel with relay forwarding
+-- TODO   - alice to create group as channel
+-- TODO   - add bob as relay
+-- TODO   - alice to manage group link, but members to connect to relay (bob)
+createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
+createChannel5 alice bob cath dan eve = do
+  createGroup2 "team" alice bob
+  bob ##> "/create link #team observer"
+  gLink <- getGroupLink bob "team" GRObserver True
+  cath ##> ("/c " <> gLink)
+  cath <## "connection request sent!"
+  bob <## "cath (Catherine): accepting request to join group #team..."
+  concurrentlyN_
+    [ bob <## "#team: cath joined the group",
+      do
+        cath <## "#team: joining the group..."
+        cath <## "#team: you joined the group"
+        cath <## "#team: member alice (Alice) is connected",
+      do
+        alice <## "#team: bob added cath (Catherine) to the group (connecting...)"
+        alice <## "#team: new member cath is connected"
+    ]
+  dan ##> ("/c " <> gLink)
+  dan <## "connection request sent!"
+  bob <## "dan (Daniel): accepting request to join group #team..."
+  concurrentlyN_
+    [ bob <## "#team: dan joined the group",
+      do
+        dan <## "#team: joining the group..."
+        dan <## "#team: you joined the group"
+        dan <## "#team: member alice (Alice) is connected"
+        dan <## "#team: member cath (Catherine) is connected",
+      do
+        alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
+        alice <## "#team: new member dan is connected",
+      do
+        cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
+        cath <## "#team: new member dan is connected"
+    ]
+  eve ##> ("/c " <> gLink)
+  eve <## "connection request sent!"
+  bob <## "eve (Eve): accepting request to join group #team..."
+  concurrentlyN_
+    [ bob <## "#team: eve joined the group",
+      eve
+        <### [ "#team: joining the group...",
+               "#team: you joined the group",
+               "#team: member alice (Alice) is connected",
+               "#team: member cath (Catherine) is connected",
+               "#team: member dan (Daniel) is connected"
+             ],
+      do
+        alice <## "#team: bob added eve (Eve) to the group (connecting...)"
+        alice <## "#team: new member eve is connected",
+      do
+        cath <## "#team: bob added eve (Eve) to the group (connecting...)"
+        cath <## "#team: new member eve is connected",
+      do
+        dan <## "#team: bob added eve (Eve) to the group (connecting...)"
+        dan <## "#team: new member eve is connected"
+    ]
+
+testChannelsRelayForwardLoop :: HasCallStack => TestParams -> IO ()
+testChannelsRelayForwardLoop =
+  testChatCfg5 cfg aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
+    createChannel5 alice bob cath dan eve
+
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    [cath, dan, eve] *<# "#team alice> hi [>>]"
+
+    cath ##> "+1 #team hi"
+    cath <## "added 👍"
+    bob <# "#team cath> > alice hi"
+    bob <## "    + 👍"
+    alice <# "#team cath> > alice hi"
+    alice <## "    + 👍"
+    dan <# "#team cath> > alice hi"
+    dan <## "    + 👍"
+    eve <# "#team cath> > alice hi"
+    eve <## "    + 👍"
+  where
+    cfg = testCfg {relayDeliveryBucketSize = 2}

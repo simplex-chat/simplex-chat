@@ -359,7 +359,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     pure
       GroupInfo
         { groupId,
-          useRelays = False,
+          useRelays = True,
           localDisplayName = ldn,
           groupProfile,
           localAlias = "",
@@ -433,7 +433,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           pure
             ( GroupInfo
                 { groupId,
-                  useRelays = False,
+                  useRelays = True,
                   localDisplayName,
                   groupProfile,
                   localAlias = "",

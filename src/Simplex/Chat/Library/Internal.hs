@@ -1976,15 +1976,23 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
--- TODO [channels fwd] review for channels - should only directly send to chat relays, for others - MSAForwarded
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction gInfo events members m@GroupMember {memberRole, memberStatus} = case memberConn m of
-  Nothing -> pendingOrForwarded
-  Just conn@Connection {connStatus}
-    | connDisabled conn || connStatus == ConnDeleted || memberStatus == GSMemRejected -> Nothing
-    | connInactive conn -> Just MSAPending
-    | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
-    | otherwise -> pendingOrForwarded
+memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember {memberRole, memberStatus}
+  -- groups with relays require newer version - we don't need to check member version for batching and forwarding support
+  | useRelays =
+      if
+        -- if user is chat relay, send to all
+        | isMemberRelay membership -> MSASendBatched . snd <$> readyMemberConn m
+        -- if user is not chat relay, send only to chat relays
+        | isMemberRelay m -> MSASendBatched . snd <$> readyMemberConn m
+        | otherwise -> Nothing -- TODO [channels fwd] MSAForwarded to create GSSForwarded snd statuses?
+  | otherwise = case memberConn m of
+      Nothing -> pendingOrForwarded
+      Just conn@Connection {connStatus}
+        | connDisabled conn || connStatus == ConnDeleted || memberStatus == GSMemRejected -> Nothing
+        | connInactive conn -> Just MSAPending
+        | connStatus == ConnSndReady || connStatus == ConnReady -> sendBatchedOrSeparate conn
+        | otherwise -> pendingOrForwarded
   where
     sendBatchedOrSeparate conn
       -- admin doesn't support batch forwarding - send messages separately so that admin can forward one by one
@@ -1995,7 +2003,7 @@ memberSendAction gInfo events members m@GroupMember {memberRole, memberStatus} =
       GCUserMember -> Nothing -- shouldn't happen
       GCInviteeMember -> Just MSAPending
       GCHostMember -> Just MSAPending
-      GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId $ membership gInfo)
+      GCPreMember -> forwardSupportedOrPending (invitedByGroupMemberId membership)
       GCPostMember -> forwardSupportedOrPending (invitedByGroupMemberId m)
       where
         forwardSupportedOrPending invitingMemberId_
@@ -2018,8 +2026,11 @@ memberSendAction gInfo events members m@GroupMember {memberRole, memberStatus} =
 
 -- Should match memberSendAction logic
 readyMemberConn :: GroupMember -> Maybe (GroupMemberId, Connection)
-readyMemberConn GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}}
-  | (connStatus == ConnReady || connStatus == ConnSndReady) && not (connDisabled conn) && not (connInactive conn) =
+readyMemberConn GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}, memberStatus}
+  | (connStatus == ConnReady || connStatus == ConnSndReady)
+    && not (connDisabled conn)
+    && not (connInactive conn)
+    && memberStatus /= GSMemRejected =
       Just (groupMemberId, conn)
   | otherwise = Nothing
 readyMemberConn GroupMember {activeConn = Nothing} = Nothing
