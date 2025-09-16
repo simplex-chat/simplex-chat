@@ -261,6 +261,9 @@ mobileChatOpts dbOptions =
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
       chatServerPort = Nothing,
+#if defined(picolisp)
+      evaluatePicolisp = Nothing,
+#endif
       optFilesFolder = Nothing,
       optTempDirectory = Nothing,
       showReactions = False,
