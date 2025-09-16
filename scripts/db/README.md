@@ -10,33 +10,13 @@
       sqlcipher simplex_v1_agent.db
       ```
 
-      2. Set your db password:
+      2. Run in sqlcipher:
 
       ```sql
-      PRAGMA key = '<your_password>';
-      ```
-
-      3. Check if db was successfully decrypted:
-
-      ```sh
-      SELECT count(*) FROM sqlite_master;
-      ```
-
-      4. Attach new empty db:
-
-      ```sh
-      ATTACH DATABASE 'simplex_v1_agent_plaintext.db' AS plaintext KEY '';
-      ```
-
-      5. Export opened db to attached db as plaintext:
-
-      ```sh
-      SELECT sqlcipher_export('plaintext');
-      ```
-
-      6. Deattach the plaintext db:
-
-      ```sh
+      PRAGMA key = '<your_password>'; -- Set your db password
+      SELECT count(*) FROM sqlite_master; -- Check if db was successfully decrypted
+      ATTACH DATABASE 'simplex_v1_agent_plaintext.db' AS plaintext KEY ''; -- Attach new empty db
+      SELECT sqlcipher_export('plaintext'); -- Export opened db to attached db as plaintext
       DETACH DATABASE plaintext;
       ```
 
@@ -48,33 +28,13 @@
       sqlcipher simplex_v1_chat.db
       ```
 
-      2. Set your db password:
+      2. Run in sqlcipher:
 
       ```sql
       PRAGMA key = '<your_password>';
-      ```
-
-      3. Check if db was successfully decrypted:
-
-      ```sh
       SELECT count(*) FROM sqlite_master;
-      ```
-
-      4. Attach new empty db:
-
-      ```sh
       ATTACH DATABASE 'simplex_v1_chat_plaintext.db' AS plaintext KEY '';
-      ```
-
-      5. Export opened db to attached db as plaintext:
-
-      ```sh
       SELECT sqlcipher_export('plaintext');
-      ```
-
-      6. Deattach the plaintext db:
-
-      ```sh
       DETACH DATABASE plaintext;
       ```
 
@@ -86,22 +46,14 @@
       psql -U postgres -h localhost
       ```
 
-   2. Create user with password:
+   2. Run in psql:
 
-      ```sh
-      CREATE USER simplex WITH ENCRYPTED PASSWORD '123123';
-      ```
-
-   3. Create database:
-
-      ```sh
-      CREATE DATABASE simplex_v1;
-      ```
-
-   4. Assign permissions:
-
-      ```sh
-      GRANT ALL PRIVILEGES ON DATABASE simplex_v1 TO simplex;
+      ```sql
+      CREATE USER simplex WITH ENCRYPTED PASSWORD '123123'; -- Create user with password
+      -- or
+      -- CREATE USER simplex;
+      CREATE DATABASE simplex_v1; -- Create database
+      GRANT ALL PRIVILEGES ON DATABASE simplex_v1 TO simplex; -- Assign permissions
       ```
 
 3. Prepare database:
@@ -294,7 +246,7 @@
    ./gradlew packageDmg -Pdatabase.backend=postgres
    ```
 
-## Transfer data from SQLite to Postgres database
+## Transfer data from Postgres to SQLite database
 
 1. Prepare sqlite db:
 
