@@ -695,7 +695,7 @@ CREATE TABLE chat_item_mentions(
   display_name TEXT NOT NULL
 );
 CREATE TABLE delivery_tasks(
-  delivery_task_id INTEGER PRIMARY KEY,
+  delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
@@ -711,7 +711,7 @@ CREATE TABLE delivery_tasks(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE delivery_jobs(
-  delivery_job_id INTEGER PRIMARY KEY,
+  delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,

@@ -297,7 +297,7 @@ startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
 createDatabase _params CoreChatOpts {dbOptions} dbPrefix = do
-  createChatDatabase dbOptions {dbSchemaPrefix = "client_" <> dbPrefix} MCError
+  createChatDatabase dbOptions {dbSchemaPrefix = "client_" <> dbPrefix} (MigrationConfig MCError Nothing)
 
 insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")
