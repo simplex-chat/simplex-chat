@@ -1,0 +1,242 @@
+---
+layout: layouts/main.html
+title: "SimpleX Chat: private and secure messenger without any user IDs (not even random)"
+description: "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."
+templateEngineOverride: njk
+active_home: true
+---
+{%- from "components/macro.njk" import overlay -%}
+
+{% include "hero.html" %}
+
+<section id="why-privacy" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
+    <div class="container">
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">{{ "privacy-matters-section-header" | i18n({}, lang ) | safe }}</h2>
+        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">{{ "privacy-matters-section-subheader" | i18n({}, lang ) | safe }}</p>
+        <div class="flex flex-col lg:flex-row gap-[20px] mb-[62px] lg:mb-[90px]">
+
+            {% for section in why_privacy_matters.sections %}
+            <div class="bg-white dark:bg-transparent px-[34px] flex flex-col md:flex-row lg:flex-col items-center rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
+                <div class="md:w-[30%] lg:w-full flex items-center justify-center h-[215px]">
+                    <img src="{{ section.imgLight }}" alt="">
+                </div>
+                <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
+                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">{{ section.title | i18n({}, lang ) | safe }}</p>
+                    {% if section.overlayContent %}
+                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">{{ section.overlayContent.linkText | i18n({}, lang ) | safe }}</a>
+                    {{ overlay(section,lang) }}
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">{{ "privacy-matters-section-label" | i18n({}, lang ) | safe }}</p>
+    </div>
+</section>
+
+{# Why SimpleX is unique #}
+{% include "sections/simplex_unique.html" %}
+
+{# Features #}
+<section id="features" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[95px] px-5 lg:h-[888px]">
+    <div class="container">
+        <h2 class="text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold gradient-text mb-20">{{ "features" | i18n({}, lang ) | safe }}</h2>
+
+        <div class="mb-[50px] grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-x-10 gap-y-32">
+            {% for feature in features.sections %}
+            <div class="flex flex-col items-center">
+                <div class="bg-white flex items-center justify-center w-[175px] h-[110px] rounded-[20px] border-[#859096] border-solid border-[1px] shadow-[2px_2px_0px_#859096] dark:border-none dark:shadow-none mb-[20px] border-gradient">
+                    <img src="{{ feature.imgLight }}" alt="" class="dark:hidden"/>
+                    <img src="{{ feature.imgDark }}" alt="" class="hidden dark:block"/>
+                </div>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">{{ feature.title | i18n({}, lang ) | safe }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+{# what makes simplex private #}
+<section id="privacy" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] overflow-hidden px-5 lg:h-[888px]">
+    <div class="container scale-100">
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-20">{{ "simplex-private-section-header" | i18n({}, lang ) | safe }}</h2>
+
+        <div class="swiper private-swiper overflow-hidden px-4 py-2">
+            <div class="swiper-wrapper mb-16">
+
+                {% for section in what_makes_simplex_private.sections %}
+                <div class="card swiper-slide relative h-[480px] rounded-[20px] bg-card-bg-light dark:bg-card-bg-dark border-[#859096] border-solid border-[1px] dark:border-none shadow-[2px_2px_0px_#859096] dark:shadow-none overflow-hidden">
+                    <div class="flex items-center justify-center py-12 px-6 h-[322px]">
+                        <img class="w-full max-w-[223px] h-full max-h-[226px] dark:hidden" src="{{ section.imgLight }}" alt=""/>
+                        <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="{{ section.imgDark }}" alt=""/>
+                    </div>
+                    <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">{{ section.title | i18n({}, lang ) | safe }}</h3>
+                        <div class="flex-1 py-3 flex flex-col gap-3">
+                            {% for point in section.points %}
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">{{ point | i18n({}, lang ) | safe }}</p>
+                            {% endfor %}
+                        </div>
+                        <p class="text-grey-black dark:text-white text-[12px] text-center">{{ "tap-to-close" | i18n({}, lang ) | safe }}</p>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev private-swiper-button-prev md:inline-block rtl:!hidden dark:!hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next private-swiper-button-next md:inline-block rtl:!hidden dark:!hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-prev private-swiper-button-prev hidden dark:md:inline-block rtl:!hidden" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-next private-swiper-button-next hidden dark:md:inline-block rtl:!hidden" src="/img/new/arrow-right-dark.svg" alt="">
+
+            <img class="fixed left-[-3px] top-[52%] swiper-button-next private-swiper-button-next md:rtl:inline-block ltr:!hidden dark:!hidden" src="/img/new/arrow-left.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-prev private-swiper-button-prev md:rtl:inline-block ltr:!hidden dark:!hidden" src="/img/new/arrow-right.svg" alt="">
+            <img class="fixed left-[-3px] top-[52%] swiper-button-next private-swiper-button-next hidden md:dark:inline-block ltr:!hidden" src="/img/new/arrow-left-dark.svg" alt="">
+            <img class="fixed right-[-6px] top-[52%] swiper-button-prev private-swiper-button-prev hidden md:dark:inline-block ltr:!hidden" src="/img/new/arrow-right-dark.svg" alt="">
+
+            <div class="swiper-scrollbar dark:bg-grey-black dark:bg-opacity-[0.2]"></div>
+        </div>
+    </div>
+</section>
+
+{# Network #}
+<section id="network" class="bg-secondary-bg-light dark:bg-secondary-bg-dark lg:h-[642px] py-[95px] px-5">
+    <div class="container">
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-5">{{ "simplex-network-section-header" | i18n({}, lang ) | safe }}</h2>
+        <p class="text-black dark:text-white text-[16px] font-normal text-center mb-16">{{ "simplex-network-section-desc" | i18n({}, lang ) | safe }}</p>
+
+        <div class="flex flex-col lg:flex-row justify-between gap-12 md:gap-14 lg:gap-16">
+            <div class="flex flex-col md:flex-row lg:flex-col items-center md:gap-9 lg:gap-0">
+                <div class="mb-4 md:mb-0 lg:mb-8 md:flex-[1] flex items-center justify-center">
+                    <img src="/img/new/network-1.svg" alt="" class="dark:hidden"/>
+                    <img src="/img/new/network-1-dark.svg" alt="" class="hidden dark:block"/>
+                </div>
+                <div class="md:flex-[2] flex flex-col items-center justify-center">
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-1-header" | i18n({}, lang ) | safe }}</h3>
+                    <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
+                        {{ "simplex-network-1-desc" | i18n({}, lang ) | safe }} <a href="javascript:void(0)" data-show-overlay="{{ simplex_network_overlay.sections[0].overlayContent.overlayId }}" class="open-overlay-btn">{{ "simplex-network-1-overlay-linktext" | i18n({}, lang ) | safe }}</a>.
+                        {{ overlay(simplex_network_overlay.sections[0],lang) }}
+                    </p>
+                </div>
+            </div>
+
+            <hr class="hidden md:block lg:hidden mx-5 dark:opacity-[0.2]">
+
+            <div class="flex flex-col md:flex-row lg:flex-col items-center md:gap-9 lg:gap-0">
+                <div class="mb-4 md:mb-0 lg:mb-8 md:flex-[1] flex items-center justify-center">
+                    <img src="/img/new/network-2.svg" alt="" class="dark:hidden"/>
+                    <img src="/img/new/network-2-dark.svg" alt="" class="hidden dark:block"/>
+                </div>
+                <div class="md:flex-[2] flex flex-col items-center justify-center">
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-2-header" | i18n({}, lang ) | safe }}</h3>
+                    <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
+                        {{ "simplex-network-2-desc" | i18n({}, lang ) | safe }}
+                    </p>
+                </div>
+            </div>
+
+            <hr class="hidden md:block lg:hidden mx-5 dark:opacity-[0.2]">
+
+            <div class="flex flex-col md:flex-row lg:flex-col items-center md:gap-9 lg:gap-0">
+                <div class="mb-4 md:mb-0 lg:mb-8 md:flex-[1] flex items-center justify-center">
+                    <img src="/img/new/network-3.svg" alt="" class="dark:hidden"/>
+                    <img src="/img/new/network-3-dark.svg" alt="" class="hidden dark:block"/>
+                </div>
+                <div class="md:flex-[2] flex flex-col items-center justify-center">
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">{{ "simplex-network-3-header" | i18n({}, lang ) | safe }}</h3>
+                    <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
+                        {{ "simplex-network-3-desc" | i18n({}, lang ) | safe }}
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</section>
+
+
+{# simplex explained #}
+{% include "simplex_explained.html" %}
+
+
+{# Comparison #}
+<section id="comparison" class="bg-secondary-bg-light dark:bg-secondary-bg-dark lg:h-[950px] py-[90px] px-5">
+    <div class="text-grey-black dark:text-white container flex flex-col">
+        <h2 class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">{{ "comparison-section-header" | i18n({}, lang ) | safe }}</h2>
+
+        <div class="w-full overflow-auto">
+            <table class="w-full border-separate border-spacing-x-5 border-spacing-y-2 mb-14">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th class="flex items-center justify-center pb-4">
+                            <img class="h-[34px] dark:hidden" alt="simplex logo" src="/img/new/logo-light.png"/>
+                            <img class="h-[34px] hidden dark:block" alt="simplex logo" src="/img/new/logo-dark.png"/>
+                        </th>
+                        <th class="pb-4">{{ "protocol-1-text" | i18n({}, lang ) | safe }}</th>
+                        <th class="pb-4">{{ "protocol-2-text" | i18n({}, lang ) | safe }}</th>
+                        <th class="pb-4">{{ "protocol-3-text" | i18n({}, lang ) | safe }}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td class="min-w-[210px]">{{ "comparison-point-1-text" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no-private" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>1</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>2</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>3</sup></td>
+                    </tr>
+                    <tr>
+                        <td class="min-w-[210px]">{{ "comparison-point-2-text" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no-secure" | i18n({}, lang ) | safe }} <sup>4</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>5</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }}</td>
+                    </tr>
+                    <tr>
+                        <td class="min-w-[210px]">{{ "comparison-point-3-text" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no-resilient" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no" | i18n({}, lang ) | safe }}</td>
+                    </tr>
+                    <tr>
+                        <td class="min-w-[210px]">{{ "comparison-point-4-text" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no-decentralized" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no-federated" | i18n({}, lang ) | safe }} <sup>6</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>7</sup></td>
+                    </tr>
+                    <tr>
+                        <td class="min-w-[210px]">{{ "comparison-point-5-text" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#48F6C2] text-grey-black rounded-[4px]">{{ "no-resilient" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }}</td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>2</sup></td>
+                        <td class="text-center font-medium min-w-[152px] h-[52px] bg-[#fff] dark:bg-[#171F3A] text-[#DD0000] rounded-[4px]">{{ "yes" | i18n({}, lang ) | safe }} <sup>8</sup></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <hr class="block mb-8 mx-5 dark:opacity-[0.2]">
+
+        <div>
+            <div class="px-5">
+                <ol class="text-sm lg:text-base font-medium leading-6 list-decimal list-inside">
+                    <li> {{ "comparison-section-list-point-1" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-2" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-3" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-4a" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-4" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-5" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-6" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "comparison-section-list-point-7" | i18n({}, lang ) | safe }} - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">{{ "see-here" | i18n({}, lang ) | safe }}</a></li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</section>
+
+{# join simplex #}
+{% include "sections/join_simplex.html" %}
