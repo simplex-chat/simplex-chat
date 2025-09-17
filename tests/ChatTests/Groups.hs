@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
@@ -223,14 +224,17 @@ chatGroupTests = do
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
   -- TODO [channels fwd] add tests for channels
-  -- TODO   - tests with multiple relays (all relays should forward, members should deduplicate)
+  -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
   -- TODO   - tests with messages batched from multiple senders (senders should deduplicate their own messages)
   -- TODO   - tests with delivery loop over members restored after restart
-  -- TODO   - forwarding in support scopes inside channels
+  -- TODO   - delivery in support scopes inside channels
   fdescribe "channels" $ do
-    describe "relay forwarding" $ do
-      it "should forward messages to members" testChannelsRelayForward
-      it "should forward messages to members in a loop" testChannelsRelayForwardLoop
+    describe "relay delivery" $ do
+      it "should deliver messages to members" testChannelsRelayDeliver
+      describe "should deliver messages in a loop over members" $ do
+        it "number of recipients is multiple of bucket size (3/1)" (testChannelsRelayDeliverLoop 1)
+        it "number of recipients is multiple of bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
+        it "number of recipients is NOT multiple of bucket size (3/2)" (testChannelsRelayDeliverLoop 2)
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8190,8 +8194,8 @@ testScopedSupportUnreadStatsCorrectOnOpen =
         { markRead = False
         }
 
-testChannelsRelayForward :: HasCallStack => TestParams -> IO ()
-testChannelsRelayForward =
+testChannelsRelayDeliver :: HasCallStack => TestParams -> IO ()
+testChannelsRelayDeliver =
   testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
     createChannel5 alice bob cath dan eve
 
@@ -8272,8 +8276,8 @@ createChannel5 alice bob cath dan eve = do
         dan <## "#team: new member eve is connected"
     ]
 
-testChannelsRelayForwardLoop :: HasCallStack => TestParams -> IO ()
-testChannelsRelayForwardLoop =
+testChannelsRelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
+testChannelsRelayDeliverLoop relayDeliveryBucketSize =
   testChatCfg5 cfg aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
     createChannel5 alice bob cath dan eve
 
@@ -8292,4 +8296,4 @@ testChannelsRelayForwardLoop =
     eve <# "#team cath> > alice hi"
     eve <## "    + 👍"
   where
-    cfg = testCfg {relayDeliveryBucketSize = 2}
+    cfg = testCfg {relayDeliveryBucketSize}
