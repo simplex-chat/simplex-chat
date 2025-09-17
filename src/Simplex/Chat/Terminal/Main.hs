@@ -40,7 +40,7 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
 #if defined(picolisp)
       Nothing -> case evaluatePicolisp opts of
         Just code -> do
-          picolispInit 100000 ["picolisp", "lib.l"]
+          picolispInit 100000 ["picolisp"] -- ["picolisp", "lib.l"]
           res <- picolispEvaluate code
           putStrLn res
         Nothing -> runCLI

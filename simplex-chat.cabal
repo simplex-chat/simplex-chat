@@ -265,7 +265,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250802_chat_peer_type
           Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks
   if flag(picolisp)
-      -- extra-libraries: picolisp
+      extra-libraries: picolisp
       cpp-options: -Dpicolisp
       exposed-modules:
           Simplex.Chat.Picolisp
@@ -415,7 +415,7 @@ executable simplex-broadcast-bot
   if flag(client_postgres)
     cpp-options: -DdbPostgres
   if flag(picolisp)
-      -- extra-libraries: picolisp
+      extra-libraries: picolisp
       cpp-options: -Dpicolisp
       exposed-modules:
           Simplex.Chat.Picolisp
@@ -453,7 +453,7 @@ executable simplex-chat
   if flag(client_postgres)
     cpp-options: -DdbPostgres
   if flag(picolisp)
-      -- extra-libraries: picolisp
+      extra-libraries: picolisp
       cpp-options: -Dpicolisp
       exposed-modules:
           Simplex.Chat.Picolisp
@@ -505,7 +505,7 @@ executable simplex-directory-service
   if flag(client_postgres)
     cpp-options: -DdbPostgres
   if flag(picolisp)
-      -- extra-libraries: picolisp
+      extra-libraries: picolisp
       cpp-options: -Dpicolisp
       exposed-modules:
           Simplex.Chat.Picolisp
