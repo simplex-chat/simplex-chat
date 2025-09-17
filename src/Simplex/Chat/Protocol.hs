@@ -1207,8 +1207,12 @@ data ContactShortLinkData = ContactShortLinkData
   }
   deriving (Show)
 
+-- TODO [channels fwd] review - GroupShortLinkData channel flag
+-- TODO   - separate ChannelShortLinkData type?
+-- TODO   - should have additional data for connecting to relays
 data GroupShortLinkData = GroupShortLinkData
   { groupProfile :: GroupProfile
+    -- channel :: Maybe Bool
   }
   deriving (Show)
 

@@ -180,7 +180,7 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
-              ((Only groupId) :. jobScopeRow_ jobScope :.  (Only DTSNew))
+              ((Only groupId) :. jobScopeRow_ jobScope :. (Only DTSNew))
       | otherwise =
           -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
           -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
@@ -202,7 +202,7 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
-              ((Only groupId) :. jobScopeRow_ jobScope :.  (senderGMId, DTSNew))
+              ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMId, DTSNew))
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
 updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
@@ -317,19 +317,23 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
 
 -- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
   memberIds <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
         DB.query
           db
           (query <> orderLimit)
-          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, count)
+          ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
+              :. (Only count)
+          )
       Just cursorGMId ->
         DB.query
           db
           (query <> " AND group_member_id > ?" <> orderLimit)
-          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, cursorGMId, count)
+          ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
+              :. (cursorGMId, count)
+          )
   rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
   where
     query =
@@ -337,6 +341,7 @@ getGroupMembersByCursor db vr user GroupInfo {groupId} cursorGMId_ singleSenderG
         SELECT group_member_id
         FROM group_members
         WHERE group_id = ?
+          AND contact_id IS DISTINCT FROM ?
           AND group_member_id IS DISTINCT FROM ?
           AND member_status IN (?,?,?,?,?,?)
       |]

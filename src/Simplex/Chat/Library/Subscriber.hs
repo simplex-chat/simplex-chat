@@ -3002,9 +3002,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               event = XGrpMsgForward memberId memberName chatMsg brokerTs
           sendGroupMemberMessage gInfo member event Nothing (pure ())
 
+    -- TODO [channels fwd] base on differentiation between groups and channels
     isUserGrpFwdRelay :: GroupInfo -> Bool
-    isUserGrpFwdRelay GroupInfo {membership = GroupMember {memberRole}} =
-      memberRole >= GRAdmin
+    isUserGrpFwdRelay GroupInfo {useRelays, membership = membership@GroupMember {memberRole}}
+      | useRelays = isMemberRelay membership
+      | otherwise = memberRole >= GRAdmin
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpLeave gInfo m msg brokerTs = do
@@ -3153,7 +3155,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
-    xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
+    xGrpMsgForward gInfo m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
       when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author
@@ -3167,8 +3169,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         processForwardedMsg :: GroupMember -> CM ()
         processForwardedMsg author = do
           let body = chatMsgToBody chatMsg
-          rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg brokerTs
-          case event of
+          rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author body chatMsg brokerTs
+          forM_ rcvMsg_ $ \rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc -> void $ memberCanSend author scope $ (const Nothing) <$> newGroupContentMessage gInfo author mc rcvMsg msgTs True
               where ExtMsgContent {scope} = mcExtMsgContent mc
             -- file description is always allowed, to allow sending files to support scope
@@ -3299,6 +3301,7 @@ getDeliveryTaskWorker hasWork deliveryKey = do
 
 runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
+  delay <- asks $ deliveryWorkerDelay . config
   vr <- chatVersionRange
   -- TODO [channels fwd] in future may be required to read groupInfo and user on each iteration for up to date state
   -- TODO   - same for delivery jobs (runDeliveryJobWorker)
@@ -3306,6 +3309,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
     user <- getUserByGroupId db groupId
     getGroupInfo db vr user groupId
   forever $ do
+    unless (delay == 0) $ liftIO $ threadDelay' delay
     lift $ waitForWork doWork
     runDeliveryTaskOperation vr gInfo
   where
@@ -3364,12 +3368,14 @@ getDeliveryJobWorker hasWork deliveryKey = do
 
 runDeliveryJobWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryJobWorker a deliveryKey Worker {doWork} = do
+  delay <- asks $ deliveryWorkerDelay . config
   vr <- chatVersionRange
   (user, gInfo) <- withStore $ \db -> do
     user <- getUserByGroupId db groupId
     gInfo <- getGroupInfo db vr user groupId
     pure (user, gInfo)
   forever $ do
+    unless (delay == 0) $ liftIO $ threadDelay' delay
     lift $ waitForWork doWork
     runDeliveryJobOperation vr user gInfo
   where
@@ -3402,16 +3408,18 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
               | useRelays gInfo = -- channel
                   case jobScope of
                     -- there's no member review in channels, so job spec includePending is ignored
-                    DJSGroup {} -> sendLoop startingCursor
+                    DJSGroup {} -> do
+                      bucketSize <- asks $ deliveryBucketSize . config
+                      sendLoop bucketSize startingCursor
                       where
-                        dbBatchSize = 1000 -- TODO [channels fwd] review, make configurable
-                        sendLoop :: Maybe GroupMemberId -> CM ()
-                        sendLoop cursorGMId_ = do
-                          mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ dbBatchSize
-                          let cursorGMId_' = groupMemberId' $ last mems
-                          unless (null mems) $ deliver body mems
-                          withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId_'
-                          unless (length mems < dbBatchSize) $ sendLoop (Just cursorGMId_')
+                        sendLoop :: Int -> Maybe GroupMemberId -> CM ()
+                        sendLoop bucketSize cursorGMId_ = do
+                          mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
+                          unless (null mems) $ do
+                            deliver body mems
+                            let cursorGMId' = groupMemberId' $ last mems
+                            withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
+                            unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId')
                     DJSMemberSupport scopeGMId -> do
                       -- for member support scope we just load all recipients in one go, without cursor
                       modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
