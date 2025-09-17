@@ -233,8 +233,8 @@ chatGroupTests = do
       it "should deliver messages to members" testChannelsRelayDeliver
       describe "should deliver messages in a loop over members" $ do
         it "number of recipients is multiple of bucket size (3/1)" (testChannelsRelayDeliverLoop 1)
-        it "number of recipients is multiple of bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
         it "number of recipients is NOT multiple of bucket size (3/2)" (testChannelsRelayDeliverLoop 2)
+        it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
