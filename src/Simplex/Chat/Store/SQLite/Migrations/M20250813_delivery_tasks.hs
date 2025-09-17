@@ -56,7 +56,7 @@ m20250813_delivery_tasks :: Query
 m20250813_delivery_tasks =
   [sql|
 CREATE TABLE delivery_tasks (
-  delivery_task_id INTEGER PRIMARY KEY,
+  delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
@@ -107,7 +107,7 @@ CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
 
 
 CREATE TABLE delivery_jobs (
-  delivery_job_id INTEGER PRIMARY KEY,
+  delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
