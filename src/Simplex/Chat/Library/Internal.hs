@@ -1976,6 +1976,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
+-- TODO [channels fwd] optimization for channels - only retrieve relays for sending (getGroupRecipients, sendGroupMessages)
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
 memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember {memberRole, memberStatus}
   -- groups with relays require newer version - we don't need to check member version for batching and forwarding support
