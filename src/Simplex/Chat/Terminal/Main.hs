@@ -39,7 +39,10 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
         Nothing -> putStrLn "Not allowed to run as a WebSockets server" >> exitFailure
 #if defined(picolisp)
       Nothing -> case evaluatePicolisp opts of
-        Just code -> pure ()
+        Just code -> do
+          picolispInit 100000 ["picolisp", "lib.l"]
+          res <- picolispEvaluate code
+          putStrLn res
         Nothing -> runCLI
 #else
       Nothing -> runCLI
