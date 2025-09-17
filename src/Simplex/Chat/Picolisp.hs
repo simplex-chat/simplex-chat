@@ -11,9 +11,6 @@ foreign import ccall "picolisp" c_picolisp_init :: Ptr CChar -> CInt -> CInt -> 
 -- char *evaluate(char*);
 foreign import ccall "evaluate" c_picolisp_evaluate :: CString -> IO CString
 
--- void reflect(void*, char*);
-foreign import ccall "reflect" c_picolisp_reflect :: Ptr () -> CString -> IO ()
-
 -- void stoplisp(void);
 foreign import ccall "stoplisp" c_picolisp_stop :: IO ()
 
