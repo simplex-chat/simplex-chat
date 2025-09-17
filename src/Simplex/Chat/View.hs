@@ -901,7 +901,6 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
       Just (AChatItem _ _ _ ci') -> chatItemDeletedText ci' $ chatInfoMembership chat
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
--- TODO [channels fwd] add "[>>]" suffix when forwarded - for tests
 viewItemReaction :: forall c d. Bool -> ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
 viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
   case (chat, chatDir) of

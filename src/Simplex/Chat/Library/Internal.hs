@@ -2091,24 +2091,27 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
         _ -> throwError e
   pure (am', conn', msg)
 
-saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupId -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> UTCTime -> CM RcvMessage
-saveGroupFwdRcvMsg user groupId forwardingMember refAuthorMember@GroupMember {memberId = refMemberId} msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs = do
+saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> UTCTime -> CM (Maybe RcvMessage)
+saveGroupFwdRcvMsg user GroupInfo {groupId, useRelays} forwardingMember refAuthorMember@GroupMember {memberId = refMemberId} msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs = do
   let newMsg = NewRcvMessage {chatMsgEvent, msgBody, brokerTs}
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = Just $ groupMemberId' refAuthorMember
-  -- TODO [channels fwd] recipient should deduplicate its own messages if they are forwarded back
-  -- TODO   - it can happen when chat relay forwards a batch of messages of different senders
-  withStore (\db -> createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId)
-    `catchAllErrors` \e -> case e of
-      ChatErrorStore (SEDuplicateGroupMessage _ _ (Just authorGroupMemberId) Nothing) -> do
-        vr <- chatVersionRange
-        am@GroupMember {memberId = amMemberId} <- withStore $ \db -> getGroupMember db vr user groupId authorGroupMemberId
-        if sameMemberId refMemberId am
-          then forM_ (memberConn forwardingMember) $ \fmConn ->
-            void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemberId) groupId
-          else toView $ CEvtMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
-        throwError e
-      _ -> throwError e
+  -- TODO [channels fwd] TBC highlighting difference between deduplicated messages (useRelays branch)
+  withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
+    Right msg -> pure $ Just msg
+    Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
+      | useRelays -> pure Nothing -- with chat relays, duplicates are expected
+      | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of
+          (Just authorGMId, Nothing) -> do
+            vr <- chatVersionRange
+            am@GroupMember {memberId = amMemberId} <- withStore $ \db -> getGroupMember db vr user groupId authorGMId
+            if sameMemberId refMemberId am
+              then forM_ (memberConn forwardingMember) $ \fmConn ->
+                void $ sendDirectMemberMessage fmConn (XGrpMemCon amMemberId) groupId
+              else toView $ CEvtMessageError user "error" "saveGroupFwdRcvMsg: referenced author member id doesn't match message member id"
+            throwError $ ChatErrorStore e
+          _ -> throwError $ ChatErrorStore e
+    Left e -> throwError $ ChatErrorStore e
 
 saveSndChatItem :: ChatTypeI c => User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> CM (ChatItem c 'MDSnd)
 saveSndChatItem user cd msg content = saveSndChatItem' user cd msg content Nothing Nothing Nothing Nothing False

@@ -34,6 +34,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -225,7 +226,6 @@ chatGroupTests = do
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
-  -- TODO   - tests with messages batched from multiple senders (senders should deduplicate their own messages)
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
   fdescribe "channels" $ do
@@ -235,6 +235,7 @@ chatGroupTests = do
         it "number of recipients is multiple of bucket size (3/1)" (testChannelsRelayDeliverLoop 1)
         it "number of recipients is NOT multiple of bucket size (3/2)" (testChannelsRelayDeliverLoop 2)
         it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
+      it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8197,7 +8198,7 @@ testScopedSupportUnreadStatsCorrectOnOpen =
 testChannelsRelayDeliver :: HasCallStack => TestParams -> IO ()
 testChannelsRelayDeliver =
   testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
-    createChannel5 alice bob cath dan eve
+    createChannel5 alice bob cath dan eve GRObserver
 
     alice #> "#team hi"
     bob <# "#team alice> hi"
@@ -8218,11 +8219,11 @@ testChannelsRelayDeliver =
 -- TODO   - alice to create group as channel
 -- TODO   - add bob as relay
 -- TODO   - alice to manage group link, but members to connect to relay (bob)
-createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
-createChannel5 alice bob cath dan eve = do
+createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+createChannel5 alice bob cath dan eve mRole = do
   createGroup2 "team" alice bob
-  bob ##> "/create link #team observer"
-  gLink <- getGroupLink bob "team" GRObserver True
+  bob ##> ("/create link #team " <> B.unpack (strEncode mRole))
+  gLink <- getGroupLink bob "team" mRole True
   cath ##> ("/c " <> gLink)
   cath <## "connection request sent!"
   bob <## "cath (Catherine): accepting request to join group #team..."
@@ -8277,9 +8278,9 @@ createChannel5 alice bob cath dan eve = do
     ]
 
 testChannelsRelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
-testChannelsRelayDeliverLoop relayDeliveryBucketSize =
+testChannelsRelayDeliverLoop deliveryBucketSize =
   testChatCfg5 cfg aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
-    createChannel5 alice bob cath dan eve
+    createChannel5 alice bob cath dan eve GRObserver
 
     alice #> "#team hi"
     bob <# "#team alice> hi"
@@ -8296,4 +8297,63 @@ testChannelsRelayDeliverLoop relayDeliveryBucketSize =
     eve <# "#team cath> > alice hi"
     eve <## "    + 👍"
   where
-    cfg = testCfg {relayDeliveryBucketSize}
+    cfg = testCfg {deliveryBucketSize}
+
+testChannelsSenderDeduplicateOwn :: HasCallStack => TestParams -> IO ()
+testChannelsSenderDeduplicateOwn ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "cath" cathProfile $ \cath ->
+      withNewTestChat ps "dan" danProfile $ \dan ->
+        withNewTestChat ps "eve" eveProfile $ \eve -> do
+          withNewTestChatCfg ps cfg "bob" bobProfile $ \bob ->
+            createChannel5 alice bob cath dan eve GRMember
+
+          -- chat relay bob is offline
+          alice #> "#team 1"
+          alice #> "#team 2"
+          alice #> "#team 3"
+          cath #> "#team 4"
+          cath #> "#team 5"
+          dan #> "#team 6"
+
+          withTestChatCfg ps cfg "bob" $ \bob -> do
+            bob <## "1 contacts connected (use /cs for the list)"
+            bob <## "1 group links active"
+            bob <## "#team: connected to server(s)"
+
+            bob
+              <### [ WithTime "#team alice> 1",
+                     WithTime "#team alice> 2",
+                     WithTime "#team alice> 3",
+                     WithTime "#team cath> 4",
+                     WithTime "#team cath> 5",
+                     WithTime "#team dan> 6"
+                   ]
+            alice
+              <### [ WithTime "#team cath> 4 [>>]",
+                     WithTime "#team cath> 5 [>>]",
+                     WithTime "#team dan> 6 [>>]"
+                   ]
+            cath
+              <### [ WithTime "#team alice> 1 [>>]",
+                     WithTime "#team alice> 2 [>>]",
+                     WithTime "#team alice> 3 [>>]",
+                     WithTime "#team dan> 6 [>>]"
+                   ]
+            dan
+              <### [ WithTime "#team alice> 1 [>>]",
+                     WithTime "#team alice> 2 [>>]",
+                     WithTime "#team alice> 3 [>>]",
+                     WithTime "#team cath> 4 [>>]",
+                     WithTime "#team cath> 5 [>>]"
+                   ]
+            eve
+              <### [ WithTime "#team alice> 1 [>>]",
+                     WithTime "#team alice> 2 [>>]",
+                     WithTime "#team alice> 3 [>>]",
+                     WithTime "#team cath> 4 [>>]",
+                     WithTime "#team cath> 5 [>>]",
+                     WithTime "#team dan> 6 [>>]"
+                   ]
+  where
+    cfg = testCfg {deliveryWorkerDelay = 250000}

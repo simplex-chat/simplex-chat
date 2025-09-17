@@ -3155,7 +3155,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
-    xGrpMsgForward gInfo@GroupInfo {groupId} m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
+    xGrpMsgForward gInfo m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
       when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author
@@ -3169,8 +3169,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         processForwardedMsg :: GroupMember -> CM ()
         processForwardedMsg author = do
           let body = chatMsgToBody chatMsg
-          rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} <- saveGroupFwdRcvMsg user groupId m author body chatMsg brokerTs
-          case event of
+          rcvMsg_ <- saveGroupFwdRcvMsg user gInfo m author body chatMsg brokerTs
+          forM_ rcvMsg_ $ \rcvMsg@RcvMessage {chatMsgEvent = ACME _ event} -> case event of
             XMsgNew mc -> void $ memberCanSend author scope $ (const Nothing) <$> newGroupContentMessage gInfo author mc rcvMsg msgTs True
               where ExtMsgContent {scope} = mcExtMsgContent mc
             -- file description is always allowed, to allow sending files to support scope
@@ -3301,6 +3301,7 @@ getDeliveryTaskWorker hasWork deliveryKey = do
 
 runDeliveryTaskWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
+  delay <- asks $ deliveryWorkerDelay . config
   vr <- chatVersionRange
   -- TODO [channels fwd] in future may be required to read groupInfo and user on each iteration for up to date state
   -- TODO   - same for delivery jobs (runDeliveryJobWorker)
@@ -3308,6 +3309,7 @@ runDeliveryTaskWorker a deliveryKey Worker {doWork} = do
     user <- getUserByGroupId db groupId
     getGroupInfo db vr user groupId
   forever $ do
+    unless (delay == 0) $ liftIO $ threadDelay' delay
     lift $ waitForWork doWork
     runDeliveryTaskOperation vr gInfo
   where
@@ -3366,12 +3368,14 @@ getDeliveryJobWorker hasWork deliveryKey = do
 
 runDeliveryJobWorker :: AgentClient -> DeliveryWorkerKey -> Worker -> CM ()
 runDeliveryJobWorker a deliveryKey Worker {doWork} = do
+  delay <- asks $ deliveryWorkerDelay . config
   vr <- chatVersionRange
   (user, gInfo) <- withStore $ \db -> do
     user <- getUserByGroupId db groupId
     gInfo <- getGroupInfo db vr user groupId
     pure (user, gInfo)
   forever $ do
+    unless (delay == 0) $ liftIO $ threadDelay' delay
     lift $ waitForWork doWork
     runDeliveryJobOperation vr user gInfo
   where
@@ -3405,8 +3409,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                   case jobScope of
                     -- there's no member review in channels, so job spec includePending is ignored
                     DJSGroup {} -> do
-                      ChatConfig {relayDeliveryBucketSize} <- asks config
-                      sendLoop relayDeliveryBucketSize startingCursor
+                      bucketSize <- asks $ deliveryBucketSize . config
+                      sendLoop bucketSize startingCursor
                       where
                         sendLoop :: Int -> Maybe GroupMemberId -> CM ()
                         sendLoop bucketSize cursorGMId_ = do
