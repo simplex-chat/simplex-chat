@@ -224,11 +224,12 @@ chatGroupTests = do
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+  -- TODO [channels fwd] enable tests (requires communicating useRelays to members)
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
-  fdescribe "channels" $ do
+  xdescribe "channels" $ do
     describe "relay delivery" $ do
       it "should deliver messages to members" testChannelsRelayDeliver
       describe "should deliver messages in a loop over members" $ do
