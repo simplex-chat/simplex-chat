@@ -17,5 +17,9 @@ main = do
     then directoryServiceCLI st opts
     else do
       env <- newServiceState opts
-      let cfg = terminalChatConfig {chatHooks = defaultChatHooks {acceptMember = Just $ acceptMemberHook opts env}}
-      simplexChatCore cfg (mkChatOpts opts) $ directoryService st opts env
+      let chatHooks =
+            defaultChatHooks
+              { postStartHook = Just $ directoryStartHook st opts,
+                acceptMember = Just $ acceptMemberHook opts env
+              }
+      simplexChatCore (terminalChatConfig {chatHooks}) (mkChatOpts opts) $ directoryService st opts env
