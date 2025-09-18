@@ -19,7 +19,7 @@ function displayEntries(entries) {
   const directory = document.getElementById('directory');
   directory.innerHTML = '';
 
-  entries.forEach(entry => {
+  for (let entry of entries) {
     const { entryType, displayName, welcomeMessage, shortDescr, imageFile } = entry;
     const entryDiv = document.createElement('div');
     entryDiv.className = 'entry';
@@ -61,7 +61,11 @@ function displayEntries(entries) {
 
     entryDiv.appendChild(textContainer);
     directory.appendChild(entryDiv);
-  });
+  }
+
+  for (let el of document.querySelectorAll('.secret')) {
+    el.addEventListener('click', () => el.classList.toggle('visible'));
+  }
 }
 
 renderDirectory()

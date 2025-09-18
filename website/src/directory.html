@@ -38,6 +38,18 @@ templateEngineOverride: njk
   .entry p {
     margin: 0 0 5px 0;
   }
+
+  .entry .secret {
+    filter: blur(5px);
+    cursor: pointer;
+    transition: filter 0.1s ease;
+    user-select: none;
+  }
+
+  .entry .secret.visible {
+    filter: none;
+    user-select: auto;
+  }
 </style>
 
 <section class="py-10 px-8 mt-[66px]">
