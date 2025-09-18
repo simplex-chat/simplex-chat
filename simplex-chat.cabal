@@ -543,10 +543,12 @@ test-suite simplex-chat-test
       Directory.BlockedWords
       Directory.Captcha
       Directory.Events
+      Directory.Listing
       Directory.Options
       Directory.Search
       Directory.Service
       Directory.Store
+      Directory.Util
       Paths_simplex_chat
   if flag(client_postgres)
       other-modules:
