@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Delivery
@@ -28,15 +29,12 @@ module Simplex.Chat.Store.Delivery
   )
 where
 
-import Control.Monad.Except
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (rights)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
 import Simplex.Chat.Protocol hiding (Binary)
-import Simplex.Chat.Store.Groups (getGroupMemberById)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
@@ -44,11 +42,14 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (firstRow')
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
+import Control.Monad.Except
+import Data.Either (rights)
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Store.Groups (getGroupMemberById)
 #endif
 
 type DeliveryJobScopeRow = (DeliveryWorkerScope, Maybe DeliveryJobSpecTag, Maybe BoolInt, Maybe GroupMemberId)
@@ -317,8 +318,8 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
 
 -- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
-  memberIds <-
+getGroupMembersByCursor db vr user@User {userId, userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+  gmIds :: [Int64] <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
         DB.query
@@ -334,7 +335,15 @@ getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} curs
           ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
               :. (cursorGMId, count)
           )
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+#if defined(dbPostgres)
+  map (toContactMember vr user) <$>
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_member_id IN ?")
+      (userId, In gmIds)
+#else
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) gmIds
+#endif
   where
     query =
       [sql|

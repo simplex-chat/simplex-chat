@@ -229,7 +229,7 @@ chatGroupTests = do
   -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
-  xdescribe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       it "should deliver messages to members" testChannelsRelayDeliver
       describe "should deliver messages in a loop over members" $ do
