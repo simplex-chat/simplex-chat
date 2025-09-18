@@ -41,6 +41,7 @@ import Data.Time.LocalTime (getCurrentTimeZone)
 import Directory.BlockedWords
 import Directory.Captcha
 import Directory.Events
+import Directory.Listing
 import Directory.Options
 import Directory.Search
 import Directory.Store
@@ -55,7 +56,7 @@ import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store (GroupLink (..))
 import Simplex.Chat.Store.Direct (getContact)
-import Simplex.Chat.Store.Groups (getGroupInfo, getGroupLink, getGroupSummary, setGroupCustomData)
+import Simplex.Chat.Store.Groups (getGroupInfo, getGroupLink, getGroupSummary, getUserGroupsWithSummary, setGroupCustomData)
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -1143,6 +1144,12 @@ setGroupPromoted st opts cc u gr grPromoted' = do
   (status, grPromoted) <- setGroupPromotedStore st gr grPromoted'
   forM_ (webFolder opts) $ \dir ->
     when (status == DSListed && grPromoted' /= grPromoted) $ updateGroupListingFiles cc st u dir
+
+updateGroupListingFiles :: ChatController -> DirectoryStore -> User -> FilePath -> IO ()
+updateGroupListingFiles cc st u dir =
+  withDB' "generateListing" cc (\db -> getUserGroupsWithSummary db (vr cc) u Nothing Nothing) >>= \case
+    Just gs -> generateListing st dir gs
+    Nothing -> putStrLn "generateListing error: failed to read groups"
 
 getContact' :: ChatController -> User -> ContactId -> IO (Maybe Contact)
 getContact' cc user ctId = withDB "getContact" cc $ \db -> getContact db (vr cc) user ctId

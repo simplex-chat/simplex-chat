@@ -26,7 +26,6 @@ module Directory.Store
     getUserGroupReg,
     getUserGroupRegs,
     filterListedGroups,
-    updateGroupListingFiles,
     groupRegStatusText,
     pendingApproval,
     groupRemoved,
@@ -43,14 +42,12 @@ import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Monad
 import Data.Aeson ((.:), (.=))
-import qualified Data.Aeson as J
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
-import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.List (find, foldl', sortOn)
 import Data.Map (Map)
@@ -59,16 +56,11 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
-import Directory.Listing
-import Directory.Util
-import Simplex.Chat.Controller
-import Simplex.Chat.Store.Groups (getUserGroupsWithSummary)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (ifM, whenM)
 import System.Directory
-import System.FilePath
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 data DirectoryStore = DirectoryStore
@@ -303,31 +295,6 @@ unlistGroup st gr = do
   modifyTVar' (listedGroups st) $ S.delete gId
   modifyTVar' (promotedGroups st) $ S.delete gId
   modifyTVar' (reservedGroups st) $ S.delete gId
-
-updateGroupListingFiles :: ChatController -> DirectoryStore -> User -> FilePath -> IO ()
-updateGroupListingFiles cc st u dir =
-  withDB' "generateListing" cc (\db -> getUserGroupsWithSummary db (vr cc) u Nothing Nothing) >>= \case
-    Just gs -> generateListing st dir gs
-    Nothing -> putStrLn "generateListing error: failed to read groups"
-
-generateListing :: DirectoryStore -> FilePath -> [GroupInfoSummary] -> IO ()
-generateListing st dir gs = do
-  gs' <- filterListedGroups st gs
-  removePathForcibly (dir </> listingImageFolder)
-  createDirectoryIfMissing True (dir </> listingImageFolder)
-  gs'' <- forM gs' $ \g@(GIS GroupInfo {groupId} _) -> do
-    let (g', img) = groupDirectoryEntry g
-    forM_ img $ \(imgFile, imgData) -> B.writeFile (dir </> imgFile) imgData
-    pure (groupId, g')
-  saveListing listingFileName gs''
-  saveListing promotedFileName =<< filterPromotedGroups st gs''
-  where
-    saveListing f = LB.writeFile (dir </> f) . J.encode . DirectoryListing . map snd
-
-filterPromotedGroups :: DirectoryStore -> [(GroupId, DirectoryEntry)] -> IO [(GroupId, DirectoryEntry)]
-filterPromotedGroups st gs = do
-  pgs <- readTVarIO $ promotedGroups st
-  pure $ filter (\g -> fst g `S.member` pgs) gs
 
 data DirectoryLogRecord
   = GRCreate GroupRegData

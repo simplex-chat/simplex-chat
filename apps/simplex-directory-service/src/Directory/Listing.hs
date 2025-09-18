@@ -9,15 +9,23 @@
 module Directory.Listing where
 
 import Control.Applicative ((<|>))
+import Control.Concurrent.STM
+import Control.Monad
+import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import Data.ByteString (ByteString)
 import Data.ByteString.Base64 as B64
+import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy as LB
 import Data.Maybe (fromMaybe)
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Directory.Store
 import Simplex.Chat.Types
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import System.Directory
 import System.FilePath
 
 listingFileName :: String
@@ -68,3 +76,22 @@ groupDirectoryEntry (GIS GroupInfo {groupId, groupProfile} summary) =
        in case B64.decode $ encodeUtf8 img' of
             Right img'' -> Just (imgFile, img'')
             Left _ -> Nothing
+
+generateListing :: DirectoryStore -> FilePath -> [GroupInfoSummary] -> IO ()
+generateListing st dir gs = do
+  gs' <- filterListedGroups st gs
+  removePathForcibly (dir </> listingImageFolder)
+  createDirectoryIfMissing True (dir </> listingImageFolder)
+  gs'' <- forM gs' $ \g@(GIS GroupInfo {groupId} _) -> do
+    let (g', img) = groupDirectoryEntry g
+    forM_ img $ \(imgFile, imgData) -> B.writeFile (dir </> imgFile) imgData
+    pure (groupId, g')
+  saveListing listingFileName gs''
+  saveListing promotedFileName =<< filterPromotedGroups st gs''
+  where
+    saveListing f = LB.writeFile (dir </> f) . J.encode . DirectoryListing . map snd
+
+filterPromotedGroups :: DirectoryStore -> [(GroupId, DirectoryEntry)] -> IO [(GroupId, DirectoryEntry)]
+filterPromotedGroups st gs = do
+  pgs <- readTVarIO $ promotedGroups st
+  pure $ filter (\g -> fst g `S.member` pgs) gs
