@@ -20,7 +20,7 @@ function displayEntries(entries) {
   directory.innerHTML = '';
 
   entries.forEach(entry => {
-    const { displayName, welcomeMessage, shortDescr, imageFile } = entry;
+    const { entryType, displayName, welcomeMessage, shortDescr, imageFile } = entry;
     const entryDiv = document.createElement('div');
     entryDiv.className = 'entry';
 
@@ -40,6 +40,16 @@ function displayEntries(entries) {
     const messageElement = document.createElement('p');
     messageElement.innerHTML = renderMarkdown(welcomeMessage);
     textContainer.appendChild(messageElement);
+
+    if (entryType.type == 'group') {
+      const memberCount = entryType.summary?.currentMembers
+      if (typeof memberCount == 'number') {
+        const memberCountElement = document.createElement('p');
+        memberCountElement.innerText = `${memberCount} members`;
+        memberCountElement.classList = ['text-sm'];
+        textContainer.appendChild(memberCountElement);
+      }
+    }
 
     const imgElement = document.createElement('img');
     imgElement.src =
@@ -81,6 +91,11 @@ function viaHost(smpHosts) {
   return `via ${first}`;
 }
 
+function targetBlank(uri) {
+  const thisSite = uri.startsWith("https://simplex.chat") || uri.startsWith("https://www.simplex.chat")
+  return thisSite ? '' : ' target="_blank"'
+}
+
 function renderMarkdown(fts) {
   let html = '';
   for (const ft of fts) {
@@ -89,59 +104,62 @@ function renderMarkdown(fts) {
       html += escapeHtml(text);
       continue;
     }
-    switch (format.type) {
-      case 'bold':
-        html += `<strong>${escapeHtml(text)}</strong>`;
-        break;
-      case 'italic':
-        html += `<em>${escapeHtml(text)}</em>`;
-        break;
-      case 'strikeThrough':
-        html += `<s>${escapeHtml(text)}</s>`;
-        break;
-      case 'snippet':
-        html += `<span style="font-family: monospace;">${escapeHtml(text)}</span>`;
-        break;
-      case 'secret':
-        html += `<span class="secret">${escapeHtml(text)}</span>`;
-        break;
-      case 'colored':
-        const color = format.color;
-        html += `<span style="color: ${color};">${escapeHtml(text)}</span>`;
-        break;
-      case 'uri':
-        let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;
-        html += `<a href="${escapeHtml(href)}">${escapeHtml(text)}</a>`;
-        break;
-      case 'hyperLink': {
-        const { showText, linkUri } = format;
-        html += `<a href="${escapeHtml(linkUri)}">${escapeHtml(showText ?? linkUri)}</a>`;
-        break;
+    try {
+      switch (format.type) {
+        case 'bold':
+          html += `<strong>${escapeHtml(text)}</strong>`;
+          break;
+        case 'italic':
+          html += `<em>${escapeHtml(text)}</em>`;
+          break;
+        case 'strikeThrough':
+          html += `<s>${escapeHtml(text)}</s>`;
+          break;
+        case 'snippet':
+          html += `<span style="font-family: monospace;">${escapeHtml(text)}</span>`;
+          break;
+        case 'secret':
+          html += `<span class="secret">${escapeHtml(text)}</span>`;
+          break;
+        case 'colored':
+          html += `<span style="color: ${format.color};">${escapeHtml(text)}</span>`;
+          break;
+        case 'uri':
+          let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;
+          html += `<a href="${href}"${targetBlank(href)}>${escapeHtml(text)}</a>`;
+          break;
+        case 'hyperLink': {
+          const { showText, linkUri } = format;
+          html += `<a href="${linkUri}"${targetBlank(linkUri)}>${escapeHtml(showText ?? linkUri)}</a>`;
+          break;
+        }
+        case 'simplexLink': {
+          const { showText, linkType, simplexUri, smpHosts } = format;
+          const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
+          // TODO replace simplexUri on desktop with the link on server domain or in simplex.chat domain
+          html += `<a href="${simplexUri}">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
+          break;
+        }
+        case 'command':
+          html += `<span style="font-family: monospace;">${escapeHtml(text)}</span>`;
+          break;
+        case 'mention':
+          html += `<strong>${escapeHtml(text)}</strong>`;
+          break;
+        case 'email':
+          html += `<a href="mailto:${text}">${escapeHtml(text)}</a>`;
+          break;
+        case 'phone':
+          html += `<a href="tel:${text}">${escapeHtml(text)}</a>`;
+          break;
+        case 'unknown':
+          html += escapeHtml(text);
+          break;
+        default:
+          html += escapeHtml(text);
       }
-      case 'simplexLink': {
-        const { showText, linkType, simplexUri, smpHosts } = format;
-        const desc = getSimplexLinkDescr(linkType);
-        // TODO replace simplexUri on desktop with the link on server domain or in simplex.chat domain
-        html += `<a href="${escapeHtml(simplexUri)}">${escapeHtml(showText ?? desc) + ` (${viaHost(smpHosts)})`}</a>`;
-        break;
-      }
-      case 'command':
-        html += `<span style="font-family: monospace;">${escapeHtml(text)}</span>`;
-        break;
-      case 'mention':
-        html += `<strong>${escapeHtml(text)}</strong>`;
-        break;
-      case 'email':
-        html += `<a href="mailto:${escapeHtml(text)}">${escapeHtml(text)}</a>`;
-        break;
-      case 'phone':
-        html += `<a href="tel:${escapeHtml(text)}">${escapeHtml(text)}</a>`;
-        break;
-      case 'unknown':
-        html += escapeHtml(text);
-        break;
-      default:
-        html += escapeHtml(text);
+    } catch {
+      html += escapeHtml(text);
     }
   }
   return html;
