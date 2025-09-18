@@ -457,10 +457,12 @@ executable simplex-directory-service
       Directory.BlockedWords
       Directory.Captcha
       Directory.Events
+      Directory.Listing
       Directory.Options
       Directory.Search
       Directory.Service
       Directory.Store
+      Directory.Util
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
@@ -468,9 +470,11 @@ executable simplex-directory-service
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
+    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , containers ==0.6.*
     , directory ==1.3.*
+    , filepath ==1.4.*
     , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
     , process >=1.6 && <1.6.18
@@ -539,10 +543,12 @@ test-suite simplex-chat-test
       Directory.BlockedWords
       Directory.Captcha
       Directory.Events
+      Directory.Listing
       Directory.Options
       Directory.Search
       Directory.Service
       Directory.Store
+      Directory.Util
       Paths_simplex_chat
   if flag(client_postgres)
       other-modules:

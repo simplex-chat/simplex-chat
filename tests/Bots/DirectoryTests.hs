@@ -12,8 +12,10 @@ import ChatTests.Utils
 import Control.Concurrent (forkIO, killThread, threadDelay)
 import Control.Exception (finally)
 import Control.Monad (forM_, when)
+import qualified Data.Aeson as J
 import qualified Data.Text as T
 import Directory.Captcha
+import Directory.Listing
 import Directory.Options
 import Directory.Service
 import Directory.Store
@@ -65,8 +67,8 @@ directoryServiceTests = do
     it "should prohibit confirmation if a duplicate group is listed" testDuplicateProhibitConfirmation
     it "should prohibit when profile is updated and not send for approval" testDuplicateProhibitWhenUpdated
     it "should prohibit approval if a duplicate group is listed" testDuplicateProhibitApproval
-  describe "list groups" $ do
-    it "should list user's groups" testListUserGroups
+  describe "list and promote groups" $ do
+    it "should list and promote user's groups" $ testListUserGroups True
   describe "member admission" $ do
     it "should ask member to pass captcha screen" testCapthaScreening
   describe "store log" $ do
@@ -77,8 +79,8 @@ directoryServiceTests = do
 directoryProfile :: Profile
 directoryProfile = Profile {displayName = "SimpleX Directory", fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
 
-mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> DirectoryOpts
-mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
+mkDirectoryOpts :: TestParams -> [KnownContact] -> Maybe KnownGroup -> Maybe FilePath -> DirectoryOpts
+mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
   DirectoryOpts
     { coreOptions =
         testCoreOpts
@@ -104,6 +106,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
       serviceName = "SimpleX Directory",
       runCLI = False,
       searchResults = 3,
+      webFolder,
       testing = True
     }
 
@@ -531,7 +534,7 @@ testSearchGroups ps =
 
 testInviteToOwnersGroup :: HasCallStack => TestParams -> IO ()
 testInviteToOwnersGroup ps =
-  withDirectoryServiceCfgOwnersGroup ps testCfg True $ \superUser dsLink ->
+  withDirectoryServiceCfgOwnersGroup ps testCfg True Nothing $ \superUser dsLink ->
     withNewTestChatCfg ps testCfg "bob" bobProfile $ \bob -> do
       bob `connectVia` dsLink
       registerGroupId superUser bob "privacy" "Privacy" 2 1
@@ -1060,14 +1063,15 @@ testDuplicateProhibitApproval ps =
         superUser <# ("'SimpleX Directory'> > " <> approve)
         superUser <## "      The group ID 2 (privacy) is already listed in the directory."
 
-testListUserGroups :: HasCallStack => TestParams -> IO ()
-testListUserGroups ps =
-  withDirectoryService ps $ \superUser dsLink ->
+testListUserGroups :: HasCallStack => Bool -> TestParams -> IO ()
+testListUserGroups promote ps =
+  withDirectoryServiceCfgOwnersGroup ps testCfg False (Just "./tests/tmp/web") $ \superUser dsLink ->
     withNewTestChat ps "bob" bobProfile $ \bob ->
       withNewTestChat ps "cath" cathProfile $ \cath -> do
         bob `connectVia` dsLink
         cath `connectVia` dsLink
         registerGroup superUser bob "privacy" "Privacy"
+        checkListings ["privacy"] []
         connectUsers bob cath
         fullAddMember "privacy" "Privacy" bob cath GRMember
         joinGroup "privacy" cath bob
@@ -1075,7 +1079,9 @@ testListUserGroups ps =
         cath <## "contact and member are merged: 'SimpleX Directory', #privacy 'SimpleX Directory_1'"
         cath <## "use @'SimpleX Directory' <message> to send messages"
         registerGroupId superUser bob "security" "Security" 2 2
+        checkListings ["privacy", "security"] []
         registerGroupId superUser cath "anonymity" "Anonymity" 3 1
+        checkListings ["privacy", "security", "anonymity"] []
         listUserGroup cath "anonymity" "Anonymity"
         -- with de-listed group
         groupFound cath "anonymity"
@@ -1085,8 +1091,51 @@ testListUserGroups ps =
         cath <## ""
         cath <## "The group is no longer listed in the directory."
         superUser <# "'SimpleX Directory'> The group ID 3 (anonymity) is de-listed (SimpleX Directory role is changed to member)."
+        checkListings ["privacy", "security"] []
         groupNotFound cath "anonymity"
         listGroups superUser bob cath
+        when promote $ do
+          superUser #> "@'SimpleX Directory' /promote 1:privacy on"
+          superUser <# "'SimpleX Directory'> > /promote 1:privacy on"
+          superUser <## "      Group promotion enabled."
+          checkListings ["privacy", "security"] ["privacy"]
+          bob ##> "/gp privacy privacy"
+          bob <## "description removed"
+          bob <# "'SimpleX Directory'> The group ID 1 (privacy) is updated!"
+          bob <## "It is hidden from the directory until approved."
+          cath <## "bob updated group #privacy:"
+          cath <## "description removed"
+          superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated."
+          superUser <# "'SimpleX Directory'> bob submitted the group ID 1:"
+          superUser <## "privacy"
+          superUser <## "Welcome message:"
+          superUser <##. "Link to join the group privacy: https://localhost/g#"
+          superUser <## "3 members"
+          superUser <## ""
+          superUser <## "To approve send:"
+          superUser <# "'SimpleX Directory'> /approve 1:privacy 1 promote=on"
+          checkListings ["security"] []
+          superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
+          superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
+          superUser <## "      Group approved!"
+          bob <# "'SimpleX Directory'> The group ID 1 (privacy) is approved and listed in directory - please moderate it!"
+          bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
+          bob <## ""
+          bob <## "Supported commands:"
+          bob <## "/'filter 1' - to configure anti-spam filter."
+          bob <## "/'role 1' - to set default member role."
+          bob <## "/'link 1' - to view/upgrade group link."
+          checkListings ["privacy", "security"] ["privacy"]
+
+checkListings :: [T.Text] -> [T.Text] -> IO ()
+checkListings listed promoted = do
+  checkListing listingFileName listed
+  checkListing promotedFileName promoted
+  where
+    checkListing f expected = do
+      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web" </> f
+      map groupName gs `shouldBe` expected
+    groupName DirectoryEntry {displayName} = displayName
 
 testCapthaScreening :: HasCallStack => TestParams -> IO ()
 testCapthaScreening ps =
@@ -1176,7 +1225,7 @@ testCapthaScreening ps =
 
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
-  testListUserGroups ps
+  testListUserGroups False ps
   restoreDirectoryService ps 3 3 $ \superUser _dsLink ->
     withTestChat ps "bob" $ \bob ->
       withTestChat ps "cath" $ \cath -> do
@@ -1294,10 +1343,10 @@ withDirectoryService :: HasCallStack => TestParams -> (TestCC -> String -> IO ()
 withDirectoryService ps = withDirectoryServiceCfg ps testCfg
 
 withDirectoryServiceCfg :: HasCallStack => TestParams -> ChatConfig -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False
+withDirectoryServiceCfg ps cfg = withDirectoryServiceCfgOwnersGroup ps cfg False Nothing
 
-withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup test = do
+withDirectoryServiceCfgOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
   dsLink <-
     withNewTestChatCfg ps cfg serviceDbPrefix directoryProfile $ \ds ->
       withNewTestChatCfg ps cfg "super_user" aliceProfile $ \superUser -> do
@@ -1315,7 +1364,7 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup test = do
           superUser <## "#owners: 'SimpleX Directory' joined the group"
         ds ##> "/ad"
         getContactLink ds True
-  withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup test
+  withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test
 
 restoreDirectoryService :: HasCallStack => TestParams -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
 restoreDirectoryService ps ctCount grCount test = do
@@ -1332,11 +1381,11 @@ restoreDirectoryService ps ctCount grCount test = do
   withDirectory ps testCfg dsLink test
 
 withDirectory :: HasCallStack => TestParams -> ChatConfig -> String -> (TestCC -> String -> IO ()) -> IO ()
-withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False
+withDirectory ps cfg dsLink = withDirectoryOwnersGroup ps cfg dsLink False Nothing
 
-withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> (TestCC -> String -> IO ()) -> IO ()
-withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup test = do
-  let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] $ if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing
+withDirectoryOwnersGroup :: HasCallStack => TestParams -> ChatConfig -> String -> Bool -> Maybe FilePath -> (TestCC -> String -> IO ()) -> IO ()
+withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
+  let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
   runDirectory cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
       superUser <## "1 contacts connected (use /cs for the list)"
