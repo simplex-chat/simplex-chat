@@ -228,7 +228,10 @@ html {
     font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
 }
 
-html, body { background:#000; }
+html,
+body {
+    background: #000;
+}
 
 .hidden {
     display: none !important;
