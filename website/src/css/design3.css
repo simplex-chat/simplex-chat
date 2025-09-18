@@ -1,0 +1,402 @@
+/* =======================
+    GT-Walsheim (WOFF2)
+    Family: "GT-Walsheim"
+    Weights mapped: Thin(100), Ultra-Light(200), Light(300), Regular(400),
+    Medium(500), Bold(700), Ultra-Bold(800), Black(900)
+======================= */
+
+/* Thin */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Trial.woff2") format("woff2");
+    font-weight: 100;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Oblique-Trial.woff2") format("woff2");
+    font-weight: 100;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Ultra-Light */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Trial.woff2") format("woff2");
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Oblique-Trial.woff2") format("woff2");
+    font-weight: 200;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Light */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Trial.woff2") format("woff2");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Oblique-Trial.woff2") format("woff2");
+    font-weight: 300;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Regular */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Trial.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Oblique-Trial.woff2") format("woff2");
+    font-weight: 400;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Medium */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Trial.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Oblique-Trial.woff2") format("woff2");
+    font-weight: 500;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Bold */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Trial.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Oblique-Trial.woff2") format("woff2");
+    font-weight: 700;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Ultra-Bold */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Trial.woff2") format("woff2");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Oblique-Trial.woff2") format("woff2");
+    font-weight: 800;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Black */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Trial.woff2") format("woff2");
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Oblique-Trial.woff2") format("woff2");
+    font-weight: 900;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* =======================
+    Manrope (TTF)
+    Family: "Manrope"
+    Weights mapped per name
+======================= */
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-ExtraLight.ttf") format("truetype");
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Light.ttf") format("truetype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-SemiBold.ttf") format("truetype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Bold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-ExtraBold.ttf") format("truetype");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
+    letter-spacing: 0.003em;
+}
+
+img {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+a {
+    word-wrap: break-word;
+}
+
+/* NEW SITE */
+.container,
+.container-fluid,
+.container-xxl,
+.container-xl,
+.container-lg,
+.container-md,
+.container-sm {
+    width: 100%;
+    /* padding: 0 20px; */
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (min-width: 576px) {
+
+    .container-sm,
+    .container {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+
+    .container-md,
+    .container-sm,
+    .container {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+
+    .container-xl,
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container {
+        max-width: 1140px;
+    }
+}
+
+@media (min-width: 1400px) {
+
+    .container-xxl,
+    .container-xl,
+    .container-lg,
+    .container-md,
+    .container-sm,
+    .container {
+        max-width: 1320px;
+    }
+}
+
+.gradient-text {
+    background: linear-gradient(90deg,
+            #019bfe 0%,
+            #64fdff 58%,
+            #c8feff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+
+/* Cover */
+section {
+    width: 100vw;
+    height: 100vh;
+    background-image: url("/img/design_3/cover.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+section div {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 35px;
+}
+
+.cover p.first {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 800;
+    font-size: 12rem;
+    letter-spacing: -0.025em;
+    line-height: 0.93;
+    text-align: center;
+    color: #ffffff;
+}
+
+.cover p.second {
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 400;
+    font-size: 2.84rem;
+    letter-spacing: -0.025em;
+    text-align: center;
+    color: #ffffff;
+}
+
+.cover p.third {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: 1.67rem;
+    text-align: center;
+    color: #ffffff;
+}
+
+
+/* Fullscreen Cover Section */
+section.cover {
+    width: 100vw;
+    height: 100vh;
+    background-image: url("/img/design_3/cover.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+
+section.cover div {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: clamp(20px, 4vw, 40px);
+}
+
+/* First line: "Be Free" */
+.cover p.first {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 800;
+    font-size: clamp(3rem, 12vw, 12rem);
+    line-height: 0.9;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+}
+
+/* Second line: Subtitle with gradient */
+.cover p.second {
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 400;
+    font-size: clamp(1.5rem, 3vw, 2.84rem);
+    letter-spacing: -0.025em;
+}
+
+/* Third line: Small description */
+.cover p.third {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: clamp(1rem, 2.25vw, 1.67rem);
+    align-items: center;
+    color: #ffffff;
+}
