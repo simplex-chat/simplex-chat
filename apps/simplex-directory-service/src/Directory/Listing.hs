@@ -23,6 +23,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
 import Directory.Store
+import Simplex.Chat.Markdown
 import Simplex.Chat.Types
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import System.Directory
@@ -47,8 +48,8 @@ $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "DET") ''DirectoryEntryType)
 data DirectoryEntry = DirectoryEntry
   { entryType :: DirectoryEntryType,
     displayName :: Text,
-    shortDescr :: Maybe Text,
-    welcomeMessage :: Maybe Text,
+    shortDescr :: Maybe MarkdownList,
+    welcomeMessage :: Maybe MarkdownList,
     imageFile :: Maybe String
   }
 
@@ -61,11 +62,19 @@ $(JQ.deriveJSON defaultJSON ''DirectoryListing)
 type ImageFileData = ByteString
 
 groupDirectoryEntry :: GroupInfoSummary -> (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry (GIS GroupInfo {groupId, groupProfile} summary) =
+groupDirectoryEntry (GIS GroupInfo {groupId, groupProfile} summary _) =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
       entryType = DETGroup memberAdmission summary
       imgData = imgFileData =<< image
-   in (DirectoryEntry {entryType, displayName, shortDescr, welcomeMessage = description, imageFile = fst <$> imgData}, imgData)
+      entry =
+        DirectoryEntry
+          { entryType,
+            displayName,
+            shortDescr = toFormattedText <$> shortDescr,
+            welcomeMessage = toFormattedText <$> description,
+            imageFile = fst <$> imgData
+          }
+   in (entry, imgData)
   where
     imgFileData (ImageData img) =
       let (img', imgExt) =
@@ -82,7 +91,7 @@ generateListing st dir gs = do
   gs' <- filterListedGroups st gs
   removePathForcibly (dir </> listingImageFolder)
   createDirectoryIfMissing True (dir </> listingImageFolder)
-  gs'' <- forM gs' $ \g@(GIS GroupInfo {groupId} _) -> do
+  gs'' <- forM gs' $ \g@(GIS GroupInfo {groupId} _ _) -> do
     let (g', img) = groupDirectoryEntry g
     forM_ img $ \(imgFile, imgData) -> B.writeFile (dir </> imgFile) imgData
     pure (groupId, g')
@@ -95,3 +104,6 @@ filterPromotedGroups :: DirectoryStore -> [(GroupId, DirectoryEntry)] -> IO [(Gr
 filterPromotedGroups st gs = do
   pgs <- readTVarIO $ promotedGroups st
   pure $ filter (\g -> fst g `S.member` pgs) gs
+
+toFormattedText :: Text -> MarkdownList
+toFormattedText t = fromMaybe [FormattedText Nothing t] $ parseMaybeMarkdownList t

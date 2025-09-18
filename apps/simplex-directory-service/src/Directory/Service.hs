@@ -54,7 +54,6 @@ import Simplex.Chat.Markdown (Format (..), FormattedText (..), parseMaybeMarkdow
 import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
-import Simplex.Chat.Store (GroupLink (..))
 import Simplex.Chat.Store.Direct (getContact)
 import Simplex.Chat.Store.Groups (getGroupInfo, getGroupLink, getGroupSummary, getUserGroupsWithSummary, setGroupCustomData)
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
@@ -301,7 +300,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     getDuplicateGroup GroupInfo {groupId, groupProfile = GroupProfile {displayName, fullName}} =
       getGroups fullName >>= mapM duplicateGroup
       where
-        sameGroupNotRemoved (GIS g@GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}} _) =
+        sameGroupNotRemoved (GIS g@GroupInfo {groupId = gId, groupProfile = GroupProfile {displayName = n, fullName = fn}} _ _) =
           gId /= groupId && n == displayName && fn == fullName && not (memberRemoved $ membership g)
         duplicateGroup [] = pure DGUnique
         duplicateGroup groups = do
@@ -310,13 +309,13 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             then pure DGUnique
             else do
               (lgs, rgs) <- atomically $ (,) <$> readTVar (listedGroups st) <*> readTVar (reservedGroups st)
-              let reserved = any (\(GIS GroupInfo {groupId = gId} _) -> gId `S.member` lgs || gId `S.member` rgs) gs
+              let reserved = any (\(GIS GroupInfo {groupId = gId} _ _) -> gId `S.member` lgs || gId `S.member` rgs) gs
               if reserved
                 then pure DGReserved
                 else do
                   removed <- foldM (\r -> fmap (r &&) . isGroupRemoved) True gs
                   pure $ if removed then DGUnique else DGRegistered
-        isGroupRemoved (GIS GroupInfo {groupId = gId} _) =
+        isGroupRemoved (GIS GroupInfo {groupId = gId} _ _) =
           getGroupReg st gId >>= \case
             Just GroupReg {groupRegStatus} -> groupRemoved <$> readTVarIO groupRegStatus
             Nothing -> pure True
@@ -925,7 +924,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GIS GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}} GroupSummary {currentMembers}) =
+            foundGroup (GIS GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}} GroupSummary {currentMembers} _) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
                   text = showId <> groupInfoText p <> "\n" <> membersStr
