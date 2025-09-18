@@ -1,0 +1,46 @@
+---
+layout: layouts/main.html
+title: "SimpleX Directory"
+description: "Find communities on SimpleX network and create your own"
+templateEngineOverride: njk
+---
+
+{% set lang = page.url | getlang %}
+{% block js_scripts %}
+<script src="/js/flag-anchor.js"></script>
+<script async defer src="/js/directory.js"></script>
+{% endblock %}
+
+<style>
+  .entry {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 16px;
+    border: 1px solid #ccc;
+    border-radius: 40px;
+  }
+
+  .entry img {
+    order: -1;
+    /* Moves the image to the left */
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 24px;
+    margin-right: 16px;
+  }
+
+  .entry h2 {
+    margin: 0 0 5px 0;
+  }
+
+  .entry p {
+    margin: 0 0 5px 0;
+  }
+</style>
+
+<section class="py-10 px-8 mt-[66px]">
+  <h1>SimpleX Directory</h1>
+  <div id="directory"></div>
+</section>
