@@ -1592,7 +1592,7 @@
     <string name="unable_to_open_browser_title">Chyba otevření prohlížeče</string>
     <string name="profile_update_event_removed_picture">odstraněn profilový obrázek</string>
     <string name="profile_update_event_set_new_address">nastavit novou kontaktní adresu</string>
-    <string name="profile_update_event_set_new_picture">nastavit nový profilový obrázek</string>
+    <string name="profile_update_event_set_new_picture">nastavil nový profilový obrázek</string>
     <string name="saved_message_title">Uložené zprávy</string>
     <string name="possible_slow_function_title">Pomalá funkce</string>
     <string name="note_folder_local_display_name">Soukromé poznámky</string>
