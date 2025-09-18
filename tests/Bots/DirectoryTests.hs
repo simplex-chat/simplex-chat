@@ -104,6 +104,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup =
       serviceName = "SimpleX Directory",
       runCLI = False,
       searchResults = 3,
+      webFolder = Nothing,
       testing = True
     }
 
