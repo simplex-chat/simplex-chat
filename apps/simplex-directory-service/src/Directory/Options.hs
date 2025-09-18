@@ -33,6 +33,7 @@ data DirectoryOpts = DirectoryOpts
     serviceName :: T.Text,
     runCLI :: Bool,
     searchResults :: Int,
+    webFolder :: Maybe FilePath,
     testing :: Bool
   }
 
@@ -124,6 +125,13 @@ directoryOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run directory service as CLI"
       )
+  webFolder <-
+    optional $
+      strOption
+        ( long "web-folder"
+            <> metavar "WEB_FOLDER"
+            <> help "Folder to store static web assets"
+        )
   pure
     DirectoryOpts
       { coreOptions,
@@ -140,6 +148,7 @@ directoryOpts appDir defaultDbName = do
         serviceName = T.pack serviceName,
         runCLI,
         searchResults = 10,
+        webFolder,
         testing = False
       }
 

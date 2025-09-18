@@ -13,11 +13,14 @@ module Directory.Store
     GroupApprovalId,
     DirectoryGroupData (..),
     DirectoryMemberAcceptance (..),
+    DirectoryStatus (..),
     ProfileCondition (..),
     restoreDirectoryStore,
     addGroupReg,
     delGroupReg,
-    setGroupStatus,
+    setGroupStatusStore,
+    setGroupPromotedStore,
+    grDirectoryStatus,
     setGroupRegOwner,
     getGroupReg,
     getUserGroupReg,
@@ -31,13 +34,14 @@ module Directory.Store
     noJoinFilter,
     basicJoinFilter,
     moderateJoinFilter,
-    strongJoinFilter
+    strongJoinFilter,
   )
 where
 
+import Control.Applicative ((<|>))
 import Control.Concurrent.STM
 import Control.Monad
-import Data.Aeson ((.=), (.:))
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
@@ -55,15 +59,23 @@ import Data.Text (Text)
 import Simplex.Chat.Types
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
-import Simplex.Messaging.Util (ifM)
-import System.Directory (doesFileExist, renameFile)
+import Simplex.Messaging.Util (ifM, whenM)
+import System.Directory
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 data DirectoryStore = DirectoryStore
-  { groupRegs :: TVar [GroupReg],
-    listedGroups :: TVar (Set GroupId),
+  { groupRegs :: TVar [GroupReg], -- most recent first, reversed when listed
+    listedGroups :: TVar (Set GroupId), -- includes promoted
+    promotedGroups :: TVar (Set GroupId),
     reservedGroups :: TVar (Set GroupId),
     directoryLogFile :: Maybe Handle
+  }
+
+data DirectoryStoreData = DirectoryStoreData
+  { groupRegs_ :: [GroupReg],
+    listedGroups_ :: Set GroupId,
+    promotedGroups_ :: Set GroupId,
+    reservedGroups_ :: Set GroupId
   }
 
 data GroupReg = GroupReg
@@ -71,7 +83,8 @@ data GroupReg = GroupReg
     userGroupRegId :: UserGroupRegId,
     dbContactId :: ContactId,
     dbOwnerMemberId :: TVar (Maybe GroupMemberId),
-    groupRegStatus :: TVar GroupRegStatus
+    groupRegStatus :: TVar GroupRegStatus,
+    promoted :: TVar Bool
   }
 
 data GroupRegData = GroupRegData
@@ -79,7 +92,8 @@ data GroupRegData = GroupRegData
     userGroupRegId_ :: UserGroupRegId,
     dbContactId_ :: ContactId,
     dbOwnerMemberId_ :: Maybe GroupMemberId,
-    groupRegStatus_ :: GroupRegStatus
+    groupRegStatus_ :: GroupRegStatus,
+    promoted_ :: Bool
   }
 
 data DirectoryGroupData = DirectoryGroupData
@@ -140,7 +154,7 @@ data GroupRegStatus
   | GRSSuspended
   | GRSSuspendedBadRoles
   | GRSRemoved
-  deriving (Show)
+  deriving (Eq, Show)
 
 pendingApproval :: GroupRegStatus -> Bool
 pendingApproval = \case
@@ -153,6 +167,7 @@ groupRemoved = \case
   _ -> False
 
 data DirectoryStatus = DSListed | DSReserved | DSRegistered | DSRemoved
+  deriving (Eq)
 
 groupRegStatusText :: GroupRegStatus -> Text
 groupRegStatusText = \case
@@ -195,7 +210,7 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
   pure $ userGroupRegId_ grData
   where
     addGroupReg_ = do
-      let grData = GroupRegData {dbGroupId_ = groupId, userGroupRegId_ = 1, dbContactId_ = ctId, dbOwnerMemberId_ = Nothing, groupRegStatus_ = grStatus}
+      let grData = GroupRegData {dbGroupId_ = groupId, userGroupRegId_ = 1, dbContactId_ = ctId, dbOwnerMemberId_ = Nothing, groupRegStatus_ = grStatus, promoted_ = False}
       gr <- dataToGroupReg grData
       atomically $ stateTVar (groupRegs st) $ \grs ->
         let ugrId = 1 + foldl' maxUgrId 0 grs
@@ -208,24 +223,37 @@ addGroupReg st ct GroupInfo {groupId} grStatus = do
       | otherwise = mx
 
 delGroupReg :: DirectoryStore -> GroupReg -> IO ()
-delGroupReg st GroupReg {dbGroupId = gId, groupRegStatus} = do
+delGroupReg st gr@GroupReg {dbGroupId = gId, groupRegStatus} = do
   logGDelete st gId
   atomically $ writeTVar groupRegStatus GRSRemoved
-  atomically $ unlistGroup st gId
+  atomically $ unlistGroup st gr
   atomically $ modifyTVar' (groupRegs st) $ filter ((gId /=) . dbGroupId)
 
-setGroupStatus :: DirectoryStore -> GroupReg -> GroupRegStatus -> IO ()
-setGroupStatus st gr grStatus = do
-  logGUpdateStatus st (dbGroupId gr) grStatus
+setGroupStatusStore :: DirectoryStore -> GroupReg -> GroupRegStatus -> IO DirectoryStatus
+setGroupStatusStore st gr grStatus' = do
+  logGUpdateStatus st (dbGroupId gr) grStatus'
   atomically $ do
-    writeTVar (groupRegStatus gr) grStatus
-    updateListing st $ dbGroupId gr
+    grStatus <- swapTVar (groupRegStatus gr) grStatus'
+    updateListing st gr
+    pure $ grDirectoryStatus grStatus
   where
-    updateListing = case grDirectoryStatus grStatus of
+    status' = grDirectoryStatus grStatus'
+    updateListing = case status' of
       DSListed -> listGroup
       DSReserved -> reserveGroup
       DSRegistered -> unlistGroup
       DSRemoved -> unlistGroup
+
+setGroupPromotedStore :: DirectoryStore -> GroupReg -> Bool -> IO (DirectoryStatus, Bool)
+setGroupPromotedStore st gr grPromoted' = do
+  let gId = dbGroupId gr
+  logGUpdatePromotion st gId grPromoted'
+  atomically $ do
+    grPromoted <- swapTVar (promoted gr) grPromoted'
+    status <- grDirectoryStatus <$> readTVar (groupRegStatus gr)
+    let update = if status == DSListed && grPromoted' then S.insert else S.delete
+    modifyTVar' (promotedGroups st) $ update gId
+    pure (status, grPromoted)
 
 setGroupRegOwner :: DirectoryStore -> GroupReg -> GroupMember -> IO ()
 setGroupRegOwner st gr owner = do
@@ -247,31 +275,39 @@ filterListedGroups st gs = do
   lgs <- readTVarIO $ listedGroups st
   pure $ filter (\(GIS GroupInfo {groupId} _) -> groupId `S.member` lgs) gs
 
-listGroup :: DirectoryStore -> GroupId -> STM ()
-listGroup st gId = do
+listGroup :: DirectoryStore -> GroupReg -> STM ()
+listGroup st gr = do
+  let gId = dbGroupId gr
   modifyTVar' (listedGroups st) $ S.insert gId
+  whenM (readTVar $ promoted gr) $ modifyTVar' (promotedGroups st) $ S.insert gId
   modifyTVar' (reservedGroups st) $ S.delete gId
 
-reserveGroup :: DirectoryStore -> GroupId -> STM ()
-reserveGroup st gId = do
+reserveGroup :: DirectoryStore -> GroupReg -> STM ()
+reserveGroup st gr = do
+  let gId = dbGroupId gr
   modifyTVar' (listedGroups st) $ S.delete gId
+  modifyTVar' (promotedGroups st) $ S.delete gId
   modifyTVar' (reservedGroups st) $ S.insert gId
 
-unlistGroup :: DirectoryStore -> GroupId -> STM ()
-unlistGroup st gId = do
+unlistGroup :: DirectoryStore -> GroupReg -> STM ()
+unlistGroup st gr = do
+  let gId = dbGroupId gr
   modifyTVar' (listedGroups st) $ S.delete gId
+  modifyTVar' (promotedGroups st) $ S.delete gId
   modifyTVar' (reservedGroups st) $ S.delete gId
 
 data DirectoryLogRecord
   = GRCreate GroupRegData
   | GRDelete GroupId
   | GRUpdateStatus GroupId GroupRegStatus
+  | GRUpdatePromotion GroupId Bool
   | GRUpdateOwner GroupId GroupMemberId
 
 data DLRTag
   = GRCreate_
   | GRDelete_
   | GRUpdateStatus_
+  | GRUpdatePromotion_
   | GRUpdateOwner_
 
 logDLR :: DirectoryStore -> DirectoryLogRecord -> IO ()
@@ -286,6 +322,9 @@ logGDelete st = logDLR st . GRDelete
 logGUpdateStatus :: DirectoryStore -> GroupId -> GroupRegStatus -> IO ()
 logGUpdateStatus st gId = logDLR st . GRUpdateStatus gId
 
+logGUpdatePromotion :: DirectoryStore -> GroupId -> Bool -> IO ()
+logGUpdatePromotion st gId = logDLR st . GRUpdatePromotion gId
+
 logGUpdateOwner :: DirectoryStore -> GroupId -> GroupMemberId -> IO ()
 logGUpdateOwner st gId = logDLR st . GRUpdateOwner gId
 
@@ -294,12 +333,14 @@ instance StrEncoding DLRTag where
     GRCreate_ -> "GCREATE"
     GRDelete_ -> "GDELETE"
     GRUpdateStatus_ -> "GSTATUS"
+    GRUpdatePromotion_ -> "GPROMOTE"
     GRUpdateOwner_ -> "GOWNER"
   strP =
     A.takeTill (== ' ') >>= \case
       "GCREATE" -> pure GRCreate_
       "GDELETE" -> pure GRDelete_
       "GSTATUS" -> pure GRUpdateStatus_
+      "GPROMOTE" -> pure GRUpdatePromotion_
       "GOWNER" -> pure GRUpdateOwner_
       _ -> fail "invalid DLRTag"
 
@@ -308,30 +349,34 @@ instance StrEncoding DirectoryLogRecord where
     GRCreate gr -> strEncode (GRCreate_, gr)
     GRDelete gId -> strEncode (GRDelete_, gId)
     GRUpdateStatus gId grStatus -> strEncode (GRUpdateStatus_, gId, grStatus)
+    GRUpdatePromotion gId promoted -> strEncode (GRUpdatePromotion_, gId, promoted)
     GRUpdateOwner gId grOwnerId -> strEncode (GRUpdateOwner_, gId, grOwnerId)
   strP =
     strP_ >>= \case
       GRCreate_ -> GRCreate <$> strP
       GRDelete_ -> GRDelete <$> strP
       GRUpdateStatus_ -> GRUpdateStatus <$> A.decimal <*> _strP
+      GRUpdatePromotion_ -> GRUpdatePromotion <$> A.decimal <*> _strP
       GRUpdateOwner_ -> GRUpdateOwner <$> A.decimal <* A.space <*> A.decimal
 
 instance StrEncoding GroupRegData where
-  strEncode GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_} =
-    B.unwords
+  strEncode GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_, promoted_} =
+    B.unwords $
       [ "group_id=" <> strEncode dbGroupId_,
         "user_group_id=" <> strEncode userGroupRegId_,
         "contact_id=" <> strEncode dbContactId_,
         "owner_member_id=" <> strEncode dbOwnerMemberId_,
         "status=" <> strEncode groupRegStatus_
       ]
+        <> ["promoted=" <> strEncode promoted_ | promoted_]
   strP = do
     dbGroupId_ <- "group_id=" *> strP_
     userGroupRegId_ <- "user_group_id=" *> strP_
     dbContactId_ <- "contact_id=" *> strP_
     dbOwnerMemberId_ <- "owner_member_id=" *> strP_
     groupRegStatus_ <- "status=" *> strP
-    pure GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_}
+    promoted_ <- (" promoted=" *> strP) <|> pure False
+    pure GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_, promoted_}
 
 instance StrEncoding GroupRegStatus where
   strEncode = \case
@@ -356,16 +401,18 @@ instance StrEncoding GroupRegStatus where
       _ -> fail "invalid GroupRegStatus"
 
 dataToGroupReg :: GroupRegData -> IO GroupReg
-dataToGroupReg GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_} = do
+dataToGroupReg GroupRegData {dbGroupId_, userGroupRegId_, dbContactId_, dbOwnerMemberId_, groupRegStatus_, promoted_} = do
   dbOwnerMemberId <- newTVarIO dbOwnerMemberId_
   groupRegStatus <- newTVarIO groupRegStatus_
+  promoted <- newTVarIO promoted_
   pure
     GroupReg
       { dbGroupId = dbGroupId_,
         userGroupRegId = userGroupRegId_,
         dbContactId = dbContactId_,
         dbOwnerMemberId,
-        groupRegStatus
+        groupRegStatus,
+        promoted
       }
 
 restoreDirectoryStore :: Maybe FilePath -> IO DirectoryStore
@@ -383,8 +430,8 @@ restoreDirectoryStore = \case
       h <- writeDirectoryData f grs -- compact
       mkDirectoryStore h grs
 
-emptyStoreData :: ([GroupReg], Set GroupId, Set GroupId)
-emptyStoreData = ([], S.empty, S.empty)
+emptyStoreData :: DirectoryStoreData
+emptyStoreData = DirectoryStoreData [] S.empty S.empty S.empty
 
 newDirectoryStore :: Maybe Handle -> IO DirectoryStore
 newDirectoryStore = (`mkDirectoryStore_` emptyStoreData)
@@ -393,21 +440,27 @@ mkDirectoryStore :: Handle -> [GroupRegData] -> IO DirectoryStore
 mkDirectoryStore h groups =
   foldM addGroupRegData emptyStoreData groups >>= mkDirectoryStore_ (Just h)
   where
-    addGroupRegData (!grs, !listed, !reserved) gr@GroupRegData {dbGroupId_ = gId} = do
+    addGroupRegData d gr@GroupRegData {dbGroupId_ = gId} = do
       gr' <- dataToGroupReg gr
-      let grs' = gr' : grs
+      let !grs' = gr' : groupRegs_ d
       pure $ case grDirectoryStatus $ groupRegStatus_ gr of
-        DSListed -> (grs', S.insert gId listed, reserved)
-        DSReserved -> (grs', listed, S.insert gId reserved)
-        DSRegistered -> (grs', listed, reserved)
-        DSRemoved -> (grs, listed, reserved)
+        DSListed ->
+          let !listed = S.insert gId $ listedGroups_ d
+              !promoted = (if promoted_ gr then S.insert gId else id) $ promotedGroups_ d
+           in d {groupRegs_ = grs', listedGroups_ = listed, promotedGroups_ = promoted}
+        DSReserved ->
+          let !reserved = S.insert gId $ reservedGroups_ d
+           in d {groupRegs_ = grs', reservedGroups_ = reserved}
+        DSRegistered -> d {groupRegs_ = grs'}
+        DSRemoved -> d
 
-mkDirectoryStore_ :: Maybe Handle -> ([GroupReg], Set GroupId, Set GroupId) -> IO DirectoryStore
-mkDirectoryStore_ h (grs, listed, reserved) = do
-  groupRegs <- newTVarIO grs
-  listedGroups <- newTVarIO listed
-  reservedGroups <- newTVarIO reserved
-  pure DirectoryStore {groupRegs, listedGroups, reservedGroups, directoryLogFile = h}
+mkDirectoryStore_ :: Maybe Handle -> DirectoryStoreData -> IO DirectoryStore
+mkDirectoryStore_ h d = do
+  groupRegs <- newTVarIO $ groupRegs_ d
+  listedGroups <- newTVarIO $ listedGroups_ d
+  promotedGroups <- newTVarIO $ promotedGroups_ d
+  reservedGroups <- newTVarIO $ reservedGroups_ d
+  pure DirectoryStore {groupRegs, listedGroups, promotedGroups, reservedGroups, directoryLogFile = h}
 
 readDirectoryData :: FilePath -> IO [GroupRegData]
 readDirectoryData f =
@@ -429,6 +482,9 @@ readDirectoryData f =
         GRUpdateStatus gId groupRegStatus_ -> case M.lookup gId m of
           Just gr -> pure $ M.insert gId gr {groupRegStatus_} m
           Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", status update ignored.")
+        GRUpdatePromotion gId promoted_ -> case M.lookup gId m of
+          Just gr -> pure $ M.insert gId gr {promoted_} m
+          Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", promotion update ignored.")
         GRUpdateOwner gId grOwnerId -> case M.lookup gId m of
           Just gr -> pure $ M.insert gId gr {dbOwnerMemberId_ = Just grOwnerId} m
           Nothing -> m <$ putStrLn ("Warning: no group with ID " <> show gId <> ", owner update ignored.")
