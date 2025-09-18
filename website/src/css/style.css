@@ -1,3 +1,194 @@
+/* =======================
+  GT-Walsheim (WOFF2)
+  Family: "GT-Walsheim"
+  Weights mapped: Thin(100), Ultra-Light(200), Light(300), Regular(400),
+  Medium(500), Bold(700), Ultra-Bold(800), Black(900)
+======================= */
+
+/* Thin */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Trial.woff2") format("woff2");
+  font-weight: 100;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Oblique-Trial.woff2") format("woff2");
+  font-weight: 100;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Ultra-Light */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Trial.woff2") format("woff2");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Oblique-Trial.woff2") format("woff2");
+  font-weight: 200;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Light */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Trial.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Oblique-Trial.woff2") format("woff2");
+  font-weight: 300;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Regular */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Trial.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Oblique-Trial.woff2") format("woff2");
+  font-weight: 400;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Medium */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Trial.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Oblique-Trial.woff2") format("woff2");
+  font-weight: 500;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Bold */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Trial.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Oblique-Trial.woff2") format("woff2");
+  font-weight: 700;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Ultra-Bold */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Trial.woff2") format("woff2");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Oblique-Trial.woff2") format("woff2");
+  font-weight: 800;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Black */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Trial.woff2") format("woff2");
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Oblique-Trial.woff2") format("woff2");
+  font-weight: 900;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* =======================
+  Manrope (TTF)
+  Family: "Manrope"
+  Weights mapped per name
+======================= */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: Gilroy;
   src: url("/fonts/GilroyRegular/font.woff2") format("woff2"), url("webFonts/GilroyRegular/font.woff") format("woff");
@@ -35,7 +226,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-family: Gilroy, Helvetica, sans-serif;;
+  font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;;
   letter-spacing: 0.003em;
 }
 
