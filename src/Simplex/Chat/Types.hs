@@ -470,6 +470,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
+    -- groupType :: GroupType, -- TODO [channels fwd] add discriminator for channels/groups
     useRelays :: Bool,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
@@ -491,6 +492,27 @@ data GroupInfo = GroupInfo
     viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
+
+-- TODO [channels fwd] should be inferred from ContactConnType of group link
+-- TODO   - data ContactConnType = ... | CCTChannel | CCTGroup | ...
+-- TODO   - or part of ConnLinkData?
+data GroupType
+  = GTGroup
+  | GTChannel
+  deriving (Eq, Show)
+
+instance TextEncoding GroupType where
+  textEncode = \case
+    GTGroup -> "group"
+    GTChannel -> "channel"
+  textDecode = \case
+    "group" -> Just GTGroup
+    "channel" -> Just GTChannel
+    _ -> Nothing
+
+instance FromField GroupType where fromField = fromTextField_ textDecode
+
+instance ToField GroupType where toField = toField . textEncode
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -1002,6 +1024,11 @@ data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile
 groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
+
+-- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
+-- TODO   - in channels members should directly connect only to relays
+isMemberRelay :: GroupMember -> Bool
+isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -2062,6 +2089,8 @@ $(JQ.deriveJSON defaultJSON ''GroupMember)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
+
+$(JQ.deriveJSON (enumJSON $ dropPrefix "GT") ''GroupType)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
