@@ -132,6 +132,10 @@ function displayEntries(entries) {
   }
 }
 
+function goToPage(p) {
+  location.hash = p > 1 ? p.toString() : '';
+}
+
 function addPagination(entries) {
   const entriesPerPage = 10;
   const totalPages = Math.ceil(entries.length / entriesPerPage);
@@ -167,9 +171,7 @@ function addPagination(entries) {
       const firstBtn = document.createElement('button');
       firstBtn.textContent = 'First';
       firstBtn.classList.add('text-btn');
-      firstBtn.addEventListener('click', () => {
-        location.hash = 1;
-      });
+      firstBtn.addEventListener('click', () => goToPage(1));
       pagination.appendChild(firstBtn);
     }
 
@@ -177,9 +179,7 @@ function addPagination(entries) {
       const prevBtn = document.createElement('button');
       prevBtn.textContent = 'Prev';
       prevBtn.classList.add('text-btn');
-      prevBtn.addEventListener('click', () => {
-        location.hash = currentPage - 1;
-      });
+      prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
       pagination.appendChild(prevBtn);
     }
 
@@ -191,11 +191,7 @@ function addPagination(entries) {
       } else if (p === currentPage - 1 || p === currentPage + 1) {
         pageBtn.classList.add('neighbor');
       }
-      pageBtn.addEventListener('click', () => {
-        if (p !== currentPage) {
-          location.hash = p;
-        }
-      });
+      pageBtn.addEventListener('click', () => goToPage(p));
       pagination.appendChild(pageBtn);
     }
 
@@ -203,9 +199,7 @@ function addPagination(entries) {
       const nextBtn = document.createElement('button');
       nextBtn.textContent = 'Next';
       nextBtn.classList.add('text-btn');
-      nextBtn.addEventListener('click', () => {
-        location.hash = currentPage + 1;
-      });
+      nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
       pagination.appendChild(nextBtn);
     }
 
@@ -213,9 +207,7 @@ function addPagination(entries) {
       const lastBtn = document.createElement('button');
       lastBtn.textContent = 'Last';
       lastBtn.classList.add('text-btn');
-      lastBtn.addEventListener('click', () => {
-        location.hash = totalPages;
-      });
+      lastBtn.addEventListener('click', () => goToPage(totalPages));
       pagination.appendChild(lastBtn);
     }
 
