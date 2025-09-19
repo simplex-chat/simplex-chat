@@ -203,6 +203,15 @@
     font-display: swap;
 }
 
+:root {
+    --bg-grad: linear-gradient(10deg,
+            #000000 0%,
+            #131d49 55%,
+            #3f5598 70%,
+            #c3faff 90%,
+            #fff6e0 100%);
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -301,60 +310,22 @@ a {
     color: transparent;
 }
 
+.screen {
+    height: 100vh;
+    overflow-y: scroll;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+}
 
-/* Cover */
 section {
     width: 100vw;
     height: 100vh;
-    background-image: url("/img/design_3/cover.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    position: relative;
+    scroll-snap-align: start;
 }
 
-section div {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    gap: 35px;
-}
-
-.cover p.first {
-    font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 800;
-    font-size: 12rem;
-    letter-spacing: -0.025em;
-    line-height: 0.93;
-    text-align: center;
-    color: #ffffff;
-}
-
-.cover p.second {
-    font-family: "GT-Walsheim", "Manrope", sans-serif;
-    font-weight: 400;
-    font-size: 2.84rem;
-    letter-spacing: -0.025em;
-    text-align: center;
-    color: #ffffff;
-}
-
-.cover p.third {
-    font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 200;
-    font-size: 1.67rem;
-    text-align: center;
-    color: #ffffff;
-}
-
-
-/* Fullscreen Cover Section */
+/* --- COVER --- */
 section.cover {
-    width: 100vw;
-    height: 100vh;
     background-image: url("/img/design_3/cover.jpg");
     background-size: cover;
     background-position: center;
@@ -366,7 +337,7 @@ section.cover {
     text-align: center;
 }
 
-section.cover div {
+section.cover div.content {
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -374,8 +345,7 @@ section.cover div {
     gap: clamp(20px, 4vw, 40px);
 }
 
-/* First line: "Be Free" */
-.cover p.first {
+.cover .content h1 {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 800;
     font-size: clamp(3rem, 12vw, 12rem);
@@ -384,19 +354,109 @@ section.cover div {
     color: #ffffff;
 }
 
-/* Second line: Subtitle with gradient */
-.cover p.second {
+.cover .content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 400;
     font-size: clamp(1.5rem, 3vw, 2.84rem);
     letter-spacing: -0.025em;
 }
 
-/* Third line: Small description */
-.cover p.third {
+.cover .content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
     font-size: clamp(1rem, 2.25vw, 1.67rem);
     align-items: center;
     color: #ffffff;
+}
+
+/* --- MAIN SECTIONS --- */
+main {
+    position: relative;
+    isolation: isolate;
+}
+
+main .section-bg {
+    position: sticky;
+    top: 0;
+    /* Prefer 100svh (mobile-safe). Fallback 100vh for older browsers. */
+    height: 100vh;
+    height: 100svh;
+
+    /* Cancel its own layout height so content starts immediately "on" it */
+    margin-bottom: -100vh;
+    margin-bottom: -100svh;
+
+    background-image: var(--bg-grad);
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 0;
+    pointer-events: none;
+}
+
+main section .image {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.page-2 .image {
+    background-image: url("/img/design_3/token-31-02_webp.webp");
+}
+
+.page-3 .image {
+    background-image: url("/img/design_3/token-31-03_webp.webp");
+}
+
+.page-4 .image {
+    background-image: url("/img/design_3/token-31-04_webp.webp");
+}
+
+.text-container {
+    position: relative;
+    color: white;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 2.5rem;
+    margin-right: auto;
+    padding-left: 8rem;
+    width: fit-content;
+}
+
+.text-container h2 {
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 400;
+    font-size: clamp(2.5rem, 8vw, 5.6rem);
+    letter-spacing: -0.025em;
+}
+
+.text-container p {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: clamp(1rem, 2.25vw, 1.84rem);
+}
+
+.text-container p span {
+    font-weight: 400;
+}
+
+.text-container a {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: clamp(1rem, 2.25vw, 1.84rem);
+    text-decoration: underline;
+    text-decoration-line: underline;
+    text-decoration-thickness: 0.5px;
+    text-underline-offset: 4px;
+}
+
+.page-3 .text-container,
+.page-4 .text-container {
+    margin-right: 8rem;
+    margin-left: auto;
 }
