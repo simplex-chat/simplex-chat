@@ -220,7 +220,8 @@ processAgentMsgSndFile _corrId aFileId msg = do
                         Nothing -> eToView $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
-                      ms <- withStore' $ \db -> getGroupMembers db vr user g
+                      -- TODO [channels fwd] single description for all recipients
+                      ms <- getRecipients
                       let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
                           extraRFDs = drop (length rfdsMemberFTs) rfds
                       withStore' $ \db -> createExtraSndFTDescrs db user fileId (map fileDescrText extraRFDs)
@@ -232,6 +233,9 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
+                        getRecipients
+                          | useRelays g = withStore' $ \db -> getGroupRelays db vr user g
+                          | otherwise = withStore' $ \db -> getGroupMembers db vr user g
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
                           where
@@ -3281,8 +3285,12 @@ deleteGroupConnections :: User -> GroupInfo -> Bool -> CM ()
 deleteGroupConnections user gInfo waitDelivery = do
   vr <- chatVersionRange
   -- member records are not deleted to keep history
-  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  members <- getMembers vr
   deleteMembersConnections' user members waitDelivery
+  where
+    getMembers vr
+      | useRelays gInfo = withStore' $ \db -> getGroupRelays db vr user gInfo
+      | otherwise = withStore' $ \db -> getGroupMembers db vr user gInfo
 
 startDeliveryTaskWorkers :: CM ()
 startDeliveryTaskWorkers = do

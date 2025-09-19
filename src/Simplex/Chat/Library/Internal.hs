@@ -1393,31 +1393,30 @@ getChatScopeInfo vr user = \case
     supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
     pure $ GCSIMemberSupport (Just supportMem)
 
--- TODO [knocking] refactor to GroupChatScope -> "a" function, "a" is some new type? Or possibly split to get scope/get recipients steps
-getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScope -> VersionChat -> CM (Maybe GroupChatScopeInfo, [GroupMember])
-getGroupRecipients vr user gInfo@GroupInfo {membership} scope modsCompatVersion = case scope of
-  Nothing -> do
-    unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
-    ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
-    let recipients = filter memberCurrent ms
-    pure (Nothing, recipients)
-  Just (GCSMemberSupport Nothing) -> do
-    modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
-    let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
-    when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
-    let scopeInfo = GCSIMemberSupport Nothing
-    pure (Just scopeInfo, rcpModMs')
-  Just (GCSMemberSupport (Just gmId)) -> do
-    unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
-    supportMem <- withFastStore $ \db -> getGroupMemberById db vr user gmId
-    unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
-    let scopeInfo = GCSIMemberSupport (Just supportMem)
-    if memberStatus supportMem == GSMemPendingApproval
-      then pure (Just scopeInfo, [supportMem])
-      else do
+getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> VersionChat -> CM [GroupMember]
+getGroupRecipients vr user gInfo@GroupInfo {useRelays, membership} scopeInfo modsCompatVersion
+  | useRelays && not (isMemberRelay membership) = do
+      unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+      withFastStore' $ \db -> getGroupRelays db vr user gInfo
+  | otherwise = case scopeInfo of
+      Nothing -> do
+        unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+        ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
+        pure $ filter memberCurrent ms
+      Just (GCSIMemberSupport Nothing) -> do
         modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
         let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
-        pure (Just scopeInfo, [supportMem] <> rcpModMs')
+        when (null rcpModMs') $ throwChatError $ CECommandError "no admins support this message"
+        pure rcpModMs'
+      Just (GCSIMemberSupport (Just supportMem)) -> do
+        unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
+        unless (memberCurrentOrPending supportMem) $ throwChatError $ CECommandError "support member not current or pending"
+        if memberStatus supportMem == GSMemPendingApproval
+          then pure [supportMem]
+          else do
+            modMs <- withFastStore' $ \db -> getGroupModerators db vr user gInfo
+            let rcpModMs' = filter (\m -> compatible m && memberCurrent m) modMs
+            pure $ [supportMem] <> rcpModMs'
   where
     compatible GroupMember {activeConn, memberChatVRange} =
       maxVersion (maybe memberChatVRange peerChatVRange activeConn) >= modsCompatVersion
@@ -1976,16 +1975,15 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
--- TODO [channels fwd] optimization for channels - only retrieve relays for sending (getGroupRecipients, sendGroupMessages)
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
 memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember {memberRole, memberStatus}
   -- groups with relays require newer version - we don't need to check member version for batching and forwarding support
   | useRelays =
       if
-        -- if user is chat relay, send to all
-        | isMemberRelay membership -> MSASendBatched . snd <$> readyMemberConn m
+        -- if user is chat relay, send to all non chat relay members
+        | isMemberRelay membership && not (isMemberRelay m) -> MSASendBatched . snd <$> readyMemberConn m
         -- if user is not chat relay, send only to chat relays
-        | isMemberRelay m -> MSASendBatched . snd <$> readyMemberConn m
+        | not (isMemberRelay membership) && isMemberRelay m -> MSASendBatched . snd <$> readyMemberConn m
         | otherwise -> Nothing -- TODO [channels fwd] MSAForwarded to create GSSForwarded snd statuses?
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
