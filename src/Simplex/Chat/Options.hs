@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
@@ -29,13 +30,13 @@ import Data.Text.Encoding (encodeUtf8)
 import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
+import Simplex.Chat.Options.DB
 import Simplex.FileTransfer.Description (mb)
 import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
-import Simplex.Messaging.Transport.Client (SocksProxyWithAuth (..), SocksAuth (..), defaultSocksProxyWithAuth)
-import Simplex.Chat.Options.DB
+import Simplex.Messaging.Transport.Client (SocksAuth (..), SocksProxyWithAuth (..), defaultSocksProxyWithAuth)
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
@@ -43,6 +44,9 @@ data ChatOpts = ChatOpts
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
     chatServerPort :: Maybe String,
+#if defined(picolisp)
+    evaluatePicolisp :: Maybe String,
+#endif
     optFilesFolder :: Maybe FilePath,
     optTempDirectory :: Maybe FilePath,
     showReactions :: Bool,
@@ -162,16 +166,17 @@ coreChatOptsP appDir defaultDbName = do
             <> help "Allow downgrade and connect directly: no, [when IP address is] protected (default), yes"
         )
   smpWebPortServers <-
-    flag' SWPAll
+    flag'
+      SWPAll
       ( long "smp-web-port"
           <> help "Use port 443 with SMP servers when not specified"
       )
       <|> option
         strParse
-          ( long "smp-web-port-servers"
-              <> help "Use port 443 with SMP servers when not specified: all, preset (default), off"
-              <> value SWPPreset
-          )
+        ( long "smp-web-port-servers"
+            <> help "Use port 443 with SMP servers when not specified: all, preset (default), off"
+            <> value SWPPreset
+        )
   t <-
     option
       auto
@@ -278,7 +283,7 @@ coreChatOptsP appDir defaultDbName = do
 
 defaultHostMode :: Maybe SocksProxyWithAuth -> HostMode
 defaultHostMode = \case
-  Just (SocksProxyWithAuth SocksIsolateByAuth _) -> HMOnionViaSocks;
+  Just (SocksProxyWithAuth SocksIsolateByAuth _) -> HMOnionViaSocks
   _ -> HMPublic
 
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
@@ -319,6 +324,14 @@ chatOptsP appDir defaultDbName = do
           <> help "Run chat server on specified port"
           <> value Nothing
       )
+#if defined(picolisp)
+  evaluatePicolisp <-
+    optional $
+      strOption
+        ( long "picolisp"
+            <> help "Evaluate picolisp expression"
+        )
+#endif
   optFilesFolder <-
     optional $
       strOption
@@ -389,6 +402,9 @@ chatOptsP appDir defaultDbName = do
         chatCmdDelay,
         chatCmdLog,
         chatServerPort,
+#if defined(picolisp)
+        evaluatePicolisp,
+#endif
         optFilesFolder,
         optTempDirectory,
         showReactions,

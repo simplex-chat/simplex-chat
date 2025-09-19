@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -20,6 +21,10 @@ import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 import System.Terminal (withTerminal)
 
+#if defined(picolisp)
+import Simplex.Chat.Picolisp
+#endif
+
 simplexChatCLI :: ChatConfig -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
 simplexChatCLI cfg server_ = do
   appDir <- getAppUserDataDirectory "simplex"
@@ -27,14 +32,22 @@ simplexChatCLI cfg server_ = do
   simplexChatCLI' cfg opts server_
 
 simplexChatCLI' :: ChatConfig -> ChatOpts -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
-simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort} server_ = do
-  if null chatCmd
-    then case chatServerPort of
+simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort} server_
+  | null chatCmd = case chatServerPort of
       Just chatPort -> case server_ of
         Just server -> server chatPort cfg opts
         Nothing -> putStrLn "Not allowed to run as a WebSockets server" >> exitFailure
-      _ -> runCLI
-    else simplexChatCore cfg opts runCommand
+#if defined(picolisp)
+      Nothing -> case evaluatePicolisp opts of
+        Just code -> do
+          picolispInit 100000 ["picolisp"] -- ["picolisp", "lib.l"]
+          res <- picolispEvaluate code
+          putStrLn res
+        Nothing -> runCLI
+#else
+      Nothing -> runCLI
+#endif
+  | otherwise = simplexChatCore cfg opts runCommand
   where
     runCLI = do
       welcome cfg opts
