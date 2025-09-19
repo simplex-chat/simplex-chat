@@ -20,7 +20,7 @@ function displayEntries(entries) {
   directory.innerHTML = '';
 
   for (let entry of entries) {
-    const { entryType, displayName, welcomeMessage, shortDescr, imageFile } = entry;
+    const { entryType, displayName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
     const entryDiv = document.createElement('div');
     entryDiv.className = 'entry';
 
@@ -51,12 +51,16 @@ function displayEntries(entries) {
       }
     }
 
-    const imgElement = document.createElement('img');
-    imgElement.src =
+    const imgElement = document.createElement('a');
+    imgSource =
       imageFile
         ? directoryDataURL + imageFile
-        : "/img/group.svg"
-    imgElement.alt = `${displayName} image`;
+        : "/img/group.svg";
+    imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
+    imgElement.href = groupLink.connShortLink ?? groupLink.connFullLink;
+    // TODO use simplex.chat site when appropriate
+    if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
+    imgElement.title = `Join ${displayName}`;
     entryDiv.appendChild(imgElement);
 
     entryDiv.appendChild(textContainer);
@@ -95,9 +99,12 @@ function viaHost(smpHosts) {
   return `via ${first}`;
 }
 
+function isCurrentSite(uri) {
+  return uri.startsWith("https://simplex.chat") || uri.startsWith("https://www.simplex.chat")
+}
+
 function targetBlank(uri) {
-  const thisSite = uri.startsWith("https://simplex.chat") || uri.startsWith("https://www.simplex.chat")
-  return thisSite ? '' : ' target="_blank"'
+  return isCurrentSite(uri) ? '' : ' target="_blank"'
 }
 
 function renderMarkdown(fts) {

@@ -17,7 +17,7 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
-import Data.Maybe (fromMaybe)
+import Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -48,6 +48,7 @@ $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "DET") ''DirectoryEntryType)
 data DirectoryEntry = DirectoryEntry
   { entryType :: DirectoryEntryType,
     displayName :: Text,
+    groupLink :: CreatedLinkContact,
     shortDescr :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
     imageFile :: Maybe String
@@ -61,20 +62,21 @@ $(JQ.deriveJSON defaultJSON ''DirectoryListing)
 
 type ImageFileData = ByteString
 
-groupDirectoryEntry :: GroupInfoSummary -> (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry (GIS GroupInfo {groupId, groupProfile} summary _) =
+groupDirectoryEntry :: GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
+groupDirectoryEntry (GIS GroupInfo {groupId, groupProfile} summary gLink_) =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
       entryType = DETGroup memberAdmission summary
       imgData = imgFileData =<< image
-      entry =
+      entry groupLink =
         DirectoryEntry
           { entryType,
             displayName,
+            groupLink,
             shortDescr = toFormattedText <$> shortDescr,
             welcomeMessage = toFormattedText <$> description,
             imageFile = fst <$> imgData
           }
-   in (entry, imgData)
+   in (\gLink -> (entry (connLinkContact gLink), imgData)) <$> gLink_
   where
     imgFileData (ImageData img) =
       let (img', imgExt) =
@@ -91,10 +93,11 @@ generateListing st dir gs = do
   gs' <- filterListedGroups st gs
   removePathForcibly (dir </> listingImageFolder)
   createDirectoryIfMissing True (dir </> listingImageFolder)
-  gs'' <- forM gs' $ \g@(GIS GroupInfo {groupId} _ _) -> do
-    let (g', img) = groupDirectoryEntry g
-    forM_ img $ \(imgFile, imgData) -> B.writeFile (dir </> imgFile) imgData
-    pure (groupId, g')
+  gs'' <-
+    fmap catMaybes $ forM gs' $ \g@(GIS GroupInfo {groupId} _ _) ->
+      forM (groupDirectoryEntry g) $ \(g', img) -> do
+        forM_ img $ \(imgFile, imgData) -> B.writeFile (dir </> imgFile) imgData
+        pure (groupId, g')
   saveListing listingFileName gs''
   saveListing promotedFileName =<< filterPromotedGroups st gs''
   where
