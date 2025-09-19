@@ -21,7 +21,6 @@ module Directory.Service
 where
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.Async
 import Control.Concurrent.STM
 import Control.Logger.Simple
 import Control.Monad
@@ -68,7 +67,7 @@ import Simplex.Messaging.Agent.Protocol (AConnectionLink (..), ConnectionLink (.
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow, unlessM, whenM, ($>>=), (<$$>))
+import Simplex.Messaging.Util (raceAny_, safeDecodeUtf8, tshow, unlessM, whenM, ($>>=), (<$$>))
 import System.Directory (getAppUserDataDirectory)
 import System.Exit (exitFailure)
 import System.Process (readProcess)
@@ -95,7 +94,8 @@ data GroupRolesStatus
 data ServiceState = ServiceState
   { searchRequests :: TMap ContactId SearchRequest,
     blockedWordsCfg :: BlockedWordsConfig,
-    pendingCaptchas :: TMap GroupMemberId PendingCaptcha
+    pendingCaptchas :: TMap GroupMemberId PendingCaptcha,
+    updateListingsJob :: TMVar (ChatController, User)
   }
 
 data PendingCaptcha = PendingCaptcha
@@ -118,7 +118,8 @@ newServiceState opts = do
   searchRequests <- TM.emptyIO
   blockedWordsCfg <- readBlockedWordsConfig opts
   pendingCaptchas <- TM.emptyIO
-  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas}
+  updateListingsJob <- newEmptyTMVarIO
+  pure ServiceState {searchRequests, blockedWordsCfg, pendingCaptchas, updateListingsJob}
 
 welcomeGetOpts :: IO DirectoryOpts
 welcomeGetOpts = do
@@ -145,22 +146,34 @@ directoryServiceCLI st opts = do
   env <- newServiceState opts
   eventQ <- newTQueueIO
   let eventHook cc resp = atomically $ resp <$ writeTQueue eventQ (cc, resp)
-      chatHooks = defaultChatHooks {postStartHook = Just $ directoryStartHook st opts, eventHook = Just eventHook, acceptMember = Just $ acceptMemberHook opts env}
-  race_
-    (simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing)
-    (processEvents eventQ env)
+      chatHooks = defaultChatHooks {postStartHook = Just $ directoryStartHook opts env, eventHook = Just eventHook, acceptMember = Just $ acceptMemberHook opts env}
+  raceAny_ $
+    [ simplexChatCLI' terminalChatConfig {chatHooks} (mkChatOpts opts) Nothing,
+      processEvents eventQ env
+    ]
+      <> updateListingsThread_ st opts env
   where
     processEvents eventQ env = forever $ do
       (cc, resp) <- atomically $ readTQueue eventQ
       u_ <- readTVarIO (currentUser cc)
       forM_ u_ $ \user -> directoryServiceEvent st opts env user cc resp
 
-directoryStartHook :: DirectoryStore -> DirectoryOpts -> ChatController -> IO ()
-directoryStartHook st opts cc =
+updateListingsThread_ :: DirectoryStore -> DirectoryOpts -> ServiceState -> [IO ()]
+updateListingsThread_ st opts env = maybe [] (\f -> [updateListingsThread f]) $ webFolder opts
+  where
+    updateListingsThread f = forever $ do
+      (cc, user) <- atomically $ takeTMVar $ updateListingsJob env
+      updateGroupListingFiles cc st user f
+
+listingsUpdated :: ServiceState -> ChatController -> User -> IO ()
+listingsUpdated env cc user = void $ atomically $ tryPutTMVar (updateListingsJob env) (cc, user)
+
+directoryStartHook :: DirectoryOpts -> ServiceState -> ChatController -> IO ()
+directoryStartHook opts env cc =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just user@User {userId, profile = p@LocalProfile {preferences}} -> do
-      forM_ (webFolder opts) $ updateGroupListingFiles cc st user
+      listingsUpdated env cc user
       let cmds = fromMaybe [] $ preferences >>= commands_
       unless (cmds == directoryCommands) $ do
         let prefs = (fromMaybe emptyChatPrefs preferences) {files = Just FilesPreference {allow = FANo}, commands = Just directoryCommands} :: Preferences
@@ -187,12 +200,23 @@ directoryCommands =
   where
     idParam = Just "<ID>"
 
-directoryService :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> IO ()
-directoryService st opts@DirectoryOpts {testing} env user cc = do
-  initializeBotAddress' (not testing) cc
-  race_ (forever $ void getLine) . forever $ do
-    (_, resp) <- atomically . readTBQueue $ outputQ cc
-    directoryServiceEvent st opts env user cc resp
+directoryService :: DirectoryStore -> DirectoryOpts -> ChatConfig -> IO ()
+directoryService st opts@DirectoryOpts {testing} cfg = do
+  env <- newServiceState opts
+  let chatHooks =
+        defaultChatHooks
+          { postStartHook = Just $ directoryStartHook opts env,
+            acceptMember = Just $ acceptMemberHook opts env
+          }
+  simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc -> do
+    initializeBotAddress' (not testing) cc
+    raceAny_ $
+      [ forever $ void getLine,
+        forever $ do
+          (_, resp) <- atomically . readTBQueue $ outputQ cc
+          directoryServiceEvent st opts env user cc resp
+      ]
+        <> updateListingsThread_ st opts env
 
 acceptMemberHook :: DirectoryOpts -> ServiceState -> GroupInfo -> GroupLinkInfo -> Profile -> IO (Either GroupRejectionReason (GroupAcceptance, GroupMemberRole))
 acceptMemberHook
@@ -394,7 +418,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           notifyOwner gr $ "Joined the group " <> displayName <> ", creating the link…"
           sendChatCmd cc (APICreateGroupLink groupId GRMember) >>= \case
             Right CRGroupLinkCreated {groupLink = GroupLink {connLinkContact = gLink}} -> do
-              setGroupStatus st opts cc user gr GRSPendingUpdate
+              setGroupStatus st env cc user gr GRSPendingUpdate
               notifyOwner
                 gr
                 "Created the public link to join the group via this directory service that is always online.\n\n\
@@ -455,7 +479,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just DGReserved -> notifyOwner gr $ groupAlreadyListed toGroup
             _ -> do
               let gaId = 1
-              setGroupStatus st opts cc user gr $ GRSPendingApproval gaId
+              setGroupStatus st env cc user gr $ GRSPendingApproval gaId
               notifyOwner gr $
                 ("Thank you! The group link for " <> userGroupReference gr toGroup <> " is added to the welcome message" <> byMember)
                   <> ".\nYou will be notified once the group is added to the directory - it may take up to 48 hours."
@@ -465,18 +489,18 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               groupRef = groupReference toGroup
           groupProfileUpdate >>= \case
             GPNoServiceLink -> do
-              setGroupStatus st opts cc user gr GRSPendingUpdate
+              setGroupStatus st env cc user gr GRSPendingUpdate
               notifyOwner gr $
                 ("The group profile is updated for " <> userGroupRef <> byMember <> ", but no link is added to the welcome message.\n\n")
                   <> "The group will remain hidden from the directory until the group link is added and the group is re-approved."
             GPServiceLinkRemoved -> do
-              setGroupStatus st opts cc user gr GRSPendingUpdate
+              setGroupStatus st env cc user gr GRSPendingUpdate
               notifyOwner gr $
                 ("The group link for " <> userGroupRef <> " is removed from the welcome message" <> byMember)
                   <> ".\n\nThe group is hidden from the directory until the group link is added and the group is re-approved."
               notifyAdminUsers $ "The group link is removed from " <> groupRef <> ", de-listed."
             GPServiceLinkAdded _ -> do
-              setGroupStatus st opts cc user gr $ GRSPendingApproval n'
+              setGroupStatus st env cc user gr $ GRSPendingApproval n'
               notifyOwner gr $
                 ("The group link is added to " <> userGroupRef <> byMember)
                   <> "!\nIt is hidden from the directory until approved."
@@ -489,7 +513,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                       <> "!\nThe group is listed in directory."
                   notifyAdminUsers $ "The group " <> groupRef <> " is updated" <> byMember <> " - only link or whitespace changes.\nThe group remained listed in directory."
               | otherwise -> do
-                  setGroupStatus st opts cc user gr $ GRSPendingApproval n'
+                  setGroupStatus st env cc user gr $ GRSPendingApproval n'
                   notifyOwner gr $
                     ("The group " <> userGroupRef <> " is updated" <> byMember)
                       <> "!\nIt is hidden from the directory until approved."
@@ -627,14 +651,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         when (ctId `isOwner` gr) $ do
           readTVarIO (groupRegStatus gr) >>= \case
             GRSSuspendedBadRoles -> when (rStatus == GRSOk) $ do
-              setGroupStatus st opts cc user gr GRSActive
+              setGroupStatus st env cc user gr GRSActive
               notifyOwner gr $ uCtRole <> ".\n\nThe group is listed in the directory again."
               notifyAdminUsers $ "The group " <> groupRef <> " is listed " <> suCtRole
             GRSPendingApproval gaId -> when (rStatus == GRSOk) $ do
               sendToApprove g gr gaId
               notifyOwner gr $ uCtRole <> ".\n\nThe group is submitted for approval."
             GRSActive -> when (rStatus /= GRSOk) $ do
-              setGroupStatus st opts cc user gr GRSSuspendedBadRoles
+              setGroupStatus st env cc user gr GRSSuspendedBadRoles
               notifyOwner gr $ uCtRole <> ".\n\nThe group is no longer listed in the directory."
               notifyAdminUsers $ "The group " <> groupRef <> " is de-listed " <> suCtRole
             _ -> pure ()
@@ -653,7 +677,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         readTVarIO (groupRegStatus gr) >>= \case
           GRSSuspendedBadRoles -> when (serviceRole == GRAdmin) $
             whenContactIsOwner gr $ do
-              setGroupStatus st opts cc user gr GRSActive
+              setGroupStatus st env cc user gr GRSActive
               notifyOwner gr $ uSrvRole <> ".\n\nThe group is listed in the directory again."
               notifyAdminUsers $ "The group " <> groupRef <> " is listed " <> suSrvRole
           GRSPendingApproval gaId -> when (serviceRole == GRAdmin) $
@@ -661,7 +685,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               sendToApprove g gr gaId
               notifyOwner gr $ uSrvRole <> ".\n\nThe group is submitted for approval."
           GRSActive -> when (serviceRole /= GRAdmin) $ do
-            setGroupStatus st opts cc user gr GRSSuspendedBadRoles
+            setGroupStatus st env cc user gr GRSSuspendedBadRoles
             notifyOwner gr $ uSrvRole <> ".\n\nThe group is no longer listed in the directory."
             notifyAdminUsers $ "The group " <> groupRef <> " is de-listed " <> suSrvRole
           _ -> pure ()
@@ -678,7 +702,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       logInfo $ "contact ID " <> tshow ctId <> " removed from group " <> viewGroupName g
       withGroupReg g "contact removed" $ \gr -> do
         when (ctId `isOwner` gr) $ do
-          setGroupStatus st opts cc user gr GRSRemoved
+          setGroupStatus st env cc user gr GRSRemoved
           notifyOwner gr $ "You are removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
           notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group owner is removed)."
 
@@ -687,7 +711,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       logInfo $ "contact ID " <> tshow ctId <> " left group " <> viewGroupName g
       withGroupReg g "contact left" $ \gr -> do
         when (ctId `isOwner` gr) $ do
-          setGroupStatus st opts cc user gr GRSRemoved
+          setGroupStatus st env cc user gr GRSRemoved
           notifyOwner gr $ "You left the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
           notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group owner left)."
 
@@ -695,7 +719,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deServiceRemovedFromGroup g = do
       logInfo $ "service removed from group " <> viewGroupName g
       withGroupReg g "service removed" $ \gr -> do
-        setGroupStatus st opts cc user gr GRSRemoved
+        setGroupStatus st env cc user gr GRSRemoved
         notifyOwner gr $ serviceName <> " is removed from the group " <> userGroupReference gr g <> ".\n\nThe group is no longer listed in the directory."
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (directory service is removed)."
 
@@ -703,7 +727,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     deGroupDeleted g = do
       logInfo $ "group removed " <> viewGroupName g
       withGroupReg g "group removed" $ \gr -> do
-        setGroupStatus st opts cc user gr GRSRemoved
+        setGroupStatus st env cc user gr GRSRemoved
         notifyOwner gr $ "The group " <> userGroupReference gr g <> " is deleted.\n\nThe group is no longer listed in the directory."
         notifyAdminUsers $ "The group " <> groupReference g <> " is de-listed (group is deleted)."
 
@@ -945,16 +969,16 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                         _ -> do
                           getGroupRolesStatus g gr >>= \case
                             Just GRSOk -> do
-                              setGroupStatus st opts cc user gr GRSActive
+                              setGroupStatus st env cc user gr GRSActive
                               forM_ promote $ \promo ->
                                 if promo -- admins can unpromote, only super-user can promote when approving
                                   then
                                     unlessM (readTVarIO promoted) $
                                       if knownCt `elem` superUsers
-                                        then setGroupPromoted st opts cc user gr True
+                                        then setGroupPromoted st env cc user gr True
                                         else sendReply "You cannot promote groups"
                                   else do
-                                    whenM (readTVarIO promoted) $ setGroupPromoted st opts cc user gr False
+                                    whenM (readTVarIO promoted) $ setGroupPromoted st env cc user gr False
                                     notifyOtherSuperUsers $ "Group promotion is disabled for " <> groupRef
                               let approved = "The group " <> userGroupReference' gr n <> " is approved"
                               notifyOwner gr $
@@ -990,7 +1014,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             withGroupAndReg sendReply groupId gName $ \_ gr ->
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSActive -> do
-                  setGroupStatus st opts cc user gr GRSSuspended
+                  setGroupStatus st env cc user gr GRSSuspended
                   let suspended = "The group " <> userGroupReference' gr gName <> " is suspended"
                   notifyOwner gr $ suspended <> " and hidden from directory. Please contact the administrators."
                   sendReply "Group suspended!"
@@ -1001,7 +1025,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             withGroupAndReg sendReply groupId gName $ \_ gr ->
               readTVarIO (groupRegStatus gr) >>= \case
                 GRSSuspended -> do
-                  setGroupStatus st opts cc user gr GRSActive
+                  setGroupStatus st env cc user gr GRSActive
                   let groupStr = "The group " <> userGroupReference' gr gName
                   notifyOwner gr $ groupStr <> " is listed in the directory again!"
                   sendReply "Group listing resumed!"
@@ -1077,7 +1101,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {groupRegStatus, promoted} -> do
               status <- readTVarIO groupRegStatus
               promote <- readTVarIO promoted
-              when (promote' /= promote) $ setGroupPromoted st opts cc user gr promote'
+              when (promote' /= promote) $ setGroupPromoted st env cc user gr promote'
               let msg =
                     "Group promotion "
                       <> (if promote' then "enabled" <> (if status == GRSActive then "." else ", but the group is not listed.") else "disabled.")
@@ -1131,18 +1155,16 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           let text = T.unlines $ [tshow useGroupId <> ". Error: getGroup. Please notify the developers."] <> maybeToList ownerStr_ <> [statusStr]
           sendComposedMessage cc ct Nothing $ MCText text
 
-setGroupStatus :: DirectoryStore -> DirectoryOpts -> ChatController -> User -> GroupReg -> GroupRegStatus -> IO ()
-setGroupStatus st opts cc u gr grStatus' = do
+setGroupStatus :: DirectoryStore -> ServiceState -> ChatController -> User -> GroupReg -> GroupRegStatus -> IO ()
+setGroupStatus st env cc user gr grStatus' = do
   let status' = grDirectoryStatus grStatus'
   status <- setGroupStatusStore st gr grStatus'
-  forM_ (webFolder opts) $ \dir ->
-    when ((status == DSListed || status' == DSListed) && status /= status') $ updateGroupListingFiles cc st u dir
+  when ((status == DSListed || status' == DSListed) && status /= status') $ listingsUpdated env cc user
 
-setGroupPromoted :: DirectoryStore -> DirectoryOpts -> ChatController -> User -> GroupReg -> Bool -> IO ()
-setGroupPromoted st opts cc u gr grPromoted' = do
+setGroupPromoted :: DirectoryStore -> ServiceState -> ChatController -> User -> GroupReg -> Bool -> IO ()
+setGroupPromoted st env cc user gr grPromoted' = do
   (status, grPromoted) <- setGroupPromotedStore st gr grPromoted'
-  forM_ (webFolder opts) $ \dir ->
-    when (status == DSListed && grPromoted' /= grPromoted) $ updateGroupListingFiles cc st u dir
+  when (status == DSListed && grPromoted' /= grPromoted) $ listingsUpdated env cc user
 
 updateGroupListingFiles :: ChatController -> DirectoryStore -> User -> FilePath -> IO ()
 updateGroupListingFiles cc st u dir =
