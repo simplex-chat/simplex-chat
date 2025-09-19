@@ -1396,14 +1396,9 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   st <- restoreDirectoryStore directoryLog
-  t <- forkIO $ bot st
+  t <- forkIO $ directoryService st opts cfg
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
-  where
-    bot st = directoryService st opts cfg
-      -- env <- newServiceState opts
-      -- let cfg' = cfg {chatHooks = defaultChatHooks {acceptMember = Just $ acceptMemberHook opts env}}
-      -- simplexChatCore cfg' (mkChatOpts opts) $ directoryService st opts env
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
