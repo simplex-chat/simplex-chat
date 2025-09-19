@@ -416,7 +416,8 @@ CREATE TABLE test_chat_schema.contacts (
     grp_direct_inv_from_group_id bigint,
     grp_direct_inv_from_group_member_id bigint,
     grp_direct_inv_from_member_conn_id bigint,
-    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL,
+    custom_field1 text
 );
 
 
@@ -716,7 +717,8 @@ CREATE TABLE test_chat_schema.groups (
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
-    via_group_link_uri bytea
+    via_group_link_uri bytea,
+    custom_field1 text
 );
 
 
@@ -1888,6 +1890,10 @@ CREATE INDEX idx_contacts_contact_request_id ON test_chat_schema.contacts USING 
 
 
 
+CREATE INDEX idx_contacts_custom_field1 ON test_chat_schema.contacts USING btree (custom_field1);
+
+
+
 CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_group_id);
 
 
@@ -2053,6 +2059,10 @@ CREATE INDEX idx_groups_chat_item_id ON test_chat_schema.groups USING btree (cha
 
 
 CREATE INDEX idx_groups_chat_ts ON test_chat_schema.groups USING btree (user_id, chat_ts);
+
+
+
+CREATE INDEX idx_groups_custom_field1 ON test_chat_schema.groups USING btree (custom_field1);
 
 
 
