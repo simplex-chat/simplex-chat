@@ -1,8 +1,17 @@
-const directoryDataURL = 'http://localhost:8080/directory-data/';
+const directoryDataURL = 'https://directory.simplex.chat/';
 
-async function renderDirectory() {
+let allEntries = [];
+
+async function initDirectory() {
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
-  displayEntries(listing.entries)
+  allEntries = listing.entries.sort(byMemberCountDesc)
+  renderDirectoryPage()
+  window.addEventListener('hashchange', renderDirectoryPage);
+}
+
+function renderDirectoryPage() {
+  const currentEntries = addPagination(allEntries);
+  displayEntries(currentEntries);
 }
 
 async function fetchJSON(url) {
@@ -15,56 +24,107 @@ async function fetchJSON(url) {
   }
 }
 
+function byMemberCountDesc(entry1, entry2) {
+  const n1 = entryMemberCount(entry1)
+  const n2 = entryMemberCount(entry2)
+  return n1 > n2 ? -1 : n1 < n2 ? 1 : 0
+}
+
+function entryMemberCount(entry) {
+  return entry.entryType.type == 'group'
+    ? (entry.entryType.summary?.currentMembers ?? 0)
+    : 0
+}
+
 function displayEntries(entries) {
   const directory = document.getElementById('directory');
   directory.innerHTML = '';
 
   for (let entry of entries) {
-    const { entryType, displayName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
-    const entryDiv = document.createElement('div');
-    entryDiv.className = 'entry';
+    try {
+      const { entryType, displayName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
+      const entryDiv = document.createElement('div');
+      entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8';
 
-    const textContainer = document.createElement('div');
-    textContainer.className = 'text-container';
+      const textContainer = document.createElement('div');
+      textContainer.className = 'text-container';
 
-    const nameElement = document.createElement('h2');
-    nameElement.textContent = displayName;
-    textContainer.appendChild(nameElement);
+      const nameElement = document.createElement('h2');
+      nameElement.textContent = displayName;
+      nameElement.className = 'text-grey-black dark:text-white !text-lg md:!text-xl font-bold';
+      textContainer.appendChild(nameElement);
 
-    if (shortDescr) {
-      const descrElement = document.createElement('p');
-      descrElement.innerHTML = renderMarkdown(shortDescr);
-      textContainer.appendChild(descrElement);
-    }
+      const welcomeMessageHTML = welcomeMessage ? renderMarkdown(welcomeMessage) : undefined;
+      const shortDescrHTML = shortDescr ? renderMarkdown(shortDescr) : undefined;
+      if (shortDescrHTML && welcomeMessageHTML?.includes(shortDescrHTML) !== true) {
+        const descrElement = document.createElement('p');
+        descrElement.innerHTML = renderMarkdown(shortDescr);
+        textContainer.appendChild(descrElement);
+      }
 
-    const messageElement = document.createElement('p');
-    messageElement.innerHTML = renderMarkdown(welcomeMessage);
-    textContainer.appendChild(messageElement);
+      if (welcomeMessageHTML) {
+        const messageElement = document.createElement('p');
+        messageElement.innerHTML = welcomeMessageHTML;
+        textContainer.appendChild(messageElement);
 
-    if (entryType.type == 'group') {
-      const memberCount = entryType.summary?.currentMembers
-      if (typeof memberCount == 'number') {
+        const readMore = document.createElement('p');
+        readMore.textContent = 'Read more';
+        readMore.style.cursor = 'pointer';
+        readMore.style.color = '#1d4ed8';
+        readMore.style.textDecoration = 'underline';
+        readMore.className = 'read-more';
+        readMore.style.display = 'none';
+        textContainer.appendChild(readMore);
+
+        setTimeout(() => {
+          const computedStyle = window.getComputedStyle(messageElement);
+          const lineHeight = parseFloat(computedStyle.lineHeight);
+          const maxLines = 8;
+          const maxHeight = maxLines * lineHeight
+          const maxHeightPx = `${maxHeight}px`;
+          messageElement.style.maxHeight = maxHeightPx;
+          messageElement.style.overflow = 'hidden';
+
+          if (messageElement.scrollHeight > maxHeight) {
+            readMore.style.display = 'block';
+            readMore.addEventListener('click', () => {
+              if (messageElement.style.maxHeight === maxHeightPx) {
+                messageElement.style.maxHeight = 'none';
+                readMore.textContent = 'Read less';
+              } else {
+                messageElement.style.maxHeight = maxHeightPx;
+                readMore.textContent = 'Read more';
+              }
+            });
+          }
+        }, 0);
+      }
+
+      const memberCount = entryMemberCount(entry);
+      if (typeof memberCount == 'number' && memberCount > 0) {
         const memberCountElement = document.createElement('p');
         memberCountElement.innerText = `${memberCount} members`;
         memberCountElement.classList = ['text-sm'];
         textContainer.appendChild(memberCountElement);
       }
+
+      const imgElement = document.createElement('a');
+      imgSource =
+        imageFile
+          ? directoryDataURL + imageFile
+          : "/img/group.svg";
+      imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
+      imgElement.href = groupLink.connShortLink ?? groupLink.connFullLink;
+      // TODO use simplex.chat site when appropriate
+      if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
+      imgElement.title = `Join ${displayName}`;
+      entryDiv.appendChild(imgElement);
+
+      entryDiv.appendChild(textContainer);
+      directory.appendChild(entryDiv);
+    } catch (e) {
+      console.log(e);
     }
-
-    const imgElement = document.createElement('a');
-    imgSource =
-      imageFile
-        ? directoryDataURL + imageFile
-        : "/img/group.svg";
-    imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
-    imgElement.href = groupLink.connShortLink ?? groupLink.connFullLink;
-    // TODO use simplex.chat site when appropriate
-    if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
-    imgElement.title = `Join ${displayName}`;
-    entryDiv.appendChild(imgElement);
-
-    entryDiv.appendChild(textContainer);
-    directory.appendChild(entryDiv);
   }
 
   for (let el of document.querySelectorAll('.secret')) {
@@ -72,7 +132,105 @@ function displayEntries(entries) {
   }
 }
 
-renderDirectory()
+function addPagination(entries) {
+  const entriesPerPage = 10;
+  const totalPages = Math.ceil(entries.length / entriesPerPage);
+  let currentPage = parseInt(location.hash.slice(1)) || 1;
+  if (currentPage < 1) currentPage = 1;
+  if (currentPage > totalPages) currentPage = totalPages;
+
+  const startIndex = (currentPage - 1) * entriesPerPage;
+  const endIndex = Math.min(startIndex + entriesPerPage, entries.length);
+  const currentEntries = entries.slice(startIndex, endIndex);
+
+  const pagination = document.getElementById('pagination');
+  if (!pagination) {
+    return currentEntries;
+  }
+  pagination.innerHTML = '';
+
+  try {
+    let startPage, endPage;
+    const pageButtonCount = 8
+    if (totalPages <= pageButtonCount) {
+      startPage = 1;
+      endPage = totalPages;
+    } else {
+      startPage = Math.max(1, currentPage - 4);
+      endPage = Math.min(totalPages, startPage + pageButtonCount - 1);
+      if (endPage - startPage + 1 < pageButtonCount) {
+        startPage = Math.max(1, endPage - pageButtonCount + 1);
+      }
+    }
+
+    if (currentPage > 1 && startPage > 1) {
+      const firstBtn = document.createElement('button');
+      firstBtn.textContent = 'First';
+      firstBtn.classList.add('text-btn');
+      firstBtn.addEventListener('click', () => {
+        location.hash = 1;
+      });
+      pagination.appendChild(firstBtn);
+    }
+
+    if (currentPage > 1) {
+      const prevBtn = document.createElement('button');
+      prevBtn.textContent = 'Prev';
+      prevBtn.classList.add('text-btn');
+      prevBtn.addEventListener('click', () => {
+        location.hash = currentPage - 1;
+      });
+      pagination.appendChild(prevBtn);
+    }
+
+    for (let p = startPage; p <= endPage; p++) {
+      const pageBtn = document.createElement('button');
+      pageBtn.textContent = p.toString();
+      if (p === currentPage) {
+        pageBtn.classList.add('active');
+      } else if (p === currentPage - 1 || p === currentPage + 1) {
+        pageBtn.classList.add('neighbor');
+      }
+      pageBtn.addEventListener('click', () => {
+        if (p !== currentPage) {
+          location.hash = p;
+        }
+      });
+      pagination.appendChild(pageBtn);
+    }
+
+    if (currentPage < totalPages) {
+      const nextBtn = document.createElement('button');
+      nextBtn.textContent = 'Next';
+      nextBtn.classList.add('text-btn');
+      nextBtn.addEventListener('click', () => {
+        location.hash = currentPage + 1;
+      });
+      pagination.appendChild(nextBtn);
+    }
+
+    if (endPage < totalPages) {
+      const lastBtn = document.createElement('button');
+      lastBtn.textContent = 'Last';
+      lastBtn.classList.add('text-btn');
+      lastBtn.addEventListener('click', () => {
+        location.hash = totalPages;
+      });
+      pagination.appendChild(lastBtn);
+    }
+
+  } catch (e) {
+    console.log(e);
+  }
+
+  return currentEntries;
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initDirectory);
+} else {
+  initDirectory();
+}
 
 function escapeHtml(text) {
   return text
@@ -80,7 +238,8 @@ function escapeHtml(text) {
     .replace(/</g, "&lt;")
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
+    .replace(/'/g, "&#039;")
+    .replace(/\n/g, "<br>");
 }
 
 function getSimplexLinkDescr(linkType) {
@@ -105,6 +264,14 @@ function isCurrentSite(uri) {
 
 function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank"'
+}
+
+function htmlColor(color) {
+  switch (color) {
+    case 'yellow': return 'gold'
+    case 'cyan': return 'turquoise'
+    default: return color
+  }
 }
 
 function renderMarkdown(fts) {
@@ -133,7 +300,7 @@ function renderMarkdown(fts) {
           html += `<span class="secret">${escapeHtml(text)}</span>`;
           break;
         case 'colored':
-          html += `<span style="color: ${format.color};">${escapeHtml(text)}</span>`;
+          html += `<span style="color: ${htmlColor(format.color)};">${escapeHtml(text)}</span>`;
           break;
         case 'uri':
           let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;
