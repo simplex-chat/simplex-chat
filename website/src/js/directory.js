@@ -1,17 +1,59 @@
 const directoryDataURL = 'https://directory.simplex.chat/';
 
+let filteredEntries = [];
+
 let allEntries = [];
 
 async function initDirectory() {
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
   allEntries = listing.entries.sort(byMemberCountDesc)
+  filteredEntries = allEntries.slice();
   renderDirectoryPage()
   window.addEventListener('hashchange', renderDirectoryPage);
+  const searchInput = document.getElementById('search');
+  searchInput.addEventListener('input', handleSearchInput);
 }
 
 function renderDirectoryPage() {
-  const currentEntries = addPagination(allEntries);
+  const currentEntries = addPagination(filteredEntries);
   displayEntries(currentEntries);
+}
+
+function handleSearchInput(e) {
+  const query = e.target.value.toLowerCase().trim();
+  if (query === '') {
+    filteredEntries = allEntries.slice();
+  } else {
+    filteredEntries = allEntries.filter(entry =>
+      (entry.displayName || '').toLowerCase().includes(query)
+        || includesQuery(entry.shortDescr, query)
+        || includesQuery(entry.welcomeMessage, query)
+    );
+  }
+  renderDirectoryPage();
+}
+
+function includesQuery(field, query) {
+  return field
+    && Array.isArray(field)
+    && field.some(ft => {
+        switch (ft.format?.type) {
+          case 'uri': return uriIncludesQuery(ft.text, query);
+          case 'hyperLink': return textIncludesQuery(ft.format.showText, query) || uriIncludesQuery(ft.format.linkUri, query);
+          case 'simplexLink': return textIncludesQuery(ft.format.showText, query);
+          default: return textIncludesQuery(ft.text, query);
+        }
+      });
+}
+
+function textIncludesQuery(text, query) {
+  text ? text.toLowerCase().includes(query) : false
+}
+
+function uriIncludesQuery(uri, query) {
+  if (!uri) return false;
+  uri = uri.toLowerCase();
+  return !uri.includes('simplex') && uri.includes(query);
 }
 
 async function fetchJSON(url) {
@@ -79,13 +121,13 @@ function displayEntries(entries) {
         setTimeout(() => {
           const computedStyle = window.getComputedStyle(messageElement);
           const lineHeight = parseFloat(computedStyle.lineHeight);
-          const maxLines = 8;
+          const maxLines = 5;
           const maxHeight = maxLines * lineHeight
           const maxHeightPx = `${maxHeight}px`;
           messageElement.style.maxHeight = maxHeightPx;
           messageElement.style.overflow = 'hidden';
 
-          if (messageElement.scrollHeight > maxHeight) {
+          if (messageElement.scrollHeight > maxHeight + 4) {
             readMore.style.display = 'block';
             readMore.addEventListener('click', () => {
               if (messageElement.style.maxHeight === maxHeightPx) {
@@ -133,7 +175,7 @@ function displayEntries(entries) {
 }
 
 function goToPage(p) {
-  location.hash = p > 1 ? p.toString() : '';
+  location.hash = p.toString();
 }
 
 function addPagination(entries) {
@@ -147,75 +189,79 @@ function addPagination(entries) {
   const endIndex = Math.min(startIndex + entriesPerPage, entries.length);
   const currentEntries = entries.slice(startIndex, endIndex);
 
-  const pagination = document.getElementById('pagination');
-  if (!pagination) {
-    return currentEntries;
-  }
-  pagination.innerHTML = '';
-
-  try {
-    let startPage, endPage;
-    const pageButtonCount = 8
-    if (totalPages <= pageButtonCount) {
-      startPage = 1;
-      endPage = totalPages;
-    } else {
-      startPage = Math.max(1, currentPage - 4);
-      endPage = Math.min(totalPages, startPage + pageButtonCount - 1);
-      if (endPage - startPage + 1 < pageButtonCount) {
-        startPage = Math.max(1, endPage - pageButtonCount + 1);
-      }
-    }
-
-    if (currentPage > 1 && startPage > 1) {
-      const firstBtn = document.createElement('button');
-      firstBtn.textContent = 'First';
-      firstBtn.classList.add('text-btn');
-      firstBtn.addEventListener('click', () => goToPage(1));
-      pagination.appendChild(firstBtn);
-    }
-
-    if (currentPage > 1) {
-      const prevBtn = document.createElement('button');
-      prevBtn.textContent = 'Prev';
-      prevBtn.classList.add('text-btn');
-      prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
-      pagination.appendChild(prevBtn);
-    }
-
-    for (let p = startPage; p <= endPage; p++) {
-      const pageBtn = document.createElement('button');
-      pageBtn.textContent = p.toString();
-      if (p === currentPage) {
-        pageBtn.classList.add('active');
-      } else if (p === currentPage - 1 || p === currentPage + 1) {
-        pageBtn.classList.add('neighbor');
-      }
-      pageBtn.addEventListener('click', () => goToPage(p));
-      pagination.appendChild(pageBtn);
-    }
-
-    if (currentPage < totalPages) {
-      const nextBtn = document.createElement('button');
-      nextBtn.textContent = 'Next';
-      nextBtn.classList.add('text-btn');
-      nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
-      pagination.appendChild(nextBtn);
-    }
-
-    if (endPage < totalPages) {
-      const lastBtn = document.createElement('button');
-      lastBtn.textContent = 'Last';
-      lastBtn.classList.add('text-btn');
-      lastBtn.addEventListener('click', () => goToPage(totalPages));
-      pagination.appendChild(lastBtn);
-    }
-
-  } catch (e) {
-    console.log(e);
-  }
-
+  addPaginationElements('top-pagination')
+  addPaginationElements('bottom-pagination')
   return currentEntries;
+
+  function addPaginationElements(paginationId) {
+    const pagination = document.getElementById(paginationId);
+    if (!pagination) {
+      return currentEntries;
+    }
+    pagination.innerHTML = '';
+
+    try {
+      let startPage, endPage;
+      const pageButtonCount = 8
+      if (totalPages <= pageButtonCount) {
+        startPage = 1;
+        endPage = totalPages;
+      } else {
+        startPage = Math.max(1, currentPage - 4);
+        endPage = Math.min(totalPages, startPage + pageButtonCount - 1);
+        if (endPage - startPage + 1 < pageButtonCount) {
+          startPage = Math.max(1, endPage - pageButtonCount + 1);
+        }
+      }
+
+      // if (currentPage > 1 && startPage > 1) {
+      //   const firstBtn = document.createElement('button');
+      //   firstBtn.textContent = 'First';
+      //   firstBtn.classList.add('text-btn');
+      //   firstBtn.addEventListener('click', () => goToPage(1));
+      //   pagination.appendChild(firstBtn);
+      // }
+
+      if (currentPage > 1) {
+        const prevBtn = document.createElement('button');
+        prevBtn.textContent = 'Prev';
+        prevBtn.classList.add('text-btn');
+        prevBtn.addEventListener('click', () => goToPage(currentPage - 1));
+        pagination.appendChild(prevBtn);
+      }
+
+      for (let p = startPage; p <= endPage; p++) {
+        const pageBtn = document.createElement('button');
+        pageBtn.textContent = p.toString();
+        if (p === currentPage) {
+          pageBtn.classList.add('active');
+        } else if (p === currentPage - 1 || p === currentPage + 1) {
+          pageBtn.classList.add('neighbor');
+        }
+        pageBtn.addEventListener('click', () => goToPage(p));
+        pagination.appendChild(pageBtn);
+      }
+
+      if (currentPage < totalPages) {
+        const nextBtn = document.createElement('button');
+        nextBtn.textContent = 'Next';
+        nextBtn.classList.add('text-btn');
+        nextBtn.addEventListener('click', () => goToPage(currentPage + 1));
+        pagination.appendChild(nextBtn);
+      }
+
+      // if (endPage < totalPages) {
+      //   const lastBtn = document.createElement('button');
+      //   lastBtn.textContent = 'Last';
+      //   lastBtn.classList.add('text-btn');
+      //   lastBtn.addEventListener('click', () => goToPage(totalPages));
+      //   pagination.appendChild(lastBtn);
+      // }
+
+    } catch (e) {
+      console.log(e);
+    }
+  }
 }
 
 if (document.readyState === 'loading') {

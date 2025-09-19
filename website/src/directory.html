@@ -54,7 +54,7 @@ templateEngineOverride: njk
     user-select: auto;
   }
 
-  #pagination {
+  .pagination {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -63,7 +63,7 @@ templateEngineOverride: njk
     padding: 10px 0;
   }
 
-  #pagination button {
+  .pagination button {
     padding: 8px 12px;
     border: none;
     background-color: transparent;
@@ -79,45 +79,57 @@ templateEngineOverride: njk
     transition: background-color 0.2s;
   }
 
-  #pagination button:hover {
+  .dark .pagination button {
+    color: #70F0F9;
+  }
+
+  .pagination button:hover {
     background-color: #f3f4f6;
   }
 
-  #pagination button.active {
-    font-weight: bold;
-    color: #1f2937;
+  .dark .pagination button:hover {
+    background-color: #1f2937;
   }
 
-  #pagination button.text-btn {
+  .pagination button.active {
+    font-weight: bold;
+    color: #11182F;
+  }
+
+  .dark .pagination button.active {
+    color: #70F0F9;
+  }
+
+  .pagination button.text-btn {
     border-radius: 20px;
     min-width: auto;
     height: 40px;
     padding: 8px 16px;
   }
 
-  #pagination button.text-btn.active {
+  .pagination button.text-btn.active {
     font-weight: normal;
   }
 
-  #pagination button:disabled {
+  .pagination button:disabled {
     opacity: 0.5;
     cursor: not-allowed;
   }
 
   @media (max-width: 768px) {
-    #pagination {
+    .pagination {
       gap: 4px;
       padding: 8px 0;
     }
 
-    #pagination button {
+    .pagination button {
       font-size: 12px;
       min-width: 32px;
       height: 32px;
       padding: 4px 8px;
     }
 
-    #pagination button.text-btn {
+    .pagination button.text-btn {
       padding: 4px 8px;
       height: 32px;
       border-radius: 16px;
@@ -125,30 +137,101 @@ templateEngineOverride: njk
     }
 
     @media (max-width: 480px) {
-      #pagination button:not(.text-btn):not(.active):not(.neighbor) {
+      .pagination button:not(.text-btn):not(.active):not(.neighbor) {
         display: none;
       }
 
-      #pagination button.active,
-      #pagination button.neighbor {
+      .pagination button.active,
+      .pagination button.neighbor {
         display: flex;
       }
 
-      #pagination {
+      .pagination {
         gap: 12px;
       }
     }
   }
+
+  #search {
+    width: 100%;
+    max-width: 480px;
+    padding: 8px 12px 8px 32px;
+    font-size: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    border: none;
+    border-radius: 10px;
+    background-color: #f2f2f7;
+    color: #000000;
+    outline: none;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iIzg4ODg4OCI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
+    background-position: 8px center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+  }
+
+  #search:focus {
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.3);
+  }
+
+  #search::placeholder {
+    color: #8e8e93;
+  }
+
+  .dark #search {
+    background-color: #1f2937;
+    color: #ffffff;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iI2JiYmJiYiI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
+  }
+
+  .dark #search:focus {
+    background-color: #2c2c2e;
+    box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.5);
+  }
+
+  .dark #search::placeholder {
+    color: #8e8e93;
+  }
+
+  .search-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+
+  #search {
+    flex-grow: 1;
+  }
+
+  #top-pagination {
+    margin-bottom: 16px;
+  }
+
+  @media (max-width: 991px) {
+    .search-container {
+      margin-bottom: 32px;
+    }
+
+    #top-pagination {
+      display: none;
+    }
+  }
 </style>
 
-<section class="py-10 px-5 mt-[66px]">
+<section class="py-10 px-5 mt-[66px] dark:text-white">
   <div class="container">
     <h1 class="text-[38px] text-center font-bold text-active-blue mb-8">SimpleX Directory</h1>
     <p>Welcome to the selected users' communities that you can join via <a href="/downloads">SimpleX Chat
         app</a>.</p>
     <p>SimpleX Directory is also available as a <a>SimpleX chat bot</a>.</p>
     <p class="mb-8">Read about <a href="/docs/directory.html">how to add</a> your community</a>.</p>
-    <div id="pagination"></div>
+    <div class="search-container">
+      <input id="search">
+      <div id="top-pagination" class="pagination"></div>
+    </div>
     <div id="directory" class="mt-[16px]"></div>
+    <div id="bottom-pagination" class="pagination"></div>
   </div>
 </section>
