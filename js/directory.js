@@ -71,7 +71,7 @@ function includesQuery(field, query) {
 }
 
 function textIncludesQuery(text, query) {
-  text ? text.toLowerCase().includes(query) : false
+  return text ? text.toLowerCase().includes(query) : false
 }
 
 function uriIncludesQuery(uri, query) {
