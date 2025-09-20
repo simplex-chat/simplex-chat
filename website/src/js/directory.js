@@ -1,17 +1,38 @@
 const directoryDataURL = 'https://directory.simplex.chat/data/';
 
-let filteredEntries = [];
+// const directoryDataURL = 'http://localhost:8080/directory-data/';
 
 let allEntries = [];
 
+let sortedEntries = [];
+
+let filteredEntries = [];
+
+let currentSortMode = '';
+
 async function initDirectory() {
+  console.log('initDirectory')
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
-  allEntries = listing.entries.sort(byMemberCountDesc)
-  filteredEntries = allEntries.slice();
-  renderDirectoryPage()
-  window.addEventListener('hashchange', renderDirectoryPage);
+  const topBtn = document.querySelector('#top-pagination .top');
+  const newBtn = document.querySelector('#top-pagination .new');
   const searchInput = document.getElementById('search');
-  searchInput.addEventListener('input', handleSearchInput);
+  allEntries = listing.entries
+  renderSortedEntries('new', byCreatedAtDesc, newBtn)
+  window.addEventListener('hashchange', renderDirectoryPage);
+  searchInput.addEventListener('input', (e) => renderFilteredEntries(e.target.value));
+
+  newBtn.addEventListener('click', () => renderSortedEntries('new', byCreatedAtDesc, newBtn));
+  topBtn.addEventListener('click', () => renderSortedEntries('top', byMemberCountDesc, topBtn));
+
+  function renderSortedEntries(mode, comparator, btn) {
+    if (currentSortMode === mode) return;
+    currentSortMode = mode;
+    newBtn.classList.remove('active');
+    topBtn.classList.remove('active');
+    btn.classList.add('active');
+    sortedEntries = allEntries.slice().sort(comparator);
+    renderFilteredEntries(searchInput.value);
+  }
 }
 
 function renderDirectoryPage() {
@@ -19,12 +40,12 @@ function renderDirectoryPage() {
   displayEntries(currentEntries);
 }
 
-function handleSearchInput(e) {
-  const query = e.target.value.toLowerCase().trim();
+function renderFilteredEntries(s) {
+  const query = s.toLowerCase().trim();
   if (query === '') {
-    filteredEntries = allEntries.slice();
+    filteredEntries = sortedEntries.slice();
   } else {
-    filteredEntries = allEntries.filter(entry =>
+    filteredEntries = sortedEntries.filter(entry =>
       (entry.displayName || '').toLowerCase().includes(query)
         || includesQuery(entry.shortDescr, query)
         || includesQuery(entry.welcomeMessage, query)
@@ -67,9 +88,11 @@ async function fetchJSON(url) {
 }
 
 function byMemberCountDesc(entry1, entry2) {
-  const n1 = entryMemberCount(entry1)
-  const n2 = entryMemberCount(entry2)
-  return n1 > n2 ? -1 : n1 < n2 ? 1 : 0
+  return entryMemberCount(entry2) - entryMemberCount(entry1)
+}
+
+function byCreatedAtDesc(entry1, entry2) {
+  return entry2.createdAt?.localeCompare(entry1.createdAt ?? '') ?? 0
 }
 
 function entryMemberCount(entry) {
@@ -171,6 +194,8 @@ function displayEntries(entries) {
   for (let el of document.querySelectorAll('.secret')) {
     el.addEventListener('click', () => el.classList.toggle('visible'));
   }
+
+  directory.style.height = '';
 }
 
 function goToPage(p) {
@@ -188,7 +213,7 @@ function addPagination(entries) {
   const endIndex = Math.min(startIndex + entriesPerPage, entries.length);
   const currentEntries = entries.slice(startIndex, endIndex);
 
-  addPaginationElements('top-pagination')
+  // addPaginationElements('top-pagination')
   addPaginationElements('bottom-pagination')
   return currentEntries;
 

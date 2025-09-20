@@ -1133,7 +1133,7 @@ checkListings listed promoted = do
   checkListing promotedFileName promoted
   where
     checkListing f expected = do
-      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web" </> f
+      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web/data" </> f
       map groupName gs `shouldBe` expected
     groupName DirectoryEntry {displayName} = displayName
 

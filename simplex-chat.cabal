@@ -473,8 +473,10 @@ executable simplex-directory-service
     , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , containers ==0.6.*
+    , crypton ==0.34.*
     , directory ==1.3.*
     , filepath ==1.4.*
+    , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
     , process >=1.6 && <1.6.18
