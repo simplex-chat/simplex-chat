@@ -221,10 +221,6 @@ templateEngineOverride: njk
     background-size: 18px;
   }
 
-  /* #search:focus {
-    box-shadow: 0 0 0 1px rgba(0, 122, 255, 0.2);
-  } */
-
   #search::placeholder {
     color: #8e8e93;
   }
@@ -235,10 +231,6 @@ templateEngineOverride: njk
     background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iI2JiYmJiYiI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
   }
 
-  /* .dark #search:focus {
-    box-shadow: 0 0 0 1px rgba(10, 132, 255, 0.3);
-  } */
-
   .dark #search::placeholder {
     color: #8e8e93;
   }
@@ -248,7 +240,6 @@ templateEngineOverride: njk
     align-items: center;
     justify-content: space-between;
     gap: 16px;
-    margin-bottom: 16px;
   }
 
   #search {
@@ -258,12 +249,6 @@ templateEngineOverride: njk
   #top-pagination {
     margin-bottom: 16px;
   }
-
-  @media (max-width: 991px) {
-    .search-container {
-      margin-bottom: 32px;
-    }
-  }
 </style>
 
 <section class="py-10 px-5 mt-[66px] dark:text-white">
@@ -272,7 +257,7 @@ templateEngineOverride: njk
     <p>Welcome to the selected users' communities that you can join via <a href="/downloads">SimpleX Chat
         app</a>.</p>
     <p>SimpleX Directory is also available as a <a>SimpleX chat bot</a>.</p>
-    <p class="mb-8">Read about <a href="/docs/directory.html">how to add</a> your community</a>.</p>
+    <p>Read about <a href="/docs/directory.html">how to add</a> your community</a>.</p>
     <div class="search-container">
       <input id="search">
       <div id="top-pagination" class="pagination">
@@ -281,7 +266,7 @@ templateEngineOverride: njk
         <button class="text-btn top">Top</button>
       </div>
     </div>
-    <div id="directory" class="mt-[16px]" style="height: 3000px;"></div>
+    <div id="directory" style="height: 3000px;"></div>
     <div id="bottom-pagination" class="pagination"></div>
   </div>
 </section>

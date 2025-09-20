@@ -11,14 +11,13 @@ let filteredEntries = [];
 let currentSortMode = '';
 
 async function initDirectory() {
-  console.log('initDirectory')
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
   const liveBtn = document.querySelector('#top-pagination .live');
   const newBtn = document.querySelector('#top-pagination .new');
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderSortedEntries('live', byActiveAtDesc, liveBtn)
+  renderSortedEntries('top', byMemberCountDesc, topBtn)
   window.addEventListener('hashchange', renderDirectoryPage);
   searchInput.addEventListener('input', (e) => renderFilteredEntries(e.target.value));
 
@@ -29,6 +28,7 @@ async function initDirectory() {
   function renderSortedEntries(mode, comparator, btn) {
     if (currentSortMode === mode) return;
     currentSortMode = mode;
+    if (location.hash) location.hash = '';
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
@@ -91,15 +91,26 @@ async function fetchJSON(url) {
 }
 
 function byMemberCountDesc(entry1, entry2) {
-  return entryMemberCount(entry2) - entryMemberCount(entry1)
+  return entryMemberCount(entry2) - entryMemberCount(entry1);
 }
 
 function byActiveAtDesc(entry1, entry2) {
-  return entry2.activeAt?.localeCompare(entry1.activeAt ?? '') ?? 0
+  return (roundedTs(entry2.activeAt) - roundedTs(entry1.activeAt)) * 10
+    + Math.sign(byMemberCountDesc(entry1, entry2));
 }
 
 function byCreatedAtDesc(entry1, entry2) {
-  return entry2.createdAt?.localeCompare(entry1.createdAt ?? '') ?? 0
+  return (roundedTs(entry2.createdAt) - roundedTs(entry1.createdAt)) * 10
+    + Math.sign(byMemberCountDesc(entry1, entry2));
+}
+
+function roundedTs(s) {
+  try {
+    // rounded to 15 minutes, which is the frequency of listing update
+    return Math.floor(new Date(s).valueOf() / 900000);
+  } catch {
+    return 0;
+  }
 }
 
 function entryMemberCount(entry) {
@@ -185,8 +196,7 @@ function displayEntries(entries) {
           ? directoryDataURL + imageFile
           : "/img/group.svg";
       imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
-      imgElement.href = groupLink.connShortLink ?? groupLink.connFullLink;
-      // TODO use simplex.chat site when appropriate
+      imgElement.href = platformSimplexUri(groupLink.connShortLink ?? groupLink.connFullLink);
       if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
       imgElement.title = `Join ${displayName}`;
       entryDiv.appendChild(imgElement);
@@ -335,6 +345,31 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank"'
 }
 
+function platformSimplexUri(uri) {
+  if (isMobile.any()) return uri;
+  if (uri.startsWith('simplex:/g#')) {
+    const prefixLength = 'simplex:/g#'.length;
+    const fragment = uri.substring(prefixLength);
+    const queryIndex = fragment.indexOf('?');
+    if (queryIndex === -1) return uri;
+    const hashPart = fragment.substring(0, queryIndex);
+    const queryStr = fragment.substring(queryIndex + 1);
+    const params = new URLSearchParams(queryStr);
+    const host = params.get('h');
+    if (!host) return uri;
+    params.delete('h');
+    let newFragment = hashPart;
+    const remainingParams = params.toString();
+    if (remainingParams) newFragment += '?' + remainingParams;
+    return `https://${host}:/g#${newFragment}`;
+  } else if(uri.startsWith('simplex:/')) {
+    const prefixLength = 'simplex:/'.length;
+    return 'https://simplex.chat/' + uri.substring(prefixLength);
+  } else {
+    return uri;
+  }
+}
+
 function renderMarkdown(fts) {
   let html = '';
   for (const ft of fts) {
@@ -375,8 +410,7 @@ function renderMarkdown(fts) {
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          // TODO replace simplexUri on desktop with the link on server domain or in simplex.chat domain
-          html += `<a href="${simplexUri}">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
+          html += `<a href="${platformSimplexUri(simplexUri)}">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
           break;
         }
         case 'command':
