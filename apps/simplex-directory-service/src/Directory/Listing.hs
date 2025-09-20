@@ -66,6 +66,7 @@ data DirectoryEntry = DirectoryEntry
     shortDescr :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
     imageFile :: Maybe String,
+    activeAt :: UTCTime,
     createdAt :: UTCTime
   }
 
@@ -78,7 +79,7 @@ $(JQ.deriveJSON defaultJSON ''DirectoryListing)
 type ImageFileData = ByteString
 
 groupDirectoryEntry :: GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry (GIS GroupInfo {groupProfile, createdAt} summary gLink_) =
+groupDirectoryEntry (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLink_) =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
       entryType = DETGroup memberAdmission summary
       entry groupLink =
@@ -90,6 +91,7 @@ groupDirectoryEntry (GIS GroupInfo {groupProfile, createdAt} summary gLink_) =
                   shortDescr = toFormattedText <$> shortDescr,
                   welcomeMessage = toFormattedText <$> description,
                   imageFile = fst <$> imgData,
+                  activeAt = fromMaybe createdAt chatTs,
                   createdAt
                 }
             imgData = imgFileData groupLink =<< image

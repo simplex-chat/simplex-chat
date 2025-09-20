@@ -1,6 +1,6 @@
-const directoryDataURL = 'https://directory.simplex.chat/data/';
+// const directoryDataURL = 'https://directory.simplex.chat/data/';
 
-// const directoryDataURL = 'http://localhost:8080/directory-data/';
+const directoryDataURL = 'http://localhost:8080/directory-data/';
 
 let allEntries = [];
 
@@ -13,20 +13,23 @@ let currentSortMode = '';
 async function initDirectory() {
   console.log('initDirectory')
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
-  const topBtn = document.querySelector('#top-pagination .top');
+  const liveBtn = document.querySelector('#top-pagination .live');
   const newBtn = document.querySelector('#top-pagination .new');
+  const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderSortedEntries('new', byCreatedAtDesc, newBtn)
+  renderSortedEntries('live', byCreatedAtDesc, liveBtn)
   window.addEventListener('hashchange', renderDirectoryPage);
   searchInput.addEventListener('input', (e) => renderFilteredEntries(e.target.value));
 
+  liveBtn.addEventListener('click', () => renderSortedEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderSortedEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderSortedEntries('top', byMemberCountDesc, topBtn));
 
   function renderSortedEntries(mode, comparator, btn) {
     if (currentSortMode === mode) return;
     currentSortMode = mode;
+    liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
     btn.classList.add('active');
@@ -89,6 +92,10 @@ async function fetchJSON(url) {
 
 function byMemberCountDesc(entry1, entry2) {
   return entryMemberCount(entry2) - entryMemberCount(entry1)
+}
+
+function byActiveAtDesc(entry1, entry2) {
+  return entry2.activeAt?.localeCompare(entry1.activeAt ?? '') ?? 0
 }
 
 function byCreatedAtDesc(entry1, entry2) {
