@@ -111,9 +111,6 @@ function displayEntries(entries) {
 
         const readMore = document.createElement('p');
         readMore.textContent = 'Read more';
-        readMore.style.cursor = 'pointer';
-        readMore.style.color = '#1d4ed8';
-        readMore.style.textDecoration = 'underline';
         readMore.className = 'read-more';
         readMore.style.display = 'none';
         textContainer.appendChild(readMore);
@@ -132,9 +129,11 @@ function displayEntries(entries) {
             readMore.addEventListener('click', () => {
               if (messageElement.style.maxHeight === maxHeightPx) {
                 messageElement.style.maxHeight = 'none';
-                readMore.textContent = 'Read less';
+                readMore.className = 'read-less';
+                readMore.innerHTML = '&#9650;';
               } else {
                 messageElement.style.maxHeight = maxHeightPx;
+                readMore.className = 'read-more';
                 readMore.textContent = 'Read more';
               }
             });
@@ -304,14 +303,6 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank"'
 }
 
-function htmlColor(color) {
-  switch (color) {
-    case 'yellow': return 'gold'
-    case 'cyan': return 'turquoise'
-    default: return color
-  }
-}
-
 function renderMarkdown(fts) {
   let html = '';
   for (const ft of fts) {
@@ -338,7 +329,7 @@ function renderMarkdown(fts) {
           html += `<span class="secret">${escapeHtml(text)}</span>`;
           break;
         case 'colored':
-          html += `<span style="color: ${htmlColor(format.color)};">${escapeHtml(text)}</span>`;
+          html += `<span class="${format.color}">${escapeHtml(text)}</span>`;
           break;
         case 'uri':
           let href = text.startsWith('http://') || text.startsWith('https://') || text.startsWith('simplex:/') ? text : 'https://' + text;

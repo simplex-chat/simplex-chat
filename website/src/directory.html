@@ -54,11 +54,70 @@ templateEngineOverride: njk
     user-select: auto;
   }
 
+  #directory .entry .read-more {
+    color: #0053D0;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  #directory .entry .read-less {
+    color: darkgray;
+    cursor: pointer;
+  }
+
+  .dark #directory .entry .read-more {
+    color: #70F0F9;
+  }
+
+  #directory .entry .red {
+    color: #DD0000;
+  }
+
+  #directory .entry .green {
+    color: #20BD3D;
+  }
+
+  #directory .entry .blue {
+    color: #0053d0;
+  }
+
+  #directory .entry .cyan {
+    color: #0AC4D1;
+  }
+
+  #directory .entry .yellow {
+    color: #DEBD00;
+  }
+
+  #directory .entry .magenta {
+    color: magenta;
+  }
+
+  .dark #directory .entry .green {
+    color: #4DDA67;
+  }
+
+  .dark #directory .entry .blue {
+    color: #00A2FF;
+  }
+
+  .dark #directory .entry .cyan {
+    color: #70F0F9;
+  }
+
+  .dark #directory .entry .yellow {
+    color: #FFD700;
+  }
+
+  .dark #directory .entry .magenta {
+    color: magenta;
+  }
+
   .pagination {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 8px;
+    gap: 4px;
     margin-top: 20px;
     padding: 10px 0;
   }
@@ -118,7 +177,7 @@ templateEngineOverride: njk
 
   @media (max-width: 768px) {
     .pagination {
-      gap: 4px;
+      gap: 2px;
       padding: 8px 0;
     }
 
@@ -154,7 +213,7 @@ templateEngineOverride: njk
 
   #search {
     width: 100%;
-    max-width: 480px;
+    max-width: 540px;
     padding: 8px 12px 8px 32px;
     font-size: 15px;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
