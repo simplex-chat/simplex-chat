@@ -1,6 +1,6 @@
-// const directoryDataURL = 'https://directory.simplex.chat/data/';
+const directoryDataURL = 'https://directory.simplex.chat/data/';
 
-const directoryDataURL = 'http://localhost:8080/directory-data/';
+// const directoryDataURL = 'http://localhost:8080/directory-data/';
 
 let allEntries = [];
 
@@ -18,7 +18,7 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderSortedEntries('live', byCreatedAtDesc, liveBtn)
+  renderSortedEntries('live', byActiveAtDesc, liveBtn)
   window.addEventListener('hashchange', renderDirectoryPage);
   searchInput.addEventListener('input', (e) => renderFilteredEntries(e.target.value));
 
