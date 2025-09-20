@@ -273,7 +273,7 @@ getUserGroupRegs st ctId = filter ((ctId ==) . dbContactId) <$> readTVarIO (grou
 filterListedGroups :: DirectoryStore -> [GroupInfoSummary] -> IO [GroupInfoSummary]
 filterListedGroups st gs = do
   lgs <- readTVarIO $ listedGroups st
-  pure $ filter (\(GIS GroupInfo {groupId} _) -> groupId `S.member` lgs) gs
+  pure $ filter (\(GIS GroupInfo {groupId} _ _) -> groupId `S.member` lgs) gs
 
 listGroup :: DirectoryStore -> GroupReg -> STM ()
 listGroup st gr = do

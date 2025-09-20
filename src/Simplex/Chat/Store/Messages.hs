@@ -2204,8 +2204,6 @@ updateGroupScopeUnreadStats db vr user g@GroupInfo {membership} scopeInfo (unrea
       m_ <- runExceptT $ getGroupMemberById db vr user groupMemberId
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
-deriving instance Show BoolInt
-
 setGroupChatItemsDeleteAt :: DB.Connection -> User -> GroupId -> [(ChatItemId, Int)] -> UTCTime -> IO [(ChatItemId, UTCTime)]
 setGroupChatItemsDeleteAt db User {userId} groupId itemIds currentTs = forM itemIds $ \(chatItemId, ttl) -> do
   let deleteAt = addUTCTime (realToFrac ttl) currentTs

@@ -2159,6 +2159,7 @@ MemberSupport:
 **Record type**:
 - groupInfo: [GroupInfo](#groupinfo)
 - groupSummary: [GroupSummary](#groupsummary)
+- groupLink: [GroupLink](#grouplink)?
 
 
 ---

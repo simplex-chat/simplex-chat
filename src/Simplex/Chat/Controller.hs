@@ -62,7 +62,7 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
-import Simplex.Chat.Store (AddressSettings, ChatLockEntity, GroupLink, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AddressSettings, ChatLockEntity, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared

@@ -18,7 +18,6 @@ module Simplex.Chat.Store.Groups
     GroupInfoRow,
     GroupMemberRow,
     MaybeGroupMemberRow,
-    GroupLink (..),
     toGroupInfo,
     toGroupMember,
     toMaybeGroupMember,
@@ -162,7 +161,6 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
-import qualified Data.Aeson.TH as J
 import Data.Bifunctor (second)
 import Data.Bitraversable (bitraverse)
 import Data.Char (toLower)
@@ -188,7 +186,6 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
-import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
 import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>), ($>>=), (<$$>))
 import Simplex.Messaging.Version
@@ -279,16 +276,6 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
     |]
     (userId, groupId)
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
-
-data GroupLink = GroupLink
-  { userContactLinkId :: Int64,
-    connLinkContact :: CreatedLinkContact,
-    shortLinkDataSet :: Bool,
-    shortLinkLargeDataSet :: BoolDef,
-    groupLinkId :: GroupLinkId,
-    acceptMemberRole :: GroupMemberRole
-  }
-  deriving (Show)
 
 getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO GroupLink
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
@@ -982,9 +969,12 @@ getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
     search = maybe "" (map toLower) search_
 
 getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfoSummary]
-getUserGroupsWithSummary db vr user _contactId_ search_ =
-  getUserGroupDetails db vr user _contactId_ search_
-    >>= mapM (\g@GroupInfo {groupId} -> GIS g <$> getGroupSummary db user groupId)
+getUserGroupsWithSummary db vr user _contactId_ search_ = do
+  gs <- getUserGroupDetails db vr user _contactId_ search_
+  forM gs $ \g@GroupInfo {groupId} -> do
+    s <- getGroupSummary db user groupId
+    link_ <- eitherToMaybe <$> runExceptT (getGroupLink db user g)
+    pure $ GIS g s link_
 
 -- the statuses on non-current members should match memberCurrent' function
 getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
@@ -2905,5 +2895,3 @@ updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
-
-$(J.deriveJSON defaultJSON ''GroupLink)

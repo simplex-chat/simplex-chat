@@ -21,8 +21,7 @@ import Directory.Service
 import Directory.Store
 import GHC.IO.Handle (hClose)
 import Simplex.Chat.Bot.KnownContacts
-import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
-import Simplex.Chat.Core
+import Simplex.Chat.Controller (ChatConfig (..))
 import qualified Simplex.Chat.Markdown as MD
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
@@ -1129,11 +1128,12 @@ testListUserGroups promote ps =
 
 checkListings :: [T.Text] -> [T.Text] -> IO ()
 checkListings listed promoted = do
+  threadDelay 100000
   checkListing listingFileName listed
   checkListing promotedFileName promoted
   where
     checkListing f expected = do
-      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web" </> f
+      Just (DirectoryListing gs) <- J.decodeFileStrict $ "./tests/tmp/web/data" </> f
       map groupName gs `shouldBe` expected
     groupName DirectoryEntry {displayName} = displayName
 
@@ -1396,14 +1396,9 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
   st <- restoreDirectoryStore directoryLog
-  t <- forkIO $ bot st
+  t <- forkIO $ directoryService st opts cfg
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)
-  where
-    bot st = do
-      env <- newServiceState opts
-      let cfg' = cfg {chatHooks = defaultChatHooks {acceptMember = Just $ acceptMemberHook opts env}}
-      simplexChatCore cfg' (mkChatOpts opts) $ directoryService st opts env
 
 registerGroup :: TestCC -> TestCC -> String -> String -> IO ()
 registerGroup su u n fn = registerGroupId su u n fn 1 1
