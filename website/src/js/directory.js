@@ -1,4 +1,4 @@
-const directoryDataURL = 'https://directory.simplex.chat/';
+const directoryDataURL = 'https://directory.simplex.chat/data/';
 
 let filteredEntries = [];
 

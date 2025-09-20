@@ -17,17 +17,23 @@ import Data.ByteString (ByteString)
 import Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
+import Data.List (isPrefixOf)
 import Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
+import Data.Time.Clock (getCurrentTime)
+import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
 import Simplex.Chat.Markdown
 import Simplex.Chat.Types
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
 import System.Directory
 import System.FilePath
+
+directoryDataPath :: String
+directoryDataPath = "data"
 
 listingFileName :: String
 listingFileName = "listing.json"
@@ -90,18 +96,26 @@ groupDirectoryEntry (GIS GroupInfo {groupId, groupProfile} summary gLink_) =
 
 generateListing :: DirectoryStore -> FilePath -> [GroupInfoSummary] -> IO ()
 generateListing st dir gs = do
+  oldDirs <- filter ((directoryDataPath <> ".") `isPrefixOf`) <$> listDirectory dir
+  ts <- getCurrentTime
+  let symLink = dir </> directoryDataPath
+      newDir = symLink <> "." <> iso8601Show ts <> "/"
   gs' <- filterListedGroups st gs
-  removePathForcibly (dir </> listingImageFolder)
-  createDirectoryIfMissing True (dir </> listingImageFolder)
+  createDirectoryIfMissing True (newDir </> listingImageFolder)
   gs'' <-
     fmap catMaybes $ forM gs' $ \g@(GIS GroupInfo {groupId} _ _) ->
       forM (groupDirectoryEntry g) $ \(g', img) -> do
-        forM_ img $ \(imgFile, imgData) -> B.writeFile (dir </> imgFile) imgData
+        forM_ img $ \(imgFile, imgData) -> B.writeFile (newDir </> imgFile) imgData
         pure (groupId, g')
-  saveListing listingFileName gs''
-  saveListing promotedFileName =<< filterPromotedGroups st gs''
+  saveListing newDir listingFileName gs''
+  saveListing newDir promotedFileName =<< filterPromotedGroups st gs''
+  -- atomically update the link
+  let newSymLink = newDir <> ".link"
+  createDirectoryLink newDir newSymLink
+  renamePath newSymLink symLink
+  mapM_ (removePathForcibly . (dir </>)) oldDirs
   where
-    saveListing f = LB.writeFile (dir </> f) . J.encode . DirectoryListing . map snd
+    saveListing newDir f = LB.writeFile (newDir </> f) . J.encode . DirectoryListing . map snd
 
 filterPromotedGroups :: DirectoryStore -> [(GroupId, DirectoryEntry)] -> IO [(GroupId, DirectoryEntry)]
 filterPromotedGroups st gs = do
