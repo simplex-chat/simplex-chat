@@ -1221,6 +1221,10 @@ video {
   flex: 2.5;
 }
 
+.flex-grow {
+  flex-grow: 1;
+}
+
 .border-separate {
   border-collapse: separate;
 }
@@ -2052,6 +2056,10 @@ video {
   --tw-shadow: inset 0px 2px 2px rgba(0,0,0,0.15);
   --tw-shadow-colored: inset 0px 2px 2px var(--tw-shadow-color);
   box-shadow: var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow);
+}
+
+.outline {
+  outline-style: solid;
 }
 
 .blur {
