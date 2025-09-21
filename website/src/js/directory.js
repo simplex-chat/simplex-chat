@@ -116,8 +116,7 @@ function byCreatedAtDesc(entry1, entry2) {
 
 function roundedTs(s) {
   try {
-    // rounded to 15 minutes, which is the frequency of listing update
-    return Math.floor(new Date(s).valueOf() / 900000);
+    return new Date(s).valueOf();
   } catch {
     return 0;
   }
@@ -135,6 +134,37 @@ function entryMemberCount(entry) {
   return entry.entryType.type == 'group'
     ? (entry.entryType.summary?.currentMembers ?? 0)
     : 0
+}
+
+const now = new Date();
+const nowVal = now.valueOf();
+const today = new Date(now);
+today.setHours(0, 0, 0, 0);
+const todayVal = today.valueOf();
+const todayYear = today.getFullYear();
+
+const dateFormatter = Intl?.DateTimeFormat?.(undefined, {month: '2-digit', day: '2-digit'});
+const dateYearFormatter = Intl?.DateTimeFormat?.(undefined, {year: 'numeric', month: '2-digit', day: '2-digit'});
+
+function showDate(d) {
+  return dateFormatter && d.getFullYear() == todayYear
+    ? dateFormatter.format(d)
+    : dateYearFormatter?.format(d) ?? d.toLocaleDateString();
+}
+
+function showCreatedOn(s) {
+  const d = new Date(s)
+  d.setHours(0, 0, 0, 0);
+  return 'Created' + (d.valueOf() === todayVal ? ' today' : ' on ' + showDate(d));
+}
+
+function showActiveOn(s) {
+  const d = new Date(s)
+  const ago = nowVal - d.valueOf();
+  if (ago <= 1200000) return 'Active now'; // 20 minutes
+  if (ago <= 10800000) return 'Active recently'; // 3 hours
+  d.setHours(0, 0, 0, 0);
+  return 'Active' + (d.valueOf() === todayVal ? ' today' : ' on ' + showDate(d));
 }
 
 function displayEntries(entries) {
@@ -200,11 +230,23 @@ function displayEntries(entries) {
         }, 0);
       }
 
+      const entryTimestamp = currentSortMode === 'new' && entry.createdAt
+        ? showCreatedOn(entry.createdAt)
+        : entry.activeAt
+        ? showActiveOn(entry.activeAt)
+        : '';
+      if (entryTimestamp) {
+        timestampElement = document.createElement('p');
+        timestampElement.textContent = entryTimestamp;
+        timestampElement.className = 'text-sm';
+        textContainer.appendChild(timestampElement);
+      }
+
       const memberCount = entryMemberCount(entry);
       if (typeof memberCount == 'number' && memberCount > 0) {
         const memberCountElement = document.createElement('p');
-        memberCountElement.innerText = `${memberCount} members`;
-        memberCountElement.classList = ['text-sm'];
+        memberCountElement.textContent = `${memberCount} members`;
+        memberCountElement.className = 'text-sm';
         textContainer.appendChild(memberCountElement);
       }
 
