@@ -23,13 +23,15 @@ import qualified Data.ByteString.Base64 as B64
 import qualified Data.ByteString.Base64.URL as B64URL
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
+import Data.Int (Int64)
 import Data.List (isPrefixOf)
 import Data.Maybe (catMaybes, fromMaybe)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime, nominalDay)
+import Data.Time.Clock
+import Data.Time.Clock.System
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
 import Simplex.Chat.Markdown
@@ -79,10 +81,14 @@ $(JQ.deriveJSON defaultJSON ''DirectoryListing)
 type ImageFileData = ByteString
 
 newOrActive :: NominalDiffTime
-newOrActive = 14 * nominalDay
+newOrActive = 30 * nominalDay
 
-recentTime :: UTCTime -> UTCTime -> Maybe UTCTime
-recentTime now t = if diffUTCTime now t <= newOrActive then Just t else Nothing
+recentRoundedTime :: Int64 -> UTCTime -> UTCTime -> Maybe UTCTime
+recentRoundedTime roundTo now t
+  | diffUTCTime now t > newOrActive = Nothing
+  | otherwise =
+      let secs = (systemSeconds (utcToSystemTime t) `div` roundTo) * roundTo
+       in Just $ systemToUTCTime $ MkSystemTime secs 0
 
 groupDirectoryEntry :: UTCTime -> GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
 groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLink_) =
@@ -97,8 +103,8 @@ groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt} summary
                   shortDescr = toFormattedText <$> shortDescr,
                   welcomeMessage = toFormattedText <$> description,
                   imageFile = fst <$> imgData,
-                  activeAt = recentTime now $ fromMaybe createdAt chatTs,
-                  createdAt = recentTime now createdAt
+                  activeAt = recentRoundedTime 900 now $ fromMaybe createdAt chatTs,
+                  createdAt = recentRoundedTime 86400 now createdAt
                 }
             imgData = imgFileData groupLink =<< image
          in (de, imgData)

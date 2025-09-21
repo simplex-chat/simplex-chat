@@ -5,11 +5,13 @@ const directoryDataURL = 'https://directory.simplex.chat/data/';
 
 let allEntries = [];
 
-let sortedEntries = [];
-
 let filteredEntries = [];
 
 let currentSortMode = '';
+
+let currentSearch = '';
+
+let currentPage = 1;
 
 async function initDirectory() {
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
@@ -20,22 +22,32 @@ async function initDirectory() {
   allEntries = listing.entries
   renderSortedEntries('top', byMemberCountDesc, topBtn)
   window.addEventListener('hashchange', renderDirectoryPage);
-  searchInput.addEventListener('input', (e) => renderFilteredEntries(e.target.value));
+  searchInput.addEventListener('input', (e) => {
+    renderSortedEntries('top', byMemberCountDesc, topBtn, e.target.value.trim())
+    // renderFilteredEntries(e.target.value);
+  });
 
   liveBtn.addEventListener('click', () => renderSortedEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderSortedEntries('new', byCreatedAtDesc, newBtn));
   topBtn.addEventListener('click', () => renderSortedEntries('top', byMemberCountDesc, topBtn));
 
-  function renderSortedEntries(mode, comparator, btn) {
-    if (currentSortMode === mode) return;
+  function renderSortedEntries(mode, comparator, btn, search) {
+    if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
     if (location.hash) location.hash = '';
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
-    btn.classList.add('active');
-    sortedEntries = allEntries.slice().sort(comparator);
-    renderFilteredEntries(searchInput.value);
+    if (!search) {
+      currentSearch = '';
+      currentPage = 1;
+      searchInput.value = '';
+      btn.classList.add('active');
+    } else {
+      currentSearch = search;
+    }
+    filteredEntries = filterEntries(mode, search ?? '').sort(comparator);
+    renderDirectoryPage();
   }
 }
 
@@ -44,18 +56,20 @@ function renderDirectoryPage() {
   displayEntries(currentEntries);
 }
 
-function renderFilteredEntries(s) {
-  const query = s.toLowerCase().trim();
-  if (query === '') {
-    filteredEntries = sortedEntries.slice();
-  } else {
-    filteredEntries = sortedEntries.filter(entry =>
-      (entry.displayName || '').toLowerCase().includes(query)
-        || includesQuery(entry.shortDescr, query)
-        || includesQuery(entry.welcomeMessage, query)
-    );
-  }
-  renderDirectoryPage();
+function filterEntries(mode, s) {
+  if (s === '' && mode == 'top') return allEntries.slice();
+  const query = s.toLowerCase();
+  return allEntries.filter(entry =>
+    ( mode === 'top'
+      || (mode === 'new' && entry.createdAt)
+      || (mode === 'live' && entry.activeAt)
+    ) &&
+    ( query === ''
+      || (entry.displayName || '').toLowerCase().includes(query)
+      || includesQuery(entry.shortDescr, query)
+      || includesQuery(entry.welcomeMessage, query)
+    )
+  );
 }
 
 function includesQuery(field, query) {
@@ -223,13 +237,13 @@ function displayEntries(entries) {
 }
 
 function goToPage(p) {
-  location.hash = p.toString();
+  currentPage = p;
+  renderDirectoryPage();
 }
 
 function addPagination(entries) {
   const entriesPerPage = 10;
   const totalPages = Math.ceil(entries.length / entriesPerPage);
-  let currentPage = parseInt(location.hash.slice(1)) || 1;
   if (currentPage < 1) currentPage = 1;
   if (currentPage > totalPages) currentPage = totalPages;
 
