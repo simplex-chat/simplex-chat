@@ -22,11 +22,11 @@ async function initDirectory() {
   allEntries = listing.entries
   renderEntries('top', bySortPriority, topBtn)
   searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim()));
-  liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn, ''));
-  newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn, ''));
-  topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn, ''));
+  liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
+  newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
+  topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
 
-  function renderEntries(mode, comparator, btn, search) {
+  function renderEntries(mode, comparator, btn, search = '') {
     if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
     if (location.hash) location.hash = '';
