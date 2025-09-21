@@ -29,7 +29,7 @@ import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
-import Data.Time.Clock (UTCTime, getCurrentTime)
+import Data.Time.Clock (NominalDiffTime, UTCTime, diffUTCTime, getCurrentTime, nominalDay)
 import Data.Time.Format.ISO8601 (iso8601Show)
 import Directory.Store
 import Simplex.Chat.Markdown
@@ -66,8 +66,8 @@ data DirectoryEntry = DirectoryEntry
     shortDescr :: Maybe MarkdownList,
     welcomeMessage :: Maybe MarkdownList,
     imageFile :: Maybe String,
-    activeAt :: UTCTime,
-    createdAt :: UTCTime
+    activeAt :: Maybe UTCTime,
+    createdAt :: Maybe UTCTime
   }
 
 $(JQ.deriveJSON defaultJSON ''DirectoryEntry)
@@ -78,8 +78,14 @@ $(JQ.deriveJSON defaultJSON ''DirectoryListing)
 
 type ImageFileData = ByteString
 
-groupDirectoryEntry :: GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLink_) =
+newOrActive :: NominalDiffTime
+newOrActive = 14 * nominalDay
+
+recentTime :: UTCTime -> UTCTime -> Maybe UTCTime
+recentTime now t = if diffUTCTime now t <= newOrActive then Just t else Nothing
+
+groupDirectoryEntry :: UTCTime -> GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
+groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLink_) =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
       entryType = DETGroup memberAdmission summary
       entry groupLink =
@@ -91,8 +97,8 @@ groupDirectoryEntry (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLi
                   shortDescr = toFormattedText <$> shortDescr,
                   welcomeMessage = toFormattedText <$> description,
                   imageFile = fst <$> imgData,
-                  activeAt = fromMaybe createdAt chatTs,
-                  createdAt
+                  activeAt = recentTime now $ fromMaybe createdAt chatTs,
+                  createdAt = recentTime now createdAt
                 }
             imgData = imgFileData groupLink =<< image
          in (de, imgData)
@@ -121,7 +127,7 @@ generateListing st dir gs = do
   createDirectoryIfMissing True (newDir </> listingImageFolder)
   gs'' <-
     fmap catMaybes $ forM gs' $ \g@(GIS GroupInfo {groupId} _ _) ->
-      forM (groupDirectoryEntry g) $ \(g', img) -> do
+      forM (groupDirectoryEntry ts g) $ \(g', img) -> do
         forM_ img $ \(imgFile, imgData) -> B.writeFile (newDir </> imgFile) imgData
         pure (groupId, g')
   saveListing newDir listingFileName gs''
