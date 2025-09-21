@@ -225,7 +225,7 @@ function displayEntries(entries) {
         console.log(e);
         imgElement.href = groupLinkUri;
       }
-      if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
+      imgElement.target = "_blank";
       imgElement.title = `Join ${displayName}`;
       entryDiv.appendChild(imgElement);
 
@@ -397,7 +397,7 @@ function platformSimplexUri(uri) {
     if (remainingParams) newFragment += '?' + remainingParams;
     return `https://${host}:/${linkType}#${newFragment}`;
   } else {
-    return `https://simplex.chat/${fragment}`;
+    return `https://simplex.chat/${linkType}#${fragment}`;
   }
 }
 
