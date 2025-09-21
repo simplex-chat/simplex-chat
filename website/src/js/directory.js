@@ -20,16 +20,15 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderSortedEntries('top', byMemberCountDesc, topBtn)
-  window.addEventListener('hashchange', renderDirectoryPage);
+  renderSortedEntries('top', bySortPriority, topBtn)
   searchInput.addEventListener('input', (e) => {
-    renderSortedEntries('top', byMemberCountDesc, topBtn, e.target.value.trim())
+    renderSortedEntries('top', bySortPriority, topBtn, e.target.value.trim())
     // renderFilteredEntries(e.target.value);
   });
 
   liveBtn.addEventListener('click', () => renderSortedEntries('live', byActiveAtDesc, liveBtn));
   newBtn.addEventListener('click', () => renderSortedEntries('new', byCreatedAtDesc, newBtn));
-  topBtn.addEventListener('click', () => renderSortedEntries('top', byMemberCountDesc, topBtn));
+  topBtn.addEventListener('click', () => renderSortedEntries('top', bySortPriority, topBtn));
 
   function renderSortedEntries(mode, comparator, btn, search) {
     if (currentSortMode === mode && search == currentSearch) return;
@@ -105,18 +104,18 @@ async function fetchJSON(url) {
   }
 }
 
-function byMemberCountDesc(entry1, entry2) {
-  return entryMemberCount(entry2) - entryMemberCount(entry1);
+function bySortPriority(entry1, entry2) {
+  return entrySortPriority(entry2) - entrySortPriority(entry1);
 }
 
 function byActiveAtDesc(entry1, entry2) {
   return (roundedTs(entry2.activeAt) - roundedTs(entry1.activeAt)) * 10
-    + Math.sign(byMemberCountDesc(entry1, entry2));
+    + Math.sign(bySortPriority(entry1, entry2));
 }
 
 function byCreatedAtDesc(entry1, entry2) {
   return (roundedTs(entry2.createdAt) - roundedTs(entry1.createdAt)) * 10
-    + Math.sign(byMemberCountDesc(entry1, entry2));
+    + Math.sign(bySortPriority(entry1, entry2));
 }
 
 function roundedTs(s) {
@@ -126,6 +125,14 @@ function roundedTs(s) {
   } catch {
     return 0;
   }
+}
+
+const simplexUsersGroup = 'SimpleX users group';
+
+function entrySortPriority(entry) {
+  return entry.displayName === simplexUsersGroup
+    ? Number.MAX_VALUE
+    : entryMemberCount(entry)
 }
 
 function entryMemberCount(entry) {
