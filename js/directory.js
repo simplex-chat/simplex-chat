@@ -1,3 +1,4 @@
+(function() {
 const directoryDataURL = 'https://directory.simplex.chat/data/';
 
 // const directoryDataURL = 'http://localhost:8080/directory-data/';
@@ -83,10 +84,10 @@ function uriIncludesQuery(uri, query) {
 async function fetchJSON(url) {
   try {
     const response = await fetch(url)
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+    if (!response.ok) throw new Error(`HTTP status: ${response.status}`)
     return await response.json()
-  } catch (error) {
-    console.error('Error fetching JSON:', error)
+  } catch (e) {
+    console.error(e)
   }
 }
 
@@ -196,7 +197,13 @@ function displayEntries(entries) {
           ? directoryDataURL + imageFile
           : "/img/group.svg";
       imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
-      imgElement.href = platformSimplexUri(groupLink.connShortLink ?? groupLink.connFullLink);
+      const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
+      try {
+        imgElement.href = platformSimplexUri(groupLinkUri);
+      } catch(e) {
+        console.log(e);
+        imgElement.href = groupLinkUri;
+      }
       if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
       imgElement.title = `Join ${displayName}`;
       entryDiv.appendChild(imgElement);
@@ -345,11 +352,17 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank"'
 }
 
+const simplexAddressRegexp = /^simplex:\/([a-z]+)#(.+)/i;
+
+const simplexShortLinkTypes = ["a", "c", "g", "i", "r"];
+
 function platformSimplexUri(uri) {
   if (isMobile.any()) return uri;
-  if (uri.startsWith('simplex:/g#')) {
-    const prefixLength = 'simplex:/g#'.length;
-    const fragment = uri.substring(prefixLength);
+  const res = uri.match(simplexAddressRegexp);
+  if (!res || !Array.isArray(res) || res.length < 3) return uri;
+  const linkType = res[1];
+  const fragment = res[2];
+  if (simplexShortLinkTypes.includes(linkType)) {
     const queryIndex = fragment.indexOf('?');
     if (queryIndex === -1) return uri;
     const hashPart = fragment.substring(0, queryIndex);
@@ -361,12 +374,9 @@ function platformSimplexUri(uri) {
     let newFragment = hashPart;
     const remainingParams = params.toString();
     if (remainingParams) newFragment += '?' + remainingParams;
-    return `https://${host}:/g#${newFragment}`;
-  } else if(uri.startsWith('simplex:/')) {
-    const prefixLength = 'simplex:/'.length;
-    return 'https://simplex.chat/' + uri.substring(prefixLength);
+    return `https://${host}:/${linkType}#${newFragment}`;
   } else {
-    return uri;
+    return `https://simplex.chat/${fragment}`;
   }
 }
 
@@ -410,7 +420,7 @@ function renderMarkdown(fts) {
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          html += `<a href="${platformSimplexUri(simplexUri)}">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
+          html += `<a href="${platformSimplexUri(simplexUri)}" target="_blank">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
           break;
         }
         case 'command':
@@ -431,9 +441,11 @@ function renderMarkdown(fts) {
         default:
           html += escapeHtml(text);
       }
-    } catch {
+    } catch(e) {
+      console.log(e);
       html += escapeHtml(text);
     }
   }
   return html;
 }
+})();
