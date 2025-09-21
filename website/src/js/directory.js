@@ -20,24 +20,20 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderSortedEntries('top', bySortPriority, topBtn)
-  searchInput.addEventListener('input', (e) => {
-    renderSortedEntries('top', bySortPriority, topBtn, e.target.value.trim())
-    // renderFilteredEntries(e.target.value);
-  });
+  renderEntries('top', bySortPriority, topBtn)
+  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim()));
+  liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn, ''));
+  newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn, ''));
+  topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn, ''));
 
-  liveBtn.addEventListener('click', () => renderSortedEntries('live', byActiveAtDesc, liveBtn));
-  newBtn.addEventListener('click', () => renderSortedEntries('new', byCreatedAtDesc, newBtn));
-  topBtn.addEventListener('click', () => renderSortedEntries('top', bySortPriority, topBtn));
-
-  function renderSortedEntries(mode, comparator, btn, search) {
+  function renderEntries(mode, comparator, btn, search) {
     if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
     if (location.hash) location.hash = '';
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
-    if (!search) {
+    if (search == '') {
       currentSearch = '';
       currentPage = 1;
       searchInput.value = '';
