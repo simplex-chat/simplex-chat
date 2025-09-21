@@ -465,15 +465,38 @@ main section .image {
     margin-left: auto;
 }
 
-.roadmap > p:first-child {
+.roadmap>p:first-child {
     font-weight: 500;
     color: #64fdff;
 }
 
-.roadmap > p:nth-child(2) {
+.roadmap>p:nth-child(2) {
     font-weight: 500;
 }
 
-.roadmap > p:nth-child(3) {
+.roadmap>p:nth-child(3) {
     font-weight: 200;
+}
+
+@media (max-width: 767px) {
+    section.cover {
+        background-image: url("/img/design_3/mobile-cover-bg.webp");
+    }
+
+    section.cover div.content {
+        gap: 35px;
+    }
+
+    .cover .content h1 {
+        font-size: 30vw;
+    }
+
+    .cover .content h2 {
+        font-size: 7vw;
+    }
+
+    .cover .content p {
+        font-size: 4.3vw;
+        max-width: 62.5vw;
+    }
 }
