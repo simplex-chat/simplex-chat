@@ -414,6 +414,10 @@ main section .image {
     background-image: url("/img/design_3/token-31-04_webp.webp");
 }
 
+.page-6 .image {
+    background-image: url("/img/design_3/section-6-desktop.webp");
+}
+
 .text-container {
     position: relative;
     color: white;
@@ -459,4 +463,17 @@ main section .image {
 .page-4 .text-container {
     margin-right: 8rem;
     margin-left: auto;
+}
+
+.roadmap > p:first-child {
+    font-weight: 500;
+    color: #64fdff;
+}
+
+.roadmap > p:nth-child(2) {
+    font-weight: 500;
+}
+
+.roadmap > p:nth-child(3) {
+    font-weight: 200;
 }
