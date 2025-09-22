@@ -1,14 +1,17 @@
+(function() {
 const directoryDataURL = 'https://directory.simplex.chat/data/';
 
 // const directoryDataURL = 'http://localhost:8080/directory-data/';
 
 let allEntries = [];
 
-let sortedEntries = [];
-
 let filteredEntries = [];
 
 let currentSortMode = '';
+
+let currentSearch = '';
+
+let currentPage = 1;
 
 async function initDirectory() {
   const listing = await fetchJSON(directoryDataURL + 'listing.json')
@@ -17,24 +20,29 @@ async function initDirectory() {
   const topBtn = document.querySelector('#top-pagination .top');
   const searchInput = document.getElementById('search');
   allEntries = listing.entries
-  renderSortedEntries('top', byMemberCountDesc, topBtn)
-  window.addEventListener('hashchange', renderDirectoryPage);
-  searchInput.addEventListener('input', (e) => renderFilteredEntries(e.target.value));
+  renderEntries('top', bySortPriority, topBtn)
+  searchInput.addEventListener('input', (e) => renderEntries('top', bySortPriority, topBtn, e.target.value.trim()));
+  liveBtn.addEventListener('click', () => renderEntries('live', byActiveAtDesc, liveBtn));
+  newBtn.addEventListener('click', () => renderEntries('new', byCreatedAtDesc, newBtn));
+  topBtn.addEventListener('click', () => renderEntries('top', bySortPriority, topBtn));
 
-  liveBtn.addEventListener('click', () => renderSortedEntries('live', byActiveAtDesc, liveBtn));
-  newBtn.addEventListener('click', () => renderSortedEntries('new', byCreatedAtDesc, newBtn));
-  topBtn.addEventListener('click', () => renderSortedEntries('top', byMemberCountDesc, topBtn));
-
-  function renderSortedEntries(mode, comparator, btn) {
-    if (currentSortMode === mode) return;
+  function renderEntries(mode, comparator, btn, search = '') {
+    if (currentSortMode === mode && search == currentSearch) return;
     currentSortMode = mode;
     if (location.hash) location.hash = '';
     liveBtn.classList.remove('active');
     newBtn.classList.remove('active');
     topBtn.classList.remove('active');
-    btn.classList.add('active');
-    sortedEntries = allEntries.slice().sort(comparator);
-    renderFilteredEntries(searchInput.value);
+    if (search == '') {
+      currentSearch = '';
+      currentPage = 1;
+      searchInput.value = '';
+      btn.classList.add('active');
+    } else {
+      currentSearch = search;
+    }
+    filteredEntries = filterEntries(mode, search ?? '').sort(comparator);
+    renderDirectoryPage();
   }
 }
 
@@ -43,18 +51,20 @@ function renderDirectoryPage() {
   displayEntries(currentEntries);
 }
 
-function renderFilteredEntries(s) {
-  const query = s.toLowerCase().trim();
-  if (query === '') {
-    filteredEntries = sortedEntries.slice();
-  } else {
-    filteredEntries = sortedEntries.filter(entry =>
-      (entry.displayName || '').toLowerCase().includes(query)
-        || includesQuery(entry.shortDescr, query)
-        || includesQuery(entry.welcomeMessage, query)
-    );
-  }
-  renderDirectoryPage();
+function filterEntries(mode, s) {
+  if (s === '' && mode == 'top') return allEntries.slice();
+  const query = s.toLowerCase();
+  return allEntries.filter(entry =>
+    ( mode === 'top'
+      || (mode === 'new' && entry.createdAt)
+      || (mode === 'live' && entry.activeAt)
+    ) &&
+    ( query === ''
+      || (entry.displayName || '').toLowerCase().includes(query)
+      || includesQuery(entry.shortDescr, query)
+      || includesQuery(entry.welcomeMessage, query)
+    )
+  );
 }
 
 function includesQuery(field, query) {
@@ -83,40 +93,78 @@ function uriIncludesQuery(uri, query) {
 async function fetchJSON(url) {
   try {
     const response = await fetch(url)
-    if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`)
+    if (!response.ok) throw new Error(`HTTP status: ${response.status}`)
     return await response.json()
-  } catch (error) {
-    console.error('Error fetching JSON:', error)
+  } catch (e) {
+    console.error(e)
   }
 }
 
-function byMemberCountDesc(entry1, entry2) {
-  return entryMemberCount(entry2) - entryMemberCount(entry1);
+function bySortPriority(entry1, entry2) {
+  return entrySortPriority(entry2) - entrySortPriority(entry1);
 }
 
 function byActiveAtDesc(entry1, entry2) {
   return (roundedTs(entry2.activeAt) - roundedTs(entry1.activeAt)) * 10
-    + Math.sign(byMemberCountDesc(entry1, entry2));
+    + Math.sign(bySortPriority(entry1, entry2));
 }
 
 function byCreatedAtDesc(entry1, entry2) {
   return (roundedTs(entry2.createdAt) - roundedTs(entry1.createdAt)) * 10
-    + Math.sign(byMemberCountDesc(entry1, entry2));
+    + Math.sign(bySortPriority(entry1, entry2));
 }
 
 function roundedTs(s) {
   try {
-    // rounded to 15 minutes, which is the frequency of listing update
-    return Math.floor(new Date(s).valueOf() / 900000);
+    return new Date(s).valueOf();
   } catch {
     return 0;
   }
+}
+
+const simplexUsersGroup = 'SimpleX users group';
+
+function entrySortPriority(entry) {
+  return entry.displayName === simplexUsersGroup
+    ? Number.MAX_VALUE
+    : entryMemberCount(entry)
 }
 
 function entryMemberCount(entry) {
   return entry.entryType.type == 'group'
     ? (entry.entryType.summary?.currentMembers ?? 0)
     : 0
+}
+
+const now = new Date();
+const nowVal = now.valueOf();
+const today = new Date(now);
+today.setHours(0, 0, 0, 0);
+const todayVal = today.valueOf();
+const todayYear = today.getFullYear();
+
+const dateFormatter = Intl?.DateTimeFormat?.(undefined, {month: '2-digit', day: '2-digit'});
+const dateYearFormatter = Intl?.DateTimeFormat?.(undefined, {year: 'numeric', month: '2-digit', day: '2-digit'});
+
+function showDate(d) {
+  return dateFormatter && d.getFullYear() == todayYear
+    ? dateFormatter.format(d)
+    : dateYearFormatter?.format(d) ?? d.toLocaleDateString();
+}
+
+function showCreatedOn(s) {
+  const d = new Date(s)
+  d.setHours(0, 0, 0, 0);
+  return 'Created' + (d.valueOf() === todayVal ? ' today' : ' on ' + showDate(d));
+}
+
+function showActiveOn(s) {
+  const d = new Date(s)
+  const ago = nowVal - d.valueOf();
+  if (ago <= 1200000) return 'Active now'; // 20 minutes
+  if (ago <= 10800000) return 'Active recently'; // 3 hours
+  d.setHours(0, 0, 0, 0);
+  return 'Active' + (d.valueOf() === todayVal ? ' today' : ' on ' + showDate(d));
 }
 
 function displayEntries(entries) {
@@ -182,24 +230,43 @@ function displayEntries(entries) {
         }, 0);
       }
 
+      const entryTimestamp = currentSortMode === 'new' && entry.createdAt
+        ? showCreatedOn(entry.createdAt)
+        : entry.activeAt
+        ? showActiveOn(entry.activeAt)
+        : '';
+      if (entryTimestamp) {
+        timestampElement = document.createElement('p');
+        timestampElement.textContent = entryTimestamp;
+        timestampElement.className = 'text-sm';
+        textContainer.appendChild(timestampElement);
+      }
+
       const memberCount = entryMemberCount(entry);
       if (typeof memberCount == 'number' && memberCount > 0) {
         const memberCountElement = document.createElement('p');
-        memberCountElement.innerText = `${memberCount} members`;
-        memberCountElement.classList = ['text-sm'];
+        memberCountElement.textContent = `${memberCount} members`;
+        memberCountElement.className = 'text-sm';
         textContainer.appendChild(memberCountElement);
       }
 
-      const imgElement = document.createElement('a');
-      imgSource =
-        imageFile
-          ? directoryDataURL + imageFile
-          : "/img/group.svg";
-      imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
-      imgElement.href = platformSimplexUri(groupLink.connShortLink ?? groupLink.connFullLink);
-      if (!isCurrentSite(imgElement.href)) imgElement.target = "_blank";
-      imgElement.title = `Join ${displayName}`;
-      entryDiv.appendChild(imgElement);
+      const imgLinkElement = document.createElement('a');
+      const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
+      try {
+        imgLinkElement.href = platformSimplexUri(groupLinkUri);
+      } catch(e) {
+        console.log(e);
+        imgLinkElement.href = groupLinkUri;
+      }
+      imgLinkElement.target = "_blank";
+      imgLinkElement.title = `Join ${displayName}`;
+
+      const imgElement = document.createElement('img');
+      imgElement.src = imageFile ? directoryDataURL + imageFile : '/img/group.svg';
+      imgElement.alt = displayName;
+      imgElement.addEventListener('error', () => imgElement.src = '/img/group.svg');
+      imgLinkElement.appendChild(imgElement);
+      entryDiv.appendChild(imgLinkElement);
 
       entryDiv.appendChild(textContainer);
       directory.appendChild(entryDiv);
@@ -216,13 +283,13 @@ function displayEntries(entries) {
 }
 
 function goToPage(p) {
-  location.hash = p.toString();
+  currentPage = p;
+  renderDirectoryPage();
 }
 
 function addPagination(entries) {
   const entriesPerPage = 10;
   const totalPages = Math.ceil(entries.length / entriesPerPage);
-  let currentPage = parseInt(location.hash.slice(1)) || 1;
   if (currentPage < 1) currentPage = 1;
   if (currentPage > totalPages) currentPage = totalPages;
 
@@ -345,11 +412,17 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank"'
 }
 
+const simplexAddressRegexp = /^simplex:\/([a-z]+)#(.+)/i;
+
+const simplexShortLinkTypes = ["a", "c", "g", "i", "r"];
+
 function platformSimplexUri(uri) {
   if (isMobile.any()) return uri;
-  if (uri.startsWith('simplex:/g#')) {
-    const prefixLength = 'simplex:/g#'.length;
-    const fragment = uri.substring(prefixLength);
+  const res = uri.match(simplexAddressRegexp);
+  if (!res || !Array.isArray(res) || res.length < 3) return uri;
+  const linkType = res[1];
+  const fragment = res[2];
+  if (simplexShortLinkTypes.includes(linkType)) {
     const queryIndex = fragment.indexOf('?');
     if (queryIndex === -1) return uri;
     const hashPart = fragment.substring(0, queryIndex);
@@ -361,12 +434,9 @@ function platformSimplexUri(uri) {
     let newFragment = hashPart;
     const remainingParams = params.toString();
     if (remainingParams) newFragment += '?' + remainingParams;
-    return `https://${host}:/g#${newFragment}`;
-  } else if(uri.startsWith('simplex:/')) {
-    const prefixLength = 'simplex:/'.length;
-    return 'https://simplex.chat/' + uri.substring(prefixLength);
+    return `https://${host}:/${linkType}#${newFragment}`;
   } else {
-    return uri;
+    return `https://simplex.chat/${linkType}#${fragment}`;
   }
 }
 
@@ -410,7 +480,7 @@ function renderMarkdown(fts) {
         case 'simplexLink': {
           const { showText, linkType, simplexUri, smpHosts } = format;
           const linkText = showText ? escapeHtml(showText) : getSimplexLinkDescr(linkType);
-          html += `<a href="${platformSimplexUri(simplexUri)}">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
+          html += `<a href="${platformSimplexUri(simplexUri)}" target="_blank">${linkText} <em>(${viaHost(smpHosts)})</em></a>`;
           break;
         }
         case 'command':
@@ -431,9 +501,11 @@ function renderMarkdown(fts) {
         default:
           html += escapeHtml(text);
       }
-    } catch {
+    } catch(e) {
+      console.log(e);
       html += escapeHtml(text);
     }
   }
   return html;
 }
+})();
