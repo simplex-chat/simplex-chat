@@ -250,22 +250,23 @@ function displayEntries(entries) {
         textContainer.appendChild(memberCountElement);
       }
 
-      const imgElement = document.createElement('a');
-      imgSource =
-        imageFile
-          ? directoryDataURL + imageFile
-          : "/img/group.svg";
-      imgElement.innerHTML = `<img src="${imgSource}" alt="${displayName}">`;
+      const imgLinkElement = document.createElement('a');
       const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
       try {
-        imgElement.href = platformSimplexUri(groupLinkUri);
+        imgLinkElement.href = platformSimplexUri(groupLinkUri);
       } catch(e) {
         console.log(e);
-        imgElement.href = groupLinkUri;
+        imgLinkElement.href = groupLinkUri;
       }
-      imgElement.target = "_blank";
-      imgElement.title = `Join ${displayName}`;
-      entryDiv.appendChild(imgElement);
+      imgLinkElement.target = "_blank";
+      imgLinkElement.title = `Join ${displayName}`;
+
+      const imgElement = document.createElement('img');
+      imgElement.src = imageFile ? directoryDataURL + imageFile : '/img/group.svg';
+      imgElement.alt = displayName;
+      imgElement.addEventListener('error', () => imgElement.src = '/img/group.svg');
+      imgLinkElement.appendChild(imgElement);
+      entryDiv.appendChild(imgLinkElement);
 
       entryDiv.appendChild(textContainer);
       directory.appendChild(entryDiv);
