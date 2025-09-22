@@ -388,7 +388,6 @@ CREATE TABLE test_chat_schema.contacts (
     user_id bigint NOT NULL,
     local_display_name text NOT NULL,
     is_user smallint DEFAULT 0 NOT NULL,
-    via_group bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     xcontact_id bytea,
@@ -1796,7 +1795,7 @@ CREATE INDEX idx_connections_conn_req_inv ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
+CREATE UNIQUE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
 
 
 
@@ -1808,7 +1807,7 @@ CREATE INDEX idx_connections_group_member ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
 
 
 
@@ -1897,10 +1896,6 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON test_chat_schem
 
 
 CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_member_conn_id);
-
-
-
-CREATE INDEX idx_contacts_via_group ON test_chat_schema.contacts USING btree (via_group);
 
 
 
@@ -2600,11 +2595,6 @@ ALTER TABLE ONLY test_chat_schema.connections
 
 ALTER TABLE ONLY test_chat_schema.contacts
     ADD CONSTRAINT fk_contacts_group_members FOREIGN KEY (contact_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE SET NULL;
-
-
-
-ALTER TABLE ONLY test_chat_schema.contacts
-    ADD CONSTRAINT fk_contacts_groups FOREIGN KEY (via_group) REFERENCES test_chat_schema.groups(group_id) ON DELETE SET NULL;
 
 
 
