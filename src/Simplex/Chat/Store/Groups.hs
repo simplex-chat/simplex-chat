@@ -824,7 +824,7 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
               WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                 AND m.member_status NOT IN (?,?,?)
           |]
-          (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+          (userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
       where
         toShortMember :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
         toShortMember (groupMemberId, localDisplayName, agentConnId) =
@@ -1031,7 +1031,7 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
       (groupId, groupMemberId, userId)
 
 getHostMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupMember
-getHostMember db vr user@User {userId} groupId =
+getHostMember db vr user groupId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupHostMemberNotFound groupId) $
     DB.query
       db
@@ -1080,7 +1080,7 @@ getGroupMemberById db vr user@User {userId} groupMemberId =
       (groupMemberId, userId)
 
 getGroupMemberByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMember
-getGroupMemberByMemberId db vr user@User {userId} GroupInfo {groupId} memberId =
+getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByMemberId memberId) $
     DB.query
       db
@@ -2357,7 +2357,7 @@ getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
         LEFT JOIN connections ch ON ch.group_member_id = mh.group_member_id
         WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
       |]
-      (userId, userId, contactId, GCHostMember)
+      (userId, contactId, GCHostMember)
   where
     toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
     toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
