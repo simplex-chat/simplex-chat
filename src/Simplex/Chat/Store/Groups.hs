@@ -1028,7 +1028,7 @@ getGroupMember db vr user@User {userId} groupId groupMemberId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
-      (userId, groupId, groupMemberId, userId)
+      (groupId, groupMemberId, userId)
 
 getHostMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupMember
 getHostMember db vr user@User {userId} groupId =
@@ -1036,7 +1036,7 @@ getHostMember db vr user@User {userId} groupId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_category = ?")
-      (userId, groupId, GCHostMember)
+      (groupId, GCHostMember)
 
 getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO CIMention
 getMentionedGroupMember db User {userId} groupId gmId =
@@ -1077,7 +1077,7 @@ getGroupMemberById db vr user@User {userId} groupMemberId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
-      (userId, groupMemberId, userId)
+      (groupMemberId, userId)
 
 getGroupMemberByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberByMemberId db vr user@User {userId} GroupInfo {groupId} memberId =
@@ -1085,7 +1085,7 @@ getGroupMemberByMemberId db vr user@User {userId} GroupInfo {groupId} memberId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
-      (userId, groupId, memberId)
+      (groupId, memberId)
 
 getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
 getScopeMemberIdViaMemberId db user g@GroupInfo {membership} sender scopeMemberId
@@ -1107,7 +1107,7 @@ getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
-      (userId, userId, groupId, userContactId)
+      (userId, groupId, userContactId)
 
 getGroupModerators :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1115,7 +1115,7 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
-      (userId, userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
+      (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1131,7 +1131,7 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
                   )
               |]
       )
-      (userId, groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
+      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
 
 toContactMember :: VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
 toContactMember vr User {userContactId} (memberRow :. connRow) =
