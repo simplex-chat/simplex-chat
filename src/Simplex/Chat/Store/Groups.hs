@@ -125,7 +125,6 @@ module Simplex.Chat.Store.Groups
     updateGroupSettings,
     updateGroupMemberSettings,
     updateGroupMemberBlocked,
-    getXGrpMemIntroContDirect,
     getHostConnId,
     createMemberContact,
     getMemberContact,
@@ -2337,32 +2336,6 @@ updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs m@GroupMember 
     |]
     (mrs, currentTs, userId, groupId, groupMemberId)
   pure m {blockedByAdmin = mrsBlocked mrs}
-
-getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
-getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
-  fmap join . maybeFirstRow toCont $
-    DB.query
-      db
-      [sql|
-        SELECT ch.connection_id, g.group_id, m.group_member_id, m.member_id, c.conn_req_inv
-        FROM contacts ct
-        JOIN group_members m ON m.contact_id = ct.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.group_member_id = m.group_member_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.group_member_id = mh.group_member_id
-        WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
-      |]
-      (userId, contactId, GCHostMember)
-  where
-    toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
-    toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
-      Just groupConnReq -> Just (hostConnId, XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq})
-      _ -> Nothing
 
 getHostConnId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostConnId db user@User {userId} groupId = do
