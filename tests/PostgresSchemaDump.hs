@@ -24,8 +24,8 @@ testSchemaPath :: FilePath
 testSchemaPath = "tests/tmp/test_schema.sql"
 
 -- copied from simplexmq
-postgresSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
-postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
+postgresSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
+postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify schema down migrations" testSchemaMigrations
   where
@@ -72,3 +72,9 @@ postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBO
       void $ readCreateProcess (shell $ sed <> " '/^--/d' " <> schemaPath) ""
       sch <- readFile schemaPath
       sch `deepseq` pure sch
+
+skipComparisonForDownMigrations :: [String]
+skipComparisonForDownMigrations =
+  [ -- via_group field moves
+    "20250922_remove_contact_merge"
+  ]
