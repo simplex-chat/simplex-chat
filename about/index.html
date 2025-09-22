@@ -40,30 +40,24 @@
         
     >
 
-  <head>
-    <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>SimpleX blog: SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.</title>
-    <meta name="Content-Type" content="text/html;charset=utf-8" />
-    <meta http-equiv="onion-location" content="http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/blog/20221206-simplex-chat-v4.3-voice-messages.html" />
-    <meta property="og:url" content="https://simplex.chat/blog/20221206-simplex-chat-v4.3-voice-messages.html" />
-    <meta property="og:type" content="article" />
-    <meta property="og:title" content="SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration." />
-    
-      <meta property="og:image" content="https://simplex.chat/blog/images/20221206-voice.png" />
-    
-    <meta name="twitter:card" content="summary" />
-    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
-    <link href="/css/tailwind.css" rel="stylesheet" />
-    <link rel="stylesheet" href="/css/blog.css" />
-    <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
-    <link href="/css/style.css" rel="stylesheet" />
-    <script async defer src="https://buttons.github.io/buttons.js"></script>
-  </head>
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title></title>
+        <meta name="Content-Type" content="text/html;charset=utf-8" />
 
-  <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
-    
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico" />
+        <link href="/css/tailwind.css" rel="stylesheet" />
+        <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css" />
+        <link href="/css/style.css" rel="stylesheet" />
+        <link rel="stylesheet" href="/css/doc.css" />
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+    </head>
+
+    <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+        <section class="w-full bg-transparent fixed top-0 z-50">
+            
 
 
     
@@ -391,100 +385,22 @@ const changeHeaderBg = ()=>{
 window.addEventListener('scroll',changeHeaderBg);
 </SCript>
 
+        </section>
 
-    <div class="container px-5">
-      <a class="inline-block text-grey-black dark:text-white my-5 underline underline-offset-2" href="/blog"><&nbsp;Back to list</a>
-    </div>
-
-    <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5">
-      <div class="py-6 md:p-[60px]"><h1 id="simplex-chat-reviews-and-v43-released-with-instant-voice-messages-irreversible-deletion-of-sent-messages-and-improved-server-configuration" tabindex="-1">SimpleX Chat reviews and v4.3 released – with instant voice messages, irreversible deletion of sent messages and improved server configuration.</h1>
-<p><strong>Published:</strong> Dec 6, 2022</p>
-<h2 id="simplex-chat-reviews" tabindex="-1">SimpleX Chat reviews</h2>
-<p>Since we published <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">the security assessment of SimpleX Chat</a> completed by Trail of Bits in November, several sites published the reviews and included it in their recommendations:</p>
-<ul>
-<li>Privacy Guides added SimpleX Chat to <a href="https://www.privacyguides.org/real-time-communication/#simplex-chat">the recommended private and secure messengers</a>.</li>
-<li>Mike Kuketz – a well-known security expert – published <a href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/">the review of SimpleX Chat</a> and added it to <a href="https://www.messenger-matrix.de">the messenger matrix</a>.</li>
-<li>Supernova published <a href="https://supernovas.space/detailed_reviews.html#simplex">the review</a> and increased <a href="https://supernovas.space/messengers.html">SimpleX Chat recommendation ratings</a>.</li>
-</ul>
-<h2 id="whats-new-in-v43" tabindex="-1">What's new in v4.3</h2>
-<ul>
-<li><a href="#instant-voice-messages">instant voice messages!</a></li>
-<li><a href="#irreversible-message-deletion">irreversible deletion of sent messages for all recipients</a></li>
-<li><a href="#smp-servers-configuration-and-password">improved SMP server configuration and support for server passwords</a></li>
-<li><a href="#privacy-and-security-improvements">privacy and security improvements</a>:
-<ul>
-<li>protect app screen in recent apps and prevent screenshots</li>
-<li>improved privacy and security of SimpleX invitation links in the app</li>
-<li>optional Android app data backup</li>
-<li>optionally allow direct messages between group members</li>
-</ul>
-</li>
-</ul>
-<h3 id="instant-voice-messages" tabindex="-1">Instant voice messages</h3>
-<img src="./images/20221206-voice.png" width="288">
-<p>Voice messages, unlike normal files, are sent instantly, in the existing connection with your contact and without acceptance from the recipient. For this reason we limited the size of voice messages to ~92.5kb (an equivalent of 6 messages), that limits the duration to 30 seconds on iOS and to ~42 seconds on Android (the size is different because of different encoders), with an average sound quality. The voice messages are sent in MP4AAC format that is natively supported both on iOS and on Android, and you can play voice message files outside of SimpleX Chat app.</p>
-<p>Users who do not want to receive voice messages can disable them, either globally, for all contacts, or for each contact independently. Please note that the global preference change will only affect the contacts where you shared your main profile (not incognito contacts) and where you didn't change the preference for the particular contact. Groups have a separate policy that allows disabling voice messages for all members (they are allowed by default). The owner can set this policy when creating a group or later, via Group preferences page.</p>
-<h3 id="irreversible-message-deletion" tabindex="-1">Irreversible message deletion</h3>
-<p><img src="./images/20221206-deleted1.png" width="288">    <img src="./images/20221206-deleted2.png" width="288"></p>
-<p>When you receive email, you have full confidence that the sender cannot delete their email from your mailbox after you received it. And it seems correct – in the end, this is your device, and nobody should be able to delete any data from it.</p>
-<p>Most existing messengers made an opposite decision – the senders can irreversibly delete their messages from the recipients' devices after they were delivered, whether recipients agree to that or not. And it seems correct too - this is your message, you should be able to delete it, at least for a limited time; that the message is on the recipient device doesn't change your ownership of this message.</p>
-<p>While both these statements appear correct, at least to some people, they simply cannot both be correct at the same time, as they contradict each other - either one or both of them must be wrong. This appears to be a very polarising subject, and <a href="https://mastodon.social/@simplex/109461879089268041">the polls</a> <a href="https://www.reddit.com/r/SimpleXChat/comments/zdam11/poll_irreversible_message_deletion_by_sender_what/">I made</a> <a href="https://twitter.com/epoberezkin/status/1599797374389727233">yesterday</a> <a href="https://www.linkedin.com/feed/update/urn:li:activity:7005564342502842368/">show it</a> - the votes are split evenly.</p>
-<p>You may want to be able to delete your messages even after they are received to protect your privacy and security, and you want the communication product you use to enforce it. But you may also have many reason to disagree to the deletion of messages on your device for several different reasons:</p>
-<ul>
-<li>it may be a business context, and either your organisation policy or a compliance requirement is that every message you receive must be preserved for some time.</li>
-<li>these messages may contain threat or abuse and you want to keep them as a proof.</li>
-<li>you may have paid for the the message (e.g., it can be a consulting report), and you don't want it to suddenly disappear before you had a chance to store it outside of the conversation.</li>
-</ul>
-<p>Instead of taking any side in this choice, we decided to allow to change this behaviour either globally or separately for each contact or group. That makes SimpleX Chat unique, being suitable both for the communication contexts where email is traditionally used and in informal or privacy sensitive contexts, that would allow the senders to delete messages irreversibly, provided that the recipients agree to that.</p>
-<p>In any case, the senders can never be 100% certain that the message is deleted from the recipient's device - recipient can be running a modified client that does not honour the conversation setting, and there is no way to ascertain which code your contact runs on their device.</p>
-<p>If irreversible message deletion is not allowed in the conversation, the senders can still mark their messages as deleted, and it would show &quot;mark deleted&quot; placeholder in the conversation. The recipients can then both reveal the content of the original message and fully delete it on their devices.</p>
-<h3 id="smp-servers-configuration-and-password" tabindex="-1">SMP servers configuration and password</h3>
-<p><img src="./images/20221206-server1.png" width="288">    <img src="./images/20221206-server2.png" width="288">    <img src="./images/20221206-server3.png" width="288"></p>
-<p>When you self-host your own SMP server you may want to make it public so that anybody can use it to receive messages. But many users want to host their private servers, so that only they and their friends can use them to receive the messages.</p>
-<p>v4.0 of SMP server and the new version of the apps adds support for server passwords. It is chosen randomly when you initialize the new server, and if you already have a server you can change it. Anybody can still message you, it doesn't require knowing the password, and the links you share do not include it, but to be able to receive the messages you need to know a server address that includes the password. In a way, it is similar to how basic authentication works in HTTP, and how browsers support the URIs with included credentials.</p>
-<p>The new server configuration section now allows to test your servers before you start using them, and you can also share your server address via QR code, so that your friends or your team can use them too, without the need to copy paste the addresses.</p>
-<p>You can read how to install and configure SMP servers in <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SERVER.md">this guide</a>.</p>
-<h3 id="privacy-and-security-improvements" tabindex="-1">Privacy and security improvements</h3>
-<h4 id="protect-app-screen" tabindex="-1">Protect app screen</h4>
-<img src="./images/20221206-protect.png" width="330">
-<p>It is now enabled by default, but you can disable it via settings.</p>
-<p>iOS app only hides the app screen in the recent apps, Android app in addition to that also prevents the screenshots.</p>
-<p>This is not the security measure for the senders, and we made it optional, as the recipient could circumvent it anyway – this is for you to protect your app screen when you give your phone to somebody.</p>
-<h4 id="privacy-and-security-of-simplex-invitation-links" tabindex="-1">Privacy and security of SimpleX invitation links</h4>
-<p>Previously, when you sent somebody an invitation link, a contact address or a group link, they would take half a screen in the chat and they could open in the browser in some cases. Also, as these links are quire large, it is not easy to see if the page domain is maliciously replaced, what SMP server the connection would go through or what kind of link it is.</p>
-<p>This version instead of showing the full link shows a short description, and it replaces a public web address with an internal URI scheme that the app uses (simplex:/) – such links open directly in the app. There is an option to show the full link, if you need it, and even to open it in the browser from the app, but in this case if this link is not using <a href="https://simplex.chat">https://simplex.chat</a> website it will show as red to highlight it.</p>
-<h3 id="optional-android-app-data-backup" tabindex="-1">Optional Android app data backup</h3>
-<p>The previous version always backed up app data in the way it was configured by the system. Now you can override it from inside the app, preventing the backup even if it's enabled by the system settings. This version requires disabling it manually, we will make it disabled by default in the next release (v4.3.1).</p>
-<h3 id="direct-messages-between-group-members" tabindex="-1">Direct messages between group members</h3>
-<p>The new version does not allow them by default, but it can be enabled by group owners in the group settings when the group is created or at any later moment.</p>
-<h2 id="simplex-platform" tabindex="-1">SimpleX platform</h2>
-<p>Some links to answer the most common questions:</p>
-<p><a href="/blog/20220511-simplex-chat-v2-images-files.html#the-first-messaging-platform-without-user-identifiers">How can SimpleX deliver messages without user identifiers</a>.</p>
-<p><a href="/blog/20220711-simplex-chat-v3-released-ios-notifications-audio-video-calls-database-export-import-protocol-improvements.html#why-having-users-identifiers-is-bad-for-the-users">What are the risks to have identifiers assigned to the users</a>.</p>
-<p><a href="/blog/20220723-simplex-chat-v3.1-tor-groups-efficiency.html#privacy-technical-details-and-limitations">Technical details and limitations</a>.</p>
-<p><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/README.md#frequently-asked-questions">How SimpleX is different from Session, Matrix, Signal, etc.</a>.</p>
-<p>Please also see the information on our <a href="https://simplex.chat">new website</a> - it also answers all these questions.</p>
-<h2 id="help-us-with-donations" tabindex="-1">Help us with donations</h2>
-<p>Huge thank you to everybody who donated to SimpleX Chat!</p>
-<p>We are prioritizing users privacy and security - it would be impossible without your support.</p>
-<p>Our pledge to our users is that SimpleX protocols are and will remain open, and in public domain, - so anybody can build the future implementations of the clients and the servers. We are building SimpleX platform based on the same principles as email and web, but much more private and secure.</p>
-<p>Your donations help us raise more funds – any amount, even the price of the cup of coffee, makes a big difference for us.</p>
-<p>It is possible to donate via:</p>
-<ul>
-<li><a href="https://github.com/sponsors/simplex-chat">GitHub</a> - it is commission-free for us.</li>
-<li><a href="https://opencollective.com/simplex-chat">OpenCollective</a> - it charges a commission, and also accepts donations in many crypto-currencies.</li>
-<li>Monero address: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt</li>
-<li>Bitcoin address: 1bpefFkzuRoMY3ZuBbZNZxycbg7NYPYTG</li>
-<li>Ethereum address: 0x83fd788f7241a2be61780ea9dc72d2151e6843e2</li>
-<li>please let us know, via GitHub issue or chat, if you want to make a donation in some other cryptocurrency - we will add the address to the list.</li>
-</ul>
-<p>Thank you,</p>
-<p>Evgeny</p>
-<p>SimpleX Chat founder</p>
+        <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
+            <main class="container px-4 lg:px-7 py-10 md:py-16">
+                <div><h1 id="about-us" tabindex="-1">About us</h1>
+<p>SimpleX Chat Ltd is a company founded to develop SimpleX network and software.</p>
+<p>Our mission is to create a fully decentralized network, based on the same principles as open web, but the one that gives users full control and ownership of their identity, contacts and communities.</p>
+<h2 id="contact-us" tabindex="-1">Contact us</h2>
+<p>SimpleX: &quot;Ask SimpleX team&quot; contact in the app or <a href="https://simplex.chat/contact#/?v=2&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion">this address</a>.</p>
+<p>Email: <a href="mailto:chat@simplex.chat">chat@simplex.chat</a>. You can use PGP to encrypt email messages using our key from <a href="https://keys.openpgp.org/search?q=chat%40simplex.chat">keys.openpgp.org</a> (its fingerprint is <code>FB44 AF81 A45B DE32 7319 797C 8510 7E35 7D4A 17FC</code>) and making your key available for a secure reply.</p>
+<p>You can follow our updates on social media: <a href="https://x.com/simplexchat">X/Twitter</a>, <a href="https://www.reddit.com/r/SimpleXChat/">Reddit</a>, <a href="https://mastodon.social/@simplex">Mastodon</a> and <a href="https://primal.net/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828">Nostr</a>.</p>
 </div>
-    </section>
+            </main>
+        </section>
 
-    
+        
 <section class="bg-[#D9E7ED] dark:bg-[#0E2B57] py-[50px]">
     <div class="container">
         <div class="flex flex-col lg:flex-row justify-between">
@@ -614,7 +530,13 @@ window.addEventListener('scroll',changeHeaderBg);
     </div>
 </section>
 
-    <script src="/js/prism.min.js"></script>
-  </body>
+    </body>
 
+    <script>
+        window.addEventListener('click', (e) => {
+            if (e.target.closest('.job-tab-btn')) {
+                e.target.closest('.job-tab').classList.toggle('active')
+            }
+        })
+    </script>
 </html>
