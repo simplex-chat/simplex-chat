@@ -820,11 +820,7 @@ getGroupToSubscribe db User {userId, userContactId} groupId = do
           [sql|
               SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
               FROM group_members m
-              JOIN connections c ON c.connection_id = (
-                SELECT max(cc.connection_id)
-                FROM connections cc
-                WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
-              )
+              JOIN connections c ON c.group_member_id = m.group_member_id
               WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                 AND m.member_status NOT IN (?,?,?)
           |]
@@ -1023,11 +1019,7 @@ groupMemberQuery =
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-    LEFT JOIN connections c ON c.connection_id = (
-      SELECT max(cc.connection_id)
-      FROM connections cc
-      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
-    )
+    LEFT JOIN connections c ON c.group_member_id = m.group_member_id
   |]
 
 getGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
@@ -2362,11 +2354,7 @@ getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
         )
         JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
         JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
+        LEFT JOIN connections ch ON ch.group_member_id = mh.group_member_id
         WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
       |]
       (userId, userId, contactId, GCHostMember)

@@ -121,8 +121,6 @@ createOrUpdateContactRequest
               JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
               LEFT JOIN connections c ON c.contact_id = ct.contact_id
               WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
-              ORDER BY c.created_at DESC
-              LIMIT 1
             |]
             (userId, xContactId)
       mapM (addDirectChatTags db) ct_

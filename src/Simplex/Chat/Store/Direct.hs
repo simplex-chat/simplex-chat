@@ -277,8 +277,6 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
             ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
               (c.user_id = ? AND c.via_contact_uri_hash = ?)
             ) AND ct.contact_status = ? AND ct.deleted = 0
-          ORDER BY c.created_at DESC
-          LIMIT 1
         |]
         (userId, cReqHash1, userId, cReqHash2, CSActive)
   mapM (addDirectChatTags db) ct
@@ -866,23 +864,8 @@ getContact_ db vr user@User {userId} contactId deleted = do
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
           AND ct.deleted = ?
-          AND (
-            c.connection_id = (
-              SELECT cc_connection_id FROM (
-                SELECT
-                  cc.connection_id AS cc_connection_id,
-                  cc.created_at AS cc_created_at,
-                  (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
-                FROM connections cc
-                WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-                ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
-                LIMIT 1
-              ) cc
-            )
-            OR c.connection_id IS NULL
-          )
       |]
-      (userId, contactId, BI deleted, ConnReady, ConnSndReady)
+      (userId, contactId, BI deleted)
 
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
 getUserByContactRequestId db contactRequestId =
