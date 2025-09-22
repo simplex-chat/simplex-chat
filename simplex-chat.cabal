@@ -259,6 +259,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250801_via_group_link_uri
           Simplex.Chat.Store.SQLite.Migrations.M20250802_chat_peer_type
           Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks
+          Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_contact_merge
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
