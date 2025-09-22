@@ -62,7 +62,6 @@ CREATE TABLE contacts(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
   is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
-  via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
@@ -768,7 +767,6 @@ CREATE INDEX idx_connections_via_user_contact_link ON connections(
   via_user_contact_link
 );
 CREATE INDEX idx_connections_rcv_file_id ON connections(rcv_file_id);
-CREATE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE INDEX idx_connections_user_contact_link_id ON connections(
   user_contact_link_id
 );
@@ -780,7 +778,6 @@ CREATE INDEX idx_contact_requests_contact_profile_id ON contact_requests(
 CREATE INDEX idx_contact_requests_user_contact_link_id ON contact_requests(
   user_contact_link_id
 );
-CREATE INDEX idx_contacts_via_group ON contacts(via_group);
 CREATE INDEX idx_contacts_contact_profile_id ON contacts(contact_profile_id);
 CREATE INDEX idx_files_chat_item_id ON files(chat_item_id);
 CREATE INDEX idx_files_user_id ON files(user_id);
@@ -1087,7 +1084,6 @@ CREATE INDEX idx_chat_items_groups_user_mention ON chat_items(
   user_mention
 );
 CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
-CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
@@ -1184,3 +1180,7 @@ CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   job_status
 );
 CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
+CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
+  group_member_id
+);

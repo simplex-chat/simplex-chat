@@ -1861,7 +1861,6 @@ export interface Contact {
   localDisplayName: string
   profile: LocalProfile
   activeConn?: Connection
-  viaGroup?: number // int64
   contactUsed: boolean
   contactStatus: ContactStatus
   chatSettings: ChatSettings
