@@ -1184,4 +1184,3 @@ CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
   group_member_id
 );
-CREATE INDEX idx_connections_user_id ON connections(user_id);
