@@ -228,6 +228,10 @@ html {
     font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
 }
 
+.hidden {
+    display: none !important;
+}
+
 img {
     user-select: none;
     -webkit-user-select: none;
@@ -330,6 +334,30 @@ section.cover div.content {
     font-size: clamp(1rem, 2.25vw, 1.67rem);
     align-items: center;
     color: #ffffff;
+}
+
+.cover .socials {
+    position: absolute;
+    width: 100vw;
+    bottom: 32px;
+    padding: 0 4vw;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cover .socials a img {
+    width: auto;
+    height: 40px;
+    border: #4f4f4f 1px solid;
+    border-radius: 8px;
+}
+
+.cover .socials a img.no-border {
+    border: none;
 }
 
 /* --- MAIN SECTIONS --- */
@@ -498,6 +526,9 @@ main section .image {
         max-width: 62.5vw;
     }
 
+    .cover .socials {
+        justify-content: center;
+    }
 
     /* --- MAIN SECTIONS --- */
     .page-2 .image {
