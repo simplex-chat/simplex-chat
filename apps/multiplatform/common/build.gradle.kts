@@ -113,7 +113,7 @@ kotlin {
         }
         // For jSystemThemeDetector only
         implementation("net.java.dev.jna:jna-platform:5.14.0")
-        implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
+        implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
