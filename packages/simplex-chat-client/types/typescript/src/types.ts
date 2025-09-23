@@ -2451,6 +2451,7 @@ export interface GroupInfo {
 export interface GroupInfoSummary {
   groupInfo: GroupInfo
   groupSummary: GroupSummary
+  groupLink?: GroupLink
 }
 
 export interface GroupLink {

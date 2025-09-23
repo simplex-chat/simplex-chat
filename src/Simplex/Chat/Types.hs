@@ -527,7 +527,17 @@ data GroupSummary = GroupSummary
   }
   deriving (Show)
 
-data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary, groupLink :: Maybe GroupLink}
+  deriving (Show)
+
+data GroupLink = GroupLink
+  { userContactLinkId :: Int64,
+    connLinkContact :: CreatedLinkContact,
+    shortLinkDataSet :: Bool,
+    shortLinkLargeDataSet :: BoolDef,
+    groupLinkId :: GroupLinkId,
+    acceptMemberRole :: GroupMemberRole
+  }
   deriving (Show)
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
@@ -2074,6 +2084,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInfo)
 $(JQ.deriveJSON defaultJSON ''Group)
 
 $(JQ.deriveJSON defaultJSON ''GroupSummary)
+
+$(JQ.deriveJSON defaultJSON ''GroupLink)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfoSummary)
 

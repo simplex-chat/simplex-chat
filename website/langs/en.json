@@ -1,5 +1,6 @@
 {
     "home": "Home",
+    "directory": "Directory",
     "developers": "Developers",
     "reference": "Reference",
     "blog": "Blog",
@@ -24,6 +25,7 @@
     "copyright-label": "© 2020-2025 SimpleX | Open-Source Project",
     "simplex-chat-protocol": "SimpleX Chat protocol",
     "terminal-cli": "Terminal CLI",
+    "about-and-contact-us": "About & Contact us",
     "terms-and-privacy-policy": "Privacy Policy",
     "hero-header": "Privacy redefined",
     "hero-subheader": "The first messenger<br>without user IDs",
@@ -232,7 +234,7 @@
     "docs-dropdown-5": "Host XFTP Server",
     "docs-dropdown-6": "WebRTC servers",
     "docs-dropdown-7": "Translate SimpleX Chat",
-    "docs-dropdown-8": "SimpleX Directory Service",
+    "docs-dropdown-8": "SimpleX Directory",
     "docs-dropdown-9": "Downloads",
     "docs-dropdown-10": "Transparency",
     "docs-dropdown-11": "FAQ",

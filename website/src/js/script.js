@@ -26,7 +26,8 @@ const uniqueSwiper = new Swiper('.unique-swiper', {
 
 const isMobile = {
     Android: () => navigator.userAgent.match(/Android/i),
-    iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i)
+    iOS: () => navigator.userAgent.match(/iPhone|iPad|iPod/i),
+    any: () => navigator.userAgent.match(/Android|iPhone|iPad|iPod/i)
 };
 
 const privateSwiper = new Swiper('.private-swiper', {
