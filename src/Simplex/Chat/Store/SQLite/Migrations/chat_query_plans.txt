@@ -626,7 +626,7 @@ Query:
             WHERE user_id = ? AND short_link_inv = ? LIMIT 1
           
 Plan:
-SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
+SEARCH connections USING INDEX idx_connections_user_id (user_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
@@ -1442,7 +1442,7 @@ Query:
           )
         
 Plan:
-SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
+SEARCH connections USING INDEX idx_connections_user_id (user_id=?)
 LIST SUBQUERY 1
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -3022,7 +3022,7 @@ Query:
         WHERE c.user_id = ? AND uc.user_id = ?
       
 Plan:
-SEARCH c USING INDEX idx_connections_updated_at (user_id=?)
+SEARCH c USING INDEX idx_connections_user_id (user_id=?)
 SEARCH uc USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -3914,7 +3914,7 @@ Query:
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
-SEARCH connections USING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
+SEARCH connections USING INDEX idx_connections_user_id (user_id=?)
 LIST SUBQUERY 2
 SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_2 (user_id=? AND contact_profile_id=?)
 LIST SUBQUERY 3
@@ -3954,7 +3954,7 @@ Query:
 Plan:
 SEARCH contact_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
-SEARCH connections USING INDEX idx_connections_custom_user_profile_id (custom_user_profile_id=?)
+SEARCH connections USING INDEX idx_connections_user_id (user_id=?)
 LIST SUBQUERY 2
 SEARCH group_members USING INDEX idx_group_members_user_id (user_id=?)
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_contact_profile_id (contact_profile_id=?)
@@ -5730,7 +5730,7 @@ SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_group_member (user_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_user_id (user_id=?)
 SEARCH files USING COVERING INDEX idx_files_user_id (user_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_user_id (user_id=?)
 SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_2 (user_id=?)
