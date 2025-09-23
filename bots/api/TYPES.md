@@ -1609,7 +1609,6 @@ Error:
 - localDisplayName: string
 - profile: [LocalProfile](#localprofile)
 - activeConn: [Connection](#connection)?
-- viaGroup: int64?
 - contactUsed: bool
 - contactStatus: [ContactStatus](#contactstatus)
 - chatSettings: [ChatSettings](#chatsettings)

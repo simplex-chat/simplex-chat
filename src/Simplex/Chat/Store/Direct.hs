@@ -262,7 +262,7 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
         [sql|
           SELECT
             -- Contact
-            ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+            ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
             cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
             ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
             ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
@@ -277,8 +277,6 @@ getContactByConnReqHash db vr user@User {userId} cReqHash1 cReqHash2 = do
             ( (c.user_id = ? AND c.via_contact_uri_hash = ?) OR
               (c.user_id = ? AND c.via_contact_uri_hash = ?)
             ) AND ct.contact_status = ? AND ct.deleted = 0
-          ORDER BY c.created_at DESC
-          LIMIT 1
         |]
         (userId, cReqHash1, userId, cReqHash2, CSActive)
   mapM (addDirectChatTags db) ct
@@ -349,7 +347,7 @@ createPreparedContact db vr user p connLinkToConnect welcomeSharedMsgId = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
       ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences prepared "" Nothing currentTs
+  contactId <- createContact_ db user p ctUserPreferences prepared "" currentTs
   getContact db vr user contactId
 
 updatePreparedContactUser :: DB.Connection -> VersionRangeChat -> User -> Contact -> User -> ExceptT StoreError IO Contact
@@ -386,7 +384,7 @@ createDirectContact :: DB.Connection -> VersionRangeChat -> User -> Connection -
 createDirectContact db vr user Connection {connId, localAlias} p = do
   currentTs <- liftIO getCurrentTime
   let ctUserPreferences = newContactUserPrefs user p
-  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias Nothing currentTs
+  contactId <- createContact_ db user p ctUserPreferences Nothing localAlias currentTs
   liftIO $ DB.execute db "UPDATE connections SET contact_id = ?, updated_at = ? WHERE connection_id = ?" (contactId, currentTs, connId)
   getContact db vr user contactId
 
@@ -792,7 +790,6 @@ createContactFromRequest db user@User {userId, profile = LocalProfile {preferenc
             localDisplayName,
             profile = toLocalProfile profileId profile "",
             activeConn = Just conn,
-            viaGroup = Nothing,
             contactUsed,
             contactStatus = CSActive,
             chatSettings = defaultChatSettings,
@@ -854,7 +851,7 @@ getContact_ db vr user@User {userId} contactId deleted = do
       [sql|
         SELECT
           -- Contact
-          ct.contact_id, ct.contact_profile_id, ct.local_display_name, ct.via_group, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+          ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
           cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
           ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
           ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
@@ -867,23 +864,8 @@ getContact_ db vr user@User {userId} contactId deleted = do
         LEFT JOIN connections c ON c.contact_id = ct.contact_id
         WHERE ct.user_id = ? AND ct.contact_id = ?
           AND ct.deleted = ?
-          AND (
-            c.connection_id = (
-              SELECT cc_connection_id FROM (
-                SELECT
-                  cc.connection_id AS cc_connection_id,
-                  cc.created_at AS cc_created_at,
-                  (CASE WHEN cc.conn_status = ? OR cc.conn_status = ? THEN 1 ELSE 0 END) AS cc_conn_status_ord
-                FROM connections cc
-                WHERE cc.user_id = ct.user_id AND cc.contact_id = ct.contact_id
-                ORDER BY cc_conn_status_ord DESC, cc_created_at DESC
-                LIMIT 1
-              ) cc
-            )
-            OR c.connection_id IS NULL
-          )
       |]
-      (userId, contactId, BI deleted, ConnReady, ConnSndReady)
+      (userId, contactId, BI deleted)
 
 getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO User
 getUserByContactRequestId db contactRequestId =

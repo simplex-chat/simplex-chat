@@ -461,12 +461,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] XGrpMemIntro continuation on receiving INV
           withCompletedCommand conn agentMsg $ \_ ->
             case cReq of
-              directConnReq@(CRInvitationUri _ _) -> do
-                contData <- withStore' $ \db -> do
-                  setConnConnReqInv db user connId cReq
-                  getXGrpMemIntroContDirect db user ct
-                forM_ contData $ \(hostConnId, xGrpMemIntroCont) ->
-                  sendXGrpMemInv hostConnId (Just directConnReq) xGrpMemIntroCont
+              CRInvitationUri _ _ -> withStore' $ \db -> setConnConnReqInv db user connId cReq
               CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
         MSG msgMeta _msgFlags msgBody -> do
           tags <- newTVarIO []
@@ -570,52 +565,43 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               void $ processContactProfileUpdate ct profile prepared
             XOk -> pure ()
             _ -> messageError "INFO for existing contact must have x.grp.mem.info, x.info or x.ok"
-        CON pqEnc ->
-          withStore' (\db -> getViaGroupMember db vr user ct) >>= \case
-            Nothing -> do
-              when (pqEnc == PQEncOn) $ withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
-              let conn' = conn {pqSndEnabled = Just pqEnc, pqRcvEnabled = Just pqEnc} :: Connection
-                  ct' = ct {activeConn = Just conn'} :: Contact
-              -- [incognito] print incognito profile used for this contact
-              incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-              lift $ setContactNetworkStatus ct' NSConnected
-              toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
-              let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
-              -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
-              when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
-                (Nothing, Nothing) -> do
-                  unlessM (withStore' $ \db -> checkContactHasItems db user ct') $
-                    createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
-                  createE2EItem
-                  createFeatureEnabledItems user ct'
-                (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->
-                  unless (Just pqEnc == connRequestPQEncryption cReq) createE2EItem
-                (_, Just connReqId) ->
-                  withStore' (\db -> getContactRequest' db user connReqId) >>= \case
-                    Just UserContactRequest {pqSupport} | CR.pqSupportToEnc pqSupport == pqEnc -> pure ()
-                    _ -> createE2EItem
-              when (contactConnInitiated conn') $ do
-                let Connection {groupLinkId} = conn'
-                    doProbeContacts = isJust groupLinkId
-                probeMatchingContactsAndMembers ct' (contactConnIncognito ct') doProbeContacts
-                withStore' $ \db -> resetContactConnInitiated db user conn'
-              forM_ viaUserContactLink $ \userContactLinkId -> do
-                (ucl, gli_) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
-                -- let UserContactLink {addressSettings = AddressSettings {autoReply}} = ucl
-                when (connChatVersion < batchSend2Version) $ forM_ (autoReply $ addressSettings ucl) $ \mc -> sendAutoReply ct' mc Nothing -- old versions only
-                -- TODO REMOVE LEGACY vvv
-                forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
-                  groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-                  subMode <- chatReadVar subscriptionMode
-                  groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
-                  gVar <- asks random
-                  withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
+        CON pqEnc -> do
+          when (pqEnc == PQEncOn) $ withStore' $ \db -> updateConnPQEnabledCON db connId pqEnc
+          let conn' = conn {pqSndEnabled = Just pqEnc, pqRcvEnabled = Just pqEnc} :: Connection
+              ct' = ct {activeConn = Just conn'} :: Contact
+          -- [incognito] print incognito profile used for this contact
+          incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
+          lift $ setContactNetworkStatus ct' NSConnected
+          toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
+          let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
+          -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
+          when (directOrUsed ct') $ case (preparedContact ct', contactRequestId' ct') of
+            (Nothing, Nothing) -> do
+              unlessM (withStore' $ \db -> checkContactHasItems db user ct') $
+                createInternalChatItem user (CDDirectSnd ct') CIChatBanner (Just epochStart)
+              createE2EItem
+              createFeatureEnabledItems user ct'
+            (Just PreparedContact {connLinkToConnect = ACCL _ (CCLink cReq _)}, _) ->
+              unless (Just pqEnc == connRequestPQEncryption cReq) createE2EItem
+            (_, Just connReqId) ->
+              withStore' (\db -> getContactRequest' db user connReqId) >>= \case
+                Just UserContactRequest {pqSupport} | CR.pqSupportToEnc pqSupport == pqEnc -> pure ()
+                _ -> createE2EItem
+          when (contactConnInitiated conn') $ do
+            probeMatchingMembers ct' (contactConnIncognito ct')
+            withStore' $ \db -> resetContactConnInitiated db user conn'
+          forM_ viaUserContactLink $ \userContactLinkId -> do
+            (ucl, gli_) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
+            -- let UserContactLink {addressSettings = AddressSettings {autoReply}} = ucl
+            when (connChatVersion < batchSend2Version) $ forM_ (autoReply $ addressSettings ucl) $ \mc -> sendAutoReply ct' mc Nothing -- old versions only
+            -- TODO REMOVE LEGACY vvv
+            forM_ gli_ $ \GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+              groupInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+              subMode <- chatReadVar subscriptionMode
+              groupConnIds <- createAgentConnectionAsync user CFCreateConnGrpInv True SCMInvitation subMode
+              gVar <- asks random
+              withStore $ \db -> createNewContactMemberAsync db gVar user groupInfo ct' gLinkMemRole groupConnIds connChatVersion peerChatVRange subMode
             -- TODO REMOVE LEGACY ^^^
-            Just (gInfo, m@GroupMember {activeConn}) ->
-              when (maybe False ((== ConnReady) . connStatus) activeConn) $ do
-                notifyMemberConnected gInfo m $ Just ct
-                let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
-                when (memberCategory m == GCPreMember) $ probeMatchingContactsAndMembers ct connectedIncognito True
         SENT msgId proxy -> do
           void $ continueSending connEntity conn
           sentMsgDeliveryEvent conn msgId
@@ -864,20 +850,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
+            notifyMemberConnected gInfo m Nothing
             let memCategory = memberCategory m
-            withStore' (\db -> getViaGroupContact db vr user m) >>= \case
-              Nothing -> do
-                notifyMemberConnected gInfo m Nothing
-                let connectedIncognito = memberIncognito membership
-                when (memCategory == GCPreMember) $
-                  probeMatchingMemberContact m connectedIncognito
-              Just ct@Contact {activeConn} ->
-                forM_ activeConn $ \Connection {connStatus} ->
-                  when (connStatus == ConnReady) $ do
-                    notifyMemberConnected gInfo m $ Just ct
-                    let connectedIncognito = contactConnIncognito ct || incognitoMembership gInfo
-                    when (memCategory == GCPreMember && not (memberPending membership)) $
-                      probeMatchingContactsAndMembers ct connectedIncognito True
+                connectedIncognito = memberIncognito membership
+            when (memCategory == GCPreMember) $
+              probeMatchingMemberContact m connectedIncognito
             sendXGrpMemCon memCategory
             where
               GroupMember {memberId} = m
@@ -1598,8 +1575,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       lift $ mapM_ (`setContactNetworkStatus` NSConnected) ct_
       toView $ CEvtConnectedToGroupMember user gInfo' m' ct_
 
-    probeMatchingContactsAndMembers :: Contact -> IncognitoEnabled -> Bool -> CM ()
-    probeMatchingContactsAndMembers ct connectedIncognito doProbeContacts = do
+    probeMatchingMembers :: Contact -> IncognitoEnabled -> CM ()
+    probeMatchingMembers ct connectedIncognito = do
       gVar <- asks random
       contactMerge <- readTVarIO =<< asks contactMergeEnabled
       if contactMerge && not connectedIncognito
@@ -1610,12 +1587,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- sendProbe -> sendProbeHashes (currently)
           -- sendProbeHashes -> sendProbe (reversed - change order in code, may add delay)
           sendProbe probe
-          cs <-
-            if doProbeContacts
-              then map COMContact <$> withStore' (\db -> getMatchingContacts db vr user ct)
-              else pure []
           ms <- map COMGroupMember <$> withStore' (\db -> getMatchingMembers db vr user ct)
-          sendProbeHashes (cs <> ms) probe probeId
+          sendProbeHashes ms probe probeId
         else sendProbe . Probe =<< liftIO (encodedRandomBytes gVar 32)
       where
         sendProbe :: Probe -> CM ()
@@ -2487,25 +2460,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     probeMatch :: ContactOrMember -> ContactOrMember -> Probe -> CM (Maybe ContactOrMember)
     probeMatch cgm1 cgm2 probe =
       case cgm1 of
-        COMContact c1@Contact {contactId = cId1, profile = p1} ->
+        COMContact c1@Contact {profile = p1} ->
           case cgm2 of
-            COMContact c2@Contact {contactId = cId2, profile = p2}
-              | cId1 /= cId2 && profilesMatch p1 p2 -> do
-                  void . sendDirectContactMessage user c1 $ XInfoProbeOk probe
-                  COMContact <$$> mergeContacts c1 c2
-              | otherwise -> messageWarning "probeMatch ignored: profiles don't match or same contact id" >> pure Nothing
             COMGroupMember m2@GroupMember {memberProfile = p2, memberContactId}
               | isNothing memberContactId && profilesMatch p1 p2 -> do
                   void . sendDirectContactMessage user c1 $ XInfoProbeOk probe
                   COMContact <$$> associateMemberAndContact c1 m2
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact" >> pure Nothing
-        COMGroupMember GroupMember {activeConn = Nothing} -> pure Nothing
-        COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId, activeConn = Just conn} ->
+            COMContact _ -> messageWarning "probeMatch ignored: contacts are not merged" >> pure Nothing
+        COMGroupMember m1@GroupMember {groupId, memberProfile = p1, memberContactId} ->
           case cgm2 of
             COMContact c2@Contact {profile = p2}
-              | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 -> do
-                  void $ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId
-                  COMContact <$$> associateMemberAndContact c2 m1
+              | memberCurrent m1 && isNothing memberContactId && profilesMatch p1 p2 ->
+                  case memberConn m1 of
+                    Just conn -> do
+                      void $ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId
+                      COMContact <$$> associateMemberAndContact c2 m1
+                    _ -> messageWarning "probeMatch ignored: matched member doesn't have connection" >> pure Nothing
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
 
@@ -2513,14 +2484,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xInfoProbeOk cgm1 probe = do
       cgm2 <- withStore' $ \db -> matchSentProbe db vr user cgm1 probe
       case cgm1 of
-        COMContact c1@Contact {contactId = cId1} ->
+        COMContact c1 ->
           case cgm2 of
-            Just (COMContact c2@Contact {contactId = cId2})
-              | cId1 /= cId2 -> void $ mergeContacts c1 c2
-              | otherwise -> messageWarning "xInfoProbeOk ignored: same contact id"
             Just (COMGroupMember m2@GroupMember {memberContactId})
               | isNothing memberContactId -> void $ associateMemberAndContact c1 m2
               | otherwise -> messageWarning "xInfoProbeOk ignored: member already has contact"
+            Just (COMContact _) -> messageWarning "xInfoProbeOk ignored: contacts are not merged"
             _ -> pure ()
         COMGroupMember m1@GroupMember {memberContactId} ->
           case cgm2 of
@@ -2639,36 +2608,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     msgCallStateError :: Text -> Call -> CM ()
     msgCallStateError eventName Call {callState} =
       messageError $ eventName <> ": wrong call state " <> T.pack (show $ callStateTag callState)
-
-    mergeContacts :: Contact -> Contact -> CM (Maybe Contact)
-    mergeContacts c1 c2 = do
-      let Contact {localDisplayName = cLDN1, profile = LocalProfile {displayName}} = c1
-          Contact {localDisplayName = cLDN2} = c2
-      case (suffixOrd displayName cLDN1, suffixOrd displayName cLDN2) of
-        (Just cOrd1, Just cOrd2)
-          | cOrd1 < cOrd2 -> merge c1 c2
-          | cOrd2 < cOrd1 -> merge c2 c1
-          | otherwise -> pure Nothing
-        _ -> pure Nothing
-      where
-        merge c1' c2' = do
-          c2'' <- withStore $ \db -> mergeContactRecords db vr user c1' c2'
-          toView $ CEvtContactsMerged user c1' c2' c2''
-          when (directOrUsed c2'') $ showSecurityCodeChanged c2''
-          pure $ Just c2''
-          where
-            showSecurityCodeChanged mergedCt = do
-              let sc1_ = contactSecurityCode c1'
-                  sc2_ = contactSecurityCode c2'
-                  scMerged_ = contactSecurityCode mergedCt
-              case (sc1_, sc2_) of
-                (Just sc1, Nothing)
-                  | scMerged_ /= Just sc1 -> securityCodeChanged mergedCt
-                  | otherwise -> pure ()
-                (Nothing, Just sc2)
-                  | scMerged_ /= Just sc2 -> securityCodeChanged mergedCt
-                  | otherwise -> pure ()
-                _ -> pure ()
 
     associateMemberAndContact :: Contact -> GroupMember -> CM (Maybe Contact)
     associateMemberAndContact c m = do

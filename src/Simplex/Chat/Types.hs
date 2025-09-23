@@ -181,7 +181,6 @@ data Contact = Contact
     localDisplayName :: ContactName,
     profile :: LocalProfile,
     activeConn :: Maybe Connection,
-    viaGroup :: Maybe Int64,
     contactUsed :: Bool,
     contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
