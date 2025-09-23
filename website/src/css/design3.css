@@ -210,6 +210,11 @@
             #3f5598 70%,
             #c3faff 90%,
             #fff6e0 100%);
+    --sa-top: env(safe-area-inset-top, 0px);
+    --sa-right: env(safe-area-inset-right, 0px);
+    --sa-bottom: env(safe-area-inset-bottom, 0px);
+    --sa-left: env(safe-area-inset-left, 0px);
+    --vh: 1svh;
 }
 
 * {
@@ -221,7 +226,12 @@
 html {
     scroll-behavior: smooth;
     font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
-    letter-spacing: 0.003em;
+}
+
+html, body { background:#000; }
+
+.hidden {
+    display: none !important;
 }
 
 img {
@@ -231,72 +241,9 @@ img {
     -ms-user-select: none;
 }
 
-a {
+a,
+p {
     word-wrap: break-word;
-}
-
-/* NEW SITE */
-.container,
-.container-fluid,
-.container-xxl,
-.container-xl,
-.container-lg,
-.container-md,
-.container-sm {
-    width: 100%;
-    /* padding: 0 20px; */
-    margin-right: auto;
-    margin-left: auto;
-}
-
-@media (min-width: 576px) {
-
-    .container-sm,
-    .container {
-        max-width: 540px;
-    }
-}
-
-@media (min-width: 768px) {
-
-    .container-md,
-    .container-sm,
-    .container {
-        max-width: 720px;
-    }
-}
-
-@media (min-width: 992px) {
-
-    .container-lg,
-    .container-md,
-    .container-sm,
-    .container {
-        max-width: 960px;
-    }
-}
-
-@media (min-width: 1200px) {
-
-    .container-xl,
-    .container-lg,
-    .container-md,
-    .container-sm,
-    .container {
-        max-width: 1140px;
-    }
-}
-
-@media (min-width: 1400px) {
-
-    .container-xxl,
-    .container-xl,
-    .container-lg,
-    .container-md,
-    .container-sm,
-    .container {
-        max-width: 1320px;
-    }
 }
 
 .gradient-text {
@@ -311,17 +258,39 @@ a {
 }
 
 .screen {
-    height: 100vh;
-    overflow-y: scroll;
+    height: 100dvh;
+    /* visible height, updates as bars expand/collapse */
+    height: calc(var(--vh) * 100);
+    /* fallback for older browsers */
+    overflow-y: auto;
     scroll-snap-type: y mandatory;
+    /* page-by-page snap */
     scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    /* avoid rubber-banding pulling UI over content */
+    -webkit-overflow-scrolling: touch;
 }
 
 section {
-    width: 100vw;
-    height: 100vh;
-    position: relative;
+    height: 100dvh;
+    height: calc(var(--vh) * 100);
+    /* same fallback */
     scroll-snap-align: start;
+    scroll-snap-stop: always;
+    /* requires a full swipe/scroll to leave */
+    position: relative;
+}
+
+/* Foreground content sits inside the safe area without changing section height */
+section .content {
+    min-height: 100%;
+    display: grid;
+    place-items: center;
+    padding:
+        max(16px, var(--sa-top)) max(16px, var(--sa-right)) max(24px, var(--sa-bottom))
+        /* lifts content above the iOS bottom bar */
+        max(16px, var(--sa-left));
+    box-sizing: border-box;
 }
 
 /* --- COVER --- */
@@ -369,6 +338,30 @@ section.cover div.content {
     color: #ffffff;
 }
 
+.cover .socials {
+    position: absolute;
+    width: 100vw;
+    bottom: 32px;
+    padding: 0 4vw;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.cover .socials a img {
+    width: auto;
+    height: 40px;
+    border: #4f4f4f 1px solid;
+    border-radius: 8px;
+}
+
+.cover .socials a img.no-border {
+    border: none;
+}
+
 /* --- MAIN SECTIONS --- */
 main {
     position: relative;
@@ -414,6 +407,10 @@ main section .image {
     background-image: url("/img/design_3/token-31-04_webp.webp");
 }
 
+.page-6 .image {
+    background-image: url("/img/design_3/section-6-desktop.webp");
+}
+
 .text-container {
     position: relative;
     color: white;
@@ -422,23 +419,26 @@ main section .image {
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    gap: 2.5rem;
-    margin-right: auto;
-    padding-left: 8rem;
+    gap: 2.3vh;
+    margin-right: 6.25vw;
+    margin-left: 6.25vw;
     width: fit-content;
 }
 
 .text-container h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 400;
-    font-size: clamp(2.5rem, 8vw, 5.6rem);
+    font-size: 4.6vw;
     letter-spacing: -0.025em;
+    line-height: 1.05;
+    max-width: 24vw;
 }
 
 .text-container p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: clamp(1rem, 2.25vw, 1.84rem);
+    font-size: 1.45vw;
+    max-width: 20.5vw;
 }
 
 .text-container p span {
@@ -448,15 +448,183 @@ main section .image {
 .text-container a {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: clamp(1rem, 2.25vw, 1.84rem);
+    font-size: 1.45vw;
     text-decoration: underline;
     text-decoration-line: underline;
     text-decoration-thickness: 0.5px;
     text-underline-offset: 4px;
+    max-width: 13vw;
+}
+
+.page-2 .text-container h2 {
+    max-width: 24vw !important;
+}
+
+.page-2 .text-container p {
+    max-width: 20.5vw;
+}
+
+.page-3 .text-container h2 {
+    max-width: 30vw !important;
+}
+
+.page-3 .text-container p {
+    max-width: 28.5vw;
 }
 
 .page-3 .text-container,
 .page-4 .text-container {
-    margin-right: 8rem;
     margin-left: auto;
+}
+
+.page-4 .text-container h2 {
+    max-width: 28vw !important;
+}
+
+.page-4 .text-container p {
+    max-width: 26.5vw;
+}
+
+.page-4 .text-container a {
+    max-width: 26.5vw;
+}
+
+.roadmap>p:first-child {
+    font-weight: 500;
+    color: #64fdff;
+}
+
+.roadmap>p:nth-child(2) {
+    font-weight: 500;
+}
+
+.roadmap>p:nth-child(3) {
+    font-weight: 200;
+}
+
+.roadmap p {
+    max-width: 30vw;
+}
+
+@media (max-width: 767px) {
+    section {
+        min-height: 100svh;
+    }
+
+    section.cover div.content {
+        gap: 35px;
+    }
+
+    .cover .content h1 {
+        font-size: 30vw;
+    }
+
+    .cover .content h2 {
+        font-size: 7vw;
+    }
+
+    .cover .content p {
+        font-size: 4.3vw;
+        max-width: 62.5vw;
+    }
+
+    .cover .socials {
+        justify-content: center;
+    }
+
+    /* --- MAIN SECTIONS --- */
+    .page-2 .image {
+        background-image: url("/img/design_3/section2-mobile-bg.webp");
+    }
+
+    .page-3 .image {
+        background-image: url("/img/design_3/section-3-mobile.webp");
+    }
+
+    .page-4 .image {
+        background-image: url("/img/design_3/section-4-mobile.webp");
+        height: 55%;
+    }
+
+    .page-6 .image {
+        background-image: url("/img/design_3/section-6-mobile.webp");
+        height: 48%;
+    }
+
+    .page-3 .text-container,
+    .page-4 .text-container {
+        margin-left: 0;
+    }
+
+    .text-container {
+        justify-content: flex-end;
+        align-items: flex-start;
+        gap: 1.25rem;
+        margin-right: 8vw !important;
+        margin-left: 8vw !important;
+        padding-bottom: 8vw;
+        max-width: 75vw;
+    }
+
+    .text-container h2 {
+        font-family: "GT-Walsheim", "Manrope", sans-serif;
+        font-weight: 400;
+        font-size: 9.25vw;
+        letter-spacing: -0.025em;
+        max-width: 75vw !important;
+        line-height: 1.05;
+    }
+
+    .text-container p {
+        font-size: 4.2vw;
+    }
+
+    .text-container a {
+        font-weight: 300;
+        font-size: 4.2vw;
+    }
+
+    .text-container p,
+    .text-container a {
+        max-width: 74vw !important;
+    }
+
+    .page-2 .text-container {
+        max-width: 75vw;
+    }
+
+    .page-2 .text-container h2 {
+        max-width: 75vw !important;
+    }
+
+    .page-3 .text-container {
+        max-width: 80vw !important;
+    }
+
+    .page-3 .text-container p {
+        max-width: 80vw !important;
+    }
+
+    .page-3 .text-container h2 {
+        max-width: 85vw !important;
+        font-size: 13vw;
+    }
+
+    .page-4 .text-container {
+        max-width: 80vw !important;
+
+    }
+
+    .page-4 .text-container h2 {
+        max-width: 80vw !important;
+        font-size: 14vw;
+    }
+
+    .page-4 .text-container p {
+        max-width: 80vw !important;
+    }
+
+    .page-4 .text-container a {
+        max-width: 80vw !important;
+    }
 }

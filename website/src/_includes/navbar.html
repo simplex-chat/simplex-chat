@@ -12,15 +12,23 @@
         <a href="/{{ '' if lang == 'en' else lang }}" class="h-full hidden dark:lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
         <a href="/{{ '' if lang == 'en' else lang }}" class="dark:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
         <a href="/{{ '' if lang == 'en' else lang }}" class="hidden dark:inline-block dark:lg:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
-        
+
         <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 h-[calc(100vh-66px)] lg:h-[66px] lg:top-0 lg:relative" id="menu">
             <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
                 <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
-                    
+
                     <li class="nav-link relative {% if active_home %}active{% endif %}">
                         <a href="/{{ '' if lang == 'en' else lang }}" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
                             <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "home" | i18n({}, lang ) | safe }}</span>
-                        </a>                        
+                        </a>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative {% if active_directory %}active{% endif %}">
+                        <a href="/directory/" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "directory" | i18n({}, lang ) | safe }}</span>
+                        </a>
                     </li>
 
                     <hr class="dark:opacity-[0.1]" >
@@ -34,7 +42,7 @@
                                 </svg>
                             </span>
                         </a>
-                        
+
                         <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
                             {% for guide in guide_dropdown.items %}
                                 <li><a href="{{ guide.url | url }}" class="{{ "active" if page.url == guide.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ guide.title | i18n({}, lang ) | safe }}</a></li>
@@ -53,7 +61,7 @@
                                 </svg>
                             </span>
                         </a>
-                        
+
                         <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
                             <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
                                 target="_blank" class="lg:px-[20px] flex items-center gap-1"
@@ -71,9 +79,9 @@
                                 >{{ "chat-protocol" | i18n({}, lang ) | safe }}</a></li>
                             <li><a href="/docs/glossary.html" class="lg:px-[20px] inline-block"
                                 >{{ "glossary" | i18n({}, lang ) | safe }}</a></li>
-                            
+
                             <hr class=" h-[1px] w-full dark:opacity-[0.1]">
-                            
+
                             {% for doc in docs_dropdown.items %}
                                 <li><a href="{{ doc.url | url }}" class="{{ "active" if page.url == doc.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ doc.title | i18n({}, lang ) | safe }}</a></li>
                             {% endfor %}
@@ -110,14 +118,6 @@
 
                     <hr class="dark:opacity-[0.1]" >
 
-                    <li class="nav-link relative {% if active_jobs %}active{% endif %}">
-                        <a href="/jobs" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "jobs" | i18n({}, lang ) | safe }}</span>
-                        </a>                        
-                    </li>
-
-                    <hr class="dark:opacity-[0.1]" >
-
                     <li class="nav-link relative {% if active_blog %}active{% endif %}">
                         <a href="/blog" class="flex items-center justify-between gap-2 lg:py-5">
                             <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">{{ "blog" | i18n({}, lang ) | safe }}</span>
@@ -143,7 +143,7 @@
             </div>
         </nav>
 
-        {% if ('blog' not in page.url) and ('jobs' not in page.url) %}
+        {% if ('blog' not in page.url) and ('jobs' not in page.url) and ('about' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) %}
         <div class="nav-link relative flag-container">
             <a href="javascript:void(0);" class="flex items-center justify-end ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 h-6 w-8 whitespace-nowrap">
                 {% for language in languages.languages %}
@@ -158,7 +158,7 @@
                     {% endif %}
                 {% endfor %}
             </a>
-            
+
             <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">
                 {% if ("docs" in page.url) or ('downloads' in page.url) %}
                     {% for supportedLang in supportedLangsForDoc %}
@@ -177,7 +177,7 @@
                                             </div>
                                             <p>{{ language.name }}</p>
                                         </a>
-                                    {% endif %} 
+                                    {% endif %}
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -198,7 +198,7 @@
                                         </div>
                                         <p>{{ language.name }}</p>
                                     </a>
-                                {% endif %} 
+                                {% endif %}
                             </li>
                         {% endif %}
                     {% endfor %}

@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Simplex Chat</title>
     <link rel="stylesheet" href="/css/design3.css">
 </head>
@@ -11,12 +11,17 @@
 <body>
     <div class="screen">
         <section class="page-1 cover">
-            <div class="container">
-                <div class="content">
-                    <h1>Be<br>Free</h1>
-                    <h2 class="gradient-text">Freedom & Security<br>of Your Communications</h2>
-                    <p>The first network where you own<br>your identity, contacts, and groups.</p>
-                </div>
+            <div class="content">
+                <h1>Be<br>Free</h1>
+                <h2 class="gradient-text">Freedom & Security<br>of Your Communications</h2>
+                <p>The first network where you own<br>your identity, contacts, and groups.</p>
+            </div>
+            <div class="socials">
+                <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg" /></a>
+                <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img src="/img/new/google_play.svg" /></a>
+                <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="SimpleX F-Droid Repository"><img src="/img/new/f_droid.svg" /></a>
+                <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" /></a>
+                <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img src="/img/design_3/android-dark.png" /></a>
             </div>
         </section>
 
@@ -26,10 +31,10 @@
             <section class="page-2">
                 <div class="image"></div>
                 <div class="text-container">
-                    <h2>World's<br>Most Secure<br>Messaging</h2>
-                    <p>SimpleX messaging has<br>cutting-edge end-to-end<br>encryption.</p>
-                    <p>For your security, servers can’t<br>see your messages <span>or who you<br>talk to.</span></p>
-                    <a class="gradient-text" href="/learn-more">Learn more about<br>SimpleX messaging</a>
+                    <h2>World's Most Secure Messaging</h2>
+                    <p>SimpleX messaging has cutting-edge end-to-end encryption.</p>
+                    <p>For your security, servers can’t see your messages <span>or who you talk to.</span></p>
+                    <a class="gradient-text" href="/learn-more">Learn more about SimpleX messaging</a>
                 </div>
             </section>
 
@@ -37,24 +42,55 @@
                 <div class="image"></div>
                 <div class="text-container">
                     <h2>You Own<br>The Next Web</h2>
-                    <p>SimpleX is founded on the belief that <span>you<br>must own your identity, contacts and<br>communities.</span></p>
-                    <p>Open and decentralized network lets you<br>connect with people and share ideas: be<br>free and secure.</p>
+                    <p>SimpleX is founded on the belief that <span>you must own your identity, contacts and communities.</span></p>
+                    <p>Open and decentralized network lets you connect with people and share ideas: be free and secure.</p>
                 </div>
             </section>
 
             <section class="page-4">
                 <div class="image"></div>
                 <div class="text-container">
-                    <h2>Communities<br>That Last</h2>
-                    <p>You will support your favorite groups with<br>future Community vouchers.</p>
-                    <p>Vouchers will pay for servers, to let your<br>communities stay free and independent.</p>
+                    <h2>Communities That Last</h2>
+                    <p>You will support your favorite groups with future Community vouchers.</p>
+                    <p>Vouchers will pay for servers, to let your communities stay free and independent.</p>
                     <a class="gradient-text" href="/">Learn more about Community Vouchers</a>
+                </div>
+            </section>
+
+            <section class="page-6">
+                <div class="image"></div>
+                <div class="text-container">
+                    <h2>SimpleX Roadmap to Free Internet</h2>
+                    <div class="roadmap">
+                        <p>2025</p>
+                        <p>Scale to Large Communities</p>
+                        <p>Escaping centralized platforms</p>
+                    </div>
+                    <div class="roadmap">
+                        <p>2026</p>
+                        <p>Sustainable Communities & Servers</p>
+                        <p>Launching Community Vouchers</p>
+                    </div>
+                    <div class="roadmap">
+                        <p>2027</p>
+                        <p>Make Your Communities Grow</p>
+                        <p>Tools to promote your communities</p>
+                    </div>
                 </div>
             </section>
         </main>
     </div>
 
     <script src="/js/design3.js"></script>
+    <script>
+    (function setVH(){
+        const apply = () =>
+        document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+        apply();
+        window.addEventListener('resize', apply);
+        window.addEventListener('orientationchange', apply);
+    })();
+    </script>
 </body>
 
 </html>
