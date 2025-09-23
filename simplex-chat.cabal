@@ -34,6 +34,11 @@ flag client_postgres
   manual: True
   default: False
 
+flag picolisp
+  description: Build with Picolisp support.
+  manual: True
+  default: False
+
 library
   exposed-modules:
       Simplex.Chat
@@ -259,6 +264,11 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250801_via_group_link_uri
           Simplex.Chat.Store.SQLite.Migrations.M20250802_chat_peer_type
           Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks
+  if flag(picolisp)
+      extra-libraries: picolisp
+      cpp-options: -Dpicolisp
+      exposed-modules:
+          Simplex.Chat.Picolisp
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -404,6 +414,11 @@ executable simplex-broadcast-bot
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
+  if flag(picolisp)
+      extra-libraries: picolisp
+      cpp-options: -Dpicolisp
+      exposed-modules:
+          Simplex.Chat.Picolisp
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -437,6 +452,11 @@ executable simplex-chat
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
+  if flag(picolisp)
+      extra-libraries: picolisp
+      cpp-options: -Dpicolisp
+      exposed-modules:
+          Simplex.Chat.Picolisp
   if impl(ghc >= 9.6.2)
     build-depends:
         text >=2.0.1 && <2.2
@@ -490,6 +510,11 @@ executable simplex-directory-service
   default-language: Haskell2010
   if flag(client_postgres)
     cpp-options: -DdbPostgres
+  if flag(picolisp)
+      extra-libraries: picolisp
+      cpp-options: -Dpicolisp
+      exposed-modules:
+          Simplex.Chat.Picolisp
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
