@@ -2476,7 +2476,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     Just conn -> do
                       void $ sendDirectMemberMessage conn (XInfoProbeOk probe) groupId
                       COMContact <$$> associateMemberAndContact c2 m1
-                    _ -> messageWarning "probeMatch ignored: matched member connection not ready" >> pure Nothing
+                    _ -> messageWarning "probeMatch ignored: matched member doesn't have connection" >> pure Nothing
               | otherwise -> messageWarning "probeMatch ignored: profiles don't match or member already has contact or member not current" >> pure Nothing
             COMGroupMember _ -> messageWarning "probeMatch ignored: members are not matched with members" >> pure Nothing
 
