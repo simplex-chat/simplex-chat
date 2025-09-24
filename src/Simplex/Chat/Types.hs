@@ -1414,10 +1414,10 @@ data RcvFileDescr = RcvFileDescr
 
 data RcvFileStatus
   = RFSNew
-  | RFSAccepted {fileInfo :: RcvFileInfo}
-  | RFSConnected {fileInfo :: RcvFileInfo}
-  | RFSComplete {fileInfo :: RcvFileInfo}
-  | RFSCancelled {fileInfo_ :: Maybe RcvFileInfo}
+  | RFSAccepted {filePath :: FilePath}
+  | RFSConnected {filePath :: FilePath}
+  | RFSComplete {filePath :: FilePath}
+  | RFSCancelled {filePath_ :: Maybe FilePath}
   deriving (Eq, Show)
 
 rcvFileComplete :: RcvFileStatus -> Bool
@@ -1428,23 +1428,11 @@ rcvFileComplete = \case
 rcvFileCompleteOrCancelled :: RcvFileTransfer -> Bool
 rcvFileCompleteOrCancelled RcvFileTransfer {fileStatus, cancelled} = rcvFileComplete fileStatus || cancelled
 
-data RcvFileInfo = RcvFileInfo
-  { filePath :: FilePath,
-    connId :: Maybe Int64,
-    agentConnId :: Maybe AgentConnId
-  }
-  deriving (Eq, Show)
-
-liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
-liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> Just fi
-  RFSConnected fi -> Just fi
-  _ -> Nothing
-
 liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
-liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
-  where
-    fp RcvFileInfo {filePath} = filePath
+liveRcvFileTransferPath RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted filePath -> Just filePath
+  RFSConnected filePath -> Just filePath
+  _ -> Nothing
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Ord, Show)
@@ -2106,8 +2094,6 @@ $(JQ.deriveJSON defaultJSON ''SndFileTransfer)
 $(JQ.deriveJSON defaultJSON ''RcvFileDescr)
 
 $(JQ.deriveJSON defaultJSON ''XFTPRcvFile)
-
-$(JQ.deriveJSON defaultJSON ''RcvFileInfo)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RFS") ''RcvFileStatus)
 

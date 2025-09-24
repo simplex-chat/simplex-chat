@@ -528,11 +528,9 @@ getRcvFileTransfer_ db userId fileId = do
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
-            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays,
-            c.connection_id, c.agent_conn_id
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays
           FROM rcv_files r
           JOIN files f USING (file_id)
-          LEFT JOIN connections c ON r.file_id = c.rcv_file_id
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
           LEFT JOIN group_members m ON m.group_member_id = r.group_member_id
           WHERE f.user_id = ? AND f.file_id = ?
@@ -543,31 +541,30 @@ getRcvFileTransfer_ db userId fileId = do
   where
     rcvFileTransfer ::
       Maybe RcvFileDescr ->
-      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) :. (Maybe Int64, Maybe AgentConnId) ->
+      (FileStatus, Maybe ConnReqInvitation, Maybe Int64, String, Integer, Integer, Maybe BoolInt) :. (Maybe ContactName, Maybe ContactName, Maybe FilePath, Maybe C.SbKey, Maybe C.CbNonce, Maybe InlineFileMode, Maybe InlineFileMode, Maybe AgentRcvFileId, BoolInt, BoolInt) ->
       ExceptT StoreError IO RcvFileTransfer
-    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays) :. (connId_, agentConnId_)) =
+    rcvFileTransfer rfd_ ((fileStatus', fileConnReq, grpMemberId, fileName, fileSize, chunkSize, cancelled_) :. (contactName_, memberName_, filePath_, fileKey, fileNonce, fileInline, rcvFileInline, agentRcvFileId, BI agentRcvFileDeleted, BI userApprovedRelays)) =
       case contactName_ <|> memberName_ <|> standaloneName_ of
         Nothing -> throwError $ SERcvFileInvalid fileId
         Just name ->
           case fileStatus' of
             FSNew -> pure $ ft name RFSNew
-            FSAccepted -> ft name . RFSAccepted <$> rfi
-            FSConnected -> ft name . RFSConnected <$> rfi
-            FSComplete -> ft name . RFSComplete <$> rfi
-            FSCancelled -> ft name . RFSCancelled <$> rfi_
+            FSAccepted -> ft name . RFSAccepted <$> filePath
+            FSConnected -> ft name . RFSConnected <$> filePath
+            FSComplete -> ft name . RFSComplete <$> filePath
+            FSCancelled -> pure $ ft name (RFSCancelled filePath_)
       where
-        standaloneName_ = case (connId_, agentRcvFileId, filePath_) of
-          (Nothing, Just _, Just _) -> Just "" -- filePath marks files that are accepted from contact or, in this case, set by createRcvDirectFileTransfer
+        standaloneName_ = case (agentRcvFileId, filePath_) of
+          (Just _, Just _) -> Just "" -- filePath marks files that are accepted from contact or, in this case, set by createRcvDirectFileTransfer
           _ -> Nothing
         ft senderDisplayName fileStatus =
           let fileInvitation = FileInvitation {fileName, fileSize, fileDigest = Nothing, fileConnReq, fileInline, fileDescr = Nothing}
               cryptoArgs = CFArgs <$> fileKey <*> fileNonce
               xftpRcvFile = (\rfd -> XFTPRcvFile {rcvFileDescription = rfd, agentRcvFileId, agentRcvFileDeleted, userApprovedRelays}) <$> rfd_
            in RcvFileTransfer {fileId, xftpRcvFile, fileInvitation, fileStatus, rcvFileInline, senderDisplayName, chunkSize, cancelled, grpMemberId, cryptoArgs}
-        rfi = maybe (throwError $ SERcvFileInvalid fileId) pure =<< rfi_
-        rfi_ = case (filePath_, connId_, agentConnId_) of
-          (Just filePath, connId, agentConnId) -> pure $ Just RcvFileInfo {filePath, connId, agentConnId}
-          _ -> pure Nothing
+        filePath = case filePath_ of
+          Nothing -> throwError $ SERcvFileInvalid fileId
+          Just fp -> pure fp
         cancelled = maybe False unBI cancelled_
 
 acceptRcvInlineFT :: DB.Connection -> VersionRangeChat -> User -> FileTransferId -> FilePath -> ExceptT StoreError IO AChatItem
@@ -849,7 +846,7 @@ getLocalCryptoFile db userId fileId sent =
       when sent $ throwError $ SEFileNotFound fileId
       RcvFileTransfer {fileStatus, cryptoArgs} <- getRcvFileTransfer_ db userId fileId
       case fileStatus of
-        RFSComplete RcvFileInfo {filePath} -> pure $ CryptoFile filePath cryptoArgs
+        RFSComplete filePath -> pure $ CryptoFile filePath cryptoArgs
         _ -> throwError $ SEFileNotFound fileId
     [(Just _, Nothing, _)] -> do
       unless sent $ throwError $ SEFileNotFound fileId

@@ -1463,10 +1463,10 @@ mkMemberSupportChatInfo m@GroupMember {groupMemberId, supportChat} =
 appendFileChunk :: RcvFileTransfer -> Integer -> ByteString -> Bool -> CM ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitation = FileInvitation {fileName}} chunkNo chunk final =
   case fileStatus of
-    RFSConnected RcvFileInfo {filePath} -> append_ filePath
+    RFSConnected filePath -> append_ filePath
     -- sometimes update of file transfer status to FSConnected
     -- doesn't complete in time before MSG with first file chunk
-    RFSAccepted RcvFileInfo {filePath} -> append_ filePath
+    RFSAccepted filePath -> append_ filePath
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where

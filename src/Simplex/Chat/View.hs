@@ -2249,8 +2249,8 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSNew -> "not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
       RFSAccepted _ -> "just started"
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
-      RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
-      RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
+      RFSComplete filePath -> "complete, path: " <> plain filePath
+      RFSCancelled (Just filePath) -> "cancelled, received part path: " <> plain filePath
       RFSCancelled Nothing -> "cancelled"
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
