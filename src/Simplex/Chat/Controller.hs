@@ -894,7 +894,6 @@ data TerminalEvent
   | TEMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
   | TEMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
   | TEPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
-  | TERcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue
@@ -932,7 +931,6 @@ logEventToFile = \case
   CEvtMessageError {} -> True
   CEvtTerminalEvent te -> case te of
     TEMemberSubError {} -> True
-    TERcvFileSubError {} -> True
     _ -> False
   _ -> False
 
