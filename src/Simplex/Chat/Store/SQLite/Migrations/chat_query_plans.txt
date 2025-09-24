@@ -219,7 +219,7 @@ Query:
                 ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-                c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+                c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
                 c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
               FROM contacts ct
               JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -630,7 +630,7 @@ SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
-              conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
+              conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, user_contact_link_id,
               created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
@@ -641,7 +641,7 @@ SEARCH connections USING INDEX sqlite_autoindex_connections_1 (agent_conn_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id, conn_status, conn_type, contact_conn_initiated, local_alias,
-              contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
+              contact_id, group_member_id, user_contact_link_id, created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
             WHERE (user_id = ? AND via_contact_uri_hash = ?)
@@ -985,7 +985,7 @@ Query:
             ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
             -- Connection
             c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-            c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+            c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
             c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
           FROM contacts ct
           JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -1065,20 +1065,6 @@ INDEX 2
 SEARCH users USING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
-          SELECT DISTINCT f.file_id
-          FROM files f
-          JOIN snd_files s USING (file_id)
-          WHERE f.user_id = ?
-            AND s.file_status IN (?, ?, ?)
-            AND s.file_descr_id IS NULL
-            AND s.file_inline IS NULL
-            AND s.created_at > ?
-        
-Plan:
-SEARCH f USING COVERING INDEX idx_files_user_id (user_id=?)
-SEARCH s USING INDEX idx_snd_files_file_descr_id (file_descr_id=? AND file_id=?)
-
-Query: 
           SELECT agent_conn_id FROM (
             SELECT
               agent_conn_id,
@@ -1095,7 +1081,7 @@ USE TEMP B-TREE FOR ORDER BY
 
 Query: 
           SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-            c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+            c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
             c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
             c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
           FROM connections c
@@ -1205,7 +1191,7 @@ Plan:
 SEARCH chat_item_moderations USING INDEX idx_chat_item_moderations_group (group_id=? AND item_member_id=? AND shared_msg_id=?)
 
 Query: 
-          SELECT connection_id, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id
+          SELECT connection_id, conn_type, contact_id, group_member_id, user_contact_link_id
           FROM connections
           WHERE agent_conn_id = ?
         
@@ -1270,19 +1256,6 @@ SEARCH c USING INDEX sqlite_autoindex_connections_1 (agent_conn_id=?)
 LIST SUBQUERY 1
 SCAN temp_conn_ids
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          SELECT f.file_id
-          FROM files f
-          JOIN rcv_files r USING (file_id)
-          WHERE f.user_id = ? AND r.file_status IN (?, ?)
-            AND r.rcv_file_inline IS NULL
-            AND r.file_descr_id IS NULL
-            AND r.created_at > ?
-        
-Plan:
-SEARCH f USING COVERING INDEX idx_files_user_id (user_id=?)
-SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           SELECT g.group_id
@@ -1395,11 +1368,9 @@ Query:
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
-            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays,
-            c.connection_id, c.agent_conn_id
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays
           FROM rcv_files r
           JOIN files f USING (file_id)
-          LEFT JOIN connections c ON r.file_id = c.rcv_file_id
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
           LEFT JOIN group_members m ON m.group_member_id = r.group_member_id
           WHERE f.user_id = ? AND f.file_id = ?
@@ -1407,7 +1378,6 @@ Query:
 Plan:
 SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_rcv_file_id (rcv_file_id=?) LEFT-JOIN
 SEARCH cs USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
@@ -1590,7 +1560,7 @@ Query:
           ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
           -- Connection
           c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-          c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+          c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM contacts ct
         JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
@@ -2987,7 +2957,7 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_
 
 Query: 
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM connections c
@@ -3000,7 +2970,7 @@ SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=
 
 Query: 
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM connections c
@@ -3013,7 +2983,7 @@ SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=
 
 Query: 
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
           uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
@@ -3200,7 +3170,7 @@ SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
-          conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
+          conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, user_contact_link_id,
           created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
           conn_chat_version, peer_chat_min_version, peer_chat_max_version
         FROM connections
@@ -4207,9 +4177,9 @@ Plan:
 Query: 
       INSERT INTO connections (
         user_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, custom_user_profile_id, conn_status, conn_type,
-        contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id, created_at, updated_at,
+        contact_id, group_member_id, user_contact_link_id, created_at, updated_at,
         conn_chat_version, peer_chat_min_version, peer_chat_max_version, to_subscribe, pq_support, pq_encryption
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -4885,7 +4855,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -4912,7 +4882,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -4931,7 +4901,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -4950,7 +4920,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -4969,7 +4939,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -4988,7 +4958,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -5007,7 +4977,7 @@ Query:
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
       c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
     FROM group_members m
@@ -5694,10 +5664,6 @@ Query: DELETE FROM sent_probes WHERE created_at <= ?
 Plan:
 SEARCH sent_probes USING COVERING INDEX idx_sent_probes_created_at (created_at<?)
 SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_sent_probe_id (sent_probe_id=?)
-
-Query: DELETE FROM snd_file_chunks WHERE file_id = ? AND connection_id = ?
-Plan:
-SEARCH snd_file_chunks USING COVERING INDEX idx_snd_file_chunks_file_id_connection_id (file_id=? AND connection_id=?)
 
 Query: DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?
 Plan:
