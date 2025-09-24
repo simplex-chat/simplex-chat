@@ -678,7 +678,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         pure (ci, rfd)
       receiveViaCompleteFD user fileId rfd userApproved cryptoArgs
       pure ci
-    (Nothing, Just _fileConnReq) -> throwChatError $ CEException "accepting via a separate connection is deprecated"
+    (Nothing, Just _fileConnReq) -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
     -- group & direct file protocol
     _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
@@ -707,7 +707,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
             send $ XFileAcptInv sharedMsgId Nothing fName
             pure ci
         | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
-        | otherwise -> throwChatError $ CEException "accepting via a separate connection is deprecated"
+        | otherwise -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
     receiveInline :: CM Bool
     receiveInline = do
       ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config

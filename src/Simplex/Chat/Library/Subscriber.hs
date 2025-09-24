@@ -1987,7 +1987,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (allowSendInline fileSize fileInline)
               (sendDirectFileInline user ct ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
-          Just _fileConnReq -> messageError "x.file.acpt.inv: receiving via a separate connection is deprecated"
+          Just _fileConnReq -> messageError "x.file.acpt.inv: receiving file via a separate connection is deprecated"
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
     assertSMPAcceptNotProhibited :: ChatItem c d -> CM ()
@@ -2081,7 +2081,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (allowSendInline fileSize fileInline)
               (sendMemberFileInline m conn ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
-          (Just _fileConnReq, _) -> messageError "x.file.acpt.inv: receiving via a separate connection is deprecated"
+          (Just _fileConnReq, _) -> messageError "x.file.acpt.inv: receiving file via a separate connection is deprecated"
           _ -> messageError "x.file.acpt.inv: member connection is not active"
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
