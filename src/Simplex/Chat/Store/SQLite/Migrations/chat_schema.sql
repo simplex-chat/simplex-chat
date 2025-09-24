@@ -288,6 +288,52 @@ CREATE TABLE rcv_file_chunks(
   updated_at TEXT CHECK(updated_at NOT NULL), -- 0(received), 1(appended to file)
   PRIMARY KEY(file_id, chunk_number)
 ) WITHOUT ROWID;
+CREATE TABLE connections(
+  -- all SMP agent connections
+  connection_id INTEGER PRIMARY KEY,
+  agent_conn_id BLOB NOT NULL UNIQUE,
+  conn_level INTEGER NOT NULL DEFAULT 0,
+  via_contact INTEGER REFERENCES contacts(contact_id) ON DELETE SET NULL,
+  conn_status TEXT NOT NULL,
+  conn_type TEXT NOT NULL, -- contact, member, rcv_file, snd_file
+  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE CASCADE,
+  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
+  snd_file_id INTEGER,
+  rcv_file_id INTEGER REFERENCES rcv_files(file_id) ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  updated_at TEXT CHECK(updated_at NOT NULL),
+  via_contact_uri_hash BLOB,
+  xcontact_id BLOB,
+  via_user_contact_link INTEGER DEFAULT NULL
+  REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
+  custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
+  conn_req_inv BLOB,
+  local_alias DEFAULT '' CHECK(local_alias NOT NULL),
+  via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
+  group_link_id BLOB,
+  security_code TEXT NULL,
+  security_code_verified_at TEXT NULL,
+  auth_err_counter INTEGER DEFAULT 0 CHECK(auth_err_counter NOT NULL),
+  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
+  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
+  to_subscribe INTEGER DEFAULT 0 NOT NULL,
+  contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
+  conn_chat_version INTEGER,
+  pq_support INTEGER NOT NULL DEFAULT 0,
+  pq_encryption INTEGER NOT NULL DEFAULT 0,
+  pq_snd_enabled INTEGER,
+  pq_rcv_enabled INTEGER,
+  quota_err_counter INTEGER NOT NULL DEFAULT 0,
+  short_link_inv BLOB,
+  via_short_link_contact BLOB,
+  via_contact_uri BLOB,
+  FOREIGN KEY(snd_file_id, connection_id)
+  REFERENCES snd_files(file_id, connection_id)
+  ON DELETE CASCADE
+  DEFERRABLE INITIALLY DEFERRED
+);
 CREATE TABLE user_contact_links(
   user_contact_link_id INTEGER PRIMARY KEY,
   conn_req_contact BLOB NOT NULL,
@@ -677,44 +723,6 @@ CREATE TABLE delivery_jobs(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
-CREATE TABLE IF NOT EXISTS "connections"(
-  connection_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  agent_conn_id BLOB NOT NULL UNIQUE,
-  conn_level INTEGER NOT NULL DEFAULT 0,
-  via_contact INTEGER REFERENCES contacts(contact_id) ON DELETE SET NULL,
-  conn_status TEXT NOT NULL,
-  conn_type TEXT NOT NULL,
-  user_contact_link_id INTEGER REFERENCES user_contact_links ON DELETE CASCADE,
-  contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
-  group_member_id INTEGER REFERENCES group_members ON DELETE CASCADE,
-  created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  via_contact_uri_hash BLOB,
-  xcontact_id BLOB,
-  via_user_contact_link INTEGER DEFAULT NULL REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
-  custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
-  conn_req_inv BLOB,
-  local_alias TEXT NOT NULL DEFAULT '',
-  via_group_link INTEGER NOT NULL DEFAULT 0,
-  group_link_id BLOB,
-  security_code TEXT NULL,
-  security_code_verified_at TEXT NULL,
-  auth_err_counter INTEGER NOT NULL DEFAULT 0,
-  peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
-  peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
-  to_subscribe INTEGER DEFAULT 0 NOT NULL,
-  contact_conn_initiated INTEGER NOT NULL DEFAULT 0,
-  conn_chat_version INTEGER,
-  pq_support INTEGER NOT NULL DEFAULT 0,
-  pq_encryption INTEGER NOT NULL DEFAULT 0,
-  pq_snd_enabled INTEGER,
-  pq_rcv_enabled INTEGER,
-  quota_err_counter INTEGER NOT NULL DEFAULT 0,
-  short_link_inv BLOB,
-  via_short_link_contact BLOB,
-  via_contact_uri BLOB
-);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -743,11 +751,26 @@ CREATE INDEX idx_messages_connection_id ON messages(connection_id);
 CREATE INDEX idx_chat_items_group_member_id ON chat_items(group_member_id);
 CREATE INDEX idx_chat_items_contact_id ON chat_items(contact_id);
 CREATE INDEX idx_chat_items_item_status ON chat_items(item_status);
+CREATE INDEX idx_connections_group_member ON connections(
+  user_id,
+  group_member_id
+);
 CREATE INDEX idx_commands_connection_id ON commands(connection_id);
 CREATE INDEX idx_calls_user_id ON calls(user_id);
 CREATE INDEX idx_calls_chat_item_id ON calls(chat_item_id);
 CREATE INDEX idx_calls_contact_id ON calls(contact_id);
 CREATE INDEX idx_commands_user_id ON commands(user_id);
+CREATE INDEX idx_connections_custom_user_profile_id ON connections(
+  custom_user_profile_id
+);
+CREATE INDEX idx_connections_via_user_contact_link ON connections(
+  via_user_contact_link
+);
+CREATE INDEX idx_connections_rcv_file_id ON connections(rcv_file_id);
+CREATE INDEX idx_connections_user_contact_link_id ON connections(
+  user_contact_link_id
+);
+CREATE INDEX idx_connections_via_contact ON connections(via_contact);
 CREATE INDEX idx_contact_profiles_user_id ON contact_profiles(user_id);
 CREATE INDEX idx_contact_requests_contact_profile_id ON contact_requests(
   contact_profile_id
@@ -868,6 +891,7 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   user_id,
   item_status
 );
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
 CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
   contact_group_member_id
 );
@@ -889,9 +913,17 @@ CREATE INDEX idx_received_probes_probe_hash ON received_probes(probe_hash);
 CREATE INDEX idx_sent_probes_created_at ON sent_probes(created_at);
 CREATE INDEX idx_sent_probe_hashes_created_at ON sent_probe_hashes(created_at);
 CREATE INDEX idx_received_probes_created_at ON received_probes(created_at);
+CREATE INDEX idx_connections_conn_req_inv ON connections(
+  user_id,
+  conn_req_inv
+);
 CREATE INDEX idx_groups_via_group_link_uri_hash ON groups(
   user_id,
   via_group_link_uri_hash
+);
+CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
+  user_id,
+  via_contact_uri_hash
 );
 CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
   user_id,
@@ -928,6 +960,7 @@ CREATE INDEX idx_contact_requests_updated_at ON contact_requests(
   user_id,
   updated_at
 );
+CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
 CREATE INDEX idx_msg_deliveries_message_id ON "msg_deliveries"(message_id);
 CREATE INDEX idx_msg_deliveries_agent_msg_id ON "msg_deliveries"(
   connection_id,
@@ -1151,27 +1184,3 @@ CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
   group_member_id
 );
-CREATE UNIQUE INDEX idx_connections_group_member ON connections(
-  user_id,
-  group_member_id
-);
-CREATE INDEX idx_connections_custom_user_profile_id ON connections(
-  custom_user_profile_id
-);
-CREATE INDEX idx_connections_via_user_contact_link ON connections(
-  via_user_contact_link
-);
-CREATE INDEX idx_connections_user_contact_link_id ON connections(
-  user_contact_link_id
-);
-CREATE INDEX idx_connections_via_contact ON connections(via_contact);
-CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
-CREATE INDEX idx_connections_conn_req_inv ON connections(
-  user_id,
-  conn_req_inv
-);
-CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
-  user_id,
-  via_contact_uri_hash
-);
-CREATE INDEX idx_connections_updated_at ON connections(user_id, updated_at);
