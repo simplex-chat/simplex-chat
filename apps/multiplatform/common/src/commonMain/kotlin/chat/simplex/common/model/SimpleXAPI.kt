@@ -7046,7 +7046,6 @@ sealed class ChatErrorType {
       is FileCancelled -> "fileCancelled"
       is FileCancel -> "fileCancel"
       is FileAlreadyExists -> "fileAlreadyExists"
-      is FileRead -> "fileRead"
       is FileWrite -> "fileWrite $message"
       is FileSend -> "fileSend"
       is FileRcvChunk -> "fileRcvChunk"
@@ -7127,7 +7126,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileCancelled") class FileCancelled(val message: String): ChatErrorType()
   @Serializable @SerialName("fileCancel") class FileCancel(val fileId: Long, val message: String): ChatErrorType()
   @Serializable @SerialName("fileAlreadyExists") class FileAlreadyExists(val filePath: String): ChatErrorType()
-  @Serializable @SerialName("fileRead") class FileRead(val filePath: String, val message: String): ChatErrorType()
   @Serializable @SerialName("fileWrite") class FileWrite(val filePath: String, val message: String): ChatErrorType()
   @Serializable @SerialName("fileSend") class FileSend(val fileId: Long, val agentError: String): ChatErrorType()
   @Serializable @SerialName("fileRcvChunk") class FileRcvChunk(val message: String): ChatErrorType()
