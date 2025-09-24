@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_contact_merge where
+module Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_obsolete_connections where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
-m20250922_remove_contact_merge :: Text
-m20250922_remove_contact_merge =
+m20250922_remove_obsolete_connections :: Text
+m20250922_remove_obsolete_connections =
   T.pack
     [r|
 DELETE FROM connections WHERE snd_file_id IS NOT NULL;
@@ -61,8 +61,8 @@ DROP INDEX idx_contacts_via_group;
 ALTER TABLE contacts DROP COLUMN via_group;
 |]
 
-down_m20250922_remove_contact_merge :: Text
-down_m20250922_remove_contact_merge =
+down_m20250922_remove_obsolete_connections :: Text
+down_m20250922_remove_obsolete_connections =
   T.pack
     [r|
 CREATE TABLE snd_file_chunks(

@@ -131,7 +131,7 @@ skipComparisonForDownMigrations =
     -- index moves down to the end of the file
     "20250721_indexes",
     -- indexes move down to the end of the file
-    "20250922_remove_contact_merge"
+    "20250922_remove_obsolete_connections"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
