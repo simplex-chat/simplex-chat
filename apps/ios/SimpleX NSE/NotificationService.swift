@@ -1196,8 +1196,6 @@ func defaultBestAttemptNtf(_ ntfConn: NtfConn) -> NSENotificationData {
             groupInfo.chatSettings.enableNtfs == .all
             ? .connectionEvent(user, connEntity)
             : .noNtf
-        case .sndFileConnection: .noNtf
-        case .rcvFileConnection: .noNtf
         case let .userContactConnection(_, userContact):
             userContact.groupId == nil
             ? .connectionEvent(user, connEntity)

@@ -1111,18 +1111,6 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
 
 
 
-CREATE TABLE test_chat_schema.snd_file_chunks (
-    file_id bigint NOT NULL,
-    connection_id bigint NOT NULL,
-    chunk_number bigint NOT NULL,
-    chunk_agent_msg_id bigint,
-    chunk_sent smallint DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.snd_files (
     file_id bigint NOT NULL,
     connection_id bigint NOT NULL,
@@ -1506,11 +1494,6 @@ ALTER TABLE ONLY test_chat_schema.server_operators
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_pkey PRIMARY KEY (settings_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_pkey PRIMARY KEY (file_id, connection_id, chunk_number);
 
 
 
@@ -2207,10 +2190,6 @@ CREATE INDEX idx_smp_servers_user_id ON test_chat_schema.protocol_servers USING 
 
 
 
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON test_chat_schema.snd_file_chunks USING btree (file_id, connection_id);
-
-
-
 CREATE INDEX idx_snd_files_connection_id ON test_chat_schema.snd_files USING btree (connection_id);
 
 
@@ -2850,11 +2829,6 @@ ALTER TABLE ONLY test_chat_schema.sent_probes
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_file_id_connection_id_fkey FOREIGN KEY (file_id, connection_id) REFERENCES test_chat_schema.snd_files(file_id, connection_id) ON DELETE CASCADE;
 
 
 

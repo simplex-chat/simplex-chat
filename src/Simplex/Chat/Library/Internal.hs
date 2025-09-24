@@ -89,7 +89,6 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (MsgBody, MsgFlags (..), ProtoServerWithAuth (..), ProtocolServer, ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, XFTPServer)
 import qualified Simplex.Messaging.Protocol as SMP
@@ -97,10 +96,10 @@ import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import System.FilePath (takeFileName, (</>))
-import System.IO (Handle, IOMode (..), SeekMode (..), hFlush)
+import System.IO (Handle, IOMode (..), hFlush)
 import UnliftIO.Concurrent (forkFinally, mkWeakThreadId)
 import UnliftIO.Directory
-import UnliftIO.IO (hClose, hSeek, hTell, openFile)
+import UnliftIO.IO (hClose, openFile)
 import UnliftIO.STM
 
 maxMsgReactions :: Int
@@ -392,10 +391,6 @@ cancelFilesInProgress user filesInfo = do
       xrfIds = mapMaybe (\RcvFileTransfer {fileId, xftpRcvFile} -> (,fileId) <$> xftpRcvFile) rfs
   lift $ agentXFTPDeleteSndFilesRemote user xsfIds
   lift $ agentXFTPDeleteRcvFiles xrfIds
-  let smpSFConnIds = concatMap (\(ft, sfts) -> mapMaybe (smpSndFileConnId ft) sfts) sfs
-      smpRFConnIds = mapMaybe smpRcvFileConnId rfs
-  deleteAgentConnectionsAsync smpSFConnIds
-  deleteAgentConnectionsAsync smpRFConnIds
   where
     fileEnded CIFileInfo {fileStatus} = case fileStatus of
       Just (AFS _ status) -> ciFileEnded status
@@ -405,12 +400,7 @@ cancelFilesInProgress user filesInfo = do
     updateSndFileCancelled :: DB.Connection -> (FileTransferMeta, [SndFileTransfer]) -> IO ()
     updateSndFileCancelled db (FileTransferMeta {fileId}, sfts) = do
       updateFileCancelled db user fileId CIFSSndCancelled
-      forM_ sfts updateSndFTCancelled
-      where
-        updateSndFTCancelled :: SndFileTransfer -> IO ()
-        updateSndFTCancelled ft = unless (sndFTEnded ft) $ do
-          updateSndFileStatus db ft FSCancelled
-          deleteSndFileChunks db ft
+      forM_ sfts $ \sft -> unless (sndFTEnded sft) $ updateSndFileStatus db sft FSCancelled
     updateRcvFileCancelled :: DB.Connection -> RcvFileTransfer -> IO ()
     updateRcvFileCancelled db ft@RcvFileTransfer {fileId} = do
       updateFileCancelled db user fileId CIFSRcvCancelled
@@ -423,14 +413,6 @@ cancelFilesInProgress user filesInfo = do
           FTSnd ft@FileTransferMeta {cancelled} sfts | not cancelled -> ((ft, sfts) : sfs, rfs)
           FTRcv ft@RcvFileTransfer {cancelled} | not cancelled -> (sfs, ft : rfs)
           _ -> (sfs, rfs)
-    smpSndFileConnId :: FileTransferMeta -> SndFileTransfer -> Maybe ConnId
-    smpSndFileConnId FileTransferMeta {xftpSndFile} sft@SndFileTransfer {agentConnId = AgentConnId acId, fileInline}
-      | isNothing xftpSndFile && isNothing fileInline && not (sndFTEnded sft) = Just acId
-      | otherwise = Nothing
-    smpRcvFileConnId :: RcvFileTransfer -> Maybe ConnId
-    smpRcvFileConnId ft@RcvFileTransfer {xftpRcvFile, rcvFileInline}
-      | isNothing xftpRcvFile && isNothing rcvFileInline = liveRcvFileTransferConnId ft
-      | otherwise = Nothing
     sndFTEnded SndFileTransfer {fileStatus} = fileStatus == FSCancelled || fileStatus == FSComplete
 
 deleteFilesLocally :: [CIFileInfo] -> CM ()
@@ -684,13 +666,6 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
     _ -> throwChatError $ CEFileAlreadyReceiving fName
   vr <- chatVersionRange
   case (xftpRcvFile, fileConnReq) of
-    -- direct file protocol
-    (Nothing, Just connReq) -> do
-      subMode <- chatReadVar subscriptionMode
-      dm <- encodeConnInfo $ XFileAcpt fName
-      connIds <- joinAgentConnectionAsync user True connReq dm subMode
-      filePath <- getRcvFilePath fileId filePath_ fName True
-      withStore $ \db -> acceptRcvFileTransfer db vr user fileId connIds ConnJoined filePath subMode
     -- XFTP
     (Just XFTPRcvFile {userApprovedRelays = approvedBeforeReady}, _) -> do
       let userApproved = approvedBeforeReady || userApprovedRelays
@@ -703,23 +678,24 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
         pure (ci, rfd)
       receiveViaCompleteFD user fileId rfd userApproved cryptoArgs
       pure ci
+    (Nothing, Just _fileConnReq) -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
     -- group & direct file protocol
     _ -> do
       chatRef <- withStore $ \db -> getChatRefByFileId db user fileId
       case (chatRef, grpMemberId) of
         (ChatRef CTDirect contactId _, Nothing) -> do
           ct <- withStore $ \db -> getContact db vr user contactId
-          acceptFile CFCreateConnFileInvDirect $ \msg -> void $ sendDirectContactMessage user ct msg
+          acceptFile $ \msg -> void $ sendDirectContactMessage user ct msg
         (ChatRef CTGroup groupId _, Just memId) -> do
           GroupMember {activeConn} <- withStore $ \db -> getGroupMember db vr user groupId memId
           case activeConn of
             Just conn -> do
-              acceptFile CFCreateConnFileInvGroup $ \msg -> void $ sendDirectMemberMessage conn msg groupId
+              acceptFile $ \msg -> void $ sendDirectMemberMessage conn msg groupId
             _ -> throwChatError $ CEFileInternal "member connection not active"
         _ -> throwChatError $ CEFileInternal "invalid chat ref for file transfer"
   where
-    acceptFile :: CommandFunction -> (ChatMsgEvent 'Json -> CM ()) -> CM AChatItem
-    acceptFile cmdFunction send = do
+    acceptFile :: (ChatMsgEvent 'Json -> CM ()) -> CM AChatItem
+    acceptFile send = do
       filePath <- getRcvFilePath fileId filePath_ fName True
       inline <- receiveInline
       vr <- chatVersionRange
@@ -731,11 +707,7 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
             send $ XFileAcptInv sharedMsgId Nothing fName
             pure ci
         | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
-        | otherwise -> do
-            -- accepting via a new connection
-            subMode <- chatReadVar subscriptionMode
-            connIds <- createAgentConnectionAsync user cmdFunction True SCMInvitation subMode
-            withStore $ \db -> acceptRcvFileTransfer db vr user fileId connIds ConnNew filePath subMode
+        | otherwise -> throwChatError $ CEException "accepting file via a separate connection is deprecated"
     receiveInline :: CM Bool
     receiveInline = do
       ChatConfig {fileChunkSize, inlineFiles = InlineFilesConfig {receiveChunks, offerChunks}} <- asks config
@@ -1488,49 +1460,13 @@ mkMemberSupportChatInfo m@GroupMember {groupMemberId, supportChat} =
       let scopeInfo = GCSIMemberSupport {groupMember_ = Just m}
        in pure (m, scopeInfo)
 
-sendFileChunk :: User -> SndFileTransfer -> CM ()
-sendFileChunk user ft@SndFileTransfer {fileId, fileStatus, agentConnId = AgentConnId acId} =
-  unless (fileStatus == FSComplete || fileStatus == FSCancelled) $ do
-    vr <- chatVersionRange
-    withStore' (`createSndFileChunk` ft) >>= \case
-      Just chunkNo -> sendFileChunkNo ft chunkNo
-      Nothing -> do
-        ci <- withStore $ \db -> do
-          liftIO $ updateSndFileStatus db ft FSComplete
-          liftIO $ deleteSndFileChunks db ft
-          updateDirectCIFileStatus db vr user fileId CIFSSndComplete
-        toView $ CEvtSndFileComplete user ci ft
-        lift $ closeFileHandle fileId sndFiles
-        deleteAgentConnectionAsync acId
-
-sendFileChunkNo :: SndFileTransfer -> Integer -> CM ()
-sendFileChunkNo ft@SndFileTransfer {agentConnId = AgentConnId acId} chunkNo = do
-  chunkBytes <- readFileChunk ft chunkNo
-  (msgId, _) <- withAgent $ \a -> sendMessage a acId PQEncOff SMP.noMsgFlags $ smpEncode FileChunk {chunkNo, chunkBytes}
-  withStore' $ \db -> updateSndFileChunkMsg db ft chunkNo msgId
-
-readFileChunk :: SndFileTransfer -> Integer -> CM ByteString
-readFileChunk SndFileTransfer {fileId, filePath, chunkSize} chunkNo = do
-  fsFilePath <- lift $ toFSFilePath filePath
-  read_ fsFilePath `catchThrow` (ChatError . CEFileRead filePath . show)
-  where
-    read_ fsFilePath = do
-      h <- getFileHandle fileId fsFilePath sndFiles ReadMode
-      pos <- hTell h
-      let pos' = (chunkNo - 1) * chunkSize
-      when (pos /= pos') $ hSeek h AbsoluteSeek pos'
-      liftIO . B.hGet h $ fromInteger chunkSize
-
-parseFileChunk :: ByteString -> CM FileChunk
-parseFileChunk = liftEither . first (ChatError . CEFileRcvChunk) . smpDecode
-
 appendFileChunk :: RcvFileTransfer -> Integer -> ByteString -> Bool -> CM ()
 appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitation = FileInvitation {fileName}} chunkNo chunk final =
   case fileStatus of
-    RFSConnected RcvFileInfo {filePath} -> append_ filePath
+    RFSConnected filePath -> append_ filePath
     -- sometimes update of file transfer status to FSConnected
     -- doesn't complete in time before MSG with first file chunk
-    RFSAccepted RcvFileInfo {filePath} -> append_ filePath
+    RFSAccepted filePath -> append_ filePath
     RFSCancelled _ -> pure ()
     _ -> throwChatError $ CEFileInternal "receiving file transfer not in progress"
   where
@@ -1572,9 +1508,9 @@ isFileActive fileId files = do
   fs <- asks files
   isJust . M.lookup fileId <$> readTVarIO fs
 
-cancelRcvFileTransfer :: User -> RcvFileTransfer -> CM (Maybe ConnId)
-cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInline} =
-  cancel' `catchAllErrors` (\e -> eToView e $> fileConnId)
+cancelRcvFileTransfer :: User -> RcvFileTransfer -> CM ()
+cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile} =
+  cancel' `catchAllErrors` \e -> eToView e
   where
     cancel' = do
       lift $ closeFileHandle fileId rcvFiles
@@ -1586,40 +1522,31 @@ cancelRcvFileTransfer user ft@RcvFileTransfer {fileId, xftpRcvFile, rcvFileInlin
         Just XFTPRcvFile {agentRcvFileId = Just (AgentRcvFileId aFileId), agentRcvFileDeleted} ->
           unless agentRcvFileDeleted $ agentXFTPDeleteRcvFile aFileId fileId
         _ -> pure ()
-      pure fileConnId
-    fileConnId = if isNothing xftpRcvFile && isNothing rcvFileInline then liveRcvFileTransferConnId ft else Nothing
 
-cancelSndFile :: User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> CM [ConnId]
+cancelSndFile :: User -> FileTransferMeta -> [SndFileTransfer] -> Bool -> CM ()
 cancelSndFile user FileTransferMeta {fileId, xftpSndFile} fts sendCancel = do
   withStore' (\db -> updateFileCancelled db user fileId CIFSSndCancelled)
     `catchAllErrors` eToView
   case xftpSndFile of
     Nothing ->
-      catMaybes <$> forM fts (\ft -> cancelSndFileTransfer user ft sendCancel)
+      forM_ fts (\ft -> cancelSndFileTransfer user ft sendCancel)
     Just xsf -> do
       forM_ fts (\ft -> cancelSndFileTransfer user ft False)
       lift (agentXFTPDeleteSndFileRemote user xsf fileId) `catchAllErrors` eToView
-      pure []
 
--- TODO v6.0 remove
-cancelSndFileTransfer :: User -> SndFileTransfer -> Bool -> CM (Maybe ConnId)
-cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, agentConnId = AgentConnId acId, fileStatus, fileInline} sendCancel =
-  if fileStatus == FSCancelled || fileStatus == FSComplete
-    then pure Nothing
-    else cancel' `catchAllErrors` (\e -> eToView e $> fileConnId)
+cancelSndFileTransfer :: User -> SndFileTransfer -> Bool -> CM ()
+cancelSndFileTransfer user@User {userId} ft@SndFileTransfer {fileId, connId, fileStatus, fileInline} sendCancel =
+  unless (fileStatus == FSCancelled || fileStatus == FSComplete) $
+    cancel' `catchAllErrors` \e -> eToView e
   where
     cancel' = do
-      withStore' $ \db -> do
-        updateSndFileStatus db ft FSCancelled
-        deleteSndFileChunks db ft
+      withStore' $ \db -> updateSndFileStatus db ft FSCancelled
       when sendCancel $ case fileInline of
         Just _ -> do
           vr <- chatVersionRange
           (sharedMsgId, conn) <- withStore $ \db -> (,) <$> getSharedMsgIdByFileId db userId fileId <*> getConnectionById db vr user connId
           void $ sendDirectMessage_ conn (BFileChunk sharedMsgId FileChunkCancel) (ConnectionId connId)
-        _ -> withAgent $ \a -> void . sendMessage a acId PQEncOff SMP.noMsgFlags $ smpEncode FileChunkCancel
-      pure fileConnId
-    fileConnId = if isNothing fileInline then Just acId else Nothing
+        _ -> throwChatError $ CEException "cancelSndFileTransfer: cancelling file via a separate connection is deprecated"
 
 closeFileHandle :: Int64 -> (ChatController -> TVar (Map Int64 Handle)) -> CM' ()
 closeFileHandle fileId files = do

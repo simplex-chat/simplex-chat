@@ -371,10 +371,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         processDirectMessage agentMessage entity conn contact_
       RcvGroupMsgConnection conn gInfo m ->
         processGroupMessage agentMessage entity conn gInfo m
-      RcvFileConnection conn ft ->
-        processRcvFileConn agentMessage entity conn ft
-      SndFileConnection conn ft ->
-        processSndFileConn agentMessage entity conn ft
       UserContactConnection conn uc ->
         processUserContactRequest agentMessage entity conn uc
   where
@@ -1115,117 +1111,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         r n'' = Just (ci, CIRcvDecryptionError mde n'')
     mdeUpdatedCI _ _ = Nothing
 
-    processSndFileConn :: AEvent e -> ConnectionEntity -> Connection -> SndFileTransfer -> CM ()
-    processSndFileConn agentMsg connEntity conn ft@SndFileTransfer {fileId, fileName, fileStatus} =
-      case agentMsg of
-        -- SMP CONF for SndFileConnection happens for direct file protocol
-        -- when recipient of the file "joins" connection created by the sender
-        CONF confId _pqSupport _ connInfo -> do
-          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          conn' <- updatePeerChatVRange conn chatVRange
-          case chatMsgEvent of
-            -- TODO save XFileAcpt message
-            XFileAcpt name
-              | name == fileName -> do
-                  withStore' $ \db -> updateSndFileStatus db ft FSAccepted
-                  -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-                  allowAgentConnectionAsync user conn' confId XOk
-              | otherwise -> messageError "x.file.acpt: fileName is different from expected"
-            _ -> messageError "CONF from file connection must have x.file.acpt"
-        CON _ -> do
-          ci <- withStore $ \db -> do
-            liftIO $ updateSndFileStatus db ft FSConnected
-            updateDirectCIFileStatus db vr user fileId $ CIFSSndTransfer 0 1
-          toView $ CEvtSndFileStart user ci ft
-          sendFileChunk user ft
-        SENT msgId _proxy -> do
-          withStore' $ \db -> updateSndFileChunkSent db ft msgId
-          unless (fileStatus == FSCancelled) $ sendFileChunk user ft
-        MERR _ err -> do
-          cancelSndFileTransfer user ft True >>= mapM_ deleteAgentConnectionAsync
-          case err of
-            SMP _ SMP.AUTH -> unless (fileStatus == FSCancelled) $ do
-              ci <- withStore $ \db -> do
-                liftIO (lookupChatRefByFileId db user fileId) >>= \case
-                  Just (ChatRef CTDirect _ _) -> liftIO $ updateFileCancelled db user fileId CIFSSndCancelled
-                  _ -> pure ()
-                lookupChatItemByFileId db vr user fileId
-              toView $ CEvtSndFileRcvCancelled user ci ft
-            _ -> throwChatError $ CEFileSend fileId err
-        MSG meta _ _ ->
-          withAckMessage' "file msg" agentConnId meta $ pure ()
-        OK ->
-          -- [async agent commands] continuation on receiving OK
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        -- TODO [certs rcv]
-        JOINED _ _serviceId->
-          -- [async agent commands] continuation on receiving JOINED
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        ERR err -> do
-          eToView (ChatErrorAgent err $ Just connEntity)
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        -- TODO add debugging output
-        _ -> pure ()
-
-    processRcvFileConn :: AEvent e -> ConnectionEntity -> Connection -> RcvFileTransfer -> CM ()
-    processRcvFileConn agentMsg connEntity conn ft@RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}, grpMemberId} =
-      case agentMsg of
-        -- TODO [certs rcv]
-        INV (ACR _ cReq) _serviceId ->
-          withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
-            case cReq of
-              fileInvConnReq@(CRInvitationUri _ _) -> case cmdFunction of
-                -- [async agent commands] direct XFileAcptInv continuation on receiving INV
-                CFCreateConnFileInvDirect -> do
-                  ct <- withStore $ \db -> getContactByFileId db vr user fileId
-                  sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-                  void $ sendDirectContactMessage user ct (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName)
-                -- [async agent commands] group XFileAcptInv continuation on receiving INV
-                CFCreateConnFileInvGroup -> case grpMemberId of
-                  Just gMemberId -> do
-                    GroupMember {groupId, activeConn} <- withStore $ \db -> getGroupMemberById db vr user gMemberId
-                    case activeConn of
-                      Just gMemberConn -> do
-                        sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
-                        void $ sendDirectMemberMessage gMemberConn (XFileAcptInv sharedMsgId (Just fileInvConnReq) fileName) groupId
-                      _ -> throwChatError $ CECommandError "no GroupMember activeConn"
-                  _ -> throwChatError $ CECommandError "no grpMemberId"
-                _ -> throwChatError $ CECommandError "unexpected cmdFunction"
-              CRContactUri _ -> throwChatError $ CECommandError "unexpected ConnectionRequestUri type"
-        -- SMP CONF for RcvFileConnection happens for group file protocol
-        -- when sender of the file "joins" connection created by the recipient
-        -- (sender doesn't create connections for all group members)
-        CONF confId _pqSupport _ connInfo -> do
-          ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
-          conn' <- updatePeerChatVRange conn chatVRange
-          case chatMsgEvent of
-            XOk -> allowAgentConnectionAsync user conn' confId XOk -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-            _ -> pure ()
-        CON _ -> startReceivingFile user fileId
-        MSG meta _ msgBody -> do
-          -- XXX: not all branches do ACK
-          parseFileChunk msgBody >>= receiveFileChunk ft (Just conn) meta
-        OK ->
-          -- [async agent commands] continuation on receiving OK
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        -- TODO [certs rcv]
-        JOINED _ _serviceId ->
-          -- [async agent commands] continuation on receiving JOINED
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        MERR _ err -> do
-          eToView (ChatErrorAgent err $ Just connEntity)
-          processConnMERR connEntity conn err
-        ERR err -> do
-          eToView (ChatErrorAgent err $ Just connEntity)
-          when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        -- TODO add debugging output
-        _ -> pure ()
-
     receiveFileChunk :: RcvFileTransfer -> Maybe Connection -> MsgMeta -> FileChunk -> CM ()
     receiveFileChunk ft@RcvFileTransfer {fileId, chunkSize} conn_ meta@MsgMeta {recipient = (msgId, _), integrity} = \case
       FileChunkCancel ->
         unless (rcvFileCompleteOrCancelled ft) $ do
-          cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
+          cancelRcvFileTransfer user ft
           ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
           toView $ CEvtRcvFileSndCancelled user ci ft
       FileChunk {chunkNo, chunkBytes = chunk} -> do
@@ -1560,7 +1450,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     badRcvFileChunk :: RcvFileTransfer -> String -> CM ()
     badRcvFileChunk ft err =
       unless (rcvFileCompleteOrCancelled ft) $ do
-        cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
+        cancelRcvFileTransfer user ft
         throwChatError $ CEFileRcvChunk err
 
     memberConnectedChatItem :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> CM ()
@@ -2073,7 +1963,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       fileId <- withStore $ \db -> getFileIdBySharedMsgId db userId contactId sharedMsgId
       ft <- withStore (\db -> getRcvFileTransfer db user fileId)
       unless (rcvFileCompleteOrCancelled ft) $ do
-        cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
+        cancelRcvFileTransfer user ft
         ci <- withStore $ \db -> getChatItemByFileId db vr user fileId
         toView $ CEvtRcvFileSndCancelled user ci ft
 
@@ -2086,14 +1976,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- [async agent commands] no continuation needed, but command should be asynchronous for stability
       if fName == fileName
         then unless cancelled $ case fileConnReq_ of
-          -- receiving via a separate connection
-          Just fileConnReq -> do
-            subMode <- chatReadVar subscriptionMode
-            dm <- encodeConnInfo XOk
-            connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
-            withStore' $ \db -> createSndDirectFTConnection db vr user fileId connIds subMode
           -- receiving inline
-          _ -> do
+          Nothing -> do
             event <- withStore $ \db -> do
               ci' <- updateDirectCIFileStatus db vr user fileId $ CIFSSndTransfer 0 1
               sft <- createSndDirectInlineFT db ct ft
@@ -2103,6 +1987,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (allowSendInline fileSize fileInline)
               (sendDirectFileInline user ct ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
+          Just _fileConnReq -> messageError "x.file.acpt.inv: receiving file via a separate connection is deprecated"
         else messageError "x.file.acpt.inv: fileName is different from expected"
 
     assertSMPAcceptNotProhibited :: ChatItem c d -> CM ()
@@ -2122,7 +2007,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       forM_ sft_ $ \sft@SndFileTransfer {fileId} -> do
         ci@(AChatItem _ _ _ ChatItem {file}) <- withStore $ \db -> do
           liftIO $ updateSndFileStatus db sft FSComplete
-          liftIO $ deleteSndFileChunks db sft
           updateDirectCIFileStatus db vr user fileId CIFSSndComplete
         case file of
           Just CIFile {fileProtocol = FPXFTP} -> do
@@ -2169,7 +2053,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             then do
               ft <- withStore $ \db -> getRcvFileTransfer db user fileId
               unless (rcvFileCompleteOrCancelled ft) $ do
-                cancelRcvFileTransfer user ft >>= mapM_ deleteAgentConnectionAsync
+                cancelRcvFileTransfer user ft
                 toView $ CEvtRcvFileSndCancelled user aci ft
               pure $ Just $ infoToDeliveryScope g scopeInfo
             else
@@ -2186,14 +2070,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       ft@FileTransferMeta {fileName, fileSize, fileInline, cancelled} <- withStore (\db -> getFileTransferMeta db user fileId)
       if fName == fileName
         then unless cancelled $ case (fileConnReq_, activeConn) of
-          (Just fileConnReq, _) -> do
-            subMode <- chatReadVar subscriptionMode
-            -- receiving via a separate connection
-            -- [async agent commands] no continuation needed, but command should be asynchronous for stability
-            dm <- encodeConnInfo XOk
-            connIds <- joinAgentConnectionAsync user True fileConnReq dm subMode
-            withStore' $ \db -> createSndGroupFileTransferConnection db vr user fileId connIds m subMode
-          (_, Just conn) -> do
+          (Nothing, Just conn) -> do
             -- receiving inline
             event <- withStore $ \db -> do
               ci' <- updateDirectCIFileStatus db vr user fileId $ CIFSSndTransfer 0 1
@@ -2204,6 +2081,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (allowSendInline fileSize fileInline)
               (sendMemberFileInline m conn ft sharedMsgId)
               (messageError "x.file.acpt.inv: fileSize is bigger than allowed to send inline")
+          (Just _fileConnReq, _) -> messageError "x.file.acpt.inv: receiving file via a separate connection is deprecated"
           _ -> messageError "x.file.acpt.inv: member connection is not active"
         else messageError "x.file.acpt.inv: fileName is different from expected"
 

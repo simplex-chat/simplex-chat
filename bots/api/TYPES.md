@@ -137,7 +137,6 @@ This file is generated automatically.
 - [RcvConnEvent](#rcvconnevent)
 - [RcvDirectEvent](#rcvdirectevent)
 - [RcvFileDescr](#rcvfiledescr)
-- [RcvFileInfo](#rcvfileinfo)
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
@@ -1103,11 +1102,6 @@ FileAlreadyExists:
 - type: "fileAlreadyExists"
 - filePath: string
 
-FileRead:
-- type: "fileRead"
-- filePath: string
-- message: string
-
 FileWrite:
 - type: "fileWrite"
 - filePath: string
@@ -1529,16 +1523,6 @@ RcvGroupMsgConnection:
 - entityConnection: [Connection](#connection)
 - groupInfo: [GroupInfo](#groupinfo)
 - groupMember: [GroupMember](#groupmember)
-
-SndFileConnection:
-- type: "sndFileConnection"
-- entityConnection: [Connection](#connection)
-- sndFileTransfer: [SndFileTransfer](#sndfiletransfer)
-
-RcvFileConnection:
-- type: "rcvFileConnection"
-- entityConnection: [Connection](#connection)
-- rcvFileTransfer: [RcvFileTransfer](#rcvfiletransfer)
 
 UserContactConnection:
 - type: "userContactConnection"
@@ -2933,16 +2917,6 @@ GroupInvLinkReceived:
 
 ---
 
-## RcvFileInfo
-
-**Record type**:
-- filePath: string
-- connId: int64?
-- agentConnId: string?
-
-
----
-
 ## RcvFileStatus
 
 **Discriminated union type**:
@@ -2952,19 +2926,19 @@ New:
 
 Accepted:
 - type: "accepted"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Connected:
 - type: "connected"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Complete:
 - type: "complete"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Cancelled:
 - type: "cancelled"
-- fileInfo_: [RcvFileInfo](#rcvfileinfo)?
+- filePath_: string?
 
 
 ---

@@ -268,17 +268,6 @@ CREATE TABLE rcv_files(
   to_receive INTEGER,
   user_approved_relays INTEGER NOT NULL DEFAULT 0
 );
-CREATE TABLE snd_file_chunks(
-  file_id INTEGER NOT NULL,
-  connection_id INTEGER NOT NULL,
-  chunk_number INTEGER NOT NULL,
-  chunk_agent_msg_id INTEGER,
-  chunk_sent INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- 0(sent to agent), 1(sent to server)
-  FOREIGN KEY(file_id, connection_id) REFERENCES snd_files ON DELETE CASCADE,
-  PRIMARY KEY(file_id, connection_id, chunk_number)
-) WITHOUT ROWID;
 CREATE TABLE rcv_file_chunks(
   file_id INTEGER NOT NULL REFERENCES rcv_files ON DELETE CASCADE,
   chunk_number INTEGER NOT NULL,
@@ -815,10 +804,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON pending_group_message
 CREATE INDEX idx_rcv_file_chunks_file_id ON rcv_file_chunks(file_id);
 CREATE INDEX idx_rcv_files_group_member_id ON rcv_files(group_member_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
-  file_id,
-  connection_id
-);
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
