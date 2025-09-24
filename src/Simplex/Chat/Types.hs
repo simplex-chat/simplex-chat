@@ -1327,9 +1327,6 @@ data SndFileTransfer = SndFileTransfer
   }
   deriving (Eq, Show)
 
-sndFileTransferConnId :: SndFileTransfer -> ConnId
-sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
-
 type FileTransferId = Int64
 
 data FileInvitation = FileInvitation
@@ -1443,12 +1440,6 @@ liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
   RFSAccepted fi -> Just fi
   RFSConnected fi -> Just fi
   _ -> Nothing
-
-liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
-liveRcvFileTransferConnId ft = acId =<< liveRcvFileTransferInfo ft
-  where
-    acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
-    acId _ = Nothing
 
 liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
 liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
@@ -1774,7 +1765,7 @@ instance TextEncoding ConnStatus where
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
 
-data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile | ConnUserContact
+data ConnType = ConnContact | ConnMember | ConnUserContact
   deriving (Eq, Show)
 
 instance FromField ConnType where fromField = fromTextField_ textDecode
@@ -1792,15 +1783,11 @@ instance TextEncoding ConnType where
   textDecode = \case
     "contact" -> Just ConnContact
     "member" -> Just ConnMember
-    "snd_file" -> Just ConnSndFile
-    "rcv_file" -> Just ConnRcvFile
     "user_contact" -> Just ConnUserContact
     _ -> Nothing
   textEncode = \case
     ConnContact -> "contact"
     ConnMember -> "member"
-    ConnSndFile -> "snd_file"
-    ConnRcvFile -> "rcv_file"
     ConnUserContact -> "user_contact"
 
 data GroupMemberIntro = GroupMemberIntro
@@ -1899,8 +1886,8 @@ instance TextEncoding CommandStatus where
 data CommandFunction
   = CFCreateConnGrpMemInv
   | CFCreateConnGrpInv
-  | CFCreateConnFileInvDirect
-  | CFCreateConnFileInvGroup
+  | CFCreateConnFileInvDirect -- deprecated
+  | CFCreateConnFileInvGroup -- deprecated
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact

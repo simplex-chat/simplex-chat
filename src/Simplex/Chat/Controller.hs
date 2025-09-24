@@ -894,7 +894,6 @@ data TerminalEvent
   | TEMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
   | TEMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
   | TEPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
-  | TESndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
   | TERcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   deriving (Show)
 
@@ -933,7 +932,6 @@ logEventToFile = \case
   CEvtMessageError {} -> True
   CEvtTerminalEvent te -> case te of
     TEMemberSubError {} -> True
-    TESndFileSubError {} -> True
     TERcvFileSubError {} -> True
     _ -> False
   _ -> False
@@ -1330,7 +1328,6 @@ data ChatErrorType
   | CEFileCancelled {message :: String}
   | CEFileCancel {fileId :: FileTransferId, message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
-  | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}

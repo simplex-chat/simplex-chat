@@ -20,7 +20,6 @@ module Simplex.Chat.Store.Connections
   )
 where
 
-import Control.Applicative ((<|>))
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -29,7 +28,6 @@ import Data.Int (Int64)
 import Data.Maybe (catMaybes, fromMaybe)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
-import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
@@ -49,12 +47,12 @@ import Database.SQLite.Simple.QQ (sql)
 
 getChatLockEntity :: DB.Connection -> AgentConnId -> ExceptT StoreError IO ChatLockEntity
 getChatLockEntity db agentConnId = do
-  ((connId, connType) :. (contactId, groupMemberId, sndFileId, rcvFileId, userContactLinkId)) <-
+  ((connId, connType) :. (contactId, groupMemberId, userContactLinkId)) <-
     ExceptT . firstRow id (SEConnectionNotFound agentConnId) $
       DB.query
         db
         [sql|
-          SELECT connection_id, conn_type, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id
+          SELECT connection_id, conn_type, contact_id, group_member_id, user_contact_link_id
           FROM connections
           WHERE agent_conn_id = ?
         |]
@@ -63,8 +61,6 @@ getChatLockEntity db agentConnId = do
   case connType of
     ConnMember -> maybe err (fmap CLGroup . getMemberGroupId) groupMemberId
     ConnContact -> pure $ maybe (CLConnection connId) CLContact contactId
-    ConnSndFile -> maybe err (pure . CLFile) sndFileId
-    ConnRcvFile -> maybe err (pure . CLFile) rcvFileId
     ConnUserContact -> maybe err (pure . CLUserContact) userContactLinkId
   where
     getMemberGroupId :: GroupMemberId -> ExceptT StoreError IO GroupId
@@ -84,8 +80,6 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
       case connType of
         ConnMember -> uncurry (RcvGroupMsgConnection c) <$> getGroupAndMember_ entId c
         ConnContact -> RcvDirectMsgConnection c . Just <$> getContactRec_ entId c
-        ConnSndFile -> SndFileConnection c <$> getConnSndFileTransfer_ entId c
-        ConnRcvFile -> RcvFileConnection c <$> getRcvFileTransfer db user entId
         ConnUserContact -> UserContactConnection c <$> getUserContact_ entId
   where
     getConnection_ :: ExceptT StoreError IO Connection
@@ -95,7 +89,7 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
           db
           [sql|
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
-              conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, snd_file_id, rcv_file_id, user_contact_link_id,
+              conn_status, conn_type, contact_conn_initiated, local_alias, contact_id, group_member_id, user_contact_link_id,
               created_at, security_code, security_code_verified_at, pq_support, pq_encryption, pq_snd_enabled, pq_rcv_enabled, auth_err_counter, quota_err_counter,
               conn_chat_version, peer_chat_min_version, peer_chat_max_version
             FROM connections
@@ -172,26 +166,6 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
       let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
           member = toGroupMember userContactId memberRow
        in (groupInfo, (member :: GroupMember) {activeConn = Just c})
-    getConnSndFileTransfer_ :: Int64 -> Connection -> ExceptT StoreError IO SndFileTransfer
-    getConnSndFileTransfer_ fileId Connection {connId} =
-      ExceptT $
-        firstRow' (sndFileTransfer_ fileId connId) (SESndFileNotFound fileId) $
-          DB.query
-            db
-            [sql|
-              SELECT s.file_status, f.file_name, f.file_size, f.chunk_size, f.file_path, s.file_descr_id, s.file_inline, s.group_member_id, cs.local_display_name, m.local_display_name
-              FROM snd_files s
-              JOIN files f USING (file_id)
-              LEFT JOIN contacts cs USING (contact_id)
-              LEFT JOIN group_members m USING (group_member_id)
-              WHERE f.user_id = ? AND f.file_id = ? AND s.connection_id = ?
-            |]
-            (userId, fileId, connId)
-    sndFileTransfer_ :: Int64 -> Int64 -> (FileStatus, String, Integer, Integer, FilePath, Maybe Int64, Maybe InlineFileMode, Maybe Int64, Maybe ContactName, Maybe ContactName) -> Either StoreError SndFileTransfer
-    sndFileTransfer_ fileId connId (fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, groupMemberId, contactName_, memberName_) =
-      case contactName_ <|> memberName_ of
-        Just recipientDisplayName -> Right SndFileTransfer {fileId, fileStatus, fileName, fileSize, chunkSize, filePath, fileDescrId, fileInline, recipientDisplayName, connId, agentConnId, groupMemberId}
-        Nothing -> Left $ SESndFileInvalid fileId
     getUserContact_ :: Int64 -> ExceptT StoreError IO UserContact
     getUserContact_ userContactLinkId = ExceptT $ do
       userContact_

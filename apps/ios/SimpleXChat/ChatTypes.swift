@@ -2874,8 +2874,6 @@ public struct MemberSubError: Decodable, Hashable {
 public enum ConnectionEntity: Decodable, Hashable {
     case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
     case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
     case userContactConnection(entityConnection: Connection, userContact: UserContact)
 
     public var id: String? {
@@ -2908,8 +2906,6 @@ public enum ConnectionEntity: Decodable, Hashable {
         switch self {
         case let .rcvDirectMsgConnection(entityConnection, _): entityConnection
         case let .rcvGroupMsgConnection(entityConnection, _, _): entityConnection
-        case let .sndFileConnection(entityConnection, _): entityConnection
-        case let .rcvFileConnection(entityConnection, _): entityConnection
         case let .userContactConnection(entityConnection, _): entityConnection
         }
     }

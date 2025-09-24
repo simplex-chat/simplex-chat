@@ -115,7 +115,7 @@ createOrUpdateContactRequest
                 ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
                 -- Connection
                 c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-                c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+                c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
                 c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
               FROM contacts ct
               JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id

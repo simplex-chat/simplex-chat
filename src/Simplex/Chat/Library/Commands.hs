@@ -2793,8 +2793,7 @@ processChatCommand vr nm = \case
           | not (null fts) && all fileCancelledOrCompleteSMP fts ->
               throwChatError $ CEFileCancel fileId "file transfer is complete"
           | otherwise -> do
-              fileAgentConnIds <- cancelSndFile user ftm fts True
-              deleteAgentConnectionsAsync fileAgentConnIds
+              cancelSndFile user ftm fts True
               cref_ <- withFastStore' $ \db -> lookupChatRefByFileId db user fileId
               aci_ <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
               case (cref_, aci_) of
@@ -2818,7 +2817,7 @@ processChatCommand vr nm = \case
           | rcvFileComplete fileStatus -> throwChatError $ CEFileCancel fileId "file transfer is complete"
           | otherwise -> case xftpRcvFile of
               Nothing -> do
-                cancelRcvFileTransfer user ftr >>= mapM_ deleteAgentConnectionAsync
+                cancelRcvFileTransfer user ftr
                 ci <- withFastStore $ \db -> lookupChatItemByFileId db vr user fileId
                 pure $ CRRcvFileCancelled user ci ftr
               Just XFTPRcvFile {agentRcvFileId} -> do
@@ -4152,22 +4151,20 @@ subscribeUserConnections :: VersionRangeChat -> Bool -> AgentBatchSubscribe -> U
 subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   -- get user connections
   ce <- asks $ subscriptionEvents . config
-  (conns, cts, ucs, gs, ms, sfts, rfts, pcs) <-
+  (conns, cts, ucs, gs, ms, pcs) <-
     if onlyNeeded
       then do
         (conns, entities) <- withStore' (`getConnectionsToSubscribe` vr)
-        let (cts, ucs, ms, sfts, rfts, pcs) = foldl' addEntity (M.empty, M.empty, M.empty, M.empty, M.empty, M.empty) entities
-        pure (conns, cts, ucs, [], ms, sfts, rfts, pcs)
+        let (cts, ucs, ms, pcs) = foldl' addEntity (M.empty, M.empty, M.empty, M.empty) entities
+        pure (conns, cts, ucs, [], ms, pcs)
       else do
         withStore' unsetConnectionToSubscribe
         (ctConns, cts) <- getContactConns
         (ucConns, ucs) <- getUserContactLinkConns
         (gs, mConns, ms) <- getGroupMemberConns
-        (sftConns, sfts) <- getSndFileTransferConns
-        (rftConns, rfts) <- getRcvFileTransferConns
         (pcConns, pcs) <- getPendingContactConns
-        let conns = concat ([ctConns, ucConns, mConns, sftConns, rftConns, pcConns] :: [[ConnId]])
-        pure (conns, cts, ucs, gs, ms, sfts, rfts, pcs)
+        let conns = concat ([ctConns, ucConns, mConns, pcConns] :: [[ConnId]])
+        pure (conns, cts, ucs, gs, ms, pcs)
   -- subscribe using batched commands
   rs <- withAgent $ \a -> agentBatchSubscribe a conns
   -- send connection events to view
@@ -4175,17 +4172,13 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
   unlessM (asks $ coreApi . config) $ do
     contactLinkSubsToView rs ucs
     groupSubsToView rs gs ms ce
-    sndFileSubsToView rs sfts
-    rcvFileSubsToView rs rfts
     pendingConnSubsToView rs pcs
   where
-    addEntity (cts, ucs, ms, sfts, rfts, pcs) = \case
-      RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, sfts, rfts, pcs)
-      RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (mkPendingContactConnection c Nothing) pcs in (cts, ucs, ms, sfts, rfts, pcs')
-      RcvGroupMsgConnection c _g m -> let ms' = addConn c (toShortMember m c) ms in (cts, ucs, ms', sfts, rfts, pcs)
-      SndFileConnection c sft -> let sfts' = addConn c sft sfts in (cts, ucs, ms, sfts', rfts, pcs)
-      RcvFileConnection c rft -> let rfts' = addConn c rft rfts in (cts, ucs, ms, sfts, rfts', pcs)
-      UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, sfts, rfts, pcs)
+    addEntity (cts, ucs, ms, pcs) = \case
+      RcvDirectMsgConnection c (Just ct) -> let cts' = addConn c ct cts in (cts', ucs, ms, pcs)
+      RcvDirectMsgConnection c Nothing -> let pcs' = addConn c (mkPendingContactConnection c Nothing) pcs in (cts, ucs, ms, pcs')
+      RcvGroupMsgConnection c _g m -> let ms' = addConn c (toShortMember m c) ms in (cts, ucs, ms', pcs)
+      UserContactConnection c uc -> let ucs' = addConn c uc ucs in (cts, ucs', ms, pcs)
     addConn :: Connection -> a -> Map ConnId a -> Map ConnId a
     addConn = M.insert . aConnId
     toShortMember GroupMember {groupMemberId, groupId, localDisplayName} Connection {agentConnId} =
@@ -4212,16 +4205,6 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
       pure (gs, map fst mPairs, M.fromList mPairs)
       where
         shortMemConnId ShortGroupMember{connId = AgentConnId acId} = acId
-    getSndFileTransferConns :: CM ([ConnId], Map ConnId SndFileTransfer)
-    getSndFileTransferConns = do
-      sfts <- withStore_ getLiveSndFileTransfers
-      let connIds = map sndFileTransferConnId sfts
-      pure (connIds, M.fromList $ zip connIds sfts)
-    getRcvFileTransferConns :: CM ([ConnId], Map ConnId RcvFileTransfer)
-    getRcvFileTransferConns = do
-      rfts <- withStore_ getLiveRcvFileTransfers
-      let rftPairs = mapMaybe (\ft -> (,ft) <$> liveRcvFileTransferConnId ft) rfts
-      pure (map fst rftPairs, M.fromList rftPairs)
     getPendingContactConns :: CM ([ConnId], Map ConnId PendingContactConnection)
     getPendingContactConns = do
       pcs <- withStore_ getPendingContactConnections
@@ -4277,17 +4260,6 @@ subscribeUserConnections vr onlyNeeded agentBatchSubscribe user = do
               | membershipStatus == GSMemInvited = TEGroupInvitation user g
               | null members = TEGroupEmpty user g
               | otherwise = TEGroupSubscribed user g
-    sndFileSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId SndFileTransfer -> CM ()
-    sndFileSubsToView rs sfts = do
-      let sftRs = resultsFor rs sfts
-      forM_ sftRs $ \(ft@SndFileTransfer {fileId, fileStatus}, err_) -> do
-        forM_ err_ $ toViewTE . TESndFileSubError user ft
-        void . forkIO $ do
-          threadDelay 1000000
-          when (fileStatus == FSConnected) . unlessM (isFileActive fileId sndFiles) . withChatLock "subscribe sendFileChunk" $
-            sendFileChunk user ft
-    rcvFileSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId RcvFileTransfer -> CM ()
-    rcvFileSubsToView rs = mapM_ (toViewTE . uncurry (TERcvFileSubError user)) . filterErrors . resultsFor rs
     pendingConnSubsToView :: Map ConnId (Either AgentErrorType (Maybe ClientServiceId)) -> Map ConnId PendingContactConnection -> CM ()
     pendingConnSubsToView rs = toViewTE . TEPendingSubSummary user . map (uncurry PendingSubStatus) . resultsFor rs
     withStore_ :: (DB.Connection -> User -> IO [a]) -> CM [a]
