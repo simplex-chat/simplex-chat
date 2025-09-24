@@ -16,6 +16,6 @@ chatTests = do
   describe "forward tests" chatForwardTests
   describe "group tests" chatGroupTests
   describe "local chats tests" chatLocalChatsTests
-  fdescribe "file tests" chatFileTests
+  describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests
   describe "chat list pagination tests" chatListTests
