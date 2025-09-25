@@ -241,7 +241,7 @@
     "stable-and-beta-versions-built-by-developers": "开发人员构建的稳定版和测试版",
     "f-droid-page-simplex-chat-repo-section-text": "要将其添加到您的 F-Droid 客户端，请<span class='hide-on-mobile'>扫描二维码或</span>使用以下 URL：",
     "comparison-section-list-point-4a": "SimpleX 中继无法破坏 e2e 加密。 验证安全代码以减轻对带外通道的攻击",
-    "docs-dropdown-8": "SimpleX 目录服务",
+    "docs-dropdown-8": "SimpleX 目录",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat 和 F-Droid.org 存储库使用不同的密钥对构建进行签名。 如需切换，请<a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>导出</a>聊天数据库并重新安装应用。",
     "hero-overlay-3-title": "安全性评估",
     "hero-overlay-card-3-p-2": "2022年11月份，Trail of Bits 审核了 SimpleX 平台的密码学和网络部件。<a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">更多内容见 该公告</a>。",
@@ -255,5 +255,7 @@
     "docs-dropdown-11": "常问问题",
     "docs-dropdown-12": "安全性",
     "hero-overlay-card-3-p-3": "Trail of Bits 于 2024 年 7 月审核了 SimpleX 网络协议的加密设计。<a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">了解更多信息</a>。",
-    "docs-dropdown-14": "企业版 SimpleX"
+    "docs-dropdown-14": "企业版 SimpleX",
+    "directory": "目录",
+    "about-and-contact-us": "关于 & 联系我们"
 }
