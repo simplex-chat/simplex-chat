@@ -209,7 +209,8 @@ testCfg =
       showReceipts = False,
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
-      tbqSize = 16
+      tbqSize = 16,
+      confirmMigrations = MCYesUp
     }
 
 testCfgSlow :: ChatConfig
@@ -435,8 +436,8 @@ getTermLine cc@TestCC {printOutput} =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      -- when True $ do
-      when printOutput $ do
+      when True $ do
+      -- when printOutput $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s

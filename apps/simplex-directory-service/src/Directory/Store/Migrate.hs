@@ -15,7 +15,7 @@ import Data.Time.Clock (getCurrentTime)
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
-import Simplex.Chat.Controller (ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -43,13 +43,17 @@ import Directory.Store.SQLite.Migrations
 #endif
 
 runDirectoryMigrations :: DirectoryOpts -> ChatController -> IO (Either MigrationError ())
-runDirectoryMigrations DirectoryOpts {coreOptions = CoreChatOpts {dbOptions, yesToUpMigrations}} ChatController {chatStore} =
+runDirectoryMigrations opts cc =
   migrateDBSchema
     chatStore
     (toDBOpts dbOptions chatSuffix False)
     (Just "sx_directory_migrations")
     directorySchemaMigrations
-    MigrationConfig { confirm = if yesToUpMigrations then MCYesUp else MCConsole, backupPath = Nothing}
+    MigrationConfig {confirm, backupPath = Nothing}
+  where
+    DirectoryOpts {coreOptions = CoreChatOpts {dbOptions, yesToUpMigrations}} = opts
+    ChatController {chatStore, config = ChatConfig {confirmMigrations}} = cc
+    confirm = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
 
 versionWithLog :: Int
 versionWithLog = 1

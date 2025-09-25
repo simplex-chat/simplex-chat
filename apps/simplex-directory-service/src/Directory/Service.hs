@@ -24,11 +24,11 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
+import Data.Bifunctor (first)
 import Data.List (find, intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing)
-import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -53,7 +53,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Direct (getContact)
-import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getBaseGroupsWithSummary, setGroupCustomData)
+import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, setGroupCustomData) -- TODO remove setGroupCustomData
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -336,9 +336,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
     groupAlreadyListed GroupInfo {groupProfile = p} =
       "The group " <> groupNameDescr p <> " is already listed in the directory, please choose another name."
 
-    getGroups_ :: Maybe Text -> IO (Either String [GroupInfoSummary])
-    getGroups_ search_ = withDB' "getGroups" cc $ \db -> getBaseGroupsWithSummary db (vr cc) user Nothing search_
-
     getDuplicateGroup :: GroupInfo -> IO (Either String DuplicateGroup)
     getDuplicateGroup GroupInfo {groupId, groupProfile = GroupProfile {displayName}} =
       duplicateGroup <$$> getDuplicateGroupRegs cc user displayName
@@ -354,12 +351,14 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 _ -> DGRegistered
               DSRemoved -> duplicateGroup groups
 
-    processInvitation :: Contact -> GroupInfo -> IO ()
-    processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = do
-      addGroupReg cc ct g GRSProposed >>= \case
-        Left e -> notifyAdminUsers $ "Error creating group registation for group " <> tshow groupId <> ": " <> T.pack e
-        Right grData -> do
-          logGCreate st grData
+    processInvitation :: Contact -> GroupInfo -> Maybe GroupReg -> IO ()
+    processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} gr_ = do
+      print $ "*** processInvitation " <> show groupId
+      case gr_ of
+        Nothing -> addGroupReg notifyAdminUsers st cc ct g GRSProposed joinGroup
+        Just _ -> setGroupStatus notifyAdminUsers st env cc groupId GRSProposed joinGroup
+      where
+        joinGroup _ = do
           r <- sendChatCmd cc $ APIJoinGroup groupId MFNone
           sendMessage cc ct $ case r of
             Right CRUserAcceptedGroupSent {} -> "Joining the group " <> displayName <> "…"
@@ -376,24 +375,21 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
              \[Directory rules](https://simplex.chat/docs/directory.html)."
 
     deGroupInvitation :: Contact -> GroupInfo -> GroupMemberRole -> GroupMemberRole -> IO ()
-    deGroupInvitation ct g@GroupInfo {groupId, groupProfile = p@GroupProfile {displayName}} fromMemberRole memberRole = do
+    deGroupInvitation ct g@GroupInfo {groupProfile = p@GroupProfile {displayName}} fromMemberRole memberRole = do
       logInfo $ "invited to group " <> viewGroupName g <> " by " <> viewContactName ct
       case badRolesMsg $ groupRolesStatus fromMemberRole memberRole of
         Just msg -> sendMessage cc ct msg
         Nothing ->
           getDuplicateGroup g >>= \case
-            Right DGUnique -> processInvitation ct g
+            Right DGUnique -> processInvitation ct g Nothing
             Right DGRegistered -> askConfirmation
             Right DGReserved -> sendMessage cc ct $ groupAlreadyListed g
             Left e -> sendMessage cc ct $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
       where
         askConfirmation =
-          addGroupReg cc ct g GRSPendingConfirmation >>= \case
-            Left e -> notifyAdminUsers $ "Error creating group registation for group " <> tshow groupId <> ": " <> T.pack e
-            Right gr@GroupReg {userGroupRegId} -> do
-              logGCreate st gr
-              sendMessage cc ct $ "The group " <> groupNameDescr p <> " is already submitted to the directory.\nTo confirm the registration, please send:"
-              sendMessage cc ct $ "/confirm " <> tshow userGroupRegId <> ":" <> viewName displayName
+          addGroupReg notifyAdminUsers st cc ct g GRSPendingConfirmation $ \GroupReg {userGroupRegId} -> do
+            sendMessage cc ct $ "The group " <> groupNameDescr p <> " is already submitted to the directory.\nTo confirm the registration, please send:"
+            sendMessage cc ct $ "/confirm " <> tshow userGroupRegId <> ":" <> viewName displayName
 
     badRolesMsg :: GroupRolesStatus -> Maybe Text
     badRolesMsg = \case
@@ -762,37 +758,39 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           \`/link <ID>` - view and upgrade group link.\n\
           \`/delete <ID>:<NAME>` - remove the group you submitted from directory, with _ID_ and _name_ as shown by /list command.\n\n\
           \To search for groups, send the search text."
-      DCSearchGroup s -> withFoundListedGroups (Just s) $ sendSearchResults s
+      DCSearchGroup s ->
+        sendFoundListedGroups (STSearch s) Nothing "No groups found" $ \gs n ->  -- $ sendSearchResults s
+          let more = if n > length gs then ", sending top " <> tshow (length gs) else ""
+           in "Found " <> tshow n <> " group(s)" <> more <> "."
       DCSearchNext ->
         atomically (TM.lookup (contactId' ct) searchRequests) >>= \case
-          Just search@SearchRequest {searchType, searchTime} -> do
+          Just SearchRequest {searchType, searchTime, lastGroup} -> do
             currentTime <- getCurrentTime
             if diffUTCTime currentTime searchTime > 300 -- 5 minutes
               then do
                 atomically $ TM.delete (contactId' ct) searchRequests
                 showAllGroups
-              else case searchType of
-                STSearch s -> withFoundListedGroups (Just s) $ sendNextSearchResults takeTop search
-                STAll -> withFoundListedGroups Nothing $ sendNextSearchResults takeTop search
-                STRecent -> withFoundListedGroups Nothing $ sendNextSearchResults takeRecent search
+              else
+                sendFoundListedGroups searchType (Just lastGroup) "No more groups" $ \gs _ ->
+                  "Sending " <> tshow (length gs) <> " more group(s)."
           Nothing -> showAllGroups
         where
           showAllGroups = deUserCommand ct ciId DCAllGroups
-      DCAllGroups -> withFoundListedGroups Nothing $ sendAllGroups takeTop "top" STAll
-      DCRecentGroups -> withFoundListedGroups Nothing $ sendAllGroups takeRecent "the most recent" STRecent
+      DCAllGroups -> sendFoundListedGroups STAll Nothing "No groups listed" $ allGroupsReply "top"
+      DCRecentGroups -> sendFoundListedGroups STRecent Nothing "No groups listed" $ allGroupsReply "the most recent"
       DCSubmitGroup _link -> pure ()
       DCConfirmDuplicateGroup ugrId gName ->
-        withUserGroupReg ugrId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName}} GroupReg {groupRegStatus} -> case groupRegStatus of
+        withUserGroupReg ugrId gName $ \g@GroupInfo {groupProfile = GroupProfile {displayName}} gr@GroupReg {groupRegStatus} -> case groupRegStatus of
           GRSPendingConfirmation ->
             getDuplicateGroup g >>= \case
               Left e -> sendMessage cc ct $ "Error: getDuplicateGroup. Please notify the developers.\n" <> T.pack e
               Right DGReserved -> sendMessage cc ct $ groupAlreadyListed g
-              _ -> processInvitation ct g
+              _ -> processInvitation ct g $ Just gr
           _ -> sendReply $ "Error: the group ID " <> tshow ugrId <> " (" <> displayName <> ") is not pending confirmation."
       DCListUserGroups ->
         getUserGroupRegs cc user (contactId' ct) >>= \case
           Left e -> sendReply $ "Error reading groups: " <> T.pack e
-          Right gs -> sendGroupsInfo ct ciId isAdmin gs
+          Right gs -> sendGroupsInfo ct ciId isAdmin (gs, length gs)
       DCDeleteGroup gId gName ->
         (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} GroupReg {dbGroupId} -> do
           delGroupReg cc dbGroupId >>= \case
@@ -914,50 +912,47 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               | maybe True (displayName ==) gName_ -> action g gr
               | otherwise -> sendReply $ "Group ID " <> tshow ugrId <> " has the display name " <> displayName
         sendReply = mkSendReply ct ciId
-        withFoundListedGroups s_ action =
-          getGroups_ s_ >>= \case
-            Right groups -> filterListedGroups' st groups >>= action
-            Left e -> sendReply $ "Error: getGroups. Please notify the developers.\n" <> T.pack e
-        sendSearchResults s = \case
-          [] -> sendReply "No groups found"
-          gs -> do
-            let gs' = takeTop searchResults gs
-                moreGroups = length gs - length gs'
-                more = if moreGroups > 0 then ", sending top " <> tshow (length gs') else ""
-                reply = "Found " <> tshow (length gs) <> " group(s)" <> more <> "."
-            updateSearchRequest (STSearch s) $ groupIds gs'
-            sendFoundGroups reply gs' moreGroups
-        sendAllGroups takeFirst sortName searchType = \case
-          [] -> sendReply "No groups listed"
-          gs -> do
-            let gs' = takeFirst searchResults gs
-                moreGroups = length gs - length gs'
-                more = if moreGroups > 0 then ", sending " <> sortName <> " " <> tshow (length gs') else ""
-                reply = tshow (length gs) <> " group(s) listed" <> more <> "."
-            updateSearchRequest searchType $ groupIds gs'
-            sendFoundGroups reply gs' moreGroups
-        sendNextSearchResults takeFirst SearchRequest {searchType, sentGroups} = \case
-          [] -> do
-            sendReply "Sorry, no more groups"
-            atomically $ TM.delete (contactId' ct) searchRequests
-          gs -> do
-            let gs' = takeFirst searchResults $ filterNotSent sentGroups gs
-                sentGroups' = sentGroups <> groupIds gs'
-                moreGroups = length gs - S.size sentGroups'
-                reply = "Sending " <> tshow (length gs') <> " more group(s)."
-            updateSearchRequest searchType sentGroups'
-            sendFoundGroups reply gs' moreGroups
-        updateSearchRequest :: SearchType -> Set GroupId -> IO ()
-        updateSearchRequest searchType sentGroups = do
+        sendFoundListedGroups searchType lastGroup_ notFound replyStr =
+          searchListedGroups cc user searchType lastGroup_ searchResults >>= \case
+            Right ([], _) -> do
+              atomically $ TM.delete (contactId' ct) searchRequests
+              sendReply notFound
+            Right (gs, n) -> do
+              let moreGroups = n - length gs
+              updateSearchRequest searchType $ last gs
+              sendFoundGroups (replyStr gs n) gs moreGroups
+            Left e -> sendReply $ "Error: searchListedGroups. Please notify the developers.\n" <> T.pack e
+        -- sendSearchResults s (gs, n) = do
+        --   let moreGroups = n - length gs
+        --       more = if moreGroups > 0 then ", sending top " <> tshow (length gs) else ""
+        --       reply = "Found " <> tshow n <> " group(s)" <> more <> "."
+        --   updateSearchRequest (STSearch s) gs
+        --   sendFoundGroups reply gs moreGroups
+        -- sendAllGroups sortName searchType (gs, n) = do
+        --   let moreGroups = n - length gs
+        --       more = if moreGroups > 0 then ", sending " <> sortName <> " " <> tshow (length gs) else ""
+        --       reply = tshow n <> " group(s) listed" <> more <> "."
+        --   updateSearchRequest searchType gs
+        --   sendFoundGroups reply gs moreGroups
+        -- sendNextSearchResults searchType (gs, n) = do
+        --   let moreGroups = n - length gs
+        --       reply = "Sending " <> tshow (length gs) <> " more group(s)."
+        --   updateSearchRequest searchType gs
+        --   sendFoundGroups reply gs moreGroups
+        allGroupsReply sortName gs n =
+          let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
+           in tshow n <> " group(s) listed" <> more <> "."
+        updateSearchRequest :: SearchType -> (GroupInfo, GroupReg) -> IO ()
+        updateSearchRequest searchType (GroupInfo {groupId}, _) = do
           searchTime <- getCurrentTime
-          let search = SearchRequest {searchType, searchTime, sentGroups}
+          let search = SearchRequest {searchType, searchTime, lastGroup = groupId}
           atomically $ TM.insert (contactId' ct) search searchRequests
         sendFoundGroups reply gs moreGroups =
           void . forkIO $ sendComposedMessages_ cc (SRDirect $ contactId' ct) msgs
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GIS GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary = GroupSummary {currentMembers}} _) =
+            foundGroup (GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary = GroupSummary {currentMembers}}, _) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
                   text = showId <> groupInfoText p <> "\n" <> membersStr
@@ -1045,11 +1040,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           DCListLastGroups count ->
             listLastGroups cc user count >>= \case
               Left e -> sendReply $ "Error reading groups: " <> T.pack e
-              Right gs -> sendGroupsInfo ct ciId True gs
+              Right gs -> sendGroupsInfo ct ciId True $ first reverse gs
           DCListPendingGroups count ->
             listPendingGroups cc user count >>= \case
               Left e -> sendReply $ "Error reading groups: " <> T.pack e
-              Right gs -> sendGroupsInfo ct ciId True gs
+              Right gs -> sendGroupsInfo ct ciId True $ first reverse gs
           DCSendToGroupOwner groupId gName msg -> do
             let groupRef = groupReference' groupId gName
             withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {dbContactId = ctId} -> do
@@ -1141,19 +1136,27 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           | otherwise ->
               sendReply $ "Group ID " <> tshow gId <> " has the display name " <> displayName
 
-    sendGroupsInfo :: Contact -> ChatItemId -> Bool -> [(GroupInfo, GroupReg)] -> IO ()
-    sendGroupsInfo ct ciId isAdmin gs = do
-      let replyMsg = (Just ciId, MCText $ tshow (length gs) <> " registered group(s)")
-      sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| map groupMessage gs
+    getOwnersInfo :: [(GroupInfo, GroupReg)] -> IO [((GroupInfo, GroupReg), Maybe (Either String Contact))]
+    getOwnersInfo gs =
+      fmap (either (\e -> map (,Just (Left e)) gs) id) $ withDB' "getOwnersInfo" cc $ \db ->
+        mapM (\g@(_, gr) -> fmap ((g,) . Just . first show) $ runExceptT $ getContact db (vr cc) user $ dbContactId gr) gs
+
+    sendGroupsInfo :: Contact -> ChatItemId -> Bool -> ([(GroupInfo, GroupReg)], Int) -> IO ()
+    sendGroupsInfo ct ciId isAdmin (gs, n) = do
+      let more = if n > length gs then ", showing the last " <> tshow (length gs) else ""
+          replyMsg = (Just ciId, MCText $ tshow n <> " registered group(s)" <> more)
+      gs' <- if isAdmin then getOwnersInfo gs else pure $ map (,Nothing) gs
+      sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| map groupMessage gs'
       where
-        groupMessage (g, gr) =
+        groupMessage ((g, gr), ct_) =
           let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary} = g
               GroupReg {userGroupRegId, groupRegStatus} = gr
               useGroupId = if isAdmin then groupId else userGroupRegId
               statusStr = "Status: " <> groupRegStatusText groupRegStatus
               membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
-              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p, membersStr, statusStr, cmds]
+              ownerStr = maybe "" (("Owner: " <>) . either (("getContact error: " <>) . T.pack) localDisplayName') ct_
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ [ownerStr | isAdmin] ++ [membersStr, statusStr, cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
@@ -1169,13 +1172,21 @@ setGroupStatusPromo sendReply st env cc GroupReg {dbGroupId = gId} grStatus' grP
       logGUpdatePromotion st gId grPromoted'
       continue
 
+addGroupReg :: (Text -> IO ()) -> DirectoryStore -> ChatController -> Contact -> GroupInfo -> GroupRegStatus -> (GroupReg -> IO ()) -> IO ()
+addGroupReg sendMsg st cc ct g@GroupInfo {groupId} grStatus continue =
+  addGroupRegStore cc ct g grStatus >>= \case
+    Left e -> sendMsg $ "Error creating group registation for group " <> tshow groupId <> ": " <> T.pack e
+    Right gr -> do
+      logGCreate st gr
+      continue gr
+
 setGroupStatus :: (Text -> IO ()) -> DirectoryStore -> ServiceState -> ChatController -> GroupId -> GroupRegStatus -> (GroupReg -> IO ()) -> IO ()
 setGroupStatus sendMsg st env cc gId grStatus' continue = do
   let status' = grDirectoryStatus grStatus'
   setGroupStatusStore cc gId grStatus' >>= \case
     Left e -> sendMsg $ "Error updating group " <> tshow gId <> " status: " <> T.pack e
-    Right gr@GroupReg {groupRegStatus} -> do
-      let status = grDirectoryStatus groupRegStatus
+    Right (grStatus, gr) -> do
+      let status = grDirectoryStatus grStatus
       when ((status == DSListed || status' == DSListed) && status /= status') $ listingsUpdated env cc
       logGUpdateStatus st gId grStatus'
       continue gr

@@ -26,14 +26,14 @@ CREATE TABLE sx_directory_store_info(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 
-INSERT INTO sx_directory_store_info (version) VALUES 1;
+INSERT INTO sx_directory_store_info (version) VALUES (1);
 
 CREATE TABLE sx_directory_group_regs(
   group_reg_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  group_id INTEGER NOT NULL REFERENCES groups ON UPDATE PROHIBIT ON DELETE CASCADE,
+  group_id INTEGER NOT NULL REFERENCES groups ON UPDATE RESTRICT ON DELETE CASCADE,
   user_group_reg_id INTEGER NOT NULL,
-  contact_id INTEGER NOT NULL REFERENCES contacts(contact_id) ON UPDATE PROHIBIT ON DELETE CASCADE,
-  owner_member_id INTEGER REFERENCES group_members(group_member_id) ON UPDATE PROHIBIT ON DELETE CASCADE,
+  contact_id INTEGER NOT NULL REFERENCES contacts(contact_id) ON UPDATE RESTRICT ON DELETE CASCADE,
+  owner_member_id INTEGER REFERENCES group_members(group_member_id) ON UPDATE RESTRICT ON DELETE CASCADE,
   group_reg_status TEXT NOT NULL,
   group_promoted INTEGER NOT NULL,
   acceptance_reject_names TEXT, -- reject long names and names with profanity

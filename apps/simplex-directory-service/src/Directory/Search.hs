@@ -14,7 +14,7 @@ import Simplex.Chat.Types
 data SearchRequest = SearchRequest
   { searchType :: SearchType,
     searchTime :: UTCTime,
-    sentGroups :: Set GroupId
+    lastGroup :: GroupId -- cursor for search
   }
 
 data SearchType = STAll | STRecent | STSearch Text
