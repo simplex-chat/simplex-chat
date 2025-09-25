@@ -1601,9 +1601,8 @@ processChatCommand vr nm = \case
     case activeConn of
       Just conn -> getConnQueueInfo user conn
       Nothing -> throwChatError $ CEContactNotActive ct
-  APIGroupInfo gId -> withUser $ \user -> do
-    (g, s) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> liftIO (getGroupSummary db user gId)
-    pure $ CRGroupInfo user g s
+  APIGroupInfo gId -> withUser $ \user ->
+    CRGroupInfo user <$> withFastStore (\db -> getGroupInfo db vr user gId)
   APIGroupMemberInfo gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     connectionStats <- mapM (withAgent . flip getConnectionServers) (memberConnId m)
@@ -2570,7 +2569,7 @@ processChatCommand vr nm = \case
     let memberSupportChats = filter (isJust . supportChat) members
     pure $ CRMemberSupportChats user gInfo memberSupportChats
   APIListGroups userId contactId_ search_ -> withUserId userId $ \user ->
-    CRGroupsList user <$> withFastStore' (\db -> getBaseGroupsWithSummary db vr user contactId_ search_)
+    CRGroupsList user <$> withFastStore' (\db -> getBaseGroupDetails db vr user contactId_ search_)
   ListGroups cName_ search_ -> withUser $ \user@User {userId} -> do
     ct_ <- forM cName_ $ \cName -> withFastStore $ \db -> getContactByName db vr user cName
     processChatCommand vr nm $ APIListGroups userId (contactId' <$> ct_) search_

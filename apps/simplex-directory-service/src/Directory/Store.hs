@@ -408,7 +408,7 @@ getDuplicateGroupRegs cc user@User {userId, userContactId} displayName =
 filterListedGroups' :: DirectoryStore -> [GroupInfoSummary] -> IO [GroupInfoSummary]
 filterListedGroups' st gs = do
   lgs <- readTVarIO $ listedGroups st
-  pure $ filter (\(GIS GroupInfo {groupId} _ _) -> groupId `S.member` lgs) gs
+  pure $ filter (\(GIS GroupInfo {groupId} _) -> groupId `S.member` lgs) gs
 
 listLastGroups :: ChatController -> User -> Int -> IO (Either String [(GroupInfo, GroupReg)])
 listLastGroups cc user@User {userId, userContactId} count =

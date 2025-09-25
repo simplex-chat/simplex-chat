@@ -24,7 +24,6 @@ import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Either (fromRight)
 import Data.List (find, intercalate)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.Map.Strict as M
@@ -54,7 +53,7 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgContent (..))
 import Simplex.Chat.Store.Direct (getContact)
-import Simplex.Chat.Store.Groups (getGroupInfo, getGroupLink, getGroupMember, getGroupSummary, getBaseGroupsWithSummary, setGroupCustomData)
+import Simplex.Chat.Store.Groups (getGroupLink, getGroupMember, getBaseGroupsWithSummary, setGroupCustomData)
 import Simplex.Chat.Store.Profiles (GroupLinkInfo (..), getGroupLinkInfo)
 import Simplex.Chat.Store.Shared (StoreError (..))
 import Simplex.Chat.Terminal (terminalChatConfig)
@@ -643,10 +642,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       useMemberFilter image $ passCaptcha a
 
     sendToApprove :: GroupInfo -> GroupReg -> GroupApprovalId -> IO ()
-    sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image'}} GroupReg {dbContactId, promoted} gaId = do
+    sendToApprove GroupInfo {groupId, groupProfile = p@GroupProfile {displayName, image = image'}, groupSummary} GroupReg {dbContactId, promoted} gaId = do
       ct_ <- getContact' cc user dbContactId
-      gr_ <- getGroupAndSummary cc user groupId
-      let membersStr = either T.pack (\(_, s) -> "_" <> tshow (currentMembers s) <> " members_\n") gr_
+      let membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_\n"
           text =
             either (\_ -> "The group ID " <> tshow groupId <> " submitted: ") (\c -> localDisplayName' c <> " submitted the group ID " <> tshow groupId <> ": ") ct_
               <> ("\n" <> groupInfoText p <> "\n" <> membersStr <> "\nTo approve send:")
@@ -794,7 +792,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       DCListUserGroups ->
         getUserGroupRegs cc user (contactId' ct) >>= \case
           Left e -> sendReply $ "Error reading groups: " <> T.pack e
-          Right gs -> void $ forkIO $ getGroupSummaries gs >>= sendGroupsInfo ct ciId isAdmin
+          Right gs -> sendGroupsInfo ct ciId isAdmin gs
       DCDeleteGroup gId gName ->
         (if isAdmin then withGroupAndReg sendReply else withUserGroupReg) gId gName $ \GroupInfo {groupProfile = GroupProfile {displayName}} GroupReg {dbGroupId} -> do
           delGroupReg cc dbGroupId >>= \case
@@ -959,7 +957,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           where
             msgs = replyMsg :| map foundGroup gs <> [moreMsg | moreGroups > 0]
             replyMsg = (Just ciId, MCText reply)
-            foundGroup (GIS GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}} GroupSummary {currentMembers} _) =
+            foundGroup (GIS GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary = GroupSummary {currentMembers}} _) =
               let membersStr = "_" <> tshow currentMembers <> " members_"
                   showId = if isAdmin then tshow groupId <> ". " else ""
                   text = showId <> groupInfoText p <> "\n" <> membersStr
@@ -1047,11 +1045,11 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           DCListLastGroups count ->
             listLastGroups cc user count >>= \case
               Left e -> sendReply $ "Error reading groups: " <> T.pack e
-              Right gs -> void $ forkIO $ getGroupSummaries gs >>= sendGroupsInfo ct ciId True
+              Right gs -> sendGroupsInfo ct ciId True gs
           DCListPendingGroups count ->
             listPendingGroups cc user count >>= \case
               Left e -> sendReply $ "Error reading groups: " <> T.pack e
-              Right gs -> void $ forkIO $ getGroupSummaries gs >>= sendGroupsInfo ct ciId True
+              Right gs -> sendGroupsInfo ct ciId True gs
           DCSendToGroupOwner groupId gName msg -> do
             let groupRef = groupReference' groupId gName
             withGroupAndReg sendReply groupId gName $ \_ gr@GroupReg {dbContactId = ctId} -> do
@@ -1143,23 +1141,19 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           | otherwise ->
               sendReply $ "Group ID " <> tshow gId <> " has the display name " <> displayName
 
-    getGroupSummaries :: [(GroupInfo, GroupReg)] -> IO [((GroupInfo, GroupReg), Maybe GroupSummary)]
-    getGroupSummaries gs = fromRight (map (,Nothing) gs) <$> withDB' "getGroupSummary" cc (\db -> forM gs $ \g@(GroupInfo {groupId}, _) -> (g,) . Just <$> getGroupSummary db user groupId)
-
-    sendGroupsInfo :: Contact -> ChatItemId -> Bool -> [((GroupInfo, GroupReg), Maybe GroupSummary)] -> IO ()
+    sendGroupsInfo :: Contact -> ChatItemId -> Bool -> [(GroupInfo, GroupReg)] -> IO ()
     sendGroupsInfo ct ciId isAdmin gs = do
       let replyMsg = (Just ciId, MCText $ tshow (length gs) <> " registered group(s)")
       sendComposedMessages_ cc (SRDirect $ contactId' ct) $ replyMsg :| map groupMessage gs
       where
-        groupMessage ((g, gr), summary_) =
-          let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}} = g
+        groupMessage (g, gr) =
+          let GroupInfo {groupId, groupProfile = p@GroupProfile {image = image_}, groupSummary} = g
               GroupReg {userGroupRegId, groupRegStatus} = gr
               useGroupId = if isAdmin then groupId else userGroupRegId
               statusStr = "Status: " <> groupRegStatusText groupRegStatus
-              membersStr = maybe "" (\GroupSummary {currentMembers} -> "_" <> tshow currentMembers <> " members_") summary_
+              membersStr = "_" <> tshow (currentMembers groupSummary) <> " members_"
               cmds = "/'role " <> tshow useGroupId <> "', /'filter " <> tshow useGroupId <> "'"
-              line s = [s | not (T.null s)]
-              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p] ++ line membersStr ++ [statusStr, cmds]
+              text = T.unlines $ [tshow useGroupId <> ". " <> groupInfoText p, membersStr, statusStr, cmds]
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
@@ -1203,10 +1197,6 @@ updateGroupListingFiles cc u dir =
 
 getContact' :: ChatController -> User -> ContactId -> IO (Either String Contact)
 getContact' cc user ctId = withDB "getContact" cc $ \db ->  withExceptT show $ getContact db (vr cc) user ctId
-
-getGroupAndSummary :: ChatController -> User -> GroupId -> IO (Either String (GroupInfo, GroupSummary))
-getGroupAndSummary cc user gId =
-  withDB "getGroupAndSummary" cc $ \db -> withExceptT groupDBError $ (,) <$> getGroupInfo db (vr cc) user gId <*> liftIO (getGroupSummary db user gId)
 
 getGroupLink' :: ChatController -> User -> GroupInfo -> IO (Either String GroupLink)
 getGroupLink' cc user gInfo =

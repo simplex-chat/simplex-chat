@@ -528,7 +528,7 @@ data GroupSummary = GroupSummary
   }
   deriving (Eq, Show)
 
-data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary, groupLink :: Maybe GroupLink}
+data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupLink :: Maybe GroupLink}
   deriving (Show)
 
 data GroupLink = GroupLink

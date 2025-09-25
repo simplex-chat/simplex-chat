@@ -2449,12 +2449,6 @@ export interface GroupInfo {
   viaGroupLinkUri?: string
 }
 
-export interface GroupInfoSummary {
-  groupInfo: GroupInfo
-  groupSummary: GroupSummary
-  groupLink?: GroupLink
-}
-
 export interface GroupLink {
   userContactLinkId: number // int64
   connLinkContact: CreatedConnLink

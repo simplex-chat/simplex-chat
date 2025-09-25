@@ -89,7 +89,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupInfoSummary](#groupinfosummary)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -2151,16 +2150,6 @@ MemberSupport:
 - groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-
-
----
-
-## GroupInfoSummary
-
-**Record type**:
-- groupInfo: [GroupInfo](#groupinfo)
-- groupSummary: [GroupSummary](#groupsummary)
-- groupLink: [GroupLink](#grouplink)?
 
 
 ---

@@ -73,7 +73,6 @@ module Simplex.Chat.Store.Groups
     getBaseGroupDetails,
     getBaseGroupsWithSummary,
     getGroupInfoSummary,
-    getGroupSummary,
     getContactGroupPreferences,
     getGroupInvitation,
     createNewContactMember,
@@ -961,28 +960,8 @@ getBaseGroupsWithSummary db vr user _contactId_ search_ =
 
 getGroupInfoSummary :: DB.Connection -> User -> GroupInfo -> IO GroupInfoSummary
 getGroupInfoSummary db user g@GroupInfo {groupId} = do
-  s <- getGroupSummary db user groupId
   link_ <- eitherToMaybe <$> runExceptT (getGroupLink db user g)
-  pure $ GIS g s link_
-
--- the statuses on non-current members should match memberCurrent' function
-getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
-getGroupSummary db User {userId} groupId = do
-  currentMembers_ <-
-    maybeFirstRow fromOnly $
-      DB.query
-        db
-        [sql|
-          SELECT count (m.group_member_id)
-          FROM groups g
-          JOIN group_members m USING (group_id)
-          WHERE g.user_id = ?
-            AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?,?,?)
-        |]
-        -- This list is consistent with member_current predicate and with update trigger
-        (userId, groupId, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator)
-  pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
+  pure $ GIS g link_
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
 getContactGroupPreferences db User {userId} Contact {contactId} = do

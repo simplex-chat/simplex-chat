@@ -89,9 +89,9 @@ recentRoundedTime roundTo now t
        in Just $ systemToUTCTime $ MkSystemTime secs 0
 
 groupDirectoryEntry :: UTCTime -> GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLink_) =
+groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_) =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
-      entryType = DETGroup memberAdmission summary
+      entryType = DETGroup memberAdmission groupSummary
       entry groupLink =
         let de =
               DirectoryEntry
