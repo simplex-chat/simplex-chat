@@ -102,6 +102,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       profileNameLimit = maxBound,
       captchaGenerator = Nothing,
       directoryLog = Just $ ps </> "directory_service.log",
+      migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
       runCLI = False,
       searchResults = 3,

@@ -93,6 +93,7 @@ CREATE TABLE contacts(
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
   custom_field1 TEXT,
+  custom_field2 INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -158,7 +159,8 @@ CREATE TABLE groups(
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
-  custom_field1 TEXT, -- received
+  custom_field1 TEXT,
+  custom_field2 INTEGER, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -1187,4 +1189,6 @@ CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
 );
 CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 CREATE INDEX idx_contacts_custom_field1 ON contacts(custom_field1);
+CREATE INDEX idx_contacts_custom_field2 ON contacts(custom_field2);
 CREATE INDEX idx_groups_custom_field1 ON groups(custom_field1);
+CREATE INDEX idx_groups_custom_field2 ON groups(custom_field2);

@@ -1628,6 +1628,7 @@ Error:
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatDeleted: bool
 - customField1: string?
+- customField2: int64?
 - customData: JSONObject?
 
 
@@ -2149,6 +2150,7 @@ MemberSupport:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customField1: string?
+- customField2: int64?
 - customData: JSONObject?
 - membersRequireAttention: int
 - viaGroupLinkUri: string?

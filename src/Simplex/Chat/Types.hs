@@ -205,6 +205,7 @@ data Contact = Contact
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
     customField1 :: Maybe Text,
+    customField2 :: Maybe Int64,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -488,6 +489,7 @@ data GroupInfo = GroupInfo
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customField1 :: Maybe Text,
+    customField2 :: Maybe Int64,
     customData :: Maybe CustomData,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact
