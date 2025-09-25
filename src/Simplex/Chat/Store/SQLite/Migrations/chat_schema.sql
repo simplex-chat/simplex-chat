@@ -1,8 +1,7 @@
 CREATE TABLE migrations(
-  name TEXT NOT NULL,
+  name TEXT NOT NULL PRIMARY KEY,
   ts TEXT NOT NULL,
-  down TEXT,
-  PRIMARY KEY(name)
+  down TEXT
 );
 CREATE TABLE contact_profiles(
   -- remote user profile
@@ -92,8 +91,6 @@ CREATE TABLE contacts(
   grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
   grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
   grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
-  custom_field1 TEXT,
-  custom_field2 INTEGER,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -159,8 +156,7 @@ CREATE TABLE groups(
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
-  custom_field1 TEXT,
-  custom_field2 INTEGER, -- received
+  summary_current_members_count INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -728,6 +724,10 @@ CREATE TABLE delivery_jobs(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
+CREATE TABLE group_member_status_predicates(
+  member_status TEXT NOT NULL PRIMARY KEY,
+  current_member INTEGER NOT NULL DEFAULT 0
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1188,7 +1188,38 @@ CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   job_status
 );
 CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
-CREATE INDEX idx_contacts_custom_field1 ON contacts(custom_field1);
-CREATE INDEX idx_contacts_custom_field2 ON contacts(custom_field2);
-CREATE INDEX idx_groups_custom_field1 ON groups(custom_field1);
-CREATE INDEX idx_groups_custom_field2 ON groups(custom_field2);
+CREATE INDEX idx_groups_summary_current_members_count ON groups(
+  summary_current_members_count
+);
+CREATE TRIGGER on_group_members_insert_update_summary
+AFTER INSERT ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+BEGIN
+  UPDATE groups
+  SET summary_current_members_count = summary_current_members_count + 1
+  WHERE group_id = NEW.group_id;
+END;
+CREATE TRIGGER on_group_members_delete_update_summary
+AFTER DELETE ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+BEGIN
+  UPDATE groups
+  SET summary_current_members_count = summary_current_members_count - 1
+  WHERE group_id = OLD.group_id;
+END;
+CREATE TRIGGER on_group_members_update_update_summary
+AFTER UPDATE ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+     != EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+BEGIN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (
+          CASE WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+          THEN 1 ELSE -1 END
+        )
+    WHERE group_id = NEW.group_id;
+END;

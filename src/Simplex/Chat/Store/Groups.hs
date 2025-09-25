@@ -148,7 +148,6 @@ module Simplex.Chat.Store.Groups
     updateUnknownMemberAnnounced,
     updateUserMemberProfileSentAt,
     setGroupCustomData,
-    setGroupCustomFields,
     setGroupUIThemes,
     updateGroupChatTags,
     getGroupChatTags,
@@ -365,8 +364,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
-          customField1 = Nothing,
-          customField2 = Nothing,
+          groupSummary = GroupSummary 1,
           customData = Nothing,
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing
@@ -441,8 +439,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
-                  customField1 = Nothing,
-                  customField2 = Nothing,
+                  groupSummary = GroupSummary 2,
                   customData = Nothing,
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing
@@ -981,9 +978,10 @@ getGroupSummary db User {userId} groupId = do
           JOIN group_members m USING (group_id)
           WHERE g.user_id = ?
             AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?)
+            AND m.member_status NOT IN (?,?,?,?,?,?,?)
         |]
-        (userId, groupId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
+        -- This list is consistent with member_current predicate and with update trigger
+        (userId, groupId, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, GSMemCreator)
   pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
@@ -1907,7 +1905,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
             g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_field1, g.custom_field2, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+            g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2606,8 +2604,6 @@ createMemberContact
           chatItemTTL = Nothing,
           uiThemes = Nothing,
           chatDeleted = False,
-          customField1 = Nothing,
-          customField2 = Nothing,
           customData = Nothing
         }
 
@@ -2856,11 +2852,6 @@ setGroupCustomData :: DB.Connection -> User -> GroupInfo -> Maybe CustomData -> 
 setGroupCustomData db User {userId} GroupInfo {groupId} customData = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET custom_data = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (customData, updatedAt, userId, groupId)
-
-setGroupCustomFields :: DB.Connection -> User -> GroupInfo -> Maybe Text -> Maybe Int64 -> Maybe CustomData -> IO ()
-setGroupCustomFields db User {userId} GroupInfo {groupId} customField1 customField2 customData = do
-  updatedAt <- getCurrentTime
-  DB.execute db "UPDATE groups SET custom_data = ?, custom_field1 = ?, custom_field2 = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (customData, customField1, customField2, updatedAt, userId, groupId)
 
 setGroupUIThemes :: DB.Connection -> User -> GroupInfo -> Maybe UIThemeEntityOverrides -> IO ()
 setGroupUIThemes db User {userId} GroupInfo {groupId} uiThemes = do

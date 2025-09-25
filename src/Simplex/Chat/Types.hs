@@ -204,8 +204,6 @@ data Contact = Contact
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     chatDeleted :: Bool,
-    customField1 :: Maybe Text,
-    customField2 :: Maybe Int64,
     customData :: Maybe CustomData
   }
   deriving (Eq, Show)
@@ -488,9 +486,8 @@ data GroupInfo = GroupInfo
     chatTags :: [ChatTagId],
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
-    customField1 :: Maybe Text,
-    customField2 :: Maybe Int64,
     customData :: Maybe CustomData,
+    groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact
   }
@@ -527,9 +524,9 @@ groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
 data GroupSummary = GroupSummary
-  { currentMembers :: Int
+  { currentMembers :: Int64
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary, groupLink :: Maybe GroupLink}
   deriving (Show)
@@ -1244,7 +1241,9 @@ memberPending m = case memberStatus m of
 memberCurrentOrPending :: GroupMember -> Bool
 memberCurrentOrPending m = memberCurrent m || memberPending m
 
--- update getGroupSummary if this is changed
+-- *** Please note:
+-- *** update getGroupSummary and SQL function used in update triggers if this is changed
+-- ***
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
   GSMemRejected -> False
@@ -2083,11 +2082,11 @@ $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
+$(JQ.deriveJSON defaultJSON ''GroupSummary)
+
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
-
-$(JQ.deriveJSON defaultJSON ''GroupSummary)
 
 $(JQ.deriveJSON defaultJSON ''GroupLink)
 

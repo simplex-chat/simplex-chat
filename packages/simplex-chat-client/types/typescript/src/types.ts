@@ -1879,8 +1879,6 @@ export interface Contact {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   chatDeleted: boolean
-  customField1?: string
-  customField2?: number // int64
   customData?: object
 }
 
@@ -2445,9 +2443,8 @@ export interface GroupInfo {
   chatTags: number[] // int64
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
-  customField1?: string
-  customField2?: number // int64
   customData?: object
+  groupSummary: GroupSummary
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
 }
@@ -2609,7 +2606,7 @@ export interface GroupShortLinkData {
 }
 
 export interface GroupSummary {
-  currentMembers: number // int
+  currentMembers: number // int64
 }
 
 export interface GroupSupportChat {

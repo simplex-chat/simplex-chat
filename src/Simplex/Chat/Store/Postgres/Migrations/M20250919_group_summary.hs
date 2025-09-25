@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20250919_custom_fields where
+module Simplex.Chat.Store.Postgres.Migrations.M20250919_group_summary where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
-m20250919_custom_fields :: Text
-m20250919_custom_fields =
+m20250919_group_summary :: Text
+m20250919_group_summary =
   T.pack
     [r|
 ALTER TABLE contacts
@@ -23,8 +23,8 @@ CREATE INDEX idx_groups_custom_field1 ON groups(custom_field1);
 CREATE INDEX idx_groups_custom_field2 ON groups(custom_field2);
 |]
 
-down_m20250919_custom_fields :: Text
-down_m20250919_custom_fields =
+down_m20250919_group_summary :: Text
+down_m20250919_group_summary =
   T.pack
     [r|
 DROP INDEX idx_contacts_custom_field1;

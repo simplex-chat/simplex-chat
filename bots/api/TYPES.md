@@ -1627,8 +1627,6 @@ Error:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - chatDeleted: bool
-- customField1: string?
-- customField2: int64?
 - customData: JSONObject?
 
 
@@ -2149,9 +2147,8 @@ MemberSupport:
 - chatTags: [int64]
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
-- customField1: string?
-- customField2: int64?
 - customData: JSONObject?
+- groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
 
@@ -2356,7 +2353,7 @@ Known:
 ## GroupSummary
 
 **Record type**:
-- currentMembers: int
+- currentMembers: int64
 
 
 ---
