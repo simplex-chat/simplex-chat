@@ -2628,25 +2628,10 @@ object ChatController {
           }
         }
       }
-      // ContactsSubscribed, ContactsDisconnected and ContactSubSummary are only used in CLI,
+      // ContactsSubscribed, ContactsDisconnected are only used in CLI,
       // They have to be used here for remote desktop to process these status updates.
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
-      is CR.ContactSubSummary -> {
-        for (sub in r.contactSubscriptions) {
-          if (active(r.user)) {
-            withContext(Dispatchers.Main) {
-              chatModel.chatsContext.updateContact(rhId, sub.contact)
-            }
-          }
-          val err = sub.contactError
-          if (err == null) {
-            chatModel.setContactNetworkStatus(sub.contact, NetworkStatus.Connected())
-          } else {
-            processContactSubError(sub.contact, sub.contactError)
-          }
-        }
-      }
       is CR.NetworkStatusResp -> {
         for (cId in r.connections) {
           chatModel.networkStatuses[cId] = r.networkStatus
@@ -3378,21 +3363,6 @@ object ChatController {
     for (c in contactRefs) {
       chatModel.networkStatuses[c.agentConnId] = status
     }
-  }
-
-  private fun processContactSubError(contact: Contact, chatError: ChatError) {
-    val e = chatError
-    val err: String =
-      if (e is ChatError.ChatErrorAgent) {
-        val a = e.agentError
-        when {
-          a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
-          a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
-          else -> e.string
-        }
-      }
-      else e.string
-    chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
   suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
@@ -6202,7 +6172,6 @@ sealed class CR {
   // TODO remove below
   @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
-  @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val user: UserRef, val contactSubscriptions: List<ContactSubStatus>): CR()
   // TODO remove above
   @Serializable @SerialName("networkStatus") class NetworkStatusResp(val networkStatus: NetworkStatus, val connections: List<String>): CR()
   @Serializable @SerialName("networkStatuses") class NetworkStatuses(val user_: UserRef?, val networkStatuses: List<ConnNetworkStatus>): CR()
@@ -6389,7 +6358,6 @@ sealed class CR {
     is GroupMemberUpdated -> "groupMemberUpdated"
     is ContactsSubscribed -> "contactsSubscribed"
     is ContactsDisconnected -> "contactsDisconnected"
-    is ContactSubSummary -> "contactSubSummary"
     is NetworkStatusResp -> "networkStatus"
     is NetworkStatuses -> "networkStatuses"
     is ChatInfoUpdated -> "chatInfoUpdated"
@@ -6567,7 +6535,6 @@ sealed class CR {
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
-    is ContactSubSummary -> withUser(user, json.encodeToString(contactSubscriptions))
     is NetworkStatusResp -> "networkStatus $networkStatus\nconnections: $connections"
     is NetworkStatuses -> withUser(user_, json.encodeToString(networkStatuses))
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))

@@ -82,6 +82,7 @@ library
       Simplex.Chat.Store.Profiles
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
+      Simplex.Chat.Store.Subscription
       Simplex.Chat.Styled
       Simplex.Chat.Types
       Simplex.Chat.Types.Preferences

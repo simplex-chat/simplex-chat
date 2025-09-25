@@ -177,8 +177,8 @@ undocumentedEvents =
     "CEvtContactsDisconnected",
     "CEvtContactsMerged",
     "CEvtContactsSubscribed",
-    "CEvtContactSubError",
-    "CEvtContactSubSummary",
+    "CEvtConnSubError",
+    "CEvtConnSubSummary",
     "CEvtContactSwitch",
     "CEvtCustomChatEvent",
     "CEvtGroupMemberRatchetSync",
@@ -211,6 +211,5 @@ undocumentedEvents =
     "CEvtUnknownMemberAnnounced",
     "CEvtUnknownMemberBlocked",
     "CEvtUnknownMemberCreated",
-    "CEvtUserAcceptedGroupSent", -- repeat group invitation after it was accepted by the user
-    "CEvtUserContactSubSummary"
+    "CEvtUserAcceptedGroupSent" -- repeat group invitation after it was accepted by the user
   ]
