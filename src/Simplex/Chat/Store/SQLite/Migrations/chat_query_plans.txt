@@ -2937,7 +2937,7 @@ Query:
         SELECT agent_conn_id, connection_id
         FROM connections
         WHERE user_id = ?
-      
+       
         AND conn_type = ?
         AND contact_id IS NULL
         AND conn_status != ?
@@ -2949,7 +2949,7 @@ Query:
         SELECT agent_conn_id, connection_id
         FROM connections
         WHERE user_id = ?
-       AND to_subscribe = 1
+       AND to_subscribe = 1 
         AND conn_type = ?
         AND contact_id IS NULL
         AND conn_status != ?
@@ -2962,7 +2962,7 @@ Query:
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
         WHERE c.user_id = ?
-      
+       
         AND c.conn_status != ?
         AND ct.contact_status = ? AND ct.deleted = 0
       
@@ -2975,7 +2975,7 @@ Query:
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
         WHERE c.user_id = ?
-       AND c.to_subscribe = 1
+       AND c.to_subscribe = 1 
         AND c.conn_status != ?
         AND ct.contact_status = ? AND ct.deleted = 0
       
@@ -2990,7 +2990,7 @@ Query:
         JOIN groups g ON g.group_id = m.group_id
         JOIN group_members mu ON mu.group_id = g.group_id
         WHERE c.user_id = ?
-      
+       
         AND c.conn_status != ?
         AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
         AND m.member_status NOT IN (?,?,?)
@@ -3008,7 +3008,7 @@ Query:
         JOIN groups g ON g.group_id = m.group_id
         JOIN group_members mu ON mu.group_id = g.group_id
         WHERE c.user_id = ?
-       AND c.to_subscribe = 1
+       AND c.to_subscribe = 1 
         AND c.conn_status != ?
         AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
         AND m.member_status NOT IN (?,?,?)
@@ -3024,7 +3024,7 @@ Query:
         FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
-       AND c.conn_status != ?
+        AND c.conn_status != ?
 Plan:
 SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
@@ -3034,7 +3034,7 @@ Query:
         FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
-       AND c.to_subscribe = 1 AND c.conn_status != ?
+       AND c.to_subscribe = 1  AND c.conn_status != ?
 Plan:
 SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
 SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
