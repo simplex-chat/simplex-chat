@@ -263,28 +263,6 @@ Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_server_operator_id (server_operator_id=?)
 
 Query: 
-              SELECT g.local_display_name, mu.member_status
-              FROM groups g
-              JOIN group_members mu ON mu.group_id = g.group_id
-              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-                AND mu.member_status NOT IN (?,?,?)
-          
-Plan:
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-
-Query: 
-              SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
-              FROM group_members m
-              JOIN connections c ON c.group_member_id = m.group_member_id
-              WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                AND m.member_status NOT IN (?,?,?)
-          
-Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
-SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?)
-
-Query: 
               SELECT timed_ttl
               FROM chat_items
               WHERE user_id = ? AND contact_id = ? AND item_status = ? AND chat_item_id = ? AND timed_ttl IS NOT NULL AND timed_delete_at IS NULL
@@ -626,7 +604,7 @@ Query:
             WHERE user_id = ? AND short_link_inv = ? LIMIT 1
           
 Plan:
-SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
+SEARCH connections USING INDEX idx_connections_conn_type (user_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
@@ -1412,7 +1390,7 @@ Query:
           )
         
 Plan:
-SEARCH connections USING INDEX idx_connections_updated_at (user_id=?)
+SEARCH connections USING INDEX idx_connections_conn_type (user_id=?)
 LIST SUBQUERY 1
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -2956,6 +2934,112 @@ Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id=? AND item_status=?)
 
 Query: 
+        SELECT agent_conn_id, connection_id
+        FROM connections
+        WHERE user_id = ?
+      
+        AND conn_type = ?
+        AND contact_id IS NULL
+        AND conn_status != ?
+      
+Plan:
+SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
+
+Query: 
+        SELECT agent_conn_id, connection_id
+        FROM connections
+        WHERE user_id = ?
+       AND to_subscribe = 1
+        AND conn_type = ?
+        AND contact_id IS NULL
+        AND conn_status != ?
+      
+Plan:
+SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
+
+Query: 
+        SELECT c.agent_conn_id, c.connection_id
+        FROM connections c
+        JOIN contacts ct ON ct.contact_id = c.contact_id
+        WHERE c.user_id = ?
+      
+        AND c.conn_status != ?
+        AND ct.contact_status = ? AND ct.deleted = 0
+      
+Plan:
+SEARCH c USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT c.agent_conn_id, c.connection_id
+        FROM connections c
+        JOIN contacts ct ON ct.contact_id = c.contact_id
+        WHERE c.user_id = ?
+       AND c.to_subscribe = 1
+        AND c.conn_status != ?
+        AND ct.contact_status = ? AND ct.deleted = 0
+      
+Plan:
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
+SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT c.agent_conn_id, c.connection_id
+        FROM connections c
+        JOIN group_members m ON m.group_member_id = c.group_member_id
+        JOIN groups g ON g.group_id = m.group_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE c.user_id = ?
+      
+        AND c.conn_status != ?
+        AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
+        AND m.member_status NOT IN (?,?,?)
+      
+Plan:
+SEARCH c USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+
+Query: 
+        SELECT c.agent_conn_id, c.connection_id
+        FROM connections c
+        JOIN group_members m ON m.group_member_id = c.group_member_id
+        JOIN groups g ON g.group_id = m.group_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE c.user_id = ?
+       AND c.to_subscribe = 1
+        AND c.conn_status != ?
+        AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
+        AND m.member_status NOT IN (?,?,?)
+      
+Plan:
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
+
+Query: 
+        SELECT c.agent_conn_id, c.connection_id
+        FROM connections c
+        JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
+        WHERE c.user_id = ?
+       AND c.conn_status != ?
+Plan:
+SEARCH c USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT c.agent_conn_id, c.connection_id
+        FROM connections c
+        JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
+        WHERE c.user_id = ?
+       AND c.to_subscribe = 1 AND c.conn_status != ?
+Plan:
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
+SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
           c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -2980,20 +3064,6 @@ Query:
 Plan:
 SEARCH uc USING INDEX sqlite_autoindex_user_contact_links_1 (user_id=? AND local_display_name=?)
 SEARCH c USING INDEX idx_connections_user_contact_link_id (user_contact_link_id=?)
-
-Query: 
-        SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
-          c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-          c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version,
-          uc.user_contact_link_id, uc.conn_req_contact, uc.group_id
-        FROM connections c
-        JOIN user_contact_links uc ON c.user_contact_link_id = uc.user_contact_link_id
-        WHERE c.user_id = ? AND uc.user_id = ?
-      
-Plan:
-SEARCH c USING INDEX idx_connections_updated_at (user_id=?)
-SEARCH uc USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT chat_item_id
@@ -3178,16 +3248,6 @@ Query:
       
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
-        FROM connections
-        WHERE user_id = ?
-          AND conn_type = ?
-          AND contact_id IS NULL
-      
-Plan:
-SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
 
 Query: 
         SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
@@ -5696,7 +5756,7 @@ SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
-SEARCH connections USING COVERING INDEX idx_connections_group_member (user_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH files USING COVERING INDEX idx_files_user_id (user_id=?)
 SEARCH group_members USING COVERING INDEX idx_group_members_user_id (user_id=?)
 SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_2 (user_id=?)
@@ -5868,10 +5928,6 @@ Query: SELECT agent_conn_id FROM connections WHERE user_id = ? AND conn_req_inv 
 Plan:
 SEARCH connections USING INDEX idx_connections_conn_req_inv (user_id=? AND conn_req_inv=?)
 
-Query: SELECT agent_conn_id FROM connections where to_subscribe = 1
-Plan:
-SEARCH connections USING INDEX idx_connections_to_subscribe (to_subscribe=?)
-
 Query: SELECT app_settings FROM app_settings
 Plan:
 SCAN app_settings
@@ -5991,10 +6047,6 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT group_id FROM groups WHERE inv_queue_info = ? AND user_id = ? LIMIT 1
 Plan:
 SEARCH groups USING INDEX idx_groups_chat_ts (user_id=?)
-
-Query: SELECT group_id FROM groups WHERE user_id = ?
-Plan:
-SEARCH groups USING COVERING INDEX sqlite_autoindex_groups_2 (user_id=?)
 
 Query: SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0 OR chat_item_ttl IS NULL
 Plan:
@@ -6132,9 +6184,9 @@ Query: UPDATE connections SET security_code = ?, security_code_verified_at = ?, 
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE connections SET to_subscribe = 0 WHERE to_subscribe = 1
+Query: UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1
 Plan:
-SEARCH connections USING INDEX idx_connections_to_subscribe (to_subscribe=?)
+SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
 
 Query: UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?
 Plan:
