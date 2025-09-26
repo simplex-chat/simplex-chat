@@ -71,7 +71,7 @@ directoryServiceTests = do
   describe "member admission" $ do
     it "should ask member to pass captcha screen" testCapthaScreening
   describe "store log" $ do
-    xit "should restore directory service state" testRestoreDirectory
+    it "should restore directory service state" testRestoreDirectory
   describe "captcha" $ do
     it "should accept some incorrect spellings" testCaptcha
 

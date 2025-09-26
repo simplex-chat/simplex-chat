@@ -36,9 +36,6 @@ CREATE TABLE sx_directory_group_regs(
   owner_member_id INTEGER REFERENCES group_members(group_member_id) ON UPDATE RESTRICT ON DELETE CASCADE,
   group_reg_status TEXT NOT NULL,
   group_promoted INTEGER NOT NULL,
-  acceptance_reject_names TEXT, -- reject long names and names with profanity
-  acceptance_pass_captcha TEXT, -- run captcha challenge with joining members
-  acceptance_make_observer TEXT, -- the role assigned in the end, after captcha challenge
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );

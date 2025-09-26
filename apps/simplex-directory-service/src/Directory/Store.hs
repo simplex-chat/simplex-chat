@@ -11,11 +11,11 @@
 
 module Directory.Store
   ( DirectoryStore (..),
+    GroupReg (..),
     GroupRegStatus (..),
     UserGroupRegId,
     GroupApprovalId,
-    GroupReg (..),
-    LegacyDirectoryGroupData (..),
+    DirectoryGroupData (..),
     DirectoryMemberAcceptance (..),
     DirectoryStatus (..),
     ProfileCondition (..),
@@ -43,8 +43,8 @@ module Directory.Store
     groupRegStatusText,
     pendingApproval,
     groupRemoved,
-    legacyFromCustomData,
-    legacyToCustomData,
+    fromCustomData,
+    toCustomData,
     noJoinFilter,
     basicJoinFilter,
     moderateJoinFilter,
@@ -63,9 +63,7 @@ import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
-import Data.Aeson (FromJSON (..), ToJSON (..), (.:), (.=))
-import qualified Data.Aeson as J
-import qualified Data.Aeson.Encoding as JE
+import Data.Aeson ((.:), (.=))
 import qualified Data.Aeson.KeyMap as JM
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Aeson.Types as JT
@@ -93,10 +91,10 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), blobFieldDecoder, fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), blobFieldDecoder)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, taggedObjectJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
 import Simplex.Messaging.Util (firstRow, ifM, maybeFirstRow')
 import System.Directory
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
@@ -130,11 +128,10 @@ data GroupReg = GroupReg
     dbOwnerMemberId :: Maybe GroupMemberId,
     groupRegStatus :: GroupRegStatus,
     promoted :: Bool,
-    memberAcceptance :: DirectoryMemberAcceptance,
     createdAt :: UTCTime
   }
 
-data LegacyDirectoryGroupData = LegacyDirectoryGroupData
+data DirectoryGroupData = DirectoryGroupData
   { memberAcceptance :: DirectoryMemberAcceptance
   }
 
@@ -151,26 +148,6 @@ data DirectoryMemberAcceptance = DirectoryMemberAcceptance
   deriving (Eq, Show)
 
 data ProfileCondition = PCAll | PCNoImage deriving (Eq, Show)
-
-instance TextEncoding ProfileCondition where
-  textEncode = \case
-    PCAll -> "all"
-    PCNoImage -> "noImage"
-  textDecode = \case
-    "all" -> Just PCAll
-    "noImage" -> Just PCNoImage
-    _ -> Nothing
-
-instance ToField ProfileCondition where toField = toField . textEncode
-
-instance FromField ProfileCondition where fromField = fromTextField_ textDecode
-
-instance ToJSON ProfileCondition where
-  toJSON = J.String . textEncode
-  toEncoding = JE.text . textEncode
-
-instance FromJSON ProfileCondition where
-  parseJSON = J.withText "ProfileCondition" $ maybe (fail "bad ProfileCondition") pure . textDecode
 
 noJoinFilter :: DirectoryMemberAcceptance
 noJoinFilter = DirectoryMemberAcceptance Nothing Nothing Nothing
@@ -246,19 +223,19 @@ grDirectoryStatus = \case
   GRSRemoved -> DSRemoved
   _ -> DSRegistered
 
-$(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "GRS") ''GroupRegStatus)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "PC") ''ProfileCondition)
 
 $(JQ.deriveJSON defaultJSON ''DirectoryMemberAcceptance)
 
-$(JQ.deriveJSON defaultJSON ''LegacyDirectoryGroupData)
+$(JQ.deriveJSON defaultJSON ''DirectoryGroupData)
 
-legacyFromCustomData :: Maybe CustomData -> LegacyDirectoryGroupData
-legacyFromCustomData cd_ =
+fromCustomData :: Maybe CustomData -> DirectoryGroupData
+fromCustomData cd_ =
   let memberAcceptance = fromMaybe noJoinFilter $ cd_ >>= \(CustomData o) -> JT.parseMaybe (.: "memberAcceptance") o
-   in LegacyDirectoryGroupData {memberAcceptance}
+   in DirectoryGroupData {memberAcceptance}
 
-legacyToCustomData :: LegacyDirectoryGroupData -> CustomData
-legacyToCustomData LegacyDirectoryGroupData {memberAcceptance} =
+toCustomData :: DirectoryGroupData -> CustomData
+toCustomData DirectoryGroupData {memberAcceptance} =
   CustomData $ JM.fromList ["memberAcceptance" .= memberAcceptance]
 
 addGroupRegStore :: ChatController -> Contact -> GroupInfo -> GroupRegStatus -> IO (Either String GroupReg)
@@ -268,26 +245,20 @@ addGroupRegStore cc Contact {contactId = dbContactId} GroupInfo {groupId = dbGro
     maxUgrId <-
       maybeFirstRow' 0 (fromMaybe 0 . fromOnly) $
         DB.query db "SELECT MAX(user_group_reg_id) FROM sx_directory_group_regs WHERE contact_id = ?" (Only dbContactId)
-    let memberAcceptance = DirectoryMemberAcceptance Nothing Nothing Nothing
-        gr = GroupReg {dbGroupId, userGroupRegId = maxUgrId + 1, dbContactId, dbOwnerMemberId = Nothing, groupRegStatus, promoted = False, memberAcceptance, createdAt}
+    let gr = GroupReg {dbGroupId, userGroupRegId = maxUgrId + 1, dbContactId, dbOwnerMemberId = Nothing, groupRegStatus, promoted = False, createdAt}
     insertGroupReg db gr
     pure gr
 
 insertGroupReg :: DB.Connection -> GroupReg -> IO ()
-insertGroupReg db GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, memberAcceptance, createdAt} = do
-  let DirectoryMemberAcceptance {rejectNames, passCaptcha, makeObserver} = memberAcceptance
+insertGroupReg db GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt} = do
   DB.execute
     db
     [sql|
       INSERT INTO sx_directory_group_regs
-        ( group_id, user_group_reg_id, contact_id, owner_member_id, group_reg_status, group_promoted,
-          acceptance_reject_names, acceptance_pass_captcha, acceptance_make_observer, created_at, created_at
-        )
-      VALUES (?,?,?,?,?,?, ?,?,?,?,?)
+        (group_id, user_group_reg_id, contact_id, owner_member_id, group_reg_status, group_promoted, created_at, created_at)
+      VALUES (?,?,?,?,?,?,?,?)
     |]
-    ( (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted)
-        :. (rejectNames, passCaptcha, makeObserver, createdAt, createdAt)
-    )
+    (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt, createdAt)
 
 delGroupReg :: ChatController -> GroupId -> IO (Either String ())
 delGroupReg cc gId =
@@ -345,8 +316,7 @@ getGroupReg_ db gId =
     DB.query
       db
       [sql|
-        SELECT group_id, user_group_reg_id, contact_id, owner_member_id, group_reg_status, group_promoted,
-          acceptance_reject_names, acceptance_pass_captcha, acceptance_make_observer, created_at
+        SELECT group_id, user_group_reg_id, contact_id, owner_member_id, group_reg_status, group_promoted, created_at
         FROM sx_directory_group_regs
         WHERE group_id = ?
       |]
@@ -464,26 +434,17 @@ toGroupInfoReg :: VersionRangeChat -> User -> (GroupInfoRow :. GroupRegRow) -> (
 toGroupInfoReg vr' User {userContactId} (groupRow :. grRow) =
   (toGroupInfo vr' userContactId [] groupRow, rowToGroupReg grRow)
 
-type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, Maybe ProfileCondition, Maybe ProfileCondition, Maybe ProfileCondition, UTCTime)
+type GroupRegRow = (GroupId, UserGroupRegId, ContactId, Maybe GroupMemberId, GroupRegStatus, BoolInt, UTCTime)
 
 rowToGroupReg :: GroupRegRow -> GroupReg
-rowToGroupReg (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, BI promoted, rejectNames, passCaptcha, makeObserver, createdAt) =
-  let memberAcceptance = DirectoryMemberAcceptance {rejectNames, passCaptcha, makeObserver}
-   in GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, memberAcceptance, createdAt}
+rowToGroupReg (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, BI promoted, createdAt) =
+  GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt}
 
 groupReqQuery :: Query
 groupReqQuery = groupInfoQueryFields <> groupRegFields <> groupInfoQueryFrom <> groupRegFromCond
   where
-    groupRegFields =
-      [sql|
-        , r.group_id, r.user_group_reg_id, r.contact_id, r.owner_member_id, r.group_reg_status, r.group_promoted,
-        r.acceptance_reject_names, r.acceptance_pass_captcha, r.acceptance_make_observer, r.created_at
-      |]
-    groupRegFromCond =
-      [sql|
-        JOIN sx_directory_group_regs r ON r.group_id = g.group_id
-        WHERE g.user_id = ? AND mu.contact_id = ?
-      |]
+    groupRegFields = ", r.group_id, r.user_group_reg_id, r.contact_id, r.owner_member_id, r.group_reg_status, r.group_promoted, r.created_at "
+    groupRegFromCond = " JOIN sx_directory_group_regs r ON r.group_id = g.group_id WHERE g.user_id = ? AND mu.contact_id = ? "
 
 data DirectoryLogRecord
   = GRCreate GroupReg
@@ -565,9 +526,8 @@ instance StrEncoding GroupReg where
     dbOwnerMemberId <- "owner_member_id=" *> strP_
     groupRegStatus <- "status=" *> strP
     promoted <- (" promoted=" *> strP) <|> pure False
-    let memberAcceptance = DirectoryMemberAcceptance Nothing Nothing Nothing
-        createdAt = UTCTime systemEpochDay 0
-    pure GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, memberAcceptance, createdAt}
+    let createdAt = UTCTime systemEpochDay 0
+    pure GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt}
 
 instance StrEncoding GroupRegStatus where
   strEncode = \case

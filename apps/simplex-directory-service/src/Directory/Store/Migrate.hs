@@ -8,7 +8,6 @@
 module Directory.Store.Migrate where
 
 import Control.Monad
-import Control.Monad.Except
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
 import Data.Time.Clock (getCurrentTime)
@@ -18,8 +17,6 @@ import Simplex.Chat (createChatDatabase)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store.Groups (getGroupInfo, setGroupCustomData)
 import Simplex.Chat.Store.Profiles (getUsers)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common
@@ -76,17 +73,11 @@ importLogToDB :: DirectoryOpts -> IO ()
 importLogToDB opts = withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
   v_ <- withTransaction st getStoreVersion
   forM_ v_ $ \v -> when (v >= versionNoLog) $ exit $ "directory version is already " ++ show v
-  withActiveUser st $ \user -> withTransaction st $ \db -> do
-    readDirectoryData logFile >>= mapM_ (importGroupRegistration db user)
+  withActiveUser st $ \_ -> withTransaction st $ \db -> do
+    -- TODO verify that group owner contact and member IDs are correct
+    readDirectoryData logFile >>= mapM_ (insertGroupReg db)
     renamePath logFile (logFile ++ ".bak")
     setStoreVersion db versionNoLog
-  where
-    importGroupRegistration db user gr@GroupReg {dbGroupId} = do
-      GroupInfo {customData, createdAt} <- either (exit . show) pure =<< runExceptT (getGroupInfo db supportedChatVRange user dbGroupId)
-      let LegacyDirectoryGroupData {memberAcceptance} = legacyFromCustomData customData
-          gr' = gr {memberAcceptance, createdAt}
-      -- TODO verify that group owner contact and member IDs are correct
-      insertGroupReg db gr'
 
 exit :: String -> IO a
 exit err = putStrLn ("Error: " <> err) >> exitFailure
@@ -98,11 +89,8 @@ exportDBToLog opts =
     withActiveUser st $ \user -> withTransaction st getStoreVersion >>= \case
       Just v | v >= versionNoLog -> withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
         gs <- getAllGroupRegs_ db user
-        forM_ gs $ \(g, gr@GroupReg {memberAcceptance}) -> do
-          B.hPutStrLn h $ strEncode $ GRCreate gr
-          let gData = LegacyDirectoryGroupData {memberAcceptance}
-          -- TODO verify that group owner contact and member IDs are correct
-          setGroupCustomData db user g $ Just (legacyToCustomData gData)
+        -- TODO verify that group owner contact and member IDs are correct
+        mapM_ (B.hPutStrLn h . strEncode . GRCreate . snd) gs
       v_ -> exit $ "directory version is " ++ maybe "not set" show v_ ++  ", it cannot be exported to store log"
 
 checkDBStoreLog :: DirectoryOpts -> IO ()

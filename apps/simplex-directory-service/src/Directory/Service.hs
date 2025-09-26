@@ -262,7 +262,7 @@ acceptMemberHook
             when (hasBlockedWords blockedWordsCfg displayName) $ throwError GRRBlockedName
 
 groupMemberAcceptance :: GroupInfo -> DirectoryMemberAcceptance
-groupMemberAcceptance GroupInfo {customData} = (\LegacyDirectoryGroupData {memberAcceptance = ma} -> ma) $ legacyFromCustomData customData
+groupMemberAcceptance GroupInfo {customData} = (\DirectoryGroupData {memberAcceptance = ma} -> ma) $ fromCustomData customData
 
 useMemberFilter :: Maybe ImageData -> Maybe ProfileCondition -> Bool
 useMemberFilter img_ = \case
@@ -352,11 +352,9 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               DSRemoved -> duplicateGroup groups
 
     processInvitation :: Contact -> GroupInfo -> Maybe GroupReg -> IO ()
-    processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} gr_ = do
-      print $ "*** processInvitation " <> show groupId
-      case gr_ of
-        Nothing -> addGroupReg notifyAdminUsers st cc ct g GRSProposed joinGroup
-        Just _ -> setGroupStatus notifyAdminUsers st env cc groupId GRSProposed joinGroup
+    processInvitation ct g@GroupInfo {groupId, groupProfile = GroupProfile {displayName}} = \case
+      Nothing -> addGroupReg notifyAdminUsers st cc ct g GRSProposed joinGroup
+      Just _gr -> setGroupStatus notifyAdminUsers st env cc groupId GRSProposed joinGroup
       where
         joinGroup _ = do
           r <- sendChatCmd cc $ APIJoinGroup groupId MFNone
@@ -824,8 +822,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               a = groupMemberAcceptance g
           case acceptance_ of
             Just a' | a /= a' -> do
-              -- TODO this will break group, save full data
-              let d = legacyToCustomData $ LegacyDirectoryGroupData a'
+              let d = toCustomData $ DirectoryGroupData a'
               withDB' "setGroupCustomData" cc (\db -> setGroupCustomData db user g $ Just d) >>= \case
                 Right () -> sendSettigns n a' " set to"
                 Left e -> sendReply $ "Error changing spam filter settings for group " <> n <> ": " <> T.pack e
@@ -922,23 +919,6 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               updateSearchRequest searchType $ last gs
               sendFoundGroups (replyStr gs n) gs moreGroups
             Left e -> sendReply $ "Error: searchListedGroups. Please notify the developers.\n" <> T.pack e
-        -- sendSearchResults s (gs, n) = do
-        --   let moreGroups = n - length gs
-        --       more = if moreGroups > 0 then ", sending top " <> tshow (length gs) else ""
-        --       reply = "Found " <> tshow n <> " group(s)" <> more <> "."
-        --   updateSearchRequest (STSearch s) gs
-        --   sendFoundGroups reply gs moreGroups
-        -- sendAllGroups sortName searchType (gs, n) = do
-        --   let moreGroups = n - length gs
-        --       more = if moreGroups > 0 then ", sending " <> sortName <> " " <> tshow (length gs) else ""
-        --       reply = tshow n <> " group(s) listed" <> more <> "."
-        --   updateSearchRequest searchType gs
-        --   sendFoundGroups reply gs moreGroups
-        -- sendNextSearchResults searchType (gs, n) = do
-        --   let moreGroups = n - length gs
-        --       reply = "Sending " <> tshow (length gs) <> " more group(s)."
-        --   updateSearchRequest searchType gs
-        --   sendFoundGroups reply gs moreGroups
         allGroupsReply sortName gs n =
           let more = if n > length gs then ", sending " <> sortName <> " " <> tshow (length gs) else ""
            in tshow n <> " group(s) listed" <> more <> "."
