@@ -99,7 +99,7 @@ getPendingConnsToSub db User {userId} filterToSubscribe =
   M.fromList <$> DB.query db query (userId, ConnContact, ConnDeleted)
   where
     query
-      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1" <> cond
+      | filterToSubscribe = baseQuery <> " AND to_subscribe = 1" <> cond
       | otherwise = baseQuery <> cond
     baseQuery =
       [sql|
