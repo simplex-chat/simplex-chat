@@ -2327,15 +2327,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 _ = m.upsertGroupMember(groupInfo, toMember)
             }
         }
-    case let .contactsMerged(user, intoContact, mergedContact):
-        if active(user) && m.hasChat(mergedContact.id) {
-            await MainActor.run {
-                if m.chatId == mergedContact.id {
-                    ItemsModel.shared.loadOpenChat(mergedContact.id)
-                }
-                m.removeChat(mergedContact.id)
-            }
-        }
     case let .networkStatus(status, connections):
         // dispatch queue to synchronize access
         networkStatusesLock.sync {

@@ -794,7 +794,6 @@ data ChatEvent
   | CEvtSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember} -- there is the same command response
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
-  | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
