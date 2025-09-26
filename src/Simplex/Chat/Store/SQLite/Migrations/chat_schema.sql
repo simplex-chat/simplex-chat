@@ -1172,4 +1172,3 @@ CREATE INDEX idx_connections_to_subscribe ON connections(
   user_id,
   to_subscribe
 );
-CREATE INDEX idx_connections_conn_type ON connections(user_id, conn_type);

@@ -57,7 +57,6 @@ CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(group_member_
 
 DROP INDEX idx_connections_to_subscribe;
 CREATE INDEX idx_connections_to_subscribe ON connections(user_id, to_subscribe);
-CREATE INDEX idx_connections_conn_type ON connections(user_id, conn_type);
 
 DROP INDEX idx_contacts_via_group;
 ALTER TABLE contacts DROP COLUMN via_group;
@@ -88,7 +87,6 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 
 DROP INDEX idx_connections_to_subscribe;
 CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
-DROP INDEX idx_connections_conn_type;
 
 ALTER TABLE contacts ADD COLUMN via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL;
 CREATE INDEX idx_contacts_via_group ON contacts(via_group);
