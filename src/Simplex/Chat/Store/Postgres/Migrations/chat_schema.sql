@@ -1798,7 +1798,7 @@ CREATE INDEX idx_connections_rcv_file_id ON test_chat_schema.connections USING b
 
 
 
-CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (to_subscribe);
+CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (user_id, to_subscribe);
 
 
 
