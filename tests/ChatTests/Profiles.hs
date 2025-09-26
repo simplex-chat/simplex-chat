@@ -1093,6 +1093,7 @@ testPlanAddressConnecting ps = do
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "1 connections subscribed"
     bob <## "alice (Alice): contact is connected"
     bob @@@ [("@alice", "Audio/video calls: enabled")]
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -1136,6 +1137,7 @@ testPlanAddressConnectingSlow ps = do
     alice <## "bob (Bob): accepting contact request..."
   withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "1 connections subscribed"
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: connecting to contact alice"
@@ -1545,10 +1547,12 @@ testSetConnectionIncognitoProhibitedDuringNegotiation ps = do
     bob <## "confirmation sent!"
   withTestChat ps "alice" $ \alice -> do
     threadDelay 250000
+    alice <## "1 connections subscribed"
     alice <## "bob (Bob): contact is connected"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChat ps "bob" $ \bob -> do
+      bob <## "1 connections subscribed"
       bob <## "alice (Alice): contact is connected"
       alice <##> bob
       alice `hasContactProfiles` ["alice", "bob"]
@@ -1566,9 +1570,11 @@ testSetConnectionIncognitoProhibitedDuringNegotiationSlow ps = do
     bob <## "confirmation sent!"
   withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     threadDelay 250000
+    alice <## "1 connections subscribed"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
+      bob <## "1 connections subscribed"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
