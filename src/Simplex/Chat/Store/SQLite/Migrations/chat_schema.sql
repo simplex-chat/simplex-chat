@@ -876,7 +876,6 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   user_id,
   item_status
 );
-CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
 CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
   contact_group_member_id
 );
@@ -1168,4 +1167,8 @@ CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
 CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
   group_member_id
+);
+CREATE INDEX idx_connections_to_subscribe ON connections(
+  user_id,
+  to_subscribe
 );

@@ -69,7 +69,6 @@ module Simplex.Chat.Store.Groups
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
     deleteGroup,
-    getUserGroupsToSubscribe,
     getUserGroupDetails,
     getUserGroupsWithSummary,
     getGroupSummary,
@@ -788,47 +787,6 @@ getGroup db vr user groupId = do
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
 
-getGroupToSubscribe :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ShortGroup
-getGroupToSubscribe db User {userId, userContactId} groupId = do
-  shortInfo <- getGroupInfoToSubscribe
-  members <- liftIO getGroupMembersToSubscribe
-  pure $ ShortGroup shortInfo members
-  where
-    getGroupInfoToSubscribe :: ExceptT StoreError IO ShortGroupInfo
-    getGroupInfoToSubscribe = ExceptT $ do
-      firstRow toInfo (SEGroupNotFound groupId) $
-        DB.query
-          db
-          [sql|
-              SELECT g.local_display_name, mu.member_status
-              FROM groups g
-              JOIN group_members mu ON mu.group_id = g.group_id
-              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-                AND mu.member_status NOT IN (?,?,?)
-          |]
-          (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-      where
-        toInfo :: (GroupName, GroupMemberStatus) -> ShortGroupInfo
-        toInfo (groupName, membershipStatus) =
-          ShortGroupInfo groupId groupName membershipStatus
-    getGroupMembersToSubscribe :: IO [ShortGroupMember]
-    getGroupMembersToSubscribe = do
-      map toShortMember
-        <$> DB.query
-          db
-          [sql|
-              SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
-              FROM group_members m
-              JOIN connections c ON c.group_member_id = m.group_member_id
-              WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                AND m.member_status NOT IN (?,?,?)
-          |]
-          (userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-      where
-        toShortMember :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
-        toShortMember (groupMemberId, localDisplayName, agentConnId) =
-          ShortGroupMember groupMemberId groupId localDisplayName agentConnId
-
 deleteGroupChatItems :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupChatItems db User {userId} GroupInfo {groupId} =
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ?" (userId, groupId)
@@ -919,11 +877,6 @@ deleteGroupProfile_ db userId groupId =
       )
     |]
     (userId, groupId)
-
-getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
-getUserGroupsToSubscribe db user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds
 
 getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
 getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do

@@ -312,6 +312,8 @@ testRetryConnectingClientTimeout ps = do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
         threadDelay 250000
+        alice <## "1 connections subscribed"
+        bob <## "1 subscription errors (run with -c option to show each error)"
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
         _sLinkData <- getTermLine bob
@@ -1247,6 +1249,7 @@ testAsyncInitiatingOffline withShortLink aliceCfg bobCfg ps = do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     withTestChatCfg ps aliceCfg "alice" $ \alice -> do
+      alice <## "1 connections subscribed"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1262,6 +1265,8 @@ testAsyncAcceptingOffline withShortLink aliceCfg bobCfg ps = do
     bob <## "confirmation sent!"
   withTestChatCfg ps aliceCfg "alice" $ \alice -> do
     withTestChatCfg ps bobCfg "bob" $ \bob -> do
+      alice <## "1 connections subscribed"
+      bob <## "1 connections subscribed"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1277,9 +1282,11 @@ testFullAsyncFast ps = do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     threadDelay 250000
-  withTestChat ps "alice" $ \alice ->
+  withTestChat ps "alice" $ \alice -> do
+    alice <## "1 connections subscribed"
     alice <## "bob (Bob): contact is connected"
-  withTestChat ps "bob" $ \bob ->
+  withTestChat ps "bob" $ \bob -> do
+    bob <## "1 connections subscribed"
     bob <## "alice (Alice): contact is connected"
 
 testFullAsyncSlow :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
@@ -1292,13 +1299,15 @@ testFullAsyncSlow withShortLink aliceCfg bobCfg ps = do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withAlice $ \_ -> pure () -- connecting... notification in UI
-  withBob $ \_ -> pure () -- connecting... notification in UI
+  withAlice $ \alice ->
+    alice <## "1 connections subscribed"
+  withBob $ \bob ->
+    bob <## "1 connections subscribed"
   withAlice $ \alice -> do
-    alice <## "1 contacts connected (use /cs for the list)"
+    alice <## "1 connections subscribed"
     alice <## "bob (Bob): contact is connected"
   withBob $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+    bob <## "1 connections subscribed"
     bob <## "alice (Alice): contact is connected"
   where
     withAlice = withTestChatCfg ps aliceCfg "alice"
@@ -1392,7 +1401,7 @@ testMaintenanceMode ps = do
       alice ##> "/_start"
       alice <## "chat started"
       -- chat works after start
-      alice <## "1 contacts connected (use /cs for the list)"
+      alice <## "1 connections subscribed"
       alice #> "@bob hi again"
       bob <# "alice> hi again"
       bob #> "@alice hello"
@@ -1413,7 +1422,7 @@ testMaintenanceMode ps = do
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
-  alice <## "1 contacts connected (use /cs for the list)"
+  alice <## "1 connections subscribed"
   alice #> "@bob hello again"
   bob <# "alice> hello again"
   bob #> "@alice hello too"
@@ -1532,7 +1541,7 @@ testSubscribeAppNSE ps =
         (nseAlice </)
         alice ##> "/_app activate"
         alice <## "ok"
-        alice <## "Your address is active! To show: /sa"
+        alice <## "1 connections subscribed"
         alice <## "bob (Bob) wants to connect to you!"
         alice <## "to accept: /ac bob"
         alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1743,8 +1752,8 @@ testUsersSubscribeAfterRestart ps = do
 
     withTestChat ps "alice" $ \alice -> do
       -- second user is active
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <## "1 connections subscribed"
+      alice <## "[user: alice] 1 connections subscribed"
 
       -- second user receives message
       alice <##> bob
@@ -2049,8 +2058,8 @@ testUsersRestartCIExpiration ps = do
       showActiveUser alice "alice (Alice)"
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alisa] 1 contacts connected (use /cs for the list)"
+      alice <## "1 connections subscribed"
+      alice <## "[user: alisa] 1 connections subscribed"
 
       -- first user messages
       alice ##> "/user alice"
@@ -2148,8 +2157,8 @@ testEnableCIExpirationOnlyForOneUser ps = do
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <## "1 connections subscribed"
+      alice <## "[user: alice] 1 connections subscribed"
 
       -- messages are not deleted for second user after restart
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
@@ -2204,8 +2213,8 @@ testDisableCIExpirationOnlyForOneUser ps = do
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <## "1 connections subscribed"
+      alice <## "[user: alice] 1 connections subscribed"
 
       -- second user still has ttl configured after restart
       alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
@@ -2311,8 +2320,8 @@ testUsersTimedMessages ps = do
       alice <# "bob> alisa 4"
 
     withTestChat ps "alice" $ \alice -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "[user: alice] 1 contacts connected (use /cs for the list)"
+      alice <## "1 connections subscribed"
+      alice <## "[user: alice] 1 connections subscribed"
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2660,7 +2669,8 @@ testAbortSwitchContact ps = do
     -- repeat switch stop is prohibited
     alice ##> "/abort switch bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
-    withTestChatContactConnected ps "bob" $ \bob -> do
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "1 connections subscribed"
       bob <## "alice started changing address for you"
       -- alice changes address again
       alice #$> ("/switch bob", id, "switch started")
@@ -2706,8 +2716,8 @@ testAbortSwitchGroupMember ps = do
     -- repeat switch stop is prohibited
     alice ##> "/abort switch #team bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
-    withTestChatContactConnected ps "bob" $ \bob -> do
-      bob <## "#team: connected to server(s)"
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "2 connections subscribed"
       bob <## "#team: alice started changing address for you"
       -- alice changes address again
       alice #$> ("/switch #team bob", id, "switch started")
@@ -2806,7 +2816,7 @@ testMsgDecryptError ps =
       alice <# "bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "1 connections subscribed"
       alice #> "@bob hello again"
       bob <# "alice> skipped message ID 9..11"
       bob <# "alice> hello again"
@@ -2817,7 +2827,7 @@ setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+    bob <## "1 connections subscribed"
     alice #> "@bob 1"
     bob <# "alice> 1"
     bob #> "@alice 2"
@@ -2828,7 +2838,7 @@ setupDesynchronizedRatchet ps alice = do
     alice <# "bob> 4"
     threadDelay 500000
   withTestChat ps "bob_old" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+    bob <## "1 connections subscribed"
     bob ##> "/sync alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "@bob 1"
@@ -2859,7 +2869,7 @@ testSyncRatchet ps =
       alice <# "bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "1 connections subscribed"
       bob ##> "/sync alice"
       bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
@@ -2898,7 +2908,7 @@ testSyncRatchetCodeReset ps =
       aliceInfo bob True
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "1 connections subscribed"
       bob ##> "/sync alice"
       bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
@@ -3122,7 +3132,7 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
 
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "1 connections subscribed"
 
       bob #> "@alice hello 1"
       alice <# "bob> hello 1"
@@ -3134,7 +3144,7 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
 
     withTestChatCfg ps cfg11 "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "1 connections subscribed"
 
       bob #> "@alice hello 2"
       alice <# "bob> hello 2"

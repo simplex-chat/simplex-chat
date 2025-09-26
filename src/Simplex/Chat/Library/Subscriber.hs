@@ -69,7 +69,7 @@ import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
-import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork_, withWorkItems)
 import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol

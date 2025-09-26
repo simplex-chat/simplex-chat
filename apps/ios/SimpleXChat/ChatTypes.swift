@@ -2086,11 +2086,6 @@ public struct ContactRef: Decodable, Equatable, Hashable {
     public var id: ChatId { get { "@\(contactId)" } }
 }
 
-public struct ContactSubStatus: Decodable, Hashable {
-    public var contact: Contact
-    public var contactError: ChatError?
-}
-
 public struct Connection: Decodable, Hashable {
     public var connId: Int64
     public var agentConnId: String
@@ -2866,11 +2861,6 @@ public enum InvitedBy: Decodable, Hashable {
     case unknown
 }
 
-public struct MemberSubError: Decodable, Hashable {
-    var member: GroupMemberIds
-    var memberError: ChatError
-}
-
 public enum ConnectionEntity: Decodable, Hashable {
     case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
     case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
@@ -2884,8 +2874,6 @@ public enum ConnectionEntity: Decodable, Hashable {
             groupMember.id
         case let .userContactConnection(_, userContact):
             userContact.id
-        default:
-            nil
         }
     }
 

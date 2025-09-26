@@ -77,7 +77,7 @@ import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescr
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Client (getFastNetworkConfig, ipAddressProtected, withLockMap)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), ServerCfg (..))
 import Simplex.Messaging.Agent.Lock (withLock)

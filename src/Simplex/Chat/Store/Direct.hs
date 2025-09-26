@@ -71,7 +71,6 @@ module Simplex.Chat.Store.Direct
     createAcceptedContactConn,
     updateContactAccepted,
     getUserByContactRequestId,
-    getPendingContactConnections,
     getContactConnections,
     getConnectionById,
     getConnectionsContacts,
@@ -871,20 +870,6 @@ getUserByContactRequestId :: DB.Connection -> Int64 -> ExceptT StoreError IO Use
 getUserByContactRequestId db contactRequestId =
   ExceptT . firstRow toUser (SEUserNotFoundByContactRequestId contactRequestId) $
     DB.query db (userQuery <> " JOIN contact_requests cr ON cr.user_id = u.user_id WHERE cr.contact_request_id = ?") (Only contactRequestId)
-
-getPendingContactConnections :: DB.Connection -> User -> IO [PendingContactConnection]
-getPendingContactConnections db User {userId} = do
-  map toPendingContactConnection
-    <$> DB.query
-      db
-      [sql|
-        SELECT connection_id, agent_conn_id, conn_status, via_contact_uri_hash, via_user_contact_link, group_link_id, custom_user_profile_id, conn_req_inv, short_link_inv, local_alias, created_at, updated_at
-        FROM connections
-        WHERE user_id = ?
-          AND conn_type = ?
-          AND contact_id IS NULL
-      |]
-      (userId, ConnContact)
 
 getContactConnections :: DB.Connection -> VersionRangeChat -> UserId -> Contact -> IO [Connection]
 getContactConnections db vr userId Contact {contactId} =

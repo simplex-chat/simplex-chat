@@ -57,6 +57,9 @@ DROP INDEX idx_connections_group_member_id;
 CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(group_member_id);
 
+DROP INDEX idx_connections_to_subscribe;
+CREATE INDEX idx_connections_to_subscribe ON connections(user_id, to_subscribe);
+
 DROP INDEX idx_contacts_via_group;
 ALTER TABLE contacts DROP COLUMN via_group;
 |]
@@ -79,12 +82,15 @@ CREATE TABLE snd_file_chunks(
 
 CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(file_id, connection_id);
 
-ALTER TABLE contacts ADD COLUMN via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL;
-CREATE INDEX idx_contacts_via_group ON contacts(via_group);
-
 DROP INDEX idx_connections_contact_id;
 DROP INDEX idx_connections_group_member_id;
 
 CREATE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
+
+DROP INDEX idx_connections_to_subscribe;
+CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
+
+ALTER TABLE contacts ADD COLUMN via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL;
+CREATE INDEX idx_contacts_via_group ON contacts(via_group);
 |]
