@@ -2618,16 +2618,6 @@ object ChatController {
           }
         }
       }
-      is CR.ContactsMerged -> {
-        if (active(r.user) && chatModel.chatsContext.hasChat(rhId, r.mergedContact.id)) {
-          if (chatModel.chatId.value == r.mergedContact.id) {
-            chatModel.chatId.value = r.intoContact.id
-          }
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.removeChat(rhId, r.mergedContact.id)
-          }
-        }
-      }
       // ContactsSubscribed, ContactsDisconnected and ContactSubSummary are only used in CLI,
       // They have to be used here for remote desktop to process these status updates.
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
@@ -6240,7 +6230,6 @@ sealed class CR {
   @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember, val withMessages: Boolean): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("contactsMerged") class ContactsMerged(val user: UserRef, val intoContact: Contact, val mergedContact: Contact): CR()
   @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
@@ -6425,7 +6414,6 @@ sealed class CR {
     is DeletedMember -> "deletedMember"
     is LeftMember -> "leftMember"
     is GroupDeleted -> "groupDeleted"
-    is ContactsMerged -> "contactsMerged"
     is UserJoinedGroup -> "userJoinedGroup"
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
@@ -6603,7 +6591,6 @@ sealed class CR {
     is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember\nwithMessages: ${withMessages}")
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is GroupDeleted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
-    is ContactsMerged -> withUser(user, "intoContact: $intoContact\nmergedContact: $mergedContact")
     is UserJoinedGroup -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")

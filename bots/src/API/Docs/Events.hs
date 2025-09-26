@@ -175,7 +175,6 @@ undocumentedEvents =
     "CEvtContactRatchetSync",
     "CEvtContactRequestAlreadyAccepted",
     "CEvtContactsDisconnected",
-    "CEvtContactsMerged",
     "CEvtContactsSubscribed",
     "CEvtContactSubError",
     "CEvtContactSubSummary",
