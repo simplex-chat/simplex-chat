@@ -35,8 +35,8 @@ getContactConnsToSub db User {userId} filterToSubscribe =
   M.fromList <$> DB.query db query (userId, ConnDeleted, CSActive)
   where
     query
-      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1" <> cond
-      | otherwise = baseQuery <> cond
+      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
+      | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
         SELECT c.agent_conn_id, c.connection_id
@@ -55,8 +55,8 @@ getUCLConnsToSub db User {userId} filterToSubscribe =
   M.fromList <$> DB.query db query (userId, ConnDeleted)
   where
     query
-      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1" <> cond
-      | otherwise = baseQuery <> cond
+      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
+      | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
         SELECT c.agent_conn_id, c.connection_id
@@ -76,8 +76,8 @@ getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
         :. (GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemRemoved, GSMemLeft, GSMemGroupDeleted))
   where
     query
-      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1" <> cond
-      | otherwise = baseQuery <> cond
+      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
+      | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
         SELECT c.agent_conn_id, c.connection_id
@@ -99,8 +99,8 @@ getPendingConnsToSub db User {userId} filterToSubscribe =
   M.fromList <$> DB.query db query (userId, ConnContact, ConnDeleted)
   where
     query
-      | filterToSubscribe = baseQuery <> " AND to_subscribe = 1" <> cond
-      | otherwise = baseQuery <> cond
+      | filterToSubscribe = baseQuery <> " AND to_subscribe = 1 " <> cond
+      | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
         SELECT agent_conn_id, connection_id
