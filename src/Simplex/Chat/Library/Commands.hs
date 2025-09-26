@@ -4157,23 +4157,22 @@ subscribeUserConnections onlyNeeded user = do
       pendingConnIds <- getPendingConnsToSub db user onlyNeeded
       unsetConnectionToSubscribe db user
       pure (ctConnIds, uclConnIds, memberConnIds, pendingConnIds)
-  let allConnIds = M.unions ([ctConnIds, uclConnIds, memberConnIds, pendingConnIds] :: [Map ConnId Int64])
-      agentConnIds = M.keys allConnIds
-  rs <- withAgent $ \a -> subscribeConnections a agentConnIds
+  let allConnIds = ctConnIds <> uclConnIds <> memberConnIds <> pendingConnIds
+  rs <- withAgent $ \a -> subscribeConnections a allConnIds
   processContactNetStatuses rs ctConnIds
   unlessM (asks $ coreApi . config) $ notifyCLI rs allConnIds
   where
-    processContactNetStatuses :: AgentSubResult -> Map ConnId Int64 -> CM ()
+    processContactNetStatuses :: AgentSubResult -> [ConnId] -> CM ()
     processContactNetStatuses rs ctConnIds = do
       chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
       let networkStatuses = map (uncurry ConnNetworkStatus) statuses
       toView $ CEvtNetworkStatuses (Just user) networkStatuses
       where
         statuses :: [(AgentConnId, NetworkStatus)]
-        statuses = M.foldrWithKey' addStatus [] ctConnIds
+        statuses = foldr' addStatus [] ctConnIds
           where
-            addStatus :: ConnId -> Int64 -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
-            addStatus connId _dbConnId nss =
+            addStatus :: ConnId -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
+            addStatus connId nss =
               let ns = (AgentConnId connId, netStatus $ subSuccessOrErr connId rs)
                in ns : nss
             netStatus :: Maybe ChatError -> NetworkStatus
@@ -4183,20 +4182,20 @@ subscribeUserConnections onlyNeeded user = do
               ChatErrorAgent (BROKER _ (NETWORK _)) _ -> "network"
               ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
               e -> show e
-    notifyCLI :: AgentSubResult -> Map ConnId Int64 -> CM ()
+    notifyCLI :: AgentSubResult -> [ConnId] -> CM ()
     notifyCLI rs connIds = do
-      let connSubResults = map (uncurry ConnSubResult) connDBIdsResults
+      let connSubResults = map (\(acId, err_) -> ConnSubResult (AgentConnId acId) err_) connIdsResults
       toView $ CEvtConnSubSummary user connSubResults
       whenM (asks $ subscriptionEvents . config) $ do
-        let connSubErrs = filterErrors connDBIdsResults
-        mapM_ (toView . uncurry (CEvtConnSubError user)) connSubErrs
+        let connSubErrs = filterErrors connIdsResults
+        mapM_ (toView . uncurry (CEvtConnSubError user . AgentConnId)) connSubErrs
       where
-        connDBIdsResults :: [(Int64, Maybe ChatError)]
-        connDBIdsResults = M.foldrWithKey' addResult [] connIds
+        connIdsResults :: [(ConnId, Maybe ChatError)]
+        connIdsResults = foldr' addResult [] connIds
           where
-            addResult :: ConnId -> Int64 -> [(Int64, Maybe ChatError)] -> [(Int64, Maybe ChatError)]
-            addResult connId = (:) . (,subSuccessOrErr connId rs)
-        filterErrors :: [(Int64, Maybe ChatError)] -> [(Int64, ChatError)]
+            addResult :: ConnId -> [(ConnId, Maybe ChatError)] -> [(ConnId, Maybe ChatError)]
+            addResult connId idsResults = (connId, subSuccessOrErr connId rs) : idsResults
+        filterErrors :: [(ConnId, Maybe ChatError)] -> [(ConnId, ChatError)]
         filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
     subSuccessOrErr :: ConnId -> AgentSubResult -> Maybe ChatError
     subSuccessOrErr connId rs = case M.lookup connId rs of
