@@ -424,7 +424,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileProgressXFTP {} -> []
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CEvtGroupMemberUpdated {} -> []
-  CEvtContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c profile
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -1414,12 +1413,6 @@ groupInvitationSub ShortGroupInfo {groupName = ldn} =
     <> " to join, "
     <> highlight ("/d #" <> viewName ldn)
     <> " to delete invitation)"
-
-viewContactsMerged :: Contact -> Contact -> Contact -> [StyledString]
-viewContactsMerged c1 c2 ct' =
-  [ "contact " <> ttyContact' c2 <> " is merged into " <> ttyContact' c1,
-    "use " <> ttyToContact' ct' <> highlight' "<message>" <> " to send messages"
-  ]
 
 viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
 viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
