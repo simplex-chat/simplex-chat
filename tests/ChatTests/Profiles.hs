@@ -1085,7 +1085,7 @@ testPlanAddressConnecting ps = do
 
     threadDelay 100000
   withTestChat ps "alice" $ \alice -> do
-    alice <## "Your address is active! To show: /sa"
+    alice <## "1 connections subscribed"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1128,7 +1128,7 @@ testPlanAddressConnectingSlow ps = do
 
     threadDelay 100000
   withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
-    alice <## "Your address is active! To show: /sa"
+    alice <## "1 connections subscribed"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
