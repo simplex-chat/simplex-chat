@@ -604,7 +604,7 @@ Query:
             WHERE user_id = ? AND short_link_inv = ? LIMIT 1
           
 Plan:
-SEARCH connections USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
 
 Query: 
             SELECT connection_id, agent_conn_id, conn_level, via_contact, via_user_contact_link, via_group_link, group_link_id, xcontact_id, custom_user_profile_id,
@@ -1390,7 +1390,7 @@ Query:
           )
         
 Plan:
-SEARCH connections USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=?)
 LIST SUBQUERY 1
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
@@ -2967,7 +2967,7 @@ Query:
         AND ct.contact_status = ? AND ct.deleted = 0
       
 Plan:
-SEARCH c USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -2996,7 +2996,7 @@ Query:
         AND m.member_status NOT IN (?,?,?)
       
 Plan:
-SEARCH c USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
@@ -3026,7 +3026,7 @@ Query:
         WHERE c.user_id = ?
        AND c.conn_status != ?
 Plan:
-SEARCH c USING INDEX idx_connections_conn_type (user_id=?)
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
