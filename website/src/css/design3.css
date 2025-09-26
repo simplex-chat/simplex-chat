@@ -228,10 +228,15 @@ html {
     font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
 }
 
-html, body { background:#000; }
+html,
+body {
+    background: #000;
+}
 
 .hidden {
     display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
 }
 
 img {
@@ -627,4 +632,208 @@ main section .image {
     .page-4 .text-container a {
         max-width: 80vw !important;
     }
+}
+
+/* NavBar */
+header#navbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 10;
+    background: none;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 54px;
+
+    border-bottom: 0.1px solid rgba(170, 170, 170, 0.1);
+}
+
+header#navbar>a.logo {
+    position: absolute;
+    left: 16px;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+header#navbar>a.logo img {
+    height: 32px;
+    width: auto;
+}
+
+header#navbar nav#menu hr {
+    width: 44px;
+    border: none;
+    height: 0.1px;
+    background: rgb(170, 170, 170);
+    opacity: 0.1;
+}
+
+header#navbar ul {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    list-style: none;
+}
+
+header#navbar ul a {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    color: white;
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 500;
+    padding: 8px 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+header#navbar ul a span {
+    display: flex;
+    height: 100%;
+    align-items: center;
+    justify-content: center;
+    line-height: 1rem;
+}
+
+header#navbar ul a>span:first-child {
+    transform: translateY(-1.5px);
+}
+
+header#navbar ul a span svg {
+    fill: #fff;
+    width: 10px;
+    height: auto;
+    transition: all 0.5s ease;
+}
+
+header#navbar nav#menu li.nav-link:hover span svg {
+    transform: rotate(180deg);
+}
+
+header#navbar ul.sub-menu {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+    height: fit-content;
+    position: absolute;
+    background: #0e1637;
+    top: 100%;
+    margin-top: 10px;
+    padding: 16px 0;
+    min-width: 180px;
+    height: fit-content;
+    border-radius: 8px;
+    transition: all .3s ease !important;
+    overflow: auto;
+
+    visibility: hidden;
+    opacity: 0;
+}
+
+header#navbar ul.sub-menu li a {
+    padding: 3px 20px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+header#navbar ul.sub-menu li a img {
+    height: 1rem;
+}
+
+header#navbar .nav-link.flag-container ul.sub-menu li a {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    white-space: nowrap;
+}
+
+header#navbar nav#menu,
+header#navbar nav#menu>ul,
+header#navbar nav#menu>ul .nav-link {
+    height: 100%;
+}
+
+header#navbar .nav-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+header#navbar .nav-link:hover .sub-menu,
+header#navbar .nav-link:focus-within .sub-menu {
+    visibility: visible;
+    opacity: 1;
+    margin-top: 0;
+}
+
+.flag-container>a {
+    width: 36px;
+    height: 36px;
+    background-color: #1e3970d3;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    color: white;
+    text-decoration: none;
+}
+
+.flag-container>a p {
+    font-size: 14px;
+    font-weight: 500;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    line-height: 1rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.flag-container .sub-menu a div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.flag-container .sub-menu {
+    top: 100%;
+    right: 0;
+}
+
+header#navbar button.theme-switch-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background-color: #1e3970d3;
+    border-radius: 4px;
+    border: none;
+}
+
+header#navbar button.theme-switch-btn img {
+    width: 20px;
+    height: auto;
+}
+
+.right-links {
+    position: absolute;
+    right: 16px;
+    display: flex;
+    flex-direction: row-reverse;
+    align-items: center;
+    gap: 8px;
 }
