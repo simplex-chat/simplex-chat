@@ -827,7 +827,7 @@ data ChatEvent
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtConnSubError {user :: User, connectionId :: Int64, chatError :: ChatError}
+  | CEvtConnSubError {user :: User, agentConnId :: AgentConnId, chatError :: ChatError}
   | CEvtConnSubSummary {user :: User, connSubResults :: [ConnSubResult]}
   | CEvtNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
@@ -1097,7 +1097,7 @@ defaultSimpleNetCfg =
     }
 
 data ConnSubResult = ConnSubResult
-  { connectionId :: Int64,
+  { agentConnId :: AgentConnId,
     connSubError :: Maybe ChatError
   }
   deriving (Show)

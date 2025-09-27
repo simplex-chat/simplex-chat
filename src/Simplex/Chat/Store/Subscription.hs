@@ -16,9 +16,6 @@ module Simplex.Chat.Store.Subscription
   )
 where
 
-import Data.Int (Int64)
-import Data.Map.Strict (Map)
-import qualified Data.Map.Strict as M
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -30,16 +27,16 @@ import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-getContactConnsToSub :: DB.Connection -> User -> Bool -> IO (Map ConnId Int64)
+getContactConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getContactConnsToSub db User {userId} filterToSubscribe =
-  M.fromList <$> DB.query db query (userId, ConnDeleted, CSActive)
+  map fromOnly <$> DB.query db query (userId, ConnDeleted, CSActive)
   where
     query
       | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
       | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
         WHERE c.user_id = ?
@@ -50,25 +47,25 @@ getContactConnsToSub db User {userId} filterToSubscribe =
         AND ct.contact_status = ? AND ct.deleted = 0
       |]
 
-getUCLConnsToSub :: DB.Connection -> User -> Bool -> IO (Map ConnId Int64)
+getUCLConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getUCLConnsToSub db User {userId} filterToSubscribe =
-  M.fromList <$> DB.query db query (userId, ConnDeleted)
+  map fromOnly <$> DB.query db query (userId, ConnDeleted)
   where
     query
       | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
       | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
       |]
     cond = " AND c.conn_status != ?"
 
-getMemberConnsToSub :: DB.Connection -> User -> Bool -> IO (Map ConnId Int64)
+getMemberConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
-  M.fromList <$>
+  map fromOnly <$>
     DB.query
       db
       query
@@ -80,7 +77,7 @@ getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
       | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN group_members m ON m.group_member_id = c.group_member_id
         JOIN groups g ON g.group_id = m.group_id
@@ -94,16 +91,16 @@ getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
         AND m.member_status NOT IN (?,?,?)
       |]
 
-getPendingConnsToSub :: DB.Connection -> User -> Bool -> IO (Map ConnId Int64)
+getPendingConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
 getPendingConnsToSub db User {userId} filterToSubscribe =
-  M.fromList <$> DB.query db query (userId, ConnContact, ConnDeleted)
+  map fromOnly <$> DB.query db query (userId, ConnContact, ConnDeleted)
   where
     query
       | filterToSubscribe = baseQuery <> " AND to_subscribe = 1 " <> cond
       | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
-        SELECT agent_conn_id, connection_id
+        SELECT agent_conn_id
         FROM connections
         WHERE user_id = ?
       |]

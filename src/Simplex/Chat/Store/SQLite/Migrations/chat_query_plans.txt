@@ -2934,7 +2934,7 @@ Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id=? AND item_status=?)
 
 Query: 
-        SELECT agent_conn_id, connection_id
+        SELECT agent_conn_id
         FROM connections
         WHERE user_id = ?
        
@@ -2946,7 +2946,7 @@ Plan:
 SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
 
 Query: 
-        SELECT agent_conn_id, connection_id
+        SELECT agent_conn_id
         FROM connections
         WHERE user_id = ?
        AND to_subscribe = 1 
@@ -2958,7 +2958,7 @@ Plan:
 SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
 
 Query: 
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
         WHERE c.user_id = ?
@@ -2971,7 +2971,7 @@ SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
         WHERE c.user_id = ?
@@ -2984,7 +2984,7 @@ SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN group_members m ON m.group_member_id = c.group_member_id
         JOIN groups g ON g.group_id = m.group_id
@@ -3002,7 +3002,7 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 
 Query: 
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN group_members m ON m.group_member_id = c.group_member_id
         JOIN groups g ON g.group_id = m.group_id
@@ -3020,7 +3020,7 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 
 Query: 
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
@@ -3030,7 +3030,7 @@ SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
 SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT c.agent_conn_id, c.connection_id
+        SELECT c.agent_conn_id
         FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
