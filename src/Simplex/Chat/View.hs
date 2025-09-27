@@ -128,7 +128,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRChatItemTTL u ttl -> ttyUser u $ viewChatItemTTL ttl
   CRNetworkConfig netCfg -> viewNetworkConfig netCfg
   CRContactInfo u ct cStats customUserProfile -> ttyUser u $ viewContactInfo ct cStats customUserProfile
-  CRGroupInfo u g s -> ttyUser u $ viewGroupInfo g s
+  CRGroupInfo u g -> ttyUser u $ viewGroupInfo g
   CRGroupMemberInfo u g m cStats -> ttyUser u $ viewGroupMemberInfo g m cStats
   CRQueueInfo _ msgInfo qInfo ->
     [ "last received msg: " <> maybe "none" viewJSON msgInfo,
@@ -1360,13 +1360,13 @@ viewContactConnected ct userIncognitoProfile testView =
     Nothing ->
       [ttyFullContact ct <> ": contact is connected"]
 
-viewGroupsList :: [GroupInfoSummary] -> [StyledString]
+viewGroupsList :: [GroupInfo] -> [StyledString]
 viewGroupsList [] = ["you have no groups!", "to create: " <> highlight' "/g <name>"]
 viewGroupsList gs = map groupSS $ sortOn ldn_ gs
   where
-    ldn_ :: GroupInfoSummary -> Text
-    ldn_ (GIS GroupInfo {localDisplayName} _ _) = T.toLower localDisplayName
-    groupSS (GIS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}} GroupSummary {currentMembers} _) =
+    ldn_ :: GroupInfo -> Text
+    ldn_ GroupInfo {localDisplayName} = T.toLower localDisplayName
+    groupSS g@GroupInfo {membership, chatSettings = ChatSettings {enableNtfs}, groupSummary = GroupSummary {currentMembers}} =
       case memberStatus membership of
         GSMemInvited -> groupInvitation' g
         s -> membershipIncognito g <> ttyFullGroup g <> viewMemberStatus s <> alias g
@@ -1628,8 +1628,8 @@ viewContactInfo ct@Contact {contactId, profile = LocalProfile {localAlias, conta
     <> viewUITheme uiThemes
     <> viewCustomData customData
 
-viewGroupInfo :: GroupInfo -> GroupSummary -> [StyledString]
-viewGroupInfo GroupInfo {groupId, uiThemes, customData} s =
+viewGroupInfo :: GroupInfo -> [StyledString]
+viewGroupInfo GroupInfo {groupId, uiThemes, customData, groupSummary = s} =
   [ "group ID: " <> sShow groupId,
     "current members: " <> sShow (currentMembers s)
   ]

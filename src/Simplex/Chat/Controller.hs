@@ -313,8 +313,8 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe String}
-  | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe String}
+  | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
+  | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
@@ -511,8 +511,8 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListMemberSupportChats GroupName
-  | APIListGroups {userId :: UserId, contactId_ :: Maybe ContactId, search :: Maybe String}
-  | ListGroups (Maybe ContactName) (Maybe String)
+  | APIListGroups {userId :: UserId, contactId_ :: Maybe ContactId, search :: Maybe Text}
+  | ListGroups (Maybe ContactName) (Maybe Text)
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
@@ -524,7 +524,7 @@ data ChatCommand
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | ClearNoteFolder
   | LastChats (Maybe Int) -- UserId (not used in UI)
-  | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
+  | LastMessages (Maybe ChatName) Int (Maybe Text) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
@@ -647,7 +647,7 @@ data ChatResponse
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
-  | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+  | CRGroupInfo {user :: User, groupInfo :: GroupInfo}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: ServerQueueInfo}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -682,7 +682,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
-  | CRGroupsList {user :: User, groups :: [GroupInfoSummary]}
+  | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem

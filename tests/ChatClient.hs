@@ -209,7 +209,8 @@ testCfg =
       showReceipts = False,
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
-      tbqSize = 16
+      tbqSize = 16,
+      confirmMigrations = MCYesUp
     }
 
 testCfgSlow :: ChatConfig

@@ -244,7 +244,7 @@ export namespace CR {
   export interface GroupsList extends Interface {
     type: "groupsList"
     user: T.User
-    groups: T.GroupInfoSummary[]
+    groups: T.GroupInfo[]
   }
 
   export interface Invitation extends Interface {

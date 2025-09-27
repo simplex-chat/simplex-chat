@@ -1465,7 +1465,7 @@ Get groups.
 GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
-- groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]
+- groups: [[GroupInfo](./TYPES.md#groupinfo)]
 
 ChatCmdError: Command error.
 - type: "chatCmdError"
