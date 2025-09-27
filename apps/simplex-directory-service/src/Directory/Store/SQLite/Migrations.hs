@@ -15,19 +15,12 @@ directorySchemaMigrations = sortOn name $ map migration schemaMigrations
 
 schemaMigrations :: [(String, Query, Maybe Query)]
 schemaMigrations =
-  [ ("20250924_initial", m20250924_initial, Nothing)
+  [ ("20250924_directory_schema", m20250924_directory_schema, Just down_m20250924_directory_schema)
   ]
 
-m20250924_initial :: Query
-m20250924_initial =
+m20250924_directory_schema :: Query
+m20250924_directory_schema =
   [sql|
-CREATE TABLE sx_directory_store_info(
-  version INTEGER NOT NULL,
-  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
-
-INSERT INTO sx_directory_store_info (version) VALUES (1);
-
 CREATE TABLE sx_directory_group_regs(
   group_reg_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON UPDATE RESTRICT ON DELETE CASCADE,
@@ -40,11 +33,17 @@ CREATE TABLE sx_directory_group_regs(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 
-CREATE UNIQUE INDEX idx_sx_directory_group_registrations_group_id ON sx_directory_group_regs(group_id);
+CREATE UNIQUE INDEX idx_sx_directory_group_regs_group_id ON sx_directory_group_regs(group_id);
+CREATE UNIQUE INDEX idx_sx_directory_group_regs_owner_member_id ON sx_directory_group_regs(owner_member_id);
+CREATE UNIQUE INDEX idx_sx_directory_group_regs_owner_contact_id_user_group_reg_id ON sx_directory_group_regs(contact_id, user_group_reg_id);
+  |]
 
-CREATE UNIQUE INDEX idx_sx_directory_group_registrations_owner_member_id ON sx_directory_group_regs(owner_member_id);
+down_m20250924_directory_schema :: Query
+down_m20250924_directory_schema =
+  [sql|
+DROP INDEX idx_sx_directory_group_regs_group_id;
+DROP INDEX idx_sx_directory_group_regs_owner_member_id;
+DROP INDEX idx_sx_directory_group_regs_owner_contact_id_user_group_reg_id;
 
-CREATE INDEX idx_sx_directory_group_registrations_owner_contact_id ON sx_directory_group_regs(contact_id);
-
-CREATE UNIQUE INDEX idx_sx_directory_group_registrations_owner_contact_id_user_group_reg_id ON sx_directory_group_regs(contact_id, user_group_reg_id);
+DROP TABLE sx_directory_group_regs;
   |]

@@ -1396,7 +1396,7 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
-  st <- restoreDirectoryStore directoryLog
+  st <- openDirectoryLog directoryLog
   t <- forkIO $ directoryService st opts cfg
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)

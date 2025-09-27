@@ -88,8 +88,8 @@ recentRoundedTime roundTo now t
       let secs = (systemSeconds (utcToSystemTime t) `div` roundTo) * roundTo
        in Just $ systemToUTCTime $ MkSystemTime secs 0
 
-groupDirectoryEntry :: UTCTime -> GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_) =
+groupDirectoryEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
+groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
       entryType = DETGroup memberAdmission groupSummary
       entry groupLink =
@@ -120,7 +120,7 @@ groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt, groupSu
             Right img'' -> Just (imgFile, img'')
             Left _ -> Nothing
 
-generateListing :: FilePath -> [(GroupInfoSummary, GroupReg)] -> IO ()
+generateListing :: FilePath -> [(GroupInfo, GroupReg, Maybe GroupLink)] -> IO ()
 generateListing dir gs = do
   createDirectoryIfMissing True dir
   oldDirs <- filter ((directoryDataPath <> ".") `isPrefixOf`) <$> listDirectory dir
@@ -129,8 +129,8 @@ generateListing dir gs = do
       newDir = dir </> newDirPath
   createDirectoryIfMissing True (newDir </> listingImageFolder)
   gs' <-
-    fmap catMaybes $ forM gs $ \(g, gr) ->
-      forM (groupDirectoryEntry ts g) $ \(g', img) -> do
+    fmap catMaybes $ forM gs $ \(g, gr, link_) ->
+      forM (groupDirectoryEntry ts g link_) $ \(g', img) -> do
         forM_ img $ \(imgFile, imgData) -> B.writeFile (newDir </> imgFile) imgData
         pure (g', gr)
   saveListing newDir listingFileName gs'

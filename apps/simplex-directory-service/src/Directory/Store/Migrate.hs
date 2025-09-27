@@ -8,15 +8,17 @@
 module Directory.Store.Migrate where
 
 import Control.Monad
+import Control.Monad.Except
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
-import Data.Time.Clock (getCurrentTime)
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
+import Simplex.Chat.Protocol (supportedChatVRange)
+import Simplex.Chat.Store.Groups (getHostMember)
 import Simplex.Chat.Store.Profiles (getUsers)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common
@@ -24,18 +26,14 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, migrateDBSchema)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Util (maybeFirstRow, whenM)
+import Simplex.Messaging.Util (whenM)
 import System.Directory (doesFileExist, renamePath)
 import System.Exit (exitFailure)
 import System.IO (IOMode (..), withFile)
 
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..))
-import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Directory.Store.Postgres.Migrations
 #else
-import Database.SQLite.Simple (Only (..))
-import Database.SQLite.Simple.QQ (sql)
 import Directory.Store.SQLite.Migrations
 #endif
 
@@ -52,49 +50,44 @@ runDirectoryMigrations opts cc =
     ChatController {chatStore, config = ChatConfig {confirmMigrations}} = cc
     confirm = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
 
-versionWithLog :: Int
-versionWithLog = 1
+checkDirectoryLog :: DirectoryOpts -> IO ()
+checkDirectoryLog opts =
+  withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
+    gs <- readDirectoryLogData logFile
+    withActiveUser st $ \user -> withTransaction st $ \db -> do
+      mapM_ (verifyGroupRegistration db user) gs
 
-versionNoLog :: Int
-versionNoLog = 2
-
-checkCreateDirectoryInfo :: DirectoryOpts -> IO ()
-checkCreateDirectoryInfo = (`withChatStore` (`withTransaction` checkCreate))
-  where
-    checkCreate db = do
-      v_ <- getStoreVersion db
-      getUsers db >>= \case
-        [] -> case v_ of
-          Just v -> when (v == versionWithLog) $ exit "unexpected store state: no active user and old store version"
-          Nothing -> createDirectoryInfoTable db >> setStoreVersion db versionNoLog
-        _ -> when (maybe True (versionWithLog ==) v_) $ exit "import directory store log using --migrate-directory-file=import"
-
-importLogToDB :: DirectoryOpts -> IO ()
-importLogToDB opts = withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
-  v_ <- withTransaction st getStoreVersion
-  forM_ v_ $ \v -> when (v >= versionNoLog) $ exit $ "directory version is already " ++ show v
-  withActiveUser st $ \_ -> withTransaction st $ \db -> do
-    -- TODO verify that group owner contact and member IDs are correct
-    readDirectoryData logFile >>= mapM_ (insertGroupReg db)
-    renamePath logFile (logFile ++ ".bak")
-    setStoreVersion db versionNoLog
+importDirectoryLogToDB :: DirectoryOpts -> IO ()
+importDirectoryLogToDB opts = do
+  withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
+    gs <- readDirectoryLogData logFile
+    withActiveUser st $ \user -> withTransaction st $ \db -> do
+      forM_ gs $ \gr -> do
+        verifyGroupRegistration db user gr
+        insertGroupReg db gr
+      renamePath logFile (logFile ++ ".bak")
 
 exit :: String -> IO a
 exit err = putStrLn ("Error: " <> err) >> exitFailure
 
-exportDBToLog :: DirectoryOpts -> IO ()
-exportDBToLog opts =
+exportDBToDirectoryLog :: DirectoryOpts -> IO ()
+exportDBToDirectoryLog opts =
   withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
     whenM (doesFileExist logFile) $ exit $ "directory log file " ++ logFile ++ " already exists"
-    withActiveUser st $ \user -> withTransaction st getStoreVersion >>= \case
-      Just v | v >= versionNoLog -> withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
-        gs <- getAllGroupRegs_ db user
-        -- TODO verify that group owner contact and member IDs are correct
-        mapM_ (B.hPutStrLn h . strEncode . GRCreate . snd) gs
-      v_ -> exit $ "directory version is " ++ maybe "not set" show v_ ++  ", it cannot be exported to store log"
+    withActiveUser st $ \user -> withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
+      gs <- getAllGroupRegs_ db user
+      forM_ gs $ \(_, gr) -> do
+        verifyGroupRegistration db user gr
+        B.hPutStrLn h $ strEncode $ GRCreate gr
+        deleteGroupReg db $ dbGroupId gr
 
-checkDBStoreLog :: DirectoryOpts -> IO ()
-checkDBStoreLog _opts = pure ()
+verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO ()
+verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId = mId} =
+  runExceptT (getHostMember db supportedChatVRange user gId) >>= \case
+    Left e -> exit $ "error loading group " <> show gId <> " host member: " <> show e
+    Right GroupMember {groupMemberId = mId', memberContactId = ctId'} -> do
+      unless (mId == Just mId') $ exit $ "bad group " <> show gId <> " host member ID: " <> show mId'
+      unless (Just ctId == ctId') $ exit $ "bad group " <> show gId <> " contact ID: " <> show ctId'
 
 withDirectoryLog :: DirectoryOpts -> (FilePath -> IO ()) -> IO ()
 withDirectoryLog DirectoryOpts {directoryLog} action =
@@ -113,33 +106,3 @@ withChatStore DirectoryOpts {coreOptions = CoreChatOpts {dbOptions, yesToUpMigra
 
 withActiveUser :: DBStore -> (User -> IO ()) -> IO ()
 withActiveUser st action = withTransaction st getUsers >>= maybe (exit "no active user") action . find activeUser
-
-createDirectoryInfoTable :: DB.Connection -> IO ()
-createDirectoryInfoTable db =
-  DB.execute_
-    db
-#if defined(dbPostgres)
-    [sql|
-      CREATE TABLE IF NOT EXISTS directory_store_info(
-        version INTEGER NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    |]
-#else
-    [sql|
-      CREATE TABLE IF NOT EXISTS directory_store_info(
-        version BIGINT NOT NULL,
-        updated_at TEXT NOT NULL
-      )
-    |]
-#endif
-
-getStoreVersion :: DB.Connection -> IO (Maybe Int)
-getStoreVersion db = do
-  createDirectoryInfoTable db
-  maybeFirstRow fromOnly $ DB.query_ db "SELECT MAX(version) FROM directory_store_info"
-
-setStoreVersion :: DB.Connection -> Int -> IO ()
-setStoreVersion db v = do
-  ts <- getCurrentTime
-  DB.execute db "UPDATE directory_store_info SET version = ?, updated_at = ?" (v, ts)

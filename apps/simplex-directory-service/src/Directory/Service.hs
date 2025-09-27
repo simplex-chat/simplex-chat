@@ -140,7 +140,7 @@ welcomeGetOpts = do
     knownContact KnownContact {contactId, localDisplayName = n} = knownName contactId n
     knownName i n = show i <> ":" <> T.unpack (viewName n)
 
-directoryServiceCLI :: DirectoryStore -> DirectoryOpts -> IO ()
+directoryServiceCLI :: DirectoryLog -> DirectoryOpts -> IO ()
 directoryServiceCLI st opts = do
   env <- newServiceState opts
   eventQ <- newTQueueIO
@@ -220,7 +220,7 @@ directoryCommands =
   where
     idParam = Just "<ID>"
 
-directoryService :: DirectoryStore -> DirectoryOpts -> ChatConfig -> IO ()
+directoryService :: DirectoryLog -> DirectoryOpts -> ChatConfig -> IO ()
 directoryService st opts@DirectoryOpts {testing} cfg = do
   env <- newServiceState opts
   let chatHooks =
@@ -280,7 +280,7 @@ readBlockedWordsConfig DirectoryOpts {blockedFragmentsFile, blockedWordsFile, na
   unless testing $ putStrLn $ "Blocked fragments: " <> show (length blockedFragments) <> ", blocked words: " <> show (length blockedWords) <> ", spelling rules: " <> show (M.size spelling)
   pure BlockedWordsConfig {blockedFragments, blockedWords, extensionRules, spelling}
 
-directoryServiceEvent :: DirectoryStore -> DirectoryOpts -> ServiceState -> User -> ChatController -> Either ChatError ChatEvent -> IO ()
+directoryServiceEvent :: DirectoryLog -> DirectoryOpts -> ServiceState -> User -> ChatController -> Either ChatError ChatEvent -> IO ()
 directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName, ownersGroup, searchResults} env@ServiceState {searchRequests} user@User {userId} cc event =
   forM_ (crDirectoryEvent event) $ \case
     DEContactConnected ct -> deContactConnected ct
@@ -1140,7 +1140,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               msg = maybe (MCText text) (\image -> MCImage {text, image}) image_
            in (Nothing, msg)
 
-setGroupStatusPromo :: (Text -> IO ()) -> DirectoryStore -> ServiceState -> ChatController -> GroupReg -> GroupRegStatus -> Bool -> IO () -> IO ()
+setGroupStatusPromo :: (Text -> IO ()) -> DirectoryLog -> ServiceState -> ChatController -> GroupReg -> GroupRegStatus -> Bool -> IO () -> IO ()
 setGroupStatusPromo sendReply st env cc GroupReg {dbGroupId = gId} grStatus' grPromoted' continue = do
   let status' = grDirectoryStatus grStatus'
   setGroupStatusPromoStore cc gId grStatus' grPromoted' >>= \case
@@ -1152,7 +1152,7 @@ setGroupStatusPromo sendReply st env cc GroupReg {dbGroupId = gId} grStatus' grP
       logGUpdatePromotion st gId grPromoted'
       continue
 
-addGroupReg :: (Text -> IO ()) -> DirectoryStore -> ChatController -> Contact -> GroupInfo -> GroupRegStatus -> (GroupReg -> IO ()) -> IO ()
+addGroupReg :: (Text -> IO ()) -> DirectoryLog -> ChatController -> Contact -> GroupInfo -> GroupRegStatus -> (GroupReg -> IO ()) -> IO ()
 addGroupReg sendMsg st cc ct g@GroupInfo {groupId} grStatus continue =
   addGroupRegStore cc ct g grStatus >>= \case
     Left e -> sendMsg $ "Error creating group registation for group " <> tshow groupId <> ": " <> T.pack e
@@ -1160,7 +1160,7 @@ addGroupReg sendMsg st cc ct g@GroupInfo {groupId} grStatus continue =
       logGCreate st gr
       continue gr
 
-setGroupStatus :: (Text -> IO ()) -> DirectoryStore -> ServiceState -> ChatController -> GroupId -> GroupRegStatus -> (GroupReg -> IO ()) -> IO ()
+setGroupStatus :: (Text -> IO ()) -> DirectoryLog -> ServiceState -> ChatController -> GroupId -> GroupRegStatus -> (GroupReg -> IO ()) -> IO ()
 setGroupStatus sendMsg st env cc gId grStatus' continue = do
   let status' = grDirectoryStatus grStatus'
   setGroupStatusStore cc gId grStatus' >>= \case
@@ -1171,7 +1171,7 @@ setGroupStatus sendMsg st env cc gId grStatus' continue = do
       logGUpdateStatus st gId grStatus'
       continue gr
 
-setGroupPromoted :: (Text -> IO ()) -> DirectoryStore -> ServiceState -> ChatController -> GroupReg -> Bool -> IO () -> IO ()
+setGroupPromoted :: (Text -> IO ()) -> DirectoryLog -> ServiceState -> ChatController -> GroupReg -> Bool -> IO () -> IO ()
 setGroupPromoted sendReply st env cc GroupReg {dbGroupId = gId} grPromoted' continue =
   setGroupPromotedStore cc gId grPromoted' >>= \case
     Left e -> sendReply $ "Error updating group " <> tshow gId <> " status: " <> T.pack e

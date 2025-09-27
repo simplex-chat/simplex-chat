@@ -71,8 +71,6 @@ module Simplex.Chat.Store.Groups
     deleteGroup,
     getUserGroupsToSubscribe,
     getBaseGroupDetails,
-    getBaseGroupsWithSummary,
-    getGroupInfoSummary,
     getContactGroupPreferences,
     getGroupInvitation,
     createNewContactMember,
@@ -952,16 +950,6 @@ getBaseGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
           )
       |]
     search = maybe "" (T.map toLower) search_
-
-getBaseGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfoSummary]
-getBaseGroupsWithSummary db vr user _contactId_ search_ =
-  getBaseGroupDetails db vr user _contactId_ search_
-    >>= mapM (getGroupInfoSummary db user)
-
-getGroupInfoSummary :: DB.Connection -> User -> GroupInfo -> IO GroupInfoSummary
-getGroupInfoSummary db user g@GroupInfo {groupId} = do
-  link_ <- eitherToMaybe <$> runExceptT (getGroupLink db user g)
-  pure $ GIS g link_
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
 getContactGroupPreferences db User {userId} Contact {contactId} = do

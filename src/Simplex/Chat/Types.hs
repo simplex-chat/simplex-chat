@@ -528,9 +528,6 @@ data GroupSummary = GroupSummary
   }
   deriving (Eq, Show)
 
-data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupLink :: Maybe GroupLink}
-  deriving (Show)
-
 data GroupLink = GroupLink
   { userContactLinkId :: Int64,
     connLinkContact :: CreatedLinkContact,
@@ -2089,8 +2086,6 @@ $(JQ.deriveJSON defaultJSON ''GroupInfo)
 $(JQ.deriveJSON defaultJSON ''Group)
 
 $(JQ.deriveJSON defaultJSON ''GroupLink)
-
-$(JQ.deriveJSON defaultJSON ''GroupInfoSummary)
 
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 

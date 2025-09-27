@@ -42,7 +42,7 @@ data DirectoryOpts = DirectoryOpts
     testing :: Bool
   }
 
-data MigrateLog = MLImport | MLExport | MLCheck
+data MigrateLog = MLCheck | MLImport | MLExport
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
 directoryOpts appDir defaultDbName = do
@@ -203,7 +203,7 @@ parseMigrateLog = eitherReader $ parseAll mlP . encodeUtf8 . T.pack
   where
     mlP =
       A.takeTill (== ' ') >>= \case
+        "check" -> pure MLCheck
         "import" -> pure MLImport
         "export" -> pure MLExport
-        "check" -> pure MLCheck
         _ -> fail "bad MigrateLog"

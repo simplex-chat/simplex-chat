@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 
 module Main where
@@ -12,12 +13,14 @@ main :: IO ()
 main = do
   opts@DirectoryOpts {directoryLog, migrateDirectoryLog, runCLI} <- welcomeGetOpts
   case migrateDirectoryLog of
-    Just cmd -> case cmd of
-      MLImport -> importLogToDB opts
-      MLExport -> exportDBToLog opts
-      MLCheck -> checkDBStoreLog opts
-    Nothing -> do -- TODO do not restore directory log
-      st <- restoreDirectoryStore directoryLog
+    Just cmd -> migrate cmd opts
+    Nothing -> do
+      st <- openDirectoryLog directoryLog
       if runCLI
         then directoryServiceCLI st opts
         else directoryService st opts terminalChatConfig
+  where
+    migrate = \case
+      MLCheck -> checkDirectoryLog
+      MLImport -> importDirectoryLogToDB
+      MLExport -> exportDBToDirectoryLog
