@@ -794,7 +794,6 @@ data ChatEvent
   | CEvtSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember} -- there is the same command response
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
-  | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
@@ -828,9 +827,8 @@ data ChatEvent
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
-  | CEvtContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
-  | CEvtUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
+  | CEvtConnSubError {user :: User, agentConnId :: AgentConnId, chatError :: ChatError}
+  | CEvtConnSubSummary {user :: User, connSubResults :: [ConnSubResult]}
   | CEvtNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
@@ -888,14 +886,6 @@ data TerminalEvent
   | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | TEContactVerificationReset {user :: User, contact :: Contact}
   | TEGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | TEGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | TEGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | TEGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | TEMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
-  | TEMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
-  | TEPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
-  | TESndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
-  | TERcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue
@@ -922,7 +912,7 @@ logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
   CEvtContactsDisconnected {} -> True
   CEvtContactsSubscribed {} -> True
-  CEvtContactSubError {} -> True
+  CEvtConnSubError {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True
@@ -931,11 +921,6 @@ logEventToFile = \case
   CEvtAgentUserDeleted {} -> True
   -- CRChatCmdError {} -> True -- TODO this should be separately logged to file as command error
   CEvtMessageError {} -> True
-  CEvtTerminalEvent te -> case te of
-    TEMemberSubError {} -> True
-    TESndFileSubError {} -> True
-    TERcvFileSubError {} -> True
-    _ -> False
   _ -> False
 
 data SendRef
@@ -1111,27 +1096,9 @@ defaultSimpleNetCfg =
       logTLSErrors = False
     }
 
-data ContactSubStatus = ContactSubStatus
-  { contact :: Contact,
-    contactError :: Maybe ChatError
-  }
-  deriving (Show)
-
-data MemberSubStatus = MemberSubStatus
-  { member :: ShortGroupMember,
-    memberError :: Maybe ChatError
-  }
-  deriving (Show)
-
-data UserContactSubStatus = UserContactSubStatus
-  { userContact :: UserContact,
-    userContactError :: Maybe ChatError
-  }
-  deriving (Show)
-
-data PendingSubStatus = PendingSubStatus
-  { connection :: PendingContactConnection,
-    connError :: Maybe ChatError
+data ConnSubResult = ConnSubResult
+  { agentConnId :: AgentConnId,
+    connSubError :: Maybe ChatError
   }
   deriving (Show)
 
@@ -1330,7 +1297,6 @@ data ChatErrorType
   | CEFileCancelled {message :: String}
   | CEFileCancel {fileId :: FileTransferId, message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
-  | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
@@ -1642,13 +1608,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
-$(JQ.deriveJSON defaultJSON ''ContactSubStatus)
-
-$(JQ.deriveJSON defaultJSON ''MemberSubStatus)
-
-$(JQ.deriveJSON defaultJSON ''UserContactSubStatus)
-
-$(JQ.deriveJSON defaultJSON ''PendingSubStatus)
+$(JQ.deriveJSON defaultJSON ''ConnSubResult)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 

@@ -388,7 +388,6 @@ CREATE TABLE test_chat_schema.contacts (
     user_id bigint NOT NULL,
     local_display_name text NOT NULL,
     is_user smallint DEFAULT 0 NOT NULL,
-    via_group bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     xcontact_id bytea,
@@ -1112,18 +1111,6 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
 
 
 
-CREATE TABLE test_chat_schema.snd_file_chunks (
-    file_id bigint NOT NULL,
-    connection_id bigint NOT NULL,
-    chunk_number bigint NOT NULL,
-    chunk_agent_msg_id bigint,
-    chunk_sent smallint DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.snd_files (
     file_id bigint NOT NULL,
     connection_id bigint NOT NULL,
@@ -1510,11 +1497,6 @@ ALTER TABLE ONLY test_chat_schema.settings
 
 
 
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_pkey PRIMARY KEY (file_id, connection_id, chunk_number);
-
-
-
 ALTER TABLE ONLY test_chat_schema.snd_files
     ADD CONSTRAINT snd_files_pkey PRIMARY KEY (file_id, connection_id);
 
@@ -1796,7 +1778,7 @@ CREATE INDEX idx_connections_conn_req_inv ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
+CREATE UNIQUE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
 
 
 
@@ -1808,7 +1790,7 @@ CREATE INDEX idx_connections_group_member ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
 
 
 
@@ -1816,7 +1798,7 @@ CREATE INDEX idx_connections_rcv_file_id ON test_chat_schema.connections USING b
 
 
 
-CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (to_subscribe);
+CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (user_id, to_subscribe);
 
 
 
@@ -1897,10 +1879,6 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON test_chat_schem
 
 
 CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_member_conn_id);
-
-
-
-CREATE INDEX idx_contacts_via_group ON test_chat_schema.contacts USING btree (via_group);
 
 
 
@@ -2209,10 +2187,6 @@ CREATE INDEX idx_settings_user_id ON test_chat_schema.settings USING btree (user
 
 
 CREATE INDEX idx_smp_servers_user_id ON test_chat_schema.protocol_servers USING btree (user_id);
-
-
-
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON test_chat_schema.snd_file_chunks USING btree (file_id, connection_id);
 
 
 
@@ -2603,11 +2577,6 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 
 
-ALTER TABLE ONLY test_chat_schema.contacts
-    ADD CONSTRAINT fk_contacts_groups FOREIGN KEY (via_group) REFERENCES test_chat_schema.groups(group_id) ON DELETE SET NULL;
-
-
-
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT fk_files_chat_items FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
 
@@ -2860,11 +2829,6 @@ ALTER TABLE ONLY test_chat_schema.sent_probes
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_file_id_connection_id_fkey FOREIGN KEY (file_id, connection_id) REFERENCES test_chat_schema.snd_files(file_id, connection_id) ON DELETE CASCADE;
 
 
 

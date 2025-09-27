@@ -377,14 +377,14 @@ ttyUserPrefix (currentRH, user_) outputRH User {userId, localDisplayName = u} ss
     userPrefix = ["user: " <> highlight u | Just userId /= currentUserId]
     currentUserId = (\User {userId = uId} -> uId) <$> user_
 
-viewErrorsSummary :: [a] -> StyledString -> [StyledString]
-viewErrorsSummary summary s = [ttyError (T.pack . show $ length summary) <> s <> " (run with -c option to show each error)" | not (null summary)]
+viewSubErrorsSummary :: [ConnSubResult] -> [StyledString]
+viewSubErrorsSummary subErrs = [ttyError (T.pack . show $ length subErrs) <> " subscription errors (run with -c option to show each error)" | not (null subErrs)]
 
 contactList :: [ContactRef] -> String
 contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
 chatEventToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatEvent -> [StyledString]
-chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
+chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, coreApi} liveItems ts tz outputRH = \case
   CEvtChatSuspended -> ["chat suspended"]
   CEvtContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CEvtGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
@@ -424,7 +424,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtRcvFileProgressXFTP {} -> []
   CEvtContactUpdated {user = u, fromContact = c, toContact = c'} -> ttyUser u $ viewContactUpdated c c' <> viewContactPrefsUpdated u c c'
   CEvtGroupMemberUpdated {} -> []
-  CEvtContactsMerged u intoCt mergedCt ct' -> ttyUser u $ viewContactsMerged intoCt mergedCt ct'
   CEvtReceivedContactRequest u UserContactRequest {localDisplayName = c, profile} _chat -> ttyUser u $ viewReceivedContactRequest c profile
   CEvtRcvFileStart u ci -> ttyUser u $ receivingFile_' hu testView "started" ci
   CEvtRcvFileComplete u ci -> ttyUser u $ receivingFile_' hu testView "completed" ci
@@ -455,21 +454,13 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
      in ttyUser u [sShow connId <> ": END"]
   CEvtContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CEvtContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CEvtContactSubError u c e -> ttyUser u [ttyContact' c <> ": contact error " <> sShow e]
-  CEvtContactSubSummary u summary ->
-    ttyUser u $ [sShow (length subscribed) <> " contacts connected (use " <> highlight' "/cs" <> " for the list)" | not (null subscribed)] <> viewErrorsSummary errors " contact errors"
+  CEvtConnSubError u connId e -> ttyUser u ["conn ID " <> sShow connId <> ": subscription error " <> sShow e]
+  CEvtConnSubSummary u connSubResults ->
+    ttyUser u $ [sShow (length subscribed) <> " connections subscribed" | not (null subscribed)] <> viewSubErrorsSummary errs
     where
-      (errors, subscribed) = partition (isJust . contactError) summary
-  CEvtUserContactSubSummary u summary ->
-    ttyUser u $
-      map addressSS addresses
-        <> ([sShow (length groupLinksSubscribed) <> " group links active" | not (null groupLinksSubscribed)] <> viewErrorsSummary groupLinkErrors " group link errors")
-    where
-      (addresses, groupLinks) = partition (\UserContactSubStatus {userContact} -> isNothing . userContactGroupId $ userContact) summary
-      addressSS UserContactSubStatus {userContactError} = maybe ("Your address is active! To show: " <> highlight' "/sa") (\e -> "User address error: " <> sShow e <> ", to delete your address: " <> highlight' "/da") userContactError
-      (groupLinkErrors, groupLinksSubscribed) = partition (isJust . userContactError) groupLinks
-  CEvtNetworkStatus status conns -> if testView then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
-  CEvtNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
+      (errs, subscribed) = partition (isJust . connSubError) connSubResults
+  CEvtNetworkStatus status conns -> if testView && coreApi then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
+  CEvtNetworkStatuses u statuses -> if testView && coreApi then ttyUser' u $ viewNetworkStatuses statuses else []
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -534,16 +525,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     TENewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
     TEContactVerificationReset u ct -> ttyUser u $ viewContactVerificationReset ct
     TEGroupMemberVerificationReset u g m -> ttyUser u $ viewGroupMemberVerificationReset g m
-    TEGroupSubscribed u ShortGroupInfo {groupName = g} -> ttyUser u $ viewGroupSubscribed g
-    TEGroupInvitation u g -> ttyUser u [groupInvitationSub g]
-    TEGroupEmpty u ShortGroupInfo {groupName = g} -> ttyUser u [ttyGroup g <> ": group is empty"]
-    TEMemberSubError u ShortGroupInfo {groupName = g} ShortGroupMember {memberName = n} e -> ttyUser u [ttyGroup g <> " member " <> ttyContact n <> " error: " <> sShow e]
-    TEMemberSubSummary u summary -> ttyUser u $ viewErrorsSummary (filter (isJust . memberError) summary) " group member errors"
-    TEPendingSubSummary u _ -> ttyUser u []
-    TESndFileSubError u SndFileTransfer {fileId, fileName} e ->
-      ttyUser u ["sent file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
-    TERcvFileSubError u RcvFileTransfer {fileId, fileInvitation = FileInvitation {fileName}} e ->
-      ttyUser u ["received file " <> sShow fileId <> " (" <> plain fileName <> ") error: " <> sShow e]
   CEvtCustomChatEvent u r -> ttyUser' u $ map plain $ T.lines r
   where
     ttyUser :: User -> [StyledString] -> [StyledString]
@@ -621,9 +602,6 @@ viewUsersList us =
         bot = case peerType of
           Just CPTBot -> " (bot)"
           _ -> ""
-
-viewGroupSubscribed :: GroupName -> [StyledString]
-viewGroupSubscribed g = [ttyGroup g <> ": connected to server(s)"]
 
 showSMPServer :: SMPServer -> String
 showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
@@ -1409,21 +1387,6 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
     joinText = case incognitoMembershipProfile g of
       Just mp -> " to join as " <> incognitoProfile' (fromLocalProfile mp) <> ", "
       Nothing -> " to join, "
-
-groupInvitationSub :: ShortGroupInfo -> StyledString
-groupInvitationSub ShortGroupInfo {groupName = ldn} =
-  highlight ("#" <> viewName ldn)
-    <> " - you are invited ("
-    <> highlight ("/j " <> viewName ldn)
-    <> " to join, "
-    <> highlight ("/d #" <> viewName ldn)
-    <> " to delete invitation)"
-
-viewContactsMerged :: Contact -> Contact -> Contact -> [StyledString]
-viewContactsMerged c1 c2 ct' =
-  [ "contact " <> ttyContact' c2 <> " is merged into " <> ttyContact' c1,
-    "use " <> ttyToContact' ct' <> highlight' "<message>" <> " to send messages"
-  ]
 
 viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
 viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
@@ -2251,8 +2214,8 @@ viewFileTransferStatus (FTRcv ft@RcvFileTransfer {fileId, fileInvitation = FileI
       RFSNew -> "not accepted yet, use " <> highlight ("/fr " <> show fileId) <> " to receive file"
       RFSAccepted _ -> "just started"
       RFSConnected _ -> "progress " <> fileProgress chunksNum chunkSize fileSize
-      RFSComplete RcvFileInfo {filePath} -> "complete, path: " <> plain filePath
-      RFSCancelled (Just RcvFileInfo {filePath}) -> "cancelled, received part path: " <> plain filePath
+      RFSComplete filePath -> "complete, path: " <> plain filePath
+      RFSCancelled (Just filePath) -> "cancelled, received part path: " <> plain filePath
       RFSCancelled Nothing -> "cancelled"
 
 viewFileTransferStatusXFTP :: AChatItem -> [StyledString]
@@ -2472,7 +2435,6 @@ viewChatError isCmd logLevel testView = \case
     CEFileCancelled f -> ["file cancelled: " <> plain f]
     CEFileCancel fileId e -> ["error cancelling file " <> sShow fileId <> ": " <> sShow e]
     CEFileAlreadyExists f -> ["file already exists: " <> plain f]
-    CEFileRead f e -> ["cannot read file " <> plain f <> ": " <> plain e]
     CEFileWrite f e -> ["cannot write file " <> plain f <> ": " <> plain e]
     CEFileSend fileId e -> ["error sending file " <> sShow fileId <> ": " <> sShow e]
     CEFileRcvChunk e -> ["error receiving file: " <> plain e]
@@ -2565,10 +2527,6 @@ viewChatError isCmd logLevel testView = \case
             "[" <> connEntityLabel entity <> ", connId: " <> cId conn <> "] "
         Just entity@(RcvGroupMsgConnection conn GroupInfo {groupId} GroupMember {groupMemberId}) ->
           "[" <> connEntityLabel entity <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
-        Just entity@(RcvFileConnection conn RcvFileTransfer {fileId}) ->
-          "[" <> connEntityLabel entity <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
-        Just entity@(SndFileConnection conn SndFileTransfer {fileId}) ->
-          "[" <> connEntityLabel entity <> ", fileId: " <> sShow fileId <> ", connId: " <> cId conn <> "] "
         Just entity@(UserContactConnection conn UserContact {userContactLinkId}) ->
           "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
         Nothing -> ""
@@ -2604,8 +2562,6 @@ connEntityLabel = \case
   RcvDirectMsgConnection _ (Just Contact {localDisplayName = c}) -> plain c
   RcvDirectMsgConnection _ Nothing -> "rcv direct msg"
   RcvGroupMsgConnection _ GroupInfo {localDisplayName = g} GroupMember {localDisplayName = m} -> plain $ "#" <> g <> " " <> m
-  RcvFileConnection _ RcvFileTransfer {fileInvitation = FileInvitation {fileName}} -> plain $ "rcv file " <> T.pack fileName
-  SndFileConnection _ SndFileTransfer {fileName} -> plain $ "snd file " <> T.pack fileName
   UserContactConnection _ UserContact {} -> "contact address"
 
 ttyContact :: ContactName -> StyledString

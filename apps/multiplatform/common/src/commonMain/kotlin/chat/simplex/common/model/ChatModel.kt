@@ -1916,12 +1916,6 @@ class ContactRef(
 }
 
 @Serializable
-class ContactSubStatus(
-  val contact: Contact,
-  val contactError: ChatError? = null
-)
-
-@Serializable
 data class Connection(
   val connId: Long,
   val agentConnId: String,
@@ -2519,12 +2513,6 @@ class LinkPreview (
     )
   }
 }
-
-@Serializable
-class MemberSubError (
-  val member: GroupMemberIds,
-  val memberError: ChatError
-)
 
 @Serializable
 class NoteFolder(

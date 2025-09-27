@@ -714,7 +714,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case fileCancelled(message: String)
     case fileCancel(fileId: Int64, message: String)
     case fileAlreadyExists(filePath: String)
-    case fileRead(filePath: String, message: String)
     case fileWrite(filePath: String, message: String)
     case fileSend(fileId: Int64, agentError: String)
     case fileRcvChunk(message: String)
