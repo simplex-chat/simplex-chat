@@ -78,6 +78,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (decodeASCII, encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.Clock.System (systemEpochDay)
 import Directory.Search
@@ -89,7 +90,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared (groupInfoQueryFields, groupInfoQueryFrom)
 import Simplex.Chat.Types
-import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..), blobFieldDecoder)
+import Simplex.Messaging.Agent.Store.DB (BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
@@ -242,10 +243,10 @@ insertGroupReg db GroupReg {dbGroupId, userGroupRegId, dbContactId, dbOwnerMembe
     db
     [sql|
       INSERT INTO sx_directory_group_regs
-        (group_id, user_group_reg_id, contact_id, owner_member_id, group_reg_status, group_promoted, created_at, created_at)
+        (group_id, user_group_reg_id, contact_id, owner_member_id, group_reg_status, group_promoted, created_at, updated_at)
       VALUES (?,?,?,?,?,?,?,?)
     |]
-    (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, promoted, createdAt, createdAt)
+    (dbGroupId, userGroupRegId, dbContactId, dbOwnerMemberId, groupRegStatus, BI promoted, createdAt, createdAt)
 
 delGroupReg :: ChatController -> GroupId -> IO (Either String ())
 delGroupReg cc gId = withDB' "delGroupReg" cc (`deleteGroupReg` gId)
@@ -541,9 +542,9 @@ instance StrEncoding GroupRegStatus where
       "removed" -> pure GRSRemoved
       _ -> fail "invalid GroupRegStatus"
 
-instance ToField GroupRegStatus where toField = toField . Binary . strEncode
+instance ToField GroupRegStatus where toField = toField . decodeASCII . strEncode
 
-instance FromField GroupRegStatus where fromField = blobFieldDecoder strDecode
+instance FromField GroupRegStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 openDirectoryLog :: Maybe FilePath -> IO DirectoryLog
 openDirectoryLog = \case

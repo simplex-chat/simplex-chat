@@ -15,6 +15,56 @@ SET row_security = off;
 CREATE SCHEMA test_chat_schema;
 
 
+
+CREATE FUNCTION test_chat_schema.on_group_members_delete_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count - 1
+    WHERE group_id = OLD.group_id;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count + 1
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_update_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+      != EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (
+          CASE WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+          THEN 1 ELSE -1 END
+        )
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_table_access_method = heap;
 
 
@@ -416,8 +466,7 @@ CREATE TABLE test_chat_schema.contacts (
     grp_direct_inv_from_group_id bigint,
     grp_direct_inv_from_group_member_id bigint,
     grp_direct_inv_from_member_conn_id bigint,
-    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL,
-    custom_field1 text
+    grp_direct_inv_started_connection smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -589,6 +638,13 @@ ALTER TABLE test_chat_schema.group_member_intros ALTER COLUMN group_member_intro
 
 
 
+CREATE TABLE test_chat_schema.group_member_status_predicates (
+    member_status text NOT NULL,
+    current_member bigint DEFAULT 0 NOT NULL
+);
+
+
+
 CREATE TABLE test_chat_schema.group_members (
     group_member_id bigint NOT NULL,
     group_id bigint NOT NULL,
@@ -718,7 +774,7 @@ CREATE TABLE test_chat_schema.groups (
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
     via_group_link_uri bytea,
-    custom_field1 text
+    summary_current_members_count bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -1377,6 +1433,11 @@ ALTER TABLE ONLY test_chat_schema.group_member_intros
 
 
 
+ALTER TABLE ONLY test_chat_schema.group_member_status_predicates
+    ADD CONSTRAINT group_member_status_predicates_pkey PRIMARY KEY (member_status);
+
+
+
 ALTER TABLE ONLY test_chat_schema.group_members
     ADD CONSTRAINT group_members_group_id_member_id_key UNIQUE (group_id, member_id);
 
@@ -1890,10 +1951,6 @@ CREATE INDEX idx_contacts_contact_request_id ON test_chat_schema.contacts USING 
 
 
 
-CREATE INDEX idx_contacts_custom_field1 ON test_chat_schema.contacts USING btree (custom_field1);
-
-
-
 CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_group_id);
 
 
@@ -2062,15 +2119,15 @@ CREATE INDEX idx_groups_chat_ts ON test_chat_schema.groups USING btree (user_id,
 
 
 
-CREATE INDEX idx_groups_custom_field1 ON test_chat_schema.groups USING btree (custom_field1);
-
-
-
 CREATE INDEX idx_groups_group_profile_id ON test_chat_schema.groups USING btree (group_profile_id);
 
 
 
 CREATE INDEX idx_groups_inv_queue_info ON test_chat_schema.groups USING btree (inv_queue_info);
+
+
+
+CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups USING btree (summary_current_members_count);
 
 
 
@@ -2255,6 +2312,18 @@ CREATE INDEX idx_xftp_file_descriptions_user_id ON test_chat_schema.xftp_file_de
 
 
 CREATE INDEX note_folders_user_id ON test_chat_schema.note_folders USING btree (user_id);
+
+
+
+CREATE TRIGGER tr_group_members_delete_update_summary AFTER DELETE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_delete_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_insert_update_summary AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_update_update_summary();
 
 
 

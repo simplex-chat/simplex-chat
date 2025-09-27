@@ -938,7 +938,7 @@ getUserGroupsToSubscribe db user@User {userId} = do
 getBaseGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
 getBaseGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
   map (toGroupInfo vr userContactId [])
-    <$> DB.query db (groupInfoQuery <> condition) (userId, userContactId, search, search, search, search)
+    <$> DB.query db (groupInfoQuery <> " " <> condition) (userId, userContactId, search, search, search, search)
   where
     condition =
       [sql|

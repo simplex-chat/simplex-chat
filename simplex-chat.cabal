@@ -493,9 +493,10 @@ executable simplex-directory-service
   default-language: Haskell2010
   if flag(client_postgres)
     other-modules:
-        Directory.Postgres.SQLite.Migrations
+        Directory.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
+        , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
   else
     other-modules:
@@ -620,6 +621,7 @@ test-suite simplex-chat-test
         Directory.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
+        , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
   else
     other-modules:

@@ -709,7 +709,7 @@ toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just Busi
 toBusinessChatInfo _ = Nothing
 
 groupInfoQuery :: Query
-groupInfoQuery = groupInfoQueryFields <> groupInfoQueryFrom
+groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
 
 groupInfoQueryFields :: Query
 groupInfoQueryFields =

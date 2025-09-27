@@ -28,7 +28,7 @@ import Control.Exception (bracket_)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
-import System.Directory (createDirectory, removePathForcibly)
+import System.Directory (createDirectoryIfMissing, removePathForcibly)
 #else
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
@@ -50,7 +50,7 @@ main = do
 #endif
     $ do
 #if defined(dbPostgres)
-      around_ (bracket_ (createDirectory "tests/tmp") (removePathForcibly "tests/tmp")) $
+      around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
