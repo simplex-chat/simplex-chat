@@ -37,7 +37,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (AConnectionRequestUri (..), AConnShortLink (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
+import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
 import Simplex.Messaging.Agent.Store (AnyStoreError (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
@@ -656,21 +656,22 @@ type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, 
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupMemberRow
 
 type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime)
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image) :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (uiThemes, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image) :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (uiThemes, currentMembers, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
       groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
-   in GroupInfo {groupId, useRelays = False, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, customData, membersRequireAttention, viaGroupLinkUri}
+      groupSummary = GroupSummary {currentMembers}
+   in GroupInfo {groupId, useRelays = False, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -688,13 +689,14 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
       memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
       supportChat = case supportChatTs_ of
         Just chatTs ->
-          Just GroupSupportChat {
-            chatTs,
-            unread = supportChatUnread,
-            memberAttention = supportChatMemberAttention,
-            mentions = supportChatMentions,
-            lastMsgFromMemberTs = supportChatLastMsgFromMemberTs
-          }
+          Just
+            GroupSupportChat
+              { chatTs,
+                unread = supportChatUnread,
+                memberAttention = supportChatMemberAttention,
+                mentions = supportChatMentions,
+                lastMsgFromMemberTs = supportChatLastMsgFromMemberTs
+              }
         _ -> Nothing
    in GroupMember {..}
 
@@ -707,7 +709,10 @@ toBusinessChatInfo (Just chatType, Just businessId, Just customerId) = Just Busi
 toBusinessChatInfo _ = Nothing
 
 groupInfoQuery :: Query
-groupInfoQuery =
+groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
+
+groupInfoQueryFields :: Query
+groupInfoQueryFields =
   [sql|
     SELECT
       -- GroupInfo
@@ -716,13 +721,18 @@ groupInfoQuery =
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
-      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
+  |]
+
+groupInfoQueryFrom :: Query
+groupInfoQueryFrom =
+  [sql|
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id
@@ -808,7 +818,8 @@ setViaGroupLinkUri db groupId connId = do
     DB.query
       db
       "SELECT via_contact_uri, via_contact_uri_hash FROM connections WHERE connection_id = ?"
-      (Only connId) :: IO [(Maybe ConnReqContact, Maybe ConnReqUriHash)]
+      (Only connId) ::
+      IO [(Maybe ConnReqContact, Maybe ConnReqUriHash)]
   forM_ (listToMaybe r) $ \(viaContactUri, viaContactUriHash) ->
     DB.execute
       db

@@ -15,6 +15,76 @@ SET row_security = off;
 CREATE SCHEMA test_chat_schema;
 
 
+
+CREATE FUNCTION test_chat_schema.is_current_member(p_status text) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN p_status IN (
+    'introduced',
+    'intro-inv',
+    'accepted',
+    'announced',
+    'connected',
+    'complete',
+    'creator'
+  );
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_delete_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF is_current_member(OLD.member_status) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count - 1
+    WHERE group_id = OLD.group_id;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF is_current_member(NEW.member_status) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count + 1
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_update_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  was_active BOOLEAN;
+  is_active BOOLEAN;
+BEGIN
+  was_active := is_current_member(OLD.member_status);
+  is_active := is_current_member(NEW.member_status);
+
+  IF was_active != is_active THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (CASE WHEN is_active THEN 1 ELSE -1 END)
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_table_access_method = heap;
 
 
@@ -716,7 +786,8 @@ CREATE TABLE test_chat_schema.groups (
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
-    via_group_link_uri bytea
+    via_group_link_uri bytea,
+    summary_current_members_count bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -2064,6 +2135,10 @@ CREATE INDEX idx_groups_inv_queue_info ON test_chat_schema.groups USING btree (i
 
 
 
+CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups USING btree (summary_current_members_count);
+
+
+
 CREATE INDEX idx_groups_via_group_link_uri_hash ON test_chat_schema.groups USING btree (user_id, via_group_link_uri_hash);
 
 
@@ -2245,6 +2320,18 @@ CREATE INDEX idx_xftp_file_descriptions_user_id ON test_chat_schema.xftp_file_de
 
 
 CREATE INDEX note_folders_user_id ON test_chat_schema.note_folders USING btree (user_id);
+
+
+
+CREATE TRIGGER tr_group_members_delete_update_summary AFTER DELETE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_delete_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_insert_update_summary AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_update_update_summary();
 
 
 

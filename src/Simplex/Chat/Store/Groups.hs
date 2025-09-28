@@ -70,9 +70,7 @@ module Simplex.Chat.Store.Groups
     cleanupHostGroupLinkConn,
     deleteGroup,
     getUserGroupsToSubscribe,
-    getUserGroupDetails,
-    getUserGroupsWithSummary,
-    getGroupSummary,
+    getBaseGroupDetails,
     getContactGroupPreferences,
     getGroupInvitation,
     createNewContactMember,
@@ -170,6 +168,7 @@ import Data.List (partition, sortOn)
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
@@ -362,6 +361,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
+          groupSummary = GroupSummary 1,
           customData = Nothing,
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing
@@ -436,6 +436,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
+                  groupSummary = GroupSummary 2,
                   customData = Nothing,
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing
@@ -934,65 +935,21 @@ getUserGroupsToSubscribe db user@User {userId} = do
   groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
   rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds
 
-getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
-getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
-  g_ <-
-    map (toGroupInfo vr userContactId [])
-      <$> DB.query
-        db
-        [sql|
-          SELECT
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
-            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-            g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
-            mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
-            mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at,
-            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
-          FROM groups g
-          JOIN group_profiles gp USING (group_profile_id)
-          JOIN group_members mu USING (group_id)
-          JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          WHERE g.user_id = ? AND mu.contact_id = ?
-            AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
-              OR LOWER(gp.full_name) LIKE '%' || ? || '%'
-              OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
-              OR LOWER(gp.description) LIKE '%' || ? || '%'
-            )
-        |]
-        (userId, userContactId, search, search, search, search)
-  mapM (addGroupChatTags db) g_
+getBaseGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
+getBaseGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
+  map (toGroupInfo vr userContactId [])
+    <$> DB.query db (groupInfoQuery <> " " <> condition) (userId, userContactId, search, search, search, search)
   where
-    search = maybe "" (map toLower) search_
-
-getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfoSummary]
-getUserGroupsWithSummary db vr user _contactId_ search_ = do
-  gs <- getUserGroupDetails db vr user _contactId_ search_
-  forM gs $ \g@GroupInfo {groupId} -> do
-    s <- getGroupSummary db user groupId
-    link_ <- eitherToMaybe <$> runExceptT (getGroupLink db user g)
-    pure $ GIS g s link_
-
--- the statuses on non-current members should match memberCurrent' function
-getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
-getGroupSummary db User {userId} groupId = do
-  currentMembers_ <-
-    maybeFirstRow fromOnly $
-      DB.query
-        db
-        [sql|
-          SELECT count (m.group_member_id)
-          FROM groups g
-          JOIN group_members m USING (group_id)
-          WHERE g.user_id = ?
-            AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?)
-        |]
-        (userId, groupId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
-  pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
+    condition =
+      [sql|
+        WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.full_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
+            OR LOWER(gp.description) LIKE '%' || ? || '%'
+          )
+      |]
+    search = maybe "" (T.map toLower) search_
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
@@ -1915,7 +1872,7 @@ getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
             g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
             g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
             g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+            g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
             -- GroupInfo {membership}
             mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
             mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -2590,7 +2547,32 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure
+      Contact
+        { contactId,
+          localDisplayName,
+          profile = memberProfile,
+          activeConn = Just ctConn,
+          viaGroup = Nothing,
+          contactUsed = True,
+          contactStatus = CSActive,
+          chatSettings = defaultChatSettings,
+          userPreferences,
+          mergedPreferences,
+          createdAt = currentTs,
+          updatedAt = currentTs,
+          chatTs = Just currentTs,
+          preparedContact = Nothing,
+          contactRequestId = Nothing,
+          contactGroupMemberId = Just groupMemberId,
+          contactGrpInvSent = False,
+          groupDirectInv = Nothing,
+          chatTags = [],
+          chatItemTTL = Nothing,
+          uiThemes = Nothing,
+          chatDeleted = False,
+          customData = Nothing
+        }
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
