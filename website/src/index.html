@@ -66,13 +66,13 @@
                         <li><a href="/docs/protocol/simplex-chat.html">{{ "chat-protocol" | i18n({}, lang ) | safe }}</a></li>
                         <li><a href="/docs/glossary.html">{{ "glossary" | i18n({}, lang ) | safe }}</a></li>
                         
-                        <hr class=" h-[1px] w-full dark:opacity-[0.1]">
+                        <hr>
                         
                         {% for doc in docs_dropdown.items %}
                             <li><a href="{{ doc.url | url }}" class="{{ "active" if page.url == doc.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ doc.title | i18n({}, lang ) | safe }}</a></li>
                         {% endfor %}
 
-                        <hr class=" h-[1px] w-full dark:opacity-[0.1]">
+                        <hr>
 
                         <li><a href="/docs/translations.html"
                         >{{ "docs-dropdown-7" | i18n({}, lang ) | safe }}
@@ -115,11 +115,19 @@
         </nav>
 
         <div class="right-links">
+            <button href="#" class="theme-switch-btn">
+                <img src="/img/design_3/sun.svg"  alt="" srcset="" class="sun">
+                <img src="/img/new/moon.svg" alt="" srcset="" class="moon hidden">
+            </button>
+
             <div class="nav-link flag-container">
                 <a href="javascript:void(0);">
                     {% for language in languages.languages %}
                         {% if language.label == page.url | getlang %}
                             <p style="text-align:center;">{{ language.label }}</p>
+                            <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                            </svg>
                         {% endif %}
                     {% endfor %}
                 </a>
@@ -147,12 +155,25 @@
                 </ul>
             </div>
 
-            <button href="#" class="theme-switch-btn">
-                <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
-                <img src="/img/new/moon.svg" alt="" srcset="" class="moon hidden">
+            <button id="cross-btn" class="nav-toggle-btn">
+                <svg id="cross" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
+            </svg>
             </button>
         </div>
     </header>
+    <div id="mobile-header">
+        <a class="logo" href="/"><img src="/img/new/logo-symbol-dark.svg" alt="logo" /></a>
+
+        <button id="hamburger" class="nav-toggle-btn">
+            <svg viewBox="0 0 100 80" width="36" height="36">
+                <rect width="100" height="15"></rect>
+                <rect y="30" width="100" height="15"></rect>
+                <rect y="60" width="100" height="15"></rect>
+            </svg>
+        </button>
+    </div>
+
     <div class="screen">
         <section class="page-1 cover">
             <div class="content">
@@ -234,6 +255,50 @@
         window.addEventListener('resize', apply);
         window.addEventListener('orientationchange', apply);
     })();
+
+    const nav = document.querySelector('header#navbar');
+
+    (function navColorOnScroll(){
+        const header = nav; // same element
+        const cover = document.querySelector('.page-1.cover');
+        if (!header || !cover || !('IntersectionObserver' in window)) {
+            window.addEventListener('load', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
+            window.addEventListener('scroll', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
+            return;
+        }
+        const io = new IntersectionObserver((entries) => {
+            for (const e of entries) {
+            // if cover is mostly visible, keep white nav; else switch to #001796
+            const onCover = e.isIntersecting && e.intersectionRatio >= 0.55;
+            document.body.classList.toggle('change-nav-color', !onCover);
+            }
+        }, { threshold: [0, 0.55, 1] });
+        io.observe(cover);
+    })();
+    
+    window.addEventListener('click',(e)=>{
+        if(e.target.closest('.nav-link')){
+            if(e.target.closest('.nav-link').classList.contains('active')){
+                e.target.closest('.nav-link').classList.remove('active');
+            }
+            else{
+                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'))
+                e.target.closest('.nav-link').classList.add('active');
+            }
+        }
+        else if(e.target.closest('.nav-toggle-btn')){
+            document.body.classList.toggle('lock-scroll');
+            if(nav.classList.contains('open')){
+                nav.classList.remove('open');
+            }
+            else{
+                nav.classList.add('open');
+            }
+        }
+        // else if(e.target.closest('.theme-switch-btn')){
+        //     themeSwitch();
+        // }
+    });
     </script>
 </body>
 
