@@ -947,22 +947,10 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                         Right DGReserved -> sendReply $ "The group " <> groupRef <> " is already listed in the directory."
                         _ -> getGroupRolesStatus g gr >>= \case
                           Right GRSOk -> do
-                            let grPromoted' = fromMaybe promoted promote
-                            -- TODO prevent admins from promoting groups via approval, only demoting
+                            let grPromoted'
+                                  | promoted || knownCt `elem` superUsers = fromMaybe promoted promote
+                                  | otherwise = False
                             setGroupStatusPromo sendReply st env cc gr GRSActive grPromoted' $ do
-                              -- forM_ promote $ \promo ->
-                              --   if promo -- admins can unpromote, only super-user can promote when approving
-                              --     then
-                              --       unless promoted $
-                              --         if knownCt `elem` superUsers
-                              --           then setGroupPromoted st env cc gr True >>= \case
-                              --             Left e -> sendReply ""
-                              --           else sendReply "You cannot promote groups"
-                              --     else do
-                              --       r_ <- if promoted then setGroupPromoted st env cc user groupId False else pure $ Right ()
-                              --       notifyOtherSuperUsers $ case r_ of
-                              --         Right () -> "Group promotion is disabled for " <> groupRef
-                              --         Left e -> "Error disabling group promotion for " <> groupRef <> ": " <> T.pack e
                               let approved = "The group " <> userGroupReference' gr n <> " is approved"
                               notifyOwner gr $
                                 (approved <> " and listed in directory - please moderate it!\n")
@@ -978,7 +966,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                                       owner <- groupOwnerInfo groupRef $ dbContactId gr
                                       pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
                                     Left err -> pure err
-                              sendReply $ "Group approved!" <> maybe "" ("\n" <>) invited
+                              sendReply $ "Group approved" <> (if grPromoted' then " (promoted)" else "") <>"!" <> maybe "" ("\n" <>) invited
                               notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> maybe "" ("\n" <>) invited
                           Right GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                           Right GRSContactNotOwner -> replyNotApproved "user is not an owner."

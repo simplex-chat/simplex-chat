@@ -1119,7 +1119,7 @@ testListUserGroups promote ps =
           checkListings ["security"] []
           superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
           superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
-          superUser <## "      Group approved!"
+          superUser <## "      Group approved (promoted)!"
           bob <# "'SimpleX Directory'> The group ID 1 (privacy) is approved and listed in directory - please moderate it!"
           bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
           bob <## ""
