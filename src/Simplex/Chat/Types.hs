@@ -181,7 +181,6 @@ data Contact = Contact
     localDisplayName :: ContactName,
     profile :: LocalProfile,
     activeConn :: Maybe Connection,
-    viaGroup :: Maybe Int64,
     contactUsed :: Bool,
     contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
@@ -355,9 +354,6 @@ data UserContact = UserContact
   }
   deriving (Eq, Show)
 
-userContactGroupId :: UserContact -> Maybe GroupId
-userContactGroupId UserContact {groupId} = groupId
-
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
@@ -442,26 +438,6 @@ optionalFullName :: ContactName -> Text -> Maybe Text -> Text
 optionalFullName displayName fullName shortDescr
   | T.null fullName || displayName == fullName = maybe "" (\sd -> " (" <> sd <> ")") shortDescr
   | otherwise = " (" <> fullName <> ")"
-
-data ShortGroup = ShortGroup
-  { shortInfo :: ShortGroupInfo,
-    members :: [ShortGroupMember]
-  }
-
-data ShortGroupInfo = ShortGroupInfo
-  { groupId :: GroupId,
-    groupName :: GroupName,
-    membershipStatus :: GroupMemberStatus
-  }
-  deriving (Eq, Show)
-
-data ShortGroupMember = ShortGroupMember
-  { groupMemberId :: GroupMemberId,
-    groupId :: GroupId,
-    memberName :: ContactName,
-    connId :: AgentConnId
-  }
-  deriving (Show)
 
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
@@ -1328,9 +1304,6 @@ data SndFileTransfer = SndFileTransfer
   }
   deriving (Eq, Show)
 
-sndFileTransferConnId :: SndFileTransfer -> ConnId
-sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
-
 type FileTransferId = Int64
 
 data FileInvitation = FileInvitation
@@ -1418,10 +1391,10 @@ data RcvFileDescr = RcvFileDescr
 
 data RcvFileStatus
   = RFSNew
-  | RFSAccepted {fileInfo :: RcvFileInfo}
-  | RFSConnected {fileInfo :: RcvFileInfo}
-  | RFSComplete {fileInfo :: RcvFileInfo}
-  | RFSCancelled {fileInfo_ :: Maybe RcvFileInfo}
+  | RFSAccepted {filePath :: FilePath}
+  | RFSConnected {filePath :: FilePath}
+  | RFSComplete {filePath :: FilePath}
+  | RFSCancelled {filePath_ :: Maybe FilePath}
   deriving (Eq, Show)
 
 rcvFileComplete :: RcvFileStatus -> Bool
@@ -1432,29 +1405,11 @@ rcvFileComplete = \case
 rcvFileCompleteOrCancelled :: RcvFileTransfer -> Bool
 rcvFileCompleteOrCancelled RcvFileTransfer {fileStatus, cancelled} = rcvFileComplete fileStatus || cancelled
 
-data RcvFileInfo = RcvFileInfo
-  { filePath :: FilePath,
-    connId :: Maybe Int64,
-    agentConnId :: Maybe AgentConnId
-  }
-  deriving (Eq, Show)
-
-liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
-liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> Just fi
-  RFSConnected fi -> Just fi
-  _ -> Nothing
-
-liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
-liveRcvFileTransferConnId ft = acId =<< liveRcvFileTransferInfo ft
-  where
-    acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
-    acId _ = Nothing
-
 liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
-liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
-  where
-    fp RcvFileInfo {filePath} = filePath
+liveRcvFileTransferPath RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted filePath -> Just filePath
+  RFSConnected filePath -> Just filePath
+  _ -> Nothing
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Ord, Show)
@@ -1775,7 +1730,7 @@ instance TextEncoding ConnStatus where
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
 
-data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile | ConnUserContact
+data ConnType = ConnContact | ConnMember | ConnUserContact
   deriving (Eq, Show)
 
 instance FromField ConnType where fromField = fromTextField_ textDecode
@@ -1793,15 +1748,11 @@ instance TextEncoding ConnType where
   textDecode = \case
     "contact" -> Just ConnContact
     "member" -> Just ConnMember
-    "snd_file" -> Just ConnSndFile
-    "rcv_file" -> Just ConnRcvFile
     "user_contact" -> Just ConnUserContact
     _ -> Nothing
   textEncode = \case
     ConnContact -> "contact"
     ConnMember -> "member"
-    ConnSndFile -> "snd_file"
-    ConnRcvFile -> "rcv_file"
     ConnUserContact -> "user_contact"
 
 data GroupMemberIntro = GroupMemberIntro
@@ -1900,8 +1851,8 @@ instance TextEncoding CommandStatus where
 data CommandFunction
   = CFCreateConnGrpMemInv
   | CFCreateConnGrpInv
-  | CFCreateConnFileInvDirect
-  | CFCreateConnFileInvGroup
+  | CFCreateConnFileInvDirect -- deprecated
+  | CFCreateConnFileInvGroup -- deprecated
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
@@ -2119,8 +2070,6 @@ $(JQ.deriveJSON defaultJSON ''RcvFileDescr)
 
 $(JQ.deriveJSON defaultJSON ''XFTPRcvFile)
 
-$(JQ.deriveJSON defaultJSON ''RcvFileInfo)
-
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RFS") ''RcvFileStatus)
 
 $(JQ.deriveJSON defaultJSON ''RcvFileTransfer)
@@ -2152,7 +2101,3 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
-
-$(JQ.deriveJSON defaultJSON ''ShortGroupInfo)
-
-$(JQ.deriveJSON defaultJSON ''ShortGroupMember)

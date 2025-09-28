@@ -54,7 +54,6 @@ main = do
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
-            [] -- skipComparisonForDownMigrations
             schemaDumpDBOpts
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
 #else

@@ -966,7 +966,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                                       owner <- groupOwnerInfo groupRef $ dbContactId gr
                                       pure $ "Invited " <> owner <> " to owners' group " <> viewName ogName
                                     Left err -> pure err
-                              sendReply $ "Group approved" <> (if grPromoted' then " (promoted)" else "") <>"!" <> maybe "" ("\n" <>) invited
+                              sendReply $ "Group approved" <> (if grPromoted' then " (promoted)" else "") <> "!" <> maybe "" ("\n" <>) invited
                               notifyOtherSuperUsers $ approved <> " by " <> viewName (localDisplayName' ct) <> maybe "" ("\n" <>) invited
                           Right GRSServiceNotAdmin -> replyNotApproved serviceNotAdmin
                           Right GRSContactNotOwner -> replyNotApproved "user is not an owner."

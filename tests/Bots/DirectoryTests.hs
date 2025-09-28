@@ -1229,19 +1229,11 @@ testCapthaScreening ps =
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
   testListUserGroups False ps
-  restoreDirectoryService ps 3 3 $ \superUser _dsLink ->
+  restoreDirectoryService ps 11 $ \superUser _dsLink ->
     withTestChat ps "bob" $ \bob ->
       withTestChat ps "cath" $ \cath -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob
-          <### [ "#privacy: connected to server(s)",
-                 "#security: connected to server(s)"
-               ]
-        cath <## "2 contacts connected (use /cs for the list)"
-        cath
-          <### [ "#privacy: connected to server(s)",
-                 "#anonymity: connected to server(s)"
-               ]
+        bob <## "5 connections subscribed"
+        cath <## "5 connections subscribed"
         listGroups superUser bob cath
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
@@ -1369,14 +1361,11 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
         getContactLink ds True
   withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test
 
-restoreDirectoryService :: HasCallStack => TestParams -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
-restoreDirectoryService ps ctCount grCount test = do
+restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> String -> IO ()) -> IO ()
+restoreDirectoryService ps connCount test = do
   dsLink <-
     withTestChat ps serviceDbPrefix $ \ds -> do
-      ds <## (show ctCount <> " contacts connected (use /cs for the list)")
-      ds <## "Your address is active! To show: /sa"
-      ds <## (show grCount <> " group links active")
-      forM_ [1 .. grCount] $ \_ -> ds <##. "#"
+      ds .<## (show connCount <> " connections subscribed")
       ds ##> "/sa"
       dsLink <- getContactLink ds False
       ds <## "auto_accept on"
@@ -1391,9 +1380,9 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
   runDirectory cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
-      superUser <## "1 contacts connected (use /cs for the list)"
-      when createOwnersGroup $
-        superUser <## "#owners: connected to server(s)"
+      if createOwnersGroup
+        then superUser <## "2 connections subscribed"
+        else superUser <## "1 connections subscribed"
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
