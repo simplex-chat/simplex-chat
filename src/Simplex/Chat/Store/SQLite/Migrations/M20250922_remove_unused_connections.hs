@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_obsolete_connections where
+module Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20250922_remove_obsolete_connections :: Query
-m20250922_remove_obsolete_connections =
+m20250922_remove_unused_connections :: Query
+m20250922_remove_unused_connections =
   [sql|
 DELETE FROM connections WHERE snd_file_id IS NOT NULL;
 DELETE FROM connections WHERE rcv_file_id IS NOT NULL;
@@ -62,8 +62,8 @@ DROP INDEX idx_contacts_via_group;
 ALTER TABLE contacts DROP COLUMN via_group;
 |]
 
-down_m20250922_remove_obsolete_connections :: Query
-down_m20250922_remove_obsolete_connections =
+down_m20250922_remove_unused_connections :: Query
+down_m20250922_remove_unused_connections =
   [sql|
 CREATE TABLE snd_file_chunks(
   file_id INTEGER NOT NULL,
