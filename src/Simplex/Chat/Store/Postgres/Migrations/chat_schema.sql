@@ -16,11 +16,29 @@ CREATE SCHEMA test_chat_schema;
 
 
 
+CREATE FUNCTION test_chat_schema.is_current_member(p_status text) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN p_status IN (
+    'introduced',
+    'intro-inv',
+    'accepted',
+    'announced',
+    'connected',
+    'complete',
+    'creator'
+  );
+END;
+$$;
+
+
+
 CREATE FUNCTION test_chat_schema.on_group_members_delete_update_summary() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1) THEN
+  IF is_current_member(OLD.member_status) THEN
     UPDATE groups
     SET summary_current_members_count = summary_current_members_count - 1
     WHERE group_id = OLD.group_id;
@@ -35,7 +53,7 @@ CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURN
     LANGUAGE plpgsql
     AS $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1) THEN
+  IF is_current_member(NEW.member_status) THEN
     UPDATE groups
     SET summary_current_members_count = summary_current_members_count + 1
     WHERE group_id = NEW.group_id;
@@ -49,15 +67,17 @@ $$;
 CREATE FUNCTION test_chat_schema.on_group_members_update_update_summary() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
+DECLARE
+  was_active BOOLEAN;
+  is_active BOOLEAN;
 BEGIN
-  IF EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
-      != EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1) THEN
+  was_active := is_current_member(OLD.member_status);
+  is_active := is_current_member(NEW.member_status);
+
+  IF was_active != is_active THEN
     UPDATE groups
     SET summary_current_members_count = summary_current_members_count +
-        (
-          CASE WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
-          THEN 1 ELSE -1 END
-        )
+        (CASE WHEN is_active THEN 1 ELSE -1 END)
     WHERE group_id = NEW.group_id;
   END IF;
   RETURN NEW;
@@ -634,13 +654,6 @@ ALTER TABLE test_chat_schema.group_member_intros ALTER COLUMN group_member_intro
     NO MINVALUE
     NO MAXVALUE
     CACHE 1
-);
-
-
-
-CREATE TABLE test_chat_schema.group_member_status_predicates (
-    member_status text NOT NULL,
-    current_member bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -1430,11 +1443,6 @@ ALTER TABLE ONLY test_chat_schema.group_member_intros
 
 ALTER TABLE ONLY test_chat_schema.group_member_intros
     ADD CONSTRAINT group_member_intros_re_group_member_id_to_group_member_id_key UNIQUE (re_group_member_id, to_group_member_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.group_member_status_predicates
-    ADD CONSTRAINT group_member_status_predicates_pkey PRIMARY KEY (member_status);
 
 
 
