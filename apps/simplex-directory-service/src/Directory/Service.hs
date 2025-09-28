@@ -164,7 +164,7 @@ directoryServiceCLI st opts = do
       forM_ u_ $ \user -> directoryServiceEvent st opts env user cc resp
 
 updateListingDelay :: Int
-updateListingDelay = 15 * 60 * 1000000 -- update every 15 minutes
+updateListingDelay = 5 * 60 * 1000000 -- update every 5 minutes
 
 updateListingsThread_ :: DirectoryOpts -> ServiceState -> [IO ()]
 updateListingsThread_ opts env = maybe [] (\f -> [updateListingsThread f]) $ webFolder opts
