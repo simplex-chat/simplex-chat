@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import APIDocs
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -30,6 +29,7 @@ import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
 #else
+import APIDocs
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
@@ -45,8 +45,8 @@ main = do
 #endif
   withGlobalLogging logCfg . hspec
 #if defined(dbPostgres)
-    . beforeAll_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    . afterAll_ (dropDatabaseAndUser testDBConnectInfo)
+    . before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
+    . after_ (dropDatabaseAndUser testDBConnectInfo)
 #endif
     $ do
 #if defined(dbPostgres)
@@ -72,7 +72,6 @@ main = do
       describe "Random servers" randomServersTests
 #if defined(dbPostgres)
       around testBracket
-        . after_ (dropAllSchemasExceptSystem testDBConnectInfo)
 #else
       around (testBracket chatQueryStats agentQueryStats)
 #endif

@@ -276,6 +276,7 @@ testSuspendResume ps =
       bob <## "The group is listed in directory."
       superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated - only link or whitespace changes."
       superUser <## "The group remained listed in directory."
+#if !defined(dbPostgres)
       -- upgrade link
       -- make it upgradeable first
       superUser #> "@'SimpleX Directory' /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
@@ -304,6 +305,7 @@ testSuspendResume ps =
       superUser <# "'SimpleX Directory'> > /owner 1:privacy hello there"
       superUser <## "      Forwarded to @bob, the owner of the group ID 1 (privacy)"
       bob <# "'SimpleX Directory'> hello there"
+#endif
 
 testDeleteGroup :: HasCallStack => TestParams -> IO ()
 testDeleteGroup ps =

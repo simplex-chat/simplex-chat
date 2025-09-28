@@ -35,13 +35,15 @@ VALUES
   ('creator', 1);
 
 UPDATE groups
-SET summary_current_members_count = (
-    SELECT COUNT(m.group_member_id)
-    FROM group_members m
-    JOIN group_member_status_predicates p ON m.member_status = p.member_status
-    WHERE m.group_id = groups.group_id
-      AND p.current_member = 1
-);
+SET summary_current_members_count = c.cnt
+FROM (
+  SELECT m.group_id, COUNT(m.group_member_id) AS cnt
+  FROM group_members m
+  JOIN group_member_status_predicates p ON m.member_status = p.member_status
+  WHERE p.current_member = 1
+  GROUP BY m.group_id
+) AS c
+WHERE groups.group_id = c.group_id;
 
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

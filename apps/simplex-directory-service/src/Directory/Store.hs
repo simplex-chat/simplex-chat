@@ -78,7 +78,7 @@ import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
-import Data.Text.Encoding (decodeASCII, encodeUtf8)
+import Data.Text.Encoding (encodeUtf8)
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Time.Clock.System (systemEpochDay)
 import Directory.Search
@@ -94,7 +94,7 @@ import Simplex.Messaging.Agent.Store.DB (BoolInt (..), fromTextField_)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON)
-import Simplex.Messaging.Util (eitherToMaybe, firstRow, maybeFirstRow')
+import Simplex.Messaging.Util (eitherToMaybe, firstRow, maybeFirstRow', safeDecodeUtf8)
 import System.IO (BufferMode (..), Handle, IOMode (..), hSetBuffering, openFile)
 
 #if defined(dbPostgres)
@@ -542,7 +542,7 @@ instance StrEncoding GroupRegStatus where
       "removed" -> pure GRSRemoved
       _ -> fail "invalid GroupRegStatus"
 
-instance ToField GroupRegStatus where toField = toField . decodeASCII . strEncode
+instance ToField GroupRegStatus where toField = toField . safeDecodeUtf8 . strEncode
 
 instance FromField GroupRegStatus where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
