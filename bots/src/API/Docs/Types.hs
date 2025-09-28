@@ -266,7 +266,6 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
-    (sti @GroupInfoSummary, STRecord, "", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
@@ -452,7 +451,6 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
-deriving instance Generic GroupInfoSummary
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember

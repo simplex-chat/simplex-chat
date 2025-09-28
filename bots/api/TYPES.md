@@ -89,7 +89,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupInfoSummary](#groupinfosummary)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -2131,18 +2130,9 @@ MemberSupport:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
+- groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-
-
----
-
-## GroupInfoSummary
-
-**Record type**:
-- groupInfo: [GroupInfo](#groupinfo)
-- groupSummary: [GroupSummary](#groupsummary)
-- groupLink: [GroupLink](#grouplink)?
 
 
 ---
@@ -2335,7 +2325,7 @@ Known:
 ## GroupSummary
 
 **Record type**:
-- currentMembers: int
+- currentMembers: int64
 
 
 ---

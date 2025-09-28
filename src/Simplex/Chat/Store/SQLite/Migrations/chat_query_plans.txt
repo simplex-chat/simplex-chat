@@ -48,6 +48,31 @@ Query:
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
               
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
                 INSERT INTO groups
@@ -59,13 +84,34 @@ Plan:
 
 Query: 
                 SELECT
+                  -- Contact
+                  ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
+                  cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
+                  ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
+                  ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
+                  -- Connection
+                  c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
+                  c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
+                  c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
+                FROM contacts ct
+                JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
+                LEFT JOIN connections c ON c.contact_id = ct.contact_id
+                WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
+              
+Plan:
+SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
+SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+
+Query: 
+                SELECT
                   -- GroupInfo
                   g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
                   g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
                   g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
                   g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
                   g.business_chat, g.business_member_id, g.customer_member_id,
-                  g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+                  g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
                   -- GroupInfo {membership}
                   mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
@@ -192,6 +238,31 @@ Query:
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
               INSERT INTO group_members
@@ -201,6 +272,31 @@ Query:
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
               INSERT INTO groups
@@ -212,24 +308,21 @@ Plan:
 
 Query: 
               SELECT
-                -- Contact
-                ct.contact_id, ct.contact_profile_id, ct.local_display_name, cp.display_name, cp.full_name, cp.short_descr, cp.image, cp.contact_link, cp.chat_peer_type, cp.local_alias, ct.contact_used, ct.contact_status, ct.enable_ntfs, ct.send_rcpts, ct.favorite,
-                cp.preferences, ct.user_preferences, ct.created_at, ct.updated_at, ct.chat_ts, ct.conn_full_link_to_connect, ct.conn_short_link_to_connect, ct.welcome_shared_msg_id, ct.request_shared_msg_id, ct.contact_request_id,
-                ct.contact_group_member_id, ct.contact_grp_inv_sent, ct.grp_direct_inv_link, ct.grp_direct_inv_from_group_id, ct.grp_direct_inv_from_group_member_id, ct.grp_direct_inv_from_member_conn_id, ct.grp_direct_inv_started_connection,
-                ct.ui_themes, ct.chat_deleted, ct.custom_data, ct.chat_item_ttl,
-                -- Connection
-                c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id, c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias,
-                c.contact_id, c.group_member_id, c.user_contact_link_id, c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-                c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-              FROM contacts ct
-              JOIN contact_profiles cp ON ct.contact_profile_id = cp.contact_profile_id
-              LEFT JOIN connections c ON c.contact_id = ct.contact_id
-              WHERE ct.user_id = ? AND ct.xcontact_id = ? AND ct.deleted = 0
+                cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
+                cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
+                cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
+                cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
+                cr.created_at, cr.updated_at,
+                cr.peer_chat_min_version, cr.peer_chat_max_version
+              FROM contact_requests cr
+              JOIN contact_profiles p USING (contact_profile_id)
+              WHERE cr.user_id = ?
+                AND cr.xcontact_id = ?
+              LIMIT 1
             
 Plan:
-SEARCH ct USING INDEX idx_contacts_chat_ts (user_id=?)
-SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
+SEARCH cr USING INDEX idx_contact_requests_xcontact_id (user_id=? AND xcontact_id=?)
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               SELECT COUNT(1)
@@ -343,6 +436,31 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
             INSERT INTO group_members
@@ -352,6 +470,31 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
             INSERT INTO group_members
@@ -361,6 +504,31 @@ Query:
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
             INSERT INTO messages (
@@ -382,24 +550,6 @@ Query:
           
 Plan:
 SEARCH c USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-            SELECT
-              cr.contact_request_id, cr.local_display_name, cr.agent_invitation_id,
-              cr.contact_id, cr.business_group_id, cr.user_contact_link_id,
-              cr.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, cr.xcontact_id,
-              cr.pq_support, cr.welcome_shared_msg_id, cr.request_shared_msg_id, p.preferences,
-              cr.created_at, cr.updated_at,
-              cr.peer_chat_min_version, cr.peer_chat_max_version
-            FROM contact_requests cr
-            JOIN contact_profiles p USING (contact_profile_id)
-            WHERE cr.user_id = ?
-              AND cr.xcontact_id = ?
-            LIMIT 1
-          
-Plan:
-SEARCH cr USING INDEX idx_contact_requests_xcontact_id (user_id=? AND xcontact_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -820,6 +970,31 @@ Query:
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
           INSERT INTO groups
@@ -981,35 +1156,6 @@ INDEX 2
 SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          SELECT
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
-            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-            g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
-            mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
-            mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at,
-            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
-          FROM groups g
-          JOIN group_profiles gp USING (group_profile_id)
-          JOIN group_members mu USING (group_id)
-          JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          WHERE g.user_id = ? AND mu.contact_id = ?
-            AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
-              OR LOWER(gp.full_name) LIKE '%' || ? || '%'
-              OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
-              OR LOWER(gp.description) LIKE '%' || ? || '%'
-            )
-        
-Plan:
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           SELECT 1
@@ -1184,18 +1330,6 @@ Query:
         
 Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          SELECT count (m.group_member_id)
-          FROM groups g
-          JOIN group_members m USING (group_id)
-          WHERE g.user_id = ?
-            AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?)
-        
-Plan:
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
 
 Query: 
           SELECT ct.contact_id
@@ -1497,6 +1631,31 @@ Query:
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
         INSERT INTO group_members
@@ -1506,6 +1665,31 @@ Query:
           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       
 Plan:
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
+SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_sender_group_member_id (sender_group_member_id=?)
+SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_job_scope_support_gm_id (job_scope_support_gm_id=?)
+SEARCH received_probes USING COVERING INDEX idx_received_probes_group_member_id (group_member_id=?)
+SEARCH sent_probe_hashes USING COVERING INDEX idx_sent_probe_hashes_group_member_id (group_member_id=?)
+SEARCH sent_probes USING COVERING INDEX idx_sent_probes_group_member_id (group_member_id=?)
+SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_group_member_id (group_member_id=?)
+SEARCH chat_item_moderations USING COVERING INDEX idx_chat_item_moderations_moderator_member_id (moderator_member_id=?)
+SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_member_id (group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_group_member_id (group_scope_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_item_deleted_by_group_member_id (item_deleted_by_group_member_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_member_id (group_member_id=?)
+SEARCH pending_group_messages USING COVERING INDEX idx_pending_group_messages_group_member_id (group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_forwarded_by_group_member_id (forwarded_by_group_member_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_author_group_member_id (author_group_member_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_group_member_id (group_member_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_group_member_id (group_member_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_group_member_id (group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH group_member_intros USING COVERING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_invited_by_group_member_id (invited_by_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_member_id (grp_direct_inv_from_group_member_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (contact_group_member_id=?)
 
 Query: 
         INSERT INTO msg_deliveries
@@ -4834,13 +5018,48 @@ Query:
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
-      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
+   
+    FROM groups g
+    JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
+    JOIN group_members mu ON mu.group_id = g.group_id
+    JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
+   
+        WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.full_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
+            OR LOWER(gp.description) LIKE '%' || ? || '%'
+          )
+      
+Plan:
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH pu USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT
+      -- GroupInfo
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+      g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
+      g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
+      g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
+      g.business_chat, g.business_member_id, g.customer_member_id,
+      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      -- GroupMember - membership
+      mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
+      mu.created_at, mu.updated_at,
+      mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
+   
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id
@@ -4860,13 +5079,14 @@ Query:
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
-      g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
+      g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
+   
     FROM groups g
     JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
     JOIN group_members mu ON mu.group_id = g.group_id

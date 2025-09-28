@@ -88,15 +88,15 @@ testSchemaMigrations = withTmpFiles $ do
       putStrLn $ "down migration " <> name m
       let downMigr = fromJust $ toDownMigration m
       schema <- getSchema testDB testSchema
-      Migrations.run st True $ MTRUp [m]
+      Migrations.run st Nothing True $ MTRUp [m]
       schema' <- getSchema testDB testSchema
       unless (name m `elem` skipComparisonForUpMigrations) $
         schema' `shouldNotBe` schema
-      Migrations.run st True $ MTRDown [downMigr]
+      Migrations.run st Nothing True $ MTRDown [downMigr]
       unless (name m `elem` skipComparisonForDownMigrations) $ do
         schema'' <- getSchema testDB testSchema
         schema'' `shouldBe` schema
-      Migrations.run st True $ MTRUp [m]
+      Migrations.run st Nothing True $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
 

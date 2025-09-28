@@ -2416,14 +2416,9 @@ export interface GroupInfo {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   customData?: object
+  groupSummary: GroupSummary
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-}
-
-export interface GroupInfoSummary {
-  groupInfo: GroupInfo
-  groupSummary: GroupSummary
-  groupLink?: GroupLink
 }
 
 export interface GroupLink {
@@ -2577,7 +2572,7 @@ export interface GroupShortLinkData {
 }
 
 export interface GroupSummary {
-  currentMembers: number // int
+  currentMembers: number // int64
 }
 
 export interface GroupSupportChat {

@@ -48,14 +48,14 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
           putStrLn $ "down migration " <> name m
           let downMigr = fromJust $ toDownMigration m
           schema <- getSchema testSchemaPath
-          Migrations.run st $ MTRUp [m]
+          Migrations.run st Nothing $ MTRUp [m]
           schema' <- getSchema testSchemaPath
           schema' `shouldNotBe` schema
-          Migrations.run st $ MTRDown [downMigr]
+          Migrations.run st Nothing $ MTRDown [downMigr]
           unless (name m `elem` skipComparisonForDownMigrations) $ do
             schema'' <- getSchema testSchemaPath
             schema'' `shouldBe` schema
-          Migrations.run st $ MTRUp [m]
+          Migrations.run st Nothing $ MTRUp [m]
           schema''' <- getSchema testSchemaPath
           schema''' `shouldBe` schema'
 
