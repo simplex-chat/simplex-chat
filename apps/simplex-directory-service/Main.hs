@@ -13,7 +13,7 @@ main :: IO ()
 main = do
   opts@DirectoryOpts {directoryLog, migrateDirectoryLog, runCLI} <- welcomeGetOpts
   case migrateDirectoryLog of
-    Just cmd -> migrate cmd opts
+    Just cmd -> migrate cmd opts terminalChatConfig
     Nothing -> do
       st <- openDirectoryLog directoryLog
       if runCLI

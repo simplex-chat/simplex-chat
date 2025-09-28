@@ -14,7 +14,7 @@ import Data.List (find)
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
-import Simplex.Chat.Controller (ChatConfig (..), ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (supportedChatVRange)
@@ -24,7 +24,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, migrateDBSchema)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util (whenM)
 import System.Directory (doesFileExist, renamePath)
@@ -37,49 +37,56 @@ import Directory.Store.Postgres.Migrations
 import Directory.Store.SQLite.Migrations
 #endif
 
-runDirectoryMigrations :: DirectoryOpts -> ChatController -> IO (Either MigrationError ())
-runDirectoryMigrations opts cc =
+runDirectoryMigrations :: DirectoryOpts -> ChatConfig -> DBStore -> IO ()
+runDirectoryMigrations opts ChatConfig {confirmMigrations} chatStore =
   migrateDBSchema
     chatStore
     (toDBOpts dbOptions chatSuffix False)
     (Just "sx_directory_migrations")
     directorySchemaMigrations
     MigrationConfig {confirm, backupPath = Nothing}
+    >>= either (exit . ("directory migrations " <>) . show) pure
   where
     DirectoryOpts {coreOptions = CoreChatOpts {dbOptions, yesToUpMigrations}} = opts
-    ChatController {chatStore, config = ChatConfig {confirmMigrations}} = cc
     confirm = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
 
-checkDirectoryLog :: DirectoryOpts -> IO ()
-checkDirectoryLog opts =
+checkDirectoryLog :: DirectoryOpts -> ChatConfig -> IO ()
+checkDirectoryLog opts cfg =
   withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
+    runDirectoryMigrations opts cfg st
     gs <- readDirectoryLogData logFile
     withActiveUser st $ \user -> withTransaction st $ \db -> do
       mapM_ (verifyGroupRegistration db user) gs
+    putStrLn $ show (length gs) <> " group registrations OK"
 
-importDirectoryLogToDB :: DirectoryOpts -> IO ()
-importDirectoryLogToDB opts = do
+importDirectoryLogToDB :: DirectoryOpts -> ChatConfig -> IO ()
+importDirectoryLogToDB opts cfg = do
   withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
+    runDirectoryMigrations opts cfg st
     gs <- readDirectoryLogData logFile
     withActiveUser st $ \user -> withTransaction st $ \db -> do
       forM_ gs $ \gr -> do
         verifyGroupRegistration db user gr
         insertGroupReg db gr
       renamePath logFile (logFile ++ ".bak")
+    putStrLn $ show (length gs) <> " group registrations imported"
 
 exit :: String -> IO a
 exit err = putStrLn ("Error: " <> err) >> exitFailure
 
-exportDBToDirectoryLog :: DirectoryOpts -> IO ()
-exportDBToDirectoryLog opts =
+exportDBToDirectoryLog :: DirectoryOpts -> ChatConfig -> IO ()
+exportDBToDirectoryLog opts cfg =
   withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
     whenM (doesFileExist logFile) $ exit $ "directory log file " ++ logFile ++ " already exists"
-    withActiveUser st $ \user -> withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
-      gs <- getAllGroupRegs_ db user
-      forM_ gs $ \(_, gr) -> do
-        verifyGroupRegistration db user gr
-        B.hPutStrLn h $ strEncode $ GRCreate gr
-        deleteGroupReg db $ dbGroupId gr
+    runDirectoryMigrations opts cfg st
+    withActiveUser st $ \user -> do
+      gs <- withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
+        gs <- getAllGroupRegs_ db user
+        forM_ gs $ \(_, gr) -> do
+          verifyGroupRegistration db user gr
+          B.hPutStrLn h $ strEncode $ GRCreate gr
+        pure gs
+      putStrLn $ show (length gs) <> " group registrations exported"
 
 verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO ()
 verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId = mId} =

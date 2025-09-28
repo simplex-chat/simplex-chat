@@ -181,12 +181,7 @@ listingsUpdated :: ServiceState -> ChatController -> IO ()
 listingsUpdated env = void . atomically . tryPutTMVar (updateListingsJob env)
 
 directoryPreStartHook :: DirectoryOpts -> ChatController -> IO ()
-directoryPreStartHook opts cc =
-  runDirectoryMigrations opts cc >>= \case
-    Right () -> pure ()
-    Left e -> do
-      putStrLn $ "Error running directory migrations: " <> show e
-      exitFailure
+directoryPreStartHook opts ChatController {config, chatStore} = runDirectoryMigrations opts config chatStore
 
 directoryPostStartHook :: DirectoryOpts -> ServiceState -> ChatController -> IO ()
 directoryPostStartHook opts env cc =
