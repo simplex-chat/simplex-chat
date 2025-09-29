@@ -588,6 +588,10 @@ main section .image {
     max-width: 30vw;
 }
 
+.roadmap p.title span {
+    display: none;
+}
+
 @media (max-width: 767px) {
     section {
         min-height: 100svh;
@@ -616,21 +620,25 @@ main section .image {
 
     /* --- MAIN SECTIONS --- */
     .page-2 .image {
-        background-image: url("/img/design_3/section2-mobile-bg.webp");
+        background-image: url("/img/design_3/section-2-mobile.webp");
+        background-size: cover;
+        height: 75%;
+        background-position: top;
     }
 
     .page-3 .image {
         background-image: url("/img/design_3/section-3-mobile.webp");
+        background-position: top;
     }
 
     .page-4 .image {
         background-image: url("/img/design_3/section-4-mobile.webp");
-        height: 55%;
+        background-position: top;
     }
 
     .page-6 .image {
         background-image: url("/img/design_3/section-6-mobile.webp");
-        height: 48%;
+        background-position: top;
     }
 
     .page-3 .text-container,
@@ -642,8 +650,8 @@ main section .image {
         justify-content: flex-end;
         align-items: flex-start;
         gap: 1.25rem;
-        margin-right: 8vw !important;
-        margin-left: 8vw !important;
+        margin-right: 7vw !important;
+        margin-left: 7vw !important;
         padding-bottom: 8vw;
         max-width: 75vw;
     }
@@ -651,7 +659,7 @@ main section .image {
     .text-container h2 {
         font-family: "GT-Walsheim", "Manrope", sans-serif;
         font-weight: 400;
-        font-size: 9.25vw;
+        font-size: 12vw;
         letter-spacing: -0.025em;
         max-width: 75vw !important;
         line-height: 1.05;
@@ -676,7 +684,7 @@ main section .image {
     }
 
     .page-2 .text-container h2 {
-        max-width: 75vw !important;
+        max-width: 63vw !important;
     }
 
     .page-3 .text-container {
@@ -708,6 +716,31 @@ main section .image {
 
     .page-4 .text-container a {
         max-width: 80vw !important;
+    }
+
+    .roadmap {
+        width: 100%;
+    }
+
+    .roadmap>p:first-child {
+        float: left;
+    }
+
+    .roadmap p.title span {
+        display: inline;
+    }
+
+    .roadmap p.title {
+        color: #64fdff;
+    }
+
+    .roadmap>p {
+        font-weight: 400;
+        max-width: 90vw !important;
+    }
+
+    .page-6 .text-container {
+        max-width: 90vw !important;
     }
 }
 
