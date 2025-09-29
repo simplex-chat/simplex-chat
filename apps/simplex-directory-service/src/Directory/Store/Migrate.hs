@@ -12,6 +12,7 @@ import Control.Monad
 import Control.Monad.Except
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
+import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
 import Directory.Options
 import Directory.Store
@@ -76,15 +77,17 @@ importDirectoryLogToDB opts cfg = do
       renamePath logFile (logFile ++ ".bak")
     putStrLn $ show (length gs) <> " group registrations imported"
   where
-    fixUserGroupRegId ctRegs gr@GroupReg {dbGroupId, userGroupRegId, dbContactId} =
-      TM.lookupIO dbContactId ctRegs >>= \case
-        Just ugIds | userGroupRegId `elem` ugIds -> do
-          let ugId = maximum ugIds + 1
-          putStrLn $ "Warning: updating userGroupRegId for group " <> show dbGroupId <> ", contact " <> show dbContactId
-          res gr {userGroupRegId = ugId} ugId
-        _ -> res gr userGroupRegId
-      where
-        res gr' ugId = gr' <$ atomically (TM.insert dbContactId [ugId] ctRegs)
+    fixUserGroupRegId ctRegs gr@GroupReg {dbGroupId, dbContactId} = do
+      ugIds <- fromMaybe [] <$> TM.lookupIO dbContactId ctRegs
+      gr' <-
+        if userGroupRegId gr `elem` ugIds
+          then do
+            let ugId = maximum ugIds + 1
+            putStrLn $ "Warning: updating userGroupRegId for group " <> show dbGroupId <> ", contact " <> show dbContactId
+            pure gr {userGroupRegId = ugId}
+          else pure gr
+      atomically $ TM.insert dbContactId (userGroupRegId gr' : ugIds) ctRegs
+      pure gr'
 
 exit :: String -> IO a
 exit err = putStrLn ("Error: " <> err) >> exitFailure
