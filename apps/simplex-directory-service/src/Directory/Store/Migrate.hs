@@ -7,6 +7,7 @@
 
 module Directory.Store.Migrate where
 
+import Control.Concurrent.STM
 import Control.Monad
 import Control.Monad.Except
 import qualified Data.ByteString.Char8 as B
@@ -27,6 +28,7 @@ import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, migrateDBSchema)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Encoding.String
+import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Util (whenM)
 import System.Directory (doesFileExist, renamePath)
 import System.Exit (exitFailure)
@@ -65,13 +67,23 @@ importDirectoryLogToDB opts cfg = do
   withDirectoryLog opts $ \logFile -> withChatStore opts $ \st -> do
     runDirectoryMigrations opts cfg st
     gs <- readDirectoryLogData logFile
+    ctRegs <- TM.emptyIO
     withActiveUser st $ \user -> withTransaction st $ \db -> do
       forM_ gs $ \gr ->
         whenM (verifyGroupRegistration db user gr) $ do
           putStrLn $ "importing group " <> show (dbGroupId gr)
-          insertGroupReg db gr
+          insertGroupReg db =<< fixUserGroupRegId ctRegs gr
       renamePath logFile (logFile ++ ".bak")
     putStrLn $ show (length gs) <> " group registrations imported"
+  where
+    fixUserGroupRegId ctRegs gr@GroupReg {userGroupRegId, dbContactId} =
+      TM.lookupIO dbContactId ctRegs >>= \case
+        Just ugIds | userGroupRegId `elem` ugIds ->
+          let ugId = maximum ugIds + 1
+           in res gr {userGroupRegId = ugId} ugId
+        _ -> res gr userGroupRegId
+      where
+        res gr' ugId = gr' <$ atomically (TM.insert dbContactId [ugId] ctRegs)
 
 exit :: String -> IO a
 exit err = putStrLn ("Error: " <> err) >> exitFailure
