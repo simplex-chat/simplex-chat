@@ -342,14 +342,14 @@ processAgentMsgRcvFile _corrId aFileId msg = do
           | e == FILE NOT_APPROVED -> do
               aci_ <- resetRcvCIFileStatus user fileId CIFSRcvAborted
               forM_ aci_ cleanupACIFile
-              agentXFTPDeleteRcvFile aFileId fileId
+              -- agentXFTPDeleteRcvFile aFileId fileId
               forM_ aci_ $ \aci -> toView $ CEvtChatItemUpdated user aci
           | otherwise -> do
               aci_ <- withStore $ \db -> do
                 liftIO $ updateFileCancelled db user fileId (CIFSRcvError $ agentFileError e)
                 lookupChatItemByFileId db vr user fileId
               forM_ aci_ cleanupACIFile
-              agentXFTPDeleteRcvFile aFileId fileId
+              -- agentXFTPDeleteRcvFile aFileId fileId
               toView $ CEvtRcvFileError user aci_ e ft
 
 type ShouldDeleteGroupConns = Bool

@@ -7525,7 +7525,7 @@ sealed class XFTPErrorType {
     is BLOCKED -> "BLOCKED ${json.encodeToString(blockInfo)}"
     is SIZE -> "SIZE"
     is QUOTA -> "QUOTA"
-    is DIGEST -> "DIGEST"
+    is DIGEST -> "DIGEST ${errContext}"
     is CRYPTO -> "CRYPTO"
     is NO_FILE -> "NO_FILE"
     is HAS_FILE -> "HAS_FILE"
@@ -7541,7 +7541,7 @@ sealed class XFTPErrorType {
   @Serializable @SerialName("BLOCKED") class BLOCKED(val blockInfo: BlockingInfo): XFTPErrorType()
   @Serializable @SerialName("SIZE") object SIZE: XFTPErrorType()
   @Serializable @SerialName("QUOTA") object QUOTA: XFTPErrorType()
-  @Serializable @SerialName("DIGEST") object DIGEST: XFTPErrorType()
+  @Serializable @SerialName("DIGEST") class DIGEST(val errContext: String): XFTPErrorType()
   @Serializable @SerialName("CRYPTO") object CRYPTO: XFTPErrorType()
   @Serializable @SerialName("NO_FILE") object NO_FILE: XFTPErrorType()
   @Serializable @SerialName("HAS_FILE") object HAS_FILE: XFTPErrorType()
