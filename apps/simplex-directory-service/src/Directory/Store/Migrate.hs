@@ -76,11 +76,12 @@ importDirectoryLogToDB opts cfg = do
       renamePath logFile (logFile ++ ".bak")
     putStrLn $ show (length gs) <> " group registrations imported"
   where
-    fixUserGroupRegId ctRegs gr@GroupReg {userGroupRegId, dbContactId} =
+    fixUserGroupRegId ctRegs gr@GroupReg {dbGroupId, userGroupRegId, dbContactId} =
       TM.lookupIO dbContactId ctRegs >>= \case
-        Just ugIds | userGroupRegId `elem` ugIds ->
+        Just ugIds | userGroupRegId `elem` ugIds -> do
           let ugId = maximum ugIds + 1
-           in res gr {userGroupRegId = ugId} ugId
+          putStrLn $ "Warning: updating userGroupRegId for group " <> show dbGroupId <> ", contact " <> show dbContactId
+          res gr {userGroupRegId = ugId} ugId
         _ -> res gr userGroupRegId
       where
         res gr' ugId = gr' <$ atomically (TM.insert dbContactId [ugId] ctRegs)
