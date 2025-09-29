@@ -218,7 +218,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                           Right (deliveryIds, _) -> eToView $ ChatError $ CEInternalError $ "SFDONE, sendFileDescriptions: expected 1 delivery id, got " <> show (length deliveryIds)
                           Left e -> eToView e
                         Nothing -> eToView $ ChatError $ CEInternalError "SFDONE, sendFileDescriptions: expected at least 1 result"
-                      lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+                      -- lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                     (_, _, SMDSnd, GroupChat g@GroupInfo {groupId} _scope) -> do
                       ms <- withStore' $ \db -> getGroupMembers db vr user g
                       let rfdsMemberFTs = zipWith (\rfd (conn, sft) -> (conn, sft, fileDescrText rfd)) rfds (memberFTs ms)
@@ -229,7 +229,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       ci' <- withStore $ \db -> do
                         liftIO $ updateCIFileStatus db user fileId CIFSSndComplete
                         getChatItemByFileId db vr user fileId
-                      lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
+                      -- lift $ withAgent' (`xftpDeleteSndFileInternal` aFileId)
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
@@ -331,7 +331,7 @@ processAgentMsgRcvFile _corrId aFileId msg = do
                   updateRcvFileStatus db fileId FSComplete
                   updateCIFileStatus db user fileId CIFSRcvComplete
                 lookupChatItemByFileId db vr user fileId
-              agentXFTPDeleteRcvFile aFileId fileId
+              -- agentXFTPDeleteRcvFile aFileId fileId
               toView $ maybe (CEvtRcvStandaloneFileComplete user fsTargetPath ft) (CEvtRcvFileComplete user) ci_
         RFWARN e -> do
           ci <- withStore $ \db -> do
