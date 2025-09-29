@@ -952,9 +952,14 @@ header#navbar button.theme-switch-btn {
     border: none;
 }
 
-header#navbar button.theme-switch-btn img {
+header#navbar button.theme-switch-btn svg {
     width: 18px;
     height: auto;
+}
+
+header#navbar button.theme-switch-btn svg path {
+    fill: var(--nav-color) !important;
+    transition: all 0.3s ease;
 }
 
 .right-links {
