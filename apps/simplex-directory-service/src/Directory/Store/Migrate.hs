@@ -14,6 +14,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.List (find)
 import Data.Maybe (fromMaybe)
 import qualified Data.Text as T
+import Directory.Listing
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
@@ -105,6 +106,14 @@ exportDBToDirectoryLog opts cfg =
             B.hPutStrLn h $ strEncode $ GRCreate gr
         pure gs
       putStrLn $ show (length gs) <> " group registrations exported"
+
+saveGroupListingFiles :: DirectoryOpts -> ChatConfig -> IO ()
+saveGroupListingFiles opts _cfg = case webFolder opts of
+  Nothing -> exit "use --web-folder to generate listings"
+  Just dir ->
+    withChatStore opts $ \st -> withActiveUser st $ \user ->
+      withTransaction st $ \db ->
+        getAllListedGroups_ db supportedChatVRange user >>= generateListing dir
 
 verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO Bool
 verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus} =

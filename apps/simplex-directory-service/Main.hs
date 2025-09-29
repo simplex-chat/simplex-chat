@@ -24,3 +24,4 @@ main = do
       MLCheck -> checkDirectoryLog
       MLImport -> importDirectoryLogToDB
       MLExport -> exportDBToDirectoryLog
+      MLListing -> saveGroupListingFiles
