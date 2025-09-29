@@ -300,6 +300,71 @@
         // }
     });
     </script>
+    <script>
+    (function imageBasedTypographyBG(){
+    // Desktop only to avoid clashing with mobile font rules
+    const mql = window.matchMedia('(min-width: 768px)');
+
+    function urlFromBG(el){
+        const bg = getComputedStyle(el).backgroundImage; // url("...") or none
+        if (!bg || bg === 'none') return null;
+        const m = bg.match(/url\((['"]?)(.*?)\1\)/);
+        return m ? m[2] : null;
+    }
+
+    const sizeCache = new Map();
+    function getImgSize(url){
+        return new Promise(resolve => {
+        if (sizeCache.has(url)) return resolve(sizeCache.get(url));
+        const im = new Image();
+        im.onload = () => {
+            const out = { w: im.naturalWidth || 1, h: im.naturalHeight || 1 };
+            sizeCache.set(url, out);
+            resolve(out);
+        };
+        im.onerror = () => resolve({ w: 1, h: 1 });
+        im.src = url;
+        });
+    }
+
+    async function setVars(){
+        if (!mql.matches) return; // desktop only
+        const secs = document.querySelectorAll('main section');
+        for (const sec of secs) {
+        const imgBox = sec.querySelector('.image');
+        const tc     = sec.querySelector('.text-container');
+        if (!imgBox || !tc) continue;
+
+        const url = urlFromBG(imgBox);
+        if (!url) continue; // no background set
+
+        const { w: iw, h: ih } = await getImgSize(url);
+        const ratio = iw / ih;             // image aspect ratio (width/height)
+
+        const cw = sec.clientWidth;        // section width
+        const ch = sec.clientHeight;       // section height
+
+        // Background-size: contain geometry
+        const drawnW = Math.min(cw, ch * ratio);
+        const drawnH = drawnW / ratio;     // equivalently Math.min(ch, cw / ratio)
+
+        // Expose to CSS on this section's text container
+        tc.style.setProperty('--imgW', drawnW + 'px');
+        tc.style.setProperty('--imgH', drawnH + 'px');
+        const gutter = Math.max(0, (cw - drawnW) / 2);
+        tc.style.setProperty('--imgGutter', gutter + 'px');
+
+        // Convert old width-based constants to height-based using current ratio
+        tc.style.setProperty('--h2k', (0.046  * ratio).toFixed(6));  // for h2
+        tc.style.setProperty('--pk',  (0.0145 * ratio).toFixed(6));  // for p, a
+        }
+    }
+
+    window.addEventListener('load', setVars);
+    window.addEventListener('resize', setVars);
+    window.addEventListener('orientationchange', setVars);
+    })();
+    </script>
 </body>
 
 </html>
