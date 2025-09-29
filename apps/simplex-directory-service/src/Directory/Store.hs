@@ -336,9 +336,9 @@ getAllListedGroups cc user = withDB' "getAllListedGroups" cc $ \db -> getAllList
 getAllListedGroups_ :: DB.Connection -> VersionRangeChat -> User -> IO [(GroupInfo, GroupReg, Maybe GroupLink)]
 getAllListedGroups_ db vr' user@User {userId, userContactId} =
   DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
-    >>= mapM (withGroupLink db . toGroupInfoReg vr' user)
+    >>= mapM (withGroupLink . toGroupInfoReg vr' user)
   where
-    withGroupLink db (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
+    withGroupLink (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
 
 searchListedGroups :: ChatController -> User -> SearchType -> Maybe GroupId -> Int -> IO (Either String ([(GroupInfo, GroupReg)], Int))
 searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pageSize =
