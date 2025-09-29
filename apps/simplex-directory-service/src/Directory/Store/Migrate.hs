@@ -11,6 +11,7 @@ import Control.Monad
 import Control.Monad.Except
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
+import qualified Data.Text as T
 import Directory.Options
 import Directory.Store
 import Simplex.Chat (createChatDatabase)
@@ -18,7 +19,7 @@ import Simplex.Chat.Controller (ChatConfig (..), ChatDatabase (..))
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol (supportedChatVRange)
-import Simplex.Chat.Store.Groups (getHostMember)
+import Simplex.Chat.Store.Groups (getGroupInfo, getHostMember)
 import Simplex.Chat.Store.Profiles (getUsers)
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.Common
@@ -65,9 +66,9 @@ importDirectoryLogToDB opts cfg = do
     runDirectoryMigrations opts cfg st
     gs <- readDirectoryLogData logFile
     withActiveUser st $ \user -> withTransaction st $ \db -> do
-      forM_ gs $ \gr -> do
-        verifyGroupRegistration db user gr
-        insertGroupReg db gr
+      forM_ gs $ \gr ->
+        whenM (verifyGroupRegistration db user gr) $
+          insertGroupReg db gr
       renamePath logFile (logFile ++ ".bak")
     putStrLn $ show (length gs) <> " group registrations imported"
 
@@ -82,19 +83,25 @@ exportDBToDirectoryLog opts cfg =
     withActiveUser st $ \user -> do
       gs <- withFile logFile WriteMode $ \h -> withTransaction st $ \db -> do
         gs <- getAllGroupRegs_ db user
-        forM_ gs $ \(_, gr) -> do
-          verifyGroupRegistration db user gr
-          B.hPutStrLn h $ strEncode $ GRCreate gr
+        forM_ gs $ \(_, gr) ->
+          whenM (verifyGroupRegistration db user gr) $
+            B.hPutStrLn h $ strEncode $ GRCreate gr
         pure gs
       putStrLn $ show (length gs) <> " group registrations exported"
 
-verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO ()
-verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId = mId} =
-  runExceptT (getHostMember db supportedChatVRange user gId) >>= \case
-    Left e -> putStrLn $ "Error: loading group " <> show gId <> " host member: " <> show e
-    Right GroupMember {groupMemberId = mId', memberContactId = ctId'} -> do
-      unless (mId == Just mId') $ putStrLn $ "Error: bad group " <> show gId <> " host member ID: " <> show mId'
-      unless (Just ctId == ctId') $ putStrLn $ "Warning: bad group " <> show gId <> " contact ID: " <> show ctId'
+verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO Bool
+verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId, groupRegStatus} =
+  runExceptT (getGroupInfo db supportedChatVRange user gId) >>= \case
+    Left e -> False <$ putStrLn ("Error: loading group " <> show gId <> " (skipping): " <> show e)
+    Right GroupInfo {localDisplayName} -> do
+      let groupRef = show gId <> " " <> T.unpack localDisplayName
+      runExceptT (getHostMember db supportedChatVRange user gId) >>= \case
+        Left e -> False <$ putStrLn ("Error: loading host member of group " <> groupRef <> " (skipping): " <> show e)
+        Right GroupMember {groupMemberId = mId', memberContactId = ctId'} -> case dbOwnerMemberId of
+          Nothing -> True <$ putStrLn ("Warning: group " <> groupRef <> " has no owner member ID, host member ID is " <> show mId' <> ", registration status: " <> B.unpack (strEncode groupRegStatus))
+          Just mId
+            | mId /= mId' -> False <$ putStrLn ("Error: different host member ID of " <> groupRef <> " (skipping): " <> show mId')
+            | otherwise -> True <$ unless (Just ctId == ctId') (putStrLn $ "Warning: bad group " <> groupRef <> " contact ID: " <> show ctId')
 
 withDirectoryLog :: DirectoryOpts -> (FilePath -> IO ()) -> IO ()
 withDirectoryLog DirectoryOpts {directoryLog} action =
