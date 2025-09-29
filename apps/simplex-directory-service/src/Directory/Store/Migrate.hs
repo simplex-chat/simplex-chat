@@ -67,7 +67,8 @@ importDirectoryLogToDB opts cfg = do
     gs <- readDirectoryLogData logFile
     withActiveUser st $ \user -> withTransaction st $ \db -> do
       forM_ gs $ \gr ->
-        whenM (verifyGroupRegistration db user gr) $
+        whenM (verifyGroupRegistration db user gr) $ do
+          putStrLn $ "importing group " <> show (dbGroupId gr)
           insertGroupReg db gr
       renamePath logFile (logFile ++ ".bak")
     putStrLn $ show (length gs) <> " group registrations imported"
