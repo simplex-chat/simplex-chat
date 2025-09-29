@@ -91,10 +91,10 @@ exportDBToDirectoryLog opts cfg =
 verifyGroupRegistration :: DB.Connection -> User -> GroupReg -> IO ()
 verifyGroupRegistration db user GroupReg {dbGroupId = gId, dbContactId = ctId, dbOwnerMemberId = mId} =
   runExceptT (getHostMember db supportedChatVRange user gId) >>= \case
-    Left e -> exit $ "error loading group " <> show gId <> " host member: " <> show e
+    Left e -> putStrLn $ "Error: loading group " <> show gId <> " host member: " <> show e
     Right GroupMember {groupMemberId = mId', memberContactId = ctId'} -> do
-      unless (mId == Just mId') $ exit $ "bad group " <> show gId <> " host member ID: " <> show mId'
-      unless (Just ctId == ctId') $ exit $ "bad group " <> show gId <> " contact ID: " <> show ctId'
+      unless (mId == Just mId') $ putStrLn $ "Error: bad group " <> show gId <> " host member ID: " <> show mId'
+      unless (Just ctId == ctId') $ putStrLn $ "Warning: bad group " <> show gId <> " contact ID: " <> show ctId'
 
 withDirectoryLog :: DirectoryOpts -> (FilePath -> IO ()) -> IO ()
 withDirectoryLog DirectoryOpts {directoryLog} action =
