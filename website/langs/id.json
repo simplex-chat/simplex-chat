@@ -70,5 +70,20 @@
     "contact-hero-header": "Anda menerima alamat untuk terhubung di SimpleX Chat",
     "invitation-hero-header": "Anda menerima tautan 1 kali untuk terhubung di SimpleX Chat",
     "simplex-explained-tab-1-p-1": "Anda dapat membuat kontak dan grup, dan melakukan percakapan dua arah, seperti pada aplikasi perpesanan lainnya.",
-    "simplex-explained-tab-1-p-2": "Bagaimana cara kerjanya dengan antrean searah dan tanpa ID profil pengguna?"
+    "simplex-explained-tab-1-p-2": "Bagaimana cara kerjanya dengan antrean searah dan tanpa ID profil pengguna?",
+    "simplex-explained-tab-2-p-1": "Untuk setiap koneksi, Anda menggunakan dua antrean pesan terpisah untuk mengirim dan menerima pesan melalui server yang berbeda.",
+    "simplex-explained-tab-2-p-2": "Server hanya menyampaikan pesan satu arah, tanpa memiliki gambaran lengkap mengenai percakapan atau koneksi pengguna.",
+    "simplex-explained-tab-3-p-1": "Server memiliki kredensial anonim terpisah untuk setiap antrean, dan tidak mengetahui pengguna mana yang menjadi milik mereka.",
+    "simplex-explained-tab-3-p-2": "Pengguna dapat tingkatkan privasi metadata dengan memakai Tor untuk akses server, mencegah korelasi berdasarkan alamat IP.",
+    "chat-bot-example": "Contoh chat bot",
+    "hero-header": "Privasi diredefinisikan",
+    "hero-subheader": "Perpesanan pertama<br>tanpa ID pengguna",
+    "hero-p-1": "Aplikasi lain memiliki ID pengguna: Signal, Matrix, Session, Briar, Jami, Cwtch, dll.<br> SimpleX tidak, <strong>bahkan angka acak</strong>.<br> Ini secara radikal meningkatkan privasi Anda.",
+    "hero-overlay-1-textlink": "Mengapa ID pengguna buruk untuk privasi?",
+    "hero-2-header-desc": "Video ini menunjukkan cara terhubung dengan teman Anda melalui kode QR sekali pakai, secara langsung, atau melalui tautan video. Anda juga dapat terhubung dengan bagikan tautan undangan.",
+    "simplex-network-overlay-1-title": "Perbandingan dengan protokol perpesanan P2P",
+    "hero-overlay-3-title": "Penilaian keamanan",
+    "simplex-private-2-title": "Lapisan enkripsi <br>tambahan server",
+    "feature-1-title": "Pesan terenkripsi E2E dengan markdown dan pengeditan",
+    "feature-3-title": "Grup terenkripsi E2E yang terdesentralisasi — hanya pengguna yang tahu keberadaannya"
 }
