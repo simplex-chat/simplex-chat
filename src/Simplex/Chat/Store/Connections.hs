@@ -271,34 +271,31 @@ getUCLConnsToSub db User {userId} filterToSubscribe =
     cond = " AND c.conn_status != ?"
 
 getMemberConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
-getMemberConnsToSub db User {userId, userContactId} filterToSubscribe = do
-  DB.execute
-    db
-    [sql|
-      CREATE TABLE temp_user_groups AS
-      SELECT g.group_id
-      FROM groups g
-      JOIN group_members mu ON mu.group_id = g.group_id
-      WHERE g.user_id = ?
-        AND mu.contact_id = ?
-        AND mu.member_status NOT IN (?,?,?);
-    |]
-    (userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-  connIds <- map fromOnly <$> DB.query db query (GSMemRemoved, GSMemLeft, GSMemGroupDeleted, ConnDeleted)
-  DB.execute_ db "DROP TABLE temp_user_groups"
-  pure connIds
+getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
+  map fromOnly <$>
+    DB.query
+      db
+      query
+      ((userId, ConnDeleted, userContactId)
+        :. (GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemRemoved, GSMemLeft, GSMemGroupDeleted))
   where
     query
-      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1"
-      | otherwise = baseQuery
+      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
+      | otherwise = baseQuery <> " " <> cond
     baseQuery =
       [sql|
         SELECT c.agent_conn_id
-        FROM temp_user_groups ug
-        JOIN group_members m ON m.group_id = ug.group_id
-        JOIN connections c ON c.group_member_id = m.group_member_id
-        WHERE m.member_status NOT IN (?,?,?)
-          AND c.conn_status != ?
+        FROM connections c
+        JOIN group_members m ON m.group_member_id = c.group_member_id
+        JOIN groups g ON g.group_id = m.group_id
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE c.user_id = ?
+      |]
+    cond =
+      [sql|
+        AND c.conn_status != ?
+        AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
+        AND m.member_status NOT IN (?,?,?)
       |]
 
 getPendingConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
