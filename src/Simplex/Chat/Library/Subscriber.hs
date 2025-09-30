@@ -3216,7 +3216,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
             MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, body, cursorGMId_ = startingCursor} = job
             sendBodyToMembers :: CM ()
             sendBodyToMembers
-              | useRelays gInfo = -- channel
+              | isTrue (useRelays gInfo) = -- channel
                   case jobScope of
                     -- there's no member review in channels, so job spec includePending is ignored
                     DJSGroup {} -> sendLoop startingCursor
