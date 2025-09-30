@@ -210,18 +210,36 @@
             #3f5598 70%,
             #c3faff 90%,
             #fff6e0 100%);
-    --sa-top: env(safe-area-inset-top, 0px);
-    --sa-right: env(safe-area-inset-right, 0px);
-    --sa-bottom: env(safe-area-inset-bottom, 0px);
-    --sa-left: env(safe-area-inset-left, 0px);
-    --vh: 1svh;
 
     --nav-color: #ffffff;
 
-    --imgW: min(100vw, 100vh);
-    --imgH: min(100vh, 100vw);
-    --imgGutter: 0px;
-    /* set per section via JS: half of leftover space around contained image */
+    /* Compute cover drawn size and inner safe frame (60% of full image on each axis) */
+    /* --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
+    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
+    --cover-safe-w: calc(var(--cover-bg-w) * 0.6); 
+    --cover-safe-h: calc(var(--cover-bg-h) * 0.6);
+    --cover-vw: calc(var(--cover-safe-w) / 100);
+    --cover-vh: calc(var(--cover-safe-h) / 100); */
+    /* 1920/3200 */
+    /* 1080/1800 */
+
+    --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
+    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
+
+    /* Drawn background size derived from viewport — no cropping (contain-like) */
+    --sec-w: calc(min((1920 / 1920) * 100vw, (1920 / 1080) * 100vh));
+    --sec-h: calc(min((1080 / 1920) * 100vw, (1080 / 1080) * 100vh));
+    --sec-vwu-desktop: calc(var(--sec-w) / 100);
+    --sec-vhu-desktop: calc(var(--sec-h) / 100);
+}
+
+@media screen and (max-width: 767px) {
+    :root {
+        --sec-w: 100vw;
+        --sec-h: 100svh;
+        --sec-vwu-desktop: calc(var(--sec-w) / 100);
+        --sec-vhu-desktop: calc(var(--sec-h) / 100);
+    }
 }
 
 body.change-nav-color {
@@ -278,10 +296,7 @@ p {
 }
 
 .screen {
-    height: 100dvh;
-    /* visible height, updates as bars expand/collapse */
-    height: calc(var(--vh) * 100);
-    /* fallback for older browsers */
+    height: 100svh;
     overflow-y: auto;
     scroll-snap-type: y mandatory;
     /* page-by-page snap */
@@ -291,49 +306,31 @@ p {
     -webkit-overflow-scrolling: touch;
 }
 
-section {
-    height: 100dvh;
-    height: calc(var(--vh) * 100);
+section.page {
+    height: 100svh;
     /* same fallback */
     scroll-snap-align: start;
     scroll-snap-stop: always;
     /* requires a full swipe/scroll to leave */
     position: relative;
-}
-
-/* Foreground content sits inside the safe area without changing section height */
-section .content {
-    min-height: 100%;
-    display: grid;
-    place-items: center;
-    padding:
-        max(16px, var(--sa-top)) max(16px, var(--sa-right)) max(24px, var(--sa-bottom))
-        /* lifts content above the iOS bottom bar */
-        max(16px, var(--sa-left));
-    box-sizing: border-box;
-}
-
-/* --- COVER --- */
-section.cover {
-    /* Compute cover drawn size and inner safe frame (60% of full image on each axis) */
-    --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
-    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
-    --cover-safe-w: calc(var(--cover-bg-w) * 0.6);
-    /* 1920/3200 */
-    --cover-safe-h: calc(var(--cover-bg-h) * 0.6);
-    /* 1080/1800 */
-    background-image: url("/img/design_3/cover.jpg");
-    background-size: var(--cover-bg-w) var(--cover-bg-h);
-    background-position: center;
-    background-repeat: no-repeat;
 
     display: flex;
     justify-content: center;
     align-items: center;
-    text-align: center;
+}
 
-    --svw: calc(var(--cover-safe-w) / 100);
-    --svh: calc(var(--cover-safe-h) / 100);
+section.page .area {
+    position: relative;
+    width: var(--sec-w);
+    height: var(--sec-h);
+}
+
+/* --- COVER --- */
+section.cover {
+    background-image: url("/img/design_3/cover.jpg");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
 section.cover div.content {
@@ -341,55 +338,60 @@ section.cover div.content {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: calc(var(--svh) * 3.5);
-    max-width: var(--cover-safe-w);
+    text-align: center;
+    gap: calc(var(--sec-vhu-desktop) * 3.5);
+    width: var(--sec-w);
+    height: var(--sec-h);
 }
 
-.cover .content h1 {
+section.cover div.content h1 {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 800;
-    font-size: calc(var(--svw) * 11.4);
+    font-size: calc(var(--sec-vwu-desktop) * 11.4);
     line-height: 0.9;
     letter-spacing: -0.025em;
     color: #ffffff;
+    text-align: center;
+    max-width: calc(var(--sec-vwu-desktop) * 25);
 }
 
-.cover .content h2 {
+section.cover div.content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 400;
-    font-size: calc(var(--svw) * 2.7);
+    font-size: calc(var(--sec-vwu-desktop) * 2.7);
     letter-spacing: -0.025em;
 }
 
-.cover .content p {
+section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: calc(var(--svw) * 1.6);
+    font-size: calc(var(--sec-vwu-desktop) * 1.6);
     align-items: center;
     color: #ffffff;
+    max-width: calc(var(--sec-vwu-desktop) * 25);
 }
 
-.cover .socials {
+section.cover div.socials {
     position: absolute;
-    width: var(--cover-safe-w);
-    bottom: calc(((100vh - var(--cover-safe-h))/2) + (var(--svh) * 4.5));
-    padding: 0 calc(var(--svw) * 5.5);
+    width: var(--sec-w);
+    bottom: calc(var(--sec-vhu-desktop) * 3);
+    padding: 0 calc(var(--sec-vwu-desktop) * 4);
 
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: calc(var(--svw) * 0.6);
+    gap: calc(var(--sec-vwu-desktop) * 0.6);
     flex-wrap: wrap;
 }
 
-.cover .socials a img {
+section.cover div.socials a img {
     width: auto;
-    height: calc(var(--svh) * 4.2);
+    height: calc(var(--sec-vhu-desktop) * 4.2);
     border: #4f4f4f 1px solid;
-    border-radius: 8px;
+    border-radius: calc(var(--sec-vhu-desktop) * 0.8);
 }
 
-.cover .socials a img.no-border {
+section.cover div.socials a img.no-border {
     border: none;
 }
 
@@ -402,7 +404,6 @@ main {
 main .section-bg {
     position: sticky;
     top: 0;
-    /* Prefer 100svh (mobile-safe). Fallback 100vh for older browsers. */
     height: 100vh;
     height: 100svh;
 
@@ -417,7 +418,7 @@ main .section-bg {
     pointer-events: none;
 }
 
-main section .image {
+.page .area>.image:first-child {
     position: absolute;
     inset: 0;
     background-size: contain;
@@ -426,22 +427,46 @@ main section .image {
 }
 
 .page-2 .image {
-    background-image: url("/img/design_3/token-31-02_webp.webp");
+    background-image: url("/img/design_3/section-2-desktop.webp");
 }
 
 .page-3 .image {
-    background-image: url("/img/design_3/token-31-03_webp.webp");
+    background-image: url("/img/design_3/section-3-desktop.webp");
 }
 
 .page-4 .image {
-    background-image: url("/img/design_3/token-31-04_webp.webp");
+    background-image: url("/img/design_3/section-4-desktop.webp");
 }
 
-.page-6 .image {
-    background-image: url("/img/design_3/section-6-desktop.webp");
+.page-5 .image {
+    background-image: url("/img/design_3/section-5-desktop.webp");
 }
 
-.text-container {
+@media screen and (max-width: 767px) {
+    .page .area>.image:first-child {
+        background-position: top;
+    }
+
+    .page-2 .image {
+        background-image: url("/img/design_3/section-2-mobile.webp");
+        background-size: cover !important;
+        height: 75%;
+    }
+
+    .page-3 .image {
+        background-image: url("/img/design_3/section-3-mobile.webp");
+    }
+
+    .page-4 .image {
+        background-image: url("/img/design_3/section-4-mobile.webp");
+    }
+
+    .page-5 .image {
+        background-image: url("/img/design_3/section-5-mobile.webp");
+    }
+}
+
+.page .text-container {
     position: relative;
     color: white;
     height: 100%;
@@ -449,58 +474,58 @@ main section .image {
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    gap: 2.3vh;
-    margin-right: max(var(--imgGutter, 0px), 6.25vw);
-    margin-left: max(var(--imgGutter, 0px), 6.25vw);
+    gap: calc(var(--sec-vhu-desktop) * 3.25);
+    margin-right: calc(var(--sec-vwu-desktop)*7.5);
+    margin-left: calc(var(--sec-vwu-desktop)*7.5);
     width: fit-content;
     z-index: 1;
 }
 
-.text-container h2 {
+.page .text-container h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 400;
-    font-size: 4.6vw;
+    font-size: calc(var(--sec-vwu-desktop)*4.94);
     letter-spacing: -0.025em;
     line-height: 1.05;
-    max-width: 24vw;
+    max-width: calc(var(--sec-vwu-desktop)*26);
 }
 
-.text-container p {
+.page .text-container p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: 1.45vw;
-    max-width: 20.5vw;
+    font-size: calc(var(--sec-vwu-desktop)*1.62);
+    max-width: calc(var(--sec-vwu-desktop)*23);
 }
 
-.text-container p span {
+.page .text-container p span {
     font-weight: 500;
 }
 
-.text-container a {
+.page .text-container a {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: 1.45vw;
+    font-size: calc(var(--sec-vwu-desktop)*1.62);
     text-decoration: underline;
     text-decoration-line: underline;
     text-decoration-thickness: 0.5px;
     text-underline-offset: 4px;
-    max-width: 13vw;
+    max-width: calc(var(--sec-vwu-desktop)*14);
 }
 
 .page-2 .text-container h2 {
-    max-width: 24vw !important;
+    max-width: calc(var(--sec-vwu-desktop)*26) !important;
 }
 
 .page-2 .text-container p {
-    max-width: 20.5vw;
+    max-width: calc(var(--sec-vwu-desktop)*23) !important;
 }
 
 .page-3 .text-container h2 {
-    max-width: 30vw !important;
+    max-width: calc(var(--sec-vwu-desktop)*29) !important;
 }
 
 .page-3 .text-container p {
-    max-width: 28.5vw;
+    max-width: calc(var(--sec-vwu-desktop)*31) !important;
 }
 
 .page-3 .text-container,
@@ -509,77 +534,31 @@ main section .image {
 }
 
 .page-4 .text-container h2 {
-    max-width: 28vw !important;
+    max-width: calc(var(--sec-vwu-desktop)*26) !important;
 }
 
 .page-4 .text-container p {
-    max-width: 26.5vw;
+    max-width: calc(var(--sec-vwu-desktop)*30) !important;
 }
 
 .page-4 .text-container a {
-    max-width: 26.5vw;
+    max-width: calc(var(--sec-vwu-desktop)*30) !important;
 }
 
-/* Desktop: tie text widths to contained image width rather than viewport */
-@media (min-width: 768px) {
-
-    .text-container {
-        max-width: var(--imgW);
-    }
-
-    /* Base proportions (converted from previous vw values) */
-    .text-container h2 {
-        max-width: calc(var(--imgW) * 0.24);
-    }
-
-    .text-container p {
-        max-width: calc(var(--imgW) * 0.205);
-    }
-
-    .text-container a {
-        max-width: calc(var(--imgW) * 0.13);
-    }
-
-    /* Per-page refinements matching your earlier vw overrides */
-    .page-2 .text-container h2 {
-        max-width: calc(var(--imgW) * 0.24) !important;
-    }
-
-    .page-2 .text-container p {
-        max-width: calc(var(--imgW) * 0.205) !important;
-    }
-
-    .page-3 .text-container h2 {
-        max-width: calc(var(--imgW) * 0.30) !important;
-    }
-
-    .page-3 .text-container p {
-        max-width: calc(var(--imgW) * 0.285) !important;
-    }
-
-    .page-4 .text-container h2 {
-        max-width: calc(var(--imgW) * 0.28) !important;
-    }
-
-    .page-4 .text-container p,
-    .page-4 .text-container a {
-        max-width: calc(var(--imgW) * 0.265) !important;
-    }
+.page-5 .text-container h2 {
+    max-width: calc(var(--sec-vwu-desktop)*23) !important;
 }
 
-.text-container h2 {
-    /* was: font-size: 4.6vw; */
-    font-size: clamp(28px, calc(var(--imgH) * var(--h2k, 0.046)), 120px);
+.page-5 .text-container p {
+    max-width: calc(var(--sec-vwu-desktop)*30) !important;
 }
 
-.text-container p {
-    /* was: font-size: 1.45vw; */
-    font-size: clamp(14px, calc(var(--imgH) * var(--pk, 0.0145)), 28px);
+.page-6 .text-container p {
+    max-width: calc(var(--sec-vwu-desktop)*21) !important;
 }
 
-.text-container a {
-    /* was: font-size: 1.45vw; */
-    font-size: clamp(14px, calc(var(--imgH) * var(--pk, 0.0145)), 28px);
+.page-6 .text-container a {
+    max-width: calc(var(--sec-vwu-desktop)*21) !important;
 }
 
 .roadmap>p:first-child {
@@ -604,72 +583,69 @@ main section .image {
 }
 
 @media (max-width: 767px) {
-    section {
-        min-height: 100svh;
-    }
 
-    section.cover div.content {
-        gap: 35px;
-    }
-
-    /* cover */
     /* --- COVER --- */
     section.cover {
         background-image: url("/img/design_3/cover-mobile.jpg");
         background-size: cover;
-        background-position: center;
-        background-repeat: no-repeat;
     }
 
-    section.cover div.content {
-        gap: 30px;
+    section.cover div.content h1 {
+        font-size: 30vw;
+        max-width: calc(var(--sec-vwu-desktop) * 65);
     }
 
-    .cover .socials {
-        width: 100vw;
+    section.cover div.content h2 {
+        font-size: 7vw;
+    }
+
+    section.cover div.content p {
+        font-size: 4.3vw;
+        max-width: calc(var(--sec-vwu-desktop) * 65);
+    }
+
+    section.cover div.socials {
         bottom: 32px;
         gap: 10px;
         justify-content: center;
     }
 
-    .cover .socials a img {
+    section.cover div.socials a img {
         height: 40px;
     }
 
-    .cover .content h1 {
-        font-size: 30vw;
-    }
-
-    .cover .content h2 {
-        font-size: 7vw;
-    }
-
-    .cover .content p {
-        font-size: 4.3vw;
-        max-width: 62.5vw;
-    }
 
     /* --- MAIN SECTIONS --- */
-    .page-2 .image {
-        background-image: url("/img/design_3/section-2-mobile.webp");
-        background-size: cover;
-        height: 75%;
-        background-position: top;
+    .page .text-container {
+        justify-content: flex-end;
+        align-items: flex-start;
+        gap: calc(var(--sec-vhu-desktop) * 3);
+        margin-right: 7vw !important;
+        margin-left: 7vw !important;
+        padding-bottom: 8vw;
+        max-width: fit-content !important;
     }
 
-    .page-3 .image {
-        background-image: url("/img/design_3/section-3-mobile.webp");
-        background-position: top;
+    .page .text-container h2 {
+        font-weight: 400;
+        font-size: 12vw;
+        max-width: 75vw !important;
     }
 
-    .page-4 .image {
-        background-image: url("/img/design_3/section-4-mobile.webp");
-        background-position: top;
+    .page .text-container p {
+        font-weight: 300;
+        font-size: 4.2vw;
+        max-width: 74vw !important;
     }
 
-    .page-6 .image {
-        background-image: url("/img/design_3/section-6-mobile.webp");
-        background-position: top;
+    .page .text-container p span {
+        font-weight: 700;
+    }
+
+    .page .text-container a {
+        font-weight: 300;
+        font-size: 4.2vw;
+        max-width: 74vw !important;
     }
 
     .page-3 .text-container,
@@ -677,61 +653,8 @@ main section .image {
         margin-left: 0;
     }
 
-    .text-container p {
-        font-weight: 300;
-    }
-
-    .text-container p span {
-        font-weight: 700;
-    }
-
-    .text-container {
-        justify-content: flex-end;
-        align-items: flex-start;
-        gap: 1.25rem;
-        margin-right: 7vw !important;
-        margin-left: 7vw !important;
-        padding-bottom: 8vw;
-        max-width: 75vw;
-    }
-
-    .text-container h2 {
-        font-family: "GT-Walsheim", "Manrope", sans-serif;
-        font-weight: 400;
-        font-size: 12vw;
-        letter-spacing: -0.025em;
-        max-width: 75vw !important;
-        line-height: 1.05;
-    }
-
-    .text-container p {
-        font-size: 4.2vw;
-    }
-
-    .text-container a {
-        font-weight: 300;
-        font-size: 4.2vw;
-    }
-
-    .text-container p,
-    .text-container a {
-        max-width: 74vw !important;
-    }
-
-    .page-2 .text-container {
-        max-width: 75vw;
-    }
-
     .page-2 .text-container h2 {
         max-width: 63vw !important;
-    }
-
-    .page-3 .text-container {
-        max-width: 80vw !important;
-    }
-
-    .page-3 .text-container p {
-        max-width: 80vw !important;
     }
 
     .page-3 .text-container h2 {
@@ -739,14 +662,13 @@ main section .image {
         font-size: 13vw;
     }
 
-    .page-4 .text-container {
+    .page-3 .text-container p {
         max-width: 80vw !important;
-
     }
 
     .page-4 .text-container h2 {
         max-width: 80vw !important;
-        font-size: 14vw;
+        font-size: 13vw;
     }
 
     .page-4 .text-container p {
@@ -777,11 +699,115 @@ main section .image {
         font-weight: 400;
         max-width: 90vw !important;
     }
+}
 
-    .page-6 .text-container {
-        max-width: fit-content !important;
+.page-6 .communities-images {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: calc(var(--sec-vwu-desktop) * 65);
+    padding: calc(var(--sec-vhu-desktop) * 10.5) calc(var(--sec-vwu-desktop) * 2.5);
+    z-index: 0;
+
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: calc(var(--sec-vwu-desktop) * 2);
+}
+
+.page-6 .communities-images img {
+    width: 100%;
+    height: auto;
+    border-radius: calc(var(--sec-vhu-desktop) * 1.8);
+}
+
+@media screen and (max-width: 767px) {
+    .page-6 .communities-images {
+        width: 100%;
+        height: 10%;
+        padding: calc(var(--sec-vhu-desktop) * 6) calc(var(--sec-vwu-desktop) * 3);
+        top: 0;
+        right: 0;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(7, 1fr);
+        gap: calc(var(--sec-vwu-desktop) * 1.5);
+    }
+
+    .page-6 .communities-images img {
+        border-radius: calc(var(--sec-vhu-desktop) * 0.8);
     }
 }
+
+/* 
+    Utility: position an image on the grid using CSS vars
+    Usage example:
+    <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
+    places the image starting at column 3, row 2, spanning 2 columns × 2 rows. 
+*/
+.page-6 .communities-images>img:nth-child(1) { --c: 2; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(2) { --c: 4; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(3) { --c: 5; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(4) { --c: 7; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(5) { --c: 1; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(6) { --c: 3; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(7) { --c: 4; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(8) { --c: 5; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(9) { --c: 6; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(10) { --c: 8; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(11) { --c: 2; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(12) { --c: 3; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(13) { --c: 4; --r: 3; --w: 2; --h: 2 }
+.page-6 .communities-images>img:nth-child(14) { --c: 6; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(15) { --c: 7; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(16) { --c: 1; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(17) { --c: 3; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(18) { --c: 6; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(19) { --c: 8; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(20) { --c: 2; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(21) { --c: 4; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(22) { --c: 5; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(23) { --c: 6; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(24) { --c: 7; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(25) { --c: 3; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(26) { --c: 4; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(27) { --c: 6; --r: 6; --w: 1; --h: 1 }
+
+@media screen and (max-width: 767px) {
+.page-6 .communities-images>img:nth-child(1) { --c: 3; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(2) { --c: 6; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(3) { --c: 2; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(4) { --c: 4; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(5) { --c: 5; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(6) { --c: 7; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(7) { --c: 3; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(8) { --c: 4; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(9) { --c: 5; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(10) { --c: 6; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(11) { --c: 8; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(12) { --c: 2; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(13) { --c: 4; --r: 4; --w: 2; --h: 2 }
+.page-6 .communities-images>img:nth-child(14) { --c: 3; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(15) { --c: 6; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(16) { --c: 7; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(17) { --c: 1; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(18) { --c: 3; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(19) { --c: 6; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(20) { --c: 7; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(21) { --c: 2; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(22) { --c: 4; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(23) { --c: 5; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(24) { --c: 6; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(25) { --c: 3; --r: 7; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(26) { --c: 4; --r: 7; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(27) { --c: 6; --r: 7; --w: 1; --h: 1 }
+}
+
+.page-6 .communities-images img {
+    grid-column: var(--c) / span var(--w, 1);
+    grid-row: var(--r) / span var(--h, 1);
+}
+
 
 /* NavBar */
 header#navbar {
@@ -872,9 +898,7 @@ header#navbar ul a span svg {
     header#navbar nav#menu>ul>li>a svg {
         fill: var(--nav-color);
     }
-}
 
-@media (min-width: 768px) {
     header#navbar nav#menu li.nav-link:hover span svg {
         transform: rotate(180deg);
     }
