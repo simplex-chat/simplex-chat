@@ -467,13 +467,13 @@ main section .image {
 
 .text-container p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 300;
+    font-weight: 200;
     font-size: 1.45vw;
     max-width: 20.5vw;
 }
 
 .text-container p span {
-    font-weight: 700;
+    font-weight: 500;
 }
 
 .text-container a {
@@ -675,6 +675,14 @@ main section .image {
     .page-3 .text-container,
     .page-4 .text-container {
         margin-left: 0;
+    }
+
+    .text-container p {
+        font-weight: 300;
+    }
+
+    .text-container p span {
+        font-weight: 700;
     }
 
     .text-container {
