@@ -41,6 +41,7 @@ module Directory.Store
     listLastGroups,
     listPendingGroups,
     getAllListedGroups,
+    getAllListedGroups_,
     searchListedGroups,
     groupRegStatusText,
     pendingApproval,
@@ -330,12 +331,14 @@ getUserGroupRegs cc user@User {userId, userContactId} ctId =
       <$> DB.query db (groupReqQuery <> " AND r.contact_id = ? ORDER BY r.user_group_reg_id") (userId, userContactId, ctId)
 
 getAllListedGroups :: ChatController -> User -> IO (Either String [(GroupInfo, GroupReg, Maybe GroupLink)])
-getAllListedGroups cc user@User {userId, userContactId} =
-  withDB' "getAllListedGroups" cc $ \db ->
-    DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
-      >>= mapM (withGroupLink db . toGroupInfoReg (vr cc) user)
+getAllListedGroups cc user = withDB' "getAllListedGroups" cc $ \db -> getAllListedGroups_ db (vr cc) user
+
+getAllListedGroups_ :: DB.Connection -> VersionRangeChat -> User -> IO [(GroupInfo, GroupReg, Maybe GroupLink)]
+getAllListedGroups_ db vr' user@User {userId, userContactId} =
+  DB.query db (groupReqQuery <> " AND r.group_reg_status = ?") (userId, userContactId, GRSActive)
+    >>= mapM (withGroupLink . toGroupInfoReg vr' user)
   where
-    withGroupLink db (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
+    withGroupLink (g, gr) = (g,gr,) . eitherToMaybe <$> runExceptT (getGroupLink db user g)
 
 searchListedGroups :: ChatController -> User -> SearchType -> Maybe GroupId -> Int -> IO (Either String ([(GroupInfo, GroupReg)], Int))
 searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pageSize =
