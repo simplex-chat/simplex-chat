@@ -217,6 +217,11 @@
     --vh: 1svh;
 
     --nav-color: #ffffff;
+
+    --imgW: min(100vw, 100vh);
+    --imgH: min(100vh, 100vw);
+    --imgGutter: 0px;
+    /* set per section via JS: half of leftover space around contained image */
 }
 
 body.change-nav-color {
@@ -310,8 +315,15 @@ section .content {
 
 /* --- COVER --- */
 section.cover {
+    /* Compute cover drawn size and inner safe frame (60% of full image on each axis) */
+    --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
+    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
+    --cover-safe-w: calc(var(--cover-bg-w) * 0.6);
+    /* 1920/3200 */
+    --cover-safe-h: calc(var(--cover-bg-h) * 0.6);
+    /* 1080/1800 */
     background-image: url("/img/design_3/cover.jpg");
-    background-size: cover;
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 
@@ -319,6 +331,9 @@ section.cover {
     justify-content: center;
     align-items: center;
     text-align: center;
+
+    --svw: calc(var(--cover-safe-w) / 100);
+    --svh: calc(var(--cover-safe-h) / 100);
 }
 
 section.cover div.content {
@@ -326,13 +341,14 @@ section.cover div.content {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: clamp(20px, 4vw, 40px);
+    gap: calc(var(--svh) * 3.5);
+    max-width: var(--cover-safe-w);
 }
 
 .cover .content h1 {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 800;
-    font-size: clamp(3rem, 12vw, 12rem);
+    font-size: calc(var(--svw) * 11.4);
     line-height: 0.9;
     letter-spacing: -0.025em;
     color: #ffffff;
@@ -341,34 +357,34 @@ section.cover div.content {
 .cover .content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 400;
-    font-size: clamp(1.5rem, 3vw, 2.84rem);
+    font-size: calc(var(--svw) * 2.7);
     letter-spacing: -0.025em;
 }
 
 .cover .content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: clamp(1rem, 2.25vw, 1.67rem);
+    font-size: calc(var(--svw) * 1.6);
     align-items: center;
     color: #ffffff;
 }
 
 .cover .socials {
     position: absolute;
-    width: 100vw;
-    bottom: 32px;
-    padding: 0 4vw;
+    width: var(--cover-safe-w);
+    bottom: calc(((100vh - var(--cover-safe-h))/2) + (var(--svh) * 4.5));
+    padding: 0 calc(var(--svw) * 5.5);
 
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: calc(var(--svw) * 0.6);
     flex-wrap: wrap;
 }
 
 .cover .socials a img {
     width: auto;
-    height: 40px;
+    height: calc(var(--svh) * 4.2);
     border: #4f4f4f 1px solid;
     border-radius: 8px;
 }
@@ -403,9 +419,8 @@ main .section-bg {
 
 main section .image {
     position: absolute;
-    width: 100%;
-    height: 100%;
-    background-size: cover;
+    inset: 0;
+    background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
 }
@@ -435,9 +450,10 @@ main section .image {
     justify-content: center;
     align-items: flex-start;
     gap: 2.3vh;
-    margin-right: 6.25vw;
-    margin-left: 6.25vw;
+    margin-right: max(var(--imgGutter, 0px), 6.25vw);
+    margin-left: max(var(--imgGutter, 0px), 6.25vw);
     width: fit-content;
+    z-index: 1;
 }
 
 .text-container h2 {
@@ -457,7 +473,7 @@ main section .image {
 }
 
 .text-container p span {
-    font-weight: 400;
+    font-weight: 500;
 }
 
 .text-container a {
@@ -504,6 +520,68 @@ main section .image {
     max-width: 26.5vw;
 }
 
+/* Desktop: tie text widths to contained image width rather than viewport */
+@media (min-width: 768px) {
+
+    .text-container {
+        max-width: var(--imgW);
+    }
+
+    /* Base proportions (converted from previous vw values) */
+    .text-container h2 {
+        max-width: calc(var(--imgW) * 0.24);
+    }
+
+    .text-container p {
+        max-width: calc(var(--imgW) * 0.205);
+    }
+
+    .text-container a {
+        max-width: calc(var(--imgW) * 0.13);
+    }
+
+    /* Per-page refinements matching your earlier vw overrides */
+    .page-2 .text-container h2 {
+        max-width: calc(var(--imgW) * 0.24) !important;
+    }
+
+    .page-2 .text-container p {
+        max-width: calc(var(--imgW) * 0.205) !important;
+    }
+
+    .page-3 .text-container h2 {
+        max-width: calc(var(--imgW) * 0.30) !important;
+    }
+
+    .page-3 .text-container p {
+        max-width: calc(var(--imgW) * 0.285) !important;
+    }
+
+    .page-4 .text-container h2 {
+        max-width: calc(var(--imgW) * 0.28) !important;
+    }
+
+    .page-4 .text-container p,
+    .page-4 .text-container a {
+        max-width: calc(var(--imgW) * 0.265) !important;
+    }
+}
+
+.text-container h2 {
+    /* was: font-size: 4.6vw; */
+    font-size: clamp(28px, calc(var(--imgH) * var(--h2k, 0.046)), 120px);
+}
+
+.text-container p {
+    /* was: font-size: 1.45vw; */
+    font-size: clamp(14px, calc(var(--imgH) * var(--pk, 0.0145)), 28px);
+}
+
+.text-container a {
+    /* was: font-size: 1.45vw; */
+    font-size: clamp(14px, calc(var(--imgH) * var(--pk, 0.0145)), 28px);
+}
+
 .roadmap>p:first-child {
     font-weight: 500;
     color: #64fdff;
@@ -521,6 +599,10 @@ main section .image {
     max-width: 30vw;
 }
 
+.roadmap p.title span {
+    display: none;
+}
+
 @media (max-width: 767px) {
     section {
         min-height: 100svh;
@@ -528,6 +610,30 @@ main section .image {
 
     section.cover div.content {
         gap: 35px;
+    }
+
+    /* cover */
+    /* --- COVER --- */
+    section.cover {
+        background-image: url("/img/design_3/cover-mobile.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    section.cover div.content {
+        gap: 30px;
+    }
+
+    .cover .socials {
+        width: 100vw;
+        bottom: 32px;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .cover .socials a img {
+        height: 40px;
     }
 
     .cover .content h1 {
@@ -543,27 +649,27 @@ main section .image {
         max-width: 62.5vw;
     }
 
-    .cover .socials {
-        justify-content: center;
-    }
-
     /* --- MAIN SECTIONS --- */
     .page-2 .image {
-        background-image: url("/img/design_3/section2-mobile-bg.webp");
+        background-image: url("/img/design_3/section-2-mobile.webp");
+        background-size: cover;
+        height: 75%;
+        background-position: top;
     }
 
     .page-3 .image {
         background-image: url("/img/design_3/section-3-mobile.webp");
+        background-position: top;
     }
 
     .page-4 .image {
         background-image: url("/img/design_3/section-4-mobile.webp");
-        height: 55%;
+        background-position: top;
     }
 
     .page-6 .image {
         background-image: url("/img/design_3/section-6-mobile.webp");
-        height: 48%;
+        background-position: top;
     }
 
     .page-3 .text-container,
@@ -571,12 +677,20 @@ main section .image {
         margin-left: 0;
     }
 
+    .text-container p {
+        font-weight: 300;
+    }
+
+    .text-container p span {
+        font-weight: 700;
+    }
+
     .text-container {
         justify-content: flex-end;
         align-items: flex-start;
         gap: 1.25rem;
-        margin-right: 8vw !important;
-        margin-left: 8vw !important;
+        margin-right: 7vw !important;
+        margin-left: 7vw !important;
         padding-bottom: 8vw;
         max-width: 75vw;
     }
@@ -584,7 +698,7 @@ main section .image {
     .text-container h2 {
         font-family: "GT-Walsheim", "Manrope", sans-serif;
         font-weight: 400;
-        font-size: 9.25vw;
+        font-size: 12vw;
         letter-spacing: -0.025em;
         max-width: 75vw !important;
         line-height: 1.05;
@@ -609,7 +723,7 @@ main section .image {
     }
 
     .page-2 .text-container h2 {
-        max-width: 75vw !important;
+        max-width: 63vw !important;
     }
 
     .page-3 .text-container {
@@ -641,6 +755,31 @@ main section .image {
 
     .page-4 .text-container a {
         max-width: 80vw !important;
+    }
+
+    .roadmap {
+        width: 85vw !important;
+    }
+
+    .roadmap>p:first-child {
+        float: left;
+    }
+
+    .roadmap p.title span {
+        display: inline;
+    }
+
+    .roadmap p.title {
+        color: #64fdff;
+    }
+
+    .roadmap>p {
+        font-weight: 400;
+        max-width: 90vw !important;
+    }
+
+    .page-6 .text-container {
+        max-width: fit-content !important;
     }
 }
 
@@ -852,9 +991,21 @@ header#navbar button.theme-switch-btn {
     border: none;
 }
 
-header#navbar button.theme-switch-btn img {
+header#navbar button.theme-switch-btn svg {
     width: 18px;
     height: auto;
+}
+
+header#navbar button.theme-switch-btn svg path {
+    fill: white;
+    transition: all 0.3s ease;
+}
+
+@media screen and (min-width: 768px) {
+    header#navbar button.theme-switch-btn svg path {
+        fill: var(--nav-color);
+        transition: all 0.3s ease;
+    }
 }
 
 .right-links {
