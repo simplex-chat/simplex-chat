@@ -276,26 +276,29 @@ getMemberConnsToSub db User {userId, userContactId} filterToSubscribe =
     DB.query
       db
       query
-      ((userId, ConnDeleted, userContactId)
-        :. (GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemRemoved, GSMemLeft, GSMemGroupDeleted))
+      ((userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+        :. (userId, ConnDeleted, GSMemRemoved, GSMemLeft, GSMemGroupDeleted))
   where
     query
-      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1 " <> cond
-      | otherwise = baseQuery <> " " <> cond
+      | filterToSubscribe = baseQuery <> " AND c.to_subscribe = 1"
+      | otherwise = baseQuery
     baseQuery =
       [sql|
+        WITH user_groups AS MATERIALIZED (
+          SELECT g.group_id
+          FROM groups g
+          JOIN group_members mu ON mu.group_id = g.group_id
+          WHERE g.user_id = ?
+            AND mu.contact_id = ?
+            AND mu.member_status NOT IN (?,?,?)
+        )
         SELECT c.agent_conn_id
         FROM connections c
         JOIN group_members m ON m.group_member_id = c.group_member_id
-        JOIN groups g ON g.group_id = m.group_id
-        JOIN group_members mu ON mu.group_id = g.group_id
+        JOIN user_groups ug ON ug.group_id = m.group_id
         WHERE c.user_id = ?
-      |]
-    cond =
-      [sql|
-        AND c.conn_status != ?
-        AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
-        AND m.member_status NOT IN (?,?,?)
+          AND c.conn_status != ?
+          AND m.member_status NOT IN (?,?,?)
       |]
 
 getPendingConnsToSub :: DB.Connection -> User -> Bool -> IO [ConnId]
