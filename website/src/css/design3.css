@@ -315,8 +315,15 @@ section .content {
 
 /* --- COVER --- */
 section.cover {
+    /* Compute cover drawn size and inner safe frame (60% of full image on each axis) */
+    --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
+    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
+    --cover-safe-w: calc(var(--cover-bg-w) * 0.6);
+    /* 1920/3200 */
+    --cover-safe-h: calc(var(--cover-bg-h) * 0.6);
+    /* 1080/1800 */
     background-image: url("/img/design_3/cover.jpg");
-    background-size: cover;
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 
@@ -324,6 +331,9 @@ section.cover {
     justify-content: center;
     align-items: center;
     text-align: center;
+
+    --svw: calc(var(--cover-safe-w) / 100);
+    --svh: calc(var(--cover-safe-h) / 100);
 }
 
 section.cover div.content {
@@ -331,13 +341,14 @@ section.cover div.content {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    gap: clamp(20px, 4vw, 40px);
+    gap: calc(var(--svh) * 3.5);
+    max-width: var(--cover-safe-w);
 }
 
 .cover .content h1 {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 800;
-    font-size: clamp(3rem, 12vw, 12rem);
+    font-size: calc(var(--svw) * 11.4);
     line-height: 0.9;
     letter-spacing: -0.025em;
     color: #ffffff;
@@ -346,34 +357,34 @@ section.cover div.content {
 .cover .content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 400;
-    font-size: clamp(1.5rem, 3vw, 2.84rem);
+    font-size: calc(var(--svw) * 2.7);
     letter-spacing: -0.025em;
 }
 
 .cover .content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: clamp(1rem, 2.25vw, 1.67rem);
+    font-size: calc(var(--svw) * 1.6);
     align-items: center;
     color: #ffffff;
 }
 
 .cover .socials {
     position: absolute;
-    width: 100vw;
-    bottom: 32px;
-    padding: 0 4vw;
+    width: var(--cover-safe-w);
+    bottom: calc(((100vh - var(--cover-safe-h))/2) + (var(--svh) * 4.5));
+    padding: 0 calc(var(--svw) * 5.5);
 
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 10px;
+    gap: calc(var(--svw) * 0.6);
     flex-wrap: wrap;
 }
 
 .cover .socials a img {
     width: auto;
-    height: 40px;
+    height: calc(var(--svh) * 4.2);
     border: #4f4f4f 1px solid;
     border-radius: 8px;
 }
@@ -601,6 +612,30 @@ main section .image {
         gap: 35px;
     }
 
+    /* cover */
+    /* --- COVER --- */
+    section.cover {
+        background-image: url("/img/design_3/cover-mobile.jpg");
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+    }
+
+    section.cover div.content {
+        gap: 30px;
+    }
+
+    .cover .socials {
+        width: 100vw;
+        bottom: 32px;
+        gap: 10px;
+        justify-content: center;
+    }
+
+    .cover .socials a img {
+        height: 40px;
+    }
+
     .cover .content h1 {
         font-size: 30vw;
     }
@@ -612,10 +647,6 @@ main section .image {
     .cover .content p {
         font-size: 4.3vw;
         max-width: 62.5vw;
-    }
-
-    .cover .socials {
-        justify-content: center;
     }
 
     /* --- MAIN SECTIONS --- */
@@ -958,8 +989,15 @@ header#navbar button.theme-switch-btn svg {
 }
 
 header#navbar button.theme-switch-btn svg path {
-    fill: var(--nav-color) !important;
+    fill: white;
     transition: all 0.3s ease;
+}
+
+@media screen and (min-width: 768px) {
+    header#navbar button.theme-switch-btn svg path {
+        fill: var(--nav-color);
+        transition: all 0.3s ease;
+    }
 }
 
 .right-links {
