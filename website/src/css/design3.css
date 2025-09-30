@@ -467,13 +467,13 @@ main section .image {
 
 .text-container p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 200;
+    font-weight: 300;
     font-size: 1.45vw;
     max-width: 20.5vw;
 }
 
 .text-container p span {
-    font-weight: 400;
+    font-weight: 700;
 }
 
 .text-container a {
@@ -750,7 +750,7 @@ main section .image {
     }
 
     .roadmap {
-        width: 100%;
+        width: 85vw !important;
     }
 
     .roadmap>p:first-child {
@@ -771,7 +771,7 @@ main section .image {
     }
 
     .page-6 .text-container {
-        max-width: 90vw !important;
+        max-width: fit-content !important;
     }
 }
 
