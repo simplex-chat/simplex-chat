@@ -446,7 +446,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
-    useRelays :: Bool,
+    useRelays :: BoolDef,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -2030,7 +2030,11 @@ $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
-$(JQ.deriveJSON defaultJSON ''GroupSummary)
+$(JQ.deriveToJSON defaultJSON ''GroupSummary)
+
+instance FromJSON GroupSummary where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
+  omittedField = Just GroupSummary {currentMembers = 0}
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
