@@ -701,6 +701,114 @@ main .section-bg {
     }
 }
 
+.page-6 .communities-images {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: calc(var(--sec-vwu-desktop) * 65);
+    padding: calc(var(--sec-vhu-desktop) * 10.5) calc(var(--sec-vwu-desktop) * 2.5);
+    z-index: 0;
+
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: calc(var(--sec-vwu-desktop) * 2);
+}
+
+.page-6 .communities-images img {
+    width: 100%;
+    height: auto;
+    border-radius: calc(var(--sec-vhu-desktop) * 1.8);
+}
+
+@media screen and (max-width: 767px) {
+    .page-6 .communities-images {
+        width: 100%;
+        height: 10%;
+        padding: calc(var(--sec-vhu-desktop) * 6) calc(var(--sec-vwu-desktop) * 3);
+        top: 0;
+        right: 0;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(7, 1fr);
+        gap: calc(var(--sec-vwu-desktop) * 1.5);
+    }
+
+    .page-6 .communities-images img {
+        border-radius: calc(var(--sec-vhu-desktop) * 0.8);
+    }
+}
+
+/* 
+    Utility: position an image on the grid using CSS vars
+    Usage example:
+    <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
+    places the image starting at column 3, row 2, spanning 2 columns × 2 rows. 
+*/
+.page-6 .communities-images>img:nth-child(1) { --c: 2; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(2) { --c: 4; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(3) { --c: 5; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(4) { --c: 7; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(5) { --c: 1; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(6) { --c: 3; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(7) { --c: 4; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(8) { --c: 5; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(9) { --c: 6; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(10) { --c: 8; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(11) { --c: 2; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(12) { --c: 3; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(13) { --c: 4; --r: 3; --w: 2; --h: 2 }
+.page-6 .communities-images>img:nth-child(14) { --c: 6; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(15) { --c: 7; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(16) { --c: 1; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(17) { --c: 3; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(18) { --c: 6; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(19) { --c: 8; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(20) { --c: 2; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(21) { --c: 4; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(22) { --c: 5; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(23) { --c: 6; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(24) { --c: 7; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(25) { --c: 3; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(26) { --c: 4; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(27) { --c: 6; --r: 6; --w: 1; --h: 1 }
+
+@media screen and (max-width: 767px) {
+.page-6 .communities-images>img:nth-child(1) { --c: 3; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(2) { --c: 6; --r: 1; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(3) { --c: 2; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(4) { --c: 4; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(5) { --c: 5; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(6) { --c: 7; --r: 2; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(7) { --c: 3; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(8) { --c: 4; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(9) { --c: 5; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(10) { --c: 6; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(11) { --c: 8; --r: 3; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(12) { --c: 2; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(13) { --c: 4; --r: 4; --w: 2; --h: 2 }
+.page-6 .communities-images>img:nth-child(14) { --c: 3; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(15) { --c: 6; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(16) { --c: 7; --r: 4; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(17) { --c: 1; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(18) { --c: 3; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(19) { --c: 6; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(20) { --c: 7; --r: 5; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(21) { --c: 2; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(22) { --c: 4; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(23) { --c: 5; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(24) { --c: 6; --r: 6; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(25) { --c: 3; --r: 7; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(26) { --c: 4; --r: 7; --w: 1; --h: 1 }
+.page-6 .communities-images>img:nth-child(27) { --c: 6; --r: 7; --w: 1; --h: 1 }
+}
+
+.page-6 .communities-images img {
+    grid-column: var(--c) / span var(--w, 1);
+    grid-row: var(--r) / span var(--h, 1);
+}
+
+
 /* NavBar */
 header#navbar {
     position: fixed;
