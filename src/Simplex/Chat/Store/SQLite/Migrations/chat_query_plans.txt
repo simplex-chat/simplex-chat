@@ -3170,42 +3170,6 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         SELECT c.agent_conn_id
         FROM connections c
-        JOIN group_members m ON m.group_member_id = c.group_member_id
-        JOIN groups g ON g.group_id = m.group_id
-        JOIN group_members mu ON mu.group_id = g.group_id
-        WHERE c.user_id = ?
-       
-        AND c.conn_status != ?
-        AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
-        AND m.member_status NOT IN (?,?,?)
-      
-Plan:
-SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-
-Query: 
-        SELECT c.agent_conn_id
-        FROM connections c
-        JOIN group_members m ON m.group_member_id = c.group_member_id
-        JOIN groups g ON g.group_id = m.group_id
-        JOIN group_members mu ON mu.group_id = g.group_id
-        WHERE c.user_id = ?
-       AND c.to_subscribe = 1 
-        AND c.conn_status != ?
-        AND mu.contact_id = ? AND mu.member_status NOT IN (?,?,?)
-        AND m.member_status NOT IN (?,?,?)
-      
-Plan:
-SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH mu USING INDEX sqlite_autoindex_group_members_1 (group_id=?)
-
-Query: 
-        SELECT c.agent_conn_id
-        FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
         AND c.conn_status != ?
@@ -3883,6 +3847,56 @@ Query:
       
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        WITH user_groups AS MATERIALIZED (
+          SELECT g.group_id
+          FROM groups g
+          JOIN group_members mu ON mu.group_id = g.group_id
+          WHERE g.user_id = ?
+            AND mu.contact_id = ?
+            AND mu.member_status NOT IN (?,?,?)
+        )
+        SELECT c.agent_conn_id
+        FROM connections c
+        JOIN group_members m ON m.group_member_id = c.group_member_id
+        JOIN user_groups ug ON ug.group_id = m.group_id
+        WHERE c.user_id = ?
+          AND c.conn_status != ?
+          AND m.member_status NOT IN (?,?,?)
+      
+Plan:
+MATERIALIZE user_groups
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
+
+Query: 
+        WITH user_groups AS MATERIALIZED (
+          SELECT g.group_id
+          FROM groups g
+          JOIN group_members mu ON mu.group_id = g.group_id
+          WHERE g.user_id = ?
+            AND mu.contact_id = ?
+            AND mu.member_status NOT IN (?,?,?)
+        )
+        SELECT c.agent_conn_id
+        FROM connections c
+        JOIN group_members m ON m.group_member_id = c.group_member_id
+        JOIN user_groups ug ON ug.group_id = m.group_id
+        WHERE c.user_id = ?
+          AND c.conn_status != ?
+          AND m.member_status NOT IN (?,?,?)
+       AND c.to_subscribe = 1
+Plan:
+MATERIALIZE user_groups
+SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
 
 Query: 
       DELETE FROM chat_items
