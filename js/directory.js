@@ -343,7 +343,7 @@ function addPagination(entries) {
         pageBtn.textContent = p.toString();
         if (p === currentPage) {
           pageBtn.classList.add('active');
-        } else if (p === currentPage - 1 || p === currentPage + 1) {
+        } else if (p === currentPage - 1 || p === currentPage + 1 || (currentPage === 1 && p === 3) || (currentPage === totalPages && p === totalPages - 2)) {
           pageBtn.classList.add('neighbor');
         }
         pageBtn.addEventListener('click', () => goToPage(p));
