@@ -15,6 +15,76 @@ SET row_security = off;
 CREATE SCHEMA test_chat_schema;
 
 
+
+CREATE FUNCTION test_chat_schema.is_current_member(p_status text) RETURNS boolean
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  RETURN p_status IN (
+    'introduced',
+    'intro-inv',
+    'accepted',
+    'announced',
+    'connected',
+    'complete',
+    'creator'
+  );
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_delete_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF is_current_member(OLD.member_status) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count - 1
+    WHERE group_id = OLD.group_id;
+  END IF;
+  RETURN OLD;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  IF is_current_member(NEW.member_status) THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count + 1
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
+
+CREATE FUNCTION test_chat_schema.on_group_members_update_update_summary() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+DECLARE
+  was_active BOOLEAN;
+  is_active BOOLEAN;
+BEGIN
+  was_active := is_current_member(OLD.member_status);
+  is_active := is_current_member(NEW.member_status);
+
+  IF was_active != is_active THEN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (CASE WHEN is_active THEN 1 ELSE -1 END)
+    WHERE group_id = NEW.group_id;
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_table_access_method = heap;
 
 
@@ -388,7 +458,6 @@ CREATE TABLE test_chat_schema.contacts (
     user_id bigint NOT NULL,
     local_display_name text NOT NULL,
     is_user smallint DEFAULT 0 NOT NULL,
-    via_group bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone NOT NULL,
     xcontact_id bytea,
@@ -716,7 +785,8 @@ CREATE TABLE test_chat_schema.groups (
     welcome_shared_msg_id bytea,
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
-    via_group_link_uri bytea
+    via_group_link_uri bytea,
+    summary_current_members_count bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -1112,18 +1182,6 @@ ALTER TABLE test_chat_schema.settings ALTER COLUMN settings_id ADD GENERATED ALW
 
 
 
-CREATE TABLE test_chat_schema.snd_file_chunks (
-    file_id bigint NOT NULL,
-    connection_id bigint NOT NULL,
-    chunk_number bigint NOT NULL,
-    chunk_agent_msg_id bigint,
-    chunk_sent smallint DEFAULT 0 NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL
-);
-
-
-
 CREATE TABLE test_chat_schema.snd_files (
     file_id bigint NOT NULL,
     connection_id bigint NOT NULL,
@@ -1510,11 +1568,6 @@ ALTER TABLE ONLY test_chat_schema.settings
 
 
 
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_pkey PRIMARY KEY (file_id, connection_id, chunk_number);
-
-
-
 ALTER TABLE ONLY test_chat_schema.snd_files
     ADD CONSTRAINT snd_files_pkey PRIMARY KEY (file_id, connection_id);
 
@@ -1796,7 +1849,7 @@ CREATE INDEX idx_connections_conn_req_inv ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
+CREATE UNIQUE INDEX idx_connections_contact_id ON test_chat_schema.connections USING btree (contact_id);
 
 
 
@@ -1808,7 +1861,7 @@ CREATE INDEX idx_connections_group_member ON test_chat_schema.connections USING 
 
 
 
-CREATE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON test_chat_schema.connections USING btree (group_member_id);
 
 
 
@@ -1816,7 +1869,7 @@ CREATE INDEX idx_connections_rcv_file_id ON test_chat_schema.connections USING b
 
 
 
-CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (to_subscribe);
+CREATE INDEX idx_connections_to_subscribe ON test_chat_schema.connections USING btree (user_id, to_subscribe);
 
 
 
@@ -1897,10 +1950,6 @@ CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON test_chat_schem
 
 
 CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON test_chat_schema.contacts USING btree (grp_direct_inv_from_member_conn_id);
-
-
-
-CREATE INDEX idx_contacts_via_group ON test_chat_schema.contacts USING btree (via_group);
 
 
 
@@ -2064,6 +2113,10 @@ CREATE INDEX idx_groups_inv_queue_info ON test_chat_schema.groups USING btree (i
 
 
 
+CREATE INDEX idx_groups_summary_current_members_count ON test_chat_schema.groups USING btree (summary_current_members_count);
+
+
+
 CREATE INDEX idx_groups_via_group_link_uri_hash ON test_chat_schema.groups USING btree (user_id, via_group_link_uri_hash);
 
 
@@ -2212,10 +2265,6 @@ CREATE INDEX idx_smp_servers_user_id ON test_chat_schema.protocol_servers USING 
 
 
 
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON test_chat_schema.snd_file_chunks USING btree (file_id, connection_id);
-
-
-
 CREATE INDEX idx_snd_files_connection_id ON test_chat_schema.snd_files USING btree (connection_id);
 
 
@@ -2245,6 +2294,18 @@ CREATE INDEX idx_xftp_file_descriptions_user_id ON test_chat_schema.xftp_file_de
 
 
 CREATE INDEX note_folders_user_id ON test_chat_schema.note_folders USING btree (user_id);
+
+
+
+CREATE TRIGGER tr_group_members_delete_update_summary AFTER DELETE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_delete_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_insert_update_summary AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_summary();
+
+
+
+CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_update_update_summary();
 
 
 
@@ -2603,11 +2664,6 @@ ALTER TABLE ONLY test_chat_schema.contacts
 
 
 
-ALTER TABLE ONLY test_chat_schema.contacts
-    ADD CONSTRAINT fk_contacts_groups FOREIGN KEY (via_group) REFERENCES test_chat_schema.groups(group_id) ON DELETE SET NULL;
-
-
-
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT fk_files_chat_items FOREIGN KEY (chat_item_id) REFERENCES test_chat_schema.chat_items(chat_item_id) ON DELETE CASCADE;
 
@@ -2860,11 +2916,6 @@ ALTER TABLE ONLY test_chat_schema.sent_probes
 
 ALTER TABLE ONLY test_chat_schema.settings
     ADD CONSTRAINT settings_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.snd_file_chunks
-    ADD CONSTRAINT snd_file_chunks_file_id_connection_id_fkey FOREIGN KEY (file_id, connection_id) REFERENCES test_chat_schema.snd_files(file_id, connection_id) ON DELETE CASCADE;
 
 
 

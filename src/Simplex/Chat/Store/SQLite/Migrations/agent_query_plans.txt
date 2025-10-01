@@ -63,9 +63,11 @@ Query:
               SELECT rcv_file_chunk_id, chunk_no, chunk_size, digest, tmp_path
               FROM rcv_file_chunks
               WHERE rcv_file_id = ?
+              ORDER BY chunk_no ASC
             
 Plan:
 SEARCH rcv_file_chunks USING INDEX idx_rcv_file_chunks_rcv_file_id (rcv_file_id=?)
+USE TEMP B-TREE FOR ORDER BY
 
 Query: 
               SELECT snd_file_chunk_id, chunk_no, chunk_offset, chunk_size, digest
@@ -950,6 +952,10 @@ Plan:
 
 Query: INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash) VALUES (?,?,?)
 Plan:
+
+Query: SELECT 1 FROM connections WHERE conn_id = ? AND deleted_at_wait_delivery < ? LIMIT 1
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: SELECT 1 FROM encrypted_rcv_message_hashes WHERE conn_id = ? AND hash = ? LIMIT 1
 Plan:

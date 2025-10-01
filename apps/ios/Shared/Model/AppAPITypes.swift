@@ -1059,7 +1059,6 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest, chat_: ChatData?)
     case contactUpdated(user: UserRef, toContact: Contact)
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
-    case contactsMerged(user: UserRef, intoContact: Contact, mergedContact: Contact)
     case networkStatus(networkStatus: NetworkStatus, connections: [String])
     case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
@@ -1138,7 +1137,6 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .receivedContactRequest: "receivedContactRequest"
         case .contactUpdated: "contactUpdated"
         case .groupMemberUpdated: "groupMemberUpdated"
-        case .contactsMerged: "contactsMerged"
         case .networkStatus: "networkStatus"
         case .networkStatuses: "networkStatuses"
         case .chatInfoUpdated: "chatInfoUpdated"
@@ -1212,7 +1210,6 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .receivedContactRequest(u, contactRequest, chat_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\nchat_: \(String(describing: chat_))")
         case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
         case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
-        case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
         case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
         case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
         case let .chatInfoUpdated(u, chatInfo): return withUser(u, String(describing: chatInfo))

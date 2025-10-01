@@ -181,7 +181,6 @@ data Contact = Contact
     localDisplayName :: ContactName,
     profile :: LocalProfile,
     activeConn :: Maybe Connection,
-    viaGroup :: Maybe Int64,
     contactUsed :: Bool,
     contactStatus :: ContactStatus,
     chatSettings :: ChatSettings,
@@ -355,9 +354,6 @@ data UserContact = UserContact
   }
   deriving (Eq, Show)
 
-userContactGroupId :: UserContact -> Maybe GroupId
-userContactGroupId UserContact {groupId} = groupId
-
 data UserContactRequest = UserContactRequest
   { contactRequestId :: Int64,
     agentInvitationId :: AgentInvId,
@@ -443,26 +439,6 @@ optionalFullName displayName fullName shortDescr
   | T.null fullName || displayName == fullName = maybe "" (\sd -> " (" <> sd <> ")") shortDescr
   | otherwise = " (" <> fullName <> ")"
 
-data ShortGroup = ShortGroup
-  { shortInfo :: ShortGroupInfo,
-    members :: [ShortGroupMember]
-  }
-
-data ShortGroupInfo = ShortGroupInfo
-  { groupId :: GroupId,
-    groupName :: GroupName,
-    membershipStatus :: GroupMemberStatus
-  }
-  deriving (Eq, Show)
-
-data ShortGroupMember = ShortGroupMember
-  { groupMemberId :: GroupMemberId,
-    groupId :: GroupId,
-    memberName :: ContactName,
-    connId :: AgentConnId
-  }
-  deriving (Show)
-
 data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
   deriving (Eq, Show)
 
@@ -470,8 +446,7 @@ type GroupId = Int64
 
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
-    -- groupType :: GroupType, -- TODO [channels fwd] add discriminator for channels/groups
-    useRelays :: Bool,
+    useRelays :: BoolDef,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -488,31 +463,11 @@ data GroupInfo = GroupInfo
     chatItemTTL :: Maybe Int64,
     uiThemes :: Maybe UIThemeEntityOverrides,
     customData :: Maybe CustomData,
+    groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
-
--- TODO [channels fwd] should be inferred from ContactConnType of group link
--- TODO   - data ContactConnType = ... | CCTChannel | CCTGroup | ...
--- TODO   - or part of ConnLinkData?
-data GroupType
-  = GTGroup
-  | GTChannel
-  deriving (Eq, Show)
-
-instance TextEncoding GroupType where
-  textEncode = \case
-    GTGroup -> "group"
-    GTChannel -> "channel"
-  textDecode = \case
-    "group" -> Just GTGroup
-    "channel" -> Just GTChannel
-    _ -> Nothing
-
-instance FromField GroupType where fromField = fromTextField_ textDecode
-
-instance ToField GroupType where toField = toField . textEncode
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -545,11 +500,18 @@ groupName' :: GroupInfo -> GroupName
 groupName' GroupInfo {localDisplayName = g} = g
 
 data GroupSummary = GroupSummary
-  { currentMembers :: Int
+  { currentMembers :: Int64
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
-data GroupInfoSummary = GIS {groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+data GroupLink = GroupLink
+  { userContactLinkId :: Int64,
+    connLinkContact :: CreatedLinkContact,
+    shortLinkDataSet :: Bool,
+    shortLinkLargeDataSet :: BoolDef,
+    groupLinkId :: GroupLinkId,
+    acceptMemberRole :: GroupMemberRole
+  }
   deriving (Show)
 
 data ContactOrGroup = CGContact Contact | CGGroup GroupInfo [GroupMember]
@@ -1257,7 +1219,9 @@ memberPending m = case memberStatus m of
 memberCurrentOrPending :: GroupMember -> Bool
 memberCurrentOrPending m = memberCurrent m || memberPending m
 
--- update getGroupSummary if this is changed
+-- *** Please note:
+-- *** update getGroupSummary and SQL function used in update triggers if this is changed
+-- ***
 memberCurrent' :: GroupMemberStatus -> Bool
 memberCurrent' = \case
   GSMemRejected -> False
@@ -1344,9 +1308,6 @@ data SndFileTransfer = SndFileTransfer
     fileInline :: Maybe InlineFileMode
   }
   deriving (Eq, Show)
-
-sndFileTransferConnId :: SndFileTransfer -> ConnId
-sndFileTransferConnId SndFileTransfer {agentConnId = AgentConnId acId} = acId
 
 type FileTransferId = Int64
 
@@ -1435,10 +1396,10 @@ data RcvFileDescr = RcvFileDescr
 
 data RcvFileStatus
   = RFSNew
-  | RFSAccepted {fileInfo :: RcvFileInfo}
-  | RFSConnected {fileInfo :: RcvFileInfo}
-  | RFSComplete {fileInfo :: RcvFileInfo}
-  | RFSCancelled {fileInfo_ :: Maybe RcvFileInfo}
+  | RFSAccepted {filePath :: FilePath}
+  | RFSConnected {filePath :: FilePath}
+  | RFSComplete {filePath :: FilePath}
+  | RFSCancelled {filePath_ :: Maybe FilePath}
   deriving (Eq, Show)
 
 rcvFileComplete :: RcvFileStatus -> Bool
@@ -1449,29 +1410,11 @@ rcvFileComplete = \case
 rcvFileCompleteOrCancelled :: RcvFileTransfer -> Bool
 rcvFileCompleteOrCancelled RcvFileTransfer {fileStatus, cancelled} = rcvFileComplete fileStatus || cancelled
 
-data RcvFileInfo = RcvFileInfo
-  { filePath :: FilePath,
-    connId :: Maybe Int64,
-    agentConnId :: Maybe AgentConnId
-  }
-  deriving (Eq, Show)
-
-liveRcvFileTransferInfo :: RcvFileTransfer -> Maybe RcvFileInfo
-liveRcvFileTransferInfo RcvFileTransfer {fileStatus} = case fileStatus of
-  RFSAccepted fi -> Just fi
-  RFSConnected fi -> Just fi
-  _ -> Nothing
-
-liveRcvFileTransferConnId :: RcvFileTransfer -> Maybe ConnId
-liveRcvFileTransferConnId ft = acId =<< liveRcvFileTransferInfo ft
-  where
-    acId RcvFileInfo {agentConnId = Just (AgentConnId cId)} = Just cId
-    acId _ = Nothing
-
 liveRcvFileTransferPath :: RcvFileTransfer -> Maybe FilePath
-liveRcvFileTransferPath ft = fp <$> liveRcvFileTransferInfo ft
-  where
-    fp RcvFileInfo {filePath} = filePath
+liveRcvFileTransferPath RcvFileTransfer {fileStatus} = case fileStatus of
+  RFSAccepted filePath -> Just filePath
+  RFSConnected filePath -> Just filePath
+  _ -> Nothing
 
 newtype AgentConnId = AgentConnId ConnId
   deriving (Eq, Ord, Show)
@@ -1792,7 +1735,7 @@ instance TextEncoding ConnStatus where
     ConnReady -> "ready"
     ConnDeleted -> "deleted"
 
-data ConnType = ConnContact | ConnMember | ConnSndFile | ConnRcvFile | ConnUserContact
+data ConnType = ConnContact | ConnMember | ConnUserContact
   deriving (Eq, Show)
 
 instance FromField ConnType where fromField = fromTextField_ textDecode
@@ -1810,15 +1753,11 @@ instance TextEncoding ConnType where
   textDecode = \case
     "contact" -> Just ConnContact
     "member" -> Just ConnMember
-    "snd_file" -> Just ConnSndFile
-    "rcv_file" -> Just ConnRcvFile
     "user_contact" -> Just ConnUserContact
     _ -> Nothing
   textEncode = \case
     ConnContact -> "contact"
     ConnMember -> "member"
-    ConnSndFile -> "snd_file"
-    ConnRcvFile -> "rcv_file"
     ConnUserContact -> "user_contact"
 
 data GroupMemberIntro = GroupMemberIntro
@@ -1917,8 +1856,8 @@ instance TextEncoding CommandStatus where
 data CommandFunction
   = CFCreateConnGrpMemInv
   | CFCreateConnGrpInv
-  | CFCreateConnFileInvDirect
-  | CFCreateConnFileInvGroup
+  | CFCreateConnFileInvDirect -- deprecated
+  | CFCreateConnFileInvGroup -- deprecated
   | CFJoinConn
   | CFAllowConn
   | CFAcceptContact
@@ -2090,21 +2029,23 @@ $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
 
 $(JQ.deriveJSON defaultJSON ''ChatSettings)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "GT") ''GroupType)
-
 $(JQ.deriveJSON (enumJSON $ dropPrefix "BC") ''BusinessChatType)
 
 $(JQ.deriveJSON defaultJSON ''BusinessChatInfo)
 
 $(JQ.deriveJSON defaultJSON ''PreparedGroup)
 
+$(JQ.deriveToJSON defaultJSON ''GroupSummary)
+
+instance FromJSON GroupSummary where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
+  omittedField = Just GroupSummary {currentMembers = 0}
+
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 
 $(JQ.deriveJSON defaultJSON ''Group)
 
-$(JQ.deriveJSON defaultJSON ''GroupSummary)
-
-$(JQ.deriveJSON defaultJSON ''GroupInfoSummary)
+$(JQ.deriveJSON defaultJSON ''GroupLink)
 
 instance FromField MsgFilter where fromField = fromIntField_ msgFilterIntP
 
@@ -2138,8 +2079,6 @@ $(JQ.deriveJSON defaultJSON ''RcvFileDescr)
 
 $(JQ.deriveJSON defaultJSON ''XFTPRcvFile)
 
-$(JQ.deriveJSON defaultJSON ''RcvFileInfo)
-
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "RFS") ''RcvFileStatus)
 
 $(JQ.deriveJSON defaultJSON ''RcvFileTransfer)
@@ -2171,7 +2110,3 @@ $(JQ.deriveJSON defaultJSON ''ContactRef)
 $(JQ.deriveJSON defaultJSON ''NoteFolder)
 
 $(JQ.deriveJSON defaultJSON ''ChatTag)
-
-$(JQ.deriveJSON defaultJSON ''ShortGroupInfo)
-
-$(JQ.deriveJSON defaultJSON ''ShortGroupMember)

@@ -1774,12 +1774,10 @@ testGroupDelayedModeration ps = do
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      bob <## "#team: connected to server(s)"
+      bob <## "2 connections subscribed"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "1 contacts connected (use /cs for the list)"
-        cath <## "#team: connected to server(s)"
+        cath <## "3 connections subscribed"
         cath <## "#team: member bob (Bob) is connected"
         bob
           <### [ "#team: new member cath is connected",
@@ -1830,15 +1828,13 @@ testGroupDelayedModerationFullDelete ps = do
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      bob <## "#team: connected to server(s)"
+      bob <## "2 connections subscribed"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "1 contacts connected (use /cs for the list)"
-        cath <## "#team: connected to server(s)"
+        cath <## "3 connections subscribed"
         cath <## "#team: member bob (Bob) is connected"
         bob
           <### [ "#team: new member cath is connected",
@@ -2019,12 +2015,8 @@ testSharedMessageBody ps =
         withTestChatOpts ps opts' "cath" $ \cath -> do
           concurrentlyN_
             [ alice <##. "server connected localhost",
-              do
-                bob <## "1 contacts connected (use /cs for the list)"
-                bob <## "#team: connected to server(s)",
-              do
-                cath <## "1 contacts connected (use /cs for the list)"
-                cath <## "#team: connected to server(s)"
+              bob <## "3 connections subscribed",
+              cath <## "3 connections subscribed"
             ]
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
@@ -2073,12 +2065,8 @@ testSharedBatchBody ps =
         withTestChatOpts ps opts' "cath" $ \cath -> do
           concurrentlyN_
             [ alice <##. "server connected localhost",
-              do
-                bob <## "1 contacts connected (use /cs for the list)"
-                bob <## "#team: connected to server(s)",
-              do
-                cath <## "1 contacts connected (use /cs for the list)"
-                cath <## "#team: connected to server(s)"
+              bob <## "3 connections subscribed",
+              cath <## "3 connections subscribed"
             ]
           forM_ [(1 :: Int) .. 300] $ \i -> do
             concurrently_
@@ -2127,8 +2115,7 @@ testGroupAsync ps = do
       bob <# "#team alice> hello bob"
   withTestChat ps "alice" $ \alice -> do
     withNewTestChat ps "cath" cathProfile $ \cath -> do
-      alice <## "1 contacts connected (use /cs for the list)"
-      alice <## "#team: connected to server(s)"
+      alice <## "2 connections subscribed"
       connectUsers alice cath
       alice ##> "/a team cath"
       concurrentlyN_
@@ -2148,21 +2135,18 @@ testGroupAsync ps = do
     withTestChat ps "cath" $ \cath -> do
       concurrentlyN_
         [ do
-            bob <## "1 contacts connected (use /cs for the list)"
-            bob <## "#team: connected to server(s)"
+            bob <## "2 connections subscribed"
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <# "#team alice> hello cath"
             bob <## "#team: new member cath is connected",
           do
-            cath <## "2 contacts connected (use /cs for the list)"
-            cath <## "#team: connected to server(s)"
+            cath <## "3 connections subscribed"
             cath <## "#team: member bob (Bob) is connected"
         ]
   threadDelay 500000
   withTestChat ps "bob" $ \bob -> do
     withNewTestChat ps "dan" danProfile $ \dan -> do
-      bob <## "2 contacts connected (use /cs for the list)"
-      bob <## "#team: connected to server(s)"
+      bob <## "4 connections subscribed"
       connectUsers bob dan
       bob ##> "/a team dan"
       concurrentlyN_
@@ -2183,18 +2167,15 @@ testGroupAsync ps = do
       withTestChat ps "dan" $ \dan -> do
         concurrentlyN_
           [ do
-              alice <## "2 contacts connected (use /cs for the list)"
-              alice <## "#team: connected to server(s)"
+              alice <## "4 connections subscribed"
               alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
               alice <## "#team: new member dan is connected",
             do
-              cath <## "2 contacts connected (use /cs for the list)"
-              cath <## "#team: connected to server(s)"
+              cath <## "4 connections subscribed"
               cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
               cath <## "#team: new member dan is connected",
             do
-              dan <## "3 contacts connected (use /cs for the list)"
-              dan <## "#team: connected to server(s)"
+              dan <## "5 connections subscribed"
               dan <## "#team: member alice (Alice) is connected"
               dan <## "#team: member cath (Catherine) is connected"
           ]
@@ -2204,18 +2185,10 @@ testGroupAsync ps = do
       withTestChat ps "cath" $ \cath -> do
         withTestChat ps "dan" $ \dan -> do
           concurrentlyN_
-            [ do
-                alice <## "3 contacts connected (use /cs for the list)"
-                alice <## "#team: connected to server(s)",
-              do
-                bob <## "3 contacts connected (use /cs for the list)"
-                bob <## "#team: connected to server(s)",
-              do
-                cath <## "3 contacts connected (use /cs for the list)"
-                cath <## "#team: connected to server(s)",
-              do
-                dan <## "3 contacts connected (use /cs for the list)"
-                dan <## "#team: connected to server(s)"
+            [ alice <## "6 connections subscribed",
+              bob <## "6 connections subscribed",
+              cath <## "6 connections subscribed",
+              dan <## "6 connections subscribed"
             ]
           alice #> "#team hello"
           concurrentlyN_
@@ -3556,12 +3529,12 @@ testPlanGroupLinkConnecting ps = do
     threadDelay 100000
   withTestChat ps "alice" $ \alice -> do
     alice
-      <### [ "1 group links active",
-             "#team: group is empty",
+      <### [ "1 connections subscribed",
              "bob (Bob): accepting request to join group #team..."
            ]
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "1 connections subscribed"
     bob <## "#team: joining the group..."
     bob <## "#team: you joined the group"
 
@@ -3603,12 +3576,12 @@ testPlanGroupLinkConnectingSlow ps = do
     threadDelay 100000
   withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     alice
-      <### [ "1 group links active",
-             "#team: group is empty",
+      <### [ "1 connections subscribed",
              "bob (Bob): accepting request to join group #team..."
            ]
   withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "1 connections subscribed"
     bob <## "#team: joining the group..."
 
     bob ##> ("/_connect plan 1 " <> gLink)
@@ -3633,8 +3606,7 @@ testGroupMsgDecryptError ps =
       alice <# "#team bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      bob <## "#team: connected to server(s)"
+      bob <## "2 connections subscribed"
       alice #> "#team hello again"
       bob <# "#team alice> skipped message ID 9..11"
       bob <# "#team alice> hello again"
@@ -3645,8 +3617,7 @@ setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
-    bob <## "#team: connected to server(s)"
+    bob <## "2 connections subscribed"
     alice #> "#team 1"
     bob <# "#team alice> 1"
     bob #> "#team 2"
@@ -3656,8 +3627,7 @@ setupDesynchronizedRatchet ps alice = do
     bob #> "#team 4"
     alice <# "#team bob> 4"
   withTestChat ps "bob_old" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
-    bob <## "#team: connected to server(s)"
+    bob <## "2 connections subscribed"
     bob ##> "/sync #team alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "#team 1"
@@ -3685,8 +3655,7 @@ testGroupSyncRatchet ps =
       alice <# "#team bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      bob <## "#team: connected to server(s)"
+      bob <## "2 connections subscribed"
       bob `send` "#team 1"
       -- "send prohibited" error is not printed in group as SndMessage is created,
       -- but it should be displayed in per member snd statuses
@@ -3731,8 +3700,7 @@ testGroupSyncRatchetCodeReset ps =
       aliceInfo bob True
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
-      bob <## "#team: connected to server(s)"
+      bob <## "2 connections subscribed"
       bob ##> "/sync #team alice"
       bob <## "connection synchronization started"
       alice <## "#team bob: connection synchronization agreed"
@@ -4430,20 +4398,20 @@ testMemberContactInvitedConnectionReplaced ps = do
         items `shouldContain` [(0, "security code changed")]
 
     withTestChat ps "bob" $ \bob -> do
-      subscriptions bob 1
+      subscriptions bob 3
 
       checkConnectionsWork alice bob
 
   withTestChat ps "alice" $ \alice -> do
-    subscriptions alice 2
+    subscriptions alice 4
 
     withTestChat ps "bob" $ \bob -> do
-      subscriptions bob 1
+      subscriptions bob 3
 
       checkConnectionsWork alice bob
 
       withTestChat ps "cath" $ \cath -> do
-        subscriptions cath 1
+        subscriptions cath 3
 
         -- group messages work
         alice #> "#team hello"
@@ -4460,9 +4428,8 @@ testMemberContactInvitedConnectionReplaced ps = do
           (bob <# "#team cath> hey team")
   where
     subscriptions :: TestCC -> Int -> IO ()
-    subscriptions cc n = do
-      cc <## (show n <> " contacts connected (use /cs for the list)")
-      cc <## "#team: connected to server(s)"
+    subscriptions cc n =
+      cc <## (show n <> " connections subscribed")
     checkConnectionsWork alice bob = do
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
@@ -7034,8 +7001,7 @@ testGroupMemberInactive ps = do
       threadDelay 1500000
 
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
-        bob <## "1 contacts connected (use /cs for the list)"
-        bob <## "#team: connected to server(s)"
+        bob <## "2 connections subscribed"
         bob <# "#team alice> 1"
         bob <# "#team alice> 2"
         bob <#. "#team alice> skipped message ID"

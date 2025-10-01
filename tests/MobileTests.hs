@@ -119,30 +119,6 @@ networkStatuses =
   networkStatusesTagged
 #endif
 
-memberSubSummary :: LB.ByteString
-memberSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  memberSubSummarySwift
-#else
-  memberSubSummaryTagged
-#endif
-
-userContactSubSummary :: LB.ByteString
-userContactSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  userContactSubSummarySwift
-#else
-  userContactSubSummaryTagged
-#endif
-
-pendingSubSummary :: LB.ByteString
-pendingSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  pendingSubSummarySwift
-#else
-  pendingSubSummaryTagged
-#endif
-
 parsedMarkdown :: LB.ByteString
 parsedMarkdown =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)

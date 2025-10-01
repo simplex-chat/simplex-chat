@@ -165,7 +165,7 @@ getNextDeliveryTasks db gInfo task =
     MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
-      | useRelays =
+      | isTrue useRelays =
           map fromOnly
             <$> DB.query
               db

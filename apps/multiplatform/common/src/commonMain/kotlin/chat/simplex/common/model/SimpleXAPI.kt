@@ -2618,35 +2618,10 @@ object ChatController {
           }
         }
       }
-      is CR.ContactsMerged -> {
-        if (active(r.user) && chatModel.chatsContext.hasChat(rhId, r.mergedContact.id)) {
-          if (chatModel.chatId.value == r.mergedContact.id) {
-            chatModel.chatId.value = r.intoContact.id
-          }
-          withContext(Dispatchers.Main) {
-            chatModel.chatsContext.removeChat(rhId, r.mergedContact.id)
-          }
-        }
-      }
-      // ContactsSubscribed, ContactsDisconnected and ContactSubSummary are only used in CLI,
+      // ContactsSubscribed, ContactsDisconnected are only used in CLI,
       // They have to be used here for remote desktop to process these status updates.
       is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
       is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
-      is CR.ContactSubSummary -> {
-        for (sub in r.contactSubscriptions) {
-          if (active(r.user)) {
-            withContext(Dispatchers.Main) {
-              chatModel.chatsContext.updateContact(rhId, sub.contact)
-            }
-          }
-          val err = sub.contactError
-          if (err == null) {
-            chatModel.setContactNetworkStatus(sub.contact, NetworkStatus.Connected())
-          } else {
-            processContactSubError(sub.contact, sub.contactError)
-          }
-        }
-      }
       is CR.NetworkStatusResp -> {
         for (cId in r.connections) {
           chatModel.networkStatuses[cId] = r.networkStatus
@@ -3378,21 +3353,6 @@ object ChatController {
     for (c in contactRefs) {
       chatModel.networkStatuses[c.agentConnId] = status
     }
-  }
-
-  private fun processContactSubError(contact: Contact, chatError: ChatError) {
-    val e = chatError
-    val err: String =
-      if (e is ChatError.ChatErrorAgent) {
-        val a = e.agentError
-        when {
-          a is AgentErrorType.BROKER && a.brokerErr is BrokerErrorType.NETWORK -> "network"
-          a is AgentErrorType.SMP && a.smpErr is SMPErrorType.AUTH -> "contact deleted"
-          else -> e.string
-        }
-      }
-      else e.string
-    chatModel.setContactNetworkStatus(contact, NetworkStatus.Error(err))
   }
 
   suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
@@ -6202,7 +6162,6 @@ sealed class CR {
   // TODO remove below
   @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
   @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
-  @Serializable @SerialName("contactSubSummary") class ContactSubSummary(val user: UserRef, val contactSubscriptions: List<ContactSubStatus>): CR()
   // TODO remove above
   @Serializable @SerialName("networkStatus") class NetworkStatusResp(val networkStatus: NetworkStatus, val connections: List<String>): CR()
   @Serializable @SerialName("networkStatuses") class NetworkStatuses(val user_: UserRef?, val networkStatuses: List<ConnNetworkStatus>): CR()
@@ -6240,7 +6199,6 @@ sealed class CR {
   @Serializable @SerialName("deletedMember") class DeletedMember(val user: UserRef, val groupInfo: GroupInfo, val byMember: GroupMember, val deletedMember: GroupMember, val withMessages: Boolean): CR()
   @Serializable @SerialName("leftMember") class LeftMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("groupDeleted") class GroupDeleted(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
-  @Serializable @SerialName("contactsMerged") class ContactsMerged(val user: UserRef, val intoContact: Contact, val mergedContact: Contact): CR()
   @Serializable @SerialName("userJoinedGroup") class UserJoinedGroup(val user: UserRef, val groupInfo: GroupInfo): CR()
   @Serializable @SerialName("joinedGroupMember") class JoinedGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember): CR()
   @Serializable @SerialName("connectedToGroupMember") class ConnectedToGroupMember(val user: UserRef, val groupInfo: GroupInfo, val member: GroupMember, val memberContact: Contact? = null): CR()
@@ -6389,7 +6347,6 @@ sealed class CR {
     is GroupMemberUpdated -> "groupMemberUpdated"
     is ContactsSubscribed -> "contactsSubscribed"
     is ContactsDisconnected -> "contactsDisconnected"
-    is ContactSubSummary -> "contactSubSummary"
     is NetworkStatusResp -> "networkStatus"
     is NetworkStatuses -> "networkStatuses"
     is ChatInfoUpdated -> "chatInfoUpdated"
@@ -6425,7 +6382,6 @@ sealed class CR {
     is DeletedMember -> "deletedMember"
     is LeftMember -> "leftMember"
     is GroupDeleted -> "groupDeleted"
-    is ContactsMerged -> "contactsMerged"
     is UserJoinedGroup -> "userJoinedGroup"
     is JoinedGroupMember -> "joinedGroupMember"
     is ConnectedToGroupMember -> "connectedToGroupMember"
@@ -6567,7 +6523,6 @@ sealed class CR {
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
     is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
     is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
-    is ContactSubSummary -> withUser(user, json.encodeToString(contactSubscriptions))
     is NetworkStatusResp -> "networkStatus $networkStatus\nconnections: $connections"
     is NetworkStatuses -> withUser(user_, json.encodeToString(networkStatuses))
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
@@ -6603,7 +6558,6 @@ sealed class CR {
     is DeletedMember -> withUser(user, "groupInfo: $groupInfo\nbyMember: $byMember\ndeletedMember: $deletedMember\nwithMessages: ${withMessages}")
     is LeftMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is GroupDeleted -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
-    is ContactsMerged -> withUser(user, "intoContact: $intoContact\nmergedContact: $mergedContact")
     is UserJoinedGroup -> withUser(user, json.encodeToString(groupInfo))
     is JoinedGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member")
     is ConnectedToGroupMember -> withUser(user, "groupInfo: $groupInfo\nmember: $member\nmemberContact: $memberContact")
@@ -7046,7 +7000,6 @@ sealed class ChatErrorType {
       is FileCancelled -> "fileCancelled"
       is FileCancel -> "fileCancel"
       is FileAlreadyExists -> "fileAlreadyExists"
-      is FileRead -> "fileRead"
       is FileWrite -> "fileWrite $message"
       is FileSend -> "fileSend"
       is FileRcvChunk -> "fileRcvChunk"
@@ -7127,7 +7080,6 @@ sealed class ChatErrorType {
   @Serializable @SerialName("fileCancelled") class FileCancelled(val message: String): ChatErrorType()
   @Serializable @SerialName("fileCancel") class FileCancel(val fileId: Long, val message: String): ChatErrorType()
   @Serializable @SerialName("fileAlreadyExists") class FileAlreadyExists(val filePath: String): ChatErrorType()
-  @Serializable @SerialName("fileRead") class FileRead(val filePath: String, val message: String): ChatErrorType()
   @Serializable @SerialName("fileWrite") class FileWrite(val filePath: String, val message: String): ChatErrorType()
   @Serializable @SerialName("fileSend") class FileSend(val fileId: Long, val agentError: String): ChatErrorType()
   @Serializable @SerialName("fileRcvChunk") class FileRcvChunk(val message: String): ChatErrorType()

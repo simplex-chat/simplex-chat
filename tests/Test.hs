@@ -3,7 +3,6 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE TupleSections #-}
 
-import APIDocs
 import Bots.BroadcastTests
 import Bots.DirectoryTests
 import ChatClient
@@ -28,8 +27,9 @@ import Control.Exception (bracket_)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
 import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
-import System.Directory (createDirectory, removePathForcibly)
+import System.Directory (createDirectoryIfMissing, removePathForcibly)
 #else
+import APIDocs
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
@@ -45,16 +45,15 @@ main = do
 #endif
   withGlobalLogging logCfg . hspec
 #if defined(dbPostgres)
-    . beforeAll_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    . afterAll_ (dropDatabaseAndUser testDBConnectInfo)
+    . before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
+    . after_ (dropDatabaseAndUser testDBConnectInfo)
 #endif
     $ do
 #if defined(dbPostgres)
-      around_ (bracket_ (createDirectory "tests/tmp") (removePathForcibly "tests/tmp")) $
+      around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
-            [] -- skipComparisonForDownMigrations
             schemaDumpDBOpts
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
 #else
@@ -72,7 +71,6 @@ main = do
       describe "Random servers" randomServersTests
 #if defined(dbPostgres)
       around testBracket
-        . after_ (dropAllSchemasExceptSystem testDBConnectInfo)
 #else
       around (testBracket chatQueryStats agentQueryStats)
 #endif

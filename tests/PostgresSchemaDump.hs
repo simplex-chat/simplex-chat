@@ -24,8 +24,8 @@ testSchemaPath :: FilePath
 testSchemaPath = "tests/tmp/test_schema.sql"
 
 -- copied from simplexmq
-postgresSchemaDumpTest :: [Migration] -> [String] -> DBOpts -> FilePath -> Spec
-postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
+postgresSchemaDumpTest :: [Migration] -> DBOpts -> FilePath -> Spec
+postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSchema} srcSchemaPath = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify schema down migrations" testSchemaMigrations
   where
@@ -48,14 +48,14 @@ postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBO
           putStrLn $ "down migration " <> name m
           let downMigr = fromJust $ toDownMigration m
           schema <- getSchema testSchemaPath
-          Migrations.run st $ MTRUp [m]
+          Migrations.run st Nothing $ MTRUp [m]
           schema' <- getSchema testSchemaPath
           schema' `shouldNotBe` schema
-          Migrations.run st $ MTRDown [downMigr]
+          Migrations.run st Nothing $ MTRDown [downMigr]
           unless (name m `elem` skipComparisonForDownMigrations) $ do
             schema'' <- getSchema testSchemaPath
             schema'' `shouldBe` schema
-          Migrations.run st $ MTRUp [m]
+          Migrations.run st Nothing $ MTRUp [m]
           schema''' <- getSchema testSchemaPath
           schema''' `shouldBe` schema'
 
@@ -72,3 +72,9 @@ postgresSchemaDumpTest migrations skipComparisonForDownMigrations testDBOpts@DBO
       void $ readCreateProcess (shell $ sed <> " '/^--/d' " <> schemaPath) ""
       sch <- readFile schemaPath
       sch `deepseq` pure sch
+
+skipComparisonForDownMigrations :: [String]
+skipComparisonForDownMigrations =
+  [ -- via_group field moves
+    "20250922_remove_unused_connections"
+  ]
