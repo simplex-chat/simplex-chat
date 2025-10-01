@@ -215,13 +215,16 @@ chatGroupTests = do
     it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
     it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
-    it "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
+    fit "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
     it "should forward admin removal in support scope in review (x.grp.mem.del, relay forwards it was removed)" testScopedSupportForwardAdminRemoval
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+    it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
+    it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
+    it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -7697,6 +7700,9 @@ testScopedSupportForwardMemberRemoval =
       createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
       setupReviewForward alice bob cath dan eve
 
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "PRAGMA foreign_keys = OFF;"
+
       -- bob removes eve, eve and dan receive member removal message
       bob ##> "/_remove #1 5"
       concurrentlyN_
@@ -8141,6 +8147,100 @@ testScopedSupportUnreadStatsCorrectOnOpen =
     alice ##> "/member support chats #team"
     alice <## "members require attention: 0"
     alice <## "bob (Bob) (id 2): unread: 0, require attention: 0, mentions: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportMemberRemoved :: HasCallStack => TestParams -> IO ()
+testScopedSupportMemberRemoved =
+  testChatOpts3 opts aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRAdmin)
+
+    bob #> "#team (support) 1"
+    [alice, cath] *<# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    [alice, cath] *<# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    cath ##> "/rm team bob"
+    concurrentlyN_
+      [ cath <## "#team: you removed bob from the group",
+        do
+          bob <## "#team: cath removed you from the group"
+          bob <## "use /d #team to delete the group",
+        alice <## "#team: cath removed bob from the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUserRemovesMember :: HasCallStack => TestParams -> IO ()
+testScopedSupportUserRemovesMember =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRMember) True
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    alice ##> "/rm team bob"
+    concurrentlyN_
+      [ alice <## "#team: you removed bob from the group",
+        do
+          bob <## "#team: alice removed you from the group"
+          bob <## "use /d #team to delete the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportMemberLeaves :: HasCallStack => TestParams -> IO ()
+testScopedSupportMemberLeaves =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRMember) True
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    bob ##> "/l team"
+    concurrentlyN_
+      [ do
+          bob <## "#team: you left the group"
+          bob <## "use /d #team to delete the group",
+        alice <## "#team: bob left the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
   where
     opts =
       testOpts

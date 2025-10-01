@@ -1339,9 +1339,8 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
     (status, role, currentTs, userId, groupMemberId)
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
 
-deleteGroupMemberSupportChat :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
-deleteGroupMemberSupportChat db user g m@GroupMember {groupMemberId} = do
-  let requiredAttention = gmRequiresAttention m
+deleteGroupMemberSupportChat :: DB.Connection -> GroupMember -> IO GroupMember
+deleteGroupMemberSupportChat db m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1363,11 +1362,7 @@ deleteGroupMemberSupportChat db user g m@GroupMember {groupMemberId} = do
       WHERE group_member_id = ?
     |]
     (currentTs, groupMemberId)
-  let m' = m {supportChat = Nothing, updatedAt = currentTs}
-  g' <- if requiredAttention
-    then decreaseGroupMembersRequireAttention db user g
-    else pure g
-  pure (g', m')
+  pure m {supportChat = Nothing, updatedAt = currentTs}
 
 updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
 updateGroupMembersRequireAttention db user g member member'
@@ -1503,12 +1498,18 @@ checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
   maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1" (userId, groupId, groupMemberId)
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberProfile} = do
+deleteGroupMember db user@User {userId, localDisplayName = un} m@GroupMember {groupMemberId, groupId, memberProfile} = do
+  when (un == "alice") $ print $ "deleteGroupMember 1"
   deleteGroupMemberConnection db user m
+  when (un == "alice") $ print $ "deleteGroupMember 2"
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, groupMemberId)
+  when (un == "alice") $ print $ "deleteGroupMember 3"
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
+  when (un == "alice") $ print $ "deleteGroupMember 4"
   cleanupMemberProfileAndName_ db user m
+  when (un == "alice") $ print $ "deleteGroupMember 5"
   when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user $ localProfileId memberProfile
+  when (un == "alice") $ print $ "deleteGroupMember 6"
 
 cleanupMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
 cleanupMemberProfileAndName_ db user@User {userId} GroupMember {groupMemberId, memberContactId, memberContactProfileId, localDisplayName} =
