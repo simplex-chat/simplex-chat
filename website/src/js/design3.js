@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function showPromotedGroups() {
+    printWelcome();
     const listing = await fetchJSON(simplexDirectoryDataURL + 'promoted.json');
     let [entries, imgPath] =
             Array.isArray(listing?.entries) && listing.entries.length > 0
@@ -86,6 +87,22 @@ async function showPromotedGroups() {
         } catch (e) {
             console.error(e)
         }
+    }
+
+    function printWelcome() {
+        console.log('%c%s', 'font-family: monospace; white-space: pre;',
+`Welcome to                  __   __
+ ___ ___ __  __ ___ _    ___\\ \\ / / ___ _  _   _ _____
+/ __|_ _|  \\/  | _ \\ |  | __ \\ V / / __| || | /_\\_   _|
+\\__ \\| || |\\/| |  _/ |__| _| / . \\| (__| __ |/ _ \\| |
+|___/___|_|  |_|_| |____|___/_/ \\_\\\\___|_||_/_/ \\_\\_|
+
+SimpleX directory: https://simplex.chat/directory
+Ask SimpleX team: https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw
+GitHub: https://github.com/simplex-chat/simplex-chat
+X/Twitter: https://x.com/SimpleXChat
+Join team: https://simplex.chat/jobs`
+        );
     }
 
     function fallbackEntries() {
