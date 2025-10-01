@@ -37,9 +37,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function showPromotedGroups() {
     const listing = await fetchJSON(simplexDirectoryDataURL + 'promoted.json');
-    let entries = Array.isArray(listing?.entries) && listing.entries.length > 0
-            ? listing.entries
-            : fallbackEntries();
+    let [entries, imgPath] =
+            Array.isArray(listing?.entries) && listing.entries.length > 0
+            ? [listing.entries, simplexDirectoryDataURL]
+            : [fallbackEntries(), '/img/groups/'];
     const links = document.querySelectorAll('.community-images a.community-image');
     entries = shuffleEntries(listing.entries, links.length);
 
@@ -47,7 +48,8 @@ async function showPromotedGroups() {
         const link = links[i]
         const img = link.querySelector('img');
         const {displayName, imageFile, groupLink} = entries[i % entries.length];
-        img.src = imageFile ? simplexDirectoryDataURL + imageFile : '/img/group.svg';
+        img.src = imageFile ? imgPath + imageFile : '/img/group.svg';
+        img.addEventListener('error', () => img.src = '/img/group.svg');
         link.title = displayName;
         const groupLinkUri = groupLink.connShortLink ?? groupLink.connFullLink
         try {
@@ -87,6 +89,7 @@ async function showPromotedGroups() {
     }
 
     function fallbackEntries() {
+        console.log('Error: using hardcoded listing as fallback');
         return [
             {
                 displayName: "Bitcoin&LightningNetwork",
