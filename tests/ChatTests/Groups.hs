@@ -8284,10 +8284,7 @@ testChannelsSenderDeduplicateOwn ps = do
           dan #> "#team 6"
 
           withTestChatCfg ps cfg "bob" $ \bob -> do
-            bob <## "1 contacts connected (use /cs for the list)"
-            bob <## "1 group links active"
-            bob <## "#team: connected to server(s)"
-
+            bob <## "6 connections subscribed"
             bob
               <### [ WithTime "#team alice> 1",
                      WithTime "#team alice> 2",

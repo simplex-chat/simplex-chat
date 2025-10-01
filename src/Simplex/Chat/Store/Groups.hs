@@ -1017,7 +1017,7 @@ getGroupRelays db vr user@User {userId, userContactId} GroupInfo {groupId} = do
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
-      (userId, userId, groupId, userContactId, GRAdmin)
+      (userId, groupId, userContactId, GRAdmin)
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do

@@ -318,7 +318,7 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
 
 -- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user@User {userId, userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
   gmIds :: [Int64] <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
@@ -340,7 +340,7 @@ getGroupMembersByCursor db vr user@User {userId, userContactId} GroupInfo {group
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id IN ?")
-      (userId, In gmIds)
+      (Only (In gmIds))
 #else
   rights <$> mapM (runExceptT . getGroupMemberById db vr user) gmIds
 #endif
