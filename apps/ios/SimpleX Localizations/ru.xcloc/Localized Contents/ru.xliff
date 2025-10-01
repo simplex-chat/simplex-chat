@@ -5291,9 +5291,9 @@ This is your link for group %@!</source>
         <target>Имя</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Network &amp; servers" xml:space="preserve">
+      <trans-unit id="Network &amp; servers" xml:space="preserve" approved="no">
         <source>Network &amp; servers</source>
-        <target>Сеть &amp; серверы</target>
+        <target state="translated">Сеть и серверы</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Network connection" xml:space="preserve">
