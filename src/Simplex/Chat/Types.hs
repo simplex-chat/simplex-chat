@@ -987,6 +987,11 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
+-- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
+-- TODO   - in channels members should directly connect only to relays
+isMemberRelay :: GroupMember -> Bool
+isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
+
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
 

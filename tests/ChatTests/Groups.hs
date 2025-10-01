@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE NumericUnderscores #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE PostfixOperators #-}
@@ -33,6 +34,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -222,6 +224,19 @@ chatGroupTests = do
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+  -- TODO [channels fwd] enable tests (requires communicating useRelays to members)
+  -- TODO [channels fwd] add tests for channels
+  -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
+  -- TODO   - tests with delivery loop over members restored after restart
+  -- TODO   - delivery in support scopes inside channels
+  xdescribe "channels" $ do
+    describe "relay delivery" $ do
+      it "should deliver messages to members" testChannelsRelayDeliver
+      describe "should deliver messages in a loop over members" $ do
+        it "number of recipients is multiple of bucket size (3/1)" (testChannelsRelayDeliverLoop 1)
+        it "number of recipients is NOT multiple of bucket size (3/2)" (testChannelsRelayDeliverLoop 2)
+        it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
+      it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8146,3 +8161,163 @@ testScopedSupportUnreadStatsCorrectOnOpen =
       testOpts
         { markRead = False
         }
+
+testChannelsRelayDeliver :: HasCallStack => TestParams -> IO ()
+testChannelsRelayDeliver =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
+    createChannel5 alice bob cath dan eve GRObserver
+
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    [cath, dan, eve] *<# "#team alice> hi [>>]"
+
+    cath ##> "+1 #team hi"
+    cath <## "added 👍"
+    bob <# "#team cath> > alice hi"
+    bob <## "    + 👍"
+    alice <# "#team cath> > alice hi"
+    alice <## "    + 👍"
+    dan <# "#team cath> > alice hi"
+    dan <## "    + 👍"
+    eve <# "#team cath> > alice hi"
+    eve <## "    + 👍"
+
+-- TODO [channels fwd] correctly setup channel with relay forwarding
+-- TODO   - alice to create group as channel
+-- TODO   - add bob as relay
+-- TODO   - alice to manage group link, but members to connect to relay (bob)
+createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> GroupMemberRole -> IO ()
+createChannel5 alice bob cath dan eve mRole = do
+  createGroup2 "team" alice bob
+  bob ##> ("/create link #team " <> B.unpack (strEncode mRole))
+  gLink <- getGroupLink bob "team" mRole True
+  cath ##> ("/c " <> gLink)
+  cath <## "connection request sent!"
+  bob <## "cath (Catherine): accepting request to join group #team..."
+  concurrentlyN_
+    [ bob <## "#team: cath joined the group",
+      do
+        cath <## "#team: joining the group..."
+        cath <## "#team: you joined the group"
+        cath <## "#team: member alice (Alice) is connected",
+      do
+        alice <## "#team: bob added cath (Catherine) to the group (connecting...)"
+        alice <## "#team: new member cath is connected"
+    ]
+  dan ##> ("/c " <> gLink)
+  dan <## "connection request sent!"
+  bob <## "dan (Daniel): accepting request to join group #team..."
+  concurrentlyN_
+    [ bob <## "#team: dan joined the group",
+      do
+        dan <## "#team: joining the group..."
+        dan <## "#team: you joined the group"
+        dan <## "#team: member alice (Alice) is connected"
+        dan <## "#team: member cath (Catherine) is connected",
+      do
+        alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
+        alice <## "#team: new member dan is connected",
+      do
+        cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
+        cath <## "#team: new member dan is connected"
+    ]
+  eve ##> ("/c " <> gLink)
+  eve <## "connection request sent!"
+  bob <## "eve (Eve): accepting request to join group #team..."
+  concurrentlyN_
+    [ bob <## "#team: eve joined the group",
+      eve
+        <### [ "#team: joining the group...",
+               "#team: you joined the group",
+               "#team: member alice (Alice) is connected",
+               "#team: member cath (Catherine) is connected",
+               "#team: member dan (Daniel) is connected"
+             ],
+      do
+        alice <## "#team: bob added eve (Eve) to the group (connecting...)"
+        alice <## "#team: new member eve is connected",
+      do
+        cath <## "#team: bob added eve (Eve) to the group (connecting...)"
+        cath <## "#team: new member eve is connected",
+      do
+        dan <## "#team: bob added eve (Eve) to the group (connecting...)"
+        dan <## "#team: new member eve is connected"
+    ]
+
+testChannelsRelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
+testChannelsRelayDeliverLoop deliveryBucketSize =
+  testChatCfg5 cfg aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
+    createChannel5 alice bob cath dan eve GRObserver
+
+    alice #> "#team hi"
+    bob <# "#team alice> hi"
+    [cath, dan, eve] *<# "#team alice> hi [>>]"
+
+    cath ##> "+1 #team hi"
+    cath <## "added 👍"
+    bob <# "#team cath> > alice hi"
+    bob <## "    + 👍"
+    alice <# "#team cath> > alice hi"
+    alice <## "    + 👍"
+    dan <# "#team cath> > alice hi"
+    dan <## "    + 👍"
+    eve <# "#team cath> > alice hi"
+    eve <## "    + 👍"
+  where
+    cfg = testCfg {deliveryBucketSize}
+
+testChannelsSenderDeduplicateOwn :: HasCallStack => TestParams -> IO ()
+testChannelsSenderDeduplicateOwn ps = do
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "cath" cathProfile $ \cath ->
+      withNewTestChat ps "dan" danProfile $ \dan ->
+        withNewTestChat ps "eve" eveProfile $ \eve -> do
+          withNewTestChatCfg ps cfg "bob" bobProfile $ \bob ->
+            createChannel5 alice bob cath dan eve GRMember
+
+          -- chat relay bob is offline
+          alice #> "#team 1"
+          alice #> "#team 2"
+          alice #> "#team 3"
+          cath #> "#team 4"
+          cath #> "#team 5"
+          dan #> "#team 6"
+
+          withTestChatCfg ps cfg "bob" $ \bob -> do
+            bob <## "6 connections subscribed"
+            bob
+              <### [ WithTime "#team alice> 1",
+                     WithTime "#team alice> 2",
+                     WithTime "#team alice> 3",
+                     WithTime "#team cath> 4",
+                     WithTime "#team cath> 5",
+                     WithTime "#team dan> 6"
+                   ]
+            alice
+              <### [ WithTime "#team cath> 4 [>>]",
+                     WithTime "#team cath> 5 [>>]",
+                     WithTime "#team dan> 6 [>>]"
+                   ]
+            cath
+              <### [ WithTime "#team alice> 1 [>>]",
+                     WithTime "#team alice> 2 [>>]",
+                     WithTime "#team alice> 3 [>>]",
+                     WithTime "#team dan> 6 [>>]"
+                   ]
+            dan
+              <### [ WithTime "#team alice> 1 [>>]",
+                     WithTime "#team alice> 2 [>>]",
+                     WithTime "#team alice> 3 [>>]",
+                     WithTime "#team cath> 4 [>>]",
+                     WithTime "#team cath> 5 [>>]"
+                   ]
+            eve
+              <### [ WithTime "#team alice> 1 [>>]",
+                     WithTime "#team alice> 2 [>>]",
+                     WithTime "#team alice> 3 [>>]",
+                     WithTime "#team cath> 4 [>>]",
+                     WithTime "#team cath> 5 [>>]",
+                     WithTime "#team dan> 6 [>>]"
+                   ]
+  where
+    cfg = testCfg {deliveryWorkerDelay = 250000}
