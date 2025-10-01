@@ -42,7 +42,7 @@ async function showPromotedGroups() {
             Array.isArray(listing?.entries) && listing.entries.length > 0
             ? [listing.entries, simplexDirectoryDataURL]
             : [fallbackEntries(), '/img/groups/'];
-    const links = document.querySelectorAll('.community-images a.community-image');
+    const links = document.querySelectorAll('.group-images a.group-image');
     entries = shuffleEntries(listing.entries, links.length);
 
     for (let i = 0; i < links.length; i++) {
