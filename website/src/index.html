@@ -13,13 +13,13 @@
     <header id="navbar">
         <a class="logo" href="/"><img src="/img/design_3/logo-light.png" alt="logo" /></a>
         {# <a href="/" class="hidden dark:inline-block dark:lg:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a> #}
-        
+
         <nav id="menu">
             <ul>
                 <li class="nav-link">
                     <a href="/{{ '' if lang == 'en' else lang }}">
                         <span class="nav-link-text">{{ "home" | i18n({}, lang ) | safe }}</span>
-                    </a>                        
+                    </a>
                 </li>
 
                 <hr>
@@ -65,9 +65,9 @@
                         </a></li>
                         <li><a href="/docs/protocol/simplex-chat.html">{{ "chat-protocol" | i18n({}, lang ) | safe }}</a></li>
                         <li><a href="/docs/glossary.html">{{ "glossary" | i18n({}, lang ) | safe }}</a></li>
-                        
+
                         <hr>
-                        
+
                         {% for doc in docs_dropdown.items %}
                             <li><a href="{{ doc.url | url }}" class="{{ "active" if page.url == doc.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ doc.title | i18n({}, lang ) | safe }}</a></li>
                         {% endfor %}
@@ -101,7 +101,7 @@
                 <li class="nav-link">
                     <a href="/jobs">
                         <span class="nav-link-text">{{ "jobs" | i18n({}, lang ) | safe }}</span>
-                    </a>                        
+                    </a>
                 </li>
 
                 <hr>
@@ -142,7 +142,7 @@
                         {% endif %}
                     {% endfor %}
                 </a>
-                
+
                 <ul class="sub-menu">
                     {% for language in languages.languages %}
                         {% if language.enabled %}
@@ -159,7 +159,7 @@
                                         </div>
                                         <p>{{ language.name }}</p>
                                     </a>
-                                {% endif %} 
+                                {% endif %}
                             </li>
                         {% endif %}
                     {% endfor %}
@@ -219,7 +219,7 @@
             </section>
 
             <section class="page-3 page">
-                <div class="area">  
+                <div class="area">
                     <div class="image"></div>
                     <div class="text-container">
                         <h2>You Own<br>The Next Web</h2>
@@ -230,7 +230,7 @@
             </section>
 
             <section class="page-4 page">
-                <div class="area"> 
+                <div class="area">
                     <div class="image"></div>
                     <div class="text-container">
                         <h2>Communities That Last</h2>
@@ -267,40 +267,42 @@
 
             <section class="page-6 page">
                 <div class="area">
-                    <div class="communities-images">
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/new/logo-symbol-dark.svg" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
-                        <img src="/img/design_3/testflight-dark.png" />
+                    <div class="group-images">
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" class="simplex-image" title="SimpleX users group" target="_blank">
+                            <img src="/img/new/logo-symbol-dark.svg">
+                        </a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
                     </div>
                     <div class="text-container">
                         <h2>Join SimpleX Communities</h2>
                         <p>Hundreds of thousands people already trust SimpleX messaging.</p>
                         <p>Find your communities in SimpleX directory and create your own!</p>
-                        <a class="gradient-text" href="/">View SimpleX Directory</a>
+                        <a class="gradient-text" href="/directory">View SimpleX Directory</a>
                     </div>
                 </div>
             </section>
@@ -308,6 +310,7 @@
         </main>
     </div>
 
+    <script src="/js/directory.js"></script>
     <script src="/js/design3.js"></script>
     <script>
     (function setVH(){
@@ -337,7 +340,7 @@
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
     })();
-    
+
     window.addEventListener('click',(e)=>{
         if(e.target.closest('.nav-link')){
             if(e.target.closest('.nav-link').classList.contains('active')){
