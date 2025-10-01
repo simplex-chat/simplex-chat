@@ -102,6 +102,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       profileNameLimit = maxBound,
       captchaGenerator = Nothing,
       directoryLog = Just $ ps </> "directory_service.log",
+      migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
       runCLI = False,
       searchResults = 3,
@@ -275,6 +276,7 @@ testSuspendResume ps =
       bob <## "The group is listed in directory."
       superUser <# "'SimpleX Directory'> The group ID 1 (privacy) is updated - only link or whitespace changes."
       superUser <## "The group remained listed in directory."
+#if !defined(dbPostgres)
       -- upgrade link
       -- make it upgradeable first
       superUser #> "@'SimpleX Directory' /x /sql chat UPDATE user_contact_links SET short_link_contact = NULL"
@@ -303,6 +305,7 @@ testSuspendResume ps =
       superUser <# "'SimpleX Directory'> > /owner 1:privacy hello there"
       superUser <## "      Forwarded to @bob, the owner of the group ID 1 (privacy)"
       bob <# "'SimpleX Directory'> hello there"
+#endif
 
 testDeleteGroup :: HasCallStack => TestParams -> IO ()
 testDeleteGroup ps =
@@ -971,7 +974,7 @@ testDuplicateAskConfirmation ps =
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
         welcomeWithLink <- groupAccepted cath "privacy"
         groupNotFound bob "privacy"
-        completeRegistration superUser cath "privacy" "Privacy" welcomeWithLink 2
+        completeRegistrationId superUser cath "privacy" "Privacy" welcomeWithLink 2 1
         groupFound bob "privacy"
 
 testDuplicateProhibitRegistration :: HasCallStack => TestParams -> IO ()
@@ -1029,10 +1032,10 @@ testDuplicateProhibitWhenUpdated ps =
         cath <# "'SimpleX Directory'> The group privacy (Privacy) is already listed in the directory, please choose another name."
         cath ##> "/gp privacy security Security"
         cath <## "changed to #security (Security)"
-        cath <# "'SimpleX Directory'> Thank you! The group link for ID 2 (security) is added to the welcome message."
+        cath <# "'SimpleX Directory'> Thank you! The group link for ID 1 (security) is added to the welcome message."
         cath <## "You will be notified once the group is added to the directory - it may take up to 48 hours."
         notifySuperUser superUser cath "security" "Security" welcomeWithLink' 2
-        approveRegistration superUser cath "security" 2
+        approveRegistrationId superUser cath "security" 2 1
         groupFound bob "security"
         groupFound cath "security"
 
@@ -1051,7 +1054,7 @@ testDuplicateProhibitApproval ps =
         cath <# "'SimpleX Directory'> /confirm 1:privacy"
         cath #> "@'SimpleX Directory' /confirm 1:privacy"
         welcomeWithLink' <- groupAccepted cath "privacy"
-        updateProfileWithLink cath "privacy" welcomeWithLink' 2
+        updateProfileWithLink cath "privacy" welcomeWithLink' 1
         notifySuperUser superUser cath "privacy" "Privacy" welcomeWithLink' 2
         groupNotFound cath "privacy"
         completeRegistration superUser bob "privacy" "Privacy" welcomeWithLink 1
@@ -1116,7 +1119,7 @@ testListUserGroups promote ps =
           checkListings ["security"] []
           superUser #> "@'SimpleX Directory' /approve 1:privacy 1"
           superUser <# "'SimpleX Directory'> > /approve 1:privacy 1"
-          superUser <## "      Group approved!"
+          superUser <## "      Group approved (promoted)!"
           bob <# "'SimpleX Directory'> The group ID 1 (privacy) is approved and listed in directory - please moderate it!"
           bob <## "Please note: if you change the group profile it will be hidden from directory until it is re-approved."
           bob <## ""
@@ -1126,7 +1129,7 @@ testListUserGroups promote ps =
           bob <## "/'link 1' - to view/upgrade group link."
           checkListings ["privacy", "security"] ["privacy"]
 
-checkListings :: [T.Text] -> [T.Text] -> IO ()
+checkListings :: HasCallStack => [T.Text] -> [T.Text] -> IO ()
 checkListings listed promoted = do
   threadDelay 100000
   checkListing listingFileName listed
@@ -1226,19 +1229,11 @@ testCapthaScreening ps =
 testRestoreDirectory :: HasCallStack => TestParams -> IO ()
 testRestoreDirectory ps = do
   testListUserGroups False ps
-  restoreDirectoryService ps 3 3 $ \superUser _dsLink ->
+  restoreDirectoryService ps 11 $ \superUser _dsLink ->
     withTestChat ps "bob" $ \bob ->
       withTestChat ps "cath" $ \cath -> do
-        bob <## "2 contacts connected (use /cs for the list)"
-        bob
-          <### [ "#privacy: connected to server(s)",
-                 "#security: connected to server(s)"
-               ]
-        cath <## "2 contacts connected (use /cs for the list)"
-        cath
-          <### [ "#privacy: connected to server(s)",
-                 "#anonymity: connected to server(s)"
-               ]
+        bob <## "5 connections subscribed"
+        cath <## "5 connections subscribed"
         listGroups superUser bob cath
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
@@ -1366,14 +1361,11 @@ withDirectoryServiceCfgOwnersGroup ps cfg createOwnersGroup webFolder test = do
         getContactLink ds True
   withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test
 
-restoreDirectoryService :: HasCallStack => TestParams -> Int -> Int -> (TestCC -> String -> IO ()) -> IO ()
-restoreDirectoryService ps ctCount grCount test = do
+restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> String -> IO ()) -> IO ()
+restoreDirectoryService ps connCount test = do
   dsLink <-
     withTestChat ps serviceDbPrefix $ \ds -> do
-      ds <## (show ctCount <> " contacts connected (use /cs for the list)")
-      ds <## "Your address is active! To show: /sa"
-      ds <## (show grCount <> " group links active")
-      forM_ [1 .. grCount] $ \_ -> ds <##. "#"
+      ds .<## (show connCount <> " connections subscribed")
       ds ##> "/sa"
       dsLink <- getContactLink ds False
       ds <## "auto_accept on"
@@ -1388,14 +1380,14 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   let opts = mkDirectoryOpts ps [KnownContact 2 "alice"] (if createOwnersGroup then Just $ KnownGroup 1 "owners" else Nothing) webFolder
   runDirectory cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
-      superUser <## "1 contacts connected (use /cs for the list)"
-      when createOwnersGroup $
-        superUser <## "#owners: connected to server(s)"
+      if createOwnersGroup
+        then superUser <## "2 connections subscribed"
+        else superUser <## "1 connections subscribed"
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()
 runDirectory cfg opts@DirectoryOpts {directoryLog} action = do
-  st <- restoreDirectoryStore directoryLog
+  st <- openDirectoryLog directoryLog
   t <- forkIO $ directoryService st opts cfg
   threadDelay 500000
   action `finally` (mapM_ hClose (directoryLogFile st) >> killThread t)

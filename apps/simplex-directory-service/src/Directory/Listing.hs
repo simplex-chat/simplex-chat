@@ -11,7 +11,6 @@
 module Directory.Listing where
 
 import Control.Applicative ((<|>))
-import Control.Concurrent.STM
 import Control.Monad
 import Crypto.Hash (Digest, MD5)
 import qualified Crypto.Hash as CH
@@ -26,7 +25,6 @@ import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
 import Data.Maybe (catMaybes, fromMaybe)
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Text.Encoding (encodeUtf8)
@@ -90,10 +88,10 @@ recentRoundedTime roundTo now t
       let secs = (systemSeconds (utcToSystemTime t) `div` roundTo) * roundTo
        in Just $ systemToUTCTime $ MkSystemTime secs 0
 
-groupDirectoryEntry :: UTCTime -> GroupInfoSummary -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
-groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt} summary gLink_) =
+groupDirectoryEntry :: UTCTime -> GroupInfo -> Maybe GroupLink -> Maybe (DirectoryEntry, Maybe (FilePath, ImageFileData))
+groupDirectoryEntry now GroupInfo {groupProfile, chatTs, createdAt, groupSummary} gLink_ =
   let GroupProfile {displayName, shortDescr, description, image, memberAdmission} = groupProfile
-      entryType = DETGroup memberAdmission summary
+      entryType = DETGroup memberAdmission groupSummary
       entry groupLink =
         let de =
               DirectoryEntry
@@ -122,22 +120,21 @@ groupDirectoryEntry now (GIS GroupInfo {groupProfile, chatTs, createdAt} summary
             Right img'' -> Just (imgFile, img'')
             Left _ -> Nothing
 
-generateListing :: DirectoryStore -> FilePath -> [GroupInfoSummary] -> IO ()
-generateListing st dir gs = do
+generateListing :: FilePath -> [(GroupInfo, GroupReg, Maybe GroupLink)] -> IO ()
+generateListing dir gs = do
   createDirectoryIfMissing True dir
   oldDirs <- filter ((directoryDataPath <> ".") `isPrefixOf`) <$> listDirectory dir
   ts <- getCurrentTime
   let newDirPath = directoryDataPath <> "." <> iso8601Show ts <> "/"
       newDir = dir </> newDirPath
-  gs' <- filterListedGroups st gs
   createDirectoryIfMissing True (newDir </> listingImageFolder)
-  gs'' <-
-    fmap catMaybes $ forM gs' $ \g@(GIS GroupInfo {groupId} _ _) ->
-      forM (groupDirectoryEntry ts g) $ \(g', img) -> do
+  gs' <-
+    fmap catMaybes $ forM gs $ \(g, gr, link_) ->
+      forM (groupDirectoryEntry ts g link_) $ \(g', img) -> do
         forM_ img $ \(imgFile, imgData) -> B.writeFile (newDir </> imgFile) imgData
-        pure (groupId, g')
-  saveListing newDir listingFileName gs''
-  saveListing newDir promotedFileName =<< filterPromotedGroups st gs''
+        pure (g', gr)
+  saveListing newDir listingFileName gs'
+  saveListing newDir promotedFileName $ filter (\(_, GroupReg {promoted}) -> promoted) gs'
   -- atomically update the link
   let newSymLink = newDir <> ".link"
       symLink = dir </> directoryDataPath
@@ -145,12 +142,7 @@ generateListing st dir gs = do
   renamePath newSymLink symLink
   mapM_ (removePathForcibly . (dir </>)) oldDirs
   where
-    saveListing newDir f = LB.writeFile (newDir </> f) . J.encode . DirectoryListing . map snd
-
-filterPromotedGroups :: DirectoryStore -> [(GroupId, DirectoryEntry)] -> IO [(GroupId, DirectoryEntry)]
-filterPromotedGroups st gs = do
-  pgs <- readTVarIO $ promotedGroups st
-  pure $ filter (\g -> fst g `S.member` pgs) gs
+    saveListing newDir f = LB.writeFile (newDir </> f) . J.encode . DirectoryListing . map fst
 
 toFormattedText :: Text -> MarkdownList
 toFormattedText t = fromMaybe [FormattedText Nothing t] $ parseMaybeMarkdownList t

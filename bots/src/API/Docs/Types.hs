@@ -238,7 +238,7 @@ chatTypesDocsData =
     (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], "", ""),
     (sti @ConnectionPlan, STUnion, "CP", [], "", ""),
     (sti @ConnStatus, (STEnum' $ consSep "Conn" '-'), "", [], "", ""),
-    (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", ["ConnSndFile", "ConnRcvFile"], "", ""),
+    (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", [], "", ""),
     (sti @Contact, STRecord, "", [], "", ""),
     (sti @ContactAddressPlan, STUnion, "CAP", [], "", ""),
     (sti @ContactShortLinkData, STRecord, "", [], "", ""),
@@ -266,7 +266,6 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
-    (sti @GroupInfoSummary, STRecord, "", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
@@ -315,7 +314,6 @@ chatTypesDocsData =
     (sti @RcvConnEvent, STUnion, "RCE", [], "", ""),
     (sti @RcvDirectEvent, STUnion, "RDE", [], "", ""),
     (sti @RcvFileDescr, STRecord, "", [], "", ""),
-    (sti @RcvFileInfo, STRecord, "", [], "", ""),
     (sti @RcvFileStatus, STUnion, "RFS", [], "", ""),
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
@@ -453,7 +451,6 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
-deriving instance Generic GroupInfoSummary
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember
@@ -508,7 +505,6 @@ deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent
 deriving instance Generic RcvDirectEvent
 deriving instance Generic RcvFileDescr
-deriving instance Generic RcvFileInfo
 deriving instance Generic RcvFileStatus
 deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent

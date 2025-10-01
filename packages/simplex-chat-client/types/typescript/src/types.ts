@@ -997,7 +997,6 @@ export type ChatErrorType =
   | ChatErrorType.FileCancelled
   | ChatErrorType.FileCancel
   | ChatErrorType.FileAlreadyExists
-  | ChatErrorType.FileRead
   | ChatErrorType.FileWrite
   | ChatErrorType.FileSend
   | ChatErrorType.FileRcvChunk
@@ -1074,7 +1073,6 @@ export namespace ChatErrorType {
     | "fileCancelled"
     | "fileCancel"
     | "fileAlreadyExists"
-    | "fileRead"
     | "fileWrite"
     | "fileSend"
     | "fileRcvChunk"
@@ -1328,12 +1326,6 @@ export namespace ChatErrorType {
   export interface FileAlreadyExists extends Interface {
     type: "fileAlreadyExists"
     filePath: string
-  }
-
-  export interface FileRead extends Interface {
-    type: "fileRead"
-    filePath: string
-    message: string
   }
 
   export interface FileWrite extends Interface {
@@ -1734,17 +1726,10 @@ export interface Connection {
 export type ConnectionEntity = 
   | ConnectionEntity.RcvDirectMsgConnection
   | ConnectionEntity.RcvGroupMsgConnection
-  | ConnectionEntity.SndFileConnection
-  | ConnectionEntity.RcvFileConnection
   | ConnectionEntity.UserContactConnection
 
 export namespace ConnectionEntity {
-  export type Tag = 
-    | "rcvDirectMsgConnection"
-    | "rcvGroupMsgConnection"
-    | "sndFileConnection"
-    | "rcvFileConnection"
-    | "userContactConnection"
+  export type Tag = "rcvDirectMsgConnection" | "rcvGroupMsgConnection" | "userContactConnection"
 
   interface Interface {
     type: Tag
@@ -1761,18 +1746,6 @@ export namespace ConnectionEntity {
     entityConnection: Connection
     groupInfo: GroupInfo
     groupMember: GroupMember
-  }
-
-  export interface SndFileConnection extends Interface {
-    type: "sndFileConnection"
-    entityConnection: Connection
-    sndFileTransfer: SndFileTransfer
-  }
-
-  export interface RcvFileConnection extends Interface {
-    type: "rcvFileConnection"
-    entityConnection: Connection
-    rcvFileTransfer: RcvFileTransfer
   }
 
   export interface UserContactConnection extends Interface {
@@ -1861,7 +1834,6 @@ export interface Contact {
   localDisplayName: string
   profile: LocalProfile
   activeConn?: Connection
-  viaGroup?: number // int64
   contactUsed: boolean
   contactStatus: ContactStatus
   chatSettings: ChatSettings
@@ -2444,14 +2416,9 @@ export interface GroupInfo {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   customData?: object
+  groupSummary: GroupSummary
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-}
-
-export interface GroupInfoSummary {
-  groupInfo: GroupInfo
-  groupSummary: GroupSummary
-  groupLink?: GroupLink
 }
 
 export interface GroupLink {
@@ -2605,7 +2572,7 @@ export interface GroupShortLinkData {
 }
 
 export interface GroupSummary {
-  currentMembers: number // int
+  currentMembers: number // int64
 }
 
 export interface GroupSupportChat {
@@ -3279,12 +3246,6 @@ export interface RcvFileDescr {
   fileDescrComplete: boolean
 }
 
-export interface RcvFileInfo {
-  filePath: string
-  connId?: number // int64
-  agentConnId?: string
-}
-
 export type RcvFileStatus = 
   | RcvFileStatus.New
   | RcvFileStatus.Accepted
@@ -3305,22 +3266,22 @@ export namespace RcvFileStatus {
 
   export interface Accepted extends Interface {
     type: "accepted"
-    fileInfo: RcvFileInfo
+    filePath: string
   }
 
   export interface Connected extends Interface {
     type: "connected"
-    fileInfo: RcvFileInfo
+    filePath: string
   }
 
   export interface Complete extends Interface {
     type: "complete"
-    fileInfo: RcvFileInfo
+    filePath: string
   }
 
   export interface Cancelled extends Interface {
     type: "cancelled"
-    fileInfo_?: RcvFileInfo
+    filePath_?: string
   }
 }
 
