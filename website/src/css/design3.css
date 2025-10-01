@@ -269,7 +269,7 @@ body {
 }
 
 .lock-scroll {
-    overflow: hidden;
+    overflow: hidden !important;
 }
 
 img {
@@ -713,7 +713,7 @@ main .section-bg {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(6, 1fr);
-    gap: calc(var(--sec-vwu-desktop) * 2);
+    gap: calc(var(--sec-vwu-desktop) * 2.1);
 }
 
 .page-6 .group-images img {
@@ -745,7 +745,10 @@ main .section-bg {
     <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
     places the image starting at column 3, row 2, spanning 2 columns × 2 rows.
 */
-.page-6 .group-images>a.simplex-image { --c: 4; --r: 3; --w: 2; --h: 2 }
+.page-6 .group-images>a.simplex-image { 
+    --c: 4; --r: 3; --w: 2; --h: 2;
+    margin: 1rem;
+}
 
 .page-6 .group-images>a.group-image:nth-child(1) { --c: 2; --r: 1; --w: 1; --h: 1 }
 .page-6 .group-images>a.group-image:nth-child(2) { --c: 4; --r: 1; --w: 1; --h: 1 }

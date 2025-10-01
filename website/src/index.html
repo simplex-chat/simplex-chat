@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <title>Simplex Chat</title>
+    <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
     <script src="/js/flag-anchor.js"></script>
 </head>
@@ -310,6 +311,16 @@
         </main>
     </div>
 
+    <style>
+        section.footer {
+            position: relative;
+            z-index: 1;
+        }
+    </style>
+
+    {% include "footer.html" %}
+
+
     <script src="/js/directory.js"></script>
     <script src="/js/design3.js"></script>
     <script>
@@ -363,6 +374,95 @@
         // else if(e.target.closest('.theme-switch-btn')){
         //     themeSwitch();
         // }
+    });
+    </script>
+    <script>
+    // Watch edges + scroll direction for .page-6 vs the WINDOW viewport
+    (function watchPage6Edges() {
+        const scroller = document.querySelector('.screen') || window;
+        const section  = document.querySelector('.page-6.page') || document.querySelector('.page-6');
+        if (!section) return;
+
+        const EPS = 1; // tolerance in px for "touching"
+
+        let lastTop = null;   // previous section top relative to viewport
+        let lastReport = {};  // to avoid noisy logs/dispatch
+
+        function getViewportRect() {
+            return {
+            top: 0,
+            left: 0,
+            right: window.innerWidth,
+            bottom: window.innerHeight,
+            width: window.innerWidth,
+            height: window.innerHeight
+            };
+        }
+
+        function onScrollOrResize() {
+            const rootRect = getViewportRect();
+            const r = section.getBoundingClientRect();
+
+            // Direction based on movement of the element in the viewport
+            const dir =
+            lastTop == null ? 'none' :
+            (r.top < lastTop ? 'down' : r.top > lastTop ? 'up' : 'none');
+            lastTop = r.top;
+
+            const touchesTop    = Math.abs(r.top    - rootRect.top)    <= EPS;
+            const touchesBottom = Math.abs(r.bottom - rootRect.bottom) <= EPS;
+            const touchesLeft   = Math.abs(r.left   - rootRect.left)   <= EPS;
+            const touchesRight  = Math.abs(r.right  - rootRect.right)  <= EPS;
+
+            const fullyCovering =
+            r.top    <= rootRect.top    + EPS &&
+            r.left   <= rootRect.left   + EPS &&
+            r.right  >= rootRect.right  - EPS &&
+            r.bottom >= rootRect.bottom - EPS;
+
+            const report = { touchesTop, touchesBottom, touchesLeft, touchesRight, fullyCovering, direction: dir, rect: r, viewport: rootRect };
+
+            // only fire when something changes
+            const changed = JSON.stringify(report) !== JSON.stringify(lastReport);
+            if (changed) {
+            section.dispatchEvent(new CustomEvent('page-6-edges', { detail: report }));
+            lastReport = report;
+            }
+        }
+
+        const target = scroller === window ? window : scroller;
+        // Listen to the .screen scroller
+        target.addEventListener('scroll', onScrollOrResize, { passive: true });
+        // ALSO listen to window scroll so it updates while you're in the footer
+        if (target !== window) {
+            window.addEventListener('scroll', onScrollOrResize, { passive: true });
+        }
+        window.addEventListener('resize', onScrollOrResize);
+
+        // initial read
+        onScrollOrResize();
+    })();
+
+    // Consumer: toggle lock-scroll based on coverage + direction
+    document.querySelector('.page-6')?.addEventListener('page-6-edges', (e) => {
+        const { direction, fullyCovering, touchesTop, touchesBottom, touchesLeft, touchesRight } = e.detail;
+
+        if (touchesTop)    console.log('page-6 touching TOP; dir=', direction);
+        if (touchesBottom) console.log('page-6 touching BOTTOM; dir=', direction);
+        if (touchesLeft)   console.log('page-6 touching LEFT; dir=', direction);
+        if (touchesRight)  console.log('page-6 touching RIGHT; dir=', direction);
+
+        if (fullyCovering) {
+            console.log('page-6 fully fills the viewport; dir=', direction);
+            const screenEl = document.querySelector('.screen');
+            if (!screenEl) return;
+
+            if (direction === 'down') {
+            screenEl.classList.add('lock-scroll');
+            } else if (direction === 'up') {
+            screenEl.classList.remove('lock-scroll');
+            }
+        }
     });
     </script>
 </body>
