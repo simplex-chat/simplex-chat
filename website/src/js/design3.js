@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function showPromotedGroups() {
-    printWelcome();
+    welcome();
     const listing = await fetchJSON(simplexDirectoryDataURL + 'promoted.json');
     let [entries, imgPath] =
             Array.isArray(listing?.entries) && listing.entries.length > 0
@@ -89,7 +89,7 @@ async function showPromotedGroups() {
         }
     }
 
-    function printWelcome() {
+    function welcome() {
         console.log('%c%s', 'font-family: monospace; white-space: pre;',
 `Welcome to                  __   __
  ___ ___ __  __ ___ _    ___\\ \\ / / ___ _  _   _ _____
@@ -100,8 +100,29 @@ async function showPromotedGroups() {
 SimpleX directory: https://simplex.chat/directory
 Ask SimpleX team: https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw
 GitHub: https://github.com/simplex-chat/simplex-chat
+Reddit: https://www.reddit.com/r/SimpleXChat
 X/Twitter: https://x.com/SimpleXChat
-Join team: https://simplex.chat/jobs`
+
+Docs
+----
+Whitepaper: https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md
+Bots API: https://github.com/simplex-chat/simplex-chat/tree/stable/bots
+TypeScript library: https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript
+Terminal CLI: https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md
+Hosting SMP servers: https://simplex.chat/docs/server.html
+
+Downloads
+---------
+Apps: https://simplex.chat/downloads
+Servers: https://github.com/simplex-chat/simplexmq/releases
+
+Project
+-------
+About & Contact us: https://simplex.chat/about
+Privacy policy: https://simplex.chat/privacy
+Join team: https://simplex.chat/jobs
+Donations: https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations
+`
         );
     }
 
