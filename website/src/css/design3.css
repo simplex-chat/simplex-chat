@@ -301,8 +301,7 @@ p {
     scroll-snap-type: y mandatory;
     /* page-by-page snap */
     scroll-behavior: smooth;
-    overscroll-behavior: contain;
-    /* avoid rubber-banding pulling UI over content */
+    /* overscroll-behavior: contain; */
     -webkit-overflow-scrolling: touch;
 }
 
@@ -1245,5 +1244,80 @@ button#cross-btn {
         width: 100%;
         left: 0;
         right: auto;
+    }
+}
+
+/* FOOTER STYLES */
+.footer {
+    position: relative;
+    z-index: 1;
+
+    display: none;
+}
+
+.footer.show{
+    display: block;
+}
+
+.footer .container,
+.footer .container-fluid,
+.footer .container-xxl,
+.footer .container-xl,
+.footer .container-lg,
+.footer .container-md,
+.footer .container-sm {
+    width: 100%;
+    /* padding: 0 20px; */
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (min-width: 576px) {
+
+    .footer .container-sm,
+    .footer .container {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+
+    .footer .container-xl,
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 1140px;
+    }
+}
+
+@media (min-width: 1400px) {
+
+    .footer .container-xxl,
+    .footer .container-xl,
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 1320px;
     }
 }

@@ -311,13 +311,6 @@
         </main>
     </div>
 
-    <style>
-        section.footer {
-            position: relative;
-            z-index: 1;
-        }
-    </style>
-
     {% include "footer.html" %}
 
 
@@ -377,92 +370,117 @@
     });
     </script>
     <script>
-    // Watch edges + scroll direction for .page-6 vs the WINDOW viewport
-    (function watchPage6Edges() {
-        const scroller = document.querySelector('.screen') || window;
-        const section  = document.querySelector('.page-6.page') || document.querySelector('.page-6');
-        if (!section) return;
+    document.addEventListener('DOMContentLoaded', () => {
+        const screenEl = document.querySelector('.screen');
+        if (!screenEl) return;
 
-        const EPS = 1; // tolerance in px for "touching"
+        let wasFull = false;
 
-        let lastTop = null;   // previous section top relative to viewport
-        let lastReport = {};  // to avoid noisy logs/dispatch
+        // Prefer IO (efficient). Use a near-1 threshold to avoid float/toolbar jitter on mobile.
+        if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver(([entry]) => {
+                const fullyVisible = entry.isIntersecting && entry.intersectionRatio >= 0.999;
+                if (fullyVisible !== wasFull) {
+                    wasFull = fullyVisible;
+                    screenEl.classList.toggle('is-fully-in-view', fullyVisible);
+                    if (fullyVisible) {
+                        console.log('✅ .screen is fully in view');
+                        document.querySelector('.screen').classList.remove('lock-scroll');
+                    } else {
+                        console.log('⛔ .screen is NOT fully in view');
+                        document.querySelector('.screen').classList.add('lock-scroll');
+                    }
+                }
+            }, {
+                root: null,                     // viewport
+                threshold: [0, 0.5, 0.99, 1],   // fire as we approach 1.0
+                rootMargin: '0px'
+            });
 
-        function getViewportRect() {
-            return {
-            top: 0,
-            left: 0,
-            right: window.innerWidth,
-            bottom: window.innerHeight,
-            width: window.innerWidth,
-            height: window.innerHeight
+            io.observe(screenEl);
+        } else {
+            // Fallback: compute from bounding rect on scroll/resize
+            const check = () => {
+                const r = screenEl.getBoundingClientRect();
+                const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+                // fully in view when its top >= 0 and bottom <= viewport height
+                const fullyVisible = r.top >= -1 && Math.ceil(r.bottom) <= vh + 1; // ±1px tolerance
+                if (fullyVisible !== wasFull) {
+                    wasFull = fullyVisible;
+                    screenEl.classList.toggle('is-fully-in-view', fullyVisible);
+                    if (fullyVisible) onScreenFullyVisible();
+                }
             };
+            addEventListener('scroll', check, { passive: true });
+            addEventListener('resize', check);
+            setTimeout(check, 0);
         }
+    });
+    </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const screenEl = document.querySelector('.screen');
+        if (!screenEl) return;
 
-        function onScrollOrResize() {
-            const rootRect = getViewportRect();
-            const r = section.getBoundingClientRect();
+        // Find page-6 robustly: prefer .page-6 / [data-page="6"], else 6th .page
+        const page6 =
+            screenEl.querySelector('.page-6') ||
+            screenEl.querySelector('.page[data-page="6"]') ||
+            screenEl.querySelectorAll('.page')[5]; // 0-based index
 
-            // Direction based on movement of the element in the viewport
-            const dir =
-            lastTop == null ? 'none' :
-            (r.top < lastTop ? 'down' : r.top > lastTop ? 'up' : 'none');
-            lastTop = r.top;
+        if (!page6) return;
 
-            const touchesTop    = Math.abs(r.top    - rootRect.top)    <= EPS;
-            const touchesBottom = Math.abs(r.bottom - rootRect.bottom) <= EPS;
-            const touchesLeft   = Math.abs(r.left   - rootRect.left)   <= EPS;
-            const touchesRight  = Math.abs(r.right  - rootRect.right)  <= EPS;
+        const onPage6Enter = () => {
+            console.log('✅ page-6 fully visible inside .screen');
+            document.querySelector('.footer').classList.add('show');
+            // TODO: your action (e.g., start animation, load assets, toggle state, etc.)
+        };
 
-            const fullyCovering =
-            r.top    <= rootRect.top    + EPS &&
-            r.left   <= rootRect.left   + EPS &&
-            r.right  >= rootRect.right  - EPS &&
-            r.bottom >= rootRect.bottom - EPS;
+        const onPage6Exit = () => {
+            console.log('⛔ page-6 left view');
+            document.querySelector('.footer').classList.remove('show');
+            // TODO: cleanup/undo if needed
+        };
 
-            const report = { touchesTop, touchesBottom, touchesLeft, touchesRight, fullyCovering, direction: dir, rect: r, viewport: rootRect };
+        let inView = false;
 
-            // only fire when something changes
-            const changed = JSON.stringify(report) !== JSON.stringify(lastReport);
-            if (changed) {
-            section.dispatchEvent(new CustomEvent('page-6-edges', { detail: report }));
-            lastReport = report;
+        if ('IntersectionObserver' in window) {
+            const io = new IntersectionObserver(([entry]) => {
+            const fully = entry.isIntersecting && entry.intersectionRatio >= 0.98; // ~fully visible
+            if (fully !== inView) {
+                inView = fully;
+                page6.classList.toggle('in-view', inView);
+                inView ? onPage6Enter() : onPage6Exit();
             }
-        }
-
-        const target = scroller === window ? window : scroller;
-        // Listen to the .screen scroller
-        target.addEventListener('scroll', onScrollOrResize, { passive: true });
-        // ALSO listen to window scroll so it updates while you're in the footer
-        if (target !== window) {
-            window.addEventListener('scroll', onScrollOrResize, { passive: true });
-        }
-        window.addEventListener('resize', onScrollOrResize);
-
-        // initial read
-        onScrollOrResize();
-    })();
-
-    // Consumer: toggle lock-scroll based on coverage + direction
-    document.querySelector('.page-6')?.addEventListener('page-6-edges', (e) => {
-        const { direction, fullyCovering, touchesTop, touchesBottom, touchesLeft, touchesRight } = e.detail;
-
-        if (touchesTop)    console.log('page-6 touching TOP; dir=', direction);
-        if (touchesBottom) console.log('page-6 touching BOTTOM; dir=', direction);
-        if (touchesLeft)   console.log('page-6 touching LEFT; dir=', direction);
-        if (touchesRight)  console.log('page-6 touching RIGHT; dir=', direction);
-
-        if (fullyCovering) {
-            console.log('page-6 fully fills the viewport; dir=', direction);
-            const screenEl = document.querySelector('.screen');
-            if (!screenEl) return;
-
-            if (direction === 'down') {
-            screenEl.classList.add('lock-scroll');
-            } else if (direction === 'up') {
-            screenEl.classList.remove('lock-scroll');
+            }, {
+            root: screenEl,                 // observe within the snap scroller
+            threshold: [0, 0.5, 0.98, 1],
+            rootMargin: '0px'
+            });
+            io.observe(page6);
+        } else {
+            // Fallback: compute visibility against .screen viewport
+            const check = () => {
+            const r = page6.getBoundingClientRect();
+            const R = screenEl.getBoundingClientRect();
+            const fully = r.top >= R.top - 1 && Math.ceil(r.bottom) <= Math.ceil(R.bottom) + 1;
+            if (fully !== inView) {
+                inView = fully;
+                page6.classList.toggle('in-view', inView);
+                inView ? onPage6Enter() : onPage6Exit();
             }
+            };
+            screenEl.addEventListener('scroll', check, { passive: true });
+            addEventListener('resize', check);
+            setTimeout(check, 0);
         }
+
+        // Optional: fire AFTER snap settles (progressive enhancement)
+        // Works in modern Chromium/Safari; ignored elsewhere.
+        screenEl.addEventListener?.('scrollend', () => {
+            const idx = Math.round(screenEl.scrollTop / screenEl.clientHeight);
+            if (idx === 5) onPage6Enter(); // 0-based -> 6th section
+        });
     });
     </script>
 </body>
