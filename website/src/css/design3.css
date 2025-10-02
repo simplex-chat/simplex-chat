@@ -1252,11 +1252,11 @@ button#cross-btn {
     position: relative;
     z-index: 1;
 
-    display: none;
+    /* display: none; */
 }
 
 .footer.show{
-    display: block;
+    /* display: block; */
 }
 
 .footer .container,
