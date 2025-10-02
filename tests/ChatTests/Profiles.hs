@@ -142,6 +142,7 @@ shortLinkTests = do
   it "changing profile should update address short link data" testShortLinkAddressChangeProfile
   it "changing auto-reply message should update address short link data" testShortLinkAddressChangeAutoReply
   it "changing group profile should update short link data" testShortLinkGroupChangeProfile
+  it "receiving group profile update should update short link data" testShortLinkGroupChangeProfileReceived
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -4124,6 +4125,44 @@ testShortLinkGroupChangeProfile = testChat3 aliceProfile bobProfile cathProfile 
       alice <## "changed to #club"
       cath <## "alice updated group #team:"
       cath <## "changed to #club"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#club: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#club: connection started"
+      alice <## "bob (Bob): accepting request to join group #club..."
+      concurrentlyN_
+        [ alice <## "#club: bob joined the group",
+          do
+            bob <## "#club: joining the group..."
+            bob <## "#club: you joined the group"
+            bob <## "#club: member cath (Catherine) is connected",
+          do
+            cath <## "#club: alice added bob (Bob) to the group (connecting...)"
+            cath <## "#club: new member bob is connected"
+        ]
+      alice #> "#club 1"
+      [bob, cath] *<# "#club alice> 1"
+      bob #> "#club 2"
+      [alice, cath] *<# "#club bob> 2"
+      cath #> "#club 3"
+      [alice, bob] *<# "#club cath> 3"
+
+testShortLinkGroupChangeProfileReceived :: HasCallStack => TestParams -> IO ()
+testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cathProfile test
+  where
+    test alice bob cath = do
+      createGroup2' "team" alice (cath, GROwner) True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+
+      cath ##> "/gp team club"
+      cath <## "changed to #club"
+      alice <## "cath updated group #team:"
+      alice <## "changed to #club"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect"
