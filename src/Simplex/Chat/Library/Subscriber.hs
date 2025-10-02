@@ -2260,7 +2260,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           GAPendingApproval ->
             messageWarning "x.grp.link.acpt: unexpected group acceptance - pending approval"
         introduceToRemainingMembers acceptedMember = do
-          introduceToRemaining vr user gInfo acceptedMember
+          introduceToAll vr user gInfo acceptedMember
           when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
 
     maybeCreateGroupDescrLocal :: GroupInfo -> GroupMember -> CM ()

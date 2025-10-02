@@ -2277,7 +2277,7 @@ processChatCommand vr nm = \case
               Nothing -> do
                 let msg = XGrpLinkAcpt GAAccepted role (memberId' m)
                 void $ sendDirectMemberMessage mConn msg groupId
-                introduceToRemaining vr user gInfo m {memberRole = role}
+                introduceToAll vr user gInfo m {memberRole = role}
                 when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
                 (m', gInfo') <- withFastStore' $ \db -> do
                   m' <- updateGroupMemberAccepted db user m GSMemConnected role
@@ -2301,7 +2301,7 @@ processChatCommand vr nm = \case
             let msg2 = XMsgNew $ MCSimple $ extMsgContent (MCText acceptedToGroupMessage) Nothing
             void $ sendDirectMemberMessage mConn msg2 groupId
         when (memberCategory m == GCInviteeMember) $ do
-          introduceToRemaining vr user gInfo m {memberRole = role}
+          introduceToAll vr user gInfo m {memberRole = role}
           when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo m
         (m', gInfo') <- withFastStore' $ \db -> do
           m' <- updateGroupMemberAccepted db user m newMemberStatus role
