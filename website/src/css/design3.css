@@ -730,7 +730,7 @@ main .section-bg {
         right: 0;
         grid-template-columns: repeat(8, 1fr);
         grid-template-rows: repeat(7, 1fr);
-        gap: calc(var(--sec-vwu-desktop) * 1.5);
+        gap: calc(var(--sec-vwu-desktop) * 2.8);
     }
 
     .page-6 .group-images img {
@@ -746,7 +746,7 @@ main .section-bg {
 */
 .page-6 .group-images>a.simplex-image { 
     --c: 4; --r: 3; --w: 2; --h: 2;
-    margin: 1rem;
+    margin: 1.15rem;
 }
 
 .page-6 .group-images>a.group-image:nth-child(1) { --c: 2; --r: 1; --w: 1; --h: 1 }
