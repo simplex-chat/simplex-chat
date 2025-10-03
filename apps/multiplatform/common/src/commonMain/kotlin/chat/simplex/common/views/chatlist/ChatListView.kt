@@ -596,12 +596,9 @@ private fun ToggleFilterEnabledButton() {
 expect fun ActiveCallInteractiveArea(call: Call)
 
 fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
-  Log.e(TAG, "##### connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
-    Log.e(TAG, "##### connectIfOpenedViaUri: if (chatModel.currentUser.value == null)")
     chatModel.appOpenUrl.value = rhId to uri
   } else {
-    Log.e(TAG, "##### connectIfOpenedViaUri: else -> planAndConnect")
     withBGApi {
       chatModel.appOpenUrlConnecting.value = true
       planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
@@ -673,7 +670,6 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 // if some other text is pasted, enter search mode
                 focusRequester.requestFocus()
               } else {
-                Log.e(TAG, "##### ChatListSearchBar LaunchedEffect(Unit) chatModel.appOpenUrlConnecting.value=${chatModel.appOpenUrlConnecting.value}")
                 if (!chatModel.appOpenUrlConnecting.value) {
                   connectProgressManager.cancelConnectProgress()
                 }
