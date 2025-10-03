@@ -245,9 +245,7 @@ fun MainScreen() {
       if (onboarding == OnboardingStage.OnboardingComplete) {
         LaunchedEffect(chatModel.chatRunning.value, chatModel.currentUser.value, chatModel.appOpenUrl.value) {
           val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
-          Log.e(TAG,"##### App LaunchedEffect")
           if (url != null && chatModel.chatRunning.value == true) {
-            Log.e(TAG,"##### App LaunchedEffect url != null")
             chatModel.appOpenUrl.value = null
             connectIfOpenedViaUri(rhId, url, chatModel)
           }

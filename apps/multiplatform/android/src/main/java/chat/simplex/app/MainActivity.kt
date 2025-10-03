@@ -159,9 +159,7 @@ fun processIntent(intent: Intent?) {
   when (intent?.action) {
     "android.intent.action.VIEW" -> {
       val uri = intent.data
-      Log.e(TAG,"##### processIntent")
       if (uri != null) {
-        Log.e(TAG,"##### processIntent uri != null")
         chatModel.appOpenUrl.value = null to uri.toString()
       } else {
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error_parsing_uri_title), generalGetString(MR.strings.error_parsing_uri_desc))
