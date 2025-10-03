@@ -242,11 +242,6 @@
     }
 }
 
-/* Disable pull-to-refresh on the page itself */
-html, body {
-  overscroll-behavior-y: none; /* or: overscroll-behavior: none; */
-}
-
 body.change-nav-color {
     --nav-color: #001796;
 }
@@ -300,27 +295,30 @@ p {
     color: transparent;
 }
 
+/* Let the PAGE (body) scroll so Safari collapses the address bar.
+   Keep .screen as a regular wrapper (no own scrolling). */
 .screen {
-    height: 100svh;
-    overflow-y: auto;
+    height: auto;
+    overflow: visible;
+}
+
+/* Make the viewport the scroll snap container (works in iOS Safari) */
+html, body {
     scroll-snap-type: y mandatory;
-    /* page-by-page snap */
     scroll-behavior: smooth;
-    /* overscroll-behavior: contain; */
-    -webkit-overflow-scrolling: touch;
 }
 
 section.page {
+    min-height: 100svh; /* fallback */
     height: 100svh;
-    /* same fallback */
     scroll-snap-align: start;
-    scroll-snap-stop: always;
-    /* requires a full swipe/scroll to leave */
+    scroll-snap-stop: always; /* requires a full swipe/scroll to leave */
     position: relative;
 
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 2;
 }
 
 section.page .area {
@@ -406,19 +404,15 @@ main {
 }
 
 main .section-bg {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    height: 100svh;
-
-    /* Cancel its own layout height so content starts immediately "on" it */
-    margin-bottom: -100vh;
-    margin-bottom: -100svh;
+    position: fixed;
+    inset: 0;
+    height: 100svh;          /* fallback */
+    margin-bottom: -100svh;  /* cancel own layout height */
 
     background-image: var(--bg-grad);
     background-position: center;
     background-repeat: no-repeat;
-    z-index: 0;
+    z-index: -1;
     pointer-events: none;
 }
 
@@ -1255,6 +1249,14 @@ button#cross-btn {
 /* FOOTER STYLES */
 section.page.footer {
     height: fit-content;
+    min-height: fit-content;
+}
+
+@media screen and (max-width: 768px) {
+    section.page.footer {
+        height: 100vh;
+        min-height: 100vh;
+    }
 }
 
 .footer .container,
