@@ -308,10 +308,10 @@
                 </div>
             </section>
 
+            {% include "footer.html" %}
+
         </main>
     </div>
-
-    {% include "footer.html" %}
 
 
     <script src="/js/directory.js"></script>
@@ -367,120 +367,6 @@
         // else if(e.target.closest('.theme-switch-btn')){
         //     themeSwitch();
         // }
-    });
-    </script>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const screenEl = document.querySelector('.screen');
-        if (!screenEl) return;
-
-        let wasFull = false;
-
-        // Prefer IO (efficient). Use a near-1 threshold to avoid float/toolbar jitter on mobile.
-        if ('IntersectionObserver' in window) {
-            const io = new IntersectionObserver(([entry]) => {
-                const fullyVisible = entry.isIntersecting && entry.intersectionRatio >= 0.999;
-                if (fullyVisible !== wasFull) {
-                    wasFull = fullyVisible;
-                    screenEl.classList.toggle('is-fully-in-view', fullyVisible);
-                    if (fullyVisible) {
-                        console.log('✅ .screen is fully in view');
-                        document.querySelector('.screen').classList.remove('lock-scroll');
-                    } else {
-                        console.log('⛔ .screen is NOT fully in view');
-                        document.querySelector('.screen').classList.add('lock-scroll');
-                    }
-                }
-            }, {
-                root: null,                     // viewport
-                threshold: [0, 0.5, 0.99, 1],   // fire as we approach 1.0
-                rootMargin: '0px'
-            });
-
-            io.observe(screenEl);
-        } else {
-            // Fallback: compute from bounding rect on scroll/resize
-            const check = () => {
-                const r = screenEl.getBoundingClientRect();
-                const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-                // fully in view when its top >= 0 and bottom <= viewport height
-                const fullyVisible = r.top >= -1 && Math.ceil(r.bottom) <= vh + 1; // ±1px tolerance
-                if (fullyVisible !== wasFull) {
-                    wasFull = fullyVisible;
-                    screenEl.classList.toggle('is-fully-in-view', fullyVisible);
-                    if (fullyVisible) onScreenFullyVisible();
-                }
-            };
-            addEventListener('scroll', check, { passive: true });
-            addEventListener('resize', check);
-            setTimeout(check, 0);
-        }
-    });
-    </script>
-    <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        const screenEl = document.querySelector('.screen');
-        if (!screenEl) return;
-
-        // Find page-6 robustly: prefer .page-6 / [data-page="6"], else 6th .page
-        const page6 =
-            screenEl.querySelector('.page-6') ||
-            screenEl.querySelector('.page[data-page="6"]') ||
-            screenEl.querySelectorAll('.page')[5]; // 0-based index
-
-        if (!page6) return;
-
-        const onPage6Enter = () => {
-            console.log('✅ page-6 fully visible inside .screen');
-            document.querySelector('.footer').classList.add('show');
-            // TODO: your action (e.g., start animation, load assets, toggle state, etc.)
-        };
-
-        const onPage6Exit = () => {
-            console.log('⛔ page-6 left view');
-            document.querySelector('.footer').classList.remove('show');
-            // TODO: cleanup/undo if needed
-        };
-
-        let inView = false;
-
-        if ('IntersectionObserver' in window) {
-            const io = new IntersectionObserver(([entry]) => {
-            const fully = entry.isIntersecting && entry.intersectionRatio >= 0.98; // ~fully visible
-            if (fully !== inView) {
-                inView = fully;
-                page6.classList.toggle('in-view', inView);
-                inView ? onPage6Enter() : onPage6Exit();
-            }
-            }, {
-            root: screenEl,                 // observe within the snap scroller
-            threshold: [0, 0.5, 0.98, 1],
-            rootMargin: '0px'
-            });
-            io.observe(page6);
-        } else {
-            // Fallback: compute visibility against .screen viewport
-            const check = () => {
-            const r = page6.getBoundingClientRect();
-            const R = screenEl.getBoundingClientRect();
-            const fully = r.top >= R.top - 1 && Math.ceil(r.bottom) <= Math.ceil(R.bottom) + 1;
-            if (fully !== inView) {
-                inView = fully;
-                page6.classList.toggle('in-view', inView);
-                inView ? onPage6Enter() : onPage6Exit();
-            }
-            };
-            screenEl.addEventListener('scroll', check, { passive: true });
-            addEventListener('resize', check);
-            setTimeout(check, 0);
-        }
-
-        // Optional: fire AFTER snap settles (progressive enhancement)
-        // Works in modern Chromium/Safari; ignored elsewhere.
-        screenEl.addEventListener?.('scrollend', () => {
-            const idx = Math.round(screenEl.scrollTop / screenEl.clientHeight);
-            if (idx === 5) onPage6Enter(); // 0-based -> 6th section
-        });
     });
     </script>
 </body>

@@ -1248,15 +1248,8 @@ button#cross-btn {
 }
 
 /* FOOTER STYLES */
-.footer {
-    position: relative;
-    z-index: 1;
-
-    /* display: none; */
-}
-
-.footer.show{
-    /* display: block; */
+section.page.footer {
+    height: fit-content;
 }
 
 .footer .container,
