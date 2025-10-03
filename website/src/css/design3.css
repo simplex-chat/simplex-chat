@@ -242,6 +242,11 @@
     }
 }
 
+/* Disable pull-to-refresh on the page itself */
+html, body {
+  overscroll-behavior-y: none; /* or: overscroll-behavior: none; */
+}
+
 body.change-nav-color {
     --nav-color: #001796;
 }
