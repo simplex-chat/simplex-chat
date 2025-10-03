@@ -427,22 +427,33 @@ struct ContentView: View {
     }
 
     func connectViaUrl() {
+        logger.error("###### connectViaUrl")
         let m = ChatModel.shared
         if let url = m.appOpenUrl {
+            logger.error("###### connectViaUrl, if let url = m.appOpenUrl")
             m.appOpenUrl = nil
-            dismissAllSheets() {
-                var path = url.path
-                if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
-                    path.removeFirst()
-                    let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                    planAndConnect(
-                        link,
-                        theme: theme,
-                        dismiss: false
-                    )
-                } else {
-                    AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
-                }
+            connectViaUrl_(url)
+        } else if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active {
+            // correcting branch in case .onChange(of: scenePhase) in SimpleXApp doesn't trigger and transfer appOpenUrlLater into appOpenUrl
+            logger.error("###### connectViaUrl, if let url = m.appOpenUrlLater")
+            m.appOpenUrlLater = nil
+            connectViaUrl_(url)
+        }
+    }
+
+    func connectViaUrl_(_ url: URL) {
+        dismissAllSheets() {
+            var path = url.path
+            if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
+                path.removeFirst()
+                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+                planAndConnect(
+                    link,
+                    theme: theme,
+                    dismiss: false
+                )
+            } else {
+                AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
             }
         }
     }
