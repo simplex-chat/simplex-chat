@@ -43,10 +43,8 @@ struct SimpleXApp: App {
                 .onOpenURL { url in
                     logger.debug("ContentView.onOpenURL: \(url)")
                     if AppChatState.shared.value == .active {
-                        logger.error("##### ContentView.onOpenURL chatModel.appOpenUrl = url")
                         chatModel.appOpenUrl = url
                     } else {
-                        logger.error("##### ContentView.onOpenURL appOpenUrlLater = url")
                         chatModel.appOpenUrlLater = url
                     }
                 }
@@ -94,23 +92,19 @@ struct SimpleXApp: App {
                                         NtfManager.shared.processNotificationResponse(ntfResponse)
                                     }
                                     if appState.inactive {
-                                        logger.error("##### .onChange(of: scenePhase), .active, appState.inactive")
                                         Task {
                                             await updateChats()
                                             if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
                                                 await updateCallInvitations()
                                             }
                                             if let url = chatModel.appOpenUrlLater {
-                                                logger.error("##### .onChange(of: scenePhase), .active, appState.inactive, if let url = appOpenUrlLater")
                                                 await MainActor.run {
-                                                    logger.error("##### .onChange(of: scenePhase), .active, appState.inactive, if let url = appOpenUrlLater, await MainActor.run")
                                                     chatModel.appOpenUrlLater = nil
                                                     chatModel.appOpenUrl = url
                                                 }
                                             }
                                         }
                                     } else if let url = chatModel.appOpenUrlLater {
-                                        logger.error("##### .onChange(of: scenePhase), .active, NOT appState.inactive (else branch)")
                                         chatModel.appOpenUrlLater = nil
                                         chatModel.appOpenUrl = url
                                     }

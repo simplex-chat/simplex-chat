@@ -427,15 +427,12 @@ struct ContentView: View {
     }
 
     func connectViaUrl() {
-        logger.error("###### connectViaUrl")
         let m = ChatModel.shared
         if let url = m.appOpenUrl {
-            logger.error("###### connectViaUrl, if let url = m.appOpenUrl")
             m.appOpenUrl = nil
             connectViaUrl_(url)
         } else if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active {
             // correcting branch in case .onChange(of: scenePhase) in SimpleXApp doesn't trigger and transfer appOpenUrlLater into appOpenUrl
-            logger.error("###### connectViaUrl, if let url = m.appOpenUrlLater")
             m.appOpenUrlLater = nil
             connectViaUrl_(url)
         }
