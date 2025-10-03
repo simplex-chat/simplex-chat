@@ -596,6 +596,7 @@ private fun ToggleFilterEnabledButton() {
 expect fun ActiveCallInteractiveArea(call: Call)
 
 fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
+  Log.d(TAG, "connectIfOpenedViaUri: opened via link")
   if (chatModel.currentUser.value == null) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
