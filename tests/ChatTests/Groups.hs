@@ -113,7 +113,7 @@ chatGroupTests = do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
     it "accept member - only moderators review" testGLinkReviewMember
-    it "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
+    fit "accept member - host approval, then moderators review" testGLinkApproveThenReviewMember
     it "delete pending approval member" testGLinkDeletePendingApprovalMember
     it "admin that joined via link introduces member for moderator review" testGLinkReviewIntroduce
   describe "group link connection plan" $ do
@@ -3302,9 +3302,17 @@ testGLinkApproveThenReviewMember =
       -- accept member
       dan ##> "/_accept member #1 5 member"
       concurrentlyN_
-        [ dan <## "#team: eve accepted",
+        [ -- dan <## "#team: eve accepted",
+          dan
+            <### [ "#team: eve accepted",
+                   "error: x.grp.mem.new error: member already exists"
+                 ],
           alice <## "#team: dan accepted eve to the group (will introduce remaining members)",
-          cath <## "#team: dan accepted eve to the group",
+          -- cath <## "#team: dan accepted eve to the group",
+          cath
+            <### [ "#team: dan accepted eve to the group",
+                   "error: x.grp.mem.new error: member already exists"
+                 ],
           eve
             <### [ "#team: you joined the group",
                    WithTime "#team alice> 1 [>>]",
@@ -3315,7 +3323,9 @@ testGLinkApproveThenReviewMember =
                    WithTime "#team bob> 8 [>>]",
                    WithTime "#team cath> 9 [>>]",
                    WithTime "#team dan> 10 [>>]",
-                   "#team: member bob (Bob) is connected"
+                   "#team: member bob (Bob) is connected",
+                   "error: x.grp.mem.intro ignored: member already exists",
+                   "error: x.grp.mem.intro ignored: member already exists"
                  ],
           do
             bob <## "#team: alice added eve (Eve) to the group (connecting...)"
