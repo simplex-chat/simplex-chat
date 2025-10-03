@@ -46,6 +46,7 @@ private suspend fun planAndConnectTask(
   filterKnownGroup: ((GroupInfo) -> Unit)? = null,
   inProgress: MutableState<Boolean>
 ): CompletableDeferred<Boolean> {
+  Log.e(TAG, "##### planAndConnectTask")
   val completable = CompletableDeferred<Boolean>()
   val close: (() -> Unit) = {
     close?.invoke()
@@ -57,8 +58,11 @@ private suspend fun planAndConnectTask(
     completable.complete(!completable.isActive)
   }
   val result = chatModel.controller.apiConnectPlan(rhId, shortOrFullLink, inProgress = inProgress)
+  Log.e(TAG, "##### planAndConnectTask after apiConnectPlan result != null = ${result != null}")
   connectProgressManager.stopConnectProgress()
+  Log.e(TAG, "##### planAndConnectTask after stopConnectProgress inProgress.value = ${inProgress.value}")
   if (!inProgress.value) { return completable }
+  Log.e(TAG, "##### planAndConnectTask after if (!inProgress.value) { return completable }")
   if (result != null) {
     val (connectionLink, connectionPlan) = result
     val link = strHasSingleSimplexLink(shortOrFullLink.trim())
@@ -128,10 +132,12 @@ private suspend fun planAndConnectTask(
           }
         }
       }
-      is ConnectionPlan.ContactAddress -> when (connectionPlan.contactAddressPlan) {
+      is ConnectionPlan.ContactAddress -> {
+        Log.e(TAG, "##### planAndConnectTask is ConnectionPlan.ContactAddress")
+        when (connectionPlan.contactAddressPlan) {
         is ContactAddressPlan.Ok ->
           if (connectionPlan.contactAddressPlan.contactSLinkData_ != null) {
-            Log.d(TAG, "planAndConnect, .ContactAddress, .Ok, short link data present")
+            Log.e(TAG, "##### planAndConnect, .ContactAddress, .Ok, short link data present")
             showPrepareContactAlert(
               rhId,
               connectionLink,
@@ -195,7 +201,7 @@ private suspend fun planAndConnectTask(
           askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close, openChat = false)
           cleanup()
         }
-      }
+      }}
       is ConnectionPlan.GroupLink -> when (connectionPlan.groupLinkPlan) {
         is GroupLinkPlan.Ok ->
           if (connectionPlan.groupLinkPlan.groupSLinkData_ != null) {
