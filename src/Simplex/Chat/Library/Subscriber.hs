@@ -75,7 +75,7 @@ import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Client (ProxyClientError (..))
+import Simplex.Messaging.Client (ProxyClientError (..), NetworkRequestMode (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -89,6 +89,7 @@ import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import qualified System.FilePath as FP
 import Text.Read (readMaybe)
+import UnliftIO.Concurrent (forkIO)
 import UnliftIO.Directory
 import UnliftIO.STM
 
@@ -2869,6 +2870,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
                 groupMsgToView cInfo ci
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
+              void $ forkIO $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 

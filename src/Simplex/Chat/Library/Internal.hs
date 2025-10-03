@@ -18,6 +18,7 @@
 
 module Simplex.Chat.Library.Internal where
 
+import qualified Codec.Compression.Zstd as Z1
 import Control.Applicative ((<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
@@ -26,9 +27,11 @@ import Control.Monad.Except
 import Control.Monad.IO.Unlift
 import Control.Monad.Reader
 import Crypto.Random (ChaChaDRG)
+import qualified Data.Aeson as J
 import Data.Bifunctor (first)
 import Data.ByteString.Char8 (ByteString)
 import qualified Data.ByteString.Char8 as B
+import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isDigit)
 import Data.Containers.ListUtils (nubOrd)
 import Data.Either (partitionEithers, rights)
@@ -84,7 +87,8 @@ import Simplex.Messaging.Agent.Lock (withLock)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode)
+import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
+import Simplex.Messaging.Compression (compressionLevel)
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -1187,6 +1191,58 @@ splitFileDescr partSize rfdText = splitParts 1 rfdText
        in if complete
             then fileDescr :| []
             else fileDescr <| splitParts (partNo + 1) rest
+
+setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> CM ()
+setGroupLinkData' nm user gInfo =
+  withFastStore' (\db -> runExceptT $ getGroupLink db user gInfo) >>= \case
+    Right gLink@GroupLink {shortLinkDataSet}
+      | shortLinkDataSet -> void $ setGroupLinkData nm user gInfo gLink
+    _ -> pure ()
+
+setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM GroupLink
+setGroupLinkData nm user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
+  vr <- chatVersionRange
+  conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
+  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+      crClientData = encodeJSON $ CRDataGroup groupLinkId
+  sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData (Just crClientData))
+  withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+
+encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
+encodeShortLinkData d =
+  let s = LB.toStrict $ J.encode d
+      -- 10kb size limit for compression to be used is based on 13784 limit for link data
+      -- and the space reserved for the other fields in ConnLinkData encoding (most of these fields are currently unused).
+      s'
+        | B.length s > 10240 = B.cons 'X' $ Z1.compress compressionLevel s
+        | otherwise = s
+    in UserLinkData s'
+
+decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
+decodeShortLinkData cData
+  | B.null s = pure Nothing
+  | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
+      Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
+      Z1.Skip -> pure Nothing
+      Z1.Decompress s' -> decode s'
+  | otherwise = decode s
+  where
+    decode s' = case J.eitherDecodeStrict s' of
+      Right d -> pure $ Just d
+      Left e -> Nothing <$ logError ("Error decoding link data: " <> tshow e)
+    s = linkUserData' cData
+
+shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
+shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)
+
+shortenCreatedLink :: CreatedConnLink m -> CM (CreatedConnLink m)
+shortenCreatedLink (CCLink cReq sLnk) = CCLink cReq <$> mapM shortenShortLink' sLnk
+
+createdGroupLink :: CreatedLinkContact -> CreatedLinkContact
+createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> shortLink)
+
+toShortGroupLink :: ShortLinkContact -> ShortLinkContact
+toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
 
 deleteGroupLink' :: User -> GroupInfo -> CM ()
 deleteGroupLink' user gInfo = do

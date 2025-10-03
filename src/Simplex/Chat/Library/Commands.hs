@@ -17,7 +17,6 @@
 
 module Simplex.Chat.Library.Commands where
 
-import qualified Codec.Compression.Zstd as Z1
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent.STM (retry)
 import Control.Logger.Simple
@@ -97,7 +96,6 @@ import Simplex.Messaging.Agent.Store.Shared (upMigration)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface (getCurrentMigrations)
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..), NetworkTimeout (..), SMPWebPortServers (..), SocksMode (SMAlways), textToHostMode)
-import Simplex.Messaging.Compression (compressionLevel)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -2645,7 +2643,8 @@ processChatCommand vr nm = \case
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
       pure (gInfo, gLink)
-    setGroupLinkData user gInfo gLink
+    gLink' <- setGroupLinkData nm user gInfo gLink
+    pure $ CRGroupLink user gInfo gLink'
   APICreateMemberContact gId gMemberId -> withUser $ \user -> do
     (g, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user gId <*> getGroupMember db vr user gId gMemberId
     assertUserGroupRole g GRAuthor
@@ -3319,7 +3318,7 @@ processChatCommand vr nm = \case
               recipients = filter memberCurrentOrPending newMs
           sendGroupMessage user gInfo' Nothing recipients $ XGrpPrefs ps'
         Nothing -> do
-          setGroupLinkData'
+          setGroupLinkData' nm user gInfo'
           recipients <- getRecipients
           sendGroupMessage user gInfo' Nothing recipients (XGrpInfo p')
           where
@@ -3328,26 +3327,12 @@ processChatCommand vr nm = \case
               | otherwise = do
                   ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo'
                   pure $ filter memberCurrentOrPending ms
-            setGroupLinkData' :: CM ()
-            setGroupLinkData' =
-              withFastStore' (\db -> runExceptT $ getGroupLink db user gInfo') >>= \case
-                Right gLink@GroupLink {shortLinkDataSet}
-                  | shortLinkDataSet -> void $ setGroupLinkData user gInfo' gLink
-                _ -> pure ()
       let cd = CDGroupSnd gInfo' Nothing
       unless (sameGroupProfileInfo p p') $ do
         ci <- saveSndChatItem user cd msg (CISndGroupEvent $ SGEGroupUpdated p')
         toView $ CEvtNewChatItems user [AChatItem SCTGroup SMDSnd (GroupChat gInfo' Nothing) ci]
       createGroupFeatureChangedItems user cd CISndGroupFeature gInfo gInfo'
       pure $ CRGroupUpdated user gInfo gInfo' Nothing
-    setGroupLinkData :: User -> GroupInfo -> GroupLink -> CM ChatResponse
-    setGroupLinkData user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
-      conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
-      let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-          crClientData = encodeJSON $ CRDataGroup groupLinkId
-      sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData (Just crClientData))
-      gLink' <- withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
-      pure $ CRGroupLink user gInfo gLink'
     checkValidName :: GroupName -> CM ()
     checkValidName displayName = do
       when (T.null displayName) $ throwChatError CEInvalidDisplayName {displayName, validName = ""}
@@ -3717,41 +3702,11 @@ processChatCommand vr nm = \case
           business = maybe False businessAddress settings
           contactData = ContactShortLinkData p msg business
        in encodeShortLinkData contactData
-    encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
-    encodeShortLinkData d =
-      let s = LB.toStrict $ J.encode d
-          -- 10kb size limit for compression to be used is based on 13784 limit for link data
-          -- and the space reserved for the other fields in ConnLinkData encoding (most of these fields are currently unused).
-          s'
-            | B.length s > 10240 = B.cons 'X' $ Z1.compress compressionLevel s
-            | otherwise = s
-       in UserLinkData s'
-    decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
-    decodeShortLinkData cData
-      | B.null s = pure Nothing
-      | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
-          Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
-          Z1.Skip -> pure Nothing
-          Z1.Decompress s' -> decode s'
-      | otherwise = decode s
-      where
-        decode s' = case J.eitherDecodeStrict s' of
-          Right d -> pure $ Just d
-          Left e -> Nothing <$ logError ("Error decoding link data: " <> tshow e)
-        s = linkUserData' cData
     updatePCCShortLinkData :: PendingContactConnection -> Profile -> CM (Maybe ShortLinkInvitation)
     updatePCCShortLinkData conn@PendingContactConnection {connLinkInv} profile =
       forM (connShortLink =<< connLinkInv) $ \_ -> do
         let userData = contactShortLinkData profile Nothing
         shortenShortLink' =<< withAgent (\a -> setConnShortLink a nm (aConnId' conn) SCMInvitation userData Nothing)
-    shortenShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
-    shortenShortLink' l = (`shortenShortLink` l) <$> asks (shortLinkPresetServers . config)
-    shortenCreatedLink :: CreatedConnLink m -> CM (CreatedConnLink m)
-    shortenCreatedLink (CCLink cReq sLnk) = CCLink cReq <$> mapM shortenShortLink' sLnk
-    createdGroupLink :: CreatedLinkContact -> CreatedLinkContact
-    createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> shortLink)
-    toShortGroupLink :: ShortLinkContact -> ShortLinkContact
-    toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
     updateCIGroupInvitationStatus :: User -> GroupInfo -> CIGroupInvitationStatus -> CM ()
     updateCIGroupInvitationStatus user GroupInfo {groupId} newStatus = do
       AChatItem _ _ cInfo ChatItem {content, meta = CIMeta {itemId}} <- withFastStore $ \db -> getChatItemByGroupId db vr user groupId
