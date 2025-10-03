@@ -385,6 +385,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: UserContactLink?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
+    @Published var appOpenUrlLater: URL?
     @Published var deviceToken: DeviceToken?
     @Published var savedToken: DeviceToken?
     @Published var tokenRegistered = false
