@@ -108,5 +108,16 @@
     "guide-dropdown-2": "Mengirim pesan",
     "guide-dropdown-3": "Grup rahasia",
     "comparison-section-list-point-2": "Alamat berbasis DNS",
-    "comparison-section-list-point-3": "Kunci publik atau ID unik global lainnya"
+    "comparison-section-list-point-3": "Kunci publik atau ID unik global lainnya",
+    "feature-7-title": "Penyimpanan aplikasi terenkripsi portabel &mdash; pindahkan profil ke perangkat lain",
+    "feature-8-title": "Mode penyamaran &mdash;<br>unik untuk SimpleX Chat",
+    "simplex-private-3-title": "Transport TLS terautentikasi<br>yang aman",
+    "simplex-private-4-title": "Akses opsional<br>via Tor",
+    "simplex-private-5-title": "Beberapa lapisan<br>kuat konten",
+    "simplex-private-6-title": "Pertukaran kunci<br>out-of-band",
+    "simplex-private-7-title": "Verifikasi integritas<br>pesan",
+    "simplex-private-8-title": "Campuran pesan<br>untuk kurangi korelasi",
+    "simplex-private-9-title": "Antrean pesan<br>searah",
+    "simplex-private-10-title": "Pengidentifikasi berpasangan anonim sementara",
+    "simplex-private-card-1-point-1": "Protokol double-ratchet &mdash;<br>Pesan OTR dengan perfect forward secrecy dan pemulihan pembobolan."
 }
