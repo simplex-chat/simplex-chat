@@ -111,8 +111,8 @@ public func resetChatCtrl() {
 }
 
 @inline(__always)
-public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil) -> APIResult<R> {
-    if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl) {    
+public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: chat_ctrl? = nil, retryNum: Int32 = 0) -> APIResult<R> {
+    if let d = sendSimpleXCmdStr(cmd.cmdString, ctrl, retryNum: retryNum) {
         decodeAPIResult(d)
     } else {
         APIResult.error(.invalidJSON(json: nil))
@@ -120,9 +120,9 @@ public func sendSimpleXCmd<R: ChatAPIResult>(_ cmd: ChatCmdProtocol, _ ctrl: cha
 }
 
 @inline(__always)
-public func sendSimpleXCmdStr(_ cmd: String, _ ctrl: chat_ctrl? = nil) -> Data? {
+public func sendSimpleXCmdStr(_ cmd: String, _ ctrl: chat_ctrl? = nil, retryNum: Int32) -> Data? {
     var c = cmd.cString(using: .utf8)!
-    return if let cjson = chat_send_cmd(ctrl ?? getChatCtrl(), &c) {
+    return if let cjson = chat_send_cmd_retry(ctrl ?? getChatCtrl(), &c, retryNum) {
         dataFromCString(cjson)
     } else {
         nil
@@ -184,6 +184,30 @@ public func parseServerAddress(_ s: String) -> ServerAddress? {
 struct ParsedServerAddress: Decodable {
     var serverAddress: ServerAddress?
     var parseError: String
+}
+
+public func parseSanitizeUri(_ s: String, safe: Bool) -> ParsedUri? {
+    var c = s.cString(using: .utf8)!
+    if let cjson = chat_parse_uri(&c, safe ? 1 : 0) {
+         if let d = dataFromCString(cjson) {
+            do {
+                return try jsonDecoder.decode(ParsedUri.self, from: d)
+            } catch {
+                logger.error("parseSanitizeUri jsonDecoder.decode error: \(error.localizedDescription)")
+            }
+        }
+    }
+    return nil
+}
+
+public struct ParsedUri: Decodable {
+    public var uriInfo: UriInfo?
+    public var parseError: String
+}
+
+public struct UriInfo: Decodable {
+    public var scheme: String
+    public var sanitized: String?
 }
 
 @inline(__always)

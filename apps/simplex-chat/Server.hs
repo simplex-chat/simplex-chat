@@ -13,12 +13,10 @@
 module Server where
 
 import Control.Monad
-import Control.Monad.Except
 import Control.Monad.Reader
 import Data.Aeson (FromJSON, ToJSON (..))
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
-import Data.Bifunctor (first)
 import Data.Text (Text)
 import Data.Text.Encoding (encodeUtf8)
 import GHC.Generics (Generic)
@@ -51,13 +49,15 @@ $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Obj") ''ObjChatCmdError)
 
 $(JQ.deriveToJSON (taggedObjectJSON $ dropPrefix "Obj") ''ObjChatError)
 
+-- this encoding preserves the websocket API format when ChatError was sent either with type: "chatError" or type: "chatCmdError"
 instance ToJSON (CSRBody ChatResponse) where
-  toJSON = toJSON . first ObjChatCmdError . csrBody
-  toEncoding = toEncoding . first ObjChatCmdError . csrBody
+  toJSON = either (toJSON . ObjChatCmdError) toJSON . csrBody
+  toEncoding = either (toEncoding . ObjChatCmdError) toEncoding . csrBody
 
+-- this encoding preserves the websocket API format when ChatError was sent either with type: "chatError" or type: "chatCmdError"
 instance ToJSON (CSRBody ChatEvent) where
-  toJSON = toJSON . first ObjChatError . csrBody
-  toEncoding = toEncoding . first ObjChatError . csrBody
+  toJSON = either (toJSON . ObjChatError) toJSON . csrBody
+  toEncoding = either (toEncoding . ObjChatError) toEncoding . csrBody
 
 data AChatSrvResponse = forall r. ToJSON (ChatSrvResponse r) => ACR (ChatSrvResponse r)
 
@@ -127,7 +127,7 @@ runChatServer ChatServerConfig {chatPort, clientQSize} cc = do
       where
         sendError corrId e = atomically $ writeTBQueue sndQ $ ACR ChatSrvResponse {corrId, resp = CSRBody $ chatCmdError e}
     processCommand (corrId, cmd) =
-      response <$> runReaderT (runExceptT $ processChatCommand cmd) cc
+      response <$> runReaderT (execChatCommand' cmd 0) cc
       where
         response r = ChatSrvResponse {corrId = Just corrId, resp = CSRBody r}
     clientDisconnected _ = pure ()

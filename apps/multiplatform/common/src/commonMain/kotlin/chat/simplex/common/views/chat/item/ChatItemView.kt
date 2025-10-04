@@ -33,6 +33,7 @@ import chat.simplex.common.views.chatlist.openChat
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import kotlinx.datetime.Clock
 import kotlin.math.*
 
@@ -64,7 +65,7 @@ data class ChatItemReactionMenuItem (
 fun ChatItemView(
   chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
-  cInfo: ChatInfo,
+  chat: Chat,
   cItem: ChatItem,
   composeState: MutableState<ComposeState>,
   imageProvider: (() -> ImageGalleryProvider)? = null,
@@ -86,6 +87,7 @@ fun ChatItemView(
   joinGroup: (Long, () -> Unit) -> Unit,
   acceptCall: (Contact) -> Unit,
   scrollToItem: (Long) -> Unit,
+  scrollToItemId: MutableState<Long?>,
   scrollToQuotedItemFromItem: (Long) -> Unit,
   acceptFeature: (Contact, ChatFeature, Int?) -> Unit,
   openDirectChat: (Long) -> Unit,
@@ -107,6 +109,7 @@ fun ChatItemView(
   itemSeparation: ItemSeparation,
   preview: Boolean = false,
 ) {
+  val cInfo = chat.chatInfo
   val uriHandler = LocalUriHandler.current
   val sent = cItem.chatDir.sent
   val alignment = if (sent) Alignment.CenterEnd else Alignment.CenterStart
@@ -271,6 +274,7 @@ fun ChatItemView(
       }
     }
 
+    // improvement could be to track "forwarded from" scope and open it
     @Composable
     fun GoToItemButton(alignStart: Boolean, parentActivated: State<Boolean>) {
       val chatTypeApiIdMsgId = cItem.meta.itemForwarded?.chatTypeApiIdMsgId
@@ -324,7 +328,7 @@ fun ChatItemView(
           ) {
             @Composable
             fun framedItemView() {
-              FramedItemView(cInfo, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToQuotedItemFromItem)
+              FramedItemView(chatsCtx, chat, cItem, uriHandler, imageProvider, linkMode = linkMode, showViaProxy = showViaProxy, showMenu, showTimestamp = showTimestamp, tailVisible = itemSeparation.largeGap, receiveFile, onLinkLongClick, scrollToItem, scrollToItemId, scrollToQuotedItemFromItem)
             }
 
             fun deleteMessageQuestionText(): String {
@@ -635,6 +639,15 @@ fun ChatItemView(
               CIEventView(eventItemViewText(reversedChatItems))
             }
 
+            @Composable fun PendingReviewEventItemView() {
+              Text(
+                buildAnnotatedString {
+                  withStyle(chatEventStyle.copy(fontWeight = FontWeight.Bold)) { append(cItem.content.text) }
+                },
+                Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
+              )
+            }
+
             @Composable
             fun DeletedItem() {
               MarkedDeletedItemView(chatsCtx, cItem, cInfo, cInfo.timedMessagesTTL, revealed, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
@@ -656,26 +669,30 @@ fun ChatItemView(
             }
 
             @Composable
-            fun E2EEInfoNoPQText() {
+            fun e2eeInfoText(sId: StringResource) {
               Text(
                 buildAnnotatedString {
-                  withStyle(chatEventStyle) { append(annotatedStringResource(MR.strings.e2ee_info_no_pq)) }
+                  withStyle(chatEventStyle) { append(annotatedStringResource(sId)) }
                 },
                 Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
               )
             }
 
             @Composable
+            fun E2EEInfoNoPQText() {
+              e2eeInfoText(MR.strings.e2ee_info_no_pq)
+            }
+
+            @Composable
             fun DirectE2EEInfoText(e2EEInfo: E2EEInfo) {
-              if (e2EEInfo.pqEnabled) {
-                Text(
-                  buildAnnotatedString {
-                    withStyle(chatEventStyle) { append(annotatedStringResource(MR.strings.e2ee_info_pq)) }
-                  },
-                  Modifier.padding(horizontal = 6.dp, vertical = 6.dp)
-                )
+              if (e2EEInfo.pqEnabled != null) {
+                if (e2EEInfo.pqEnabled) {
+                  e2eeInfoText(MR.strings.e2ee_info_pq)
+                } else {
+                  E2EEInfoNoPQText()
+                }
               } else {
-                E2EEInfoNoPQText()
+                e2eeInfoText(MR.strings.e2ee_info_e2ee)
               }
             }
 
@@ -711,12 +728,16 @@ fun ChatItemView(
               is CIContent.RcvGroupEventContent -> {
                 when (c.rcvGroupEvent) {
                   is RcvGroupEvent.MemberCreatedContact -> CIMemberCreatedContactView(cItem, openDirectChat)
+                  is RcvGroupEvent.NewMemberPendingReview -> PendingReviewEventItemView()
                   else -> EventItemView()
                 }
                 MsgContentItemDropdownMenu()
               }
               is CIContent.SndGroupEventContent -> {
-                EventItemView()
+                when (c.sndGroupEvent) {
+                  is SndGroupEvent.UserPendingReview -> PendingReviewEventItemView()
+                  else -> EventItemView()
+                }
                 MsgContentItemDropdownMenu()
               }
               is CIContent.RcvConnEventContent -> {
@@ -767,6 +788,7 @@ fun ChatItemView(
               is CIContent.RcvDirectE2EEInfo -> DirectE2EEInfoText(c.e2eeInfo)
               is CIContent.SndGroupE2EEInfo -> E2EEInfoNoPQText()
               is CIContent.RcvGroupE2EEInfo -> E2EEInfoNoPQText()
+              is CIContent.ChatBanner -> Spacer(modifier = Modifier.size(0.dp))
               is CIContent.InvalidJSON -> {
                 CIInvalidJSONView(c.json)
                 DeleteItemMenu()
@@ -1260,7 +1282,11 @@ sealed class ShapeStyle {
   data class RoundRect(val radius: Dp) : ShapeStyle()
 }
 
-fun shapeStyle(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
+val shapeStyle: (chatItem: ChatItem?, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean) -> ShapeStyle =
+  if (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) > 27) ::shapeStyleWithTail
+  else { _, _, _, _ -> ShapeStyle.RoundRect(msgRectMaxRadius) }
+
+fun shapeStyleWithTail(chatItem: ChatItem? = null, tailEnabled: Boolean, tailVisible: Boolean, revealed: Boolean): ShapeStyle {
   if (chatItem == null) {
     return ShapeStyle.RoundRect(msgRectMaxRadius)
   }
@@ -1422,9 +1448,9 @@ fun PreviewChatItemView(
   chatItem: ChatItem = ChatItem.getSampleData(1, CIDirection.DirectSnd(), Clock.System.now(), "hello")
 ) {
   ChatItemView(
-    chatsCtx = ChatModel.ChatsContext(contentTag = null),
+    chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
     rhId = null,
-    ChatInfo.Direct.sampleData,
+    Chat.sampleData,
     chatItem,
     useLinkPreviews = true,
     linkMode = SimplexLinkMode.DESCRIPTION,
@@ -1444,6 +1470,7 @@ fun PreviewChatItemView(
     joinGroup = { _, _ -> },
     acceptCall = { _ -> },
     scrollToItem = {},
+    scrollToItemId = remember { mutableStateOf(null) },
     scrollToQuotedItemFromItem = {},
     acceptFeature = { _, _, _ -> },
     openDirectChat = { _ -> },
@@ -1472,9 +1499,9 @@ fun PreviewChatItemView(
 fun PreviewChatItemViewDeletedContent() {
   SimpleXTheme {
     ChatItemView(
-      chatsCtx = ChatModel.ChatsContext(contentTag = null),
+      chatsCtx = ChatModel.ChatsContext(secondaryContextFilter = null),
       rhId = null,
-      ChatInfo.Direct.sampleData,
+      Chat.sampleData,
       ChatItem.getDeletedContentSampleData(),
       useLinkPreviews = true,
       linkMode = SimplexLinkMode.DESCRIPTION,
@@ -1494,6 +1521,7 @@ fun PreviewChatItemViewDeletedContent() {
       joinGroup = { _, _ -> },
       acceptCall = { _ -> },
       scrollToItem = {},
+      scrollToItemId = remember { mutableStateOf(null) },
       scrollToQuotedItemFromItem = {},
       acceptFeature = { _, _, _ -> },
       openDirectChat = { _ -> },

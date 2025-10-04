@@ -67,7 +67,7 @@ struct AdvancedNetworkSettings: View {
                             Text(netCfg.smpProxyMode.label)
                         }
                     }
-                    
+
                     NavigationLink {
                         List {
                             Section {
@@ -192,16 +192,15 @@ struct AdvancedNetworkSettings: View {
                         netCfg.requiredHostMode = requiredHostMode
                     }
                 }
-                
+
                 if developerTools {
                     Section {
-                        Picker("Transport isolation", selection: $netCfg.sessionMode) {
+                        WrappedPicker("Transport isolation", selection: $netCfg.sessionMode) {
                             let modes = TransportSessionMode.values.contains(netCfg.sessionMode)
                                 ? TransportSessionMode.values
                                 : TransportSessionMode.values + [netCfg.sessionMode]
                             ForEach(modes, id: \.self) { Text($0.text) }
                         }
-                        .frame(height: 36)
                     } footer: {
                         sessionModeInfo(netCfg.sessionMode)
                             .foregroundColor(theme.colors.secondary)
@@ -209,10 +208,9 @@ struct AdvancedNetworkSettings: View {
                 }
 
                 Section {
-                    Picker("Use web port", selection: $netCfg.smpWebPortServers) {
+                    WrappedPicker("Use web port", selection: $netCfg.smpWebPortServers) {
                         ForEach(SMPWebPortServers.allCases, id: \.self) { Text($0.text) }
                     }
-                    .frame(height: 36)
                 } header: {
                     Text("TCP port for messaging")
                 } footer: {
@@ -220,10 +218,12 @@ struct AdvancedNetworkSettings: View {
                     ? Text("Use TCP port 443 for preset servers only.")
                     : Text("Use TCP port \(netCfg.smpWebPortServers == .all ? "443" : "5223") when no port is specified.")
                 }
-                
+
                 Section("TCP connection") {
-                    timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
-                    timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
+                    timeoutSettingPicker("TCP connection timeout", selection: $netCfg.tcpConnectTimeout.interactiveTimeout, values: [10_000000, 15_000000, 20_000000, 30_000000], label: secondsLabel)
+                    timeoutSettingPicker("TCP connection bg timeout", selection: $netCfg.tcpConnectTimeout.backgroundTimeout, values: [30_000000, 45_000000, 60_000000, 90_000000], label: secondsLabel)
+                    timeoutSettingPicker("Protocol timeout", selection: $netCfg.tcpTimeout.interactiveTimeout, values: [5_000000, 7_000000, 10_000000, 15_000000, 20_000000], label: secondsLabel)
+                    timeoutSettingPicker("Protocol background timeout", selection: $netCfg.tcpTimeout.backgroundTimeout, values: [15_000000, 20_000000, 30_000000, 45_000000, 60_000000], label: secondsLabel)
                     timeoutSettingPicker("Protocol timeout per KB", selection: $netCfg.tcpTimeoutPerKb, values: [2_500, 5_000, 10_000, 15_000, 20_000, 30_000], label: secondsLabel)
                     // intSettingPicker("Receiving concurrency", selection: $netCfg.rcvConcurrency, values: [1, 2, 4, 8, 12, 16, 24], label: "")
                     timeoutSettingPicker("PING interval", selection: $netCfg.smpPingInterval, values: [120_000000, 300_000000, 600_000000, 1200_000000, 2400_000000, 3600_000000], label: secondsLabel)
@@ -243,7 +243,7 @@ struct AdvancedNetworkSettings: View {
                         .foregroundColor(theme.colors.secondary)
                     }
                 }
-                
+
                 Section {
                     Button("Reset to defaults") {
                         updateNetCfgView(NetCfg.defaults, NetworkProxy.def)
@@ -254,7 +254,7 @@ struct AdvancedNetworkSettings: View {
                         updateNetCfgView(netCfg.withProxyTimeouts, netProxy)
                     }
                     .disabled(netCfg.hasProxyTimeouts)
-                    
+
                     Button("Save and reconnect") {
                         showSettingsAlert = .update
                     }
@@ -351,16 +351,15 @@ struct AdvancedNetworkSettings: View {
     }
 
     private func timeoutSettingPicker(_ title: LocalizedStringKey, selection: Binding<Int>, values: [Int], label: String) -> some View {
-        Picker(title, selection: selection) {
+        WrappedPicker(title, selection: selection) {
             let v = selection.wrappedValue
             let vs = values.contains(v) ? values : values + [v]
             ForEach(vs, id: \.self) { value in
                 Text("\(String(format: "%g", (Double(value) / 1000000))) \(secondsLabel)")
             }
         }
-        .frame(height: 36)
     }
-    
+
     private func onionHostsInfo(_ hosts: OnionHosts) -> LocalizedStringKey {
         switch hosts {
         case .no: return "Onion hosts will not be used."
@@ -378,7 +377,7 @@ struct AdvancedNetworkSettings: View {
         case .entity: Text("A separate TCP connection will be used **for each contact and group member**.\n**Please note**: if you have many connections, your battery and traffic consumption can be substantially higher and some connections may fail.")
         }
     }
-    
+
     private func proxyModeInfo(_ mode: SMPProxyMode) -> LocalizedStringKey {
         switch mode {
         case .always: return "Always use private routing."
@@ -387,7 +386,7 @@ struct AdvancedNetworkSettings: View {
         case .never: return "Do NOT use private routing."
         }
     }
-    
+
     private func proxyFallbackInfo(_ proxyFallback: SMPProxyFallback) -> LocalizedStringKey {
         switch proxyFallback {
         case .allow: return "Send messages directly when your or destination server does not support private routing."

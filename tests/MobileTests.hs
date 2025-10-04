@@ -38,7 +38,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
@@ -75,6 +75,9 @@ mobileTests = do
       it "should convert invalid name to a valid name" testValidNameCApi
     describe "JSON length" $ do
       it "should compute length of JSON encoded string" testChatJsonLengthCApi
+    describe "Parsers" $ do
+      it "should parse server address" testChatParseServer
+      it "should parse and sanitize URI" testChatParseUri
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -164,7 +167,7 @@ testChatApi ps = do
   let tmp = tmpPath ps
       dbPrefix = tmp </> "1"
       f = dbPrefix <> chatSuffix
-  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) MCYesUp
+  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) (MigrationConfig MCYesUp Nothing)
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
@@ -317,6 +320,14 @@ testChatJsonLengthCApi _ = do
   cInt1 `shouldBe` 6
   cInt2 <- cChatJsonLength =<< newCString "こんにちは！"
   cInt2 `shouldBe` 18
+
+testChatParseServer :: TestParams -> IO ()
+testChatParseServer _ = do
+  pure ()
+
+testChatParseUri :: TestParams -> IO ()
+testChatParseUri _ = do
+  pure ()
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

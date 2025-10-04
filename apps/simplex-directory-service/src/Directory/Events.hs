@@ -66,7 +66,7 @@ crDirectoryEvent :: Either ChatError ChatEvent -> Maybe DirectoryEvent
 crDirectoryEvent = \case
   Right evt -> crDirectoryEvent_ evt
   Left e -> case e of
-    ChatErrorAgent {agentError = BROKER _ NETWORK} -> Nothing
+    ChatErrorAgent {agentError = BROKER _ (NETWORK _)} -> Nothing
     ChatErrorAgent {agentError = BROKER _ TIMEOUT} -> Nothing
     _ -> Just $ DELogChatResponse $ "chat error: " <> tshow e
 
@@ -79,7 +79,7 @@ crDirectoryEvent_ = \case
   CEvtJoinedGroupMember {groupInfo, member = m}
     | pending m -> Just $ DEPendingMember groupInfo m
     | otherwise -> Nothing
-  CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat g) ci : _} -> case ci of
+  CEvtNewChatItems {chatItems = AChatItem _ _ (GroupChat g _scopeInfo) ci : _} -> case ci of
     ChatItem {chatDir = CIGroupRcv m, content = CIRcvMsgContent (MCText t)} | pending m -> Just $ DEPendingMemberMsg g m (chatItemId' ci) t
     _ -> Nothing
   CEvtMemberRole {groupInfo, member, toRole}
@@ -124,13 +124,13 @@ data DirectoryCmdTag (r :: DirectoryRole) where
   DCDeleteGroup_ :: DirectoryCmdTag 'DRUser
   DCMemberRole_ :: DirectoryCmdTag 'DRUser
   DCGroupFilter_ :: DirectoryCmdTag 'DRUser
+  DCShowUpgradeGroupLink_ :: DirectoryCmdTag 'DRUser
   DCApproveGroup_ :: DirectoryCmdTag 'DRAdmin
   DCRejectGroup_ :: DirectoryCmdTag 'DRAdmin
   DCSuspendGroup_ :: DirectoryCmdTag 'DRAdmin
   DCResumeGroup_ :: DirectoryCmdTag 'DRAdmin
   DCListLastGroups_ :: DirectoryCmdTag 'DRAdmin
   DCListPendingGroups_ :: DirectoryCmdTag 'DRAdmin
-  DCShowGroupLink_ :: DirectoryCmdTag 'DRAdmin
   DCSendToGroupOwner_ :: DirectoryCmdTag 'DRAdmin
   DCInviteOwnerToGroup_ :: DirectoryCmdTag 'DRAdmin
   -- DCAddBlockedWord_ :: DirectoryCmdTag 'DRAdmin
@@ -156,13 +156,13 @@ data DirectoryCmd (r :: DirectoryRole) where
   DCDeleteGroup :: UserGroupRegId -> GroupName -> DirectoryCmd 'DRUser
   DCMemberRole :: UserGroupRegId -> Maybe GroupName -> Maybe GroupMemberRole -> DirectoryCmd 'DRUser
   DCGroupFilter :: UserGroupRegId -> Maybe GroupName -> Maybe DirectoryMemberAcceptance -> DirectoryCmd 'DRUser
+  DCShowUpgradeGroupLink :: GroupId -> Maybe GroupName -> DirectoryCmd 'DRUser
   DCApproveGroup :: {groupId :: GroupId, displayName :: GroupName, groupApprovalId :: GroupApprovalId} -> DirectoryCmd 'DRAdmin
   DCRejectGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSuspendGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCResumeGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCListLastGroups :: Int -> DirectoryCmd 'DRAdmin
   DCListPendingGroups :: Int -> DirectoryCmd 'DRAdmin
-  DCShowGroupLink :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   DCSendToGroupOwner :: GroupId -> GroupName -> Text -> DirectoryCmd 'DRAdmin
   DCInviteOwnerToGroup :: GroupId -> GroupName -> DirectoryCmd 'DRAdmin
   -- DCAddBlockedWord :: Text -> DirectoryCmd 'DRAdmin
@@ -200,13 +200,13 @@ directoryCmdP =
         "delete" -> u DCDeleteGroup_
         "role" -> u DCMemberRole_
         "filter" -> u DCGroupFilter_
+        "link" -> u DCShowUpgradeGroupLink_
         "approve" -> au DCApproveGroup_
         "reject" -> au DCRejectGroup_
         "suspend" -> au DCSuspendGroup_
         "resume" -> au DCResumeGroup_
         "last" -> au DCListLastGroups_
         "pending" -> au DCListPendingGroups_
-        "link" -> au DCShowGroupLink_
         "owner" -> au DCSendToGroupOwner_
         "invite" -> au DCInviteOwnerToGroup_
         -- "block_word" -> au DCAddBlockedWord_
@@ -266,6 +266,7 @@ directoryCmdP =
             "=all" $> PCAll
               <|> ("=noimage" <|> "=no_image" <|> "=no-image") $> PCNoImage
               <|> pure PCAll
+      DCShowUpgradeGroupLink_ -> gc_ DCShowUpgradeGroupLink
       DCApproveGroup_ -> do
         (groupId, displayName) <- gc (,)
         groupApprovalId <- A.space *> A.decimal
@@ -275,7 +276,6 @@ directoryCmdP =
       DCResumeGroup_ -> gc DCResumeGroup
       DCListLastGroups_ -> DCListLastGroups <$> (A.space *> A.decimal <|> pure 10)
       DCListPendingGroups_ -> DCListPendingGroups <$> (A.space *> A.decimal <|> pure 10)
-      DCShowGroupLink_ -> gc DCShowGroupLink
       DCSendToGroupOwner_ -> do
         (groupId, displayName) <- gc (,)
         msg <- A.space *> A.takeText
@@ -299,17 +299,17 @@ directoryCmdTag = \case
   DCRecentGroups -> "new"
   DCSubmitGroup _ -> "submit"
   DCConfirmDuplicateGroup {} -> "confirm"
-  DCListUserGroups -> "list" 
+  DCListUserGroups -> "list"
   DCDeleteGroup {} -> "delete"
   DCApproveGroup {} -> "approve"
   DCMemberRole {} -> "role"
   DCGroupFilter {} -> "filter"
+  DCShowUpgradeGroupLink {} -> "link"
   DCRejectGroup {} -> "reject"
   DCSuspendGroup {} -> "suspend"
   DCResumeGroup {} -> "resume"
   DCListLastGroups _ -> "last"
   DCListPendingGroups _ -> "pending"
-  DCShowGroupLink {} -> "link"
   DCSendToGroupOwner {} -> "owner"
   DCInviteOwnerToGroup {} -> "invite"
   -- DCAddBlockedWord _ -> "block_word"

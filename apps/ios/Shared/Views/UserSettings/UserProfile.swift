@@ -15,6 +15,7 @@ struct UserProfile: View {
     @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
     @State private var profile = Profile(displayName: "", fullName: "")
     @State private var currentProfileHash: Int?
+    @State private var shortDescr = ""
     // Modals
     @State private var showChooseSource = false
     @State private var showImagePicker = false
@@ -25,28 +26,8 @@ struct UserProfile: View {
 
     var body: some View {
         List {
-            Group {
-                if profile.image != nil {
-                    ZStack(alignment: .bottomTrailing) {
-                        ZStack(alignment: .topTrailing) {
-                            profileImageView(profile.image)
-                                .onTapGesture { showChooseSource = true }
-                            overlayButton("multiply", edge: .top) { profile.image = nil }
-                        }
-                        overlayButton("camera", edge: .bottom) { showChooseSource = true }
-                    }
-                } else {
-                    ZStack(alignment: .center) {
-                        profileImageView(profile.image)
-                        editImageButton { showChooseSource = true }
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-            .padding(.top)
-            .contentShape(Rectangle())
+            EditProfileImage(profileImage: $profile.image, showChooseSource: $showChooseSource)
+                .padding(.top)
 
             Section {
                 HStack {
@@ -63,6 +44,16 @@ struct UserProfile: View {
                 if let user = chatModel.currentUser, showFullName(user) {
                     TextField("Full name (optional)", text: $profile.fullName)
                 }
+                HStack {
+                    TextField("Bio", text: $shortDescr)
+                    if !bioFitsLimit() {
+                        Button {
+                            showAlert(NSLocalizedString("Bio too large", comment: "alert title"))
+                        } label: {
+                            Image(systemName: "exclamationmark.circle").foregroundColor(.red)
+                        }
+                    }
+                }
             } footer: {
                 Text("Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.")
             }
@@ -71,7 +62,10 @@ struct UserProfile: View {
                 Button(action: getCurrentProfile) {
                     Text("Reset")
                 }
-                .disabled(currentProfileHash == profile.hashValue)
+                .disabled(
+                    currentProfileHash == profile.hashValue &&
+                    (profile.shortDescr ?? "") == shortDescr.trimmingCharacters(in: .whitespaces)
+                )
                 Button(action: saveProfile) {
                     Text("Save (and notify contacts)")
                 }
@@ -133,33 +127,22 @@ struct UserProfile: View {
         .alert(item: $alert) { a in userProfileAlert(a, $profile.displayName) }
     }
 
-    private func overlayButton(
-        _ systemName: String,
-        edge: Edge.Set,
-        action: @escaping () -> Void
-    ) -> some View {
-        Image(systemName: systemName)
-            .resizable()
-            .aspectRatio(contentMode: .fit)
-            .frame(height: 12)
-            .foregroundColor(theme.colors.primary)
-            .padding(6)
-            .frame(width: 36, height: 36, alignment: .center)
-            .background(radius >= 20 ? Color.clear : theme.colors.background.opacity(0.5))
-            .clipShape(Circle())
-            .contentShape(Circle())
-            .padding([.trailing, edge], -12)
-            .onTapGesture(perform: action)
-    }
-
     private func showFullName(_ user: User) -> Bool {
         user.profile.fullName != "" && user.profile.fullName != user.profile.displayName
     }
-    
+
+    private func bioFitsLimit() -> Bool {
+        chatJsonLength(shortDescr) <= MAX_BIO_LENGTH_BYTES
+    }
+
     private var canSaveProfile: Bool {
-        currentProfileHash != profile.hashValue &&
+        (
+            currentProfileHash != profile.hashValue ||
+            (chatModel.currentUser?.profile.shortDescr ?? "") != shortDescr.trimmingCharacters(in: .whitespaces)
+        ) &&
         profile.displayName.trimmingCharacters(in: .whitespaces) != "" &&
-        validDisplayName(profile.displayName)
+        validDisplayName(profile.displayName) &&
+        bioFitsLimit()
     }
 
     private func saveProfile() {
@@ -167,6 +150,7 @@ struct UserProfile: View {
         Task {
             do {
                 profile.displayName = profile.displayName.trimmingCharacters(in: .whitespaces)
+                profile.shortDescr = shortDescr.trimmingCharacters(in: .whitespaces)
                 if let (newProfile, _) = try await apiUpdateProfile(profile: profile) {
                     await MainActor.run {
                         chatModel.updateCurrentUser(newProfile)
@@ -185,12 +169,59 @@ struct UserProfile: View {
         if let user = chatModel.currentUser {
             profile = fromLocalProfile(user.profile)
             currentProfileHash = profile.hashValue
+            shortDescr = profile.shortDescr ?? ""
         }
     }
 }
 
-func profileImageView(_ imageStr: String?) -> some View {
-    ProfileImage(imageStr: imageStr, size: 192)
+struct EditProfileImage: View {
+    @EnvironmentObject var theme: AppTheme
+    @AppStorage(DEFAULT_PROFILE_IMAGE_CORNER_RADIUS) private var radius = defaultProfileImageCorner
+    @Binding var profileImage: String?
+    @Binding var showChooseSource: Bool
+
+    var body: some View {
+        Group {
+            if profileImage != nil {
+                ZStack(alignment: .bottomTrailing) {
+                    ZStack(alignment: .topTrailing) {
+                        ProfileImage(imageStr: profileImage, size: 160)
+                            .onTapGesture { showChooseSource = true }
+                        overlayButton("multiply", edge: .top) { profileImage = nil }
+                    }
+                    overlayButton("camera", edge: .bottom) { showChooseSource = true }
+                }
+            } else {
+                ZStack(alignment: .center) {
+                    ProfileImage(imageStr: profileImage, size: 160)
+                    editImageButton { showChooseSource = true }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .listRowBackground(Color.clear)
+        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+        .contentShape(Rectangle())
+    }
+
+    private func overlayButton(
+        _ systemName: String,
+        edge: Edge.Set,
+        action: @escaping () -> Void
+    ) -> some View {
+        Image(systemName: systemName)
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .frame(height: 12)
+            .foregroundColor(theme.colors.primary)
+            .padding(6)
+            .frame(width: 36, height: 36, alignment: .center)
+            .background(radius >= 20 ? Color.clear : theme.colors.background.opacity(0.5))
+            .clipShape(Circle())
+            .contentShape(Circle())
+            .padding([.trailing, edge], -12)
+            .onTapGesture(perform: action)
+    }
 }
 
 func editImageButton(action: @escaping () -> Void) -> some View {

@@ -54,6 +54,19 @@ chatDbOptsP appDir defaultDbName = do
         vacuumOnMigration = not disableVacuum
       }
 
+migrationBackupPathP :: Parser (Maybe FilePath)
+migrationBackupPathP =
+  flag' Nothing
+    ( long "disable-backup"
+        <> help "Disable backup when migrating database"
+    )
+    <|>
+      (fmap Just . strOption)
+        ( long "backup-directory"
+            <> help "Directory to backup database for migration"
+            <> value ""
+        )
+
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbFilePrefix} = dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
 

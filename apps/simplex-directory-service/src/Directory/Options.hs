@@ -16,7 +16,7 @@ import qualified Data.Text as T
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
@@ -116,10 +116,10 @@ directoryOpts appDir defaultDbName = do
     strOption
       ( long "service-name"
           <> metavar "SERVICE_NAME"
-          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
-          <> value "SimpleX-Directory"
+          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
+          <> value "SimpleX Directory"
       )
-  runCLI <- 
+  runCLI <-
     switch
       ( long "run-cli"
           <> help "Run directory service as CLI"
@@ -155,7 +155,7 @@ getDirectoryOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: DirectoryOpts -> ChatOpts
-mkChatOpts DirectoryOpts {coreOptions} =
+mkChatOpts DirectoryOpts {coreOptions, serviceName} =
   ChatOpts
     { coreOptions,
       chatCmd = "",
@@ -169,5 +169,6 @@ mkChatOpts DirectoryOpts {coreOptions} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False},
       maintenance = False
     }

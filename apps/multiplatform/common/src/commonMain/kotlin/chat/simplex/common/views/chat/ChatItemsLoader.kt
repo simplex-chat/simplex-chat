@@ -17,7 +17,7 @@ suspend fun apiLoadSingleMessage(
   apiId: Long,
   itemId: Long
 ): ChatItem? = coroutineScope {
-  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
+  val (chat, _) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), chatsCtx.contentTag, ChatPagination.Around(itemId, 0), "") ?: return@coroutineScope null
   chat.chatItems.firstOrNull()
 }
 
@@ -31,7 +31,7 @@ suspend fun apiLoadMessages(
   openAroundItemId: Long? = null,
   visibleItemIndexesNonReversed: () -> IntRange = { 0 .. 0 }
 ) = coroutineScope {
-  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
+  val (chat, navInfo) = chatModel.controller.apiGetChat(rhId, chatType, apiId, chatsCtx.groupScopeInfo?.toChatScope(), chatsCtx.contentTag, pagination, search) ?: return@coroutineScope
   // For .initial allow the chatItems to be empty as well as chatModel.chatId to not match this chat because these values become set after .initial finishes
   /** When [openAroundItemId] is provided, chatId can be different too */
   if (((chatModel.chatId.value != chat.id || chat.chatItems.isEmpty()) && pagination !is ChatPagination.Initial && pagination !is ChatPagination.Last && openAroundItemId == null)
@@ -54,7 +54,7 @@ suspend fun processLoadedChat(
   when (pagination) {
     is ChatPagination.Initial -> {
       val newSplits = if (chat.chatItems.isNotEmpty() && navInfo.afterTotal > 0) listOf(chat.chatItems.last().id) else emptyList()
-      if (chatsCtx.contentTag == null) {
+      if (chatsCtx.secondaryContextFilter == null) {
         // update main chats, not content tagged
         withContext(Dispatchers.Main) {
           val oldChat = chatModel.chatsContext.getChat(chat.id)
@@ -68,7 +68,6 @@ suspend fun processLoadedChat(
         }
       }
       withContext(Dispatchers.Main) {
-        chatsCtx.chatItemStatuses.clear()
         chatsCtx.chatItems.replaceAll(chat.chatItems)
         chatModel.chatId.value = chat.id
         splits.value = newSplits
@@ -326,7 +325,8 @@ private fun removeDuplicatesAndUpperSplits(
   if (idsToTrim.last().isNotEmpty()) {
     // it has some elements to trim from currently visible range which means the items shouldn't be trimmed
     // Otherwise, the last set would be empty
-    idsToTrim.removeLast()
+    // note: removeLast() produce NoSuchMethodError on Android but removeLastOrNull() works
+    idsToTrim.removeLastOrNull()
   }
   val allItemsToDelete = idsToTrim.flatten()
   if (allItemsToDelete.isNotEmpty()) {

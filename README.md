@@ -72,9 +72,9 @@ You must:
 
 Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
 
-You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FiBkJE72asZX1NUZaYFIeKRVk6oVjb-iv%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAinqu3j74AMjODLoIRR487ZW6ysip_dlpD6Zxk18SPFY%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22groupLinkId%22%3A%223wAFGCLygQHR5AwynZOHlQ%3D%3D%22%7D)
+You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM)
 
-There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FvYCRjIflKNMGYlfTkuHe4B40qSlQ0439%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAHNdcqNbzXZhyMoSBjT2R0-Eb1EPaLyUg3KZjn-kmM1w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22PD20tcXjw7IpkkMCfR6HLA%3D%3D%22%7D) for developers who build on SimpleX platform:
+There is also a group [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSpzTspw9SER0iJwrQTmKBafQHwkKM) for developers who build on SimpleX platform:
 
 - chat bots and automations
 - integrations with other apps
@@ -83,7 +83,7 @@ There is also a group [#simplex-devs](https://simplex.chat/contact#/?v=1-4&smp=s
 
 There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
 
-[\#SimpleX-DE](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FmfiivxDKWFuowXrQOp11jsY8TuP__rBL%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAiz3pKNwvKudckFYMUfgoT0s96B0jfZ7ALHAu7rtE9HQ%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22jZeJpXGrRXQJU_-MSJ_v2A%3D%3D%22%7D) (German-speaking), [\#SimpleX-ES](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FJ5ES83pJimY2BRklS8fvy_iQwIU37xra%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEA0F0STP6UqN_12_k2cjjTrIjFgBGeWhOAmbY1qlk3pnM%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22VmUU0fqmYdCRmVCyvStvHA%3D%3D%22%7D) (Spanish-speaking), [\#SimpleX-FR](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FxCHBE_6PBRMqNEpm4UQDHXb9cz-mN7dd%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAetqlcM7zTCRw-iatnwCrvpJSto7lq5Yv6AsBMWv7GSM%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22foO5Xw4hhjOa_x7zET7otw%3D%3D%22%7D) (French-speaking), [\#SimpleX-RU](https://simplex.chat/contact#/?v=2-4&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FVXQTB0J2lLjYkgjWByhl6-1qmb5fgZHh%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAI6JaEWezfSwvcoTEkk6au-gkjrXR2ew2OqZYMYBvayk%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22ORH9OEe8Duissh-hslfeVg%3D%3D%22%7D) (Russian-speaking), [\#SimpleX-IT](https://simplex.chat/contact#/?v=2-7&smp=smp%3A%2F%2Fhpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg%3D%40smp5.simplex.im%2FqpHu0psOUdYfc11yQCzSyq5JhijrBzZT%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEACZ_7fbwlM45wl6cGif8cY47oPQ_AMdP0ATqOYLA6zHY%253D%26srv%3Djjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%229uRQRTir3ealdcSfB0zsrw%3D%3D%22%7D) (Italian-speaking).
+[\#SimpleX-DE](https://smp6.simplex.im/g#V6tQ-lJqsdgJJdJiLPtP326oQFKHvwinIbgruZ9K2oU) (German-speaking), [\#SimpleX-ES](https://smp5.simplex.im/g#xJ5kwDLq2305O5FmpUzvgRIXXAcAJ9S5BItCd2Wmloc) (Spanish-speaking), [\#SimpleX-FR](https://smp6.simplex.im/g#cVOpB0CKd6hEf2aWQ6sJ22E2DVgQLtdHoiSdKxXeKqk) (French-speaking), [\#SimpleX-RU](https://smp5.simplex.im/g#vwXRdfG5SgtaG6aVcITiUGd--Ux0rY1IuH4QXYxlq3U) (Russian-speaking), [\#SimpleX-IT](https://smp5.simplex.im/g#BtRcjsl29ULFNBSE2OPhp1UwZfW7PW9gUYFQTKHdjqU) (Italian-speaking).
 
 You can join either by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
 
@@ -114,9 +114,8 @@ Read about the app features and settings in the new [User guide](./docs/guide/RE
 
 We would love to have you join the development! You can help us with:
 
-- [share the color theme](./docs/THEMES.md) you use in Android app!
-- writing a tutorial or recipes about hosting servers, chat bot automations, etc.
-- contributing to SimpleX Chat knowledge-base.
+- [develop a chat bot](#develop-a-chat-bot) for SimpleX Chat!
+- writing a tutorial or recipes about hosting servers, chat bots, etc.
 - developing features - please connect to us via chat so we can help you get started.
 
 ## Help translating SimpleX Chat
@@ -194,6 +193,7 @@ SimpleX Chat founder
 - [SimpleX Platform design](#simplex-platform-design)
 - [Privacy and security: technical details and limitations](#privacy-and-security-technical-details-and-limitations)
 - [For developers](#for-developers)
+- [Develop a chat bot](#develop-a-chat-bot)
 - [Roadmap](#roadmap)
 - [Disclaimers, Security contact, License](#disclaimers)
 
@@ -234,6 +234,10 @@ You can use SimpleX with your own servers and still communicate with people usin
 ## News and updates
 
 Recent and important updates:
+
+[Jul 29, 2025 SimpleX Chat v6.4.1: welcome your contacts, review members to protect groups, and more.](./blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.md)
+
+[Jul 3, 2025 SimpleX network: new experience of connecting with people &mdash; available in SimpleX Chat v6.4-beta.4](./blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.md)
 
 [Mar 8, 2025. SimpleX Chat v6.3: new user experience and safety in public groups](./blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.md)
 
@@ -323,14 +327,22 @@ We plan to add:
 
 You can:
 
+- [create chat bots and services](#develop-a-chat-bot).
+- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
 - use SimpleX Chat library to integrate chat functionality into your mobile apps.
 - create chat bots and services in Haskell - see [simple](./apps/simplex-bot/) and more [advanced chat bot example](./apps/simplex-bot-advanced/).
-- create chat bots and services in any language running SimpleX Chat terminal CLI as a local WebSocket server. See [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
-- run [simplex-chat terminal CLI](./docs/CLI.md) to execute individual chat commands, e.g. to send messages as part of shell script execution.
 
 If you are considering developing with SimpleX platform please get in touch for any advice and support.
 
 Please also join [#simplex-devs](https://simplex.chat/contact#/?v=1-2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2F6eHqy7uAbZPOcA6qBtrQgQquVlt4Ll91%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAqV_pg3FF00L98aCXp4D3bOs4Sxv_UmSd-gb0juVoQVs%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22XonlixcHBIb2ijCehbZoiw%3D%3D%22%7D) group to ask any questions and share your success stories.
+
+## Develop a chat bot
+
+You can create a chat bot or any chat-based service in any language running SimpleX Chat terminal CLI as a local WebSocket server.
+
+See [our new bot API reference](./bots/README.md). Most of it is automatically generated from core library types, so it stays up to date.
+
+Also see [TypeScript SimpleX Chat client](./packages/simplex-chat-client/) and [JavaScript chat bot example](./packages/simplex-chat-client/typescript/examples/squaring-bot.js).
 
 ## Roadmap
 
@@ -430,7 +442,7 @@ Please do NOT report security vulnerabilities via GitHub issues.
 
 ## License
 
-[AGPL v3](./LICENSE)
+This software is licensed under the GNU Affero General Public License version 3 (AGPLv3). See the [LICENSE](./LICENSE) file for details. The SimpleX and SimpleX Chat name, logo, and associated branding materials are not covered by this license and are subject to the terms outlined in the [TRADEMARK](./docs/TRADEMARK.md) file.
 
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;

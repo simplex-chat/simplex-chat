@@ -93,7 +93,18 @@ struct MsgContentView: View {
 
     @inline(__always)
     private func msgContentView() -> some View {
-        let r = messageText(text, formattedText, textStyle: textStyle, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: containerBackground, prefix: prefix)
+        let r = messageText(
+            text,
+            formattedText,
+            textStyle: textStyle,
+            sender: sender,
+            mentions: mentions,
+            userMemberId: userMemberId,
+            showSecrets: showSecrets,
+            commands: chat.chatInfo.useCommands && chat.chatInfo.sndReady,
+            backgroundColor: containerBackground,
+            prefix: prefix
+        )
         let s = r.string
         let t: Text
         if let mt = meta {
@@ -104,7 +115,7 @@ struct MsgContentView: View {
         } else {
             t = Text(AttributedString(s))
         }
-        return msgTextResultView(r, t, showSecrets: $showSecrets)
+        return msgTextResultView(r, t, showSecrets: $showSecrets, sendCommand: { cmd in sendCommandMsg(chat, cmd) })
     }
 
     @inline(__always)
@@ -120,13 +131,27 @@ struct MsgContentView: View {
     }
 }
 
-func msgTextResultView(_ r: MsgTextResult, _ t: Text, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+func msgTextResultView(
+    _ r: MsgTextResult,
+    _ t: Text,
+    showSecrets: Binding<Set<Int>>? = nil,
+    sendCommand: ((String) -> Void)? = nil,
+    centered: Bool = false,
+    smallFont: Bool = false
+) -> some View {
     t.if(r.hasSecrets, transform: hiddenSecretsView)
-        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets)) }
+        .if(r.handleTaps) { $0.overlay(handleTextTaps(r.string, showSecrets: showSecrets, sendCommand: sendCommand, centered: centered, smallFont: smallFont)) }
 }
 
+// smallFont parameter is used to pad height, otherwise CTFrameGetLines fails to see them as lines - it's needed if font is not .body
 @inline(__always)
-private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<Int>>? = nil) -> some View {
+private func handleTextTaps(
+    _ s: NSAttributedString,
+    showSecrets: Binding<Set<Int>>? = nil,
+    sendCommand: ((String) -> Void)? = nil,
+    centered: Bool,
+    smallFont: Bool
+) -> some View {
     return GeometryReader { g in
         Rectangle()
             .fill(Color.clear)
@@ -135,38 +160,52 @@ private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<In
                 let t = event.translation
                 if t.width * t.width + t.height * t.height > 100 { return }
                 let framesetter = CTFramesetterCreateWithAttributedString(s as CFAttributedString)
-                let path = CGPath(rect: CGRect(origin: .zero, size: g.size), transform: nil)
+                let paddedSize = smallFont ? CGSize(width: g.size.width, height: g.size.height + 1.0) : g.size
+                let path = CGPath(rect: CGRect(origin: .zero, size: paddedSize), transform: nil)
                 let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, s.length), path, nil)
                 let point = CGPoint(x: event.location.x, y: g.size.height - event.location.y) // Flip y for UIKit
                 var index: CFIndex?
                 if let lines = CTFrameGetLines(frame) as? [CTLine] {
                     var origins = [CGPoint](repeating: .zero, count: lines.count)
                     CTFrameGetLineOrigins(frame, CFRangeMake(0, 0), &origins)
+                    var maxWidth: CGFloat = 0
+                    if centered {
+                        for line in lines {
+                            let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+                            if bounds.width > maxWidth {
+                                maxWidth = bounds.width
+                            }
+                        }
+                    }
                     for i in 0 ..< lines.count {
                         let bounds = CTLineGetBoundsWithOptions(lines[i], .useOpticalBounds)
-                        if bounds.offsetBy(dx: origins[i].x, dy: origins[i].y).contains(point) {
-                            index = CTLineGetStringIndexForPosition(lines[i], point)
+                        let offsetX = centered ? (maxWidth - bounds.width) / 2 : 0
+                        if bounds.offsetBy(dx: origins[i].x + offsetX, dy: origins[i].y).contains(point) {
+                            let relativePoint = centered ? CGPoint(x: point.x - origins[i].x - offsetX, y: point.y - origins[i].y) : point
+                            index = CTLineGetStringIndexForPosition(lines[i], relativePoint)
                             break
                         }
                     }
                 }
-                if let index, let (url, browser) = attributedStringLink(s, for: index) {
+                if let index, let (uri, browser) = attributedStringLink(s, for: index) {
                     if browser {
-                        openBrowserAlert(uri: url)
-                    } else {
+                        openBrowserAlert(uri: uri)
+                    } else if let url = URL(string: uri) {
                         UIApplication.shared.open(url)
+                    } else {
+                        showInvalidLinkAlert(uri)
                     }
                 }
             })
     }
 
-    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (URL, Bool)? {
-        var linkURL: URL?
+    func attributedStringLink(_ s: NSAttributedString, for index: CFIndex) -> (String, Bool)? {
+        var linkURL: String?
         var browser: Bool = false
         s.enumerateAttributes(in: NSRange(location: 0, length: s.length)) { attrs, range, stop in
             if index >= range.location && index < range.location + range.length {
-                if let url = attrs[linkAttrKey] as? NSURL {
-                    linkURL = url.absoluteURL
+                if let url = attrs[linkAttrKey] as? String {
+                    linkURL = url
                     browser = attrs[webLinkAttrKey] != nil
                 } else if let showSecrets, let i = attrs[secretAttrKey] as? Int {
                     if showSecrets.wrappedValue.contains(i) {
@@ -174,6 +213,8 @@ private func handleTextTaps(_ s: NSAttributedString, showSecrets: Binding<Set<In
                     } else {
                         showSecrets.wrappedValue.insert(i)
                     }
+                } else if let sendCommand, let cmd = attrs[commandAttrKey] as? String {
+                    sendCommand(cmd)
                 }
                 stop.pointee = true
             }
@@ -205,7 +246,35 @@ private let webLinkAttrKey = NSAttributedString.Key("chat.simplex.app.webLink")
 
 private let secretAttrKey = NSAttributedString.Key("chat.simplex.app.secret")
 
+private let commandAttrKey = NSAttributedString.Key("chat.simplex.app.command")
+
 typealias MsgTextResult = (string: NSMutableAttributedString, hasSecrets: Bool, handleTaps: Bool)
+
+@inline(__always)
+func markdownText(
+    _ s: String,
+    textStyle: UIFont.TextStyle = .body,
+    sender: String? = nil,
+    preview: Bool = false,
+    mentions: [String: CIMention]? = nil,
+    userMemberId: String? = nil,
+    showSecrets: Set<Int>? = nil,
+    backgroundColor: Color
+) -> MsgTextResult {
+    messageText(
+        s,
+        parseSimpleXMarkdown(s),
+        textStyle: textStyle,
+        sender: sender,
+        preview: preview,
+        mentions: mentions,
+        userMemberId: userMemberId,
+        showSecrets: showSecrets,
+        commands: false,
+        backgroundColor: UIColor(backgroundColor)
+    )
+}
+
 
 func messageText(
     _ text: String,
@@ -216,6 +285,7 @@ func messageText(
     mentions: [String: CIMention]?,
     userMemberId: String?,
     showSecrets: Set<Int>?,
+    commands: Bool = false,
     backgroundColor: UIColor,
     prefix: NSAttributedString? = nil
 ) -> MsgTextResult {
@@ -288,22 +358,41 @@ func messageText(
             case .uri:
                 attrs = linkAttrs()
                 if !preview {
-                    let s = t.lowercased()
-                    let link = s.hasPrefix("http://") || s.hasPrefix("https://")
+                    let link = t.hasPrefix("http://") || t.hasPrefix("https://")
                                 ? t
                                 : "https://" + t
-                    attrs[linkAttrKey] = NSURL(string: link)
+                    attrs[linkAttrKey] = link
                     attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
-            case let .simplexLink(linkType, simplexUri, smpHosts):
+            case let .hyperLink(text, uri):
                 attrs = linkAttrs()
+                if let text { t = text }
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: simplexUri)
+                    attrs[linkAttrKey] = uri
+                    attrs[webLinkAttrKey] = true
                     handleTaps = true
                 }
-                if case .description = privacySimplexLinkModeDefault.get() {
-                    t = simplexLinkText(linkType, smpHosts)
+            case let .simplexLink(text, linkType, simplexUri, smpHosts):
+                attrs = linkAttrs()
+                if !preview {
+                    attrs[linkAttrKey] = simplexUri
+                    handleTaps = true
+                }
+                if let s = text ?? (privacySimplexLinkModeDefault.get() == .description ? linkType.description : nil) {
+                    res.append(NSAttributedString(string: s + " ", attributes: attrs))
+                    italic = italic ?? UIFont(descriptor: descr.withSymbolicTraits(.traitItalic) ?? descr, size: descr.pointSize)
+                    attrs[.font] = italic
+                    t = viaHost(smpHosts)
+                }
+            case let .command(cmdStr):
+                snippet = snippet ?? UIFont.monospacedSystemFont(ofSize: descr.pointSize, weight: .regular)
+                attrs[.font] = snippet
+                t = "/" + cmdStr
+                if !preview && commands {
+                    attrs[.foregroundColor] = uiLinkColor
+                    attrs[commandAttrKey] = t
+                    handleTaps = true
                 }
             case let .mention(memberName):
                 if let m = mentions?[memberName] {
@@ -326,15 +415,16 @@ func messageText(
             case .email:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: "mailto:" + ft.text)
+                    attrs[linkAttrKey] = "mailto:" + ft.text
                     handleTaps = true
                 }
             case .phone:
                 attrs = linkAttrs()
                 if !preview {
-                    attrs[linkAttrKey] = NSURL(string: "tel:" + t.replacingOccurrences(of: " ", with: ""))
+                    attrs[linkAttrKey] = "tel:" + t.replacingOccurrences(of: " ", with: "")
                     handleTaps = true
                 }
+            case .unknown: ()
             case .none: ()
             }
             res.append(NSAttributedString(string: t, attributes: attrs))
@@ -361,7 +451,11 @@ private func mentionText(_ name: String) -> String {
 }
 
 func simplexLinkText(_ linkType: SimplexLinkType, _ smpHosts: [String]) -> String {
-    linkType.description + " " + "(via \(smpHosts.first ?? "?"))"
+    linkType.description + " " + viaHost(smpHosts)
+}
+
+func viaHost(_ smpHosts: [String]) -> String {
+    "(via \(smpHosts.first ?? "?"))"
 }
 
 struct MsgContentView_Previews: PreviewProvider {

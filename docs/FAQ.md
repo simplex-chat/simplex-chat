@@ -1,12 +1,13 @@
 ---
 title: Frequently Asked Questions
 permalink: /faq/index.html
-revision: 23.04.2024
+revision: 13.08.2025
 ---
 
 # Frequently Asked Questions
 
 [How to use it](#how-to-use-it)
+- [How do I connect to people?](#how-do-i-connect-to-people)
 - [I have nobody to chat with! Where can I find any groups?](#i-have-nobody-to-chat-with-where-can-i-find-any-groups)
 - [What is database? What can I do with it?](#what-is-database-what-can-i-do-with-it)
 - [Can I send files over SimpleX? ](#can-i-send-files-over-simplex)
@@ -18,7 +19,8 @@ revision: 23.04.2024
 - [I want to see when my contacts read my messages](#i-want-to-see-when-my-contacts-read-my-messages)
 - [Can I use the same profile on desktop? Do messages sync cross-platform?](#can-i-use-the-same-profile-on-desktop-do-messages-sync-cross-platform)
 - [Why cannot I delete messages I sent from my contact's device?](#why-cannot-i-delete-messages-i-sent-from-my-contacts-device)
-- [Why invitation links use simplex.chat domain?](#why-invitation-links-use-simplex.chat-domain)
+- [What do group roles mean?](#what-do-group-roles-mean)
+- [I don't want to share a web link or a QR code. How can I connect?](#i-dont-want-to-share-a-web-link-or-a-qr-code-how-can-i-connect)
 
 [Troubleshooting](#troubleshooting)
 - [I do not receive messages or message notifications](#i-do-not-receive-messages-or-message-notifications)
@@ -29,9 +31,11 @@ revision: 23.04.2024
 - [Audio or video calls without e2e encryption](#audio-or-video-calls-without-e2e-encryption)
 - [I clicked the link to connect, but could not connect](#i-clicked-the-link-to-connect-but-could-not-connect)
 - [I do not know my database passphrase](#i-do-not-know-my-database-passphrase)
+- [My mobile app does not connect to desktop app](#my-mobile-app-does-not-connect-to-desktop-app)
 
 [Privacy and security](#privacy-and-security)
 - [Does SimpleX support post quantum cryptography?](#does-simplex-support-post-quantum-cryptography)
+- [Why can't I use the same profile on different devices?](#why-cant-i-use-the-same-profile-on-different-devices)
 - [What user data can be provided on request?](#what-user-data-can-be-provided-on-request)
 - [Does SimpleX protect my IP address?](#does-simplex-protect-my-ip-address)
 - [Doesn't private message routing reinvent Tor?](#doesnt-private-message-routing-reinvent-tor)
@@ -45,6 +49,16 @@ revision: 23.04.2024
 
 ## How to use it
 
+### How do I connect to people?
+
+Tap "pencil" button in the right corner, then "Create 1-time link". Share the link with the person you want to connect to. Your contact has to paste the link to the app's search bar. The link will can also be opened via the browser, once the app is installed.
+
+Alternatively, you can show the QR code when meeting in person or in a video call.
+
+It is safe to share this link over any communication channel, it contains only public keys and can only be used once.
+
+If you want to share your address publicly, so that many people can connect to you, use your SimpleX address instead of 1-time links. Tap your profile image/avatar, then Your SimpleX address. Once you create the address, you can share it in social media profiles, email signature, etc. See [the comparison of SimpleX address with 1-time links](./guide/making-connections.md#comparison-of-1-time-invitation-links-and-simplex-contact-addresses).
+
 ### I have nobody to chat with! Where can I find any groups?
 
 Please check our [Groups Directory](./DIRECTORY.md) in the first place. You might find some interesting groups and meet even more interesting people.
@@ -53,15 +67,15 @@ Please check our [Groups Directory](./DIRECTORY.md) in the first place. You migh
 
 Database is essential for SimpleX Chat to function properly. In comparison to centralized messaging providers, it is _the user_ who is responsible for taking care of their data. On the other hand, user is sure that _nobody but them_ has access to it. Please read more about it: [Database](./guide/managing-data.md).
 
-### Can I send files over SimpleX? 
+### Can I send files over SimpleX?
 
 Of course! While doing so, you are using a _state-of-the-art_ protocol that greatly reduces metadata leaks. Please read more about it: [XFTP Protocol](../blog/20230301-simplex-file-transfer-protocol.md).
 
 ### What’s incognito profile?
 
-This feature is unique to SimpleX Chat – it is independent from chat profiles. 
+This feature is unique to SimpleX Chat – it is independent from chat profiles.
 
-When "Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection. 
+When "Incognito Mode” is turned on, your currently chosen profile name and image are hidden from your new contacts. It allows anonymous connections with other people without any shared data – when you make new connections or join groups via a link a new random profile name will be generated for each connection.
 
 ### How do invitations work?
 
@@ -122,13 +136,44 @@ It is also important to remember, that even if your contact enabled "Delete for 
 
 When "Delete for everyone" is not enabled, you can still mark the sent message as deleted within 24 hours of sending it. In this case the recipient will see it as "deleted message", and will be able to reveal the original message.
 
-### Why invitation links use simplex.chat domain?
+### What do group roles mean?
 
-You can replace `https://simplex.chat/` with `simplex:/` or with any other domain - the app never connect with it, ignoring it completely. It is only used to make it easier to connect for the new users who did not install the app yet.
+Groups support 5 member roles: owner, admin, moderator, member and observer.
 
-The invitation links will soon move to servers' domains. The servers already can host the pages that will be used to show QR codes.
+An observer can:
+- add reactions
+- send reports
+- talk to admins via "Chat with admins"
 
-The link itself and the key exchange are not hosted anywhere, and the server that hosts the page to show QR code does not observe the actual connection link, because it is in the hash part of the link. The part after hash character (`#`) is not sent over the internet - the server can only see `https://simplex.chat/contact/` and the rest is processed on user's device in the browser, if you open it as a page.
+A member can:
+- send messages
+
+A moderator can:
+- approve members in review ("knocking")
+- moderate messages<sup>*</sup>
+- block members temporarily<sup>*</sup>
+- participate in "Chats with members"
+
+An admin can:
+- add and remove members<sup>*</sup>
+- change member roles<sup>*</sup>, including their own
+- create group links (but the new members will join via them, so use links of admins who are always online).
+
+A group owner can:
+- edit group profile
+- delete the group
+
+Each role can do everything that the previous roles can, except moderators and higher cannot send reports or "Chat with admins".
+
+<sup>*</sup>Any actions affecting members or their messages can only be applied to members of the same or lower role (so admins can't demote owners or promote anybody to owners, etc., but they can demote other admins and themselves, or make anybody an admin).
+
+### I don't want to share a web link or a QR code. How can I connect?
+
+You can replace the server part of the link (e.g., `https://smp18.simplex.im/`) with `simplex:/` and add `?h=smp18.simplex.im` (replace it with server of your link) to the end of the link. Then it will not be possible to use it in a web browser, but it will be recognized by SimpleX Chat app.
+
+For example, this link: `https://smp18.simplex.im/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ`
+
+becomes: `simplex:/i#E74vSxMwDnEx6DAvRCZmzBeZwwAseJUD/yVTHjaaH_EzL19DG7fvd46Mjry3IBqYT0UMo5G7l4jQ?h=smp18.simplex.im`
 
 ## Troubleshooting
 
@@ -250,11 +295,47 @@ You can resolve it by deleting the app's database: (WARNING: this results in del
 - on Linux/Mac, delete directories `~/.local/share/simplex` and `~/.config/simplex`, where `~` represents your home directory (/home/user)
 - on Flatpak, delete directory `~/.var/app/chat.simplex.simplex`.
 
+### My mobile app does not connect to desktop app
+
+1. Check that both devices are connected to the same network (e.g., it won't work if mobile is connected to mobile Internet and desktop to WiFi).
+2. If you use VPN on mobile, allow connections to local network in you VPN settings, or disable VPN.
+3. Allow SimpleX Chat on desktop to accept network connections in system firewall settings. You may choose a specific port in desktop app to accept connections, by default it uses a random port every time.
+4. Check that your WiFi router allows connections between devices (e.g., it may have an option for "device isolation", or similar).
+5. If you see an error "certificate expired", please check that your device clocks are synchronized within a few seconds.
+6. If iOS app fails to connect and shows an error containing "no route", check that local network connections are allowed for the app in system settings.
+
+Also see this post: https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol
+
+If none of the suggestions work for you, you can create a separate profile on each device and create a small group inviting both of your device profiles and your contact.
+
 ## Privacy and security
 
 ### Does SimpleX support post quantum cryptography?
 
 Yes! Please read more about quantum resistant encryption is added to SimpleX Chat and about various properties of end-to-end encryption in [this post](../blog/20240314-simplex-chat-v5-6-quantum-resistance-signal-double-ratchet-algorithm.md).
+
+### Why can't I use the same profile on different devices?
+
+SimpleX Chat apps support [linking of mobile and desktop apps](https://simplex.chat/blog/20231125-simplex-chat-v5-4-link-mobile-desktop-quantum-resistant-better-groups.html#link-mobile-and-desktop-apps-via-secure-quantum-resistant-protocol) via secure quantum-resistant protocol. It allows using the profile on your mobile device from desktop clients.
+
+Seamlessly and securely using the same profile from two or more devices is a complex and unsolved problem. All apps that provide multi-device support do so at a cost of compromising security of end-to-end encryption. E.g., Session removed the Double Ratchet algorithm entirely to enable multi-device support, sacrificing forward secrecy. Signal provides multi-device support with Double Ratchet algorithm, but by [compromising its "break-in recovery" property](https://eprint.iacr.org/2021/626.pdf) (aka post-compromise security).
+
+To the best of our knowledge there is no end-to-end encrypted messenger that solved this problem without compromising security, but we believe that the solution is possible. We have considered several approaches:
+
+1. Convert each direct conversation into a group, where each device participates as a member. This is the approach that Signal and WhatsApp use, and while Signal implementation does not protect from a temporary compromise of long-term identity key (break-in recovery), such protection is possible. The downside of this approach is that the contacts and groups you participate in would know which device you use. Another possible attack is to send different messages to different devices, or to send messages to some devices but not to the others. This could lead to message history inconsistency or enable targeted attacks.
+
+2. Store the state of the Double Ratchet algorithm for each conversation in an encrypted container on the server, allowing concurrent access and modification by each device for encrypting and decrypting messages. We did not see this approach used in any of the messaging apps, but it is technically viable. This approach has no downsides of the first, but it would increase the time it takes to send and to receive messages, as each message would require additional access to the server.
+
+3. "Thin client" approach when user profile is stored on the server. The main challenge with this approach is to prevent the server knowing who connects to whom.
+
+Whichever approach we choose for multi-device support, it requires careful design and implementation, and there is no existing secure solution to copy from. While we value usability very highly, we will not be improving usability in a way that compromises users' security. We will take a slower path of designing and implementing a solution for multi-device that achieves a better trade-off between usability and security than currently offered.
+
+In the meantime, here are several secure options to enhance usability:
+- link mobile profiles with desktop app. It does not compromise security in any way.
+- create small groups with trusted contacts. These contacts would still know which device you use when you send the message, but it won't be shared with all contacts and groups you participate in. This approach is also secure, and it prevents devices being added to the conversation without user noticing.
+- use "[business address](https://simplex.chat/blog/20241210-simplex-network-v6-2-servers-by-flux-business-chats.html#business-chats)" - the app would create a new small group with everybody who connects to you via your address, and you will be able to add your other devices to these groups.
+
+While these approaches are not as convenient as seamless multi-device support offered by other apps, they also do not compromise security to achieve that convenience.
 
 ### What user data can be provided on request?
 

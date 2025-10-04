@@ -172,7 +172,7 @@ struct ShareView: View {
                 VStack(alignment: .center, spacing: 4) {
                     Text(linkPreview.title)
                         .lineLimit(1)
-                    Text(linkPreview.uri.absoluteString)
+                    Text(linkPreview.uri)
                         .font(.caption)
                         .lineLimit(1)
                         .foregroundColor(.secondary)

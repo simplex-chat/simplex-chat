@@ -24,6 +24,7 @@ import Data.Maybe (fromMaybe)
 import Data.String
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatController (..))
+import Simplex.Chat.Markdown (viewName)
 import Simplex.Chat.Messages.CIContent (e2eInfoNoPQText, e2eInfoPQText)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct (getContact)
@@ -57,22 +58,28 @@ defaultPrefs :: Maybe Preferences
 defaultPrefs = Just $ toChatPrefs defaultChatPrefs
 
 aliceDesktopProfile :: Profile
-aliceDesktopProfile = Profile {displayName = "alice_desktop", fullName = "Alice Desktop", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+aliceDesktopProfile = mkProfile "alice_desktop" "Alice Desktop" Nothing
 
 aliceProfile :: Profile
-aliceProfile = Profile {displayName = "alice", fullName = "Alice", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+aliceProfile = mkProfile "alice" "Alice" Nothing
 
 bobProfile :: Profile
-bobProfile = Profile {displayName = "bob", fullName = "Bob", image = Just (ImageData "data:image/png;base64,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"), contactLink = Nothing, preferences = defaultPrefs}
+bobProfile = mkProfile "bob" "Bob" $ Just $ ImageData "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAAKHGlDQ1BJQ0MgUHJvZmlsZQAASImFVgdUVNcWve9Nb7QZeu9NehtAem/Sq6gMQ28OQxWxgAQjEFFEREARNFQFg1KjiIhiIQgoYA9IEFBisCAq6OQNJNH4//r/zDpz9ttzz7n73ffWmg0A6QCDxYqD+QCIT0hmezlYywQEBsngngEYCAIy0AC6DGYSy8rDwxUg8Xf9d7wbAxC33tHgzvrP3/9nCISFJzEBgIIRTGey2MkILkawT1oyi4tnEUxjI6IQvMLFkauYqxjQQtewwuoaHy8bBNMBwJMZDHYkAERbhJdJZUYic4hhCNZOCItOQDB3vjkzioFwxLsIXhcRl5IOAImrRzs+fivCk7QRrIL0shAcwNUW+tX8yH/tFfrPXgxG5D84Pi6F+dc9ck+HHJ7g641UMSQlQATQBHEgBaQDGcACbLAVYaIRJhx5Dv+9j77aZ4OsZIFtSEc0iARRIBnpt/9qlvfqpGSQBhjImnCEcUU+NtxnujZy4fbqVEiU/wuXdQyA9S0cDqfzC+e2F4DzyLkSB79wyi0A8KoBcL2GmcJOXePQ3C8MIAJeQAOiQArIAxXuWwMMgSmwBHbAGbgDHxAINgMmojceUZUGMkEWyAX54AA4DMpAJTgJ6sAZ0ALawQVwGVwDt8AQGAUPwQSYBi/AAngHliEIwkEUiAqJQtKQIqQO6UJ0yByyg1whLygQCoEioQQoBcqE9kD5UBFUBlVB9dBPUCd0GboBDUP3oUloDnoNfYRRMBmmwZKwEqwF02Er2AX2gTfBkXAinAHnwPvhUrgaPg23wZfhW/AoPAG/gBdRAEVCCaFkURooOsoG5Y4KQkWg2KidqDxUCaoa1YTqQvWj7qAmUPOoD2gsmoqWQWugTdGOaF80E52I3okuQJeh69Bt6D70HfQkegH9GUPBSGDUMSYYJ0wAJhKThsnFlGBqMK2Yq5hRzDTmHRaLFcIqY42wjthAbAx2O7YAewzbjO3BDmOnsIs4HE4Up44zw7njGLhkXC7uKO407hJuBDeNe48n4aXxunh7fBA+AZ+NL8E34LvxI/gZ/DKBj6BIMCG4E8II2wiFhFOELsJtwjRhmchPVCaaEX2IMcQsYimxiXiV+Ij4hkQiyZGMSZ6kaNJuUinpLOk6aZL0gSxAViPbkIPJKeT95FpyD/k++Q2FQlGiWFKCKMmU/ZR6yhXKE8p7HiqPJo8TTxjPLp5ynjaeEZ6XvAReRV4r3s28GbwlvOd4b/PO8xH4lPhs+Bh8O/nK+Tr5xvkW+an8Ovzu/PH8BfwN/Df4ZwVwAkoCdgJhAjkCJwWuCExRUVR5qg2VSd1DPUW9Sp2mYWnKNCdaDC2fdoY2SFsQFBDUF/QTTBcsF7woOCGEElISchKKEyoUahEaE/ooLClsJRwuvE+4SXhEeElEXMRSJFwkT6RZZFTko6iMqJ1orOhB0XbRx2JoMTUxT7E0seNiV8XmxWnipuJM8TzxFvEHErCEmoSXxHaJkxIDEouSUpIOkizJo5JXJOelhKQspWKkiqW6peakqdLm0tHSxdKXpJ/LCMpYycTJlMr0ySzISsg6yqbIVskOyi7LKcv5ymXLNcs9lifK0+Uj5Ivle+UXFKQV3BQyFRoVHigSFOmKUYpHFPsVl5SUlfyV9iq1K80qiyg7KWcoNyo/UqGoWKgkqlSr3FXFqtJVY1WPqQ6pwWoGalFq5Wq31WF1Q/Vo9WPqw+sw64zXJayrXjeuQdaw0kjVaNSY1BTSdNXM1mzXfKmloBWkdVCrX+uztoF2nPYp7Yc6AjrOOtk6XTqvddV0mbrlunf1KHr2erv0OvRe6avrh+sf179nQDVwM9hr0GvwydDIkG3YZDhnpGAUYlRhNE6n0T3oBfTrxhhja+NdxheMP5gYmiSbtJj8YaphGmvaYDq7Xnl9+PpT66fM5MwYZlVmE+Yy5iHmJ8wnLGQtGBbVFk8t5S3DLGssZ6xUrWKsTlu9tNa2Zlu3Wi/ZmNjssOmxRdk62ObZDtoJ2Pnaldk9sZezj7RvtF9wMHDY7tDjiHF0cTzoOO4k6cR0qndacDZy3uHc50J28XYpc3nqqubKdu1yg92c3Q65PdqguCFhQ7s7cHdyP+T+2EPZI9HjZ0+sp4dnueczLx2vTK9+b6r3Fu8G73c+1j6FPg99VXxTfHv9eP2C/er9lvxt/Yv8JwK0AnYE3AoUC4wO7AjCBfkF1QQtbrTbeHjjdLBBcG7w2CblTembbmwW2xy3+eIW3i2MLedCMCH+IQ0hKwx3RjVjMdQptCJ0gWnDPMJ8EWYZVhw2F24WXhQ+E2EWURQxG2kWeShyLsoiqiRqPtomuiz6VYxjTGXMUqx7bG0sJ84/rjkeHx8S35kgkBCb0LdVamv61mGWOiuXNZFokng4cYHtwq5JgpI2JXUk05A/0oEUlZTvUiZTzVPLU9+n+aWdS+dPT0gf2Ka2bd+2mQz7jB+3o7czt/dmymZmZU7usNpRtRPaGbqzd5f8rpxd07sddtdlEbNis37J1s4uyn67x39PV45kzu6cqe8cvmvM5cll547vNd1b+T36++jvB/fp7Tu673NeWN7NfO38kvyVAmbBzR90fij9gbM/Yv9goWHh8QPYAwkHxg5aHKwr4i/KKJo65HaorVimOK/47eEth2+U6JdUHiEeSTkyUepa2nFU4eiBoytlUWWj5dblzRUSFfsqlo6FHRs5bnm8qVKyMr/y44noE/eqHKraqpWqS05iT6aefHbK71T/j/Qf62vEavJrPtUm1E7UedX11RvV1zdINBQ2wo0pjXOng08PnbE909Gk0VTVLNScfxacTTn7/KeQn8ZaXFp6z9HPNZ1XPF/RSm3Na4PatrUttEe1T3QEdgx3Onf2dpl2tf6s+XPtBdkL5RcFLxZ2E7tzujmXMi4t9rB65i9HXp7q3dL78ErAlbt9nn2DV12uXr9mf+1Kv1X/petm1y/cMLnReZN+s/2W4a22AYOB1l8MfmkdNBxsu210u2PIeKhreP1w94jFyOU7tneu3XW6e2t0w+jwmO/YvfHg8Yl7Yfdm78fdf/Ug9cHyw92PMI/yHvM9Lnki8aT6V9VfmycMJy5O2k4OPPV++nCKOfXit6TfVqZznlGelcxIz9TP6s5emLOfG3q+8fn0C9aL5fnc3/l/r3ip8vL8H5Z/DCwELEy/Yr/ivC54I/qm9q3+295Fj8Un7+LfLS/lvRd9X/eB/qH/o//HmeW0FdxK6SfVT12fXT4/4sRzOCwGm7FqBVBIwhERALyuBYASCAB1CPEPG9f8119+BvrK2fyNwVndL5jhvubRVsMQgCakeCFp04OsQ1LJEgAe5NodqT6WANbT+yf/iqQIPd21PXgaAcDJcjivtwJAQHLFgcNZ9uBwPlUgYhHf1z37f7V9g9e8ITewiP88wfWIYET6HPg21nzjV2fybQVcxfrg2/onng/F50lD/ccAAAA4ZVhJZk1NACoAAAAIAAGHaQAEAAAAAQAAABoAAAAAAAKgAgAEAAAAAQAAABigAwAEAAAAAQAAABgAAAAAwf1XlwAAAaNJREFUSA3FlT1LA0EQQBN/gYUYRTksJZVgEbCR/D+7QMr8ABtttBBCsLGzsLG2sxaxED/ie4d77u0dyaE5HHjczn7MzO7M7nU6/yXz+bwLhzCCjTQO+rZhDH3opuNLdRYN4RHe4RIKJ7R34Ro+4AEGSw2mE1iUwT18gpI74WvkGlccu4XNdH0jnYU7cAUacidn37qR23cOxc4aGU0nYUAn7iSWEHkz46w0ocdQu1X6B/AMQZ5o7KfBqNOfwRH8JB7FajGhnmcpKvQe3MEbvILiDm5gPXaCHnZr4vvFGMoEKudKn8YvQIOOe+YzCPop7dwJ3zRfJ7GDuso4YJGRa0yZgg4tUaNXdGrbuZWKKxzYYEJc2xp9AUUjGt8KC2jvgYadF8+10vJyDnNLXwbdiWUZi0fUK01Eoc+AZhCLZVzK4Vq6sDUdz+0dEcbbTTIOJmAyTVhx/WmvrExbv2jtPhWLKodjCtefZiEeZeVZWWSndgwj6fVf3XON8Qwq15++uoqrfYVrow6dGBpCq79ME291jaB0/Q2CPncyht/99MNO/vr9AqW/CGi8sJqbAAAAAElFTkSuQmCC"
 
 cathProfile :: Profile
-cathProfile = Profile {displayName = "cath", fullName = "Catherine", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+cathProfile = mkProfile "cath" "Catherine" Nothing
 
 danProfile :: Profile
-danProfile = Profile {displayName = "dan", fullName = "Daniel", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+danProfile = mkProfile "dan" "Daniel" Nothing
+
+eveProfile :: Profile
+eveProfile = mkProfile "eve" "Eve" Nothing
 
 businessProfile :: Profile
-businessProfile = Profile {displayName = "biz", fullName = "Biz Inc", image = Nothing, contactLink = Nothing, preferences = defaultPrefs}
+businessProfile = mkProfile "biz" "Biz Inc" Nothing
+
+mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
+mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
 it :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
 it name test =
@@ -94,19 +101,22 @@ ifCI xrun run d t = do
   ci <- runIO $ lookupEnv "CI"
   (if ci == Just "true" then xrun else run) d t
 
+envCI :: IO Bool
+envCI = (Just "true" ==) <$> lookupEnv "CI"
+
 skip :: String -> SpecWith a -> SpecWith a
 skip = before_ . pendingWith
 
 -- Bool is pqExpected - see testAddContact
-versionTestMatrix2 :: (HasCallStack => Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
+versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
-  it "current" $ testChat2 aliceProfile bobProfile (runTest True)
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False)
-  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False)
-  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False)
-  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False)
-  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False)
-  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False)
+  it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
+  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False True)
+  it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
+  it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
+  it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
+  it "old to curr" $ runTestCfg2 testCfg testCfgV1 (runTest False True)
+  it "curr to old" $ runTestCfg2 testCfgV1 testCfg (runTest False False)
 
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
@@ -262,6 +272,11 @@ chat'' = read
 chatFeatures :: [(Int, String)]
 chatFeatures = map (\(a, _, _) -> a) chatFeatures''
 
+chatFeaturesNoPQ :: [(Int, String)]
+chatFeaturesNoPQ =
+  map (\(a, _, _) -> a) $
+    ((1, "chat banner"), Nothing, Nothing) : ((0, e2eeInfoNoPQStr), Nothing, Nothing) : chatFeatures_
+
 chatFeatures' :: [((Int, String), Maybe (Int, String))]
 chatFeatures' = map (\(a, b, _) -> (a, b)) chatFeatures''
 
@@ -269,9 +284,11 @@ chatFeaturesF :: [((Int, String), Maybe String)]
 chatFeaturesF = map (\(a, _, c) -> (a, c)) chatFeatures''
 
 chatFeatures'' :: [((Int, String), Maybe (Int, String), Maybe String)]
-chatFeatures'' =
-  [ ((0, e2eeInfoPQStr), Nothing, Nothing),
-    ((0, "Disappearing messages: allowed"), Nothing, Nothing),
+chatFeatures'' = ((1, "chat banner"), Nothing, Nothing) : ((0, e2eeInfoPQStr), Nothing, Nothing) : chatFeatures_
+
+chatFeatures_ :: [((Int, String), Maybe (Int, String), Maybe String)]
+chatFeatures_ =
+  [ ((0, "Disappearing messages: allowed"), Nothing, Nothing),
     ((0, "Full deletion: off"), Nothing, Nothing),
     ((0, "Message reactions: enabled"), Nothing, Nothing),
     ((0, "Voice messages: enabled"), Nothing, Nothing),
@@ -290,6 +307,9 @@ lastChatFeature = snd $ last chatFeatures
 groupFeatures :: [(Int, String)]
 groupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 0
 
+groupFeaturesNoE2E :: [(Int, String)]
+groupFeaturesNoE2E = map (\(a, _, _) -> a) $ ((1, "chat banner"), Nothing, Nothing) : groupFeatures_ 0
+
 sndGroupFeatures :: [(Int, String)]
 sndGroupFeatures = map (\(a, _, _) -> a) $ groupFeatures'' 1
 
@@ -297,9 +317,11 @@ groupFeatureStrs :: [String]
 groupFeatureStrs = map (\(a, _, _) -> snd a) $ groupFeatures'' 0
 
 groupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
-groupFeatures'' dir =
-  [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
-    ((dir, "Disappearing messages: off"), Nothing, Nothing),
+groupFeatures'' dir = ((1, "chat banner"), Nothing, Nothing) : ((dir, e2eeInfoNoPQStr), Nothing, Nothing) : groupFeatures_ dir
+
+groupFeatures_ :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+groupFeatures_ dir =
+  [ ((dir, "Disappearing messages: off"), Nothing, Nothing),
     ((dir, "Direct messages: on"), Nothing, Nothing),
     ((dir, "Full deletion: off"), Nothing, Nothing),
     ((dir, "Message reactions: on"), Nothing, Nothing),
@@ -307,6 +329,24 @@ groupFeatures'' dir =
     ((dir, "Files and media: on"), Nothing, Nothing),
     ((dir, "SimpleX links: on"), Nothing, Nothing),
     ((dir, "Member reports: on"), Nothing, Nothing),
+    ((dir, "Recent history: on"), Nothing, Nothing)
+  ]
+
+businessGroupFeatures :: [(Int, String)]
+businessGroupFeatures = map (\(a, _, _) -> a) $ businessGroupFeatures'' 0
+
+businessGroupFeatures'' :: Int -> [((Int, String), Maybe (Int, String), Maybe String)]
+businessGroupFeatures'' dir =
+  -- [ ((dir, e2eeInfoNoPQStr), Nothing, Nothing),
+  [ ((1, "chat banner"), Nothing, Nothing),
+    ((dir, "Disappearing messages: on"), Nothing, Nothing),
+    ((dir, "Direct messages: off"), Nothing, Nothing),
+    ((dir, "Full deletion: off"), Nothing, Nothing),
+    ((dir, "Message reactions: on"), Nothing, Nothing),
+    ((dir, "Voice messages: on"), Nothing, Nothing),
+    ((dir, "Files and media: on"), Nothing, Nothing),
+    ((dir, "SimpleX links: on"), Nothing, Nothing),
+    ((dir, "Member reports: off"), Nothing, Nothing),
     ((dir, "Recent history: on"), Nothing, Nothing)
   ]
 
@@ -474,6 +514,8 @@ dropTime_ :: String -> Maybe String
 dropTime_ msg = case splitAt 6 msg of
   ([m, m', ':', s, s', ' '], text) ->
     if all isDigit [m, m', s, s'] then Just text else Nothing
+  ([month, month', '-', d, d', ' '], text) ->
+    if all isDigit [month, month', d, d'] then Just text else Nothing
   _ -> Nothing
 
 dropStrPrefix :: HasCallStack => String -> String -> String
@@ -502,29 +544,45 @@ dropPartialReceipt_ msg = case splitAt 2 msg of
   _ -> Nothing
 
 getInvitation :: HasCallStack => TestCC -> IO String
-getInvitation = getInvitation_ False
+getInvitation cc = do
+  (_, fullInv) <- getInvitations cc
+  pure fullInv
 
-getShortInvitation :: HasCallStack => TestCC -> IO String
-getShortInvitation = getInvitation_ True
+getInvitations :: HasCallStack => TestCC -> IO (String, String)
+getInvitations cc = do
+  shortInv <- getInvitation_ cc
+  cc <##. "The invitation link for old clients:"
+  fullInv <- getTermLine cc
+  pure (shortInv, fullInv)
 
-getInvitation_ :: HasCallStack => Bool -> TestCC -> IO String
-getInvitation_ short cc = do
+getInvitationNoShortLink :: HasCallStack => TestCC -> IO String
+getInvitationNoShortLink = getInvitation_
+
+getInvitation_ :: HasCallStack => TestCC -> IO String
+getInvitation_ cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
   inv <- getTermLine cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
-  when short $ cc <##. "The invitation link for old clients: https://simplex.chat/invitation#"
   pure inv
-
-getShortContactLink :: HasCallStack => TestCC -> Bool -> IO (String, String)
-getShortContactLink cc created = do
-  shortLink <- getContactLink cc created
-  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
-  pure (shortLink, fullLink)
 
 getContactLink :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink cc created = do
+  (_shortLink, fullLink) <- getContactLinks cc created
+  pure fullLink
+
+getContactLinks :: HasCallStack => TestCC -> Bool -> IO (String, String)
+getContactLinks cc created = do
+  shortLink <- getContactLink_ cc created
+  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
+  pure (shortLink, fullLink)
+
+getContactLinkNoShortLink :: HasCallStack => TestCC -> Bool -> IO String
+getContactLinkNoShortLink = getContactLink_
+
+getContactLink_ :: HasCallStack => TestCC -> Bool -> IO String
+getContactLink_ cc created = do
   cc <## if created then "Your new chat address is created!" else "Your chat address:"
   cc <## ""
   link <- getTermLine cc
@@ -540,14 +598,22 @@ dropLinePrefix line s
   | line `isPrefixOf` s = pure $ drop (length line) s
   | otherwise = error $ "expected to start from: " <> line <> ", got: " <> s
 
-getShortGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
-getShortGroupLink cc gName mRole created = do
-  shortLink <- getGroupLink cc gName mRole created
+getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLink cc gName mRole created = do
+  (_shortLink, fullLink) <- getGroupLinks cc gName mRole created
+  pure fullLink
+
+getGroupLinks :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
+getGroupLinks cc gName mRole created = do
+  shortLink <- getGroupLink_ cc gName mRole created
   fullLink <- dropLinePrefix "The group link for old clients: " =<< getTermLine cc
   pure (shortLink, fullLink)
 
-getGroupLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
-getGroupLink cc gName mRole created = do
+getGroupLinkNoShortLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLinkNoShortLink = getGroupLink_
+
+getGroupLink_ :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
+getGroupLink_ cc gName mRole created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
   link <- getTermLine cc
@@ -633,15 +699,22 @@ lastItemId cc = do
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do
   cc <## ("user profile: " <> name)
-  cc <## "use /p <display name> to change it"
-  cc <## "(the updated profile will be sent to all your contacts)"
+  cc <## "use /p <name> [<bio>] to change it"
+
+connectUsersNoShortLink :: HasCallStack => TestCC -> TestCC -> IO ()
+connectUsersNoShortLink cc1 cc2 = connectUsers_ cc1 cc2 True
 
 connectUsers :: HasCallStack => TestCC -> TestCC -> IO ()
-connectUsers cc1 cc2 = do
+connectUsers cc1 cc2 = connectUsers_ cc1 cc2 False
+
+connectUsers_ :: HasCallStack => TestCC -> TestCC -> Bool -> IO ()
+connectUsers_ cc1 cc2 noShortLink = do
   name1 <- showName cc1
   name2 <- showName cc2
   cc1 ##> "/c"
-  inv <- getInvitation cc1
+  inv <- if noShortLink
+    then getInvitationNoShortLink cc1
+    else getInvitation cc1
   cc2 ##> ("/c " <> inv)
   cc2 <## "confirmation sent!"
   concurrently_
@@ -650,20 +723,20 @@ connectUsers cc1 cc2 = do
 
 showName :: TestCC -> IO String
 showName (TestCC ChatController {currentUser} _ _ _ _ _) = do
-  Just User {localDisplayName, profile = LocalProfile {fullName}} <- readTVarIO currentUser
-  pure . T.unpack $ localDisplayName <> optionalFullName localDisplayName fullName
+  Just User {localDisplayName, profile = LocalProfile {fullName, shortDescr}} <- readTVarIO currentUser
+  pure . T.unpack $ viewName localDisplayName <> optionalFullName localDisplayName fullName shortDescr
 
 createGroup2 :: HasCallStack => String -> TestCC -> TestCC -> IO ()
-createGroup2 gName cc1 cc2 = createGroup2' gName cc1 cc2 True
+createGroup2 gName cc1 cc2 = createGroup2' gName cc1 (cc2, GRAdmin) True
 
-createGroup2' :: HasCallStack => String -> TestCC -> TestCC -> Bool -> IO ()
-createGroup2' gName cc1 cc2 doConnectUsers = do
+createGroup2' :: HasCallStack => String -> TestCC -> (TestCC, GroupMemberRole) -> Bool -> IO ()
+createGroup2' gName cc1 (cc2, role2) doConnectUsers = do
   when doConnectUsers $ connectUsers cc1 cc2
   name2 <- userName cc2
   cc1 ##> ("/g " <> gName)
   cc1 <## ("group #" <> gName <> " is created")
   cc1 <## ("to add members use /a " <> gName <> " <name> or /create link #" <> gName)
-  addMember gName cc1 cc2 GRAdmin
+  addMember gName cc1 cc2 role2
   cc2 ##> ("/j " <> gName)
   concurrently_
     (cc1 <## ("#" <> gName <> ": " <> name2 <> " joined the group"))
@@ -681,13 +754,17 @@ disableFullDeletion2 gName cc1 cc2 = do
 
 createGroup3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
 createGroup3 gName cc1 cc2 cc3 = do
-  createGroup2 gName cc1 cc2
+  createGroup3' gName cc1 (cc2, GRAdmin) (cc3, GRAdmin)
+
+createGroup3' :: HasCallStack => String -> TestCC -> (TestCC, GroupMemberRole) -> (TestCC, GroupMemberRole) -> IO ()
+createGroup3' gName cc1 (cc2, role2) (cc3, role3) = do
+  createGroup2' gName cc1 (cc2, role2) True
   connectUsers cc1 cc3
   name1 <- userName cc1
   name3 <- userName cc3
   sName2 <- showName cc2
   sName3 <- showName cc3
-  addMember gName cc1 cc3 GRAdmin
+  addMember gName cc1 cc3 role3
   cc3 ##> ("/j " <> gName)
   concurrentlyN_
     [ cc1 <## ("#" <> gName <> ": " <> name3 <> " joined the group"),
@@ -697,6 +774,31 @@ createGroup3 gName cc1 cc2 cc3 = do
       do
         cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName3 <> " to the group (connecting...)")
         cc2 <## ("#" <> gName <> ": new member " <> name3 <> " is connected")
+    ]
+
+createGroup4 :: HasCallStack => String -> TestCC -> (TestCC, GroupMemberRole) -> (TestCC, GroupMemberRole) -> (TestCC, GroupMemberRole) -> IO ()
+createGroup4 gName cc1 (cc2, role2) (cc3, role3) (cc4, role4) = do
+  createGroup3' gName cc1 (cc2, role2) (cc3, role3)
+  connectUsers cc1 cc4
+  name1 <- userName cc1
+  name4 <- userName cc4
+  sName2 <- showName cc2
+  sName3 <- showName cc3
+  sName4 <- showName cc4
+  addMember gName cc1 cc4 role4
+  cc4 ##> ("/j " <> gName)
+  concurrentlyN_
+    [ cc1 <## "#team: dan joined the group",
+      do
+        cc4 <## ("#" <> gName <> ": you joined the group")
+        cc4 <## ("#" <> gName <> ": member " <> sName2 <> " is connected")
+        cc4 <## ("#" <> gName <> ": member " <> sName3 <> " is connected"),
+      do
+        cc2 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
+        cc2 <## ("#" <> gName <> ": new member " <> name4 <> " is connected"),
+      do
+        cc3 <## ("#" <> gName <> ": " <> name1 <> " added " <> sName4 <> " to the group (connecting...)")
+        cc3 <## ("#" <> gName <> ": new member " <> name4 <> " is connected")
     ]
 
 disableFullDeletion3 :: HasCallStack => String -> TestCC -> TestCC -> TestCC -> IO ()
@@ -710,7 +812,7 @@ disableFullDeletion3 gName cc1 cc2 cc3 = do
 create2Groups3 :: HasCallStack => String -> String -> TestCC -> TestCC -> TestCC -> IO ()
 create2Groups3 gName1 gName2 cc1 cc2 cc3 = do
   createGroup3 gName1 cc1 cc2 cc3
-  createGroup2' gName2 cc1 cc2 False
+  createGroup2' gName2 cc1 (cc2, GRAdmin) False
   name1 <- userName cc1
   name3 <- userName cc3
   addMember gName2 cc1 cc3 GRAdmin

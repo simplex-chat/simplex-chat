@@ -11,7 +11,6 @@ import SwiftUI
 public struct ErrorAlert: Error {
     public let title: LocalizedStringKey
     public let message: LocalizedStringKey?
-    public let actions: Optional<() -> AnyView>
 
     public init(
         title: LocalizedStringKey,
@@ -19,7 +18,6 @@ public struct ErrorAlert: Error {
     ) {
         self.title = title
         self.message = message
-        self.actions = nil
     }
 
     public init<A: View>(
@@ -29,7 +27,6 @@ public struct ErrorAlert: Error {
     ) {
         self.title = title
         self.message = message
-        self.actions = { AnyView(actions()) }
     }
 
     public init(_ title: LocalizedStringKey) {
@@ -75,11 +72,7 @@ extension View {
                 set: { if !$0 { errorAlert.wrappedValue = nil } }
             ),
             actions: {
-                if let actions_ = errorAlert.wrappedValue?.actions {
-                    actions_()
-                } else {
-                    if let alert = errorAlert.wrappedValue { actions(alert) }
-                }
+                if let alert = errorAlert.wrappedValue { actions(alert) }
             },
             message: {
                 if let message = errorAlert.wrappedValue?.message {
@@ -94,6 +87,8 @@ public func getNetworkErrorAlert(_ e: ChatError) -> ErrorAlert? {
     switch e {
     case let .errorAgent(.BROKER(addr, .TIMEOUT)):
         ErrorAlert(title: "Connection timeout", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
+    case let .errorAgent(.BROKER(addr, .NETWORK(.unknownCAError))):
+        ErrorAlert(title: "Connection error", message: "Fingerprint in server address does not match certificate: \(serverHostname(addr)).")
     case let .errorAgent(.BROKER(addr, .NETWORK)):
         ErrorAlert(title: "Connection error", message: "Please check your network connection with \(serverHostname(addr)) and try again.")
     case let .errorAgent(.BROKER(addr, .HOST)):
@@ -112,6 +107,8 @@ private func smpProxyErrorAlert(_ proxyErr: ProxyError, _ srvAddr: String) -> Er
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
         return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
+    case .BROKER(brokerErr: .NETWORK(.unknownCAError)):
+        return ErrorAlert(title: "Private routing error", message: "Fingerprint in forwarding server address does not match certificate: \(serverHostname(srvAddr)).")
     case .BROKER(brokerErr: .NETWORK):
         return ErrorAlert(title: "Private routing error", message: "Error connecting to forwarding server \(serverHostname(srvAddr)). Please try later.")
     case .BROKER(brokerErr: .HOST):
@@ -127,6 +124,8 @@ private func proxyDestinationErrorAlert(_ proxyErr: ProxyError, _ proxyServer: S
     switch proxyErr {
     case .BROKER(brokerErr: .TIMEOUT):
         return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
+    case .BROKER(brokerErr: .NETWORK(.unknownCAError)):
+        return ErrorAlert(title: "Private routing error", message: "Fingerprint in destination server address does not match certificate: \(serverHostname(relayServer)).")
     case .BROKER(brokerErr: .NETWORK):
         return ErrorAlert(title: "Private routing error", message: "Forwarding server \(serverHostname(proxyServer)) failed to connect to destination server \(serverHostname(relayServer)). Please try later.")
     case .NO_SESSION:

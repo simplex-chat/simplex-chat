@@ -56,7 +56,7 @@ import System.FilePath (takeFileName, (</>))
 import UnliftIO
 
 data RemoteCommand
-  = RCSend {command :: Text} -- TODO maybe ChatCommand here?
+  = RCSend {command :: Text, retryNumber :: Int}
   | RCRecv {wait :: Int} -- this wait should be less than HTTP timeout
   | -- local file encryption is determined by the host, but can be overridden for videos
     RCStoreFile {fileName :: String, fileSize :: Word32, fileDigest :: FileDigest} -- requires attachment
@@ -133,9 +133,9 @@ closeRemoteHostClient RemoteHostClient {httpClient} = closeHTTP2Client httpClien
 
 -- ** Commands
 
-remoteSend :: RemoteHostClient -> ByteString -> ExceptT RemoteProtocolError IO (Either ChatError ChatResponse)
-remoteSend c cmd =
-  sendRemoteCommand' c Nothing RCSend {command = decodeUtf8 cmd} >>= \case
+remoteSend :: RemoteHostClient -> ByteString -> Int -> ExceptT RemoteProtocolError IO (Either ChatError ChatResponse)
+remoteSend c cmd retryNumber =
+  sendRemoteCommand' c Nothing RCSend {command = decodeUtf8 cmd, retryNumber} >>= \case
     RRChatResponse cr -> pure $ resultToEither cr
     r -> badResponse r
 

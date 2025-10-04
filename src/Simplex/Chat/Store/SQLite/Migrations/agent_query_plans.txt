@@ -274,7 +274,7 @@ Plan:
 
 Query: 
         INSERT INTO conn_invitations
-        (invitation_id,  contact_conn_id, cr_invitation, recipient_conn_info, accepted) VALUES (?, ?, ?, ?, 0);
+        (invitation_id, contact_conn_id, cr_invitation, recipient_conn_info, accepted) VALUES (?, ?, ?, ?, 0);
       
 Plan:
 
@@ -555,8 +555,9 @@ Query:
       INSERT INTO rcv_queues
         ( host, port, rcv_id, conn_id, rcv_private_key, rcv_dh_secret, e2e_priv_key, e2e_dh_secret,
           snd_id, queue_mode, status, rcv_queue_id, rcv_primary, replace_rcv_queue_id, smp_client_version, server_key_hash,
-          link_id, link_key, link_priv_sig_key, link_enc_fixed_data
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+          link_id, link_key, link_priv_sig_key, link_enc_fixed_data,
+          ntf_public_key, ntf_private_key, ntf_id, rcv_ntf_dh_secret
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
     
 Plan:
 
@@ -822,7 +823,7 @@ Query: DELETE FROM commands WHERE command_id = ?
 Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: DELETE FROM conn_invitations WHERE contact_conn_id = ? AND invitation_id = ?
+Query: DELETE FROM conn_invitations WHERE invitation_id = ?
 Plan:
 SEARCH conn_invitations USING PRIMARY KEY (invitation_id=?)
 

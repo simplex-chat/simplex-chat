@@ -137,6 +137,7 @@ struct UserPickerSheetView: View {
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
@@ -148,6 +149,7 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
+    @State private var scrollToItemId: ChatItem.ID? = nil
 
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
     @State private var viewOnScreen = true
@@ -446,7 +448,14 @@ struct ChatListView: View {
     
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat)
+            let im = ItemsModel.shared
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im),
+                scrollToItemId: $scrollToItemId
+            )
         }
     }
     
@@ -564,6 +573,7 @@ struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -571,8 +581,6 @@ struct ChatListSearchBar: View {
     @Binding var searchChatFilteredBySimplexLink: String?
     @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var ignoreSearchTextChange = false
-    @State private var alert: PlanAndConnectAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -585,6 +593,9 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                    if connectProgressManager.showConnectProgress != nil {
+                        ProgressView()
+                    }
                     if !searchText.isEmpty {
                         Image(systemName: "xmark.circle.fill")
                             .onTapGesture {
@@ -618,7 +629,7 @@ struct ChatListSearchBar: View {
             } else {
                 if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
                     searchFocussed = false
-                    if case let .simplexLink(linkType, _, smpHosts) = link.format {
+                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
                         ignoreSearchTextChange = true
                         searchText = simplexLinkText(linkType, smpHosts)
                     }
@@ -628,6 +639,8 @@ struct ChatListSearchBar: View {
                 } else {
                     if t != "" { // if some other text is pasted, enter search mode
                         searchFocussed = true
+                    } else {
+                        ConnectProgressManager.shared.cancelConnectProgress()
                     }
                     searchShowingSimplexLink = false
                     searchChatFilteredBySimplexLink = nil
@@ -636,12 +649,6 @@ struct ChatListSearchBar: View {
         }
         .onChange(of: chatTagsModel.activeFilter) { _ in
             searchText = ""
-        }
-        .alert(item: $alert) { a in
-            planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
-        }
-        .actionSheet(item: $sheet) { s in
-            planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
         }
     }
 
@@ -668,10 +675,12 @@ struct ChatListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
-            showAlert: { alert = $0 },
-            showActionSheet: { sheet = $0 },
+            theme: theme,
             dismiss: false,
-            incognito: nil,
+            cleanup: {
+                searchText = ""
+                searchFocussed = false
+            },
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
             filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
@@ -889,15 +898,15 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         chatInfo.chatSettings?.favorite == true
     case .contacts:
         switch chatInfo {
-        case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
+        case let .direct(contact): !contact.isContactCard && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
-        case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
+        case let .group(groupInfo, _): groupInfo.businessChat?.chatType == .customer
         default: false
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo): groupInfo.businessChat == nil
+        case let .group(groupInfo, _): groupInfo.businessChat == nil
         default: false
         }
     case .business:

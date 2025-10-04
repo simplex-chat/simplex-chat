@@ -230,7 +230,7 @@ struct ChatItemInfoView: View {
     private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
         let backgroundColor = chatItemFrameColor(ci, theme)
         return VStack(alignment: .leading, spacing: 4) {
-            textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil, backgroundColor: UIColor(backgroundColor))
+            textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil, backgroundColor: backgroundColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(backgroundColor)
@@ -258,7 +258,7 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil, backgroundColor: UIColor) -> some View {
+    @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil, backgroundColor: Color) -> some View {
         if text != "" {
             TextBubble(text: text, formattedText: formattedText, sender: sender, mentions: ci.mentions, userMemberId: userMemberId, backgroundColor: backgroundColor)
         } else {
@@ -275,11 +275,11 @@ struct ChatItemInfoView: View {
         var sender: String? = nil
         var mentions: [String: CIMention]?
         var userMemberId: String?
-        var backgroundColor: UIColor
+        var backgroundColor: Color
         @State private var showSecrets: Set<Int> = []
 
         var body: some View {
-            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: backgroundColor)
+            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor))
             return msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
         }
     }
@@ -305,7 +305,7 @@ struct ChatItemInfoView: View {
     private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
         let backgroundColor = quotedMsgFrameColor(qi, theme)
         return VStack(alignment: .leading, spacing: 4) {
-            textBubble(qi.text, qi.formattedText, qi.getSender(nil), backgroundColor: UIColor(backgroundColor))
+            textBubble(qi.text, qi.formattedText, qi.getSender(nil), backgroundColor: backgroundColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(quotedMsgFrameColor(qi, theme))

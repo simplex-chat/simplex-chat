@@ -14,7 +14,7 @@ import AVKit
 struct FullScreenMediaView: View {
     @EnvironmentObject var m: ChatModel
     @State var chatItem: ChatItem
-    var scrollToItemId: ((ChatItem.ID) -> Void)?
+    var scrollToItem: ((ChatItem.ID) -> Void)?
     @State var image: UIImage?
     @State var player: AVPlayer? = nil
     @State var url: URL? = nil
@@ -71,7 +71,7 @@ struct FullScreenMediaView: View {
                 let w = abs(t.width)
                 if t.height > 60 && t.height > w * 2  {
                     showView = false
-                    scrollToItemId?(chatItem.id)
+                    scrollToItem?(chatItem.id)
                 } else if w > 60 && w > abs(t.height) * 2 && !scrolling {
                     let previous = t.width > 0
                     scrolling = true

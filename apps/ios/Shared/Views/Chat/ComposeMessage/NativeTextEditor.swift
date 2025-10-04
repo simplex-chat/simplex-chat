@@ -63,12 +63,20 @@ struct NativeTextEditor: UIViewRepresentable {
             field.textAlignment = alignment(text)
             field.updateFont()
             field.updateHeight(updateBindingNow: false)
+            field.placeholder = text.isEmpty ? placeholder : ""
         }
         if field.placeholder != placeholder {
-            field.placeholder = placeholder
+            field.placeholder = text.isEmpty ? placeholder : ""
         }
         if field.selectedRange != selectedRange {
             field.selectedRange = selectedRange
+        }
+        if focused && !field.isFocused {
+            DispatchQueue.main.async {
+                if !field.isFocused {
+                    field.becomeFirstResponder()
+                }
+            }
         }
     }
 }

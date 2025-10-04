@@ -132,7 +132,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
         click = { contactRequestAlertDialog(chat.remoteHostId, chat.chatInfo, chatModel) { onRequestAccepted(it) } },
         dropdownMenuItems = {
           tryOrShowError("${chat.id}ChatListNavLinkDropdown", error = {}) {
-            ContactRequestMenuItems(chat.remoteHostId, chat.chatInfo, chatModel, showMenu)
+            ContactRequestMenuItems(chat.remoteHostId, contactRequestId = chat.chatInfo.apiId, chatModel, showMenu)
           }
         },
         showMenu,
@@ -188,7 +188,7 @@ fun ErrorChatListItem() {
 
 suspend fun directChatAction(rhId: Long?, contact: Contact, chatModel: ChatModel) {
   when {
-    contact.activeConn == null && contact.profile.contactLink != null && contact.active -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
+    contact.isContactCard -> askCurrentOrIncognitoProfileConnectContactViaAddress(chatModel, rhId, contact, close = null, openChat = true)
     else -> openDirectChat(rhId, contact.contactId)
   }
 }
@@ -236,7 +236,6 @@ suspend fun openChat(
 
 suspend fun openLoadedChat(chat: Chat) {
   withContext(Dispatchers.Main) {
-    chatModel.chatsContext.chatItemStatuses.clear()
     chatModel.chatsContext.chatItems.replaceAll(chat.chatItems)
     chatModel.chatId.value = chat.chatInfo.id
     chatModel.chatsContext.chatState.clear()
@@ -272,18 +271,28 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
 
 @Composable
 fun ContactMenuItems(chat: Chat, contact: Contact, chatModel: ChatModel, showMenu: MutableState<Boolean>, showMarkRead: Boolean) {
-  if (contact.activeConn != null) {
-    if (showMarkRead) {
-      MarkReadChatAction(chat, showMenu)
+  if (contact.nextAcceptContactRequest) {
+    if (contact.contactRequestId != null) {
+      ContactRequestMenuItems(chat.remoteHostId, contactRequestId = contact.contactRequestId, chatModel, showMenu)
+    } else if (contact.groupDirectInv != null && !contact.groupDirectInv.memberRemoved) {
+      MemberContactRequestMenuItems(chat.remoteHostId, contact, showMenu)
     } else {
-      MarkUnreadChatAction(chat, chatModel, showMenu)
+      DeleteContactAction(chat, chatModel, showMenu)
     }
-    ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
-    ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
-    TagListAction(chat, showMenu)
-    ClearChatAction(chat, showMenu)
+  } else {
+    if (contact.activeConn != null) {
+      if (showMarkRead) {
+        MarkReadChatAction(chat, showMenu)
+      } else {
+        MarkUnreadChatAction(chat, chatModel, showMenu)
+      }
+      ToggleFavoritesChatAction(chat, chatModel, chat.chatInfo.chatSettings?.favorite == true, showMenu)
+      ToggleNotificationsChatAction(chat, chatModel, contact.chatSettings.enableNtfs.nextMode(false), showMenu)
+      TagListAction(chat, showMenu)
+      ClearChatAction(chat, showMenu)
+    }
+    DeleteContactAction(chat, chatModel, showMenu)
   }
-  DeleteContactAction(chat, chatModel, showMenu)
 }
 
 @Composable
@@ -305,7 +314,7 @@ fun GroupMenuItems(
       }
     }
     GroupMemberStatus.MemAccepted -> {
-      if (groupInfo.membership.memberCurrent) {
+      if (groupInfo.membership.memberCurrentOrPending) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -327,7 +336,7 @@ fun GroupMenuItems(
         }
       }
       ClearChatAction(chat, showMenu)
-      if (groupInfo.membership.memberCurrent) {
+      if (groupInfo.membership.memberCurrentOrPending) {
         LeaveGroupAction(chat.remoteHostId, groupInfo, chatModel, showMenu)
       }
       if (groupInfo.canDelete) {
@@ -510,22 +519,46 @@ fun LeaveGroupAction(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, sh
 }
 
 @Composable
-fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
+fun ContactRequestMenuItems(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
   ItemAction(
     stringResource(MR.strings.accept_contact_button),
     painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = false, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
+      acceptContactRequest(rhId, incognito = false, contactRequestId, true, chatModel, onSuccess)
       showMenu.value = false
     }
   )
+  if (!chatModel.addressShortLinkDataSet()) {
+    ItemAction(
+      stringResource(MR.strings.accept_contact_incognito_button),
+      painterResource(MR.images.ic_theater_comedy),
+      color = MaterialTheme.colors.onBackground,
+      onClick = {
+        acceptContactRequest(rhId, incognito = true, contactRequestId, true, chatModel, onSuccess)
+        showMenu.value = false
+      }
+    )
+  }
   ItemAction(
-    stringResource(MR.strings.accept_contact_incognito_button),
-    painterResource(MR.images.ic_theater_comedy),
+    stringResource(MR.strings.reject_contact_button),
+    painterResource(MR.images.ic_close),
+    onClick = {
+      rejectContactRequest(rhId, contactRequestId, chatModel)
+      showMenu.value = false
+    },
+    color = Color.Red
+  )
+}
+
+@Composable
+fun MemberContactRequestMenuItems(rhId: Long?, contact: Contact, showMenu: MutableState<Boolean>, onSuccess: ((chat: Chat) -> Unit)? = null) {
+  ItemAction(
+    stringResource(MR.strings.accept_contact_button),
+    painterResource(MR.images.ic_check),
     color = MaterialTheme.colors.onBackground,
     onClick = {
-      acceptContactRequest(rhId, incognito = true, chatInfo.apiId, chatInfo, true, chatModel, onSuccess)
+      acceptMemberContact(rhId, contact.contactId, onSuccess)
       showMenu.value = false
     }
   )
@@ -533,7 +566,7 @@ fun ContactRequestMenuItems(rhId: Long?, chatInfo: ChatInfo.ContactRequest, chat
     stringResource(MR.strings.reject_contact_button),
     painterResource(MR.images.ic_close),
     onClick = {
-      rejectContactRequest(rhId, chatInfo, chatModel)
+      showRejectMemberContactRequestAlert(rhId, contact)
       showMenu.value = false
     },
     color = Color.Red
@@ -651,7 +684,7 @@ fun markChatUnread(chat: Chat, chatModel: ChatModel) {
     if (success) {
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.replaceChat(chat.remoteHostId, chat.id, chat.copy(chatStats = chat.chatStats.copy(unreadChat = true)))
-        chatModel.chatsContext.updateChatTagReadNoContentTag(chat, wasUnread)
+        chatModel.chatsContext.updateChatTagReadInPrimaryContext(chat, wasUnread)
       }
     }
   }
@@ -665,19 +698,21 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
       Column {
         SectionItemView({
           AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
+          acceptContactRequest(rhId, incognito = false, contactRequest.apiId, true, chatModel, onSucess)
         }) {
           Text(generalGetString(MR.strings.accept_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
         }
-        SectionItemView({
-          AlertManager.shared.hideAlert()
-          acceptContactRequest(rhId, incognito = true, contactRequest.apiId, contactRequest, true, chatModel, onSucess)
-        }) {
-          Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        if (!chatModel.addressShortLinkDataSet()) {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            acceptContactRequest(rhId, incognito = true, contactRequest.apiId, true, chatModel, onSucess)
+          }) {
+            Text(generalGetString(MR.strings.accept_contact_incognito_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+          }
         }
         SectionItemView({
           AlertManager.shared.hideAlert()
-          rejectContactRequest(rhId, contactRequest, chatModel)
+          rejectContactRequest(rhId, contactRequest.apiId, chatModel)
         }) {
           Text(generalGetString(MR.strings.reject_contact_button), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
         }
@@ -687,25 +722,48 @@ fun contactRequestAlertDialog(rhId: Long?, contactRequest: ChatInfo.ContactReque
   )
 }
 
-fun acceptContactRequest(rhId: Long?, incognito: Boolean, apiId: Long, contactRequest: ChatInfo.ContactRequest?, isCurrentUser: Boolean, chatModel: ChatModel, close: ((chat: Chat) -> Unit)? = null ) {
+fun acceptContactRequest(
+  rhId: Long?,
+  incognito: Boolean,
+  contactRequestId: Long,
+  isCurrentUser: Boolean,
+  chatModel: ChatModel,
+  close: ((chat: Chat) -> Unit)? = null,
+  inProgress: MutableState<Boolean>? = null
+) {
   withBGApi {
-    val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, apiId)
-    if (contact != null && isCurrentUser && contactRequest != null) {
+    inProgress?.value = true
+    val contact = chatModel.controller.apiAcceptContactRequest(rhId, incognito, contactRequestId)
+    if (contact != null && isCurrentUser) {
       val chat = Chat(remoteHostId = rhId, ChatInfo.Direct(contact), listOf())
       withContext(Dispatchers.Main) {
-        chatModel.chatsContext.replaceChat(rhId, contactRequest.id, chat)
+        if (contact.contactRequestId != null) { // means contact request was initially created with contact, so we don't need to replace it
+          chatModel.chatsContext.updateContact(rhId, contact)
+        } else {
+          chatModel.chatsContext.replaceChat(rhId, contactRequestChatId(contactRequestId), chat)
+        }
+        inProgress?.value = false
       }
       chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       close?.invoke(chat)
+    } else {
+      inProgress?.value = false
     }
   }
 }
 
-fun rejectContactRequest(rhId: Long?, contactRequest: ChatInfo.ContactRequest, chatModel: ChatModel) {
+fun rejectContactRequest(rhId: Long?, contactRequestId: Long, chatModel: ChatModel, dismissToChatList: Boolean = false) {
   withBGApi {
-    chatModel.controller.apiRejectContactRequest(rhId, contactRequest.apiId)
+    val contact_ = chatModel.controller.apiRejectContactRequest(rhId, contactRequestId)
     withContext(Dispatchers.Main) {
-      chatModel.chatsContext.removeChat(rhId, contactRequest.id)
+      if (contact_ != null) { // means contact request was initially created with contact, so we need to remove contact chat
+        chatModel.chatsContext.removeChat(rhId, contact_.id)
+      } else {
+        chatModel.chatsContext.removeChat(rhId, contactRequestChatId(contactRequestId))
+      }
+      if (dismissToChatList) {
+        chatModel.chatId.value = null
+      }
     }
   }
 }
@@ -765,33 +823,49 @@ fun askCurrentOrIncognitoProfileConnectContactViaAddress(
   close: (() -> Unit)?,
   openChat: Boolean
 ) {
+  @Composable
+  fun UseCurrentProfileButton() {
+    SectionItemView({
+      AlertManager.privacySensitive.hideAlert()
+      withBGApi {
+        val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
+        if (ok && openChat) {
+          close?.invoke()
+          openDirectChat(rhId, contact.contactId)
+        }
+      }
+    }) {
+      Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+    }
+  }
+
+  @Composable
+  fun UseIncognitoProfileButton(text: String) {
+    SectionItemView({
+      AlertManager.privacySensitive.hideAlert()
+      withBGApi {
+        val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
+        if (ok && openChat) {
+          close?.invoke()
+          openDirectChat(rhId, contact.contactId)
+        }
+      }
+    }) {
+      Text(text, Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+    }
+  }
+
   AlertManager.privacySensitive.showAlertDialogButtonsColumn(
     title = String.format(generalGetString(MR.strings.connect_with_contact_name_question), contact.chatViewName),
     buttons = {
       Column {
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi {
-            close?.invoke()
-            val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = false)
-            if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId)
-            }
-          }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_current_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
-        }
-        SectionItemView({
-          AlertManager.privacySensitive.hideAlert()
-          withBGApi {
-            close?.invoke()
-            val ok = connectContactViaAddress(chatModel, rhId, contact.contactId, incognito = true)
-            if (ok && openChat) {
-              openDirectChat(rhId, contact.contactId)
-            }
-          }
-        }) {
-          Text(generalGetString(MR.strings.connect_use_new_incognito_profile), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        if (!contact.profileChangeProhibited) {
+          UseCurrentProfileButton()
+          UseIncognitoProfileButton(generalGetString(MR.strings.connect_use_new_incognito_profile))
+        } else if (!contact.contactConnIncognito) {
+          UseCurrentProfileButton()
+        } else {
+          UseIncognitoProfileButton(generalGetString(MR.strings.connect_use_incognito_profile))
         }
         SectionItemView({
           AlertManager.privacySensitive.hideAlert()
@@ -886,7 +960,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       ChatInfo.Direct(contact.copy(chatSettings = chatSettings))
     }
     is ChatInfo.Group -> with(chatInfo) {
-      ChatInfo.Group(groupInfo.copy(chatSettings = chatSettings))
+      ChatInfo.Group(groupInfo.copy(chatSettings = chatSettings), groupChatScope = null)
     }
     else -> null
   }
@@ -914,7 +988,7 @@ fun updateChatSettings(remoteHostId: Long?, chatInfo: ChatInfo, chatSettings: Ch
       val updatedChat = chatModel.getChat(chatInfo.id)
       if (updatedChat != null) {
         withContext(Dispatchers.Main) {
-          chatModel.chatsContext.updateChatTagReadNoContentTag(updatedChat, wasUnread)
+          chatModel.chatsContext.updateChatTagReadInPrimaryContext(updatedChat, wasUnread)
         }
       }
       val current = currentState?.value

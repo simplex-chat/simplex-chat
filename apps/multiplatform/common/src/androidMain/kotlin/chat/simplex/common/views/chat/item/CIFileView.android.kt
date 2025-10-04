@@ -46,7 +46,7 @@ actual fun SaveOrOpenFileMenu(
     }
     ItemAction(
       stringResource(MR.strings.save_verb),
-      painterResource(if (encrypted) MR.images.ic_lock_open_right else MR.images.ic_download),
+      painterResource(MR.images.ic_download),
       color = MaterialTheme.colors.primary,
       onClick = {
         saveFile()

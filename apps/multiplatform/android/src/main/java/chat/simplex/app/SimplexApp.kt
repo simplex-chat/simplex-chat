@@ -46,6 +46,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    AppContextProvider.initialize(this)
     if (ProcessPhoenix.isPhoenixProcess(this)) {
       return
     } else {

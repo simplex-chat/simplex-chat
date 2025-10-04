@@ -17,7 +17,8 @@ import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages.Batch
 import Simplex.Chat.Controller (ChatError (..), ChatErrorType (..))
 import Simplex.Chat.Messages (SndMessage (..))
-import Simplex.Chat.Protocol (SharedMsgId (..), maxEncodedMsgLength)
+import Simplex.Chat.Protocol (maxEncodedMsgLength)
+import Simplex.Chat.Types (SharedMsgId (..))
 import Test.Hspec
 
 batchingTests :: Spec

@@ -99,26 +99,43 @@ jobs:
 # =========================
 
   build-linux:
-    name: "ubuntu-${{ matrix.os }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
+    name: "ubuntu-${{ matrix.os }}-${{ matrix.arch }} (CLI,Desktop), GHC: ${{ matrix.ghc }}"
     needs: [maybe-release, variables]
-    runs-on: ubuntu-${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: 22.04
+            os_underscore: 22_04
+            arch: x86_64
+            runner: "ubuntu-22.04"
             ghc: "8.10.7"
             should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
           - os: 22.04
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            cli_asset_name: simplex-chat-ubuntu-22_04-x86-64
-            desktop_asset_name: simplex-desktop-ubuntu-22_04-x86_64.deb
+            os_underscore: 22_04
+            arch: x86_64
+            runner: "ubuntu-22.04"
             should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
           - os: 24.04
-            ghc: ${{ needs.variables.outputs.GHC_VER }}
-            cli_asset_name: simplex-chat-ubuntu-24_04-x86-64
-            desktop_asset_name: simplex-desktop-ubuntu-24_04-x86_64.deb
+            os_underscore: 24_04
+            arch: x86_64
+            runner: "ubuntu-24.04"
             should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+          - os: 22.04
+            os_underscore: 22_04
+            arch: aarch64
+            runner: "ubuntu-22.04-arm"
+            should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+          - os: 24.04
+            os_underscore: 24_04
+            arch: aarch64
+            runner: "ubuntu-24.04-arm"
+            should_run: true
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
     steps:
       - name: Checkout Code
         if: matrix.should_run == true
@@ -143,7 +160,7 @@ jobs:
           path: |
             ~/.cabal/store
             dist-newstyle
-          key: ubuntu-${{ matrix.os }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
+          key: ubuntu-${{ matrix.os }}-${{ matrix.arch }}-ghc${{ matrix.ghc }}-${{ hashFiles('cabal.project', 'simplex-chat.cabal') }}
 
       - name: Set up Docker Buildx
         if: matrix.should_run == true
@@ -215,17 +232,17 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
-          docker cp builder:/out/simplex-chat ./${{ matrix.cli_asset_name }}
-          path="${{ github.workspace }}/${{ matrix.cli_asset_name }}"
+          docker cp builder:/out/simplex-chat ./simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}
+          path="${{ github.workspace }}/simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}"
           echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-256\(${{ matrix.cli_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_cli_prepare.outputs.bin_path }}
-          bin_name: ${{ matrix.cli_asset_name }}
+          bin_name: simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}
           bin_hash: ${{ steps.linux_cli_prepare.outputs.bin_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -234,25 +251,23 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          scripts/desktop/build-lib-linux.sh
-          cd apps/multiplatform
-          ./gradlew packageDeb
+          scripts/desktop/make-deb-linux.sh
 
       - name: Prepare Desktop
         id: linux_desktop_build
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
-          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_*_amd64.deb )
+          path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_${{ matrix.arch }}.deb )
           echo "package_path=$path" >> $GITHUB_OUTPUT
-          echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "package_hash=$(echo SHA2-256\(simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload Desktop
         uses: ./.github/actions/prepare-release
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         with:
           bin_path: ${{ steps.linux_desktop_build.outputs.package_path }}
-          bin_name: ${{ matrix.desktop_asset_name }}
+          bin_name: simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb
           bin_hash: ${{ steps.linux_desktop_build.outputs.package_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -270,14 +285,14 @@ jobs:
         run: |
           path=$(echo ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage)
           echo "appimage_path=$path" >> $GITHUB_OUTPUT
-          echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-x86_64.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          echo "appimage_hash=$(echo SHA2-256\(simplex-desktop-${{ matrix.arch }}.AppImage\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload AppImage
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
           bin_path: ${{ steps.linux_appimage_build.outputs.appimage_path }}
-          bin_name: "simplex-desktop-x86_64.AppImage"
+          bin_name: "simplex-desktop-${{ matrix.arch }}.AppImage"
           bin_hash: ${{ steps.linux_appimage_build.outputs.appimage_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -290,7 +305,7 @@ jobs:
           sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
 
       - name: Run tests
-        if: matrix.should_run == true
+        if: matrix.should_run == true && matrix.arch == 'x86_64'
         timeout-minutes: 120
         shell: bash
         run: |

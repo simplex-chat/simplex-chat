@@ -240,6 +240,7 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "Hyväksy";
 
@@ -249,7 +250,7 @@ swipe action */
 /* notification body */
 "Accept contact request from %@?" = "Hyväksy kontaktipyyntö %@:ltä?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "Hyväksy tuntematon";
 
@@ -509,7 +510,8 @@ swipe action */
 "Can't invite contacts!" = "Kontakteja ei voi kutsua!";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "Peruuta";
 
 /* feature offered item */
@@ -652,15 +654,12 @@ set passcode view */
 "Connect" = "Yhdistä";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "Yhdistä Incognito";
-
-/* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "ole yhteydessä SimpleX Chat -kehittäjiin.";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "Yhdistä linkin kautta";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "Yhdistä kertalinkillä";
 
 /* No comment provided by engineer. */
@@ -696,7 +695,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection" = "Yhteys";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "Yhteysvirhe";
 
 /* No comment provided by engineer. */
@@ -708,7 +707,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection request sent!" = "Yhteyspyyntö lähetetty!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "Yhteyden aikakatkaisu";
 
 /* connection information */
@@ -773,9 +772,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "Luo jono";
-
-/* No comment provided by engineer. */
-"Create secret group" = "Luo salainen ryhmä";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "Luo SimpleX-osoite";
@@ -1073,7 +1069,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "Älä salli";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "Älä näytä uudelleen";
 
 /* No comment provided by engineer. */
@@ -1247,7 +1243,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "Virhe roolin vaihdossa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "Virhe asetuksen muuttamisessa";
 
 /* No comment provided by engineer. */
@@ -1265,19 +1261,19 @@ swipe action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "Virhe tiedoston salauksen purussa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "Virhe keskustelujen tietokannan poistamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "Virhe keskutelun poistamisessa!";
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "Virhe yhteyden poistamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "Virhe tietokannan poistamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "Virhe vanhan tietokannan poistamisessa";
 
 /* No comment provided by engineer. */
@@ -1295,10 +1291,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "Virhe tietokannan salauksessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "Virhe vietäessä keskustelujen tietokantaa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "Virhe keskustelujen tietokannan tuonnissa";
 
 /* No comment provided by engineer. */
@@ -1307,7 +1303,7 @@ swipe action */
 /* alert title */
 "Error receiving file" = "Virhe tiedoston vastaanottamisessa";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "Virhe poistettaessa jäsentä";
 
 /* No comment provided by engineer. */
@@ -1431,6 +1427,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Löydä keskustelut nopeammin";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
 
 /* No comment provided by engineer. */
 "Fix" = "Korjaa";
@@ -1760,9 +1759,9 @@ snd error text */
 "Join" = "Liity";
 
 /* No comment provided by engineer. */
-"join as %@" = "Liity %@:nä";
+"Join as %@" = "Liity %@:nä";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "Liity ryhmään";
 
 /* No comment provided by engineer. */
@@ -2079,6 +2078,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "pois";
 
@@ -2091,7 +2091,9 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "tarjottu %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button
+new chat action */
 "Ok" = "Ok";
 
 /* No comment provided by engineer. */
@@ -2154,7 +2156,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "Vain kontaktisi voi lähettää ääniviestejä.";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "Avaa keskustelu";
 
 /* authentication reason */
@@ -2208,7 +2210,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "Tarkista, että käytit oikeaa linkkiä tai pyydä kontaktiasi lähettämään sinulle uusi linkki.";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "Tarkista verkkoyhteytesi %@:lla ja yritä uudelleen.";
 
 /* No comment provided by engineer. */
@@ -2240,9 +2242,6 @@ time to disappear */
 
 /* No comment provided by engineer. */
 "Polish interface" = "Puolalainen käyttöliittymä";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
@@ -2382,14 +2381,15 @@ time to disappear */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "Pienempi akun käyttö";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "Hylkää";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "Hylkää (lähettäjälle EI ilmoiteta)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "Hylkää yhteyspyyntö";
 
 /* call status */
@@ -2652,10 +2652,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Lähetetyt viestit poistetaan asetetun ajan kuluttua.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
+"Server requires authorization to create queues, check password." = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
+"Server requires authorization to upload, check password." = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Palvelintesti epäonnistui!";
@@ -2911,12 +2911,9 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "Vanhaa tietokantaa ei poistettu siirron aikana, se voidaan kuitenkin poistaa.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "Toinen kuittaus, joka uupui! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "Lähettäjälle EI ilmoiteta";
 
 /* No comment provided by engineer. */
@@ -3072,7 +3069,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use chat" = "Käytä chattia";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "Käytä nykyistä profiilia";
 
 /* No comment provided by engineer. */
@@ -3081,7 +3078,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "Käytä iOS:n puhelujen käyttöliittymää";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "Käytä uutta incognito-profiilia";
 
 /* No comment provided by engineer. */
@@ -3220,9 +3217,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "sinut on kutsuttu ryhmään";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";
 
 /* No comment provided by engineer. */
@@ -3264,7 +3258,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "Voit käyttää markdownia viestien muotoiluun:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "Et voi lähettää viestejä!";
 
 /* chat item text */
@@ -3391,10 +3385,10 @@ chat item action */
 "Your profile **%@** will be shared." = "Profiilisi **%@** jaetaan.";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
+"Your profile is stored on your device and only shared with your contacts." = "Profiili jaetaan vain kontaktiesi kanssa.";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "Profiilisi, kontaktisi ja toimitetut viestit tallennetaan laitteellesi.";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "Profiilisi tallennetaan laitteeseesi ja jaetaan vain yhteystietojesi kanssa. SimpleX-palvelimet eivät näe profiiliasi.";
 
 /* No comment provided by engineer. */
 "Your random profile" = "Satunnainen profiilisi";

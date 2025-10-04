@@ -136,7 +136,6 @@ object NtfManager {
       val actionPendingIntent: PendingIntent = PendingIntent.getBroadcast(SimplexApp.context, 0, actionIntent, flags)
       val actionButton = when (action) {
         NotificationAction.ACCEPT_CONTACT_REQUEST -> generalGetString(MR.strings.accept)
-        NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO -> generalGetString(MR.strings.accept_contact_incognito_button)
       }
       builder.addAction(0, actionButton, actionPendingIntent)
     }
@@ -316,7 +315,6 @@ object NtfManager {
       val m = SimplexApp.context.chatModel
       when (intent.action) {
         NotificationAction.ACCEPT_CONTACT_REQUEST.name -> ntfManager.acceptContactRequestAction(userId, incognito = false, chatId)
-        NotificationAction.ACCEPT_CONTACT_REQUEST_INCOGNITO.name -> ntfManager.acceptContactRequestAction(userId, incognito = true, chatId)
         RejectCallAction -> {
           val invitation = m.callInvitations[chatId]
           if (invitation != null) {

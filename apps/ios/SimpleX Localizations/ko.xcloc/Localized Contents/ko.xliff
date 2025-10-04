@@ -2250,8 +2250,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -2603,8 +2603,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Sent messages will be deleted after set time.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3696,7 +3696,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3873,8 +3873,8 @@ SimpleX servers cannot see your profile.</source>
         <source>yes</source>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
@@ -4641,8 +4641,8 @@ This is your own one-time link!</source>
         <source>All new messages from %@ will be hidden!</source>
         <target state="translated">%@로부터의 모든 새 메세지가 숨겨집니다!</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">자동-수락 설정</target>
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">

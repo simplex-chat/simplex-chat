@@ -634,7 +634,7 @@ fun HostDisconnectButton(onClick: (() -> Unit)?) {
 }
 
 @Composable
-fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boolean) {
+fun BoxScope.userUnreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boolean) {
   Text(
     if (unreadCount > 0) unreadCountStr(unreadCount) else "",
     color = Color.White,

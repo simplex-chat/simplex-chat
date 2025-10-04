@@ -101,13 +101,13 @@ actual fun GrayU8.toImageBitmap(): ImageBitmap = ConvertBitmap.grayToBitmap(this
 
 actual fun ImageBitmap.hasAlpha(): Boolean = hasAlpha
 
-actual fun ImageBitmap.addLogo(): ImageBitmap = asAndroidBitmap().applyCanvas {
-  val radius = (width * 0.16f) / 2
+actual fun ImageBitmap.addLogo(size: Float): ImageBitmap = asAndroidBitmap().applyCanvas {
+  val radius = (width * size) / 2
   val paint = android.graphics.Paint()
   paint.color = android.graphics.Color.WHITE
   drawCircle(width / 2f, height / 2f, radius, paint)
   val logo = androidAppContext.resources.getDrawable(R.drawable.icon_foreground_android_common, null).toBitmap()
-  val logoSize = (width * 0.24).toInt()
+  val logoSize = (width * size * 1.5).toInt()
   translate((width - logoSize) / 2f, (height - logoSize) / 2f)
   drawBitmap(logo, null, android.graphics.Rect(0, 0, logoSize, logoSize), null)
 }.asImageBitmap()

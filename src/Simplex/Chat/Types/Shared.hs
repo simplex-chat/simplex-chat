@@ -49,20 +49,17 @@ instance ToJSON GroupMemberRole where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
-data GroupAcceptance = GAAccepted | GAPending deriving (Eq, Show)
-
--- TODO [knocking] encoding doesn't match field type
-instance FromField GroupAcceptance where fromField = blobFieldDecoder strDecode
-
-instance ToField GroupAcceptance where toField = toField . strEncode
+data GroupAcceptance = GAAccepted | GAPendingApproval | GAPendingReview  deriving (Eq, Show)
 
 instance StrEncoding GroupAcceptance where
   strEncode = \case
     GAAccepted -> "accepted"
-    GAPending -> "pending"
+    GAPendingApproval -> "pending"
+    GAPendingReview -> "pending_review"
   strDecode = \case
     "accepted" -> Right GAAccepted
-    "pending" -> Right GAPending
+    "pending" -> Right GAPendingApproval
+    "pending_review" -> Right GAPendingReview
     r -> Left $ "bad GroupAcceptance " <> B.unpack r
   strP = strDecode <$?> A.takeByteString
 

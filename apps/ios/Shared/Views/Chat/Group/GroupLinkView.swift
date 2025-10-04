@@ -12,7 +12,7 @@ import SimpleXChat
 struct GroupLinkView: View {
     @EnvironmentObject var theme: AppTheme
     var groupId: Int64
-    @Binding var groupLink: CreatedConnLink?
+    @Binding var groupLink: GroupLink?
     @Binding var groupLinkMemberRole: GroupMemberRole
     var showTitle: Bool = false
     var creatingGroup: Bool = false
@@ -35,16 +35,23 @@ struct GroupLinkView: View {
     }
 
     var body: some View {
-        if creatingGroup {
-            groupLinkView()
-                .navigationBarBackButtonHidden()
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button ("Continue") { linkCreatedCb?() }
+        ZStack {
+            if creatingGroup {
+                groupLinkView()
+                    .navigationBarBackButtonHidden()
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button ("Continue") { linkCreatedCb?() }
+                        }
                     }
-                }
-        } else {
-            groupLinkView()
+            } else {
+                groupLinkView()
+            }
+            if creatingLink {
+                ProgressView()
+                    .scaleEffect(2)
+                    .frame(maxWidth: .infinity)
+            }
         }
     }
 
@@ -71,10 +78,21 @@ struct GroupLinkView: View {
                         }
                     }
                     .frame(height: 36)
-                    SimpleXCreatedLinkQRCode(link: groupLink, short: $showShortLink)
-                        .id("simplex-qrcode-view-for-\(groupLink.simplexChatUri(short: showShortLink))")
+                    SimpleXCreatedLinkQRCode(link: groupLink.connLinkContact, short: $showShortLink)
+                        .id("simplex-qrcode-view-for-\(groupLink.connLinkContact.simplexChatUri(short: showShortLink))")
+                    if groupLink.shouldBeUpgraded {
+                        Button {
+                            upgradeAndShareLinkAlert()
+                        } label: {
+                            Label("Upgrade link", systemImage: "arrow.up")
+                        }
+                    }
                     Button {
-                        showShareSheet(items: [groupLink.simplexChatUri(short: showShortLink)])
+                        if groupLink.shouldBeUpgraded {
+                            upgradeAndShareLinkAlert(groupLink: groupLink)
+                        } else {
+                            groupLink.shareAddress(short: showShortLink)
+                        }
                     } label: {
                         Label("Share link", systemImage: "square.and.arrow.up")
                     }
@@ -89,15 +107,10 @@ struct GroupLinkView: View {
                         Label("Create link", systemImage: "link.badge.plus")
                     }
                     .disabled(creatingLink)
-                    if creatingLink {
-                        ProgressView()
-                            .scaleEffect(2)
-                            .frame(maxWidth: .infinity)
-                    }
                 }
             } header: {
-                if let groupLink, groupLink.connShortLink != nil {
-                    ToggleShortLinkHeader(text: Text(""), link: groupLink, short: $showShortLink)
+                if let groupLink, groupLink.connLinkContact.connShortLink != nil {
+                    ToggleShortLinkHeader(text: Text(""), link: groupLink.connLinkContact, short: $showShortLink)
                 }
             }
             .alert(item: $alert) { alert in
@@ -124,7 +137,7 @@ struct GroupLinkView: View {
             .onChange(of: groupLinkMemberRole) { _ in
                 Task {
                     do {
-                        _ = try await apiGroupLinkMemberRole(groupId, memberRole: groupLinkMemberRole)
+                        groupLink = try await apiGroupLinkMemberRole(groupId, memberRole: groupLinkMemberRole)
                     } catch let error {
                         let a = getErrorAlert(error, "Error updating group link")
                         alert = .error(title: a.title, error: a.message)
@@ -145,10 +158,10 @@ struct GroupLinkView: View {
         Task {
             do {
                 creatingLink = true
-                let link = try await apiCreateGroupLink(groupId)
+                let gLink = try await apiCreateGroupLink(groupId)
                 await MainActor.run {
                     creatingLink = false
-                    (groupLink, groupLinkMemberRole) = link
+                    groupLink = gLink
                 }
             } catch let error {
                 logger.error("GroupLinkView apiCreateGroupLink: \(responseError(error))")
@@ -160,12 +173,61 @@ struct GroupLinkView: View {
             }
         }
     }
+
+    private func upgradeAndShareLinkAlert(groupLink: GroupLink? = nil) {
+        showAlert(
+            NSLocalizedString("Upgrade group link?", comment: "alert message"),
+            message: NSLocalizedString("The link will be short, and group profile will be shared via the link.", comment: "alert message"),
+            actions: {
+                var actions = [UIAlertAction(title: NSLocalizedString("Upgrade", comment: "alert button"), style: .default) { _ in
+                    addShortLink(shareOnCompletion: groupLink != nil)
+                }]
+                if let groupLink {
+                    actions.append(UIAlertAction(title: NSLocalizedString("Share old link", comment: "alert button"), style: .default) { _ in
+                        groupLink.shareAddress(short: showShortLink)
+                    })
+                }
+                actions.append(cancelAlertAction)
+                return actions
+            }
+        )
+    }
+
+    private func addShortLink(shareOnCompletion: Bool = false) {
+        Task {
+            do {
+                creatingLink = true
+                let gLink = try await apiAddGroupShortLink(groupId)
+                await MainActor.run {
+                    creatingLink = false
+                    groupLink = gLink
+                    if shareOnCompletion, let gLink {
+                        gLink.shareAddress(short: showShortLink)
+                    }
+                }
+            } catch let error {
+                logger.error("apiAddGroupShortLink: \(responseError(error))")
+                await MainActor.run {
+                    creatingLink = false
+                    let a = getErrorAlert(error, "Error adding short link")
+                    alert = .error(title: a.title, error: a.message)
+                }
+            }
+        }
+    }
 }
 
 struct GroupLinkView_Previews: PreviewProvider {
     static var previews: some View {
-        @State var groupLink: CreatedConnLink? = CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil)
-        @State var noGroupLink: CreatedConnLink? = nil
+        @State var groupLink: GroupLink? = GroupLink(
+            userContactLinkId: 1,
+            connLinkContact: CreatedConnLink(connFullLink: "https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D", connShortLink: nil),
+            shortLinkDataSet: false,
+            shortLinkLargeDataSet: false,
+            groupLinkId: "abc",
+            acceptMemberRole: .member
+        )
+        @State var noGroupLink: GroupLink? = nil
 
         return Group {
             GroupLinkView(groupId: 1, groupLink: $groupLink, groupLinkMemberRole: Binding.constant(.member))
@@ -173,4 +235,3 @@ struct GroupLinkView_Previews: PreviewProvider {
         }
     }
 }
-

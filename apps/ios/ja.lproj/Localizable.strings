@@ -178,14 +178,14 @@
 /* time interval */
 "%d sec" = "%d 秒";
 
+/* delete after time */
+"%d seconds(s)" = "%d 秒";
+
 /* integrity error chat item */
 "%d skipped message(s)" = "%d 件のスキップされたメッセージ";
 
 /* time interval */
 "%d weeks" = "%d 週";
-
-/* No comment provided by engineer. */
-"%lld" = "";
 
 /* No comment provided by engineer. */
 "%lld %@" = "%lld %@";
@@ -283,6 +283,9 @@ time interval */
 time interval */
 "1 week" = "1週間";
 
+/* delete after time */
+"1 year" = "1年";
+
 /* No comment provided by engineer. */
 "1-time link" = "使い捨てリンク";
 
@@ -323,6 +326,9 @@ time interval */
 "Abort changing address?" = "アドレス変更を中止しますか？";
 
 /* No comment provided by engineer. */
+"About operators" = "オペレーターについて";
+
+/* No comment provided by engineer. */
 "About SimpleX Chat" = "SimpleX Chat について";
 
 /* No comment provided by engineer. */
@@ -330,21 +336,43 @@ time interval */
 
 /* accept contact request via notification
 accept incoming call via notification
+alert action
 swipe action */
 "Accept" = "承諾";
+
+/* alert action */
+"Accept as member" = "メンバーとして承認する";
+
+/* alert action */
+"Accept as observer" = "オブザーバーとして承認する";
+
+/* No comment provided by engineer. */
+"Accept conditions" = "条件に同意する";
 
 /* No comment provided by engineer. */
 "Accept connection request?" = "接続要求を承認？";
 
+/* alert title */
+"Accept contact request" = "連絡先リクエストを受け入れる";
+
 /* notification body */
 "Accept contact request from %@?" = "%@ からの連絡要求を受け入れますか?";
 
-/* accept contact request via notification
+/* alert action
 swipe action */
 "Accept incognito" = "シークレットモードで承諾";
 
+/* alert title */
+"Accept member" = "メンバーを承認する";
+
 /* call status */
 "accepted call" = "受けた通話";
+
+/* No comment provided by engineer. */
+"Accepted conditions" = "承諾された条件";
+
+/* No comment provided by engineer. */
+"Acknowledged" = "了承済み";
 
 /* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。";
@@ -484,10 +512,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Already connected?" = "すでに接続済みですか？";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already connecting!" = "既に接続中です！";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Already joining the group!" = "すでにグループに参加しています！";
 
 /* pref value */
@@ -647,7 +675,8 @@ swipe action */
 "Can't invite contacts!" = "連絡先を招待できません！";
 
 /* alert action
-alert button */
+alert button
+new chat action */
 "Cancel" = "中止";
 
 /* feature offered item */
@@ -808,9 +837,6 @@ set passcode view */
 "Connect" = "接続";
 
 /* No comment provided by engineer. */
-"Connect incognito" = "シークレットモードで接続";
-
-/* No comment provided by engineer. */
 "Connect to desktop" = "デスクトップに接続";
 
 /* No comment provided by engineer. */
@@ -819,10 +845,10 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connect to your friends faster." = "友達ともっと速くつながりましょう。";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "リンク経由で接続";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via one-time link" = "ワンタイムリンクで接続";
 
 /* No comment provided by engineer. */
@@ -882,7 +908,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection and servers status." = "接続とサーバーのステータス。";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "接続エラー";
 
 /* No comment provided by engineer. */
@@ -897,7 +923,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Connection terminated" = "接続停止";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "接続タイムアウト";
 
 /* connection information */
@@ -962,9 +988,6 @@ set passcode view */
 
 /* server test step */
 "Create queue" = "キューの作成";
-
-/* No comment provided by engineer. */
-"Create secret group" = "シークレットグループを作成する";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "SimpleXアドレスの作成";
@@ -1277,7 +1300,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Don't enable" = "有効にしない";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "次から表示しない";
 
 /* No comment provided by engineer. */
@@ -1454,7 +1477,7 @@ swipe action */
 /* No comment provided by engineer. */
 "Error changing role" = "役割変更にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "設定変更にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1475,19 +1498,19 @@ swipe action */
 /* No comment provided by engineer. */
 "Error decrypting file" = "ファイルの復号エラー";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "チャットデータベース削除にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "チャット削除にエラー発生！";
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "接続の削除エラー";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "データベースの削除にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "古いデータベースを削除にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1502,10 +1525,10 @@ swipe action */
 /* No comment provided by engineer. */
 "Error encrypting database" = "データベース暗号化ににエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "チャットデータベースのエキスポートにエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "チャットデータベースのインポートにエラー発生";
 
 /* No comment provided by engineer. */
@@ -1514,7 +1537,7 @@ swipe action */
 /* alert title */
 "Error receiving file" = "ファイル受信にエラー発生";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "メンバー除名にエラー発生";
 
 /* No comment provided by engineer. */
@@ -1638,6 +1661,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "チャットを素早く検索";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "サーバアドレスの証明証IDが正しくないかもしれません";
 
 /* No comment provided by engineer. */
 "Fix" = "修正";
@@ -1967,9 +1993,9 @@ snd error text */
 "Join" = "参加";
 
 /* No comment provided by engineer. */
-"join as %@" = "%@ として参加";
+"Join as %@" = "%@ として参加";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "グループに参加";
 
 /* No comment provided by engineer. */
@@ -2295,6 +2321,7 @@ snd error text */
 
 /* enabled status
 group pref value
+member criteria value
 time to disappear */
 "off" = "オフ";
 
@@ -2307,7 +2334,9 @@ time to disappear */
 /* feature offered item */
 "offered %@: %@" = "提供された %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button
+new chat action */
 "Ok" = "OK";
 
 /* No comment provided by engineer. */
@@ -2373,7 +2402,7 @@ time to disappear */
 /* alert action */
 "Open" = "開く";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "チャットを開く";
 
 /* authentication reason */
@@ -2427,7 +2456,7 @@ time to disappear */
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "リンクが正しいかどうかご確認ください。または、連絡相手にもう一度リンクをお求めください。";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "%@ を使用してネットワーク接続を確認し、再試行してください。";
 
 /* No comment provided by engineer. */
@@ -2459,9 +2488,6 @@ time to disappear */
 
 /* No comment provided by engineer. */
 "Polish interface" = "ポーランド語UI";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "サーバアドレスの証明証IDが正しくないかもしれません";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "添付を含めて、下書きを保存する。";
@@ -2601,14 +2627,15 @@ time to disappear */
 /* No comment provided by engineer. */
 "Reduced battery usage" = "電池使用量低減";
 
-/* reject incoming call via notification
+/* alert action
+reject incoming call via notification
 swipe action */
 "Reject" = "拒否";
 
 /* No comment provided by engineer. */
 "Reject (sender NOT notified)" = "連絡を拒否（送信者には通知されません）";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "連絡要求を拒否する";
 
 /* call status */
@@ -2850,10 +2877,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "一定時間が経ったら送信されたメッセージが削除されます。";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to upload, check password." = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "サーバテスト失敗！";
@@ -3112,12 +3139,9 @@ chat item action */
 "The old database was not removed during the migration, it can be deleted." = "古いデータベースは移行時に削除されなかったので、削除することができます。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "長らくお待たせしました！ ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "送信者には通知されません";
 
 /* No comment provided by engineer. */
@@ -3270,7 +3294,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use chat" = "チャット";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use current profile" = "現在のプロファイルを使用する";
 
 /* No comment provided by engineer. */
@@ -3279,7 +3303,7 @@ chat item action */
 /* No comment provided by engineer. */
 "Use iOS call interface" = "iOS通話インターフェースを使用する";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Use new incognito profile" = "新しいシークレットプロファイルを使用する";
 
 /* No comment provided by engineer. */
@@ -3418,9 +3442,6 @@ chat item action */
 "You are connected to the server used to receive messages from this contact." = "この連絡先から受信するメッセージのサーバに既に接続してます。";
 
 /* No comment provided by engineer. */
-"you are invited to group" = "グループ招待が届きました";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "グループ招待が届きました";
 
 /* No comment provided by engineer. */
@@ -3465,7 +3486,7 @@ chat item action */
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "メッセージの書式にmarkdownを使用することができます：";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "メッセージを送信できませんでした！";
 
 /* chat item text */
@@ -3592,10 +3613,10 @@ chat item action */
 "Your profile **%@** will be shared." = "あなたのプロファイル **%@** が共有されます。";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
+"Your profile is stored on your device and only shared with your contacts." = "プロフィールは連絡先にしか共有されません。";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "あなたのプロフィール、連絡先、送信したメッセージがご自分の端末に保存されます。";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "プロフィールはデバイスに保存され、連絡先とのみ共有されます。 SimpleX サーバーはあなたのプロファイルを参照できません。";
 
 /* No comment provided by engineer. */
 "Your random profile" = "あなたのランダム・プロフィール";

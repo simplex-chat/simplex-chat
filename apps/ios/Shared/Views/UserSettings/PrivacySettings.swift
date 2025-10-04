@@ -14,13 +14,12 @@ struct PrivacySettings: View {
     @EnvironmentObject var theme: AppTheme
     @AppStorage(DEFAULT_PRIVACY_ACCEPT_IMAGES) private var autoAcceptImages = true
     @AppStorage(DEFAULT_PRIVACY_LINK_PREVIEWS) private var useLinkPreviews = true
+    @AppStorage(GROUP_DEFAULT_PRIVACY_SANITIZE_LINKS, store: groupDefaults) private var privacySanitizeLinks = false
     @AppStorage(DEFAULT_PRIVACY_SHOW_CHAT_PREVIEWS) private var showChatPreviews = true
     @AppStorage(DEFAULT_PRIVACY_SAVE_LAST_DRAFT) private var saveLastDraft = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ENCRYPT_LOCAL_FILES, store: groupDefaults) private var encryptLocalFiles = true
     @AppStorage(GROUP_DEFAULT_PRIVACY_ASK_TO_APPROVE_RELAYS, store: groupDefaults) private var askToApproveRelays = true
-    @State private var simplexLinkMode = privacySimplexLinkModeDefault.get()
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
-    @AppStorage(DEFAULT_PRIVACY_SHORT_LINKS) private var shortSimplexLinks = false
     @AppStorage(DEFAULT_PRIVACY_PROTECT_SCREEN) private var protectScreen = false
     @AppStorage(DEFAULT_PERFORM_LA) private var prefPerformLA = false
     @State private var currentLAMode = privacyLocalAuthModeDefault.get()
@@ -33,6 +32,8 @@ struct PrivacySettings: View {
     @State private var groupReceiptsReset = false
     @State private var groupReceiptsOverrides = 0
     @State private var groupReceiptsDialogue = false
+    @State private var autoAcceptMemberContacts = false
+    @State private var autoAcceptMemberContactsReset = false
     @State private var alert: PrivacySettingsViewAlert?
 
     enum PrivacySettingsViewAlert: Identifiable {
@@ -74,7 +75,11 @@ struct PrivacySettings: View {
                         Toggle("Send link previews", isOn: $useLinkPreviews)
                             .onChange(of: useLinkPreviews) { linkPreviews in
                                 privacyLinkPreviewsGroupDefault.set(linkPreviews)
+                                privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
                             }
+                    }
+                    settingsRow("link", color: theme.colors.secondary) {
+                        Toggle("Remove link tracking", isOn: $privacySanitizeLinks)
                     }
                     settingsRow("message", color: theme.colors.secondary) {
                         Toggle("Show last messages", isOn: $showChatPreviews)
@@ -86,24 +91,6 @@ struct PrivacySettings: View {
                         if !saveDraft {
                             m.draft = nil
                             m.draftChatId = nil
-                        }
-                    }
-                    settingsRow("link", color: theme.colors.secondary) {
-                        Picker("SimpleX links", selection: $simplexLinkMode) {
-                            ForEach(
-                                SimpleXLinkMode.values + (SimpleXLinkMode.values.contains(simplexLinkMode) ? [] : [simplexLinkMode])
-                            ) { mode in
-                                Text(mode.text)
-                            }
-                        }
-                    }
-                    .frame(height: 36)
-                    .onChange(of: simplexLinkMode) { mode in
-                        privacySimplexLinkModeDefault.set(mode)
-                    }
-                    if developerTools {
-                        settingsRow("link.badge.plus", color: theme.colors.secondary) {
-                            Toggle("Use short links (BETA)", isOn: $shortSimplexLinks)
                         }
                     }
                 } header: {
@@ -125,7 +112,7 @@ struct PrivacySettings: View {
                             }
                     }
                     settingsRow("circle.filled.pattern.diagonalline.rectangle", color: theme.colors.secondary) {
-                        Picker("Blur media", selection: $privacyMediaBlurRadius) {
+                        WrappedPicker("Blur media", selection: $privacyMediaBlurRadius) {
                             let values = [0, 12, 24, 48] + ([0, 12, 24, 48].contains(privacyMediaBlurRadius) ? [] : [privacyMediaBlurRadius])
                             ForEach(values, id: \.self) { radius in
                                 let text: String = switch radius {
@@ -139,7 +126,6 @@ struct PrivacySettings: View {
                             }
                         }
                     }
-                    .frame(height: 36)
                     settingsRow("network.badge.shield.half.filled", color: theme.colors.secondary) {
                         Toggle("Protect IP address", isOn: $askToApproveRelays)
                     }
@@ -154,6 +140,18 @@ struct PrivacySettings: View {
                         Text("Without Tor or VPN, your IP address will be visible to file servers.")
                             .foregroundColor(theme.colors.secondary)
                     }
+                }
+
+                Section {
+                    settingsRow("checkmark", color: theme.colors.secondary) {
+                        Toggle("Auto-accept", isOn: $autoAcceptMemberContacts)
+                    }
+                } header: {
+                    Text("Contact requests from groups")
+                        .foregroundColor(theme.colors.secondary)
+                } footer: {
+                    Text("This setting is for your current profile **\(m.currentUser?.displayName ?? "")**.")
+                        .foregroundColor(theme.colors.secondary)
                 }
 
                 Section {
@@ -214,6 +212,13 @@ struct PrivacySettings: View {
                 setOrAskSendReceiptsGroups(groupReceipts)
             }
         }
+        .onChange(of: autoAcceptMemberContacts) { _ in
+            if autoAcceptMemberContactsReset {
+                autoAcceptMemberContactsReset = false
+            } else {
+                setAutoAcceptGrpDirectInvs(autoAcceptMemberContacts)
+            }
+        }
         .onAppear {
             if let u = m.currentUser {
                 if contactReceipts != u.sendRcptsContacts {
@@ -223,6 +228,10 @@ struct PrivacySettings: View {
                 if groupReceipts != u.sendRcptsSmallGroups {
                     groupReceiptsReset = true
                     groupReceipts = u.sendRcptsSmallGroups
+                }
+                if autoAcceptMemberContacts != u.autoAcceptMemberContacts {
+                    autoAcceptMemberContactsReset = true
+                    autoAcceptMemberContacts = u.autoAcceptMemberContacts
                 }
             }
         }
@@ -340,6 +349,23 @@ struct PrivacySettings: View {
         }
     }
 
+    private func setAutoAcceptGrpDirectInvs(_ enable: Bool) {
+        Task {
+            do {
+                if let currentUser = m.currentUser {
+                    try await apiSetUserAutoAcceptMemberContacts(currentUser.userId, enable: enable)
+                    await MainActor.run {
+                        var updatedUser = currentUser
+                        updatedUser.autoAcceptMemberContacts = enable
+                        m.updateUser(updatedUser)
+                    }
+                }
+            } catch let error {
+                alert = .error(title: "Error setting auto-accept", error: "Error: \(responseError(error))")
+            }
+        }
+    }
+
     private func simplexLockRow(_ value: LocalizedStringKey) -> some View {
         HStack {
             Text("SimpleX Lock")
@@ -452,7 +478,7 @@ struct SimplexLockView: View {
                         Toggle("Allow sharing", isOn: $allowShareExtension)
                     }
                 }
-                
+
                 if performLA && laMode == .passcode {
                     Section(header: Text("Self-destruct passcode").foregroundColor(theme.colors.secondary)) {
                         Toggle(isOn: $selfDestruct) {

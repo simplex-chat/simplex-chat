@@ -14,7 +14,6 @@ module Simplex.Chat.Terminal.Input where
 import Control.Applicative (optional, (<|>))
 import Control.Concurrent (forkFinally, forkIO, killThread, mkWeakThreadId, threadDelay)
 import Control.Monad
-import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.Bifunctor (second)
@@ -63,7 +62,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
       cmd = parseChatCommand bs
       rh' = if either (const False) allowRemoteCommand cmd then rh else Nothing
   unless (isMessage cmd) $ echo s
-  r <- runReaderT (execChatCommand rh' bs) cc
+  r <- execChatCommand rh' bs 0 `runReaderT` cc
   case r of
     Right r' -> processResp cmd rh r'
     Left _ -> when (isMessage cmd) $ echo s
@@ -150,7 +149,7 @@ runInputLoop ct@ChatTerminal {termState, liveMessageState} cc = forever $ do
 sendUpdatedLiveMessage :: ChatController -> String -> LiveMessage -> Bool -> IO (Either ChatError ChatResponse)
 sendUpdatedLiveMessage cc sentMsg LiveMessage {chatName, chatItemId} live = do
   let cmd = UpdateLiveMessage chatName chatItemId live $ T.pack sentMsg
-  runExceptT (processChatCommand cmd) `runReaderT` cc
+  execChatCommand' cmd 0 `runReaderT` cc
 
 runTerminalInput :: ChatTerminal -> ChatController -> IO ()
 runTerminalInput ct cc = withChatTerm ct $ do

@@ -67,6 +67,7 @@ func apiSendMessages(
         : SEChatCommand.apiSendMessages(
             type: chatInfo.chatType,
             id: chatInfo.apiId,
+            scope: chatInfo.groupChatScope(),
             live: false,
             ttl: nil,
             composedMessages: composedMessages
@@ -123,7 +124,7 @@ enum SEChatCommand: ChatCmdProtocol {
     case apiSetEncryptLocalFiles(enable: Bool)
     case apiGetChats(userId: Int64)
     case apiCreateChatItems(noteFolderId: Int64, composedMessages: [ComposedMessage])
-    case apiSendMessages(type: ChatType, id: Int64, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
+    case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     
     var cmdString: String {
         switch self {
@@ -139,15 +140,29 @@ enum SEChatCommand: ChatCmdProtocol {
         case let .apiCreateChatItems(noteFolderId, composedMessages):
             let msgs = encodeJSON(composedMessages)
             return "/_create *\(noteFolderId) json \(msgs)"
-        case let .apiSendMessages(type, id, live, ttl, composedMessages):
+        case let .apiSendMessages(type, id, scope, live, ttl, composedMessages):
             let msgs = encodeJSON(composedMessages)
             let ttlStr = ttl != nil ? "\(ttl!)" : "default"
-            return "/_send \(ref(type, id)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
+            return "/_send \(ref(type, id, scope: scope)) live=\(onOff(live)) ttl=\(ttlStr) json \(msgs)"
         }
     }
     
-    func ref(_ type: ChatType, _ id: Int64) -> String {
-        "\(type.rawValue)\(id)"
+    func ref(_ type: ChatType, _ id: Int64, scope: GroupChatScope?) -> String {
+        "\(type.rawValue)\(id)\(scopeRef(scope: scope))"
+    }
+
+    func scopeRef(scope: GroupChatScope?) -> String {
+        switch (scope) {
+        case .none: ""
+        case let .memberSupport(groupMemberId_):
+            if let groupMemberId = groupMemberId_ {
+                "(_support:\(groupMemberId))"
+            } else {
+                "(_support)"
+            }
+        case .reports:
+            "(reports, prohibited)" // can't use surrogate Reports scope
+        }
     }
 }
 

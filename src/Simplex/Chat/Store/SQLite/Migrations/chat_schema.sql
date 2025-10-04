@@ -18,7 +18,9 @@ CREATE TABLE contact_profiles(
   incognito INTEGER,
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   preferences TEXT,
-  contact_link BLOB
+  contact_link BLOB,
+  short_descr TEXT,
+  chat_peer_type TEXT
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -36,7 +38,8 @@ CREATE TABLE users(
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
-  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  active_order INTEGER NOT NULL DEFAULT 0,
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -79,6 +82,16 @@ CREATE TABLE contacts(
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
   chat_item_ttl INTEGER,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
+  contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
+  grp_direct_inv_link BLOB,
+  grp_direct_inv_from_group_id INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
+  grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
+  grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -109,7 +122,8 @@ CREATE TABLE group_profiles(
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   preferences TEXT,
   description TEXT NULL,
-  member_admission TEXT
+  member_admission TEXT,
+  short_descr TEXT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -134,7 +148,15 @@ CREATE TABLE groups(
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
-  local_alias TEXT DEFAULT '', -- received
+  local_alias TEXT DEFAULT '',
+  members_require_attention INTEGER NOT NULL DEFAULT 0,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
+  conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
+  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
+  via_group_link_uri BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -167,6 +189,13 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  support_chat_ts TEXT,
+  support_chat_items_unread INTEGER NOT NULL DEFAULT 0,
+  support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0,
+  support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
+  support_chat_last_msg_from_member_ts TEXT,
+  member_xcontact_id BLOB,
+  member_welcome_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -300,6 +329,7 @@ CREATE TABLE connections(
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
   short_link_inv BLOB,
   via_short_link_contact BLOB,
+  via_contact_uri BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -320,12 +350,14 @@ CREATE TABLE user_contact_links(
   group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
   short_link_contact BLOB,
+  short_link_data_set INTEGER NOT NULL DEFAULT 0,
+  short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
   contact_request_id INTEGER PRIMARY KEY,
-  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links
-  ON UPDATE CASCADE ON DELETE CASCADE,
+  user_contact_link_id INTEGER REFERENCES user_contact_links
+  ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles
   ON DELETE SET NULL
@@ -339,6 +371,9 @@ CREATE TABLE contact_requests(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -411,7 +446,10 @@ CREATE TABLE chat_items(
   via_proxy INTEGER,
   msg_content_tag TEXT,
   include_in_history INTEGER NOT NULL DEFAULT 0,
-  user_mention INTEGER NOT NULL DEFAULT 0
+  user_mention INTEGER NOT NULL DEFAULT 0,
+  group_scope_tag TEXT,
+  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  show_group_as_sender INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -658,7 +696,6 @@ CREATE INDEX contact_profiles_index ON contact_profiles(
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
@@ -1021,4 +1058,48 @@ CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
+);
+CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(
+  group_scope_group_member_id
+);
+CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_ts
+);
+CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status,
+  item_ts
+);
+CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
+CREATE INDEX idx_contact_requests_business_group_id ON contact_requests(
+  business_group_id
+);
+CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(
+  user_id,
+  xcontact_id
+);
+CREATE INDEX idx_chat_items_group_scope_stats_all ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status,
+  chat_item_id,
+  user_mention
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON contacts(
+  grp_direct_inv_from_group_id
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON contacts(
+  grp_direct_inv_from_group_member_id
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON contacts(
+  grp_direct_inv_from_member_conn_id
 );

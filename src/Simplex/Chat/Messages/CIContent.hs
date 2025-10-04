@@ -14,10 +14,12 @@
 
 module Simplex.Chat.Messages.CIContent where
 
+import Control.Applicative ((<|>))
 import Data.Aeson (FromJSON, ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
+import qualified Data.ByteString.Lazy as LB
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Text.Encoding (decodeLatin1, encodeUtf8)
@@ -165,6 +167,7 @@ data CIContent (d :: MsgDirection) where
   CIRcvDirectE2EEInfo :: E2EInfo -> CIContent 'MDRcv
   CISndGroupE2EEInfo :: E2EInfo -> CIContent 'MDSnd -- when new group is created
   CIRcvGroupE2EEInfo :: E2EInfo -> CIContent 'MDRcv -- when enabled with some member
+  CIChatBanner :: CIContent 'MDSnd
   CIInvalidJSON :: Text -> CIContent d -- this is also used for logical database errors, e.g. SEBadChatItem
 
 -- ^ This type is used both in API and in DB, so we use different JSON encodings for the database and for the API
@@ -173,7 +176,7 @@ data CIContent (d :: MsgDirection) where
 
 deriving instance Show (CIContent d)
 
-data E2EInfo = E2EInfo {pqEnabled :: PQEncryption}
+data E2EInfo = E2EInfo {pqEnabled :: Maybe PQEncryption}
   deriving (Eq, Show)
 
 ciMsgContent :: CIContent d -> Maybe MsgContent
@@ -181,6 +184,9 @@ ciMsgContent = \case
   CISndMsgContent mc -> Just mc
   CIRcvMsgContent mc -> Just mc
   _ -> Nothing
+
+isCIReport :: CIContent d -> Bool
+isCIReport = maybe False isReport . ciMsgContent
 
 data MsgDecryptError
   = MDERatchetHeader
@@ -203,9 +209,12 @@ ciRequiresAttention content = case msgDirection @d of
     CIRcvDirectEvent rde -> case rde of
       RDEContactDeleted -> False
       RDEProfileUpdated {} -> False
+      RDEGroupInvLinkReceived _ -> True
     CIRcvGroupEvent rge -> case rge of
       RGEMemberAdded {} -> False
       RGEMemberConnected -> False
+      RGEMemberAccepted {} -> False
+      RGEUserAccepted -> False
       RGEMemberLeft -> False
       RGEMemberRole {} -> False
       RGEMemberBlocked {} -> False
@@ -217,6 +226,7 @@ ciRequiresAttention content = case msgDirection @d of
       RGEInvitedViaGroupLink -> False
       RGEMemberCreatedContact -> False
       RGEMemberProfileUpdated {} -> False
+      RGENewMemberPendingReview -> True
     CIRcvConnEvent _ -> True
     CIRcvChatFeature {} -> False
     CIRcvChatPreference {} -> False
@@ -286,15 +296,22 @@ ciContentToText = \case
   CIRcvDirectE2EEInfo e2eeInfo -> directE2EInfoToText e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
   CIRcvGroupE2EEInfo e2eeInfo -> groupE2EInfoToText e2eeInfo
+  CIChatBanner -> "chat banner"
   CIInvalidJSON _ -> "invalid content JSON"
 
 directE2EInfoToText :: E2EInfo -> Text
 directE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
-  PQEncOn -> e2eInfoPQText
-  PQEncOff -> e2eInfoNoPQText
+  Just PQEncOn -> e2eInfoPQText
+  Just PQEncOff -> e2eInfoNoPQText
+  Nothing -> simpleE2EText
 
 groupE2EInfoToText :: E2EInfo -> Text
-groupE2EInfoToText _e2eeInfo = e2eInfoNoPQText
+groupE2EInfoToText E2EInfo {pqEnabled} = case pqEnabled of
+  Just _ -> e2eInfoNoPQText
+  Nothing -> simpleE2EText
+
+simpleE2EText :: Text
+simpleE2EText = "This conversation is protected by end-to-end encryption"
 
 e2eInfoNoPQText :: Text
 e2eInfoNoPQText =
@@ -306,17 +323,20 @@ e2eInfoPQText =
 
 ciGroupInvitationToText :: CIGroupInvitation -> GroupMemberRole -> Text
 ciGroupInvitationToText CIGroupInvitation {groupProfile = GroupProfile {displayName, fullName}} role =
-  "invitation to join group " <> displayName <> optionalFullName displayName fullName <> " as " <> (decodeLatin1 . strEncode $ role)
+  "invitation to join group " <> displayName <> optionalFullName displayName fullName Nothing <> " as " <> (decodeLatin1 . strEncode $ role)
 
 rcvDirectEventToText :: RcvDirectEvent -> Text
 rcvDirectEventToText = \case
   RDEContactDeleted -> "contact deleted"
   RDEProfileUpdated {} -> "updated profile"
+  RDEGroupInvLinkReceived GroupProfile {displayName} -> "requested connection from group " <> displayName
 
 rcvGroupEventToText :: RcvGroupEvent -> Text
 rcvGroupEventToText = \case
   RGEMemberAdded _ p -> "added " <> profileToText p
   RGEMemberConnected -> "connected"
+  RGEMemberAccepted _ p -> "accepted " <> profileToText p
+  RGEUserAccepted -> "accepted you"
   RGEMemberLeft -> "left"
   RGEMemberRole _ p r -> "changed role of " <> profileToText p <> " to " <> safeDecodeUtf8 (strEncode r)
   RGEMemberBlocked _ p blocked -> (if blocked then "blocked" else "unblocked") <> " " <> profileToText p
@@ -328,6 +348,7 @@ rcvGroupEventToText = \case
   RGEInvitedViaGroupLink -> "invited via your group link"
   RGEMemberCreatedContact -> "started direct connection with you"
   RGEMemberProfileUpdated {} -> "updated profile"
+  RGENewMemberPendingReview -> "new member wants to join the group"
 
 sndGroupEventToText :: SndGroupEvent -> Text
 sndGroupEventToText = \case
@@ -337,6 +358,18 @@ sndGroupEventToText = \case
   SGEMemberDeleted _ p -> "removed " <> profileToText p
   SGEUserLeft -> "left"
   SGEGroupUpdated _ -> "group profile updated"
+  SGEMemberAccepted _ _p -> "you accepted this member"
+  SGEUserPendingReview -> "please wait for group moderators to review your request to join the group"
+
+-- used to send to members with old version
+pendingReviewMessage :: Text
+pendingReviewMessage =
+  "Please wait for group moderators to review your request to join the group."
+
+-- used to send to members with old version
+acceptedToGroupMessage :: Text
+acceptedToGroupMessage =
+  "You are accepted to the group."
 
 rcvConnEventToText :: RcvConnEvent -> Text
 rcvConnEventToText = \case
@@ -375,7 +408,7 @@ sndConnEventToText = \case
       maybe "" (\GroupMemberRef {profile = Profile {displayName}} -> " for " <> displayName) member_
 
 profileToText :: Profile -> Text
-profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName
+profileToText Profile {displayName, fullName} = displayName <> optionalFullName displayName fullName Nothing
 
 msgIntegrityError :: MsgErrorType -> Text
 msgIntegrityError = \case
@@ -444,6 +477,7 @@ data JSONCIContent
   | JCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | JCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | JCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | JCIChatBanner
   | JCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 jsonCIContent :: forall d. MsgDirectionI d => CIContent d -> JSONCIContent
@@ -478,6 +512,7 @@ jsonCIContent = \case
   CIRcvDirectE2EEInfo e2eeInfo -> JCIRcvDirectE2EEInfo e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> JCISndGroupE2EEInfo e2eeInfo
   CIRcvGroupE2EEInfo e2eeInfo -> JCIRcvGroupE2EEInfo e2eeInfo
+  CIChatBanner -> JCIChatBanner
   CIInvalidJSON json -> JCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentJSON :: JSONCIContent -> ACIContent
@@ -512,6 +547,7 @@ aciContentJSON = \case
   JCIRcvDirectE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
   JCISndGroupE2EEInfo {e2eeInfo} -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
   JCIRcvGroupE2EEInfo {e2eeInfo} -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
+  JCIChatBanner -> ACIContent SMDSnd CIChatBanner
   JCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -547,6 +583,7 @@ data DBJSONCIContent
   | DBJCIRcvDirectE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCISndGroupE2EEInfo {e2eeInfo :: E2EInfo}
   | DBJCIRcvGroupE2EEInfo {e2eeInfo :: E2EInfo}
+  | DBJCIChatBanner
   | DBJCIInvalidJSON {direction :: MsgDirection, json :: Text}
 
 dbJsonCIContent :: forall d. MsgDirectionI d => CIContent d -> DBJSONCIContent
@@ -581,6 +618,7 @@ dbJsonCIContent = \case
   CIRcvDirectE2EEInfo e2eeInfo -> DBJCIRcvDirectE2EEInfo e2eeInfo
   CISndGroupE2EEInfo e2eeInfo -> DBJCISndGroupE2EEInfo e2eeInfo
   CIRcvGroupE2EEInfo e2eeInfo -> DBJCIRcvGroupE2EEInfo e2eeInfo
+  CIChatBanner -> DBJCIChatBanner
   CIInvalidJSON json -> DBJCIInvalidJSON (toMsgDirection $ msgDirection @d) json
 
 aciContentDBJSON :: DBJSONCIContent -> ACIContent
@@ -615,6 +653,7 @@ aciContentDBJSON = \case
   DBJCIRcvDirectE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvDirectE2EEInfo e2eeInfo
   DBJCISndGroupE2EEInfo e2eeInfo -> ACIContent SMDSnd $ CISndGroupE2EEInfo e2eeInfo
   DBJCIRcvGroupE2EEInfo e2eeInfo -> ACIContent SMDRcv $ CIRcvGroupE2EEInfo e2eeInfo
+  DBJCIChatBanner -> ACIContent SMDSnd CIChatBanner
   DBJCIInvalidJSON dir json -> case fromMsgDirection dir of
     AMsgDirection d -> ACIContent d $ CIInvalidJSON json
 
@@ -659,7 +698,13 @@ $(JQ.deriveJSON defaultJSON ''CIGroupInvitation)
 $(JQ.deriveJSON (enumJSON $ dropPrefix "CISCall") ''CICallStatus)
 
 -- platform specific
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
+$(JQ.deriveToJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent)
+
+-- We only need this fallback for platform specific encoding to support remote desktop link
+instance FromJSON JSONCIContent where
+  parseJSON v =
+    $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "JCI") ''JSONCIContent) v
+      <|> pure (JCIInvalidJSON MDRcv $ safeDecodeUtf8 $ LB.toStrict $ J.encode v)
 
 -- platform independent
 $(JQ.deriveJSON (singleFieldJSON $ dropPrefix "DBJCI") ''DBJSONCIContent)
@@ -674,7 +719,11 @@ instance MsgDirectionI d => ToJSON (CIContent d) where
   toEncoding = J.toEncoding . jsonCIContent
 
 instance MsgDirectionI d => FromJSON (CIContent d) where
-  parseJSON v = (\(ACIContent _ c) -> checkDirection c) <$?> J.parseJSON v
+  parseJSON v = unwrap <$?> J.parseJSON v
+    where
+      unwrap = \case
+        ACIContent _ (CIInvalidJSON t) -> Right $ CIInvalidJSON @d t -- ignoring direction in ACIContent - it may be incorrect from JSONCIContent parser fallback
+        ACIContent _ c -> checkDirection c
 
 -- platform independent
 dbParseACIContent :: Text -> Either String ACIContent
@@ -722,4 +771,5 @@ toCIContentTag ciContent = case ciContent of
   CIRcvDirectE2EEInfo _ -> "rcvDirectE2EEInfo"
   CISndGroupE2EEInfo _ -> "sndGroupE2EEInfo"
   CIRcvGroupE2EEInfo _ -> "rcvGroupE2EEInfo"
+  CIChatBanner -> "chatBanner"
   CIInvalidJSON _ -> "invalidJSON"

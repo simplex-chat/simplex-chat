@@ -34,6 +34,7 @@ import Simplex.Chat.Types (VersionRangeChat, authErrDisableCount, sameVerificati
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Client (NetworkTimeout (..))
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -94,21 +95,21 @@ chatDirectTests = do
     it "get and enable operators, accept conditions" testOperators
   describe "async connection handshake" $ do
     describe "connect when initiating client goes offline" $ do
-      it "curr" $ testAsyncInitiatingOffline testCfg testCfg
-      it "v5" $ testAsyncInitiatingOffline testCfgSlow testCfgSlow
-      it "v5/curr" $ testAsyncInitiatingOffline testCfgSlow testCfg
-      it "curr/v5" $ testAsyncInitiatingOffline testCfg testCfgSlow
+      it "curr" $ testAsyncInitiatingOffline True testCfg testCfg
+      it "v5" $ testAsyncInitiatingOffline False testCfgSlow testCfgSlow
+      it "v5/curr" $ testAsyncInitiatingOffline False testCfgSlow testCfg
+      it "curr/v5" $ testAsyncInitiatingOffline True testCfg testCfgSlow
     describe "connect when accepting client goes offline" $ do
-      it "curr" $ testAsyncAcceptingOffline testCfg testCfg
-      it "v5" $ testAsyncAcceptingOffline testCfgSlow testCfgSlow
-      it "v5/curr" $ testAsyncAcceptingOffline testCfgSlow testCfg
-      it "curr/v5" $ testAsyncAcceptingOffline testCfg testCfgSlow
+      it "curr" $ testAsyncAcceptingOffline True testCfg testCfg
+      it "v5" $ testAsyncAcceptingOffline False testCfgSlow testCfgSlow
+      it "v5/curr" $ testAsyncAcceptingOffline False testCfgSlow testCfg
+      it "curr/v5" $ testAsyncAcceptingOffline True testCfg testCfgSlow
     describe "connect, fully asynchronous (when clients are never simultaneously online)" $ do
       it "curr" testFullAsyncFast
       -- fails in CI
-      xit'' "v5" $ testFullAsyncSlow testCfgSlow testCfgSlow
-      xit'' "v5/curr" $ testFullAsyncSlow testCfgSlow testCfg
-      xit'' "curr/v5" $ testFullAsyncSlow testCfg testCfgSlow
+      xit'' "v5" $ testFullAsyncSlow False testCfgSlow testCfgSlow
+      xit'' "v5/curr" $ testFullAsyncSlow False testCfgSlow testCfg
+      xit'' "curr/v5" $ testFullAsyncSlow True testCfg testCfgSlow
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
 #if !defined(dbPostgres)
@@ -183,9 +184,9 @@ chatDirectTests = do
 testAddContact :: HasCallStack => SpecWith TestParams
 testAddContact = versionTestMatrix2 runTestAddContact
   where
-    runTestAddContact pqExpected alice bob = do
+    runTestAddContact pqExpected withShortLink alice bob = do
       alice ##> "/_connect 1"
-      inv <- getInvitation alice
+      inv <- (if withShortLink then getInvitation else getInvitationNoShortLink) alice
       bob ##> ("/_connect 1 " <> inv)
       bob <## "confirmation sent!"
       concurrently_
@@ -232,10 +233,7 @@ testAddContact = versionTestMatrix2 runTestAddContact
           bob #$> ("/_read chat @2", id, "ok")
           alice #$> ("/read user", id, "ok")
           alice #$> ("/_read user 1", id, "ok")
-        features =
-          if pqExpected
-            then chatFeatures
-            else (0, e2eeInfoNoPQStr) : tail chatFeatures
+        features = if pqExpected then chatFeatures else chatFeaturesNoPQ
 
 testRetryConnecting :: HasCallStack => TestParams -> IO ()
 testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile test ps
@@ -248,6 +246,7 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       alice <## "server disconnected localhost ()"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
+      _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> inv)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
@@ -255,6 +254,7 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "confirmation sent!"
         concurrently_
@@ -299,6 +299,7 @@ testRetryConnectingClientTimeout ps = do
       withNewTestChatCfgOpts ps cfgZeroTimeout opts' "bob" bobProfile $ \bob -> do
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "smp agent error: BROKER {brokerAddress = \"smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7003\", brokerErr = TIMEOUT}"
 
@@ -310,8 +311,10 @@ testRetryConnectingClientTimeout ps = do
   withSmpServer' serverCfg' $ do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
+        threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
+        _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> inv)
         bob <## "confirmation sent!"
 
@@ -348,7 +351,7 @@ testRetryConnectingClientTimeout ps = do
               },
           presetServers =
             let def@PresetServers {netCfg} = presetServers testCfg
-             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = 10}}
+             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
         }
     opts' =
       testOpts
@@ -372,7 +375,7 @@ testMarkReadDirect = testChat2 aliceProfile bobProfile $ \alice bob -> do
   bob ##> "/last_item_id"
   i :: ChatItemId <- read <$> getTermLine bob
   let itemIds = intercalate "," $ map show [i - 3 .. i]
-  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "items read for chat")
 
 testChatPaginationInitial :: HasCallStack => TestParams -> IO ()
 testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
@@ -391,7 +394,7 @@ testChatPaginationInitial = testChatOpts2 opts aliceProfile bobProfile $ \alice 
 
   -- Read next 2 items
   let itemIds = intercalate "," $ map itemId [1 .. 2]
-  bob #$> ("/_read chat items @2 " <> itemIds, id, "ok")
+  bob #$> ("/_read chat items @2 " <> itemIds, id, "items read for chat")
   bob #$> ("/_get chat @2 initial=2", chat, [(0, "1"), (0, "2"), (0, "3"), (0, "4"), (0, "5")])
 
   -- Read all items
@@ -478,6 +481,7 @@ testPlanInvitationLinkOk =
       inv <- getInvitation alice
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
+      _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> inv)
       bob <## "confirmation sent!"
@@ -487,6 +491,7 @@ testPlanInvitationLinkOk =
 
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+      _sLinkData <- getTermLine bob
       alice <##> bob
 
 testPlanInvitationLinkOwn :: HasCallStack => TestParams -> IO ()
@@ -510,6 +515,7 @@ testPlanInvitationLinkOwn ps =
 
     alice ##> ("/_connect plan 1 " <> inv)
     alice <## "invitation link: ok to connect" -- conn_req_inv is forgotten after connection
+    _sLinkData <- getTermLine alice
     threadDelay 100000
     alice @@@ [("@alice_1", lastChatFeature), ("@alice_2", lastChatFeature)]
     alice `send` "@alice_2 hi"
@@ -548,9 +554,9 @@ testContactClear =
       alice <##> bob
       threadDelay 500000
       alice #$> ("/clear bob", id, "bob: all messages are removed locally ONLY")
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
       bob #$> ("/clear alice", id, "alice: all messages are removed locally ONLY")
-      bob #$> ("/_get chat @2 count=100", chat, [])
+      bob #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
 testDeleteContactDeletesProfile :: HasCallStack => TestParams -> IO ()
 testDeleteContactDeletesProfile =
@@ -602,7 +608,7 @@ testDeleteConversationKeepContact =
       alice ##> "/_delete @2 messages"
       alice <## "bob: contact is deleted"
 
-      alice @@@ [("@bob", "")] -- UI would filter
+      alice @@@ [("@bob", "chat banner")] -- UI would filter
       bob @@@ [("@alice", "hey")]
       bob #> "@alice hi"
       alice <# "bob> hi"
@@ -907,13 +913,13 @@ testDirectLiveMessage =
     connectUsers alice bob
     -- non-empty live message is sent instantly
     alice `send` "/live @bob hello"
-    bob <# "alice> [LIVE started] use /show [on/off/7] hello"
+    bob <# "alice> [LIVE started] use /show [on/off/8] hello"
     alice ##> ("/_update item @2 " <> itemId 1 <> " text hello there")
     alice <# "@bob [LIVE] hello there"
     bob <# "alice> [LIVE ended] hello there"
     -- empty live message is also sent instantly
     alice `send` "/live @bob"
-    bob <# "alice> [LIVE started] use /show [on/off/8]"
+    bob <# "alice> [LIVE started] use /show [on/off/9]"
     alice ##> ("/_update item @2 " <> itemId 2 <> " text hello 2")
     alice <# "@bob [LIVE] hello 2"
     bob <# "alice> [LIVE ended] hello 2"
@@ -1155,8 +1161,8 @@ testTestSMPServerConnection =
       alice ##> "/smp test smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7001"
       alice <## "SMP server test passed"
       alice ##> "/smp test smp://LcJU@localhost:7001"
-      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK}"
-      alice <## "Possibly, certificate fingerprint in SMP server address is incorrect"
+      alice <## "SMP server test failed at Connect, error: BROKER {brokerAddress = \"smp://LcJU@localhost:7001\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice <## "Certificate fingerprint in SMP server address does not match server certificate"
 
 testGetSetXFTPServers :: HasCallStack => TestParams -> IO ()
 testGetSetXFTPServers =
@@ -1197,8 +1203,8 @@ testTestXFTPServer =
       alice ##> "/xftp test xftp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=:server_password@localhost:7002"
       alice <## "XFTP server test passed"
       alice ##> "/xftp test xftp://LcJU@localhost:7002"
-      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK}"
-      alice <## "Possibly, certificate fingerprint in XFTP server address is incorrect"
+      alice <## "XFTP server test failed at Connect, error: BROKER {brokerAddress = \"xftp://LcJU@localhost:7002\", brokerErr = NETWORK {networkError = NEUnknownCAError}}"
+      alice <## "Certificate fingerprint in XFTP server address does not match server certificate"
 
 testOperators  :: HasCallStack => TestParams -> IO ()
 testOperators =
@@ -1209,20 +1215,20 @@ testOperators =
       alice <##. "Current conditions: 2."
       alice ##> "/_operators"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
-      alice <##. "The new conditions will be accepted for SimpleX Chat Ltd at "
-      -- set conditions notified 
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
+      alice <##. "The new conditions will be accepted for SimpleX Chat Ltd, InFlux Technologies Limited at "
+      -- set conditions notified
       alice ##> "/_conditions_notified 2"
       alice <## "ok"
       alice ##> "/_operators"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: required"
-      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: required"
+      alice <## "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: required"
       alice ##> "/_conditions"
       alice <##. "Current conditions: 2 (notified)."
       -- accept conditions
       alice ##> "/_accept_conditions 2 1,2"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
-      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: disabled, conditions: accepted ("
+      alice <##. "2 (flux). Flux (InFlux Technologies Limited), domains: simplexonflux.com, servers: SMP enabled proxy, XFTP enabled proxy, conditions: accepted ("
       -- update operators
       alice ##> "/operators 2:on:smp=proxy:xftp=off"
       alice <##. "1 (simplex). SimpleX Chat (SimpleX Chat Ltd), domains: simplex.im, servers: enabled, conditions: accepted ("
@@ -1230,12 +1236,12 @@ testOperators =
   where
     opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
-testAsyncInitiatingOffline :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
-testAsyncInitiatingOffline aliceCfg bobCfg ps = do
+testAsyncInitiatingOffline :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
+testAsyncInitiatingOffline withShortLink aliceCfg bobCfg ps = do
   inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
-    getInvitation alice
+    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
   withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1245,11 +1251,11 @@ testAsyncInitiatingOffline aliceCfg bobCfg ps = do
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testAsyncAcceptingOffline :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
-testAsyncAcceptingOffline aliceCfg bobCfg ps = do
+testAsyncAcceptingOffline :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
+testAsyncAcceptingOffline withShortLink aliceCfg bobCfg ps = do
   inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
-    getInvitation alice
+    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
   withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1276,12 +1282,12 @@ testFullAsyncFast ps = do
   withTestChat ps "bob" $ \bob ->
     bob <## "alice (Alice): contact is connected"
 
-testFullAsyncSlow :: HasCallStack => ChatConfig -> ChatConfig -> TestParams -> IO ()
-testFullAsyncSlow aliceCfg bobCfg ps = do
+testFullAsyncSlow :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
+testFullAsyncSlow withShortLink aliceCfg bobCfg ps = do
   inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
-    getInvitation alice
+    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
   withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
@@ -1755,7 +1761,7 @@ testMultipleUserAddresses =
       cLinkAlice <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlice)
       alice <#? bob
-      alice @@@ [("<@bob", "")]
+      alice @@@ [("@bob", "Audio/video calls: enabled")]
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
@@ -1773,14 +1779,14 @@ testMultipleUserAddresses =
       cLinkAlisa <- getContactLink alice True
       bob ##> ("/c " <> cLinkAlisa)
       alice <#? bob
-      alice #$> ("/_get chats 2 pcc=on", chats, [("<@bob", ""), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", "Audio/video calls: enabled"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
       alice ##> "/ac bob"
       alice <## "bob (Bob): accepting contact request, you can send messages to contact"
       concurrently_
         (bob <## "alisa: contact is connected")
         (alice <## "bob (Bob): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@bob", lastChatFeature), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
       alice <##> bob
 
       bob #> "@alice hey alice"
@@ -1811,7 +1817,7 @@ testMultipleUserAddresses =
         (cath <## "alisa: contact is connected")
         (alice <## "cath (Catherine): contact is connected")
       threadDelay 100000
-      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@SimpleX Chat team", ""), ("@SimpleX-Status", ""), ("*", "")])
+      alice #$> ("/_get chats 2 pcc=on", chats, [("@cath", lastChatFeature), ("@bob", "hey"), ("@Ask SimpleX Team", ""), ("@SimpleX Status", ""), ("*", "")])
       alice <##> cath
 
       -- first user doesn't have cath as contact
@@ -1993,7 +1999,7 @@ testUsersDifferentCIExpirationTTL ps = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       -- second user messages
       alice ##> "/user alisa"
@@ -2002,7 +2008,7 @@ testUsersDifferentCIExpirationTTL ps = do
 
       threadDelay 2000000
 
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2076,7 +2082,7 @@ testUsersRestartCIExpiration ps = do
       -- first user messages
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       -- second user messages
       alice ##> "/user alisa"
@@ -2085,7 +2091,7 @@ testUsersRestartCIExpiration ps = do
 
       threadDelay 4000000
 
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2134,7 +2140,7 @@ testEnableCIExpirationOnlyForOneUser ps = do
       -- messages are deleted for first user
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       -- messages are not deleted for second user
       alice ##> "/user alisa"
@@ -2195,7 +2201,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
       alice <## "1 contacts connected (use /cs for the list)"
@@ -2209,12 +2215,12 @@ testDisableCIExpirationOnlyForOneUser ps = do
       bob #> "@alisa alisa 4"
       alice <# "bob> alisa 4"
 
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 2000000
 
       -- second user messages are deleted
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
@@ -2254,11 +2260,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "alice 1"), (0, "alice 2")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner"), (1, "alice 1"), (0, "alice 2")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -2269,11 +2275,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 1"), (0, "alisa 2")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 1"), (0, "alisa 2")])
 
       threadDelay 1000000
 
@@ -2284,7 +2290,7 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
       -- first user messages
       alice ##> "/user alice"
@@ -2310,11 +2316,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "alice 3"), (0, "alice 4")])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner"), (1, "alice 3"), (0, "alice 4")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       -- messages are deleted after restart
       threadDelay 1000000
@@ -2326,11 +2332,11 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
-      alice #$> ("/_get chat @2 count=100", chat, [])
+      alice #$> ("/_get chat @2 count=100", chat, [(1,"chat banner")])
 
       alice ##> "/user alisa"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [(1, "alisa 3"), (0, "alisa 4")])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner"), (1, "alisa 3"), (0, "alisa 4")])
 
       threadDelay 1000000
 
@@ -2341,7 +2347,7 @@ testUsersTimedMessages ps = do
 
       alice ##> "/user"
       showActiveUser alice "alisa"
-      alice #$> ("/_get chat @6 count=100", chat, [])
+      alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
     configureTimedMessages :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
     configureTimedMessages alice bob bobId ttl = do
@@ -2397,20 +2403,21 @@ testUserPrivacy =
       alice <## "alice (Alice)"
       alice <## "alisa (active, hidden, muted, unread: 1)"
       -- hidden message is saved
-      alice ##> "/tail"
+      alice ##> "/tail 11"
       alice <##? chatHistory
-      alice ##> "/_get items count=10"
+      alice ##> "/_get items count=11"
       alice <##? chatHistory
-      alice ##> "/_get items before=13 count=10"
+      alice ##> "/_get items before=15 count=10"
       alice
-        <##? [ ConsoleString ("bob> " <> e2eeInfoPQStr),
+        <##? [ "@bob chat banner",
+               ConsoleString ("bob> " <> e2eeInfoPQStr),
                "bob> Disappearing messages: allowed",
                "bob> Full deletion: off",
                "bob> Message reactions: enabled",
                "bob> Voice messages: enabled",
                "bob> Audio/video calls: enabled"
              ]
-      alice ##> "/_get items around=11 count=2"
+      alice ##> "/_get items around=13 count=2"
       alice
         <##? [ "bob> Full deletion: off",
                "bob> Message reactions: enabled",
@@ -2418,7 +2425,7 @@ testUserPrivacy =
                "bob> Audio/video calls: enabled",
                "@bob hello"
              ]
-      alice ##> "/_get items after=12 count=10"
+      alice ##> "/_get items after=14 count=10"
       alice
         <##? [ "@bob hello",
                "bob> hey",
@@ -2482,7 +2489,8 @@ testUserPrivacy =
       alice <## "messages are shown"
       alice <## "profile is visible"
     chatHistory =
-      [ ConsoleString ("bob> " <> e2eeInfoPQStr),
+      [ "@bob chat banner",
+        ConsoleString ("bob> " <> e2eeInfoPQStr),
         "bob> Disappearing messages: allowed",
         "bob> Full deletion: off",
         "bob> Message reactions: enabled",
@@ -2520,7 +2528,7 @@ testSetChatItemTTL =
       alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, ""), Just "test.jpg"), ((1, "3"), Nothing), ((0, "4"), Nothing)])
       checkActionDeletesFile "./tests/tmp/app_files/test.jpg" $
         alice #$> ("/_ttl 1 2", id, "ok")
-      alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
+      alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")]) -- when expiration is turned on, first cycle is synchronous
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, ""), (0, "3"), (1, "4")])
       alice #$> ("/_ttl 1", id, "old messages are set to be deleted after: 2 second(s)")
       alice #$> ("/ttl week", id, "ok")
@@ -2554,12 +2562,12 @@ testSetDirectChatTTL =
         alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "1"), Nothing), ((0, "2"), Nothing), ((1, "3"), Nothing), ((0, "4"), Nothing)])
         alice #$> ("/_ttl 1 2", id, "ok")
          -- when expiration is turned on, first cycle is synchronous
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4")])
 
         -- chat @3 doesn't expire since it was set to not expire
         alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4")])
-        
+
         -- remove global ttl
         alice #$> ("/ttl none", id, "ok")
         alice #> "@bob 5"
@@ -2567,14 +2575,14 @@ testSetDirectChatTTL =
         bob #> "@alice 6"
         alice <# "bob> 6"
         alice #$> ("/_get chat @3 count=100", chat, chatFeatures <> [(1, "10"), (0, "11")])
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4"), (1, "5"), (0, "6")])
 
         -- set ttl for chat @3, only chat @3 is affected since global ttl is disabled
         alice #$> ("/_ttl 1 @3 1", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: 1 second(s)")
         threadDelay 3000000
-        alice #$> ("/_get chat @3 count=100", chat, [])
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "chat banner")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4"), (1, "5"), (0, "6")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4"), (0, "5"), (1, "6")])
 
         -- set ttl to never expire again
@@ -2584,16 +2592,16 @@ testSetDirectChatTTL =
         cath #> "@alice 13"
         alice <# "cath> 13"
         threadDelay 3000000
-        alice #$> ("/_get chat @3 count=100", chat, [(1, "12"), (0, "13")])
-        alice #$> ("/_get chat @2 count=100", chat, [(1, "3"), (0, "4"), (1, "5"), (0, "6")])
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "chat banner"), (1, "12"), (0, "13")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner"), (1, "3"), (0, "4"), (1, "5"), (0, "6")])
         bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "1"), (1, "2"), (0, "3"), (1, "4"), (0, "5"), (1, "6")])
 
         -- set ttl back to default
         alice #$> ("/ttl @cath default", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are set to delete according to default user config")
         alice #$> ("/_ttl 1 2", id, "ok")
-        alice #$> ("/_get chat @3 count=100", chat, [])
-        alice #$> ("/_get chat @2 count=100", chat, [])
+        alice #$> ("/_get chat @3 count=100", chat, [(1, "chat banner")])
+        alice #$> ("/_get chat @2 count=100", chat, [(1, "chat banner")])
 
         alice #$> ("/ttl @cath day", id, "ok")
         alice #$> ("/ttl @cath", id, "old messages are set to be deleted after: one day")

@@ -66,7 +66,7 @@ struct ChatListNavLink: View {
             switch chat.chatInfo {
             case let .direct(contact):
                 contactNavLink(contact)
-            case let .group(groupInfo):
+            case let .group(groupInfo, _):
                 groupNavLink(groupInfo)
             case let .local(noteFolder):
                 noteFolderNavLink(noteFolder)
@@ -92,7 +92,7 @@ struct ChatListNavLink: View {
     
     private func contactNavLink(_ contact: Contact) -> some View {
         Group {
-            if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
+            if contact.isContactCard {
                 ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false))
                     .frameCompat(height: dynamicRowHeight)
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
@@ -122,29 +122,81 @@ struct ChatListNavLink: View {
                     label: { ChatPreviewView(chat: chat, progressByTimeout: Binding.constant(false)) }
                 )
                 .frameCompat(height: dynamicRowHeight)
-                .swipeActions(edge: .leading, allowsFullSwipe: true) {
-                    markReadButton()
-                    toggleFavoriteButton()
-                    toggleNtfsButton(chat: chat)
+                .if(!contact.nextAcceptContactRequest) { v in
+                    v.swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        markReadButton()
+                        toggleFavoriteButton()
+                        toggleNtfsButton(chat: chat)
+                    }
                 }
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                    tagChatButton(chat)
-                    if !chat.chatItems.isEmpty {
-                        clearChatButton()
+                    if contact.nextAcceptContactRequest {
+                        if let contactRequestId = contact.contactRequestId {
+                            Button {
+                                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequestId) }
+                            } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
+                                .tint(theme.colors.primary)
+                            if !ChatModel.shared.addressShortLinkDataSet {
+                                Button {
+                                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequestId) }
+                                } label: {
+                                    SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                                }
+                                .tint(.indigo)
+                            }
+                            Button {
+                                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequestId))
+                            } label: {
+                                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
+                            }
+                            .tint(.red)
+                        } else if let groupDirectInv = contact.groupDirectInv, !groupDirectInv.memberRemoved {
+                            Button {
+                                acceptMemberContactRequest(contact)
+                            } label: {
+                                Label("Accept", systemImage: "checkmark")
+                            }
+                            .tint(theme.colors.primary)
+                            Button {
+                                showRejectMemberContactRequestAlert(contact)
+                            } label: {
+                                Label("Reject", systemImage: "multiply")
+                            }
+                            .tint(.red)
+                        } else {
+                            Button {
+                                deleteContactDialog(
+                                    chat,
+                                    contact,
+                                    dismissToChatList: false,
+                                    showAlert: { alert = $0 },
+                                    showActionSheet: { actionSheet = $0 },
+                                    showSheetContent: { sheet = $0 }
+                                )
+                            } label: {
+                                deleteLabel
+                            }
+                            .tint(.red)
+                        }
+                    } else {
+                        tagChatButton(chat)
+                        if !chat.chatItems.isEmpty {
+                            clearChatButton()
+                        }
+                        Button {
+                            deleteContactDialog(
+                                chat,
+                                contact,
+                                dismissToChatList: false,
+                                showAlert: { alert = $0 },
+                                showActionSheet: { actionSheet = $0 },
+                                showSheetContent: { sheet = $0 }
+                            )
+                        } label: {
+                            deleteLabel
+                        }
+                        .tint(.red)
                     }
-                    Button {
-                        deleteContactDialog(
-                            chat,
-                            contact,
-                            dismissToChatList: false,
-                            showAlert: { alert = $0 },
-                            showActionSheet: { actionSheet = $0 },
-                            showSheetContent: { sheet = $0 }
-                        )
-                    } label: {
-                        deleteLabel
-                    }
-                    .tint(.red)
                 }
             }
         }
@@ -189,7 +241,7 @@ struct ChatListNavLink: View {
                 }
                 .swipeActions(edge: .trailing) {
                     tagChatButton(chat)
-                    if (groupInfo.membership.memberCurrent) {
+                    if (groupInfo.membership.memberCurrentOrPending) {
                         leaveGroupChatButton(groupInfo)
                     }
                     if groupInfo.canDelete {
@@ -214,7 +266,7 @@ struct ChatListNavLink: View {
                 let showReportsButton = chat.chatStats.reportsCount > 0 && groupInfo.membership.memberRole >= .moderator
                 let showClearButton = !chat.chatItems.isEmpty
                 let showDeleteGroup = groupInfo.canDelete
-                let showLeaveGroup = groupInfo.membership.memberCurrent
+                let showLeaveGroup = groupInfo.membership.memberCurrentOrPending
                 let totalNumberOfButtons = 1 + (showReportsButton ? 1 : 0) + (showClearButton ? 1 : 0) + (showDeleteGroup ? 1 : 0) + (showLeaveGroup ? 1 : 0)
 
                 if showClearButton && totalNumberOfButtons <= 3 {
@@ -276,7 +328,7 @@ struct ChatListNavLink: View {
     @ViewBuilder private func markReadButton() -> some View {
         if chat.chatStats.unreadCount > 0 || chat.chatStats.unreadChat {
             Button {
-                Task { await markChatRead(chat) }
+                Task { await markChatRead(ItemsModel.shared, chat) }
             } label: {
                 SwipeLabel(NSLocalizedString("Read", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI)
             }
@@ -436,28 +488,32 @@ struct ChatListNavLink: View {
         .frameCompat(height: dynamicRowHeight)
         .swipeActions(edge: .trailing, allowsFullSwipe: true) {
             Button {
-                Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } label: { SwipeLabel(NSLocalizedString("Accept", comment: "swipe action"), systemImage: "checkmark", inverted: oneHandUI) }
                 .tint(theme.colors.primary)
-            Button {
-                Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) }
-            } label: {
-                SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button {
+                    Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) }
+                } label: {
+                    SwipeLabel(NSLocalizedString("Accept incognito", comment: "swipe action"), systemImage: "theatermasks.fill", inverted: oneHandUI)
+                }
+                .tint(.indigo)
             }
-            .tint(.indigo)
             Button {
-                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest))
+                AlertManager.shared.showAlert(rejectContactRequestAlert(contactRequest.apiId))
             } label: {
-                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply.fill", inverted: oneHandUI)
+                SwipeLabel(NSLocalizedString("Reject", comment: "swipe action"), systemImage: "multiply", inverted: oneHandUI)
             }
             .tint(.red)
         }
         .contentShape(Rectangle())
         .onTapGesture { showContactRequestDialog = true }
         .confirmationDialog("Accept connection request?", isPresented: $showContactRequestDialog, titleVisibility: .visible) {
-            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequest: contactRequest) } }
-            Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequest: contactRequest) } }
-            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest) } }
+            Button("Accept") { Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) } }
+            if !ChatModel.shared.addressShortLinkDataSet {
+                Button("Accept incognito") { Task { await acceptContactRequest(incognito: true, contactRequestId: contactRequest.apiId) } }
+            }
+            Button("Reject (sender NOT notified)", role: .destructive) { Task { await rejectContactRequest(contactRequest.apiId) } }
         }
     }
 
@@ -482,12 +538,10 @@ struct ChatListNavLink: View {
             .tint(theme.colors.primary)
         }
         .appSheet(isPresented: $showContactConnectionInfo) {
-            Group {
-                if case let .contactConnection(contactConnection) = chat.chatInfo {
-                    ContactConnectionInfo(contactConnection: contactConnection)
-                        .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
-                        .modifier(ThemedBackground(grouped: true))
-                }
+            if case let .contactConnection(contactConnection) = chat.chatInfo {
+                ContactConnectionInfo(contactConnection: contactConnection)
+                    .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+                    .modifier(ThemedBackground(grouped: true))
             }
         }
         .contentShape(Rectangle())
@@ -621,12 +675,12 @@ extension View {
     }
 }
 
-func rejectContactRequestAlert(_ contactRequest: UserContactRequest) -> Alert {
+func rejectContactRequestAlert(_ contactRequestId: Int64) -> Alert {
     Alert(
         title: Text("Reject contact request"),
         message: Text("The sender will NOT be notified"),
         primaryButton: .destructive(Text("Reject")) {
-            Task { await rejectContactRequest(contactRequest) }
+            Task { await rejectContactRequest(contactRequestId) }
         },
         secondaryButton: .cancel()
     )
@@ -676,16 +730,17 @@ func joinGroup(_ groupId: Int64, _ onComplete: @escaping () async -> Void) {
     Task {
         logger.debug("joinGroup")
         do {
-            let r = try await apiJoinGroup(groupId)
-            switch r {
-            case let .joined(groupInfo):
-                await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
-            case .invitationRemoved:
-                AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
-                await deleteGroup()
-            case .groupNotFound:
-                AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
-                await deleteGroup()
+            if let r = try await apiJoinGroup(groupId) {
+                switch r {
+                case let .joined(groupInfo):
+                    await MainActor.run { ChatModel.shared.updateGroup(groupInfo) }
+                case .invitationRemoved:
+                    AlertManager.shared.showAlertMsg(title: "Invitation expired!", message: "Group invitation is no longer valid, it was removed by sender.")
+                    await deleteGroup()
+                case .groupNotFound:
+                    AlertManager.shared.showAlertMsg(title: "No group!", message: "This group no longer exists.")
+                    await deleteGroup()
+                }
             }
             await onComplete()
         } catch let error {

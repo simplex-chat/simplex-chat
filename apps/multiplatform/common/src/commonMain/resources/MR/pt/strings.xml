@@ -268,7 +268,7 @@
     <string name="chat_preferences_contact_allows">O contacto permite</string>
     <string name="chat_preferences">Preferências de conversa</string>
     <string name="app_name">SimpleX</string>
-    <string name="thousand_abbreviation">m</string>
+    <string name="thousand_abbreviation">mil</string>
     <string name="connect_via_contact_link">Conectar através do endereço de contacto?</string>
     <string name="connect_via_invitation_link">Conectar via link de convite?</string>
     <string name="connect_via_group_link">Conectar através da ligação do grupo\?</string>
@@ -971,4 +971,9 @@
     <string name="all_users">Todos os perfis</string>
     <string name="connect_plan_already_connecting">Já conectando!</string>
     <string name="connect_plan_already_joining_the_group">Já entrando no grupo!</string>
+    <string name="forward_files_failed_to_receive_desc">Não foi possível descarregar %1$d ficheiros(s).</string>
+    <string name="n_file_errors">%1$d erro(s) nos ficheiros:\n%2$s</string>
+    <string name="forward_files_in_progress_desc">Ainda a descarregar %1$d ficheiros(s).</string>
+    <string name="forward_files_missing_desc">%1$d ficheiros(s) eliminado(s).</string>
+    <string name="forward_files_not_accepted_desc">Não foi possível descarregar %1$d ficheiro(s).</string>
 </resources>

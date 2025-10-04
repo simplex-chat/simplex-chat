@@ -24,7 +24,7 @@ struct ChatPreviewView: View {
 
     var dynamicMediaSize: CGFloat { dynamicSize(userFont).mediaSize }
     var dynamicChatInfoSize: CGFloat { dynamicSize(userFont).chatInfoSize }
-    
+
     var body: some View {
         let cItem = chat.chatItems.last
         return ZStack {
@@ -35,7 +35,7 @@ struct ChatPreviewView: View {
                         .padding([.bottom, .trailing], 1)
                 }
                 .padding(.leading, 4)
-                
+
                 let chatTs = if let cItem {
                     cItem.meta.itemTs
                 } else {
@@ -53,7 +53,7 @@ struct ChatPreviewView: View {
                     }
                     .padding(.bottom, 4)
                     .padding(.horizontal, 8)
-                    
+
                     ZStack(alignment: .topTrailing) {
                         let chat = activeContentPreview?.chat ?? chat
                         let ci = activeContentPreview?.ci ?? chat.chatItems.last
@@ -88,14 +88,14 @@ struct ChatPreviewView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.trailing, 8)
-                    
+
                     Spacer()
                 }
                 .frame(maxHeight: .infinity)
             }
             .opacity(deleting ? 0.4 : 1)
             .padding(.bottom, -8)
-            
+
             if deleting {
                 ProgressView()
                     .scaleEffect(2)
@@ -141,7 +141,7 @@ struct ChatPreviewView: View {
             } else {
                 EmptyView()
             }
-        case let .group(groupInfo):
+        case let .group(groupInfo, _):
             switch (groupInfo.membership.memberStatus) {
             case .memRejected: inactiveIcon()
             case .memLeft: inactiveIcon()
@@ -164,14 +164,26 @@ struct ChatPreviewView: View {
         let t = Text(chat.chatInfo.chatViewName).font(.title3).fontWeight(.bold)
         switch chat.chatInfo {
         case let .direct(contact):
-            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(deleting ? Color.secondary : nil)
-        case let .group(groupInfo):
-            let v = previewTitle(t)
-            switch (groupInfo.membership.memberStatus) {
-            case .memInvited: v.foregroundColor(deleting ? theme.colors.secondary : chat.chatInfo.incognito ? .indigo : theme.colors.primary)
-            case .memAccepted, .memRejected: v.foregroundColor(theme.colors.secondary)
-            default: if deleting  { v.foregroundColor(theme.colors.secondary) } else { v }
+            let color =
+                deleting
+                ? theme.colors.secondary
+                : (contact.nextAcceptContactRequest && !(contact.groupDirectInv?.memberRemoved ?? false)) || contact.sendMsgToConnect
+                ? theme.colors.primary
+                : !contact.sndReady
+                ? theme.colors.secondary
+                : nil
+            previewTitle(contact.verified == true ? verifiedIcon + t : t).foregroundColor(color)
+        case let .group(groupInfo, _):
+            let color = if deleting {
+                theme.colors.secondary
+            } else {
+                switch (groupInfo.membership.memberStatus) {
+                case .memInvited: chat.chatInfo.incognito ? .indigo : theme.colors.primary
+                case .memAccepted, .memRejected: theme.colors.secondary
+                default: groupInfo.nextConnectPrepared ? theme.colors.primary : nil
+                }
             }
+            previewTitle(t).foregroundColor(color)
         default: previewTitle(t)
         }
     }
@@ -251,7 +263,7 @@ struct ChatPreviewView: View {
             Color.clear.frame(width: 0)
         }
     }
-    
+
     private func mentionColor(_ chat: Chat) -> Color {
         switch chat.chatInfo.chatSettings?.enableNtfs {
         case .all: theme.colors.primary
@@ -262,7 +274,7 @@ struct ChatPreviewView: View {
 
     private func messageDraft(_ draft: ComposeState) -> (Text, Bool) {
         let msg = draft.message
-        let r = messageText(msg, parseSimpleXMarkdown(msg), sender: nil, preview: true, mentions: draft.mentions, userMemberId: nil, showSecrets: nil, backgroundColor: UIColor(theme.colors.background))
+        let r = markdownText(msg, preview: true, mentions: draft.mentions, backgroundColor: theme.colors.background)
         return (image("rectangle.and.pencil.and.ellipsis", color: theme.colors.primary)
                     + attachment()
                     + Text(AttributedString(r.string)),
@@ -285,7 +297,7 @@ struct ChatPreviewView: View {
     func chatItemPreview(_ cItem: ChatItem) -> (Text, Bool) {
         let itemText = cItem.meta.itemDeleted == nil ? cItem.text : markedDeletedText()
         let itemFormattedText = cItem.meta.itemDeleted == nil ? cItem.formattedText : nil
-        let r = messageText(itemText, itemFormattedText, sender: cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
+        let r = messageText(itemText, itemFormattedText, sender: cItem.meta.showGroupAsSender ? nil : cItem.memberDisplayName, preview: true, mentions: cItem.mentions, userMemberId: chat.chatInfo.groupInfo?.membership.memberId, showSecrets: nil, backgroundColor: UIColor(theme.colors.background), prefix: prefix())
         return (Text(AttributedString(r.string)), r.hasSecrets)
 
         // same texts are in markedDeletedText in MarkedDeletedItemView, but it returns LocalizedStringKey;
@@ -312,7 +324,7 @@ struct ChatPreviewView: View {
             default: return nil
             }
         }
-        
+
         func prefix() -> NSAttributedString? {
             switch cItem.content.msgContent {
             case let .report(_, reason): reason.attrString
@@ -325,31 +337,50 @@ struct ChatPreviewView: View {
         if chatModel.draftChatId == chat.id, let draft = chatModel.draft {
             let (t, hasSecrets) = messageDraft(draft)
             chatPreviewLayout(t, draft: true, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
+        } else if cItem?.content.hasMsgContent != true, let previewText = chatPreviewInfoText() {
+            chatPreviewInfoTextLayout(previewText)
         } else if let cItem = cItem {
             let (t, hasSecrets) = chatItemPreview(cItem)
             chatPreviewLayout(itemStatusMark(cItem) + t, hasFilePreview: hasFilePreview, hasSecrets: hasSecrets)
-        } else {
-            switch (chat.chatInfo) {
-            case let .direct(contact):
-                if contact.activeConn == nil && contact.profile.contactLink != nil && contact.active {
-                    chatPreviewInfoText("Tap to Connect")
-                        .foregroundColor(theme.colors.primary)
-                } else if !contact.sndReady && contact.activeConn != nil {
-                    if contact.nextSendGrpInv {
-                        chatPreviewInfoText("send direct message")
-                    } else if contact.active {
-                        chatPreviewInfoText("connecting…")
-                    }
-                }
-            case let .group(groupInfo):
-                switch (groupInfo.membership.memberStatus) {
-                case .memRejected: chatPreviewInfoText("rejected")
-                case .memInvited: groupInvitationPreviewText(groupInfo)
-                case .memAccepted: chatPreviewInfoText("connecting…")
-                default: EmptyView()
-                }
-            default: EmptyView()
+        }
+    }
+
+    private func chatPreviewInfoText() -> Text? {
+        switch (chat.chatInfo) {
+        case let .direct(contact):
+            if contact.isContactCard {
+                Text("Tap to Connect")
+                    .foregroundColor(theme.colors.primary)
+            } else if contact.isBot && contact.nextConnectPrepared {
+                Text("Open to use bot")
+            } else if contact.sendMsgToConnect {
+                Text("Open to connect")
+            } else if contact.nextAcceptContactRequest {
+                Text("Open to accept")
+            } else if !contact.sndReady && contact.activeConn != nil && contact.active {
+                (contact.preparedContact?.uiConnLinkType == .con && !contact.isBot) || contact.contactGroupMemberId != nil
+                ? Text("contact should accept…")
+                : Text("connecting…")
+            } else {
+                nil
             }
+        case let .group(groupInfo, _):
+            if groupInfo.nextConnectPrepared {
+                if groupInfo.businessChat?.chatType == .business {
+                    Text("Open to connect")
+                } else {
+                    Text("Open to join")
+                }
+            } else {
+                switch (groupInfo.membership.memberStatus) {
+                case .memRejected: Text("rejected")
+                case .memInvited: groupInvitationPreviewText(groupInfo)
+                case .memAccepted: Text("connecting…")
+                case .memPendingReview, .memPendingApproval: Text("reviewed by admins")
+                default: nil
+                }
+            }
+        default: nil
         }
     }
 
@@ -399,14 +430,14 @@ struct ChatPreviewView: View {
     }
 
 
-    @ViewBuilder private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> some View {
+    private func groupInvitationPreviewText(_ groupInfo: GroupInfo) -> Text {
         groupInfo.membership.memberIncognito
-        ? chatPreviewInfoText("join as \(groupInfo.membership.memberProfile.displayName)")
-        : chatPreviewInfoText("you are invited to group")
+        ? Text("Join as \(groupInfo.membership.memberProfile.displayName)")
+        : Text("You are invited to group")
     }
 
-    private func chatPreviewInfoText(_ text: LocalizedStringKey) -> some View {
-        Text(text)
+    private func chatPreviewInfoTextLayout(_ text: Text) -> some View {
+        text
             .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 44, alignment: .topLeading)
             .padding([.leading, .trailing], 8)
             .padding(.bottom, 4)
@@ -430,7 +461,7 @@ struct ChatPreviewView: View {
         let size = dynamicSize(userFont).incognitoSize
         switch chat.chatInfo {
         case let .direct(contact):
-            if contact.active && contact.activeConn != nil {
+            if contact.active, let status = contact.activeConn?.connStatus, status == .ready || status == .sndReady {
                 NetworkStatusView(contact: contact, size: size)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
@@ -439,7 +470,11 @@ struct ChatPreviewView: View {
             if progressByTimeout {
                 ProgressView()
             } else if chat.chatStats.reportsCount > 0 {
-                groupReportsIcon(size: size * 0.8)
+                flagIcon(size: size * 0.8, color: .red)
+            } else if chat.supportUnreadCount > 0 {
+                flagIcon(size: size * 0.8, color: theme.colors.primary)
+            } else if chat.chatInfo.groupInfo?.membership.memberPending ?? false {
+                flagIcon(size: size * 0.8, color: theme.colors.secondary)
             } else {
                 incognitoIcon(chat.chatInfo.incognito, theme.colors.secondary, size: size)
             }
@@ -485,12 +520,12 @@ struct ChatPreviewView: View {
     }
 }
 
-func groupReportsIcon(size: CGFloat) -> some View {
+func flagIcon(size: CGFloat, color: Color) -> some View {
     Image(systemName: "flag")
         .resizable()
         .scaledToFit()
         .frame(width: size, height: size)
-        .foregroundColor(.red)
+        .foregroundColor(color)
 }
 
 func smallContentPreview(size: CGFloat, _ view: @escaping () -> some View) -> some View {

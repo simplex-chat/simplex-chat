@@ -5,7 +5,7 @@ FROM ubuntu:${TAG} AS build
 ### Build stage
 
 ARG GHC=9.6.3
-ARG CABAL=3.10.1.0
+ARG CABAL=3.10.2.0
 ARG JAVA=17
 
 ENV TZ=Etc/UTC \
@@ -16,6 +16,7 @@ RUN apt-get update && \
     apt-get install -y curl \
                        libpq-dev \
                        git \
+                       strip-nondeterminism \
                        sqlite3 \
                        libsqlite3-dev \
                        build-essential \

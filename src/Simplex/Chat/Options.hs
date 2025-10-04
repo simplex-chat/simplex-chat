@@ -8,6 +8,7 @@
 module Simplex.Chat.Options
   ( ChatOpts (..),
     CoreChatOpts (..),
+    CreateBotOpts (..),
     ChatCmdLog (..),
     chatOptsP,
     coreChatOptsP,
@@ -49,6 +50,7 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
+    createBot :: Maybe CreateBotOpts,
     maintenance :: Bool
   }
 
@@ -65,7 +67,13 @@ data CoreChatOpts = CoreChatOpts
     tbqSize :: Natural,
     deviceName :: Maybe Text,
     highlyAvailable :: Bool,
-    yesToUpMigrations :: Bool
+    yesToUpMigrations :: Bool,
+    migrationBackupPath :: Maybe FilePath
+  }
+
+data CreateBotOpts = CreateBotOpts
+  { botDisplayName :: Text,
+    allowFiles :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -236,6 +244,7 @@ coreChatOptsP appDir defaultDbName = do
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )
+  migrationBackupPath <- migrationBackupPathP
   pure
     CoreChatOpts
       { dbOptions,
@@ -261,7 +270,8 @@ coreChatOptsP appDir defaultDbName = do
         tbqSize,
         deviceName,
         highlyAvailable,
-        yesToUpMigrations
+        yesToUpMigrations,
+        migrationBackupPath
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
@@ -354,6 +364,18 @@ chatOptsP appDir defaultDbName = do
           <> short 'r'
           <> help "Mark shown messages as read"
       )
+  createBotDisplayName <-
+    optional $
+      strOption
+        ( long "create-bot-display-name"
+            <> metavar "BOT_NAME"
+            <> help "Create new bot user on the first start with the passed display name"
+        )
+  createBotAllowFiles <-
+    switch
+      ( long "create-bot-allow-files"
+          <> help "Flag for created bot to allow files (only allowed together with --create-bot option)"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -374,6 +396,11 @@ chatOptsP appDir defaultDbName = do
         autoAcceptFileSize,
         muteNotifications,
         markRead,
+        createBot = case createBotDisplayName of
+          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles}
+          Nothing
+            | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
+            | otherwise -> Nothing,
         maintenance
       }
 

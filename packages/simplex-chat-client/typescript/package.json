@@ -1,12 +1,16 @@
 {
   "name": "simplex-chat",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "SimpleX Chat client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  },
   "scripts": {
     "test": "npm run prettier:check && npm run eslint && jest --coverage",
     "build": "npm run prettier:write && npm run eslint && tsc && ./copy && npm run bundle",
@@ -17,13 +21,17 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/simplex-chat/simplex-chat.git"
+    "url": "git+https://github.com/simplex-chat/simplex-chat.git",
+    "directory": "/packages/simplex-chat-client/typescript"
   },
   "keywords": [
+    "simplex",
     "messenger",
     "chat",
     "privacy",
-    "security"
+    "security",
+    "bots",
+    "websockets"
   ],
   "author": "SimpleX Chat",
   "license": "AGPL-3.0",
@@ -35,6 +43,7 @@
     "isomorphic-ws": "^4.0.1"
   },
   "devDependencies": {
+    "@simplex-chat/types": "^0.1.0",
     "@types/jest": "^27.5.1",
     "@types/node": "^18.11.18",
     "@typescript-eslint/eslint-plugin": "^5.23.0",
