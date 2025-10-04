@@ -269,7 +269,7 @@ body {
 }
 
 .lock-scroll {
-    overflow: hidden;
+    overflow: hidden !important;
 }
 
 img {
@@ -295,28 +295,30 @@ p {
     color: transparent;
 }
 
+/* Let the PAGE (body) scroll so Safari collapses the address bar.
+   Keep .screen as a regular wrapper (no own scrolling). */
 .screen {
-    height: 100svh;
-    overflow-y: auto;
+    height: auto;
+    overflow: visible;
+}
+
+/* Make the viewport the scroll snap container (works in iOS Safari) */
+html, body {
     scroll-snap-type: y mandatory;
-    /* page-by-page snap */
     scroll-behavior: smooth;
-    overscroll-behavior: contain;
-    /* avoid rubber-banding pulling UI over content */
-    -webkit-overflow-scrolling: touch;
 }
 
 section.page {
+    min-height: 100svh; /* fallback */
     height: 100svh;
-    /* same fallback */
     scroll-snap-align: start;
-    scroll-snap-stop: always;
-    /* requires a full swipe/scroll to leave */
+    scroll-snap-stop: always; /* requires a full swipe/scroll to leave */
     position: relative;
 
     display: flex;
     justify-content: center;
     align-items: center;
+    z-index: 2;
 }
 
 section.page .area {
@@ -402,19 +404,15 @@ main {
 }
 
 main .section-bg {
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    height: 100svh;
-
-    /* Cancel its own layout height so content starts immediately "on" it */
-    margin-bottom: -100vh;
-    margin-bottom: -100svh;
+    position: fixed;
+    inset: 0;
+    height: 100svh;          /* fallback */
+    margin-bottom: -100svh;  /* cancel own layout height */
 
     background-image: var(--bg-grad);
     background-position: center;
     background-repeat: no-repeat;
-    z-index: 0;
+    z-index: -1;
     pointer-events: none;
 }
 
@@ -713,7 +711,7 @@ main .section-bg {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(6, 1fr);
-    gap: calc(var(--sec-vwu-desktop) * 2);
+    gap: calc(var(--sec-vwu-desktop) * 2.1);
 }
 
 .page-6 .group-images img {
@@ -731,7 +729,7 @@ main .section-bg {
         right: 0;
         grid-template-columns: repeat(8, 1fr);
         grid-template-rows: repeat(7, 1fr);
-        gap: calc(var(--sec-vwu-desktop) * 1.5);
+        gap: calc(var(--sec-vwu-desktop) * 2.8);
     }
 
     .page-6 .group-images img {
@@ -745,7 +743,10 @@ main .section-bg {
     <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
     places the image starting at column 3, row 2, spanning 2 columns × 2 rows.
 */
-.page-6 .group-images>a.simplex-image { --c: 4; --r: 3; --w: 2; --h: 2 }
+.page-6 .group-images>a.simplex-image { 
+    --c: 4; --r: 3; --w: 2; --h: 2;
+    margin: 1.15rem;
+}
 
 .page-6 .group-images>a.group-image:nth-child(1) { --c: 2; --r: 1; --w: 1; --h: 1 }
 .page-6 .group-images>a.group-image:nth-child(2) { --c: 4; --r: 1; --w: 1; --h: 1 }
@@ -1242,5 +1243,81 @@ button#cross-btn {
         width: 100%;
         left: 0;
         right: auto;
+    }
+}
+
+/* FOOTER STYLES */
+section.page.footer {
+    height: fit-content;
+    min-height: fit-content;
+}
+
+@media screen and (max-width: 768px) {
+    section.page.footer {
+        height: 100vh;
+        min-height: 100vh;
+    }
+}
+
+.footer .container,
+.footer .container-fluid,
+.footer .container-xxl,
+.footer .container-xl,
+.footer .container-lg,
+.footer .container-md,
+.footer .container-sm {
+    width: 100%;
+    /* padding: 0 20px; */
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (min-width: 576px) {
+
+    .footer .container-sm,
+    .footer .container {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 768px) {
+
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+
+    .footer .container-xl,
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 1140px;
+    }
+}
+
+@media (min-width: 1400px) {
+
+    .footer .container-xxl,
+    .footer .container-xl,
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 1320px;
     }
 }
