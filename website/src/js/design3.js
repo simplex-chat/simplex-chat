@@ -42,8 +42,18 @@ async function showPromotedGroups() {
             Array.isArray(listing?.entries) && listing.entries.length > 0
             ? [listing.entries, simplexDirectoryDataURL]
             : [fallbackEntries(), '/img/groups/'];
+    // Uncomment to log fallback entries
+    // entries.forEach(e => {
+    //     delete e.activeAt;
+    //     delete e.createdAt;
+    //     delete e.entryType;
+    //     delete e.groupLink.connFullLink;
+    //     delete e.shortDescr;
+    //     delete e.welcomeMessage;
+    // });
+    // console.log(entries);
     const links = document.querySelectorAll('.group-images a.group-image');
-    entries = shuffleEntries(listing.entries, links.length);
+    entries = shuffleEntries(entries, links.length);
 
     for (let i = 0; i < links.length; i++) {
         const link = links[i]
@@ -165,18 +175,25 @@ Donations: https://github.com/simplex-chat/simplex-chat#please-support-us-with-y
                 imageFile: "images/TwaN96DcV2OCMfUo6oJ4LQ.png"
             },
             {
+                displayName: "Start9 - Sovereign Computing",
+                groupLink: {
+                    connShortLink: "https://smp4.simplex.im/g#JArWigpS6OB0gYE2U94pDSzPQyejOdmqe98ohBNoW2Q"
+                },
+                imageFile: "images/478ec86_izoJb95VXKWEhg.jpg"
+            },
+            {
+                displayName: "Meshtastic",
+                groupLink: {
+                    connShortLink: "https://smp5.simplex.im/g#Ub1c3ByH5vkhXMMsRdG0fBhSik_qPuEZHcx8AQ2f2Tw"
+                },
+                imageFile: "images/PPTLdveOyb9Wsg3bm6Y_IQ.png"
+            },
+            {
                 displayName: "GrapheneOS (unofficial)",
                 groupLink: {
                     connShortLink: "https://smp5.simplex.im/g#6OTo6kP4ccV4lPOOHekZfOajdxGkxC1_DkAR39_cU4U"
                 },
                 imageFile: "images/zIotMF8Zoe85k956B48N9g.jpg"
-            },
-            {
-                displayName: "Aragonite - privacy search engine",
-                groupLink: {
-                    connShortLink: "https://smp4.simplex.im/g#qqkNFo9kdpype-ArQ6HdA_bBpngw37y3Hk-sjp-px_o"
-                },
-                imageFile: "images/vzejmEMUU_ttg2lJDIk5hA.png"
             },
             {
                 displayName: "BasicSwap",
@@ -242,6 +259,13 @@ Donations: https://github.com/simplex-chat/simplex-chat#please-support-us-with-y
                 imageFile: "images/BD6FXuHO-eKOnYCAzkRfmA.jpg"
             },
             {
+                displayName: "SimpleX users group",
+                groupLink: {
+                    connShortLink: "https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM"
+                },
+                imageFile: "images/CX-1MPD3r3a7NYBvW7de6g.jpg"
+            },
+            {
                 displayName: "NBTV Community",
                 groupLink: {
                     connShortLink: "https://smp6.simplex.im/g#RX598AUwyQBG6bqa4TOnEnUg7xONdrA-_e0CmNGxEBI"
@@ -261,6 +285,13 @@ Donations: https://github.com/simplex-chat/simplex-chat#please-support-us-with-y
                     connShortLink: "https://smp5.simplex.im/g#-_h6fBWisca6RKhteZtVuXol1a49vFH1Jo-n74fnRK0"
                 },
                 imageFile: "images/ESomaJp7MlFlThqcoj3Ycg.png"
+            },
+            {
+                displayName: "UW Support 💬",
+                groupLink: {
+                    connShortLink: "https://smp5.simplex.im/g#6KPZcRjE6KDNQ1VcS1a2wd9LRuJy1zgdvldaE5bhg5c"
+                },
+                imageFile: "images/t1RmI4AhKgelVoWeSBTqUA.jpg"
             }
         ]
     }
