@@ -98,7 +98,6 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberRole,
     createIntroductions,
     updateIntroStatus,
-    saveIntroInvitation,
     getIntroduction,
     getIntroducedGroupMemberIds,
     getForwardIntroducedMembers,
@@ -108,7 +107,6 @@ module Simplex.Chat.Store.Groups
     getForwardScopeMember,
     createIntroReMember,
     createIntroToMemberContact,
-    saveMemberInvitation,
     getMatchingContacts,
     getMatchingMembers,
     getMatchingMemberContacts,
@@ -1542,7 +1540,7 @@ createIntroductions db chatV members toMember = do
             |]
             (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
           introId <- insertedRowId db
-          pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
+          pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending}
       where
         checkInverseIntro :: IO (Maybe Int64)
         checkInverseIntro =
@@ -1564,56 +1562,21 @@ updateIntroStatus db introId introStatus = do
     |]
     (introStatus, currentTs, introId)
 
-saveIntroInvitation :: DB.Connection -> GroupMember -> GroupMember -> IntroInvitation -> ExceptT StoreError IO GroupMemberIntro
-saveIntroInvitation db reMember toMember introInv@IntroInvitation {groupConnReq} = do
-  intro <- getIntroduction db reMember toMember
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        UPDATE group_member_intros
-        SET intro_status = ?,
-            group_queue_info = ?,
-            direct_queue_info = ?,
-            updated_at = ?
-        WHERE group_member_intro_id = ?
-      |]
-      (GMIntroInvReceived, groupConnReq, directConnReq introInv, currentTs, introId intro)
-  pure intro {introInvitation = Just introInv, introStatus = GMIntroInvReceived}
-
-saveMemberInvitation :: DB.Connection -> GroupMember -> IntroInvitation -> GroupMemberStatus -> IO ()
-saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnReq, directConnReq} newMemberStatus = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET member_status = ?,
-          group_queue_info = ?,
-          direct_queue_info = ?,
-          updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (newMemberStatus, groupConnReq, directConnReq, currentTs, groupMemberId)
-
 getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
-getIntroduction db reMember toMember = ExceptT $ do
-  toIntro
-    <$> DB.query
+getIntroduction db reMember toMember = ExceptT $
+  firstRow toIntro SEIntroNotFound $
+    DB.query
       db
       [sql|
-        SELECT group_member_intro_id, group_queue_info, direct_queue_info, intro_status
+        SELECT group_member_intro_id, intro_status
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       |]
       (groupMemberId' reMember, groupMemberId' toMember)
   where
-    toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
-    toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
-      let introInvitation = IntroInvitation <$> groupConnReq <*> pure directConnReq
-       in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
-    toIntro _ = Left SEIntroNotFound
+    toIntro :: (Int64, GroupMemberIntroStatus) -> GroupMemberIntro
+    toIntro (introId, introStatus) =
+      GroupMemberIntro {introId, reMember, toMember, introStatus}
 
 getIntroducedGroupMemberIds :: DB.Connection -> GroupMember -> IO [GroupMemberId]
 getIntroducedGroupMemberIds db invitee =
