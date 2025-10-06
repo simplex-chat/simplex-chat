@@ -3514,7 +3514,7 @@ Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
 Query: 
-        SELECT group_member_intro_id, group_queue_info, direct_queue_info, intro_status
+        SELECT group_member_intro_id, intro_status
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       
@@ -3808,17 +3808,6 @@ Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 LIST SUBQUERY 1
 SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
-
-Query: 
-        UPDATE group_member_intros
-        SET intro_status = ?,
-            group_queue_info = ?,
-            direct_queue_info = ?,
-            updated_at = ?
-        WHERE group_member_intro_id = ?
-      
-Plan:
-SEARCH group_member_intros USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         UPDATE group_member_intros SET intro_status='fwd'
@@ -4794,17 +4783,6 @@ Query:
       UPDATE group_members
       SET member_restriction = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-    
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE group_members
-      SET member_status = ?,
-          group_queue_info = ?,
-          direct_queue_info = ?,
-          updated_at = ?
-      WHERE group_member_id = ?
     
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
