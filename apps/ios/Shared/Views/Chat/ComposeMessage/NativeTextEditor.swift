@@ -71,6 +71,10 @@ struct NativeTextEditor: UIViewRepresentable {
         if field.selectedRange != selectedRange {
             field.selectedRange = selectedRange
         }
+// This block causes delays in closing keyboard when navigating from chat view to chat list.
+// It is also a candidate for iOS 26.1 freeze.
+// This was added in commit below to open keyboard programmatically via a passed binding but this approach is not reliable.
+// https://github.com/simplex-chat/simplex-chat/pull/6003/commits/cb666de51375623451a5e80dcf59449adc7d2a5f
 //        if focused && !field.isFocused {
 //            DispatchQueue.main.async {
 //                if !field.isFocused {
