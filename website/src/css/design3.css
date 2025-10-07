@@ -716,6 +716,7 @@ main .section-bg {
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(6, 1fr);
     gap: calc(var(--sec-vwu-desktop) * 2.1);
+    z-index: 2;
 }
 
 .page-6 .group-images img {
