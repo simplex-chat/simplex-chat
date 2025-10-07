@@ -7,31 +7,9 @@ active_home: true
 ---
 {%- from "components/macro.njk" import overlay -%}
 
-{% include "hero.html" %}
-
-<section id="why-privacy" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
+<section id="article" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[95px] px-5">
     <div class="container">
-        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">{{ "privacy-matters-section-header" | i18n({}, lang ) | safe }}</h2>
-        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">{{ "privacy-matters-section-subheader" | i18n({}, lang ) | safe }}</p>
-        <div class="flex flex-col lg:flex-row gap-[20px] mb-[62px] lg:mb-[90px]">
-
-            {% for section in why_privacy_matters.sections %}
-            <div class="bg-white dark:bg-transparent px-[34px] flex flex-col md:flex-row lg:flex-col items-center rounded-[12px] dark:rounded-[6px] shadow-[0px_50px_61px_rgba(0,0,0,0.12)] dark:shadow-none flex-[1] border-gradient">
-                <div class="md:w-[30%] lg:w-full flex items-center justify-center h-[215px]">
-                    <img src="{{ section.imgLight }}" alt="">
-                </div>
-                <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
-                    <p class="font-medium text-xl text-center text-grey-black dark:text-white">{{ section.title | i18n({}, lang ) | safe }}</p>
-                    {% if section.overlayContent %}
-                    <a href="javascript:void(0);" data-show-overlay="{{ section.overlayContent.overlayId }}" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">{{ section.overlayContent.linkText | i18n({}, lang ) | safe }}</a>
-                    {{ overlay(section,lang) }}
-                    {% endif %}
-                </div>
-            </div>
-            {% endfor %}
-
-        </div>
-        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">{{ "privacy-matters-section-label" | i18n({}, lang ) | safe }}</p>
+        {% mdInclude "sections/learn_more.md" %}
     </div>
 </section>
 
@@ -239,4 +217,4 @@ active_home: true
 </section>
 
 {# join simplex #}
-{% include "sections/join_simplex.html" %}
+{# {% include "sections/join_simplex.html" %} #}
