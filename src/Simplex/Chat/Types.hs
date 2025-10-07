@@ -1764,8 +1764,7 @@ data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,
     reMember :: GroupMember,
     toMember :: GroupMember,
-    introStatus :: GroupMemberIntroStatus,
-    introInvitation :: Maybe IntroInvitation
+    introStatus :: GroupMemberIntroStatus
   }
   deriving (Show)
 
