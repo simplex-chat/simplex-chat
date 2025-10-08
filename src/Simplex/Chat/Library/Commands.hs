@@ -181,6 +181,7 @@ startChatController mainApp enableSndFiles = do
         r <- withAgent $ \a -> syncSubscriptions a aUserIds connIds
         -- delete/mark deleted connections that agent doesn't have
         withFastStore' $ \db -> setSubscriptionsSync db r
+        toView $ CEvtSubscriptionSync r
       where
         getConnsToSub user =
           withFastStore' $ \db -> do
