@@ -165,10 +165,30 @@ startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
+  syncSubscriptions users
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
+    syncSubscriptions users =
+      whenM (withFastStore' shouldSyncSubscriptions) $ do
+        connIds <- concat $ forM users getConnsToSub
+        let aUserIds = map aUserId users
+        -- agent to return discrepancy:
+        -- - connections that chat requests but agent doesn't have, or are deleted/waiting delivery - chat can delete
+        -- - connections that agent has but chat doesn't request - agent can delete, chat can log warning
+        -- - similar for user records
+        r <- withAgent $ \a -> syncSubscriptions a aUserIds connIds
+        -- delete/mark deleted connections that agent doesn't have
+        withFastStore' $ \db -> setSubscriptionsSync db r
+      where
+        getConnsToSub user =
+          withFastStore' $ \db -> do
+            ctConnIds <- getContactConnsToSub db user False
+            uclConnIds <- getUCLConnsToSub db user False
+            memberConnIds <- getMemberConnsToSub db user False
+            pendingConnIds <- getPendingConnsToSub db user False
+            pure $ ctConnIds <> uclConnIds <> memberConnIds <> pendingConnIds
     start s users = do
       a1 <- async agentSubscriber
       a2 <-

@@ -20,6 +20,7 @@ module Simplex.Chat.Store.Connections
     getMemberConnsToSub,
     getPendingConnsToSub,
     unsetConnectionToSubscribe,
+    shouldSyncSubscriptions,
   )
 where
 
@@ -327,3 +328,22 @@ unsetConnectionToSubscribe db User {userId} =
     db
     "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1"
     (Only userId)
+
+shouldSyncSubscriptions :: DB.Connection -> IO Bool
+shouldSyncSubscriptions db =
+  fromOnly . head
+    <$> DB.query_
+      db
+      "SELECT should_sync FROM subscriptions_sync WHERE subscriptions_sync_id = 1"
+
+setSubscriptionsSync :: DB.Connection -> SubscriptionSyncResult -> IO ()
+setSubscriptionsSync db result = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE subscriptions_sync
+      SET should_sync = 0, last_sync_ts = ?, result = ?
+      WHERE subscriptions_sync_id = 1
+    |]
+    (currentTs, result)
