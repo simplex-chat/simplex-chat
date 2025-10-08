@@ -148,10 +148,10 @@ processAgentMessageNoConn = \case
         notifyCLI = do
           cs <- withStore' (`getConnectionsContacts` conns)
           toView $ event srv cs
-    errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
+    errsEvent :: NonEmpty (ConnId, AgentErrorType) -> CM ()
     errsEvent cErrs = do
       vr <- chatVersionRange
-      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
+      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) (L.toList cErrs))
       toView $ CEvtChatErrors errs
       where
         getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError

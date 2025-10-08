@@ -165,23 +165,22 @@ startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
-  syncSubscriptions users
+  runExceptT (syncConnections' users) >>= \case
+    Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
+    Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
-    syncSubscriptions users = do
-      (shouldSync, shouldDelete) <- withFastStore' shouldSyncSubscriptions
-      when shouldSync $ do
-        connIds <- concat $ forM users getConnsToSub
+    syncConnections' users =
+      whenM (withFastStore' shouldSyncConnections) $ do
+        connIds <- concat <$> forM users getConnsToSub
         let aUserIds = map aUserId users
-        r <- withAgent $ \a -> syncSubscriptions a shouldDelete aUserIds connIds
-        when shouldDelete $ do
-          -- delete missing connections
-          -- delete missing users
-          pure ()
-        withFastStore' $ \db -> setSubscriptionsSync db r
-        toView $ CEvtSubscriptionSync r
+        connDrift <- toConnDriftInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
+        -- delete missing connections
+        -- delete missing users
+        withFastStore' $ \db -> updateConnectionsSync db connDrift
+        toView $ CEvtConnectionsDrift connDrift
       where
         getConnsToSub user =
           withFastStore' $ \db -> do

@@ -204,7 +204,7 @@ undocumentedEvents =
     "CEvtSndFileRedirectStartXFTP",
     "CEvtSndFileStart", -- legacy SMP files
     "CEvtSndStandaloneFileComplete",
-    "CEvtSubscriptionSync",
+    "CEvtConnectionsDrift",
     "CEvtSubscriptionEnd",
     "CEvtTerminalEvent",
     "CEvtTimedAction",

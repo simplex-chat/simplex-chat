@@ -826,7 +826,7 @@ data ChatEvent
   | CEvtContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
-  | CEvtSubscriptionSync {syncResult :: SubscriptionSyncResult}
+  | CEvtConnectionsDrift {connDrift :: ConnDriftInfo}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}

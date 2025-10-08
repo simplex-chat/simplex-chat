@@ -52,6 +52,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
+import Simplex.Messaging.Agent (ConnectionsDriftInfo (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -1760,6 +1761,23 @@ instance TextEncoding ConnType where
     ConnMember -> "member"
     ConnUserContact -> "user_contact"
 
+data ConnDriftInfo = ConnDriftInfo
+  { missingUserIds :: [AgentUserId],
+    extraUserIds :: [AgentUserId],
+    missingConnIds :: [AgentConnId],
+    extraConnIds :: [AgentConnId]
+  }
+  deriving (Show)
+
+toConnDriftInfo :: ConnectionsDriftInfo -> ConnDriftInfo
+toConnDriftInfo ConnectionsDriftInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds} =
+  ConnDriftInfo
+    { missingUserIds = map AgentUserId missingUserIds,
+      extraUserIds = map AgentUserId extraUserIds,
+      missingConnIds = map AgentConnId missingConnIds,
+      extraConnIds = map AgentConnId extraConnIds
+    }
+
 data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,
     reMember :: GroupMember,
@@ -2019,6 +2037,14 @@ $(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
+
+$(JQ.deriveJSON defaultJSON ''ConnDriftInfo)
+
+instance ToField ConnDriftInfo where
+  toField = toField . encodeJSON
+
+instance FromField ConnDriftInfo where
+  fromField = fromTextField_ decodeJSON
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 

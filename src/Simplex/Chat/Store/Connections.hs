@@ -20,7 +20,8 @@ module Simplex.Chat.Store.Connections
     getMemberConnsToSub,
     getPendingConnsToSub,
     unsetConnectionToSubscribe,
-    shouldSyncSubscriptions,
+    shouldSyncConnections,
+    updateConnectionsSync,
   )
 where
 
@@ -29,6 +30,7 @@ import Control.Monad.IO.Class
 import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
+import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
@@ -329,21 +331,21 @@ unsetConnectionToSubscribe db User {userId} =
     "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1"
     (Only userId)
 
-shouldSyncSubscriptions :: DB.Connection -> IO (Bool, Bool)
-shouldSyncSubscriptions db =
-  bimap unBI unBI . head
+shouldSyncConnections :: DB.Connection -> IO Bool
+shouldSyncConnections db =
+  fromOnly . head
     <$> DB.query_
       db
-      "SELECT should_sync, should_delete FROM subscriptions_sync WHERE subscriptions_sync_id = 1"
+      "SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1"
 
-setSubscriptionsSync :: DB.Connection -> SubscriptionSyncResult -> IO ()
-setSubscriptionsSync db result = do
+updateConnectionsSync :: DB.Connection -> ConnDriftInfo -> IO ()
+updateConnectionsSync db connDrift = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
-      UPDATE subscriptions_sync
-      SET should_sync = 0, should_delete = 0, last_sync_ts = ?, result = ?
-      WHERE subscriptions_sync_id = 1
+      UPDATE connections_sync
+      SET should_sync = 0, last_sync_ts = ?, conn_drift = ?
+      WHERE connections_sync_id = 1
     |]
-    (currentTs, result)
+    (currentTs, connDrift)
