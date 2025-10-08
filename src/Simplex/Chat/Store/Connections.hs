@@ -329,12 +329,12 @@ unsetConnectionToSubscribe db User {userId} =
     "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1"
     (Only userId)
 
-shouldSyncSubscriptions :: DB.Connection -> IO Bool
+shouldSyncSubscriptions :: DB.Connection -> IO (Bool, Bool)
 shouldSyncSubscriptions db =
-  fromOnly . head
+  bimap unBI unBI . head
     <$> DB.query_
       db
-      "SELECT should_sync FROM subscriptions_sync WHERE subscriptions_sync_id = 1"
+      "SELECT should_sync, should_delete FROM subscriptions_sync WHERE subscriptions_sync_id = 1"
 
 setSubscriptionsSync :: DB.Connection -> SubscriptionSyncResult -> IO ()
 setSubscriptionsSync db result = do
@@ -343,7 +343,7 @@ setSubscriptionsSync db result = do
     db
     [sql|
       UPDATE subscriptions_sync
-      SET should_sync = 0, last_sync_ts = ?, result = ?
+      SET should_sync = 0, should_delete = 0, last_sync_ts = ?, result = ?
       WHERE subscriptions_sync_id = 1
     |]
     (currentTs, result)

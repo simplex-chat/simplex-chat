@@ -170,16 +170,16 @@ startChatController mainApp enableSndFiles = do
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
-    syncSubscriptions users =
-      whenM (withFastStore' shouldSyncSubscriptions) $ do
+    syncSubscriptions users = do
+      (shouldSync, shouldDelete) <- withFastStore' shouldSyncSubscriptions
+      when shouldSync $ do
         connIds <- concat $ forM users getConnsToSub
         let aUserIds = map aUserId users
-        -- agent to return discrepancy:
-        -- - connections that chat requests but agent doesn't have, or are deleted/waiting delivery - chat can delete
-        -- - connections that agent has but chat doesn't request - agent can delete, chat can log warning
-        -- - similar for user records
-        r <- withAgent $ \a -> syncSubscriptions a aUserIds connIds
-        -- delete/mark deleted connections that agent doesn't have
+        r <- withAgent $ \a -> syncSubscriptions a shouldDelete aUserIds connIds
+        when shouldDelete $ do
+          -- delete missing connections
+          -- delete missing users
+          pure ()
         withFastStore' $ \db -> setSubscriptionsSync db r
         toView $ CEvtSubscriptionSync r
       where
