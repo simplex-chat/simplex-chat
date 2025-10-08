@@ -1023,6 +1023,7 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
     <$> DB.query
       db
       ( groupMemberQuery
+          <> " "
           <> [sql|
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
