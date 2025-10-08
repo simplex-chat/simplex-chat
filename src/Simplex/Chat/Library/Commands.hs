@@ -177,18 +177,10 @@ startChatController mainApp enableSndFiles = do
         connIds <- concat <$> forM users getConnsToSub
         let aUserIds = map aUserId users
         connDrift <- toConnDriftInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
-        -- delete missing connections
-        -- delete missing users
+        -- TODO delete missing connections
+        -- TODO delete missing users
         withFastStore' $ \db -> updateConnectionsSync db connDrift
         toView $ CEvtConnectionsDrift connDrift
-      where
-        getConnsToSub user =
-          withFastStore' $ \db -> do
-            ctConnIds <- getContactConnsToSub db user False
-            uclConnIds <- getUCLConnsToSub db user False
-            memberConnIds <- getMemberConnsToSub db user False
-            pendingConnIds <- getPendingConnsToSub db user False
-            pure $ ctConnIds <> uclConnIds <> memberConnIds <> pendingConnIds
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -230,6 +222,15 @@ startChatController mainApp enableSndFiles = do
             ttl <- getChatItemTTL db user
             ttlCount <- getChatTTLCount db user
             pure $ ttl > 0 || ttlCount > 0
+
+getConnsToSub :: User -> CM [ConnId]
+getConnsToSub user =
+  withFastStore' $ \db -> do
+    ctConnIds <- getContactConnsToSub db user False
+    uclConnIds <- getUCLConnsToSub db user False
+    memberConnIds <- getMemberConnsToSub db user False
+    pendingConnIds <- getPendingConnsToSub db user False
+    pure $ ctConnIds <> uclConnIds <> memberConnIds <> pendingConnIds
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
@@ -468,6 +469,12 @@ processChatCommand vr nm = \case
     stopRemoteCtrl
     lift $ withAgent' (`suspendAgent` t)
     ok_
+  ShowConnectionsDrift -> do
+    users <- withFastStore' getUsers
+    let aUserIds = map aUserId users
+    connIds <- concat <$> forM users getConnsToSub
+    connDrift <- toConnDriftInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
+    pure $ CRConnectionsDrift connDrift
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
@@ -4373,6 +4380,7 @@ chatCommandP =
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
+      "/_connections drift" $> ShowConnectionsDrift,
       "/_resubscribe all" $> ResubscribeAllConnections,
       -- deprecated, use /set file paths
       "/_temp_folder " *> (SetTempFolder <$> filePath),
