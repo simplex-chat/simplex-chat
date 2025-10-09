@@ -213,9 +213,10 @@ startChatController mainApp enableSndFiles = do
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
-  let (us, us') = partition activeUser users
-  subscribe us
-  subscribe us'
+  void $ runExceptT $ withAgent subscribeAllConnections
+  -- let (us, us') = partition activeUser users
+  -- subscribe us
+  -- subscribe us'
   where
     subscribe :: [User] -> CM' ()
     subscribe = mapM_ $ runExceptT . subscribeUserConnections onlyNeeded

@@ -196,8 +196,6 @@ chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   CEvtContactAnotherClient u ct -> do
     whenCurrUser cc u $ unsetActiveContact t ct
     when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
-  CEvtContactsDisconnected srv _ -> serverNtf srv "disconnected"
-  CEvtContactsSubscribed srv _ -> serverNtf srv "connected"
   CEvtReceivedGroupInvitation u g ct _ _ ->
     when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")

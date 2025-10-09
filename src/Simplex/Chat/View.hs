@@ -452,14 +452,12 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CEvtContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
   CEvtConnSubError u connId e -> ttyUser u ["conn ID " <> sShow connId <> ": subscription error " <> sShow e]
   CEvtConnSubSummary u connSubResults ->
     ttyUser u $ [sShow (length subscribed) <> " connections subscribed" | not (null subscribed)] <> viewSubErrorsSummary errs
     where
       (errs, subscribed) = partition (isJust . connSubError) connSubResults
-  CEvtNetworkStatus status conns -> if testView && coreApi then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
+  CEvtNetworkStatus srv status conns -> [plain $ "server " <> showSMPServer srv <> ": " <> show (length conns) <> " connections " <> netStatusStr status]
   CEvtNetworkStatuses u statuses -> if testView && coreApi then ttyUser' u $ viewNetworkStatuses statuses else []
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g

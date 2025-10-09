@@ -827,11 +827,9 @@ data ChatEvent
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
   | CEvtConnSubError {user :: User, agentConnId :: AgentConnId, chatError :: ChatError}
   | CEvtConnSubSummary {user :: User, connSubResults :: [ConnSubResult]}
-  | CEvtNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CEvtNetworkStatus {server :: SMPServer, networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
@@ -912,8 +910,8 @@ allowRemoteEvent = \case
 
 logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
-  CEvtContactsDisconnected {} -> True
-  CEvtContactsSubscribed {} -> True
+  CEvtNetworkStatus {} -> True
+  CEvtNetworkStatuses {} -> True
   CEvtConnSubError {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
