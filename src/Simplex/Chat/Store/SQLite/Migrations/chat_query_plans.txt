@@ -4716,6 +4716,14 @@ Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      UPDATE connections_sync
+      SET should_sync = 0, last_sync_ts = ?
+      WHERE connections_sync_id = 1
+    
+Plan:
+SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       UPDATE contact_profiles
       SET contact_link = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
@@ -5708,6 +5716,17 @@ Query: DELETE FROM commands WHERE user_id = ? AND command_id = ?
 Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: DELETE FROM connections WHERE contact_id = (SELECT contact_id FROM contacts WHERE local_display_name = 'cath')
+Plan:
+SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
+SCALAR SUBQUERY 1
+SCAN contacts USING COVERING INDEX sqlite_autoindex_contacts_1
+SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_agent_msg_id (connection_id=?)
+SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_member_conn_id (grp_direct_inv_from_member_conn_id=?)
+
 Query: DELETE FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
@@ -6403,6 +6422,10 @@ SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1
 Plan:
 SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
+
+Query: UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1
+Plan:
+SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?
 Plan:
