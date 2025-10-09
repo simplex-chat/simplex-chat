@@ -2395,7 +2395,7 @@
     <string name="support_chat">Chat s adminy</string>
     <string name="accept_pending_member_button">Přijmout</string>
     <string name="accept_pending_member_alert_title">Přijmout člena</string>
-    <string name="reviewed_by_admins">schválen adminy</string>
+    <string name="reviewed_by_admins">čeká na schválení adminy</string>
     <string name="add_short_link">Povýšit adresu</string>
     <string name="rcv_group_event_member_accepted">přijat %1$s</string>
     <string name="rcv_group_event_user_accepted">Vás přijal</string>
