@@ -103,7 +103,6 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (base64P)
 import Simplex.Messaging.Protocol (AProtoServerWithAuth (..), AProtocolType (..), MsgFlags (..), NtfServer, ProtoServerWithAuth (..), ProtocolServer, ProtocolType (..), ProtocolTypeI (..), SProtocolType (..), SubscriptionMode (..), UserProtocol, userProtocol)
-import qualified Simplex.Messaging.Protocol as SMP
 import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport.Client (defaultSocksProxyWithAuth)
@@ -176,9 +175,9 @@ startChatController mainApp enableSndFiles = do
       whenM (withFastStore' shouldSyncConnections) $ do
         let aUserIds = map aUserId users
         connIds <- concat <$> forM users getConnsToSub
-        connDiff <- toConnDiffInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
+        (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
-        toView $ CEvtConnectionsDiff connDiff
+        toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -232,12 +231,8 @@ getConnsToSub user =
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
-  let (us, us') = partition activeUser users
-  subscribe us
-  subscribe us'
-  where
-    subscribe :: [User] -> CM' ()
-    subscribe = mapM_ $ runExceptT . subscribeUserConnections onlyNeeded
+  let activeUserId_ = (\User {agentUserId = AgentUserId uId} -> uId) <$> find activeUser users
+  withAgent (\a -> subscribeAllConnections a onlyNeeded activeUserId_) `catchAllErrors'` eToView'
 
 startFilesToReceive :: [User] -> CM' ()
 startFilesToReceive users = do
@@ -471,8 +466,8 @@ processChatCommand vr nm = \case
     users <- withFastStore' getUsers
     let aUserIds = map aUserId users
     connIds <- concat <$> forM users getConnsToSub
-    connDiff <- toConnDiffInfo <$> withAgent (\a -> compareConnections a aUserIds connIds)
-    pure $ CRConnectionsDiff showIds connDiff
+    (userDiff, connDiff) <- withAgent (\a -> compareConnections a aUserIds connIds)
+    pure $ CRConnectionsDiff showIds (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
@@ -4157,63 +4152,6 @@ agentSubscriber = do
         run action = action `catchAllErrors'` (eToView')
 
 type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
-
--- TODO [certs rcv]
-subscribeUserConnections :: Bool -> User -> CM ()
-subscribeUserConnections onlyNeeded user = do
-  (ctConnIds, uclConnIds, memberConnIds, pendingConnIds) <-
-    withStore' $ \db -> do
-      ctConnIds <- getContactConnsToSub db user onlyNeeded
-      uclConnIds <- getUCLConnsToSub db user onlyNeeded
-      memberConnIds <- getMemberConnsToSub db user onlyNeeded
-      pendingConnIds <- getPendingConnsToSub db user onlyNeeded
-      unsetConnectionToSubscribe db user
-      pure (ctConnIds, uclConnIds, memberConnIds, pendingConnIds)
-  let allConnIds = ctConnIds <> uclConnIds <> memberConnIds <> pendingConnIds
-  rs <- withAgent $ \a -> subscribeConnections a allConnIds
-  processContactNetStatuses rs ctConnIds
-  unlessM (asks $ coreApi . config) $ notifyCLI rs allConnIds
-  where
-    processContactNetStatuses :: AgentSubResult -> [ConnId] -> CM ()
-    processContactNetStatuses rs ctConnIds = do
-      chatModifyVar connNetworkStatuses $ M.union (M.fromList statuses)
-      let networkStatuses = map (uncurry ConnNetworkStatus) statuses
-      toView $ CEvtNetworkStatuses (Just user) networkStatuses
-      where
-        statuses :: [(AgentConnId, NetworkStatus)]
-        statuses = foldr' addStatus [] ctConnIds
-          where
-            addStatus :: ConnId -> [(AgentConnId, NetworkStatus)] -> [(AgentConnId, NetworkStatus)]
-            addStatus connId nss =
-              let ns = (AgentConnId connId, netStatus $ subSuccessOrErr connId rs)
-               in ns : nss
-            netStatus :: Maybe ChatError -> NetworkStatus
-            netStatus = maybe NSConnected $ NSError . errorNetworkStatus
-            errorNetworkStatus :: ChatError -> String
-            errorNetworkStatus = \case
-              ChatErrorAgent (BROKER _ (NETWORK _)) _ -> "network"
-              ChatErrorAgent (SMP _ SMP.AUTH) _ -> "contact deleted"
-              e -> show e
-    notifyCLI :: AgentSubResult -> [ConnId] -> CM ()
-    notifyCLI rs connIds = do
-      let connSubResults = map (\(acId, err_) -> ConnSubResult (AgentConnId acId) err_) connIdsResults
-      toView $ CEvtConnSubSummary user connSubResults
-      whenM (asks $ subscriptionEvents . config) $ do
-        let connSubErrs = filterErrors connIdsResults
-        mapM_ (toView . uncurry (CEvtConnSubError user . AgentConnId)) connSubErrs
-      where
-        connIdsResults :: [(ConnId, Maybe ChatError)]
-        connIdsResults = foldr' addResult [] connIds
-          where
-            addResult :: ConnId -> [(ConnId, Maybe ChatError)] -> [(ConnId, Maybe ChatError)]
-            addResult connId idsResults = (connId, subSuccessOrErr connId rs) : idsResults
-        filterErrors :: [(ConnId, Maybe ChatError)] -> [(ConnId, ChatError)]
-        filterErrors = mapMaybe (\(a, e_) -> (a,) <$> e_)
-    subSuccessOrErr :: ConnId -> AgentSubResult -> Maybe ChatError
-    subSuccessOrErr connId rs = case M.lookup connId rs of
-      Just (Right _) -> Nothing -- success
-      Just (Left e) -> Just $ ChatErrorAgent e Nothing
-      Nothing -> Just . ChatError . CEAgentNoSubResult $ AgentConnId connId
 
 cleanupManager :: CM ()
 cleanupManager = do

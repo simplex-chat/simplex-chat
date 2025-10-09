@@ -52,7 +52,6 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent (ConnectionsDiffInfo (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -1761,23 +1760,6 @@ instance TextEncoding ConnType where
     ConnMember -> "member"
     ConnUserContact -> "user_contact"
 
-data ConnDiffInfo = ConnDiffInfo
-  { missingUserIds :: [AgentUserId],
-    extraUserIds :: [AgentUserId],
-    missingConnIds :: [AgentConnId],
-    extraConnIds :: [AgentConnId]
-  }
-  deriving (Show)
-
-toConnDiffInfo :: ConnectionsDiffInfo -> ConnDiffInfo
-toConnDiffInfo ConnectionsDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds} =
-  ConnDiffInfo
-    { missingUserIds = map AgentUserId missingUserIds,
-      extraUserIds = map AgentUserId extraUserIds,
-      missingConnIds = map AgentConnId missingConnIds,
-      extraConnIds = map AgentConnId extraConnIds
-    }
-
 data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,
     reMember :: GroupMember,
@@ -1831,7 +1813,7 @@ data NetworkStatus
 netStatusStr :: NetworkStatus -> String
 netStatusStr = \case
   NSUnknown -> "unknown"
-  NSConnected -> "connected"
+  NSConnected -> "subscribed"
   NSDisconnected -> "disconnected"
   NSError e -> "error: " <> e
 
@@ -2037,8 +2019,6 @@ $(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
-
-$(JQ.deriveJSON defaultJSON ''ConnDiffInfo)
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 

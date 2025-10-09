@@ -22,7 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import Data.List (groupBy, intercalate, intersperse, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -57,6 +57,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
+import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
@@ -116,9 +117,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
-  CRConnectionsDiff showIds connDiff
-    | showIds -> viewConnDiffIds connDiff
-    | otherwise -> viewConnDiffSummary connDiff
+  CRConnectionsDiff showIds userDiff connDiff
+    | showIds -> viewConnDiffIds userDiff connDiff
+    | otherwise -> viewConnDiffSummary userDiff connDiff
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
@@ -387,7 +388,7 @@ contactList :: [ContactRef] -> String
 contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
 chatEventToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatEvent -> [StyledString]
-chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, coreApi} liveItems ts tz outputRH = \case
+chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CEvtChatSuspended -> ["chat suspended"]
   CEvtContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CEvtGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
@@ -452,19 +453,11 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, 
   CEvtContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CEvtContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CEvtContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CEvtConnectionsDiff connDiff -> viewConnDiffSync connDiff
+  CEvtConnectionsDiff userDiff connDiff -> viewConnDiffSync userDiff connDiff
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtContactsDisconnected srv cs -> [plain $ "server disconnected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CEvtContactsSubscribed srv cs -> [plain $ "server connected " <> showSMPServer srv <> " (" <> contactList cs <> ")"]
-  CEvtConnSubError u connId e -> ttyUser u ["conn ID " <> sShow connId <> ": subscription error " <> sShow e]
-  CEvtConnSubSummary u connSubResults ->
-    ttyUser u $ [sShow (length subscribed) <> " connections subscribed" | not (null subscribed)] <> viewSubErrorsSummary errs
-    where
-      (errs, subscribed) = partition (isJust . connSubError) connSubResults
-  CEvtNetworkStatus status conns -> if testView && coreApi then [plain $ show (length conns) <> " connections " <> netStatusStr status] else []
-  CEvtNetworkStatuses u statuses -> if testView && coreApi then ttyUser' u $ viewNetworkStatuses statuses else []
+  CEvtNetworkStatus srv status conns -> [plain $ netStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -1435,36 +1428,41 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
-viewConnDiffSync :: ConnDiffInfo -> [StyledString]
-viewConnDiffSync connDiff@ConnDiffInfo {extraUserIds, extraConnIds} =
-  viewConnDiffSummary connDiff
-    <> ["removed extra users in agent" | not (null extraUserIds)]
-    <> ["removed extra connections in agent" | not (null extraConnIds)]
+viewConnDiffSync :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffSync userDiff connDiff =
+  viewConnDiffSummary userDiff connDiff
+    <> ["removed extra users in agent" | not (null $ extraIds userDiff)]
+    <> ["removed extra connections in agent" | not (null $ extraIds connDiff)]
 
-viewConnDiffSummary :: ConnDiffInfo -> [StyledString]
-viewConnDiffSummary ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds}
-  | null missingUserIds && null extraUserIds && null missingConnIds && null extraConnIds =
+viewConnDiffSummary :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffSummary userDiff connDiff
+  | noDiff userDiff && noDiff connDiff =
       ["no difference between agent and chat connections"]
   | otherwise =
       ["connections difference summary:"]
-        <> ["number of users missing in agent: " <> sShow (length missingUserIds) | not (null missingUserIds)]
-        <> ["number of extra users in agent: " <> sShow (length extraUserIds) | not (null extraUserIds)]
-        <> ["number of connections missing in agent: " <> sShow (length missingConnIds) | not (null missingConnIds)]
-        <> ["number of extra connections in agent: " <> sShow (length extraConnIds) | not (null extraConnIds)]
+        <> showDatabaseDiff "users" userDiff
+        <> showDatabaseDiff "connections" connDiff
+  where
+    noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
+    showDatabaseDiff name DatabaseDiff {missingIds, extraIds} =
+      ["number of missing " <> name <> " in agent: " <> sShow (length missingIds) | not (null missingIds)]
+        <> ["number of extra " <> name <> " in agent: " <> sShow (length extraIds) | not (null extraIds)]
 
-viewConnDiffIds :: ConnDiffInfo -> [StyledString]
-viewConnDiffIds ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds}
-  | null missingUserIds && null extraUserIds && null missingConnIds && null extraConnIds =
+viewConnDiffIds :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffIds userDiff connDiff
+  | noDiff userDiff && noDiff connDiff =
       ["no difference between agent and chat connections"]
   | otherwise =
       ["connections difference:"]
-        <> ["users missing in agent (agent user IDs): " <> showUserIds missingUserIds | not (null missingUserIds)]
-        <> ["extra users in agent (agent user IDs): " <> showUserIds extraUserIds | not (null extraUserIds)]
-        <> ["connections missing in agent (agent conn IDs): " <> showConnIds missingConnIds | not (null missingConnIds)]
-        <> ["extra connections in agent (agent conn IDs): " <> showConnIds extraConnIds | not (null extraConnIds)]
+        <> showDatabaseDiff "users" (\(AgentUserId uId) -> uId) userDiff
+        <> showDatabaseDiff "connections" (\(AgentConnId cId) -> cId) connDiff
   where
-    showUserIds auIds = plain $ T.intercalate ", " $ map (\(AgentUserId auId) -> T.pack $ show auId) auIds
-    showConnIds acIds = plain $ T.intercalate ", " $ map (\(AgentConnId acId) -> T.pack $ show acId) acIds
+    noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
+    showDatabaseDiff name unwrapId DatabaseDiff {missingIds, extraIds} =
+      ["missing " <> name <> " in agent (agent IDs): " <> showIds missingIds | not (null missingIds)]
+        <> ["extra " <> name <> " in agent (agent IDs): " <> showIds extraIds | not (null extraIds)]
+      where
+        showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []
