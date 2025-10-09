@@ -22,9 +22,11 @@ module Simplex.Chat.Store.Connections
     unsetConnectionToSubscribe,
     shouldSyncConnections,
     updateConnectionsSync,
+    markDeletedConnsByAgentIds,
   )
 where
 
+import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Data.Bitraversable (bitraverse)
@@ -42,7 +44,7 @@ import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), (:.) (..))
@@ -349,3 +351,12 @@ updateConnectionsSync db connDrift = do
       WHERE connections_sync_id = 1
     |]
     (currentTs, connDrift)
+
+markDeletedConnsByAgentIds :: DB.Connection -> [AgentConnId] -> IO ()
+markDeletedConnsByAgentIds db agentConnIds =
+#if defined(dbPostgres)
+  DB.execute db "UPDATE connections SET conn_status = ? WHERE agent_conn_id IN ?" (ConnDeleted, In agentConnIds)
+#else
+  forM_ agentConnIds $ \acId ->
+    DB.execute db "UPDATE connections SET conn_status = ? WHERE agent_conn_id = ?" (ConnDeleted, acId)
+#endif

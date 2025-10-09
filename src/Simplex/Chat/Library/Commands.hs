@@ -177,8 +177,10 @@ startChatController mainApp enableSndFiles = do
         connIds <- concat <$> forM users getConnsToSub
         let aUserIds = map aUserId users
         connDrift <- toConnDriftInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
-        -- TODO delete missing connections
-        -- TODO delete missing users
+        let ConnDriftInfo {missingUserIds, missingConnIds} = connDrift
+        withFastStore' $ \db -> do
+          deleteUsersByAgentIds db missingUserIds
+          markDeletedConnsByAgentIds db missingConnIds
         withFastStore' $ \db -> updateConnectionsSync db connDrift
         toView $ CEvtConnectionsDrift connDrift
     start s users = do
