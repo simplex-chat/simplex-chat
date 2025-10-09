@@ -116,7 +116,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
-  CRConnectionsDiff connDiff -> ["connections diff:"] <> [viewJSON connDiff]
+  CRConnectionsDiff showIds connDiff
+    | showIds -> viewConnDiffIds connDiff
+    | otherwise -> viewConnDiffSummary connDiff
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
@@ -450,7 +452,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, 
   CEvtContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CEvtContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CEvtContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CEvtConnectionsDiff connDiff -> ["connections diff:"] <> [viewJSON connDiff]
+  CEvtConnectionsDiff connDiff -> viewConnDiffSummary connDiff
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
@@ -1432,6 +1434,31 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
+
+viewConnDiffSummary :: ConnDiffInfo -> [StyledString]
+viewConnDiffSummary ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds}
+  | null missingUserIds && null extraUserIds && null missingConnIds && null extraConnIds =
+      ["no difference between agent and chat connections"]
+  | otherwise =
+      ["connections difference summary:"]
+        <> ["users missing in agent: " <> sShow (length missingUserIds) | not (null missingUserIds)]
+        <> ["extra users in agent: " <> sShow (length extraUserIds) | not (null extraUserIds)]
+        <> ["connections missing in agent: " <> sShow (length missingConnIds) | not (null missingConnIds)]
+        <> ["extra connections in agent: " <> sShow (length extraConnIds) | not (null extraConnIds)]
+
+viewConnDiffIds :: ConnDiffInfo -> [StyledString]
+viewConnDiffIds ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds}
+  | null missingUserIds && null extraUserIds && null missingConnIds && null extraConnIds =
+      ["no difference between agent and chat connections"]
+  | otherwise =
+      ["connections difference:"]
+        <> ["users missing in agent: " <> showUserIds missingUserIds | not (null missingUserIds)]
+        <> ["extra users in agent: " <> showUserIds extraUserIds | not (null extraUserIds)]
+        <> ["connections missing in agent: " <> showConnIds missingConnIds | not (null missingConnIds)]
+        <> ["extra connections in agent: " <> showConnIds extraConnIds | not (null extraConnIds)]
+  where
+    showUserIds auIds = plain $ T.intercalate ", " $ map (\(AgentUserId auId) -> T.pack $ show auId) auIds
+    showConnIds acIds = plain $ T.intercalate ", " $ map (\(AgentConnId acId) -> T.pack $ show acId) acIds
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []

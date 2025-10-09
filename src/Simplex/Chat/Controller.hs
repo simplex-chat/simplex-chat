@@ -293,7 +293,7 @@ data ChatCommand
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
-  | ShowConnectionsDiff
+  | ShowConnectionsDiff Bool
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
@@ -635,7 +635,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
-  | CRConnectionsDiff {connDiff :: ConnDiffInfo}
+  | CRConnectionsDiff {showIds :: Bool, connDiff :: ConnDiffInfo}
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}

@@ -467,12 +467,12 @@ processChatCommand vr nm = \case
     stopRemoteCtrl
     lift $ withAgent' (`suspendAgent` t)
     ok_
-  ShowConnectionsDiff -> do
+  ShowConnectionsDiff showIds -> do
     users <- withFastStore' getUsers
     let aUserIds = map aUserId users
     connIds <- concat <$> forM users getConnsToSub
     connDiff <- toConnDiffInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
-    pure $ CRConnectionsDiff connDiff
+    pure $ CRConnectionsDiff showIds connDiff
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
@@ -4378,7 +4378,7 @@ chatCommandP =
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
-      "/_connections v" $> ShowConnectionsDiff,
+      "/_connections diff" *> (ShowConnectionsDiff <$> (" show_ids=" *> onOffP <|> pure False)),
       "/_resubscribe all" $> ResubscribeAllConnections,
       -- deprecated, use /set file paths
       "/_temp_folder " *> (SetTempFolder <$> filePath),
