@@ -471,7 +471,7 @@ processChatCommand vr nm = \case
     users <- withFastStore' getUsers
     let aUserIds = map aUserId users
     connIds <- concat <$> forM users getConnsToSub
-    connDiff <- toConnDiffInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
+    connDiff <- toConnDiffInfo <$> withAgent (\a -> compareConnections a aUserIds connIds)
     pure $ CRConnectionsDiff showIds connDiff
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat

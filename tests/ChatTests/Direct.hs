@@ -16,7 +16,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -118,6 +118,8 @@ chatDirectTests = do
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
 #endif
+  describe "connections synchronization" $ do
+    fit "should remove and report extra users in agent" testConnSyncExtraAgentUsers
   describe "coordination between app and NSE" $ do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
@@ -1522,6 +1524,45 @@ testDatabaseEncryption ps = do
     withTestChat ps "alice" $ \alice -> do
       testChatWorking alice bob
 #endif
+
+testConnSyncExtraAgentUsers :: HasCallStack => TestParams -> IO ()
+testConnSyncExtraAgentUsers ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+
+      alice ##> "/_connections diff"
+      alice <## "no difference between agent and chat connections"
+
+      void $ withCCAgentTransaction alice $ \db ->
+        DB.execute_ db "INSERT INTO users DEFAULT VALUES"
+      agentUserCount <- withCCAgentTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM users" :: IO [[Int]]
+      agentUserCount `shouldBe` [[2]]
+
+      alice ##> "/_connections diff"
+      alice <## "connections difference summary:"
+      alice <## "number of extra users in agent: 1"
+
+      alice ##> "/_connections diff show_ids=on"
+      alice <## "connections difference:"
+      alice <## "extra users in agent (agent user IDs): 2"
+
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
+
+    withTestChat ps "alice" $ \alice -> do
+      alice <## "connections difference summary:"
+      alice <## "number of extra users in agent: 1"
+      alice <## "removed extra users in agent"
+
+      alice <## "1 connections subscribed"
+
+      agentUserCount <- withCCAgentTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM users" :: IO [[Int]]
+      agentUserCount `shouldBe` [[1]]
+
+      alice <##> bob
 
 testSubscribeAppNSE :: HasCallStack => TestParams -> IO ()
 testSubscribeAppNSE ps =

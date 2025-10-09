@@ -452,7 +452,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, 
   CEvtContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CEvtContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CEvtContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CEvtConnectionsDiff connDiff -> viewConnDiffSummary connDiff
+  CEvtConnectionsDiff connDiff -> viewConnDiffSync connDiff
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
@@ -1435,16 +1435,22 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
 
+viewConnDiffSync :: ConnDiffInfo -> [StyledString]
+viewConnDiffSync connDiff@ConnDiffInfo {extraUserIds, extraConnIds} =
+  viewConnDiffSummary connDiff
+    <> ["removed extra users in agent" | not (null extraUserIds)]
+    <> ["removed extra connections in agent" | not (null extraConnIds)]
+
 viewConnDiffSummary :: ConnDiffInfo -> [StyledString]
 viewConnDiffSummary ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds}
   | null missingUserIds && null extraUserIds && null missingConnIds && null extraConnIds =
       ["no difference between agent and chat connections"]
   | otherwise =
       ["connections difference summary:"]
-        <> ["users missing in agent: " <> sShow (length missingUserIds) | not (null missingUserIds)]
-        <> ["extra users in agent: " <> sShow (length extraUserIds) | not (null extraUserIds)]
-        <> ["connections missing in agent: " <> sShow (length missingConnIds) | not (null missingConnIds)]
-        <> ["extra connections in agent: " <> sShow (length extraConnIds) | not (null extraConnIds)]
+        <> ["number of users missing in agent: " <> sShow (length missingUserIds) | not (null missingUserIds)]
+        <> ["number of extra users in agent: " <> sShow (length extraUserIds) | not (null extraUserIds)]
+        <> ["number of connections missing in agent: " <> sShow (length missingConnIds) | not (null missingConnIds)]
+        <> ["number of extra connections in agent: " <> sShow (length extraConnIds) | not (null extraConnIds)]
 
 viewConnDiffIds :: ConnDiffInfo -> [StyledString]
 viewConnDiffIds ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds}
@@ -1452,10 +1458,10 @@ viewConnDiffIds ConnDiffInfo {missingUserIds, extraUserIds, missingConnIds, extr
       ["no difference between agent and chat connections"]
   | otherwise =
       ["connections difference:"]
-        <> ["users missing in agent: " <> showUserIds missingUserIds | not (null missingUserIds)]
-        <> ["extra users in agent: " <> showUserIds extraUserIds | not (null extraUserIds)]
-        <> ["connections missing in agent: " <> showConnIds missingConnIds | not (null missingConnIds)]
-        <> ["extra connections in agent: " <> showConnIds extraConnIds | not (null extraConnIds)]
+        <> ["users missing in agent (agent user IDs): " <> showUserIds missingUserIds | not (null missingUserIds)]
+        <> ["extra users in agent (agent user IDs): " <> showUserIds extraUserIds | not (null extraUserIds)]
+        <> ["connections missing in agent (agent conn IDs): " <> showConnIds missingConnIds | not (null missingConnIds)]
+        <> ["extra connections in agent (agent conn IDs): " <> showConnIds extraConnIds | not (null extraConnIds)]
   where
     showUserIds auIds = plain $ T.intercalate ", " $ map (\(AgentUserId auId) -> T.pack $ show auId) auIds
     showConnIds acIds = plain $ T.intercalate ", " $ map (\(AgentConnId acId) -> T.pack $ show acId) acIds
