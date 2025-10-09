@@ -867,10 +867,6 @@ Query: DELETE FROM deleted_snd_chunk_replicas WHERE deleted_snd_chunk_replica_id
 Plan:
 SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: DELETE FROM encrypted_rcv_message_hashes WHERE created_at < ?
-Plan:
-SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_created_at (created_at<?)
-
 Query: DELETE FROM inv_short_links WHERE host = ? AND port = ? AND link_id = ?
 Plan:
 SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=? AND link_id=?)
