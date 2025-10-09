@@ -22,7 +22,7 @@ import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char (isSpace, toUpper)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.List (groupBy, intercalate, intersperse, partition, sortOn)
+import Data.List (groupBy, intercalate, intersperse, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -384,7 +384,7 @@ contactList :: [ContactRef] -> String
 contactList cs = T.unpack . T.intercalate ", " $ map (\ContactRef {localDisplayName = n} -> "@" <> n) cs
 
 chatEventToView :: (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Bool -> CurrentTime -> TimeZone -> Maybe RemoteHostId -> ChatEvent -> [StyledString]
-chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, coreApi} liveItems ts tz outputRH = \case
+chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} liveItems ts tz outputRH = \case
   CEvtChatSuspended -> ["chat suspended"]
   CEvtContactSwitch u ct progress -> ttyUser u $ viewContactSwitch ct progress
   CEvtGroupMemberSwitch u g m progress -> ttyUser u $ viewGroupMemberSwitch g m progress
@@ -452,13 +452,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtConnSubError u connId e -> ttyUser u ["conn ID " <> sShow connId <> ": subscription error " <> sShow e]
-  CEvtConnSubSummary u connSubResults ->
-    ttyUser u $ [sShow (length subscribed) <> " connections subscribed" | not (null subscribed)] <> viewSubErrorsSummary errs
-    where
-      (errs, subscribed) = partition (isJust . connSubError) connSubResults
-  CEvtNetworkStatus srv status conns -> [plain $ "server " <> showSMPServer srv <> ": " <> show (length conns) <> " connections " <> netStatusStr status]
-  CEvtNetworkStatuses u statuses -> if testView && coreApi then ttyUser' u $ viewNetworkStatuses statuses else []
+  CEvtNetworkStatus srv status conns -> [plain $ netStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m

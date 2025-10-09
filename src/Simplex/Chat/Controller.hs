@@ -155,7 +155,6 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
-    coreApi :: Bool,
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     highlyAvailable :: Bool,
@@ -827,10 +826,7 @@ data ChatEvent
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CEvtConnSubError {user :: User, agentConnId :: AgentConnId, chatError :: ChatError}
-  | CEvtConnSubSummary {user :: User, connSubResults :: [ConnSubResult]}
   | CEvtNetworkStatus {server :: SMPServer, networkStatus :: NetworkStatus, connections :: [AgentConnId]}
-  | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
@@ -911,8 +907,6 @@ allowRemoteEvent = \case
 logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
   CEvtNetworkStatus {} -> True
-  CEvtNetworkStatuses {} -> True
-  CEvtConnSubError {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True

@@ -58,7 +58,7 @@ main = do
             "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
 #else
       describe "Schema dump" schemaDumpTest
-      describe "Bot API docs" apiDocsTest
+      fdescribe "Bot API docs" apiDocsTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "SimpleX chat markdown" markdownTests

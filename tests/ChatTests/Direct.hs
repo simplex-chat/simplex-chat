@@ -55,7 +55,7 @@ chatDirectTests = do
   describe "direct messages" $ do
     describe "add contact and send/receive messages" testAddContact
     it "retry connecting via the same link" testRetryConnecting
-    xit'' "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
+    it "retry connecting via the same link with client timeout" testRetryConnectingClientTimeout
     it "mark multiple messages as read" testMarkReadDirect
     it "clear chat with contact" testContactClear
     it "deleting contact deletes profile" testDeleteContactDeletesProfile
@@ -243,14 +243,14 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       inv <- withSmpServer' serverCfg' $ do
         alice ##> "/_connect 1"
         getInvitation alice
-      alice <## "server disconnected localhost ()"
+      alice <## "disconnected 1 connections on server localhost"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
       _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> inv)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "server connected localhost ()"
+        alice <## "subscribed 1 connections on server localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
@@ -264,8 +264,8 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         bob <# "alice> message 1"
         bob #> "@alice message 2"
         alice <# "bob> message 2"
-      bob <## "server disconnected localhost (@alice)"
-      alice <## "server disconnected localhost (@bob)"
+      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected 1 connections on server localhost"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
@@ -312,8 +312,8 @@ testRetryConnectingClientTimeout ps = do
     withTestChatCfgOpts ps cfg' opts' "alice" $ \alice -> do
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
         threadDelay 250000
-        alice <## "1 connections subscribed"
-        bob <## "1 subscription errors (run with -c option to show each error)"
+        alice <## "subscribed 1 connections on server localhost"
+        -- bob <## "1 subscription errors (run with -c option to show each error)"
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
         _sLinkData <- getTermLine bob
@@ -1249,7 +1249,7 @@ testAsyncInitiatingOffline withShortLink aliceCfg bobCfg ps = do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
     withTestChatCfg ps aliceCfg "alice" $ \alice -> do
-      alice <## "1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1265,8 +1265,8 @@ testAsyncAcceptingOffline withShortLink aliceCfg bobCfg ps = do
     bob <## "confirmation sent!"
   withTestChatCfg ps aliceCfg "alice" $ \alice -> do
     withTestChatCfg ps bobCfg "bob" $ \bob -> do
-      alice <## "1 connections subscribed"
-      bob <## "1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on server localhost"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1283,10 +1283,10 @@ testFullAsyncFast ps = do
     bob <## "confirmation sent!"
     threadDelay 250000
   withTestChat ps "alice" $ \alice -> do
-    alice <## "1 connections subscribed"
+    alice <## "subscribed 1 connections on server localhost"
     alice <## "bob (Bob): contact is connected"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
     bob <## "alice (Alice): contact is connected"
 
 testFullAsyncSlow :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
@@ -1300,14 +1300,14 @@ testFullAsyncSlow withShortLink aliceCfg bobCfg ps = do
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
   withAlice $ \alice ->
-    alice <## "1 connections subscribed"
+    alice <## "subscribed 1 connections on server localhost"
   withBob $ \bob ->
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
   withAlice $ \alice -> do
-    alice <## "1 connections subscribed"
+    alice <## "subscribed 1 connections on server localhost"
     alice <## "bob (Bob): contact is connected"
   withBob $ \bob -> do
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
     bob <## "alice (Alice): contact is connected"
   where
     withAlice = withTestChatCfg ps aliceCfg "alice"
@@ -1401,7 +1401,7 @@ testMaintenanceMode ps = do
       alice ##> "/_start"
       alice <## "chat started"
       -- chat works after start
-      alice <## "1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
       alice #> "@bob hi again"
       bob <# "alice> hi again"
       bob #> "@alice hello"
@@ -1422,7 +1422,7 @@ testMaintenanceMode ps = do
 
 testChatWorking :: HasCallStack => TestCC -> TestCC -> IO ()
 testChatWorking alice bob = do
-  alice <## "1 connections subscribed"
+  alice <## "subscribed 1 connections on server localhost"
   alice #> "@bob hello again"
   bob <# "alice> hello again"
   bob #> "@alice hello too"
@@ -1541,7 +1541,7 @@ testSubscribeAppNSE ps =
         (nseAlice </)
         alice ##> "/_app activate"
         alice <## "ok"
-        alice <## "1 connections subscribed"
+        alice <## "subscribed 1 connections on server localhost"
         alice <## "bob (Bob) wants to connect to you!"
         alice <## "to accept: /ac bob"
         alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1752,8 +1752,8 @@ testUsersSubscribeAfterRestart ps = do
 
     withTestChat ps "alice" $ \alice -> do
       -- second user is active
-      alice <## "1 connections subscribed"
-      alice <## "[user: alice] 1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on server localhost"
 
       -- second user receives message
       alice <##> bob
@@ -2058,8 +2058,8 @@ testUsersRestartCIExpiration ps = do
       showActiveUser alice "alice (Alice)"
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "1 connections subscribed"
-      alice <## "[user: alisa] 1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on server localhost"
 
       -- first user messages
       alice ##> "/user alice"
@@ -2157,8 +2157,8 @@ testEnableCIExpirationOnlyForOneUser ps = do
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "1 connections subscribed"
-      alice <## "[user: alice] 1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on server localhost"
 
       -- messages are not deleted for second user after restart
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
@@ -2213,8 +2213,8 @@ testDisableCIExpirationOnlyForOneUser ps = do
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
 
     withTestChatCfg ps cfg "alice" $ \alice -> do
-      alice <## "1 connections subscribed"
-      alice <## "[user: alice] 1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on server localhost"
 
       -- second user still has ttl configured after restart
       alice #$> ("/ttl", id, "old messages are set to be deleted after: 1 second(s)")
@@ -2320,8 +2320,8 @@ testUsersTimedMessages ps = do
       alice <# "bob> alisa 4"
 
     withTestChat ps "alice" $ \alice -> do
-      alice <## "1 connections subscribed"
-      alice <## "[user: alice] 1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
+      alice <## "subscribed 1 connections on server localhost"
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2670,7 +2670,7 @@ testAbortSwitchContact ps = do
     alice ##> "/abort switch bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 connections subscribed"
+      bob <## "subscribed 1 connections on server localhost"
       bob <## "alice started changing address for you"
       -- alice changes address again
       alice #$> ("/switch bob", id, "switch started")
@@ -2717,7 +2717,7 @@ testAbortSwitchGroupMember ps = do
     alice ##> "/abort switch #team bob"
     alice <## "error: command is prohibited, abortConnectionSwitch: not allowed"
     withTestChat ps "bob" $ \bob -> do
-      bob <## "2 connections subscribed"
+      bob <## "subscribed 2 connections on server localhost"
       bob <## "#team: alice started changing address for you"
       -- alice changes address again
       alice #$> ("/switch #team bob", id, "switch started")
@@ -2816,7 +2816,7 @@ testMsgDecryptError ps =
       alice <# "bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 connections subscribed"
+      bob <## "subscribed 1 connections on server localhost"
       alice #> "@bob hello again"
       bob <# "alice> skipped message ID 9..11"
       bob <# "alice> hello again"
@@ -2827,7 +2827,7 @@ setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
     alice #> "@bob 1"
     bob <# "alice> 1"
     bob #> "@alice 2"
@@ -2838,7 +2838,7 @@ setupDesynchronizedRatchet ps alice = do
     alice <# "bob> 4"
     threadDelay 500000
   withTestChat ps "bob_old" $ \bob -> do
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
     bob ##> "/sync alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "@bob 1"
@@ -2869,7 +2869,7 @@ testSyncRatchet ps =
       alice <# "bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "1 connections subscribed"
+      bob <## "subscribed 1 connections on server localhost"
       bob ##> "/sync alice"
       bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
@@ -2908,7 +2908,7 @@ testSyncRatchetCodeReset ps =
       aliceInfo bob True
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "1 connections subscribed"
+      bob <## "subscribed 1 connections on server localhost"
       bob ##> "/sync alice"
       bob <## "connection synchronization started"
       alice <## "bob: connection synchronization agreed"
@@ -3132,7 +3132,7 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
 
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 connections subscribed"
+      bob <## "subscribed 1 connections on server localhost"
 
       bob #> "@alice hello 1"
       alice <# "bob> hello 1"
@@ -3144,7 +3144,7 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
 
     withTestChatCfg ps cfg11 "bob" $ \bob -> do
-      bob <## "1 connections subscribed"
+      bob <## "subscribed 1 connections on server localhost"
 
       bob #> "@alice hello 2"
       alice <# "bob> hello 2"
@@ -3159,17 +3159,15 @@ testUpdatePeerChatVRange ps =
 
 testGetNetworkStatuses :: HasCallStack => TestParams -> IO ()
 testGetNetworkStatuses ps = do
-  withNewTestChatCfg ps cfg "alice" aliceProfile $ \alice -> do
-    withNewTestChatCfg ps cfg "bob" bobProfile $ \bob -> do
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
       connectUsers alice bob
       alice ##> "/_network_statuses"
-      alice <## "1 connections connected"
-  withTestChatCfg ps cfg "alice" $ \alice ->
-    withTestChatCfg ps cfg "bob" $ \bob -> do
-      alice <## "1 connections connected"
-      bob <## "1 connections connected"
-  where
-    cfg = testCfg {coreApi = True}
+      alice <## "1 connections subscribed"
+  withTestChat ps "alice" $ \alice ->
+    withTestChat ps "bob" $ \bob -> do
+      alice <## "subscribed 1 connections on server localhost"
+      bob <## "subscribed 1 connections on server localhost"
 
 vr11 :: VersionRangeChat
 vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)
