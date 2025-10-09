@@ -69,6 +69,13 @@ fs.readdir(translationsDirectoryPath, (err, files) => {
 const translations = require("./translations.json")
 
 module.exports = function (ty) {
+  // Add this after your markdownLib definition
+  ty.addShortcode("mdInclude", function (filepath) {
+    const fullPath = path.join(__dirname, 'src/_includes', filepath);
+    const content = fs.readFileSync(fullPath, 'utf8');
+    return markdownLib.render(content);
+  });
+
   ty.addShortcode("cfg", (name) => globalConfig[name])
 
   ty.addFilter("getlang", (path) => {

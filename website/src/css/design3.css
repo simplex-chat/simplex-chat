@@ -204,12 +204,12 @@
 }
 
 :root {
-    --bg-grad: linear-gradient(10deg,
+    --bg-grad: linear-gradient(9.2deg,
             #000000 0%,
-            #131d49 55%,
-            #3f5598 70%,
-            #c3faff 90%,
-            #fff6e0 100%);
+            #131d49 52%,
+            #3f5598 65%,
+            #c3faff 85%,
+            #fff6e0 90%);
 
     --nav-color: #ffffff;
 
@@ -306,6 +306,7 @@ p {
 html, body {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
 }
 
 section.page {
@@ -404,13 +405,16 @@ main {
 }
 
 main .section-bg {
-    position: fixed;
+    position: sticky;
+    top: 0;
     inset: 0;
-    height: 100svh;          /* fallback */
-    margin-bottom: -100svh;  /* cancel own layout height */
+    height: 100lvh;          /* fallback */
+    margin-bottom: -100lvh;  /* cancel own layout height */
+    width: 100vw;
 
     background-image: var(--bg-grad);
     background-position: center;
+    background-size: cover;
     background-repeat: no-repeat;
     z-index: -1;
     pointer-events: none;
@@ -712,6 +716,7 @@ main .section-bg {
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(6, 1fr);
     gap: calc(var(--sec-vwu-desktop) * 2.1);
+    z-index: 2;
 }
 
 .page-6 .group-images img {
@@ -1254,8 +1259,8 @@ section.page.footer {
 
 @media screen and (max-width: 768px) {
     section.page.footer {
-        height: 100vh;
-        min-height: 100vh;
+        height: 100lvh;
+        min-height: 100lvh;
     }
 }
 
