@@ -6324,6 +6324,10 @@ Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? A
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
+Plan:
+SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -6596,10 +6600,6 @@ Query: UPDATE groups SET request_shared_msg_id = ? WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE groups SET send_rcpts = NULL
-Plan:
-SCAN groups
-
 Query: UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
@@ -6691,10 +6691,6 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE users SET send_rcpts_contacts = ?, send_rcpts_small_groups = ? WHERE view_pwd_hash IS NULL
 Plan:
 SCAN users
-
-Query: UPDATE users SET send_rcpts_small_groups = ? WHERE user_id = ?
-Plan:
-SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE users SET ui_themes = ?, updated_at = ? WHERE user_id = ?
 Plan:
