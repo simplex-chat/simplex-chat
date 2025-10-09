@@ -118,7 +118,7 @@ import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Transport.Client (TransportHost)
 import Simplex.Messaging.Util (eitherToMaybe, safeDecodeUtf8)
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
