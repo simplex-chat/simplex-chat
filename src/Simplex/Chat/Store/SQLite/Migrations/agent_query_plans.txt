@@ -882,13 +882,6 @@ SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_co
 SEARCH snd_messages USING COVERING INDEX idx_snd_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
 SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
 
-Query: DELETE FROM messages WHERE internal_ts < ? AND internal_snd_id IS NOT NULL
-Plan:
-SEARCH messages USING INDEX idx_messages_internal_ts (internal_ts<?)
-SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=? AND internal_id=?)
-SEARCH snd_messages USING COVERING INDEX idx_snd_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
-SEARCH rcv_messages USING COVERING INDEX idx_rcv_messages_conn_id_internal_id (conn_id=? AND internal_id=?)
-
 Query: DELETE FROM ntf_subscriptions WHERE conn_id = ?
 Plan:
 SEARCH ntf_subscriptions USING PRIMARY KEY (conn_id=?)
