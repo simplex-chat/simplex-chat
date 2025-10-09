@@ -176,13 +176,13 @@ startChatController mainApp enableSndFiles = do
       whenM (withFastStore' shouldSyncConnections) $ do
         connIds <- concat <$> forM users getConnsToSub
         let aUserIds = map aUserId users
-        connDrift <- toConnDriftInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
-        let ConnDriftInfo {missingUserIds, missingConnIds} = connDrift
+        connDiff <- toConnDiffInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
+        let ConnDiffInfo {missingUserIds, missingConnIds} = connDiff
         withFastStore' $ \db -> do
           deleteUsersByAgentIds db missingUserIds
           markDeletedConnsByAgentIds db missingConnIds
-        withFastStore' $ \db -> updateConnectionsSync db connDrift
-        toView $ CEvtConnectionsDrift connDrift
+        withFastStore' $ \db -> updateConnectionsSync db connDiff
+        toView $ CEvtConnectionsDiff connDiff
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -471,12 +471,12 @@ processChatCommand vr nm = \case
     stopRemoteCtrl
     lift $ withAgent' (`suspendAgent` t)
     ok_
-  ShowConnectionsDrift -> do
+  ShowConnectionsDiff -> do
     users <- withFastStore' getUsers
     let aUserIds = map aUserId users
     connIds <- concat <$> forM users getConnsToSub
-    connDrift <- toConnDriftInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
-    pure $ CRConnectionsDrift connDrift
+    connDiff <- toConnDiffInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
+    pure $ CRConnectionsDiff connDiff
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
@@ -4382,7 +4382,7 @@ chatCommandP =
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
-      "/_connections drift" $> ShowConnectionsDrift,
+      "/_connections v" $> ShowConnectionsDiff,
       "/_resubscribe all" $> ResubscribeAllConnections,
       -- deprecated, use /set file paths
       "/_temp_folder " *> (SetTempFolder <$> filePath),

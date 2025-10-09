@@ -293,7 +293,7 @@ data ChatCommand
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
-  | ShowConnectionsDrift
+  | ShowConnectionsDiff
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
@@ -635,7 +635,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
-  | CRConnectionsDrift {connDrift :: ConnDriftInfo}
+  | CRConnectionsDiff {connDiff :: ConnDiffInfo}
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
@@ -828,7 +828,7 @@ data ChatEvent
   | CEvtContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
-  | CEvtConnectionsDrift {connDrift :: ConnDriftInfo}
+  | CEvtConnectionsDiff {connDiff :: ConnDiffInfo}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
   | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}

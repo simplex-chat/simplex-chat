@@ -130,7 +130,7 @@ undocumentedResponses =
     "CRChats",
     "CRChatStarted",
     "CRChatStopped",
-    "CRConnectionsDrift",
+    "CRConnectionsDiff",
     "CRChatTags",
     "CRConnectionAliasUpdated",
     "CRConnectionIncognitoUpdated",

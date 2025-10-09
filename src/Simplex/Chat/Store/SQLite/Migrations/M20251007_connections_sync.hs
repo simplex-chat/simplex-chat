@@ -12,11 +12,10 @@ m20251007_connections_sync =
 CREATE TABLE connections_sync(
   connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
   should_sync INTEGER NOT NULL DEFAULT 0,
-  last_sync_ts TEXT,
-  conn_drift TEXT
+  last_sync_ts TEXT
 );
 
-INSERT INTO connections_sync (connections_sync_id, should_sync, last_sync_ts, conn_drift) VALUES (1,0,NULL,NULL);
+INSERT INTO connections_sync (connections_sync_id, should_sync, last_sync_ts) VALUES (1,0,NULL);
 |]
 
 down_m20251007_connections_sync :: Query

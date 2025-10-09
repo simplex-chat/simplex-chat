@@ -719,8 +719,7 @@ CREATE TABLE group_member_status_predicates(
 CREATE TABLE connections_sync(
   connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
   should_sync INTEGER NOT NULL DEFAULT 0,
-  last_sync_ts TEXT,
-  conn_drift TEXT
+  last_sync_ts TEXT
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,

@@ -52,7 +52,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
-import Simplex.Messaging.Agent (ConnectionsDriftInfo (..))
+import Simplex.Messaging.Agent (ConnectionsDiffInfo (..))
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
@@ -1761,7 +1761,7 @@ instance TextEncoding ConnType where
     ConnMember -> "member"
     ConnUserContact -> "user_contact"
 
-data ConnDriftInfo = ConnDriftInfo
+data ConnDiffInfo = ConnDiffInfo
   { missingUserIds :: [AgentUserId],
     extraUserIds :: [AgentUserId],
     missingConnIds :: [AgentConnId],
@@ -1769,9 +1769,9 @@ data ConnDriftInfo = ConnDriftInfo
   }
   deriving (Show)
 
-toConnDriftInfo :: ConnectionsDriftInfo -> ConnDriftInfo
-toConnDriftInfo ConnectionsDriftInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds} =
-  ConnDriftInfo
+toConnDiffInfo :: ConnectionsDiffInfo -> ConnDiffInfo
+toConnDiffInfo ConnectionsDiffInfo {missingUserIds, extraUserIds, missingConnIds, extraConnIds} =
+  ConnDiffInfo
     { missingUserIds = map AgentUserId missingUserIds,
       extraUserIds = map AgentUserId extraUserIds,
       missingConnIds = map AgentConnId missingConnIds,
@@ -2038,12 +2038,12 @@ $(JQ.deriveJSON defaultJSON ''Connection)
 
 $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
-$(JQ.deriveJSON defaultJSON ''ConnDriftInfo)
+$(JQ.deriveJSON defaultJSON ''ConnDiffInfo)
 
-instance ToField ConnDriftInfo where
+instance ToField ConnDiffInfo where
   toField = toField . encodeJSON
 
-instance FromField ConnDriftInfo where
+instance FromField ConnDiffInfo where
   fromField = fromTextField_ decodeJSON
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)

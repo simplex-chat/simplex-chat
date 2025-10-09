@@ -340,17 +340,17 @@ shouldSyncConnections db =
       db
       "SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1"
 
-updateConnectionsSync :: DB.Connection -> ConnDriftInfo -> IO ()
-updateConnectionsSync db connDrift = do
+updateConnectionsSync :: DB.Connection -> ConnDiffInfo -> IO ()
+updateConnectionsSync db connDiff = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE connections_sync
-      SET should_sync = 0, last_sync_ts = ?, conn_drift = ?
+      SET should_sync = 0, last_sync_ts = ?
       WHERE connections_sync_id = 1
     |]
-    (currentTs, connDrift)
+    (currentTs, connDiff)
 
 markDeletedConnsByAgentIds :: DB.Connection -> [AgentConnId] -> IO ()
 markDeletedConnsByAgentIds db agentConnIds =

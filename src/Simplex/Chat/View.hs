@@ -116,7 +116,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
-  CRConnectionsDrift connDrift -> ["connections drift:"] <> [viewJSON connDrift]
+  CRConnectionsDiff connDiff -> ["connections diff:"] <> [viewJSON connDiff]
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
@@ -450,7 +450,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView, 
   CEvtContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CEvtContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CEvtContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
-  CEvtConnectionsDrift connDrift -> ["connections drift:"] <> [viewJSON connDrift]
+  CEvtConnectionsDiff connDiff -> ["connections diff:"] <> [viewJSON connDiff]
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
