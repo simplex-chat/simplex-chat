@@ -21,12 +21,10 @@ module Simplex.Chat.Store.Connections
     getPendingConnsToSub,
     unsetConnectionToSubscribe,
     shouldSyncConnections,
-    updateConnectionsSync,
-    markDeletedConnsByAgentIds,
+    setConnectionsSyncTs,
   )
 where
 
-import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Data.Bitraversable (bitraverse)
@@ -340,8 +338,8 @@ shouldSyncConnections db =
       db
       "SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1"
 
-updateConnectionsSync :: DB.Connection -> ConnDiffInfo -> IO ()
-updateConnectionsSync db connDiff = do
+setConnectionsSyncTs :: DB.Connection -> IO ()
+setConnectionsSyncTs db = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -350,13 +348,4 @@ updateConnectionsSync db connDiff = do
       SET should_sync = 0, last_sync_ts = ?
       WHERE connections_sync_id = 1
     |]
-    (currentTs, connDiff)
-
-markDeletedConnsByAgentIds :: DB.Connection -> [AgentConnId] -> IO ()
-markDeletedConnsByAgentIds db agentConnIds =
-#if defined(dbPostgres)
-  DB.execute db "UPDATE connections SET conn_status = ? WHERE agent_conn_id IN ?" (ConnDeleted, In agentConnIds)
-#else
-  forM_ agentConnIds $ \acId ->
-    DB.execute db "UPDATE connections SET conn_status = ? WHERE agent_conn_id = ?" (ConnDeleted, acId)
-#endif
+    (Only currentTs)

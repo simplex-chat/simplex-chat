@@ -2040,12 +2040,6 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''ConnDiffInfo)
 
-instance ToField ConnDiffInfo where
-  toField = toField . encodeJSON
-
-instance FromField ConnDiffInfo where
-  fromField = fromTextField_ decodeJSON
-
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
 $(JQ.deriveJSON defaultJSON ''GroupMember)

@@ -36,7 +36,6 @@ module Simplex.Chat.Store.Profiles
     getUserByFileId,
     getUserFileInfo,
     deleteUserRecord,
-    deleteUsersByAgentIds,
     updateUserPrivacy,
     updateAllContactReceipts,
     updateUserContactReceipts,
@@ -262,15 +261,6 @@ getUserFileInfo db User {userId} =
 deleteUserRecord :: DB.Connection -> User -> IO ()
 deleteUserRecord db User {userId} =
   DB.execute db "DELETE FROM users WHERE user_id = ?" (Only userId)
-
-deleteUsersByAgentIds :: DB.Connection -> [AgentUserId] -> IO ()
-deleteUsersByAgentIds db agentUserIds =
-#if defined(dbPostgres)
-  DB.execute db "DELETE FROM users WHERE agent_user_id IN ?" (Only (In agentUserIds))
-#else
-  forM_ agentUserIds $ \auId ->
-    DB.execute db "DELETE FROM users WHERE agent_user_id = ?" (Only auId)
-#endif
 
 updateUserPrivacy :: DB.Connection -> User -> IO ()
 updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =

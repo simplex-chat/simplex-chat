@@ -174,14 +174,10 @@ startChatController mainApp enableSndFiles = do
   where
     syncConnections' users =
       whenM (withFastStore' shouldSyncConnections) $ do
-        connIds <- concat <$> forM users getConnsToSub
         let aUserIds = map aUserId users
+        connIds <- concat <$> forM users getConnsToSub
         connDiff <- toConnDiffInfo <$> withAgent (\a -> syncConnections a aUserIds connIds)
-        let ConnDiffInfo {missingUserIds, missingConnIds} = connDiff
-        withFastStore' $ \db -> do
-          deleteUsersByAgentIds db missingUserIds
-          markDeletedConnsByAgentIds db missingConnIds
-        withFastStore' $ \db -> updateConnectionsSync db connDiff
+        withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff connDiff
     start s users = do
       a1 <- async agentSubscriber
