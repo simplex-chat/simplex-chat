@@ -568,7 +568,7 @@
   <string name="cant_send_message_you_left">you left</string>
   <string name="cant_send_message_generic">can\'t send messages</string>
   <string name="you_are_observer">you are observer</string>
-  <string name="reviewed_by_admins">reviewed by admins</string>
+  <string name="waiting_for_admins_review">waiting for admins review</string>
   <string name="cant_send_message_member_has_old_version">member has old version</string>
   <string name="cant_send_commands_alert_text">To send commands you must be connected.</string>
 
