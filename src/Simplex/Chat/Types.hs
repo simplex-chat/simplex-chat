@@ -1813,7 +1813,7 @@ data NetworkStatus
 netStatusStr :: NetworkStatus -> String
 netStatusStr = \case
   NSUnknown -> "unknown"
-  NSConnected -> "connected"
+  NSConnected -> "subscribed"
   NSDisconnected -> "disconnected"
   NSError e -> "error: " <> e
 

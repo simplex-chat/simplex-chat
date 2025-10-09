@@ -131,23 +131,19 @@ processAgentMessageNoConn :: AEvent 'AENone -> CM ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CEvtHostConnected p h
   DISCONNECT p h -> hostEvent $ CEvtHostDisconnected p h
-  DOWN srv conns -> serverEvent srv conns NSDisconnected CEvtContactsDisconnected
-  UP srv conns -> serverEvent srv conns NSConnected CEvtContactsSubscribed
+  DOWN srv conns -> serverEvent srv NSDisconnected conns
+  UP srv conns -> serverEvent srv NSConnected conns
   SUSPENDED -> toView CEvtChatSuspended
   DEL_USER agentUserId -> toView $ CEvtAgentUserDeleted agentUserId
-  ERRS cErrs -> errsEvent cErrs
+  ERRS cErrs -> errsEvent $ L.toList cErrs
   where
     hostEvent :: ChatEvent -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent srv conns nsStatus event = do
+    serverEvent srv nsStatus conns = do
       chatModifyVar connNetworkStatuses $ \m -> foldl' (\m' cId -> M.insert cId nsStatus m') m connIds
-      ifM (asks $ coreApi . config) (notifyAPI connIds) notifyCLI
+      toView $ CEvtNetworkStatus srv nsStatus connIds
       where
         connIds = map AgentConnId conns
-        notifyAPI = toView . CEvtNetworkStatus nsStatus
-        notifyCLI = do
-          cs <- withStore' (`getConnectionsContacts` conns)
-          toView $ event srv cs
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent cErrs = do
       vr <- chatVersionRange
