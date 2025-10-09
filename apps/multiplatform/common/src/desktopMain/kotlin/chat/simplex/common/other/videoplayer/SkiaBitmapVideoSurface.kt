@@ -44,6 +44,8 @@ internal class SkiaBitmapVideoSurface : VideoSurface(VideoSurfaceAdapters.getVid
       return RV32BufferFormat(sourceWidth, sourceHeight)
     }
 
+    override fun newFormatSize(bufferWidth: Int, bufferHeight: Int, displayWidth: Int, displayHeight: Int) {}
+
     override fun allocatedBuffers(buffers: Array<ByteBuffer>) {
       frameBytes = buffers[0].run { ByteArray(remaining()).also(::get) }
       imageInfo = ImageInfo(
@@ -56,11 +58,7 @@ internal class SkiaBitmapVideoSurface : VideoSurface(VideoSurfaceAdapters.getVid
   }
 
   private inner class SkiaBitmapRenderCallback : RenderCallback {
-    override fun display(
-      mediaPlayer: MediaPlayer,
-      nativeBuffers: Array<ByteBuffer>,
-      bufferFormat: BufferFormat,
-    ) {
+    override fun display(mediaPlayer: MediaPlayer?, nativeBuffers: Array<out ByteBuffer>, bufferFormat: BufferFormat, displayWidth: Int, displayHeight: Int) {
       SwingUtilities.invokeLater {
         nativeBuffers[0].rewind()
         nativeBuffers[0].get(frameBytes)
@@ -68,6 +66,10 @@ internal class SkiaBitmapVideoSurface : VideoSurface(VideoSurfaceAdapters.getVid
         composeBitmap.value = skiaBitmap.asComposeImageBitmap()
       }
     }
+
+    override fun lock(mediaPlayer: MediaPlayer?) {}
+
+    override fun unlock(mediaPlayer: MediaPlayer?) {}
   }
 
   private inner class SkiaBitmapVideoSurface : CallbackVideoSurface(

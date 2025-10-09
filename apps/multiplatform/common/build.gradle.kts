@@ -35,26 +35,26 @@ kotlin {
         api(compose.runtime)
         api(compose.foundation)
         api(compose.material)
-        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-        api("org.jetbrains.kotlinx:kotlinx-datetime:0.5.0")
-        api("com.russhwolf:multiplatform-settings:1.1.1")
-        api("com.charleskorn.kaml:kaml:0.59.0")
+        api("org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.0")
+        api("org.jetbrains.kotlinx:kotlinx-datetime:0.6.2")
+        api("com.russhwolf:multiplatform-settings:1.3.0")
+        api("com.charleskorn.kaml:kaml:0.73.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
         implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
         implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
-        api("org.boofcv:boofcv-core:1.1.3")
+        api("org.boofcv:boofcv-core:1.1.8")
         implementation("com.godaddy.android.colorpicker:compose-color-picker-jvm:0.7.0")
         // Link Previews
-        implementation("org.jsoup:jsoup:1.17.2")
+        implementation("org.jsoup:jsoup:1.19.1")
         // Resources
         api("dev.icerock.moko:resources:0.23.0")
         api("dev.icerock.moko:resources-compose:0.23.0")
 
         // Markdown
-        implementation("com.mikepenz:multiplatform-markdown-renderer:0.27.0")
-        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.27.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer:0.31.0")
+        implementation("com.mikepenz:multiplatform-markdown-renderer-m2:0.31.0")
       }
     }
     val commonTest by getting {
@@ -68,8 +68,8 @@ kotlin {
     val androidMain by getting {
       kotlin.srcDir("build/generated/moko/androidMain/src")
       dependencies {
-        implementation("androidx.activity:activity-compose:1.9.1")
-        val workVersion = "2.9.1"
+        implementation("androidx.activity:activity-compose:1.10.1")
+        val workVersion = "2.10.0"
         implementation("androidx.work:work-runtime-ktx:$workVersion")
 
         // Video support
@@ -79,23 +79,23 @@ kotlin {
         implementation("androidx.biometric:biometric:1.2.0-alpha05")
 
         //Barcode
-        implementation("org.boofcv:boofcv-android:1.1.3")
+        implementation("org.boofcv:boofcv-android:1.1.8")
 
         //Camera Permission
-        implementation("com.google.accompanist:accompanist-permissions:0.34.0")
+        implementation("com.google.accompanist:accompanist-permissions:0.37.2")
 
-        implementation("androidx.webkit:webkit:1.11.0")
+        implementation("androidx.webkit:webkit:1.13.0")
 
         // GIFs support
         implementation("io.coil-kt:coil-compose:2.6.0")
-        implementation("io.coil-kt:coil-gif:2.6.0")
+        implementation("io.coil-kt:coil-gif:2.7.0")
 
         // Emojis
-        implementation("androidx.emoji2:emoji2-emojipicker:1.4.0")
+        implementation("androidx.emoji2:emoji2-emojipicker:1.5.0")
 
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        val cameraXVersion = "1.3.4"
+        val cameraXVersion = "1.4.1"
         implementation("androidx.camera:camera-core:${cameraXVersion}")
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
@@ -107,7 +107,7 @@ kotlin {
     }
     val desktopMain by getting {
       dependencies {
-        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.8.0")
+        implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.10.1")
         implementation("com.github.Dansoftowner:jSystemThemeDetector:3.8") {
           exclude("net.java.dev.jna")
         }
@@ -115,7 +115,7 @@ kotlin {
         implementation("net.java.dev.jna:jna-platform:5.14.0")
         implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
-        implementation("uk.co.caprica:vlcj:4.8.3")
+        implementation("uk.co.caprica:vlcj:4.10.1")
         implementation("net.java.dev.jna:jna:5.14.0")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd:efb2ebf85a")
         implementation("com.github.NanoHttpd.nanohttpd:nanohttpd-websocket:efb2ebf85a")
