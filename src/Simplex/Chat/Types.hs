@@ -581,6 +581,10 @@ groupFeatureMemberAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupMemb
 groupFeatureMemberAllowed feature GroupMember {memberRole} =
   groupFeatureMemberAllowed' feature memberRole . fullGroupPreferences
 
+groupFeatureUserAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupInfo -> Bool
+groupFeatureUserAllowed feature GroupInfo {membership = GroupMember {memberRole}, fullGroupPreferences} =
+  groupFeatureMemberAllowed' feature memberRole fullGroupPreferences
+
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
 mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
 
@@ -673,21 +677,12 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
-redactedMemberProfile :: Profile -> Profile
-redactedMemberProfile Profile {displayName, fullName, shortDescr, image, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType}
-
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 fromIncognitoProfile :: IncognitoProfile -> Profile
 fromIncognitoProfile = \case
   NewIncognito p -> p
   ExistingIncognito lp -> fromLocalProfile lp
-
-userProfileInGroup :: User -> Maybe Profile -> Profile
-userProfileInGroup User {profile = p} incognitoProfile =
-  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-   in redactedMemberProfile p'
 
 userProfileDirect :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
 userProfileDirect user@User {profile = p} incognitoProfile ct canFallbackToUserTTL =
@@ -869,15 +864,6 @@ data BusinessChatInfo = BusinessChatInfo
     customerId :: MemberId
   }
   deriving (Eq, Show)
-
-memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo
-    { memberId,
-      memberRole,
-      v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile $ fromLocalProfile memberProfile
-    }
 
 data MemberRestrictionStatus
   = MRSBlocked
