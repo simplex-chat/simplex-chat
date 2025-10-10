@@ -941,6 +941,7 @@ export namespace ChatError {
   export interface ErrorAgent extends Interface {
     type: "errorAgent"
     agentError: AgentErrorType
+    agentConnId: string
     connectionEntity_?: ConnectionEntity
   }
 

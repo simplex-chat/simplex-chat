@@ -911,6 +911,7 @@ Error:
 ErrorAgent:
 - type: "errorAgent"
 - agentError: [AgentErrorType](#agenterrortype)
+- agentConnId: string
 - connectionEntity_: [ConnectionEntity](#connectionentity)?
 
 ErrorStore:

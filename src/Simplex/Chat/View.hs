@@ -2396,7 +2396,7 @@ viewRemoteCtrl CtrlAppInfo {deviceName, appVersionRange = AppVersionRange _ (App
 
 viewRemoteCtrlStopped :: RemoteCtrlStopReason -> [StyledString]
 viewRemoteCtrlStopped = \case
-  RCSRConnectionFailed (ChatErrorAgent (RCP RCEIdentity) _) ->
+  RCSRConnectionFailed (ChatErrorAgent (RCP RCEIdentity) _ _) ->
     ["remote controller stopped: this link was used with another controller, please create a new link on the host"]
   _ -> ["remote controller stopped"]
 
@@ -2531,7 +2531,7 @@ viewChatError isCmd logLevel testView = \case
     DBErrorExport e -> ["error encrypting database: " <> sqliteError' e]
     DBErrorOpen e -> ["error opening database after encryption: " <> sqliteError' e]
     e -> ["chat database error: " <> sShow e]
-  ChatErrorAgent err entity_ -> case err of
+  ChatErrorAgent err (AgentConnId acId) entity_ -> case err of
     CMD PROHIBITED cxt -> [withConnEntity <> plain ("error: command is prohibited, " <> cxt)]
     SMP _ SMP.AUTH ->
       [ withConnEntity
@@ -2562,7 +2562,9 @@ viewChatError isCmd logLevel testView = \case
           "[" <> connEntityLabel entity <> ", groupId: " <> sShow groupId <> ", memberId: " <> sShow groupMemberId <> ", connId: " <> cId conn <> "] "
         Just entity@(UserContactConnection conn UserContact {userContactLinkId}) ->
           "[" <> connEntityLabel entity <> ", userContactLinkId: " <> sShow userContactLinkId <> ", connId: " <> cId conn <> "] "
-        Nothing -> ""
+        Nothing
+          | acId == "" -> ""
+          | otherwise -> plain $ "agent conn ID: " <> acId
       cId :: Connection -> StyledString
       cId Connection {connId} = sShow connId
   ChatErrorRemoteCtrl e -> [plain $ "remote controller error: " <> show e]
