@@ -46,7 +46,7 @@ main = do
   withGlobalLogging logCfg . hspec
     $ do
 #if defined(dbPostgres)
-      createdDropDB .
+      createdDropDb .
       around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
@@ -67,7 +67,7 @@ main = do
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
 #if defined(dbPostgres)
-      createdDropDB
+      createdDropDb
       . around testBracket
 #else
       around (testBracket chatQueryStats agentQueryStats)
@@ -85,7 +85,7 @@ main = do
 #endif
   where
 #if defined(dbPostgres)
-    createdDropDB =
+    createdDropDb =
       before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
       . after_ (dropDatabaseAndUser testDBConnectInfo)
     testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
