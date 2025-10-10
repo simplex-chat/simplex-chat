@@ -232,7 +232,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFileStandalone "started" ft
   CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFileStandalone "started" ft
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
-  CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRMemberAccepted u g m -> ttyUser u $ viewMemberAccepted g m
   CRMemberSupportChatRead u g m -> ttyUser u $ viewSupportChatRead g m
@@ -1173,12 +1172,6 @@ viewCannotResendInvitation g c =
 viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
 viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
 viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
-
-viewNetworkStatuses :: [ConnNetworkStatus] -> [StyledString]
-viewNetworkStatuses = map viewStatuses . L.groupBy ((==) `on` netStatus) . sortOn netStatus
-  where
-    netStatus ConnNetworkStatus {networkStatus} = networkStatus
-    viewStatuses ss@(s :| _) = plain $ show (L.length ss) <> " connections " <> netStatusStr (netStatus s)
 
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
 viewUserJoinedGroup g@GroupInfo {membership} =

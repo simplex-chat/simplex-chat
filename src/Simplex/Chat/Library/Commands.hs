@@ -1368,8 +1368,6 @@ processChatCommand vr nm = \case
         user <- getUserByContactId db contactId
         contact <- getContact db vr user contactId
         pure RcvCallInvitation {user, contact, callType = peerCallType, sharedKey, callUUID, callTs}
-  APIGetNetworkStatuses -> withUser $ \_ ->
-    CRNetworkStatuses Nothing . map (uncurry ConnNetworkStatus) . M.toList <$> chatReadVar connNetworkStatuses
   APICallStatus contactId receivedStatus ->
     withCurrentCall contactId $ \user ct call ->
       updateCallItemStatus user ct call receivedStatus Nothing $> Just call
@@ -2681,7 +2679,6 @@ processChatCommand vr nm = \case
         ct <- withFastStore' $ \db -> createMemberContact db user connId cReq g m mConn subMode
         void $ createChatItem user (CDDirectSnd ct) False CIChatBanner Nothing (Just epochStart)
         -- TODO not sure it is correct to set connections status here?
-        lift $ setContactNetworkStatus ct NSConnected
         pure $ CRNewMemberContact user ct g m
       _ -> throwChatError CEGroupMemberNotActive
   APISendMemberContactInvitation contactId msgContent_ -> withUser $ \user -> do
@@ -4392,7 +4389,6 @@ chatCommandP =
       "/_call end @" *> (APIEndCall <$> A.decimal),
       "/_call status @" *> (APICallStatus <$> A.decimal <* A.space <*> strP),
       "/_call get" $> APIGetCallInvitations,
-      "/_network_statuses" $> APIGetNetworkStatuses,
       "/_profile " *> (APIUpdateProfile <$> A.decimal <* A.space <*> jsonP),
       "/_set alias @" *> (APISetContactAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),
       "/_set alias #" *> (APISetGroupAlias <$> A.decimal <*> (A.space *> textP <|> pure "")),

@@ -15,8 +15,6 @@ import SwiftUI
 
 private var chatController: chat_ctrl?
 
-private let networkStatusesLock = DispatchQueue(label: "chat.simplex.app.network-statuses.lock")
-
 enum TerminalItem: Identifiable {
     case cmd(Date, ChatCommand)
     case res(Date, ChatAPIResult)
@@ -1640,7 +1638,8 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64, inProgress: 
             } else {
                 ChatModel.shared.replaceChat(contactRequestChatId(contactRequestId), chat)
             }
-            NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+            // TODO [sub status] review
+            // NetworkModel.shared.setContactNetworkStatus(contact, .connected)
             inProgress?.wrappedValue = false
         }
         if contact.sndReady {
@@ -1726,12 +1725,6 @@ func apiCallStatus(_ contact: Contact, _ status: String) async throws {
     } else {
         logger.debug("apiCallStatus: call status \(status) not used")
     }
-}
-
-func apiGetNetworkStatuses() throws -> [ConnNetworkStatus] {
-    let r: ChatResponse1 = try chatSendCmdSync(.apiGetNetworkStatuses)
-    if case let .networkStatuses(_, statuses) = r { return statuses }
-    throw r.unexpected
 }
 
 func markChatRead(_ im: ItemsModel, _ chat: Chat) async {
@@ -1955,7 +1948,8 @@ func acceptMemberContact(contactId: Int64, inProgress: Binding<Bool>? = nil) asy
     if let contact = await apiAcceptMemberContact(contactId: contactId) {
         await MainActor.run {
             ChatModel.shared.updateContact(contact)
-            NetworkModel.shared.setContactNetworkStatus(contact, .connected)
+            // TODO [sub status] review
+            // NetworkModel.shared.setContactNetworkStatus(contact, .connected)
             inProgress?.wrappedValue = false
         }
         if contact.sndReady {
@@ -2241,7 +2235,6 @@ class ChatReceiver {
 
 func processReceivedMsg(_ res: ChatEvent) async {
     let m = ChatModel.shared
-    let n = NetworkModel.shared
     logger.debug("processReceivedMsg: \(res.responseType)")
     switch res {
     case let .contactDeletedByContact(user, contact):
@@ -2263,9 +2256,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
         if contact.directOrUsed {
             NtfManager.shared.notifyContactConnected(user, contact)
         }
-        await MainActor.run {
-            n.setContactNetworkStatus(contact, .connected)
-        }
+        // TODO [sub status] review
+        // await MainActor.run {
+        //     n.setContactNetworkStatus(contact, .connected)
+        // }
     case let .contactConnecting(user, contact):
         if active(user) && contact.directOrUsed {
             await MainActor.run {
@@ -2286,9 +2280,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
         }
-        await MainActor.run {
-            n.setContactNetworkStatus(contact, .connected)
-        }
+        // TODO [sub status] review
+        // await MainActor.run {
+        //     n.setContactNetworkStatus(contact, .connected)
+        // }
     case let .receivedContactRequest(user, contactRequest, chat_):
         if active(user) {
             await MainActor.run {
@@ -2328,31 +2323,8 @@ func processReceivedMsg(_ res: ChatEvent) async {
             }
         }
     case let .networkStatus(status, connections):
-        // dispatch queue to synchronize access
-        networkStatusesLock.sync {
-            var ns = n.networkStatuses
-            // slow loop is on the background thread
-            for cId in connections {
-                ns[cId] = status
-            }
-            // fast model update is on the main thread
-            DispatchQueue.main.sync {
-                n.networkStatuses = ns
-            }
-        }
-    case let .networkStatuses(_, statuses): ()
-        // dispatch queue to synchronize access
-        networkStatusesLock.sync {
-            var ns = n.networkStatuses
-            // slow loop is on the background thread
-            for s in statuses {
-                ns[s.agentConnId] = s.networkStatus
-            }
-            // fast model update is on the main thread
-            DispatchQueue.main.sync {
-                n.networkStatuses = ns
-            }
-        }
+        // TODO [sub status] update status for current chat in model if id matches
+        return
     case let .chatInfoUpdated(user, chatInfo):
         if active(user) {
             await MainActor.run {
@@ -2554,11 +2526,12 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
         }
-        if let contact = memberContact {
-            await MainActor.run {
-                n.setContactNetworkStatus(contact, .connected)
-            }
-        }
+        // TODO [sub status] review
+        // if let contact = memberContact {
+        //     await MainActor.run {
+        //         n.setContactNetworkStatus(contact, .connected)
+        //     }
+        // }
     case let .groupUpdated(user, toGroup):
         if active(user) {
             await MainActor.run {
@@ -2784,13 +2757,10 @@ func processReceivedMsg(_ res: ChatEvent) async {
 
 func switchToLocalSession() {
     let m = ChatModel.shared
-    let n = NetworkModel.shared
     m.remoteCtrlSession = nil
     do {
         m.users = try listUsers()
         try getUserChatData()
-        let statuses = (try apiGetNetworkStatuses()).map { s in (s.agentConnId, s.networkStatus) }
-        n.networkStatuses = Dictionary(uniqueKeysWithValues: statuses)
     } catch let error {
         logger.debug("error updating chat data: \(responseError(error))")
     }

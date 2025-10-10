@@ -180,8 +180,6 @@ chatDirectTests = do
       testReqVRange vr11 supportedChatVRange
       testReqVRange vr11 vr11
     it "update peer version range on received messages" testUpdatePeerChatVRange
-  describe "network statuses" $ do
-    it "should get network statuses" testGetNetworkStatuses
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -3323,18 +3321,6 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
   where
     cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
-
-testGetNetworkStatuses :: HasCallStack => TestParams -> IO ()
-testGetNetworkStatuses ps = do
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
-    withNewTestChat ps "bob" bobProfile $ \bob -> do
-      connectUsers alice bob
-      alice ##> "/_network_statuses"
-      alice <## "1 connections subscribed"
-  withTestChat ps "alice" $ \alice ->
-    withTestChat ps "bob" $ \bob -> do
-      alice <## "subscribed 1 connections on server localhost"
-      bob <## "subscribed 1 connections on server localhost"
 
 vr11 :: VersionRangeChat
 vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)

@@ -1803,12 +1803,6 @@ netStatusStr = \case
   NSDisconnected -> "disconnected"
   NSError e -> "error: " <> e
 
-data ConnNetworkStatus = ConnNetworkStatus
-  { agentConnId :: AgentConnId,
-    networkStatus :: NetworkStatus
-  }
-  deriving (Show)
-
 type CommandId = Int64
 
 aCorrId :: CommandId -> ACorrId
@@ -1999,8 +1993,6 @@ $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NS") ''NetworkStatus)
-
-$(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 
 $(JQ.deriveJSON defaultJSON ''Connection)
 

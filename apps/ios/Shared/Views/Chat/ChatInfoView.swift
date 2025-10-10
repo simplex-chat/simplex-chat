@@ -92,7 +92,6 @@ struct ChatInfoView: View {
     @EnvironmentObject var chatModel: ChatModel
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
-    @ObservedObject var networkModel = NetworkModel.shared
     @ObservedObject var chat: Chat
     @State var contact: Contact
     @State var localAlias: String
@@ -553,14 +552,17 @@ struct ChatInfoView: View {
                 .foregroundColor(theme.colors.primary)
                 .font(.system(size: 14))
             Spacer()
-            Text(networkModel.contactNetworkStatus(contact).statusString)
+            // TODO [sub status] use status from model
+            // Text(networkModel.contactNetworkStatus(contact).statusString)
+            Text(NetworkStatus.connected.statusString)
                 .foregroundColor(theme.colors.secondary)
             serverImage()
         }
     }
 
     private func serverImage() -> some View {
-        let status = networkModel.contactNetworkStatus(contact)
+        // TODO [sub status] use status from model
+        let status = NetworkStatus.connected // networkModel.contactNetworkStatus(contact)
         return Image(systemName: status.imageName)
             .foregroundColor(status == .connected ? .green : theme.colors.secondary)
             .font(.system(size: 12))
@@ -608,7 +610,8 @@ struct ChatInfoView: View {
     private func networkStatusAlert() -> Alert {
         Alert(
             title: Text("Network status"),
-            message: Text(networkModel.contactNetworkStatus(contact).statusExplanation)
+            // TODO [sub status] use status from model
+            message: Text("") // Text(networkModel.contactNetworkStatus(contact).statusExplanation)
         )
     }
 
