@@ -2000,7 +2000,7 @@
     <string name="chunks_deleted">Блоков удалено</string>
     <string name="chunks_downloaded">Блоков принято</string>
     <string name="subscription_results_ignored">Подписок игнорировано</string>
-    <string name="copy_error">Ошибка копирования</string>
+    <string name="copy_error">Скопировать ошибку</string>
     <string name="info_view_video_button">видеозвонок</string>
     <string name="delete_contact_cannot_undo_warning">Контакт будет удален — это нельзя отменить!</string>
     <string name="keep_conversation">Оставить разговор</string>
@@ -2464,7 +2464,7 @@
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
     <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
-    <string name="member_criteria_all">все</string>
+    <string name="member_criteria_all">всех</string>
     <string name="accept_pending_member_button">Принять</string>
     <string name="accept_pending_member_alert_question">Член группы хочет присоединиться. Принять?</string>
     <string name="cant_send_message_group_deleted">группа удалена</string>
@@ -2492,7 +2492,7 @@
     <string name="admission_stage_review">Одобрять членов группы</string>
     <string name="member_support">Чаты с членами группы</string>
     <string name="member_admission">Приём членов в группу</string>
-    <string name="admission_stage_review_descr">Одобрять членов для вступления в группу.</string>
+    <string name="admission_stage_review_descr">Вручную одобрять членов для вступления в группу.</string>
     <string name="no_support_chats">Нет чатов с членами группы</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Принять как читателя</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Принять в группу</string>
@@ -2512,7 +2512,7 @@
     <string name="set_member_admission">Установить вступление в группу</string>
     <string name="delete_member_support_chat_alert_title">Удалить чат с членом группы?</string>
     <string name="delete_member_support_chat_button">Удалить разговор</string>
-    <string name="rcv_group_event_member_accepted">принят %1$s</string>
+    <string name="rcv_group_event_member_accepted">принял %1$s</string>
     <string name="support_chat">Чат с админами</string>
     <string name="rcv_group_event_user_accepted">Вы приняты</string>
     <string name="group_new_support_chat_one">1 чат с членом группы</string>
