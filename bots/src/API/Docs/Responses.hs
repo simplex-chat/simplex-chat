@@ -167,7 +167,6 @@ undocumentedResponses =
     "CRMemberSupportChatDeleted",
     "CRMemberSupportChats",
     "CRNetworkConfig",
-    "CRNetworkStatuses",
     "CRNewMemberContact",
     "CRNewMemberContactSentInv",
     "CRMemberContactAccepted",

@@ -149,7 +149,6 @@ newChatController
     eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
-    connNetworkStatuses <- TM.emptyIO
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- TM.emptyIO
@@ -191,7 +190,6 @@ newChatController
           eventSeq,
           inputQ,
           outputQ,
-          connNetworkStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
