@@ -57,6 +57,7 @@ import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import qualified Simplex.FileTransfer.Transport as XFTP
+import Simplex.Messaging.Agent (DatabaseDiff (..))
 import Simplex.Messaging.Agent.Client (ProtocolTestFailure (..), ProtocolTestStep (..), SubscriptionsInfo (..))
 import Simplex.Messaging.Agent.Env.SQLite (NetworkConfig (..), ServerRoles (..))
 import Simplex.Messaging.Agent.Protocol
@@ -116,6 +117,9 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRChatStarted -> ["chat started"]
   CRChatRunning -> ["chat is running"]
   CRChatStopped -> ["chat stopped"]
+  CRConnectionsDiff showIds userDiff connDiff
+    | showIds -> viewConnDiffIds userDiff connDiff
+    | otherwise -> viewConnDiffSummary userDiff connDiff
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
@@ -449,6 +453,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactConnected u ct userCustomProfile -> ttyUser u $ viewContactConnected ct userCustomProfile testView
   CEvtContactSndReady u ct -> ttyUser u [ttyFullContact ct <> ": you can send messages to contact"]
   CEvtContactAnotherClient u c -> ttyUser u [ttyContact' c <> ": contact is connected to another client"]
+  CEvtConnectionsDiff userDiff connDiff -> viewConnDiffSync userDiff connDiff
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
@@ -1422,6 +1427,42 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
     "messages are " <> if showNtfs then "shown" else "hidden (use /tail to view)",
     "profile is " <> if isJust viewPwdHash then "hidden" else "visible"
   ]
+
+viewConnDiffSync :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffSync userDiff connDiff =
+  viewConnDiffSummary userDiff connDiff
+    <> ["removed extra users in agent" | not (null $ extraIds userDiff)]
+    <> ["removed extra connections in agent" | not (null $ extraIds connDiff)]
+
+viewConnDiffSummary :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffSummary userDiff connDiff
+  | noDiff userDiff && noDiff connDiff =
+      ["no difference between agent and chat connections"]
+  | otherwise =
+      ["connections difference summary:"]
+        <> showDatabaseDiff "users" userDiff
+        <> showDatabaseDiff "connections" connDiff
+  where
+    noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
+    showDatabaseDiff name DatabaseDiff {missingIds, extraIds} =
+      ["number of missing " <> name <> " in agent: " <> sShow (length missingIds) | not (null missingIds)]
+        <> ["number of extra " <> name <> " in agent: " <> sShow (length extraIds) | not (null extraIds)]
+
+viewConnDiffIds :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffIds userDiff connDiff
+  | noDiff userDiff && noDiff connDiff =
+      ["no difference between agent and chat connections"]
+  | otherwise =
+      ["connections difference:"]
+        <> showDatabaseDiff "users" (\(AgentUserId uId) -> uId) userDiff
+        <> showDatabaseDiff "connections" (\(AgentConnId cId) -> cId) connDiff
+  where
+    noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
+    showDatabaseDiff name unwrapId DatabaseDiff {missingIds, extraIds} =
+      ["missing " <> name <> " in agent (agent IDs): " <> showIds missingIds | not (null missingIds)]
+        <> ["extra " <> name <> " in agent (agent IDs): " <> showIds extraIds | not (null extraIds)]
+      where
+        showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []

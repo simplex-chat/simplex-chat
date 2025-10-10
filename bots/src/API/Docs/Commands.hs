@@ -440,6 +440,7 @@ undocumentedCommands =
     "ReconnectAllServers",
     "ReconnectServer",
     "ResetAgentServersStats",
+    "ShowConnectionsDiff",
     "ResubscribeAllConnections",
     "SetAllContactReceipts",
     "SetChatItemTTL",

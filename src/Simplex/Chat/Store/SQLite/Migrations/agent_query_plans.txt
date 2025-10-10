@@ -912,6 +912,20 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id (conn_id=?)
 SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=?)
 SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 
+Query: DELETE FROM connections WHERE user_id = 2
+Plan:
+SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
+SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
+SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
+SEARCH commands USING COVERING INDEX idx_commands_conn_id (conn_id=?)
+SEARCH ratchets USING PRIMARY KEY (conn_id=?)
+SEARCH conn_invitations USING COVERING INDEX idx_conn_invitations_contact_conn_id (contact_conn_id=?)
+SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_conn_id (conn_id=?)
+SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=?)
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
+
 Query: DELETE FROM deleted_snd_chunk_replicas WHERE deleted_snd_chunk_replica_id = ?
 Plan:
 SEARCH deleted_snd_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
@@ -962,6 +976,14 @@ SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_ex
 Query: DELETE FROM snd_queues WHERE conn_id = ? AND snd_queue_id = ?
 Plan:
 SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=? AND snd_queue_id=?)
+
+Query: DELETE FROM users WHERE user_id = 2
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_user_id (user_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_user_id (user_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_user_id (user_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
@@ -1035,13 +1057,25 @@ Query: SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND failed = 0 LIM
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
+Query: SELECT conn_id FROM connections WHERE deleted = 0
+Plan:
+SCAN connections
+
 Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
+Query: SELECT count(1) FROM connections
+Plan:
+SCAN connections USING COVERING INDEX idx_connections_user
+
 Query: SELECT count(1) FROM snd_message_bodies
 Plan:
 SCAN snd_message_bodies
+
+Query: SELECT count(1) FROM users
+Plan:
+SCAN users
 
 Query: SELECT deleted FROM snd_files WHERE snd_file_id = ?
 Plan:
@@ -1102,6 +1136,10 @@ SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=?)
 Query: SELECT started_at, servers_stats FROM servers_stats WHERE servers_stats_id = 1
 Plan:
 SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: SELECT user_id FROM users WHERE deleted = 0
+Plan:
+SCAN users
 
 Query: SELECT user_id FROM users WHERE user_id = ? AND deleted = ?
 Plan:

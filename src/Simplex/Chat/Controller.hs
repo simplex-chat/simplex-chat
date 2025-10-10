@@ -69,7 +69,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
-import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
+import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
@@ -292,6 +292,7 @@ data ChatCommand
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
+  | ShowConnectionsDiff Bool
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
@@ -633,6 +634,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
+  | CRConnectionsDiff {showIds :: Bool, userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
@@ -825,6 +827,7 @@ data ChatEvent
   | CEvtContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
+  | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
   | CEvtNetworkStatus {server :: SMPServer, networkStatus :: NetworkStatus, connections :: [AgentConnId]}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}

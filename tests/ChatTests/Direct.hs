@@ -16,7 +16,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
-import Control.Monad (forM_)
+import Control.Monad (forM_, void)
 import Data.Aeson (ToJSON)
 import qualified Data.Aeson as J
 import qualified Data.ByteString.Char8 as B
@@ -118,6 +118,11 @@ chatDirectTests = do
     it "export/import chat with files" testMaintenanceModeWithFiles
     it "encrypt/decrypt database" testDatabaseEncryption
 #endif
+  describe "connections synchronization" $ do
+    it "should report users missing in agent" testConnSyncMissingAgentUsers
+    it "should remove and report extra users in agent" testConnSyncExtraAgentUsers
+    it "should report connections missing in agent" testConnSyncMissingAgentConns
+    it "should remove and report extra connections in agent" testConnSyncExtraAgentConns
   describe "coordination between app and NSE" $ do
     it "should not subscribe in NSE and subscribe in the app" testSubscribeAppNSE
   describe "mute/unmute messages" $ do
@@ -1522,6 +1527,168 @@ testDatabaseEncryption ps = do
     withTestChat ps "alice" $ \alice -> do
       testChatWorking alice bob
 #endif
+
+testConnSyncMissingAgentUsers :: HasCallStack => TestParams -> IO ()
+testConnSyncMissingAgentUsers ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+      alice ##> "/user alice"
+      showActiveUser alice "alice (Alice)"
+
+      alice ##> "/_connections diff"
+      alice <## "no difference between agent and chat connections"
+
+      void $ withCCAgentTransaction alice $ \db ->
+        DB.execute_ db "DELETE FROM users WHERE user_id = 2"
+
+      alice ##> "/_connections diff"
+      alice <## "connections difference summary:"
+      alice <## "number of missing users in agent: 1"
+
+      alice ##> "/_connections diff show_ids=on"
+      alice <## "connections difference:"
+      alice <## "missing users in agent (agent IDs): 2"
+
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
+
+    withTestChat ps "alice" $ \alice -> do
+      alice <## "connections difference summary:"
+      alice <## "number of missing users in agent: 1"
+
+      alice <## "subscribed 1 connections on server localhost"
+
+      alice <##> bob
+
+testConnSyncExtraAgentUsers :: HasCallStack => TestParams -> IO ()
+testConnSyncExtraAgentUsers ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      connectUsers alice bob
+
+      alice ##> "/_connections diff"
+      alice <## "no difference between agent and chat connections"
+
+      void $ withCCAgentTransaction alice $ \db ->
+        DB.execute_ db "INSERT INTO users DEFAULT VALUES"
+      agentUserCount <- withCCAgentTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM users" :: IO [[Int]]
+      agentUserCount `shouldBe` [[2]]
+
+      alice ##> "/_connections diff"
+      alice <## "connections difference summary:"
+      alice <## "number of extra users in agent: 1"
+
+      alice ##> "/_connections diff show_ids=on"
+      alice <## "connections difference:"
+      alice <## "extra users in agent (agent IDs): 2"
+
+      void $ withCCTransaction alice $ \db ->
+        DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
+
+    withTestChat ps "alice" $ \alice -> do
+      alice <## "connections difference summary:"
+      alice <## "number of extra users in agent: 1"
+      alice <## "removed extra users in agent"
+
+      alice <## "subscribed 1 connections on server localhost"
+
+      threadDelay 100000
+      agentUserCount <- withCCAgentTransaction alice $ \db ->
+        DB.query_ db "SELECT count(1) FROM users" :: IO [[Int]]
+      agentUserCount `shouldBe` [[1]]
+
+      alice <##> bob
+
+testConnSyncMissingAgentConns :: HasCallStack => TestParams -> IO ()
+testConnSyncMissingAgentConns ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
+      withNewTestChat ps "alice" aliceProfile $ \alice -> do
+        connectUsers alice bob
+
+        alice ##> "/create user alisa"
+        showActiveUser alice "alisa"
+
+        -- connection with cath is in user 2, below we delete connection by user_id
+        -- because it's one of the simplest ways to differentiate them in agent db
+        connectUsers alice cath
+
+        alice ##> "/user alice"
+        showActiveUser alice "alice (Alice)"
+
+        alice ##> "/_connections diff"
+        alice <## "no difference between agent and chat connections"
+
+        void $ withCCAgentTransaction alice $ \db ->
+          DB.execute_ db "DELETE FROM connections WHERE user_id = 2"
+
+        alice ##> "/_connections diff"
+        alice <## "connections difference summary:"
+        alice <## "number of missing connections in agent: 1"
+
+        alice ##> "/_connections diff show_ids=on"
+        alice <## "connections difference:"
+        alice <##. "missing connections in agent (agent IDs):"
+
+        void $ withCCTransaction alice $ \db ->
+          DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
+
+      withTestChat ps "alice" $ \alice -> do
+        alice <## "connections difference summary:"
+        alice <## "number of missing connections in agent: 1"
+
+        alice <## "subscribed 1 connections on server localhost"
+        -- alice <## "[user: alisa] 1 subscription errors (run with -c option to show each error)"
+
+        alice <##> bob
+
+testConnSyncExtraAgentConns :: HasCallStack => TestParams -> IO ()
+testConnSyncExtraAgentConns ps = do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "cath" cathProfile $ \cath -> do
+      withNewTestChat ps "alice" aliceProfile $ \alice -> do
+        connectUsers alice bob
+        connectUsers alice cath
+
+        alice ##> "/_connections diff"
+        alice <## "no difference between agent and chat connections"
+
+        -- deleting connection record in chat db
+        void $ withCCTransaction alice $ \db ->
+          DB.execute_ db "DELETE FROM connections WHERE contact_id = (SELECT contact_id FROM contacts WHERE local_display_name = 'cath')"
+        agentConnCount <- withCCAgentTransaction alice $ \db ->
+          DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]
+        agentConnCount `shouldBe` [[2]]
+
+        alice ##> "/_connections diff"
+        alice <## "connections difference summary:"
+        alice <## "number of extra connections in agent: 1"
+
+        alice ##> "/_connections diff show_ids=on"
+        alice <## "connections difference:"
+        alice <##. "extra connections in agent (agent IDs):"
+
+        void $ withCCTransaction alice $ \db ->
+          DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
+
+      withTestChat ps "alice" $ \alice -> do
+        alice <## "connections difference summary:"
+        alice <## "number of extra connections in agent: 1"
+        alice <## "removed extra connections in agent"
+
+        alice <## "subscribed 1 connections on server localhost"
+
+        threadDelay 100000
+        agentConnCount <- withCCAgentTransaction alice $ \db ->
+          DB.query_ db "SELECT count(1) FROM connections" :: IO [[Int]]
+        agentConnCount `shouldBe` [[1]]
+
+        alice <##> bob
 
 testSubscribeAppNSE :: HasCallStack => TestParams -> IO ()
 testSubscribeAppNSE ps =

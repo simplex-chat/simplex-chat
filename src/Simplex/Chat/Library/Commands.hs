@@ -164,10 +164,20 @@ startChatController mainApp enableSndFiles = do
   asks smpAgent >>= liftIO . resumeAgentClient
   unless mainApp $ chatWriteVar' subscriptionMode SMOnlyCreate
   users <- fromRight [] <$> runExceptT (withFastStore' getUsers)
+  runExceptT (syncConnections' users) >>= \case
+    Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
+    Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
   where
+    syncConnections' users =
+      whenM (withFastStore' shouldSyncConnections) $ do
+        let aUserIds = map aUserId users
+        connIds <- concat <$> forM users getConnsToSub
+        (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
+        withFastStore' setConnectionsSyncTs
+        toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -209,6 +219,15 @@ startChatController mainApp enableSndFiles = do
             ttl <- getChatItemTTL db user
             ttlCount <- getChatTTLCount db user
             pure $ ttl > 0 || ttlCount > 0
+
+getConnsToSub :: User -> CM [ConnId]
+getConnsToSub user =
+  withFastStore' $ \db -> do
+    ctConnIds <- getContactConnsToSub db user False
+    uclConnIds <- getUCLConnsToSub db user False
+    memberConnIds <- getMemberConnsToSub db user False
+    pendingConnIds <- getPendingConnsToSub db user False
+    pure $ ctConnIds <> uclConnIds <> memberConnIds <> pendingConnIds
 
 subscribeUsers :: Bool -> [User] -> CM' ()
 subscribeUsers onlyNeeded users = do
@@ -443,6 +462,12 @@ processChatCommand vr nm = \case
     stopRemoteCtrl
     lift $ withAgent' (`suspendAgent` t)
     ok_
+  ShowConnectionsDiff showIds -> do
+    users <- withFastStore' getUsers
+    let aUserIds = map aUserId users
+    connIds <- concat <$> forM users getConnsToSub
+    (userDiff, connDiff) <- withAgent (\a -> compareConnections a aUserIds connIds)
+    pure $ CRConnectionsDiff showIds (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
   ResubscribeAllConnections -> withStore' getUsers >>= lift . subscribeUsers False >> ok_
   -- has to be called before StartChat
   SetTempFolder tf -> do
@@ -4291,6 +4316,7 @@ chatCommandP =
       "/_app activate restore=" *> (APIActivateChat <$> onOffP),
       "/_app activate" $> APIActivateChat True,
       "/_app suspend " *> (APISuspendChat <$> A.decimal),
+      "/_connections diff" *> (ShowConnectionsDiff <$> (" show_ids=" *> onOffP <|> pure False)),
       "/_resubscribe all" $> ResubscribeAllConnections,
       -- deprecated, use /set file paths
       "/_temp_folder " *> (SetTempFolder <$> filePath),
