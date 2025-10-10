@@ -44,12 +44,9 @@ main = do
   agentQueryStats <- TM.emptyIO
 #endif
   withGlobalLogging logCfg . hspec
-#if defined(dbPostgres)
-    . before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    . after_ (dropDatabaseAndUser testDBConnectInfo)
-#endif
     $ do
 #if defined(dbPostgres)
+      createdDropDB .
       around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
@@ -70,7 +67,8 @@ main = do
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
 #if defined(dbPostgres)
-      around testBracket
+      createdDropDB
+      . around testBracket
 #else
       around (testBracket chatQueryStats agentQueryStats)
 #endif
@@ -87,6 +85,9 @@ main = do
 #endif
   where
 #if defined(dbPostgres)
+    createdDropDB =
+      before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
+      . after_ (dropDatabaseAndUser testDBConnectInfo)
     testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
 #else
     testBracket chatQueryStats agentQueryStats test =
