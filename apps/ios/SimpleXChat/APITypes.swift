@@ -539,6 +539,7 @@ public enum MsgFilter: String, Codable, Hashable {
     }
 }
 
+// TODO [sub status] add SubscriptionStatus, QueueStatus
 public struct ConnectionStats: Decodable, Hashable {
     public var connAgentVersion: Int
     public var rcvQueuesInfo: [RcvQueueInfo]
