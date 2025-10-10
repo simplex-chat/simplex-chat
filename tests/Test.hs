@@ -26,7 +26,7 @@ import ViewTests
 import Control.Exception (bracket_)
 import PostgresSchemaDump
 import Simplex.Chat.Store.Postgres.Migrations (migrations)
-import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
+import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
 import System.Directory (createDirectoryIfMissing, removePathForcibly)
 #else
 import APIDocs
@@ -46,8 +46,7 @@ main = do
   withGlobalLogging logCfg . hspec
     $ do
 #if defined(dbPostgres)
-      createdDropDb .
-      around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
+      createdDropDb . around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
         describe "Postgres schema dump" $
           postgresSchemaDumpTest
             migrations
@@ -67,8 +66,7 @@ main = do
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
 #if defined(dbPostgres)
-      createdDropDb
-      . around testBracket
+      createdDropDb . around testBracket
 #else
       around (testBracket chatQueryStats agentQueryStats)
 #endif
@@ -87,7 +85,7 @@ main = do
 #if defined(dbPostgres)
     createdDropDb =
       before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-      . after_ (dropDatabaseAndUser testDBConnectInfo)
+        . after_ (dropDatabaseAndUser testDBConnectInfo)
     testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
 #else
     testBracket chatQueryStats agentQueryStats test =
