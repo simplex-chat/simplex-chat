@@ -1551,7 +1551,7 @@ testConnSyncMissingAgentUsers ps = do
 
       alice ##> "/_connections diff show_ids=on"
       alice <## "connections difference:"
-      alice <## "users missing in agent (agent user IDs): 2"
+      alice <## "missing users in agent (agent IDs): 2"
 
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
@@ -1560,7 +1560,7 @@ testConnSyncMissingAgentUsers ps = do
       alice <## "connections difference summary:"
       alice <## "number of missing users in agent: 1"
 
-      alice <## "1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
 
       alice <##> bob
 
@@ -1585,7 +1585,7 @@ testConnSyncExtraAgentUsers ps = do
 
       alice ##> "/_connections diff show_ids=on"
       alice <## "connections difference:"
-      alice <## "extra users in agent (agent user IDs): 2"
+      alice <## "extra users in agent (agent IDs): 2"
 
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
@@ -1595,7 +1595,7 @@ testConnSyncExtraAgentUsers ps = do
       alice <## "number of extra users in agent: 1"
       alice <## "removed extra users in agent"
 
-      alice <## "1 connections subscribed"
+      alice <## "subscribed 1 connections on server localhost"
 
       threadDelay 100000
       agentUserCount <- withCCAgentTransaction alice $ \db ->
@@ -1671,7 +1671,7 @@ testConnSyncExtraAgentConns ps = do
 
         alice ##> "/_connections diff show_ids=on"
         alice <## "connections difference:"
-        alice <##. "extra connections in agent (agent conn IDs):"
+        alice <##. "extra connections in agent (agent IDs):"
 
         void $ withCCTransaction alice $ \db ->
           DB.execute_ db "UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1"
@@ -1681,7 +1681,7 @@ testConnSyncExtraAgentConns ps = do
         alice <## "number of extra connections in agent: 1"
         alice <## "removed extra connections in agent"
 
-        alice <## "1 connections subscribed"
+        alice <## "subscribed 1 connections on server localhost"
 
         threadDelay 100000
         agentConnCount <- withCCAgentTransaction alice $ \db ->

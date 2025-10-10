@@ -19,7 +19,6 @@ module Simplex.Chat.Store.Connections
     getUCLConnsToSub,
     getMemberConnsToSub,
     getPendingConnsToSub,
-    unsetConnectionToSubscribe,
     shouldSyncConnections,
     setConnectionsSyncTs,
   )
@@ -323,13 +322,6 @@ getPendingConnsToSub db User {userId} filterToSubscribe =
         AND contact_id IS NULL
         AND conn_status != ?
       |]
-
-unsetConnectionToSubscribe :: DB.Connection -> User -> IO ()
-unsetConnectionToSubscribe db User {userId} =
-  DB.execute
-    db
-    "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1"
-    (Only userId)
 
 shouldSyncConnections :: DB.Connection -> IO Bool
 shouldSyncConnections db =
