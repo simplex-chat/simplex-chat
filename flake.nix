@@ -279,6 +279,7 @@
                   armv7a-unknown-linux-androideabi-ghc -shared -o libsupport.so \
                     -optl-Wl,-u,setLineBuffering \
                     -optl-Wl,-u,pipe_std_to_socket \
+                    -optl-Wl,-z,max-page-size=16384 \
                     dist/build/*.a
                 '';
 
@@ -309,6 +310,7 @@
                   aarch64-unknown-linux-android-ghc -shared -o libsupport.so \
                     -optl-Wl,-u,setLineBuffering \
                     -optl-Wl,-u,pipe_std_to_socket \
+                    -optl-Wl,-z,max-page-size=16384 \
                     dist/build/*.a
                 '';
 
@@ -367,6 +369,7 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-optl-Wl,-z,max-page-size=16384"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -475,6 +478,7 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-optl-Wl,-z,max-page-size=16384"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
