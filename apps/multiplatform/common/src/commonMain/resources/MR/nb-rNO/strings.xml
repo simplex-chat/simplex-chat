@@ -1,3 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="chat_item_ttl_day">1 dag</string>
+    <string name="send_disappearing_message_1_minute">1 minutt</string>
+    <string name="chat_item_ttl_month">1 måned</string>
+    <string name="group_reports_active_one">1 rapport</string>
+    <string name="one_time_link_short">Engangslenke</string>
+    <string name="chat_item_ttl_week">1 uke</string>
+    <string name="chat_item_ttl_year">1 år</string>
+    <string name="send_disappearing_message_30_seconds">30 sekunder</string>
+    <string name="send_disappearing_message_5_minutes">5 minutter</string>
+    <string name="a_plus_b">A + B</string>
 </resources>
