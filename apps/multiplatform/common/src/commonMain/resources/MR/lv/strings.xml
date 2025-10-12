@@ -9,7 +9,7 @@
     <string name="connect_use_new_incognito_profile">Izmantot jaunu inkognito profilu</string>
     <string name="connect_use_incognito_profile">Izmantot inkognito profilu</string>
     <string name="profile_will_be_sent_to_contact_sending_link">Jūsu profils tiks nosūtīts kontaktpersonai, no kuras saņēmāt šo saiti.</string>
-    <string name="you_will_join_group">Jūs tiksiet pievienots visiem grupas dalībniekiem.</string>
+    <string name="you_will_join_group">Jūs pievienosities visiem grupas dalībniekiem.</string>
     <string name="connect_via_link_verb">Pievienoties</string>
     <string name="connect_plan_open_chat">Atvērt tērzēšanu</string>
     <string name="connect_plan_open_new_chat">Atvērt jaunu tērzēšanu</string>
