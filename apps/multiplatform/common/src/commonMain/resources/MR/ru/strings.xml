@@ -207,7 +207,7 @@
     <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет %1$s.</string>
     <string name="waiting_for_file">Ожидается приём файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
-    <string name="file_saved">Файл сохранен</string>
+    <string name="file_saved">Файл сохранён</string>
     <string name="file_not_found">Файл не найден</string>
     <string name="error_saving_file">Ошибка сохранения файла</string>
     <!-- Voice messages -->
@@ -379,7 +379,7 @@
     <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
-    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE-серверы будут удалены.</string>
+    <string name="saved_ICE_servers_will_be_removed">Сохранённые WebRTC ICE-серверы будут удалены.</string>
     <string name="your_ICE_servers">Ваши ICE-серверы</string>
     <string name="configure_ICE_servers">Настройка ICE-серверов</string>
     <string name="enter_one_ICE_server_per_line">ICE-серверы (один на строке)</string>
@@ -633,13 +633,13 @@
     <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, Вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Внимание</b>: Вы не сможете восстановить или поменять пароль, если потеряете его.]]></string>
-    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
-    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранен на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранён в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
+    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранён на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
     <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
     <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранен в Keystore.</string>
-    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранён в Keystore.</string>
+    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменён и сохранён в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
     <string name="store_passphrase_securely">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
     <string name="store_passphrase_securely_without_recover">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
@@ -648,7 +648,7 @@
     <string name="encrypted_database">База данных зашифрована</string>
     <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
-    <string name="passphrase_is_different">Пароль базы данных отличается от сохраненного в Keystore.</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от сохранённого в Keystore.</string>
     <string name="file_with_path">Файл: %s</string>
     <string name="database_passphrase_is_required">Введите пароль базы данных, чтобы открыть чат.</string>
     <string name="error_with_info">Ошибка: %s</string>
@@ -1433,8 +1433,8 @@
     <string name="connect_use_current_profile">Использовать активный профиль</string>
     <string name="connect_use_new_incognito_profile">Использовать новый профиль инкогнито</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
-    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
-    <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранён в настройках.</string>
+    <string name="v5_3_encrypt_local_files">Шифруйте сохранённые файлы и медиа</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
