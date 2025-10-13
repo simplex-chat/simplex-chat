@@ -178,7 +178,7 @@
     <string name="server_error">fejl</string>
     <string name="server_connecting">forbinder</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Du har forbindelse til den server, der bruges til at modtage beskeder fra denne kontakt.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Forsøger at oprette forbindelse til den server, der bruges til at modtage beskeder fra denne kontakt (fejl: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Forsøger at oprette forbindelse til den server, der bruges til at modtage beskeder fra denne kontakt (fejl: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Forsøger at oprette forbindelse til den server, der bruges til at modtage beskeder fra denne kontakt.</string>
     <string name="deleted_description">slettet</string>
     <string name="marked_deleted_description">markeret som slettet</string>

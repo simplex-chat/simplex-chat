@@ -109,7 +109,6 @@ fun GroupMemberInfoView(
               }
               openDirectChat(rhId, memberContact.contactId)
               closeAll()
-              chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }
             progressIndicator = false
           }
