@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var m: ChatModel
     @ObservedObject var chat: Chat
     var imageSize: CGFloat = 32
 
@@ -58,7 +59,7 @@ struct ChatInfoToolbar: View {
                 }
             if let contact = chat.chatInfo.contact,
                contact.ready && contact.active,
-               let chatSubStatus = ChatModel.shared.chatSubStatus,
+               let chatSubStatus = m.chatSubStatus,
                chatSubStatus != .active {
                 SubStatusView(status: chatSubStatus)
                     .padding(.leading, 4)
