@@ -236,7 +236,7 @@ struct ChatInfoView: View {
                     if contact.ready && contact.active {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
                             if let chatSubStatus = chatModel.chatSubStatus {
-                                subStatusRow(chatSubStatus)
+                                SubStatusRow(status: chatSubStatus)
                                     .onTapGesture {
                                         alert = .subStatusAlert(status: chatSubStatus)
                                     }
@@ -547,25 +547,6 @@ struct ChatInfoView: View {
         }
     }
 
-    private func subStatusRow(_ status: SubscriptionStatus) -> some View {
-        HStack {
-            Text("Network status")
-            Image(systemName: "info.circle")
-                .foregroundColor(theme.colors.primary)
-                .font(.system(size: 14))
-            Spacer()
-            Text(status.statusString)
-                .foregroundColor(theme.colors.secondary)
-            serverImage(status)
-        }
-    }
-
-    private func serverImage(_ status: SubscriptionStatus) -> some View {
-        return Image(systemName: status.imageName)
-            .foregroundColor(status == .active ? .green : theme.colors.secondary)
-            .font(.system(size: 12))
-    }
-
     private func deleteContactButton() -> some View {
         Button(role: .destructive) {
             deleteContactDialog(
@@ -664,6 +645,30 @@ struct ChatInfoView: View {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
             }
         }
+    }
+}
+
+struct SubStatusRow: View {
+    @EnvironmentObject var theme: AppTheme
+    var status: SubscriptionStatus
+
+    var body: some View {
+        HStack {
+            Text("Network status")
+            Image(systemName: "info.circle")
+                .foregroundColor(theme.colors.primary)
+                .font(.system(size: 14))
+            Spacer()
+            Text(status.statusString)
+                .foregroundColor(theme.colors.secondary)
+            serverImage(status)
+        }
+    }
+
+    private func serverImage(_ status: SubscriptionStatus) -> some View {
+        return Image(systemName: status.imageName)
+            .foregroundColor(status == .active ? .green : theme.colors.secondary)
+            .font(.system(size: 12))
     }
 }
 

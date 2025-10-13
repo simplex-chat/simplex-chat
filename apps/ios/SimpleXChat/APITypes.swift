@@ -633,12 +633,21 @@ public enum SubscriptionStatus: Decodable, Hashable {
         }
     }
 
-    public var statusExplanation: LocalizedStringKey {
+    public var statusExplanation: String {
         switch self {
-        case .active: "You are connected to the server used to receive messages from this contact."
-        case .pending: "Trying to connect to the server used to receive messages from this contact."
-        case let .removed(err): "Error connecting to the server used to receive messages from this contact: \(err)."
-        case .noSub: "You are not connected to the server used to receive messages from this contact (no subscription)."
+        case .active: NSLocalizedString("You are connected to the server used to receive messages from this contact.", comment: "subscription status explanation")
+        case .pending: NSLocalizedString("Trying to connect to the server used to receive messages from this contact.", comment: "subscription status explanation")
+        case let .removed(err): String.localizedStringWithFormat(NSLocalizedString("Error connecting to the server used to receive messages from this contact: %@", comment: "subscription status explanation"), err)
+        case .noSub: NSLocalizedString("You are not connected to the server used to receive messages from this contact (no subscription).", comment: "subscription status explanation")
+        }
+    }
+
+    public var statusExplanationMember: String {
+        switch self {
+        case .active: NSLocalizedString("You are connected to the server used to receive messages from this member.", comment: "subscription status explanation")
+        case .pending: NSLocalizedString("Trying to connect to the server used to receive messages from this member.", comment: "subscription status explanation")
+        case let .removed(err): String.localizedStringWithFormat(NSLocalizedString("Error connecting to the server used to receive messages from this member: %@", comment: "subscription status explanation"), err)
+        case .noSub: NSLocalizedString("You are not connected to the server used to receive messages from this member (no subscription).", comment: "subscription status explanation")
         }
     }
 

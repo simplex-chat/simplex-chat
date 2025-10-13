@@ -160,7 +160,15 @@ struct GroupMemberInfoView: View {
 
                     if let connStats = connectionStats {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
-                            // TODO network connection status
+                            if let subStatus = connStats.subStatus {
+                                SubStatusRow(status: subStatus)
+                                    .onTapGesture {
+                                        showAlert(
+                                            NSLocalizedString("Network status", comment: "alert title"),
+                                            message: subStatus.statusExplanationMember
+                                        )
+                                    }
+                            }
                             Button("Change receiving address") {
                                 alert = .switchAddressAlert
                             }
