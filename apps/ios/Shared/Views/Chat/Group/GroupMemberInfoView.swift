@@ -165,7 +165,7 @@ struct GroupMemberInfoView: View {
                                     .onTapGesture {
                                         showAlert(
                                             NSLocalizedString("Network status", comment: "alert title"),
-                                            message: subStatus.statusExplanationMember
+                                            message: subStatus.statusExplanation
                                         )
                                     }
                             }

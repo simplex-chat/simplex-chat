@@ -499,7 +499,7 @@ fun GroupMemberInfoLayout(
           SectionItemView({
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.network_status),
-              subStatus.statusExplanationMember
+              subStatus.statusExplanation
             )
           }) {
             SubStatusRow(subStatus)

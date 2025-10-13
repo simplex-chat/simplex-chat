@@ -33,14 +33,10 @@
   <string name="server_error">error</string>
   <string name="server_connecting">connecting</string>
   <string name="server_no_sub">no subscription</string>
-  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
-  <string name="error_connecting_to_server_to_receive_messages">Error connecting to the server used to receive messages from this contact: %1$s.</string>
-  <string name="not_connected_to_server_to_receive_messages_no_sub">You are not connected to the server used to receive messages from this contact (no subscription).</string>
-  <string name="connected_to_server_to_receive_messages_from_member">You are connected to the server used to receive messages from this member.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages_from_member">Trying to connect to the server used to receive messages from this member.</string>
-  <string name="error_connecting_to_server_to_receive_messages_from_member">Error connecting to the server used to receive messages from this member: %1$s.</string>
-  <string name="not_connected_to_server_to_receive_messages_from_member_no_sub">You are not connected to the server used to receive messages from this member (no subscription).</string>
+  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this connection.</string>
+  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this connection.</string>
+  <string name="error_connecting_to_server_to_receive_messages">Error connecting to the server used to receive messages from this connection: %1$s.</string>
+  <string name="not_connected_to_server_to_receive_messages_no_sub">You are not connected to the server used to receive messages from this connection (no subscription).</string>
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
