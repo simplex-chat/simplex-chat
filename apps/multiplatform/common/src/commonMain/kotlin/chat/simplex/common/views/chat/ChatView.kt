@@ -1322,7 +1322,7 @@ fun SubStatusView(status: SubscriptionStatus) {
     SubscriptionStatus.Active ->
       Box {}
     SubscriptionStatus.Pending ->
-      subProgressView()
+      SubProgressView()
     is SubscriptionStatus.Removed, SubscriptionStatus.NoSub ->
       Icon(
         painterResource(MR.images.ic_error),
@@ -1336,7 +1336,7 @@ fun SubStatusView(status: SubscriptionStatus) {
 }
 
 @Composable
-fun subProgressView() {
+private fun SubProgressView() {
   CircularProgressIndicator(
     Modifier
       .size(15.sp.toDp())
