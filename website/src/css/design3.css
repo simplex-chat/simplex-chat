@@ -322,6 +322,19 @@ section.page {
     z-index: 2;
 }
 
+.chrome-ios section.page,
+.safari-ios section.page {
+    min-height: 110lvh; /* fallback */
+    height: 110lvh;
+    padding-bottom: calc(110lvh - 100svh);
+}
+
+.chrome-android section.page {
+    min-height: 100lvh; /* fallback */
+    height: 100lvh;
+    padding-bottom: calc(100lvh - 100svh);
+}
+
 section.page .area {
     position: relative;
     width: var(--sec-w);
