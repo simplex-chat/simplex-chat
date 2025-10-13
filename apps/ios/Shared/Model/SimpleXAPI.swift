@@ -1638,8 +1638,6 @@ func acceptContactRequest(incognito: Bool, contactRequestId: Int64, inProgress: 
             } else {
                 ChatModel.shared.replaceChat(contactRequestChatId(contactRequestId), chat)
             }
-            // TODO [sub status] review
-            // NetworkModel.shared.setContactNetworkStatus(contact, .connected)
             inProgress?.wrappedValue = false
         }
         if contact.sndReady {
@@ -1948,8 +1946,6 @@ func acceptMemberContact(contactId: Int64, inProgress: Binding<Bool>? = nil) asy
     if let contact = await apiAcceptMemberContact(contactId: contactId) {
         await MainActor.run {
             ChatModel.shared.updateContact(contact)
-            // TODO [sub status] review
-            // NetworkModel.shared.setContactNetworkStatus(contact, .connected)
             inProgress?.wrappedValue = false
         }
         if contact.sndReady {
@@ -2251,15 +2247,15 @@ func processReceivedMsg(_ res: ChatEvent) async {
                     m.dismissConnReqView(conn.id)
                     m.removeChat(conn.id)
                 }
+                if contact.id == m.chatId, let conn = contact.activeConn {
+                    m.chatAgentConnId = conn.agentConnId
+                    m.chatSubStatus = .active
+                }
             }
         }
         if contact.directOrUsed {
             NtfManager.shared.notifyContactConnected(user, contact)
         }
-        // TODO [sub status] review
-        // await MainActor.run {
-        //     n.setContactNetworkStatus(contact, .connected)
-        // }
     case let .contactConnecting(user, contact):
         if active(user) && contact.directOrUsed {
             await MainActor.run {
@@ -2280,10 +2276,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 }
             }
         }
-        // TODO [sub status] review
-        // await MainActor.run {
-        //     n.setContactNetworkStatus(contact, .connected)
-        // }
     case let .receivedContactRequest(user, contactRequest, chat_):
         if active(user) {
             await MainActor.run {
@@ -2529,12 +2521,6 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 _ = m.upsertGroupMember(groupInfo, member)
             }
         }
-        // TODO [sub status] review
-        // if let contact = memberContact {
-        //     await MainActor.run {
-        //         n.setContactNetworkStatus(contact, .connected)
-        //     }
-        // }
     case let .groupUpdated(user, toGroup):
         if active(user) {
             await MainActor.run {

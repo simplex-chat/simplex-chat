@@ -667,8 +667,8 @@ struct ChatView: View {
                         await MainActor.run {
                             if let s = stats {
                                 chatModel.updateContactConnectionStats(contact, s)
-                                if let contactConn = contact.activeConn {
-                                    chatModel.chatAgentConnId = contactConn.agentConnId
+                                if let conn = contact.activeConn {
+                                    chatModel.chatAgentConnId = conn.agentConnId
                                     chatModel.chatSubStatus = s.subStatus
                                 }
                             }
