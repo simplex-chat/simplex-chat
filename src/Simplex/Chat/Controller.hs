@@ -826,7 +826,7 @@ data ChatEvent
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
   | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CEvtNetworkStatus {server :: SMPServer, networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CEvtSubscriptionStatus {server :: SMPServer, subscriptionStatus :: SubscriptionStatus, connections :: [AgentConnId]}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
@@ -906,7 +906,7 @@ allowRemoteEvent = \case
 
 logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
-  CEvtNetworkStatus {} -> True
+  CEvtSubscriptionStatus {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True

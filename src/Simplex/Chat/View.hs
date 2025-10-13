@@ -456,7 +456,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtNetworkStatus srv status conns -> [plain $ netStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -1456,6 +1456,13 @@ viewConnDiffIds userDiff connDiff
         <> ["extra " <> name <> " in agent (agent IDs): " <> showIds extraIds | not (null extraIds)]
       where
         showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
+
+subStatusStr :: SubscriptionStatus -> String
+subStatusStr = \case
+  SSActive -> "subscribed"
+  SSPending -> "disconnected"
+  SSRemoved e -> "removed: " <> e
+  SSNoSub -> "no subscription"
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []

@@ -131,16 +131,16 @@ processAgentMessageNoConn :: AEvent 'AENone -> CM ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CEvtHostConnected p h
   DISCONNECT p h -> hostEvent $ CEvtHostDisconnected p h
-  DOWN srv conns -> serverEvent srv NSDisconnected conns
-  UP srv conns -> serverEvent srv NSConnected conns
+  DOWN srv conns -> serverEvent srv SSPending conns
+  UP srv conns -> serverEvent srv SSActive conns
   SUSPENDED -> toView CEvtChatSuspended
   DEL_USER agentUserId -> toView $ CEvtAgentUserDeleted agentUserId
   ERRS cErrs -> errsEvent $ L.toList cErrs
   where
     hostEvent :: ChatEvent -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent :: SMPServer -> NetworkStatus -> [ConnId] -> CM ()
-    serverEvent srv nsStatus conns = toView $ CEvtNetworkStatus srv nsStatus $ map AgentConnId conns
+    serverEvent :: SMPServer -> SubscriptionStatus -> [ConnId] -> CM ()
+    serverEvent srv nsStatus conns = toView $ CEvtSubscriptionStatus srv nsStatus $ map AgentConnId conns
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 

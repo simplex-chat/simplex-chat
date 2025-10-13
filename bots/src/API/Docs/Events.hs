@@ -180,7 +180,7 @@ undocumentedEvents =
     "CEvtGroupMemberSwitch",
     "CEvtHostConnected",
     "CEvtHostDisconnected",
-    "CEvtNetworkStatus",
+    "CEvtSubscriptionStatus",
     "CEvtNewRemoteHost",
     "CEvtNoMemberContactCreating",
     "CEvtNtfMessage",

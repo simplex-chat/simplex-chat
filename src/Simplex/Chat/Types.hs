@@ -1789,20 +1789,6 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-data NetworkStatus
-  = NSUnknown
-  | NSConnected
-  | NSDisconnected
-  | NSError {connectionError :: String}
-  deriving (Eq, Ord, Show)
-
-netStatusStr :: NetworkStatus -> String
-netStatusStr = \case
-  NSUnknown -> "unknown"
-  NSConnected -> "subscribed"
-  NSDisconnected -> "disconnected"
-  NSError e -> "error: " <> e
-
 type CommandId = Int64
 
 aCorrId :: CommandId -> ACorrId
@@ -1991,8 +1977,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NS") ''NetworkStatus)
 
 $(JQ.deriveJSON defaultJSON ''Connection)
 
