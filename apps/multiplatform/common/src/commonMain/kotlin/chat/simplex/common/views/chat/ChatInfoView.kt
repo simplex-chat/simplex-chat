@@ -638,7 +638,6 @@ fun ChatInfoLayout(
 
     if (contact.ready && contact.active) {
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
-        // TODO [sub status] from model
         val chatSubStatus = chatModel.chatSubStatus.value
         if (chatSubStatus != null) {
           SectionItemView({
@@ -1062,7 +1061,7 @@ fun InfoViewActionButton(
 }
 
 @Composable
-private fun SubStatusRow(subStatus: SubscriptionStatus) {
+fun SubStatusRow(subStatus: SubscriptionStatus) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,

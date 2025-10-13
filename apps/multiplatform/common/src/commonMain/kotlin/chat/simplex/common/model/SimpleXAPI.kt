@@ -6803,6 +6803,14 @@ sealed class SubscriptionStatus {
       is Removed -> String.format(generalGetString(MR.strings.error_connecting_to_server_to_receive_messages), subError)
       is NoSub -> generalGetString(MR.strings.not_connected_to_server_to_receive_messages_no_sub)
     }
+
+  val statusExplanationMember: String get() =
+    when (this) {
+      is Active -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_member)
+      is Pending -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_from_member)
+      is Removed -> String.format(generalGetString(MR.strings.error_connecting_to_server_to_receive_messages_from_member), subError)
+      is NoSub -> generalGetString(MR.strings.not_connected_to_server_to_receive_messages_from_member_no_sub)
+    }
 }
 
 interface SimplexAddress {

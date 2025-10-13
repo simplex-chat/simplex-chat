@@ -494,6 +494,17 @@ fun GroupMemberInfoLayout(
     if (cStats != null) {
       SectionDividerSpaced()
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
+        val subStatus = cStats.subStatus
+        if (subStatus != null) {
+          SectionItemView({
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.network_status),
+              subStatus.statusExplanationMember
+            )
+          }) {
+            SubStatusRow(subStatus)
+          }
+        }
         SwitchAddressButton(
           disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || !member.sendMsgEnabled,
           switchAddress = switchMemberAddress
