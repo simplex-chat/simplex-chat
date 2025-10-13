@@ -2322,9 +2322,12 @@ func processReceivedMsg(_ res: ChatEvent) async {
                 _ = m.upsertGroupMember(groupInfo, toMember)
             }
         }
-    case let .networkStatus(status, connections):
-        // TODO [sub status] update status for current chat in model if id matches
-        return
+    case let .subscriptionStatus(status, connections):
+        if let chatAgentConnId = m.chatAgentConnId, connections.contains(chatAgentConnId) {
+            await MainActor.run {
+                m.chatSubStatus = status
+            }
+        }
     case let .chatInfoUpdated(user, chatInfo):
         if active(user) {
             await MainActor.run {

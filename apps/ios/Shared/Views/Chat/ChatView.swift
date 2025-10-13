@@ -393,6 +393,8 @@ struct ChatView: View {
             if chatModel.chatId == cInfo.id && !presentationMode.wrappedValue.isPresented {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
                     if chatModel.chatId == nil {
+                        chatModel.chatAgentConnId = nil
+                        chatModel.chatSubStatus = nil
                         im.reversedChatItems = []
                         im.chatState.clear()
                         chatModel.groupMembers = []
@@ -657,18 +659,30 @@ struct ChatView: View {
     private func initChatView() {
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
-        if case .active = scenePhase,
-           case let .direct(contact) = cInfo {
-            Task {
-                do {
-                    let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
-                    await MainActor.run {
-                        if let s = stats {
-                            chatModel.updateContactConnectionStats(contact, s)
+        if case .active = scenePhase {
+            if case let .direct(contact) = cInfo {
+                Task {
+                    do {
+                        let (stats, _) = try await apiContactInfo(chat.chatInfo.apiId)
+                        await MainActor.run {
+                            if let s = stats {
+                                chatModel.updateContactConnectionStats(contact, s)
+                                if let contactConn = contact.activeConn {
+                                    chatModel.chatAgentConnId = contactConn.agentConnId
+                                    chatModel.chatSubStatus = s.subStatus
+                                }
+                            }
                         }
+                    } catch let error {
+                        logger.error("apiContactInfo error: \(responseError(error))")
                     }
-                } catch let error {
-                    logger.error("apiContactInfo error: \(responseError(error))")
+                }
+            } else {
+                Task {
+                    await MainActor.run {
+                        chatModel.chatAgentConnId = nil
+                        chatModel.chatSubStatus = nil
+                    }
                 }
             }
         }

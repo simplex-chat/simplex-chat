@@ -114,7 +114,7 @@ struct ChatInfoView: View {
 
     enum ChatInfoViewAlert: Identifiable {
         case clearChatAlert
-        case networkStatusAlert
+        case subStatusAlert(status: SubscriptionStatus)
         case switchAddressAlert
         case abortSwitchAddressAlert
         case syncConnectionForceAlert
@@ -125,7 +125,7 @@ struct ChatInfoView: View {
         var id: String {
             switch self {
             case .clearChatAlert: return "clearChatAlert"
-            case .networkStatusAlert: return "networkStatusAlert"
+            case let .subStatusAlert(status): return "subStatusAlert \(status)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
             case .syncConnectionForceAlert: return "syncConnectionForceAlert"
@@ -235,10 +235,12 @@ struct ChatInfoView: View {
 
                     if contact.ready && contact.active {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
-                            networkStatusRow()
-                                .onTapGesture {
-                                    alert = .networkStatusAlert
-                                }
+                            if let chatSubStatus = chatModel.chatSubStatus {
+                                subStatusRow(chatSubStatus)
+                                    .onTapGesture {
+                                        alert = .subStatusAlert(status: chatSubStatus)
+                                    }
+                            }
                             if let connStats = connectionStats {
                                 Button("Change receiving address") {
                                     alert = .switchAddressAlert
@@ -324,7 +326,7 @@ struct ChatInfoView: View {
         .alert(item: $alert) { alertItem in
             switch(alertItem) {
             case .clearChatAlert: return clearChatAlert()
-            case .networkStatusAlert: return networkStatusAlert()
+            case let .subStatusAlert(status): return subStatusAlert(status)
             case .switchAddressAlert: return switchAddressAlert(switchContactAddress)
             case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchContactAddress)
             case .syncConnectionForceAlert:
@@ -545,26 +547,22 @@ struct ChatInfoView: View {
         }
     }
 
-    private func networkStatusRow() -> some View {
+    private func subStatusRow(_ status: SubscriptionStatus) -> some View {
         HStack {
             Text("Network status")
             Image(systemName: "info.circle")
                 .foregroundColor(theme.colors.primary)
                 .font(.system(size: 14))
             Spacer()
-            // TODO [sub status] use status from model
-            // Text(networkModel.contactNetworkStatus(contact).statusString)
-            Text(NetworkStatus.connected.statusString)
+            Text(status.statusString)
                 .foregroundColor(theme.colors.secondary)
-            serverImage()
+            serverImage(status)
         }
     }
 
-    private func serverImage() -> some View {
-        // TODO [sub status] use status from model
-        let status = NetworkStatus.connected // networkModel.contactNetworkStatus(contact)
+    private func serverImage(_ status: SubscriptionStatus) -> some View {
         return Image(systemName: status.imageName)
-            .foregroundColor(status == .connected ? .green : theme.colors.secondary)
+            .foregroundColor(status == .active ? .green : theme.colors.secondary)
             .font(.system(size: 12))
     }
 
@@ -607,11 +605,10 @@ struct ChatInfoView: View {
         )
     }
 
-    private func networkStatusAlert() -> Alert {
+    private func subStatusAlert(_ status: SubscriptionStatus) -> Alert {
         Alert(
             title: Text("Network status"),
-            // TODO [sub status] use status from model
-            message: Text("") // Text(networkModel.contactNetworkStatus(contact).statusExplanation)
+            message: Text(status.statusExplanation)
         )
     }
 

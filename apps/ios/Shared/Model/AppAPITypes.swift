@@ -1053,7 +1053,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest, chat_: ChatData?)
     case contactUpdated(user: UserRef, toContact: Contact)
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
-    case networkStatus(networkStatus: NetworkStatus, connections: [String])
+    case subscriptionStatus(subscriptionStatus: SubscriptionStatus, connections: [String])
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
@@ -1130,7 +1130,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .receivedContactRequest: "receivedContactRequest"
         case .contactUpdated: "contactUpdated"
         case .groupMemberUpdated: "groupMemberUpdated"
-        case .networkStatus: "networkStatus"
+        case .subscriptionStatus: "subscriptionStatus"
         case .chatInfoUpdated: "chatInfoUpdated"
         case .newChatItems: "newChatItems"
         case .chatItemsStatusesUpdated: "chatItemsStatusesUpdated"
@@ -1202,7 +1202,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .receivedContactRequest(u, contactRequest, chat_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\nchat_: \(String(describing: chat_))")
         case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
         case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
-        case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
+        case let .subscriptionStatus(status, conns): return "subscriptionStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
         case let .chatInfoUpdated(u, chatInfo): return withUser(u, String(describing: chatInfo))
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
@@ -1358,38 +1358,6 @@ enum ChatDeleteMode: Codable {
         switch self {
         case .entity: return true
         default: return false
-        }
-    }
-}
-
-enum NetworkStatus: Decodable, Equatable {
-    case unknown
-    case connected
-    case disconnected
-    case error(connectionError: String)
-
-    var statusString: LocalizedStringKey {
-        switch self {
-        case .connected: "connected"
-        case .error: "error"
-        default: "connecting"
-        }
-    }
-
-    var statusExplanation: LocalizedStringKey {
-        switch self {
-        case .connected: "You are connected to the server used to receive messages from this contact."
-        case let .error(err): "Trying to connect to the server used to receive messages from this contact (error: \(err))."
-        default: "Trying to connect to the server used to receive messages from this contact."
-        }
-    }
-
-    var imageName: String {
-        switch self {
-        case .unknown: "circle.dotted"
-        case .connected: "circle.fill"
-        case .disconnected: "ellipsis.circle.fill"
-        case .error: "exclamationmark.circle.fill"
         }
     }
 }

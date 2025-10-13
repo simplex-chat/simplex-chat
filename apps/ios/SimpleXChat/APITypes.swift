@@ -539,13 +539,13 @@ public enum MsgFilter: String, Codable, Hashable {
     }
 }
 
-// TODO [sub status] add SubscriptionStatus, QueueStatus
 public struct ConnectionStats: Decodable, Hashable {
     public var connAgentVersion: Int
     public var rcvQueuesInfo: [RcvQueueInfo]
     public var sndQueuesInfo: [SndQueueInfo]
     public var ratchetSyncState: RatchetSyncState
     public var ratchetSyncSupported: Bool
+    public var subStatus: SubscriptionStatus?
 
     public var ratchetSyncAllowed: Bool {
         ratchetSyncSupported && [.allowed, .required].contains(ratchetSyncState)
@@ -560,25 +560,28 @@ public struct ConnectionStats: Decodable, Hashable {
     }
 }
 
-public struct RcvQueueInfo: Codable, Hashable {
+public struct RcvQueueInfo: Decodable, Hashable {
     public var rcvServer: String
+    public var status: QueueStatus
     public var rcvSwitchStatus: RcvSwitchStatus?
     public var canAbortSwitch: Bool
+    public var subStatus: SubscriptionStatus
 }
 
-public enum RcvSwitchStatus: String, Codable, Hashable {
+public enum RcvSwitchStatus: String, Decodable, Hashable {
     case switchStarted = "switch_started"
     case sendingQADD = "sending_qadd"
     case sendingQUSE = "sending_quse"
     case receivedMessage = "received_message"
 }
 
-public struct SndQueueInfo: Codable, Hashable {
+public struct SndQueueInfo: Decodable, Hashable {
     public var sndServer: String
+    public var status: QueueStatus
     public var sndSwitchStatus: SndSwitchStatus?
 }
 
-public enum SndSwitchStatus: String, Codable, Hashable {
+public enum SndSwitchStatus: String, Decodable, Hashable {
     case sendingQKEY = "sending_qkey"
     case sendingQTEST = "sending_qtest"
 }
@@ -605,6 +608,48 @@ public enum RatchetSyncState: String, Decodable {
     case required
     case started
     case agreed
+}
+
+public enum QueueStatus: String, Decodable, Hashable {
+    case new
+    case confirmed
+    case secured
+    case active
+    case disabled
+}
+
+public enum SubscriptionStatus: Decodable, Hashable {
+    case active
+    case pending
+    case removed(subError: String)
+    case noSub
+
+    public var statusString: LocalizedStringKey {
+        switch self {
+        case .active: "connected"
+        case .pending: "connecting"
+        case .removed: "error"
+        case .noSub: "no subscription"
+        }
+    }
+
+    public var statusExplanation: LocalizedStringKey {
+        switch self {
+        case .active: "You are connected to the server used to receive messages from this contact."
+        case .pending: "Trying to connect to the server used to receive messages from this contact."
+        case let .removed(err): "Error connecting to the server used to receive messages from this contact: \(err)."
+        case .noSub: "You are not connected to the server used to receive messages from this contact (no subscription)."
+        }
+    }
+
+    public var imageName: String {
+        switch self {
+        case .active: "circle.fill"
+        case .pending: "ellipsis.circle.fill"
+        case .removed: "exclamationmark.circle.fill"
+        case .noSub: "circle.dotted"
+        }
+    }
 }
 
 public protocol SelectableItem: Identifiable, Equatable {

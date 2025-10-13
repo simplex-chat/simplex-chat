@@ -351,6 +351,8 @@ final class ChatModel: ObservableObject {
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
+    @Published var chatAgentConnId: String?
+    @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
