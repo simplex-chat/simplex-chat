@@ -1317,6 +1317,10 @@ func apiCreateUserAddress() async throws -> CreatedConnLink? {
     let userId = try currentUserId("apiCreateUserAddress")
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiCreateMyAddress(userId: userId))
     if case let .result(.userContactLinkCreated(_, connLink)) = r { return connLink }
+    if case let .error(.errorAgent(.NOTICE(server, expires))) = r {
+        showClientNotice(server, expires)
+        return nil
+    }
     if let r { throw r.unexpected } else { return nil }
 }
 
@@ -1890,6 +1894,10 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> GroupLink? {
     let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole))
     if case let .result(.groupLinkCreated(_, _, groupLink)) = r { return groupLink }
+    if case let .error(.errorAgent(.NOTICE(server, expires))) = r {
+        showClientNotice(server, expires)
+        return nil
+    }
     if let r { throw r.unexpected } else { return nil }
 }
 
@@ -2856,4 +2864,28 @@ func activateCall(_ callInvitation: RcvCallInvitation) {
 private struct UserResponse: Decodable {
     var user: User?
     var error: String?
+}
+
+private func showClientNotice(_ server: String?, _ expiresAt: Date?) {
+    DispatchQueue.main.async {
+        let srv = if let server { "the server \(server)." } else { "some preset server." }
+        let exp = if let expiresAt { "\nNew addresses can be created after \(expiresAt.formatted(date: .abbreviated, time: .shortened))." } else { "" }
+        let message = "Conditions of use violation notice received from " + srv + " No IDs shared, see How it works." + exp
+        showAlert("Not allowed", message: message) {
+            var buttons = [
+                okAlertAction,
+                UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default, handler: { _ in
+                    UIApplication.shared.open(contentModerationPostLink)
+                })
+            ]
+            if server == nil {
+                buttons.append(
+                    UIAlertAction(title: NSLocalizedString("Conditions of use", comment: "alert button"), style: .default, handler: { _ in
+                        UIApplication.shared.open(conditionsURL)
+                    })
+                )
+            }
+            return buttons
+        }
+    }
 }
