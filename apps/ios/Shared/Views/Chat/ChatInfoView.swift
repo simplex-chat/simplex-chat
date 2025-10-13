@@ -556,14 +556,8 @@ struct ChatInfoView: View {
             Spacer()
             Text(status.statusString)
                 .foregroundColor(theme.colors.secondary)
-            serverImage(status)
+            SubStatusServerImage(status: status)
         }
-    }
-
-    private func serverImage(_ status: SubscriptionStatus) -> some View {
-        return Image(systemName: status.imageName)
-            .foregroundColor(status == .active ? .green : theme.colors.secondary)
-            .font(.system(size: 12))
     }
 
     private func deleteContactButton() -> some View {
@@ -664,6 +658,17 @@ struct ChatInfoView: View {
                 logger.error("ContactPreferencesView apiSetContactPrefs error: \(responseError(error))")
             }
         }
+    }
+}
+
+struct SubStatusServerImage: View {
+    @EnvironmentObject var theme: AppTheme
+    var status: SubscriptionStatus
+
+    var body: some View {
+        Image(systemName: status.imageName)
+            .foregroundColor(status == .active ? .green : theme.colors.secondary)
+            .font(.system(size: 12))
     }
 }
 

@@ -56,6 +56,11 @@ struct ChatInfoToolbar: View {
                             .padding(.top, -2)
                     }
                 }
+            if let contact = chat.chatInfo.contact,
+               contact.ready && contact.active,
+               let chatSubStatus = ChatModel.shared.chatSubStatus {
+                SubStatusServerImage(status: chatSubStatus)
+            }
         }
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
