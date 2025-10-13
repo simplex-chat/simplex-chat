@@ -1308,7 +1308,7 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
       chatSubStatus != SubscriptionStatus.Active
       ) {
       Box(
-        Modifier.padding(start = 8.dp)
+        Modifier.padding(start = 10.dp)
       ) {
         SubStatusView(chatSubStatus)
       }
@@ -1330,7 +1330,6 @@ fun SubStatusView(status: SubscriptionStatus) {
         tint = MaterialTheme.colors.secondary,
         modifier = Modifier
           .size(19.sp.toDp())
-          .offset(x = 2.sp.toDp())
       )
   }
 }
@@ -1339,8 +1338,7 @@ fun SubStatusView(status: SubscriptionStatus) {
 private fun SubProgressView() {
   CircularProgressIndicator(
     Modifier
-      .size(15.sp.toDp())
-      .offset(y = 2.sp.toDp()),
+      .size(15.sp.toDp()),
     color = MaterialTheme.colors.secondary,
     strokeWidth = 1.5.dp
   )
