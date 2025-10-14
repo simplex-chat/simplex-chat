@@ -764,14 +764,15 @@ p a{
 }
 
 .tooltip-title{
-  margin-bottom: 0.5rem;
-  color: #0197FF;
-  font-weight: 600;
-  font-size: 1.1rem;
+  margin: 0 !important;
+  margin-bottom: 0.5rem !important;
+  color: #0197FF !important;
+  font-weight: 600 !important;
+  font-size: 1.1rem !important;
 }
 
 .dark .tooltip-title{
-  color: #70F0F9;
+  color: #70F0F9 !important;
 }
 
 .glossary-tooltip .read-more-btn{
@@ -854,13 +855,18 @@ p a{
 }
 
 .glossary-overlay .overlay-card .overlay-title{
-  font-size: 1.875rem;
-  line-height: 2.25rem;
-  font-weight: 700;
-  margin-bottom: 1rem;
-  margin-bottom: 1.5rem;
-  --tw-text-opacity: 1;
-  color: rgb(1 151 255 / var(--tw-text-opacity));
+  font-size: 1.875rem !important;
+  line-height: 2.25rem !important;
+  font-weight: 700 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  margin-bottom: 1.5rem !important;
+  --tw-text-opacity: 1 !important;
+  color: rgb(1 151 255 / var(--tw-text-opacity)) !important;
+}
+
+.glossary-overlay .overlay-card .overlay-title::after{
+  background-color: transparent !important;
 }
 
 .glossary-overlay .overlay-card .overlay-content{
@@ -874,6 +880,10 @@ p a{
 
 .dark .glossary-overlay .overlay-card .overlay-content{
   color: #fff;
+}
+
+.glossary-overlay .overlay-card .overlay-content p{
+  margin: 0 !important;
 }
 
 .close-overlay-btn{
