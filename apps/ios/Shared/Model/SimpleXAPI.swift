@@ -1317,8 +1317,8 @@ func apiCreateUserAddress() async throws -> CreatedConnLink? {
     let userId = try currentUserId("apiCreateUserAddress")
     let r: APIResult<ChatResponse1>? = await chatApiSendCmdWithRetry(.apiCreateMyAddress(userId: userId))
     if case let .result(.userContactLinkCreated(_, connLink)) = r { return connLink }
-    if case let .error(.errorAgent(.NOTICE(server, expires))) = r {
-        showClientNotice(server, expires)
+    if case let .error(.errorAgent(.NOTICE(server, preset, expires))) = r {
+        showClientNotice(server, preset, expires)
         return nil
     }
     if let r { throw r.unexpected } else { return nil }
@@ -1894,8 +1894,8 @@ func apiUpdateGroup(_ groupId: Int64, _ groupProfile: GroupProfile) async throws
 func apiCreateGroupLink(_ groupId: Int64, memberRole: GroupMemberRole = .member) async throws -> GroupLink? {
     let r: APIResult<ChatResponse2>? = await chatApiSendCmdWithRetry(.apiCreateGroupLink(groupId: groupId, memberRole: memberRole))
     if case let .result(.groupLinkCreated(_, _, groupLink)) = r { return groupLink }
-    if case let .error(.errorAgent(.NOTICE(server, expires))) = r {
-        showClientNotice(server, expires)
+    if case let .error(.errorAgent(.NOTICE(server, preset, expires))) = r {
+        showClientNotice(server, preset, expires)
         return nil
     }
     if let r { throw r.unexpected } else { return nil }
@@ -2866,26 +2866,25 @@ private struct UserResponse: Decodable {
     var error: String?
 }
 
-private func showClientNotice(_ server: String?, _ expiresAt: Date?) {
+private func showClientNotice(_ server: String, _ preset: Bool, _ expiresAt: Date?) {
     DispatchQueue.main.async {
-        let srv = if let server { "the server \(server)." } else { "some preset server." }
-        let exp = if let expiresAt { "\nNew addresses can be created after \(expiresAt.formatted(date: .abbreviated, time: .shortened))." } else { "" }
-        let message = "Conditions of use violation notice received from " + srv + " No IDs shared, see How it works." + exp
+        var message = "Server: \(server).\nConditions of use violation notice received from \(preset ? "preset" : "this") server.\nNo IDs shared, see How it works."
+        if let expiresAt {
+            message += "\n\nNew addresses can be created after \(expiresAt.formatted(date: .abbreviated, time: .shortened))."
+        }
         showAlert("Not allowed", message: message) {
-            var buttons = [
-                okAlertAction,
-                UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default, handler: { _ in
-                    UIApplication.shared.open(contentModerationPostLink)
-                })
-            ]
-            if server == nil {
-                buttons.append(
-                    UIAlertAction(title: NSLocalizedString("Conditions of use", comment: "alert button"), style: .default, handler: { _ in
-                        UIApplication.shared.open(conditionsURL)
-                    })
-                )
-            }
-            return buttons
+            let howItWorks = UIAlertAction(title: NSLocalizedString("How it works", comment: "alert button"), style: .default, handler: { _ in
+                UIApplication.shared.open(contentModerationPostLink)
+            })
+            return preset
+                    ? [
+                        okAlertAction,
+                        UIAlertAction(title: NSLocalizedString("Conditions of use", comment: "alert button"), style: .default, handler: { _ in
+                            UIApplication.shared.open(conditionsURL)
+                        }),
+                        howItWorks
+                    ]
+                    : [okAlertAction, howItWorks]
         }
     }
 }

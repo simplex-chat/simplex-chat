@@ -879,7 +879,7 @@ public enum AgentErrorType: Decodable, Hashable {
     case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
-    case NOTICE(noticeServer: String?, expiresAt: Date?)
+    case NOTICE(server: String, preset: Bool, expiresAt: Date?)
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE
