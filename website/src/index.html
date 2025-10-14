@@ -8,6 +8,26 @@
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
     <script src="/js/flag-anchor.js"></script>
+    <script>
+        function detectMobileBrowser() {
+            const ua = navigator.userAgent;
+            
+            // Chrome on iOS
+            if (/CriOS/.test(ua)) {
+                document.documentElement.classList.add('chrome-ios');
+            }
+            // Safari on iOS
+            else if (/Safari/.test(ua) && /iPhone|iPad|iPod/.test(ua) && !/CriOS|FxiOS|EdgiOS/.test(ua)) {
+                document.documentElement.classList.add('safari-ios');
+            }
+            // Chrome on Android
+            else if (/Chrome/.test(ua) && /Android/.test(ua)) {
+                document.documentElement.classList.add('chrome-android');
+            }
+        }
+
+        detectMobileBrowser();
+    </script>
 </head>
 
 <body>
