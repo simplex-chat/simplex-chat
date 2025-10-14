@@ -303,17 +303,20 @@ p {
 }
 
 /* Make the viewport the scroll snap container (works in iOS Safari) */
-html, body {
+html,
+body {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
 }
 
 section.page {
-    min-height: 100svh; /* fallback */
+    min-height: 100svh;
+    /* fallback */
     height: 100svh;
     scroll-snap-align: start;
-    scroll-snap-stop: always; /* requires a full swipe/scroll to leave */
+    scroll-snap-stop: always;
+    /* requires a full swipe/scroll to leave */
     position: relative;
 
     display: flex;
@@ -324,13 +327,15 @@ section.page {
 
 .chrome-ios section.page,
 .safari-ios section.page {
-    min-height: 110lvh; /* fallback */
+    min-height: 110lvh;
+    /* fallback */
     height: 110lvh;
     padding-bottom: calc(110lvh - 100svh);
 }
 
 .chrome-android section.page {
-    min-height: 100lvh; /* fallback */
+    min-height: 100lvh;
+    /* fallback */
     height: 100lvh;
     padding-bottom: calc(100lvh - 100svh);
 }
@@ -421,8 +426,10 @@ main .section-bg {
     position: sticky;
     top: 0;
     inset: 0;
-    height: 100lvh;          /* fallback */
-    margin-bottom: -100lvh;  /* cancel own layout height */
+    height: 100lvh;
+    /* fallback */
+    margin-bottom: -100lvh;
+    /* cancel own layout height */
     width: 100vw;
 
     background-image: var(--bg-grad);
@@ -761,67 +768,385 @@ main .section-bg {
     <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
     places the image starting at column 3, row 2, spanning 2 columns × 2 rows.
 */
-.page-6 .group-images>a.simplex-image { 
-    --c: 4; --r: 3; --w: 2; --h: 2;
+.page-6 .group-images>a.simplex-image {
+    --c: 4;
+    --r: 3;
+    --w: 2;
+    --h: 2;
     margin: 1.15rem;
 }
 
-.page-6 .group-images>a.group-image:nth-child(1) { --c: 2; --r: 1; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(2) { --c: 4; --r: 1; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(3) { --c: 5; --r: 1; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(4) { --c: 7; --r: 1; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(5) { --c: 1; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(6) { --c: 3; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(7) { --c: 4; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(8) { --c: 5; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(9) { --c: 6; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(10) { --c: 8; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(11) { --c: 2; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(12) { --c: 3; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(14) { --c: 6; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(15) { --c: 7; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(16) { --c: 1; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(17) { --c: 3; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(18) { --c: 6; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(19) { --c: 8; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(20) { --c: 2; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(21) { --c: 4; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(22) { --c: 5; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(23) { --c: 6; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(24) { --c: 7; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(25) { --c: 3; --r: 6; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(26) { --c: 4; --r: 6; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(27) { --c: 6; --r: 6; --w: 1; --h: 1 }
+.page-6 .group-images>a.group-image:nth-child(1) {
+    --c: 2;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(2) {
+    --c: 4;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(3) {
+    --c: 5;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(4) {
+    --c: 7;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(5) {
+    --c: 1;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(6) {
+    --c: 3;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(7) {
+    --c: 4;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(8) {
+    --c: 5;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(9) {
+    --c: 6;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(10) {
+    --c: 8;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(11) {
+    --c: 2;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(12) {
+    --c: 3;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(14) {
+    --c: 6;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(15) {
+    --c: 7;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(16) {
+    --c: 1;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(17) {
+    --c: 3;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(18) {
+    --c: 6;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(19) {
+    --c: 8;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(20) {
+    --c: 2;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(21) {
+    --c: 4;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(22) {
+    --c: 5;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(23) {
+    --c: 6;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(24) {
+    --c: 7;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(25) {
+    --c: 3;
+    --r: 6;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(26) {
+    --c: 4;
+    --r: 6;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(27) {
+    --c: 6;
+    --r: 6;
+    --w: 1;
+    --h: 1
+}
 
 @media screen and (max-width: 767px) {
-.page-6 .group-images>a.simplex-image { --c: 4; --r: 4; --w: 2; --h: 2 }
+    .page-6 .group-images>a.simplex-image {
+        --c: 4;
+        --r: 4;
+        --w: 2;
+        --h: 2
+    }
 
-.page-6 .group-images>a.group-image:nth-child(1) { --c: 3; --r: 1; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(2) { --c: 6; --r: 1; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(3) { --c: 2; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(4) { --c: 4; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(5) { --c: 5; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(6) { --c: 7; --r: 2; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(7) { --c: 3; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(8) { --c: 4; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(9) { --c: 5; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(10) { --c: 6; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(11) { --c: 8; --r: 3; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(12) { --c: 2; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(14) { --c: 3; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(15) { --c: 6; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(16) { --c: 7; --r: 4; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(17) { --c: 1; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(18) { --c: 3; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(19) { --c: 6; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(20) { --c: 7; --r: 5; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(21) { --c: 2; --r: 6; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(22) { --c: 4; --r: 6; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(23) { --c: 5; --r: 6; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(24) { --c: 6; --r: 6; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(25) { --c: 3; --r: 7; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(26) { --c: 4; --r: 7; --w: 1; --h: 1 }
-.page-6 .group-images>a.group-image:nth-child(27) { --c: 6; --r: 7; --w: 1; --h: 1 }
+    .page-6 .group-images>a.group-image:nth-child(1) {
+        --c: 3;
+        --r: 1;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(2) {
+        --c: 6;
+        --r: 1;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(3) {
+        --c: 2;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(4) {
+        --c: 4;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(5) {
+        --c: 5;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(6) {
+        --c: 7;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(7) {
+        --c: 3;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(8) {
+        --c: 4;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(9) {
+        --c: 5;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(10) {
+        --c: 6;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(11) {
+        --c: 8;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(12) {
+        --c: 2;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(14) {
+        --c: 3;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(15) {
+        --c: 6;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(16) {
+        --c: 7;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(17) {
+        --c: 1;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(18) {
+        --c: 3;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(19) {
+        --c: 6;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(20) {
+        --c: 7;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(21) {
+        --c: 2;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(22) {
+        --c: 4;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(23) {
+        --c: 5;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(24) {
+        --c: 6;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(25) {
+        --c: 3;
+        --r: 7;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(26) {
+        --c: 4;
+        --r: 7;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(27) {
+        --c: 6;
+        --r: 7;
+        --w: 1;
+        --h: 1
+    }
 }
 
 .page-6 .group-images a {
@@ -1274,6 +1599,13 @@ section.page.footer {
     section.page.footer {
         height: 100lvh;
         min-height: 100lvh;
+    }
+
+    .chrome-ios section.page,
+    .safari-ios section.page {
+        min-height: 110lvh;
+        height: 110lvh;
+        padding-bottom: calc(110lvh - 100svh);
     }
 }
 
