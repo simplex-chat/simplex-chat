@@ -37,7 +37,7 @@ fun Base64AsyncImage(
   base64ImageString: String,
   contentDescription: String?,
   contentScale: ContentScale,
-  modifier: Modifier
+  modifier: Modifier = Modifier
 ) {
   val imageBitmap by produceState<ImageBitmap?>(initialValue = null, base64ImageString) {
     value = withContext(Dispatchers.IO) { base64ToBitmap(base64ImageString) }
