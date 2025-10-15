@@ -1,24 +1,13 @@
 package chat.simplex.common.platform
 
-import androidx.compose.foundation.Image
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import boofcv.struct.image.GrayU8
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
-import java.util.Base64
-import javax.imageio.ImageIO
-
-//@Composable expect fun AsyncImage(base64ImageString: String)
 
 expect fun base64ToBitmap(base64ImageString: String): ImageBitmap
 expect fun resizeImageToStrSize(image: ImageBitmap, maxDataSize: Long): String
