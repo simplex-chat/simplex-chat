@@ -655,6 +655,11 @@ struct ChatView: View {
     }
 
     private func initChatView() {
+        if im.secondaryIMFilter == nil {
+            chatModel.groupMembers = []
+            chatModel.groupMembersIndexes.removeAll()
+            chatModel.membersLoaded = false
+        }
         let cInfo = chat.chatInfo
         // This check prevents the call to apiContactInfo after the app is suspended, and the database is closed.
         if case .active = scenePhase,

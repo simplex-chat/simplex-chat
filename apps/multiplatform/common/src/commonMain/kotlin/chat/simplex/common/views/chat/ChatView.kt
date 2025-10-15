@@ -161,6 +161,9 @@ fun ChatView(
             }
             if (chatsCtx.secondaryContextFilter == null) {
               markUnreadChatAsRead(chatId)
+              chatModel.groupMembers.value = emptyList()
+              chatModel.groupMembersIndexes.value = emptyMap()
+              chatModel.membersLoaded.value = false
             }
             showSearch.value = false
             searchText.value = ""
