@@ -1,0 +1,41 @@
+name: Build Eleventy
+
+on:
+  push:
+    branches:
+      - new-website
+      - ep/new-site-generate
+    paths:
+      - website/**
+      - images/**
+      - blog/**
+      - docs/**
+      - .github/workflows/web.yml
+      - PRIVACY.md
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [16.x]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies & build
+        run: |
+          ./website/web.sh
+
+      - name: Deploy
+        uses: simplex-chat/actions-gh-pages@v3
+        with:
+          publish_dir: ./website/_site
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: new-gh-pages
