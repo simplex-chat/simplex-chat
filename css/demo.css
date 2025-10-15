@@ -1,0 +1,226 @@
+#demo {
+    padding-top: 3.5rem;
+    padding-bottom: 2.5rem;
+    text-align: center;
+}
+
+#demo .all-users {
+    position: relative;
+    height: 640px;
+}
+
+#demo .user {
+    position: absolute;
+}
+
+#demo h3 {
+    position: absolute;
+    top: -60px;
+    text-align: left;
+    padding: 0 0 5px 7px;
+    color: #ffffbb;
+    mix-blend-mode: difference;
+    font-size: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+#demo .user .terminal {
+    text-align: left;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.8);
+    border-radius: 10px;
+    box-sizing: border-box;
+    padding: 10px 10px;
+    color: white;
+    overflow-y: hidden;
+}
+
+#demo .user .terminal:before {
+    content: "";
+    display: block;
+    position: absolute;
+    top: 0px;
+    left: 0px;
+    width: 100%;
+    height: 20px;
+    background: #666 url(/img/topbar.svg) no-repeat 8px center;
+    border-radius: 10px 10px 0 0;
+    z-index: 2;
+}
+
+#demo .user .terminal input,
+#demo .user .terminal .input,
+#demo .user .terminal .display {
+    font-family: Menlo, "Lucida Console", Monaco, monospace;
+    font-size: 14px;
+    letter-spacing: 0.27px;
+    line-height: 28px;
+    position: absolute;
+    left: 10px;
+    right: 10px;
+}
+
+#demo .user .terminal input,
+#demo .user .terminal .input {
+    color: white;
+    display: block;
+    height: 30px;
+    bottom: 0;
+}
+
+#demo .user .terminal input {
+    background-color: transparent;
+    display: none;
+    left: 25px;
+    width: calc(100% - 30px);
+}
+
+#demo .user .terminal .display {
+    color: white;
+    text-align: left;
+    bottom: 30px;
+    z-index: 1;
+    overflow-x: hidden;
+    word-wrap: break-word;
+}
+
+#demo .user .terminal .display .info {
+    color: white;
+}
+
+#demo .user .terminal .display .error {
+    color: #ff6347;
+}
+
+#demo .user .terminal .display .sent span.group {
+    color: cyan;
+}
+
+#demo .user .terminal .display .received span.group {
+    color: yellow;
+}
+
+#demo .user .terminal .display span {
+    font-family: Menlo, Monaco, "Lucida Console", monospace;
+    text-align: left;
+    margin: 0 0;
+}
+
+#demo .user .terminal .display span.recipient {
+    color: cyan;
+}
+
+#demo .user .terminal .display span.sender {
+    color: yellow;
+}
+
+#demo .user .terminal .display span.secret {
+    color: rgba(0, 0, 0, 0.4);
+    background-color: rgba(0, 0, 0, 0.4);
+}
+
+#demo .alice {
+    left: -30px;
+    top: 102px;
+}
+
+#demo .bob {
+    left: 425px;
+    top: 0px;
+}
+
+#demo .tom {
+    left: 425px;
+    top: 378px;
+}
+
+#demo .all-users .terminal {
+    width: 410px;
+}
+
+#demo .alice .terminal {
+    height: 340px;
+}
+
+#demo .bob .terminal {
+    height: 305px;
+}
+
+#demo .tom .terminal {
+    height: 280px;
+}
+
+
+/* Demo buttons */
+#demo button {
+    position: absolute;
+    width: 140px;
+    height: 40px;
+    bottom: 85px;
+    font-size: 16px;
+    border-radius: 34px;
+    color: white;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+    background-color: #0053d0;
+}
+
+.dark #demo button {
+    color: black;
+    background-color: #70f0f9;
+}
+
+#demo button:disabled {
+    filter: brightness(75%);
+}
+
+#demo .run-demo {
+    left: 20px;
+}
+
+#demo .run-faster {
+    left: 20px;
+    display: none;
+}
+
+#demo .try-it {
+    left: 180px;
+}
+
+@media (max-width: 1240px) {
+    #demo .all-users {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+    }
+
+    #demo .alice {
+        position: relative !important;
+        top: 0;
+        left: 0;
+    }
+
+    #demo button,
+    #demo .bob,
+    #demo .tom {
+        display: none;
+    }
+}
+
+@media (max-width: 570px) {
+    #demo .alice .terminal {
+        width: 400px;
+    }
+}
+
+@media (max-width: 440px) {
+    #demo .alice .terminal {
+        width: 330px;
+        height: 420px;
+    }
+}

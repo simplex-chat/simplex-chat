@@ -1,0 +1,823 @@
+{
+  "metadata": {
+    "description": "JTD schema for SimpleX Chat Protocol messages for chat functions"
+  },
+  "definitions": {
+    "profile": {
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "metadata": {
+            "format": "non-empty string, the first character must not be # or @"
+          }
+        },
+        "fullName": {"type": "string"}
+      },
+      "optionalProperties": {
+        "image": {
+          "type": "string",
+          "metadata": {
+            "format": "data URI format for base64 encoded image"
+          }
+        },
+        "shortDescr": {
+          "type": "string",
+          "metadata": {"comment": "profile bio (160 characters)"}
+        },
+        "contactLink": {"ref": "connReqUri"},
+        "peerType": {"enum": ["human", "bot"]},
+        "preferences": {
+          "optionalProperties": {
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          },
+          "additionalProperties": true,
+          "metadata": {
+            "format": "an object with user or contact preferences"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "groupProfile": {
+      "properties": {
+        "displayName": {
+          "type": "string",
+          "metadata": {
+            "format": "non-empty string, the first character must not be # or @"
+          }
+        },
+        "fullName": {"type": "string"}
+      },
+      "optionalProperties": {
+        "image": {
+          "type": "string",
+          "metadata": {
+            "format": "data URI format for base64 encoded image"
+          }
+        },
+        "shortDescr": {
+          "type": "string",
+          "metadata": {"comment": "group purpose / short description (160 characters)"}
+        },
+        "groupPreferences": {
+          "optionalProperties": {
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          },
+          "additionalProperties": "true",
+          "metadata": {
+            "format": "an object with group preferences"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "command": {
+      "discriminator": "type",
+      "mapping": {
+        "command": {
+          "properties": {
+            "keyword": {
+              "type": "string",
+              "metadata": {"format": "Must start from / and consist from letters, digits and underscores only, no punctuation or spaces"}
+            },
+            "label": {
+              "type": "string",
+              "metadata": {"comment": "shown to the user after command keyword in menus"}
+            }
+          },
+          "optionalProperties": {
+            "params": {
+              "type": "string",
+              "metadata": {"comment": "Params that can follow after keyword using command-line syntax. If params property is not present, command will be sent on selection"}}
+            },
+            "hidden": {
+              "type": "bool",
+              "metadata": {"comment": "Won't be shown in menu when true"}
+            }
+          }
+        },
+        "menu": {
+          "properties": {
+            "label": {"type": "string"},
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          }
+        }
+      }
+    },
+    "msgContainer": {
+      "properties": {
+        "content": {"ref": "msgContent"}
+      },
+      "optionalProperties": {
+        "file": {"ref": "fileInvitation"},
+        "ttl": {"type": "integer"},
+        "live": {"type": "boolean"},
+        "quote": {
+          "properties": {
+            "msgRef": {"ref": "msgRef"},
+            "content": {"ref": "msgContent"}
+          }
+        },
+        "forward": {"type": "boolean"}
+      },
+      "metadata": {
+        "comment": "optional properties `quote` and `forward` are mutually exclusive"
+      }
+    },
+    "msgContent": {
+      "discriminator": "type",
+      "mapping": {
+        "text": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "non-empty"}}
+          }
+        },
+        "link": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "non-empty"}},
+            "preview": {"ref": "linkPreview"}
+          }
+        },
+        "image": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+            "image": {"ref": "base64url"}
+          }
+        },
+        "video": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+            "image": {"ref": "base64url"},
+            "duration": {"type": "integer"}
+          }
+        },
+        "voice": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}},
+            "duration": {"type": "integer"}
+          }
+        },
+        "file": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty"}}
+          }
+        },
+        "report": {
+          "properties": {
+            "text": {"type": "string", "metadata": {"comment": "can be empty, includes report reason for old clients"}},
+            "reason": {"enum": ["spam", "illegal", "community", "other"]}
+          }
+        }
+      },
+      "metadata": {
+        "comment": "it is RECOMMENDED that the clients support other values in `type` properties showing them as text messages in case `text` property is present"
+      }
+    },
+    "msgReaction" : {
+      "discriminator": "type",
+      "mapping": {
+        "emoji": {
+          "properties": {
+            "emoji": {
+              "type": "string",
+              "metadata": {"comment": "emoji character"}
+            }
+          }
+        }
+      }
+    },
+    "msgRef": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "sentAt": {
+          "type": "string",
+          "metadata": {
+            "format": "ISO8601 UTC time of the message"
+          }
+        },
+        "sent": {"type": "boolean"}
+      },
+      "optionalProperties": {
+        "memberId": {"ref": "base64url"},
+        "metadata": {
+          "comment": "memberId must be present in all group message references, both for sent and received"
+        }
+      }
+    },
+    "fileInvitation": {
+      "properties": {
+        "fileName": {"type": "string"},
+        "fileSize": {"type": "uint32"}
+      },
+      "optionalProperties": {
+        "fileDigest": {"ref": "base64url"},
+        "fileConnReq": {"ref": "connReqUri"},
+        "fileDescr": {"ref": "fileDescription"}
+      }
+    },
+    "fileDescription": {
+      "properties": {
+        "fileDescrText": {
+          "type": "string",
+          "metadata": {
+            "format": "XFTP file description part text"
+          }
+        },
+        "fileDescrPartNo": {
+          "type": "integer",
+          "metadata": {
+            "format": "XFTP file description part number"
+          }
+        },
+        "fileDescrComplete": {
+          "type": "boolean",
+          "metadata": {
+            "format": "XFTP file description completion marker"
+          }
+        }
+      }
+    },
+    "linkPreview": {
+      "properties": {
+        "uri": {"type": "string"},
+        "title": {"type": "string"},
+        "description": {"type": "string"},
+        "image": {"ref": "base64url"}
+      },
+      "optionalProperties": {
+        "content": {"ref": "linkContent"}
+      }
+    },
+    "linkContent": {
+      "discriminator": "type",
+      "mapping": {
+        "page": {},
+        "image": {},
+        "video": {
+          "optionalProperties": {
+            "duration": {"type": "integer"}
+          }
+        }
+      }
+    },
+    "groupInvitation": {
+      "properties": {
+        "fromMember": {"ref": "memberIdRole"},
+        "invitedMember": {"ref": "memberIdRole"},
+        "connRequest": {"ref": "connReqUri"},
+        "groupProfile": {"ref": "groupProfile"}
+      },
+      "optionalProperties": {
+        "groupLinkId": {"ref": "base64url"},
+        "groupSize": {"type": "integer"},
+        "metadata": {
+          "comment": "groupLinkId is used to identify invitation via group link"
+        }
+      }
+    },
+    "groupLinkInvitation": {
+      "properties": {
+        "fromMember": {"ref": "memberIdRole"},
+        "fromMemberName": {"type": "string"},
+        "invitedMember": {"ref": "memberIdRole"},
+        "groupProfile": {"ref": "groupProfile"}
+      },
+      "optionalProperties": {
+        "groupSize": {"type": "integer"}
+      }
+    },
+    "memberIdRole": {
+      "properties": {
+        "memberId": {"ref": "base64url"},
+        "memberRole": {"ref": "groupMemberRole"}
+      }
+    },
+    "memberInfo": {
+      "properties": {
+        "memberId": {"ref": "base64url"},
+        "memberRole": {"ref": "groupMemberRole"},
+        "profile": {"ref": "profile"}
+      },
+      "optionalProperties": {
+        "v": {"ref": "chatVersionRange"}
+      }
+    },
+    "memberRestrictions": {
+      "properties": {
+        "restriction": {"ref": "memberRestrictionStatus"}
+      }
+    },
+    "memberRestrictionStatus": {
+      "enum": ["blocked", "unrestricted"]
+    },
+    "chatVersionRange": {
+      "type": "string",
+      "metadata": {
+        "format": "chat version range string encoded as `<min>-<max>`, or as `<number>` if min = max"
+      }
+    },
+    "introInvitation": {
+      "properties": {
+        "groupConnReq": {"ref": "connReqUri"}
+      },
+      "optionalProperties": {
+        "directConnReq": {"ref": "connReqUri"}
+      }
+    },
+    "groupMemberRole": {
+      "enum": ["observer", "author", "member", "admin", "owner"]
+    },
+    "callInvitation": {
+      "properties": {
+        "callType": {"ref": "callType"}
+      },
+      "optionalProperties": {
+        "callDhPubKey": {"ref": "base64url"}
+      }
+    },
+    "callOffer": {
+      "properties": {
+        "callType": {"ref": "callType"},
+        "rtcSession": {"ref": "webRTCSession"}
+      },
+      "optionalProperties": {
+        "callDhPubKey": {"ref": "base64url"}
+      }
+    },
+    "callAnswer": {
+      "properties": {
+        "rtcSession": {"ref": "webRTCSession"}
+      }
+    },
+    "callExtraInfo": {
+      "properties": {
+        "rtcExtraInfo": {
+          "properties": {
+            "rtcIceCandidates": {"type": "string"}
+          }
+        }
+      }
+    },
+    "callType": {
+      "properties": {
+        "media": {"enum": ["audio", "video"]},
+        "capabilities": {
+          "properties": {
+            "encryption": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "webRTCSession": {
+      "properties": {
+        "rtcSession": {"type": "string"},
+        "rtcIceCandidates": {"type": "string"}
+      }
+    },
+    "base64url": {
+      "type": "string",
+      "metadata": {
+        "format": "base64url encoded string"
+      }
+    },
+    "connReqUri": {
+      "type": "string",
+      "metadata": {
+        "format": "URI for connection request"
+      }
+    }
+  },
+  "discriminator": "event",
+  "mapping": {
+    "x.contact": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "profile": {"ref": "profile"},
+            "contactReqId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.info": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.info.probe": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "probe": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.info.probe.check": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "probeHash": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.info.probe.ok": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "probe": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.msg.new": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {"ref": "msgContainer"}
+      }
+    },
+    "x.msg.file.descr": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"},
+            "fileDescr": {"ref": "fileDescription"}
+          }
+        }
+      }
+    },
+    "x.msg.update": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"},
+            "content": {"ref": "msgContent"}
+          },
+          "optionalProperties": {
+            "ttl": {"type": "integer"},
+            "live": {"type": "boolean"}
+          }
+        }
+      }
+    },
+    "x.msg.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"}
+          },
+          "optionalProperties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.msg.react": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"},
+            "reaction": {"ref": "msgReaction"},
+            "add": {"type": "boolean"}
+          },
+          "optionalProperties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.file.acpt": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "fileName": {"type": "string"}
+          }
+        }
+      }
+    },
+    "x.file.acpt.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"},
+            "fileName": {"type": "string"}
+          },
+          "optionalProperties": {
+            "fileConnReq": {"ref": "connReqUri"}
+          }
+        }
+      }
+    },
+    "x.file.cancel": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "msgId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.direct.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
+        }
+      }
+    },
+    "x.grp.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupInvitation": {"ref": "groupInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.acpt": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.grp.link.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupLinkInvitation": {"ref": "groupLinkInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.link.mem": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.new": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberInfo": {"ref": "memberInfo"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.intro": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberInfo": {"ref": "memberInfo"}
+          },
+          "optionalProperties": {
+            "memberRestrictions": {"ref": "memberRestrictions"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "memberIntro": {"ref": "introInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.fwd": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberInfo": {"ref": "memberInfo"},
+            "memberIntro": {"ref": "introInvitation"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.info": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "profile": {"ref": "profile"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.role": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "role": {"ref": "groupMemberRole"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.restrict": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "memberRestrictions": {"ref": "memberRestrictions"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.con": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.grp.mem.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.grp.leave": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
+        }
+      }
+    },
+    "x.grp.del": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
+        }
+      }
+    },
+    "x.grp.info": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupProfile": {"ref": "groupProfile"}
+          }
+        }
+      }
+    },
+    "x.grp.prefs": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupPreferences": {"ref": "groupPreferences"}
+          }
+        }
+      }
+    },
+    "x.grp.direct.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "connReq": {"ref": "connReqUri"}
+          },
+          "optionalProperties": {
+            "content": {"ref": "msgContent"}
+          }
+        }
+      }
+    },
+    "x.grp.msg.forward": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "memberId": {"ref": "base64url"},
+            "msg": {
+              "type": "string",
+              "metadata": {
+                "format": "JSON encoded chat message"
+              }
+            },
+            "msgTs": {
+              "type": "string",
+              "metadata": {
+                "format": "ISO8601 UTC time of the message"
+              }
+            }
+          }
+        }
+      }
+    },
+    "x.call.inv": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "invitation": {"ref": "callInvitation"}
+          }
+        }
+      }
+    },
+    "x.call.offer": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "offer": {"ref": "callOffer"}
+          }
+        }
+      }
+    },
+    "x.call.answer": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "answer": {"ref": "callAnswer"}
+          }
+        }
+      }
+    },
+    "x.call.extra": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"},
+            "extra": {"ref": "callExtraInfo"}
+          }
+        }
+      }
+    },
+    "x.call.end": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "callId": {"ref": "base64url"}
+          }
+        }
+      }
+    },
+    "x.ok": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {}
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,412 @@
+html {
+  scroll-behavior: smooth;
+}
+
+header {
+  transition: none;
+}
+
+:focus {
+  outline: none;
+}
+
+#doc {
+  font-size: 16px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+#doc code,
+#doc kbd,
+#doc pre,
+#doc samp {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 1em;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+#doc p {
+  margin: 0 0 16px;
+  gap: 2px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.dark #doc p {
+  color: white;
+}
+
+#doc h1 {
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: -webkit-linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  background: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+
+  position: relative;
+  margin: 0px 0px 16px;
+  padding: 0px 0px 9.6px;
+}
+
+#doc h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #3F484B;
+  position: relative;
+  margin: 24px 0px 16px;
+  padding: 0 0 7.2px;
+}
+
+#doc h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #606C71;
+  margin: 24px 0px 16px;
+}
+
+#doc h1::after,
+#doc h2::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0px;
+  width: 100%;
+  height: 1px;
+  background-color: rgb(216, 222, 228);
+}
+
+.dark #doc h1::after,
+.dark #doc h2::after {
+  background-color: transparent;
+}
+
+.dark #doc h1 {
+  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+.dark #doc h2,
+.dark #doc h3,
+.dark #doc h4 {
+  color: white;
+}
+
+#doc img {
+  max-width: 100%;
+}
+
+#doc article ul {
+  overflow-x: auto;
+}
+
+#doc ul,
+#doc ol {
+  list-style-position: inside;
+  overflow: auto;
+  margin: 1rem 0;
+  padding-left: 1rem;
+}
+
+#doc ul li,
+#doc ol li {
+  margin-right: 0;
+  margin-left: 0;
+  -webkit-margin-start: 1.1rem;
+  color: #000;
+}
+
+.dark #doc ul li,
+.dark #doc ol li {
+  color: #fff;
+}
+
+#doc ul li::marker,
+#doc ol li::marker {
+  color: black;
+}
+
+.dark #doc ul li::marker,
+.dark #doc ol li::marker {
+  color: white;
+}
+
+#doc ul li a,
+#doc ol li a {
+  line-height: 30px;
+}
+
+#doc ul li {
+  list-style: disc;
+}
+
+#doc ol li {
+  list-style: decimal;
+}
+
+#doc a {
+  color: #0053D0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+#doc h1 a {
+  -webkit-text-fill-color: #0053D0;
+  text-fill-color: #0053D0;
+}
+
+.dark #doc a {
+  color: #70F0F9;
+}
+
+.dark #doc h1 a {
+  -webkit-text-fill-color: #70F0F9;
+  text-fill-color: #70F0F9;
+}
+
+#doc pre {
+  overflow: auto;
+}
+
+.dark #doc pre {
+  color: white;
+}
+
+#doc table {
+  display: block;
+  border-collapse: collapse;
+  width: max-content;
+  max-width: 100%;
+  overflow: auto;
+  margin-bottom: 1rem;
+  border: 1px solid #e1e4e8;
+}
+
+#doc table th,
+#doc table td {
+  border: 1px solid #e1e4e8;
+  padding: 6px 13px;
+}
+
+#doc table td a {
+  display: inline-block;
+}
+
+#doc table th {
+  font-weight: 600;
+  background-color: #f6f8fa;
+  text-align: left;
+}
+
+#doc table tbody tr:nth-child(odd) {
+  background-color: #ffffff;
+}
+
+#doc table tbody tr:nth-child(even) {
+  background-color: #fafbfc;
+}
+
+.dark #doc table tr,
+.dark #doc table th {
+  color: white;
+  background-color: transparent !important;
+}
+
+#doc main {
+  display: flex;
+}
+
+#doc main aside {
+  width: 320px;
+  height: calc(100vh - 66px);
+  position: sticky;
+  top: 66px;
+  overflow-y: auto;
+  background-color: #fff;
+}
+
+.dark #doc main aside {
+  background-color: #17203D;
+}
+
+#doc main aside ul {
+  margin: 0;
+  padding: 0;
+}
+
+#doc main aside ul li {
+  list-style: none;
+  margin: 0;
+}
+
+#doc main aside ul li a {
+  font-size: 14px;
+  display: block;
+  color: rgb(60, 60, 60);
+  text-decoration: none;
+}
+
+#doc main aside ul li a:hover {
+  color: #000;
+}
+
+.dark #doc main aside ul li a:hover {
+  color: #fff;
+}
+
+#doc main aside ul li a.active {
+  color: #0053D0;
+}
+
+.dark #doc main aside ul li a.active {
+  color: #70F0F9;
+}
+
+#doc main aside p {
+  margin: 0;
+  font-weight: 700;
+  letter-spacing: .8px;
+  margin-top: 1.2rem;
+  margin-bottom: .4rem;
+}
+
+#doc main article {
+  width: calc(100vw - 320px);
+}
+
+@media (max-width: 1024px) {
+  #doc main aside {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 100;
+    transition: all ease .3s;
+    transform: translateX(-100%);
+  }
+
+  #doc main.overlay aside {
+    transform: translateX(0);
+  }
+
+  #doc main.overlay::after {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #F3F6F7;
+    opacity: 0.9;
+    z-index: 99;
+  }
+
+  .dark #doc main.overlay::after {
+    background-color: #0C0B13;
+  }
+
+  #doc main article {
+    width: 100%;
+  }
+}
+
+#doc article>div {
+  max-width: 870px;
+  margin: 0 auto;
+  padding: 16px 32px 32px 32px;
+}
+
+@media (max-width: 1024px) {
+  #doc article>div {
+    max-width: 600px;
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
+
+#doc .hash-link {
+  opacity: 0;
+  font-size: 1.5rem;
+  text-decoration: none !important;
+  position: absolute;
+  left: -16px;
+  top: 0;
+  transition: all ease .3s;
+}
+
+#doc h1 a.hash-link {
+  top: 6px;
+}
+
+#doc h1:hover .hash-link,
+#doc h2:hover .hash-link,
+#doc h3:hover .hash-link,
+#doc h4:hover .hash-link,
+#doc h5:hover .hash-link,
+#doc h6:hover .hash-link,
+#doc .hash-link:hover {
+  opacity: 1;
+}
+
+#doc .hash-link:hover {
+  text-decoration: underline !important;
+}
+
+#doc .hash-list {
+  padding: 1.5rem 2rem !important;
+}
+
+#doc .hash-list li {
+  list-style: none !important;
+  width: 100%;
+  -webkit-margin-start: 0 !important;
+}
+
+#doc .hash-list li a {
+  text-decoration: none !important;
+  color: #000 !important;
+}
+
+.dark #doc .hash-list li a {
+  color: #fff !important;
+}
+
+@media (max-width: 1024px) {
+  #doc .sub-menu.hash-list {
+    max-height: fit-content;
+  }
+}
+
+#doc #back-to-top {
+  color: #0053D0 !important;
+  position: relative;
+  display: block;
+  width: 100%;
+}
+
+.dark #doc #back-to-top {
+  color: #70F0F9 !important;
+}
+
+#doc #back-to-top::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -12px;
+  height: 1px;
+  background-color: rgb(216, 222, 228);
+}
+
+.dark #doc #back-to-top::after {
+  opacity: 0.2;
+}

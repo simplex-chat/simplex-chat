@@ -1,0 +1,297 @@
+#article h1 {
+  font-size: 38px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: -webkit-linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  background: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+
+  margin-bottom: 32px;
+}
+
+@media (min-width:768px) {
+  #article h1 {
+    font-size: 45px;
+    margin-bottom: 50px;
+  }
+}
+
+.dark #article h1 {
+  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
+section.container>div>p:nth-child(2) {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.03em;
+  color:
+    #3F484B;
+}
+
+.dark section.container>div>p:nth-child(2) {
+  color: #A8B0B4;
+}
+
+#article h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #3F484B;
+}
+
+@media (min-width:768px) {
+  #article h2 {
+    font-size: 38px;
+  }
+}
+
+.dark #article h2 {
+  color: white;
+}
+
+#article h3 {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #606C71;
+
+  margin: 50px 0 25px 0;
+}
+
+#article h4 {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #606C71;
+
+  margin: 50px 0 25px 0;
+}
+
+@media (min-width:768px) {
+  #article h3 {
+    font-size: 28px;
+  }
+
+  #article h4 {
+    font-size: 20px;
+  }
+}
+
+.dark #article h3,
+.dark #article h4 {
+  color: white;
+}
+
+#article p {
+  font-weight: 400;
+  font-size: 16px;
+  line-height: 24px;
+  color: black;
+  margin: 1.2rem 0;
+}
+
+.dark #article p {
+  color: white;
+}
+
+#article ul,
+#article ol {
+  list-style-position: inside;
+  overflow: auto;
+  margin: 1rem 0;
+}
+
+#article ul li,
+#article ol li {
+  margin-right: 0;
+  margin-left: 0;
+  -webkit-margin-start: 1.1rem;
+  ;
+  color: #000;
+}
+
+.dark #article ul li,
+.dark #article ol li {
+  color: #fff;
+}
+
+#article ul li::marker,
+#article ol li::marker {
+  color: black;
+}
+
+.dark #article ul li::marker,
+.dark #article ol li::marker {
+  color: white;
+}
+
+#article ul li a,
+#article ol li a {
+  line-height: 30px;
+}
+
+#article ul li {
+  list-style: disc;
+}
+
+#article ol li {
+  list-style: decimal;
+}
+
+#article a {
+  color: #0053D0;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.dark #article a {
+  color: #70F0F9;
+}
+
+pre {
+  overflow: auto;
+}
+
+.dark pre {
+  color: white;
+}
+
+/* code{
+    width: 100%;
+    height: auto;
+} */
+
+
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* h1::before,
+h2::before,
+h3::before {
+  display: block;
+  content: " ";
+  margin-top: -80px;
+  height: 80px;
+  visibility: hidden;
+  pointer-events: none;
+} */
+
+:focus {
+  outline: none;
+}
+
+#article h1,
+#article h2,
+#article h3,
+#article h4,
+#article h5,
+#article h6 {
+  clear: both;
+}
+
+#article p img {
+  display: inline-block;
+}
+
+#article img {
+  margin: 0.5rem 0 1rem 0;
+}
+
+@media (min-width: 1024px) {
+  #article .float-to-left {
+    float: left;
+    margin-right: 3rem;
+  }
+
+  #article .float-to-right {
+    float: right;
+    margin-left: 3rem;
+  }
+}
+
+@media (max-width:768px) {
+  #article img {
+    width: 100%;
+  }
+}
+
+#article ol>li {
+  list-style-position: inside !important;
+  margin-left: -0px !important;
+}
+
+#article ol>li::marker {
+  font-weight: 500;
+}
+
+#article blockquote {
+  padding-left: 1em;
+  border-left: 2px solid #c0c0c0;
+  font-style: italic;
+}
+
+#article table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  margin-bottom: 16px;
+}
+
+#article th,
+#article td {
+  border: 1px solid #d0d7de;
+  padding: 8px 16px;
+}
+
+#article th {
+  font-weight: 600;
+}
+
+#article table {
+  border-collapse: collapse;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark #article th,
+.dark #article td {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.dark #article th {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+
+#article tr:nth-child(even) {
+  background-color: #ffffff;
+}
+
+#article tr:nth-child(odd) {
+  background-color: #f6f8fa;
+}
+
+
+.dark #article tr:nth-child(even) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.dark #article tr:nth-child(odd) {
+  background-color: transparent;
+}
+
+.dark #article td {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.dark #article th {
+  color: rgba(255, 255, 255, 1);
+}

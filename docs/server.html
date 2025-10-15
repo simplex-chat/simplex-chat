@@ -1,0 +1,2916 @@
+
+<!DOCTYPE html>
+<html lang="en"
+    
+        
+            dir="ltr"
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    
+        
+    >
+
+    <head>
+        <meta charset="UTF-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Hosting your own SMP Server</title>
+        <meta name="Content-Type" content="text/html;charset=utf-8"/>
+
+        <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+        <link href="/css/tailwind.css" rel="stylesheet"/>
+        <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
+        <link href="/css/style.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="/css/doc.css"/>
+        <script async defer src="https://buttons.github.io/buttons.js"></script>
+    </head>
+
+    <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+        <section class="w-full bg-transparent fixed top-0 z-50">
+            
+
+
+    
+        
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+
+<header class="">
+    <div class="flex items-center flex-row justify-end m-auto px-4 lg:px-7 h-[66px]">
+        <a href="/" class="h-full hidden dark:hidden lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
+        <a href="/" class="h-full hidden dark:lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
+        <a href="/" class="dark:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+        <a href="/" class="hidden dark:inline-block dark:lg:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+
+        <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 h-[calc(100vh-66px)] lg:h-[66px] lg:top-0 lg:relative" id="menu">
+            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
+                <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
+
+                    <li class="nav-link relative ">
+                        <a href="/" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Home</span>
+                        </a>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative ">
+                        <a href="/directory/" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Directory</span>
+                        </a>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative">
+                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Guide</span>
+                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
+                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            
+                                <li><a href="/docs/guide/readme.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Quick start</a></li>
+                            
+                                <li><a href="/docs/guide/send-messages.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Sending messages</a></li>
+                            
+                                <li><a href="/docs/guide/secret-groups.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Secret groups</a></li>
+                            
+                                <li><a href="/docs/guide/chat-profiles.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Chat profiles</a></li>
+                            
+                                <li><a href="/docs/guide/managing-data.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Managing data</a></li>
+                            
+                                <li><a href="/docs/guide/audio-video-calls.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Audio & video Calls</a></li>
+                            
+                                <li><a href="/docs/guide/privacy-security.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Privacy & security</a></li>
+                            
+                                <li><a href="/docs/guide/app-settings.html" class=" lg:px-[20px] inline-block whitespace-nowrap">App settings</a></li>
+                            
+                                <li><a href="/docs/guide/making-connections.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Making connections</a></li>
+                            
+                        </ul>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative">
+                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Reference</span>
+                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
+                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                </svg>
+                            </span>
+                        </a>
+
+                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
+                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
+                                >Whitepaper
+                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                            </a></li>
+                            <li><a href="/privacy" class="lg:px-[20px] inline-block"
+                                >Privacy Policy</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
+                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
+                                >SMP protocol
+                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                            </a></li>
+                            <li><a href="/docs/protocol/simplex-chat.html" class="lg:px-[20px] inline-block"
+                                >Chat protocol</a></li>
+                            <li><a href="/docs/glossary.html" class="lg:px-[20px] inline-block"
+                                >Glossary</a></li>
+
+                            <hr class=" h-[1px] w-full dark:opacity-[0.1]">
+
+                            
+                                <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX network</a></li>
+                            
+                                <li><a href="/docs/business.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX for business</a></li>
+                            
+                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX Directory</a></li>
+                            
+                                <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accessing chat database</a></li>
+                            
+                                <li><a href="/docs/server.html" class="active lg:px-[20px] inline-block whitespace-nowrap">Host SMP Server</a></li>
+                            
+                                <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Host XFTP Server</a></li>
+                            
+                                <li><a href="/docs/webrtc.html" class=" lg:px-[20px] inline-block whitespace-nowrap">WebRTC servers</a></li>
+                            
+                                <li><a href="/downloads/" class=" lg:px-[20px] inline-block whitespace-nowrap">Downloads</a></li>
+                            
+                                <li><a href="/transparency/" class=" lg:px-[20px] inline-block whitespace-nowrap">Transparency</a></li>
+                            
+                                <li><a href="/security/" class=" lg:px-[20px] inline-block whitespace-nowrap">Security</a></li>
+                            
+                                <li><a href="/faq/" class=" lg:px-[20px] inline-block whitespace-nowrap">FAQ</a></li>
+                            
+
+                            <hr class=" h-[1px] w-full dark:opacity-[0.1]">
+
+                            <li><a href="/docs/translations.html"
+                                class="lg:px-[20px] flex items-center gap-1"
+                                >Translate SimpleX Chat
+                            </a></li>
+                            <li><a href="/docs/android.html"
+                                class="lg:px-[20px] flex items-center gap-1"
+                                >Accessing Android files
+                            </a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
+                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
+                                >Chat bot example
+                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                            </a></li>
+                            <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
+                                >TypeScript SDK
+                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                            </a></li>
+                            <li><a href="/docs/cli.html" class="lg:px-[20px] inline-block"
+                                >Terminal CLI</a></li>
+                            <li><a href="https://github.com/simplex-chat/simplexmq"
+                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
+                                >SimpleXMQ
+                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                            </a></li>
+                        </ul>
+                    </li>
+
+                    <hr class="dark:opacity-[0.1]" >
+
+                    <li class="nav-link relative ">
+                        <a href="/blog" class="flex items-center justify-between gap-2 lg:py-5">
+                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Blog</span>
+                        </a>
+                    </li>
+                </ul>
+
+                <a href="https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations"
+                    target="_blank" class="whitespace-nowrap flex items-center gap-1 self-center text-white dark:text-black text-[16px] font-medium tracking-[0.02em] rounded-[34px] bg-primary-light dark:bg-primary-dark py-3 lg:py-2 px-20 lg:px-5 mb-auto lg:mb-0"
+                    >Donate
+                </a>
+
+                <div class="inline-block dark:hidden self-center mt-[8px]">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+
+                <div class="hidden dark:inline-block self-center mt-[8px]">
+                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
+                        data-color-scheme="no-preference: dark; light: dark; dark: dark;"
+                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
+                </div>
+            </div>
+        </nav>
+
+        
+        <div class="nav-link relative flag-container">
+            <a href="javascript:void(0);" class="flex items-center justify-end ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 h-6 w-8 whitespace-nowrap">
+                
+                    
+                        
+                            <img src="/img/flags/en.svg" alt="" srcset="">
+                        
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+                    
+                
+            </a>
+
+            <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">
+                
+                    
+                        
+                            
+                                <li>
+                                    
+                                        <a href="/docs/server.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                            <img class="h-4" src="/img/flags/en.svg" alt="" srcset="">
+                                            <p>English</p>
+                                        </a>
+                                    
+                                </li>
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                    
+                        
+                            
+                        
+                            
+                        
+                            
+                                <li>
+                                    
+                                        <a href="/docs/lang/cs/server.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                            <img class="h-4" src="/img/flags/cs.svg" alt="" srcset="">
+                                            <p>Čeština</p>
+                                        </a>
+                                    
+                                </li>
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                    
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                                <li>
+                                    
+                                        <a href="/docs/lang/fr/server.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                            <img class="h-4" src="/img/flags/fr.svg" alt="" srcset="">
+                                            <p>Français</p>
+                                        </a>
+                                    
+                                </li>
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                    
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                                <li>
+                                    
+                                        <a href="/docs/lang/pl/server.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
+                                            <img class="h-4" src="/img/flags/pl.svg" alt="" srcset="">
+                                            <p>Polski</p>
+                                        </a>
+                                    
+                                </li>
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                            
+                        
+                    
+                
+            </ul>
+        </div>
+        
+
+        <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ltr:ml-8 ltr:lg:ml-4 ltr:xl:ml-8 rtl:mr-8 rtl:lg:mr-4 rtl:xl:mr-8 theme-switch-btn">
+            <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
+            <img src="/img/new/moon.svg" alt="" srcset="" class="moon">
+        </button>
+
+        <button href="" id="btn-mobile" class="flex lg:hidden items-center justify-center h-[36px] w-[36px] ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 nav-toggle-btn">
+            <img src="/img/new/hamburger.svg" id="hamburger" alt="" srcset="">
+            <svg class="fill-black dark:fill-white hidden" id="cross" width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
+            </svg>
+        </button>
+    </div>
+</header>
+
+
+<SCript>
+// switch theme
+const sunIcon = document.querySelector('.sun');
+const moonIcon = document.querySelector('.moon');
+
+const userTheme = localStorage.getItem('theme');
+const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+const prismThemeLink = document.getElementById('prism-theme')
+
+const iconToggle = () => {
+    sunIcon.classList.toggle('hidden');
+    moonIcon.classList.toggle('hidden');
+}
+
+const themeCheck = () => {
+    if(userTheme === 'dark' || (!userTheme && systemTheme)){
+        document.documentElement.classList.add('dark');
+        moonIcon.classList.add('hidden');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
+        }
+    }
+    else{
+        sunIcon.classList.add('hidden');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-light.min.css')
+        }
+    }
+}
+
+const themeSwitch = () => {
+    if(document.documentElement.classList.contains('dark')){
+        document.documentElement.classList.remove('dark');
+        localStorage.setItem('theme','light');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-light.min.css')
+        }
+        iconToggle();
+    }
+    else{
+        document.documentElement.classList.add('dark');
+        localStorage.setItem('theme','dark');
+        if(prismThemeLink){
+            prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
+        }
+        iconToggle();
+    }
+}
+
+const nav = document.querySelector('header nav');
+window.addEventListener('click',(e)=>{
+    if(e.target.closest('.nav-link')){
+        if(e.target.closest('.nav-link').classList.contains('active')){
+            e.target.closest('.nav-link').classList.remove('active');
+        }
+        else{
+            document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'))
+            e.target.closest('.nav-link').classList.add('active');
+        }
+    }
+    else if(e.target.closest('.nav-toggle-btn')){
+        document.body.classList.toggle('lock-scroll');
+        if(nav.classList.contains('open')){
+            nav.classList.remove('open');
+            document.getElementById('hamburger').classList.remove('hidden');
+            document.getElementById('cross').classList.add('hidden');
+        }
+        else{
+            nav.classList.add('open');
+            document.getElementById('hamburger').classList.add('hidden');
+            document.getElementById('cross').classList.remove('hidden');
+        }
+    }
+    else if(e.target.closest('.theme-switch-btn')){
+        themeSwitch();
+    }
+})
+
+themeCheck();
+
+const changeHeaderBg = ()=>{
+    const header = document.querySelector('header')
+    const scrollValue = window.scrollY
+    if(scrollValue > 5){
+        header.classList.add('bg-primary-bg-light');
+        header.classList.add('dark:bg-primary-bg-dark');
+    }
+    else{
+        header.classList.remove('bg-primary-bg-light');
+        header.classList.remove('dark:bg-primary-bg-dark');
+    }
+}
+
+window.addEventListener('scroll',changeHeaderBg);
+</SCript>
+
+        </section>
+
+        <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
+            <div>
+                <main>
+                    <aside class="sidebar px-4 lg:px-7">
+                        <div class="h-[66px] lg:h-0">
+                            <a href="/" class="h-full flex dark:hidden lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo"/></a>
+                            <a href="/" class="h-full hidden dark:flex dark:lg:hidden items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo"/></a>
+                        </div>
+                        <ul class="!my-4">
+                            
+                                
+                                
+                                    
+                                        
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+
+                                
+                                    
+                                        <p class="">Guide</p>
+                                        <ul>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/readme.html">Quick start</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/send-messages.html">Sending messages</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/secret-groups.html">Secret groups</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/chat-profiles.html">Chat profiles</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/managing-data.html">Managing data</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/audio-video-calls.html">Audio &amp; video Calls</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/privacy-security.html">Privacy &amp; security</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/app-settings.html">App settings</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/guide/making-connections.html">Making connections</a>
+                                                </li>
+                                            
+                                        </ul>
+                                    
+                                
+                            
+                                
+                                
+                                    
+                                
+                                    
+                                        
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+
+                                
+                                    
+                                        <p class="">Reference</p>
+                                        <ul>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/simplex.html">SimpleX platform</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/business.html">SimpleX for business</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/directory.html">SimpleX Directory</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/android.html">Accessing files in Android app</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/cli.html">Terminal CLI</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/contributing.html">Contributing guide</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="active" href="/docs/server.html">Hosting your own SMP Server</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/translations.html">Contributing translations to SimpleX Chat</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/webrtc.html">Using custom WebRTC ICE servers in SimpleX Chat</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/xftp-server.html">Hosting your own XFTP Server</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/downloads/">Download SimpleX apps</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/transparency/">Transparency Reports</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/security/">Security Policy</a>
+                                                </li>
+                                            
+                                                <li>
+                                                    <a class="" href="/faq/">Frequently Asked Questions</a>
+                                                </li>
+                                            
+                                        </ul>
+                                    
+                                
+                            
+                                
+                                
+                                    
+                                
+                                    
+                                        
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+
+                                
+                                    
+                                
+                            
+                                
+                                
+                                    
+                                
+                                    
+                                        
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+
+                                
+                                    
+                                
+                            
+                                
+                                
+                                    
+                                
+                                    
+                                        
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+
+                                
+                                    
+                                
+                            
+                                
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                
+                                    
+                                        
+                                    
+                                
+
+                                
+                                    
+                                        <p class="">Protocol</p>
+                                        <ul>
+                                            
+                                                <li>
+                                                    <a class="" href="/docs/protocol/simplex-chat.html">SimpleX Chat Protocol</a>
+                                                </li>
+                                            
+                                        </ul>
+                                    
+                                
+                            
+                    </ul>
+                </aside>
+                <article class="content px-4 lg:px-7">
+
+                    
+
+                    <div class="sticky top-[66px] bg-white dark:bg-[#17203D] z-[49] !py-2 lg:hidden">
+                        <div class="relative flex items-center justify-between">
+                            <button class="menu flex items-center gap-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" viewBox="0 0 24 24" class="menu-icon h-4 w-4 fill-[rgb(60,60,60)] dark:fill-white">
+                                    <path d="M17,11H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,11,17,11z"></path>
+                                    <path d="M21,7H3C2.4,7,2,6.6,2,6s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,7,21,7z"></path>
+                                    <path d="M21,15H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h18c0.6,0,1,0.4,1,1S21.6,15,21,15z"></path>
+                                    <path d="M17,19H3c-0.6,0-1-0.4-1-1s0.4-1,1-1h14c0.6,0,1,0.4,1,1S17.6,19,17,19z"></path>
+                                </svg>
+                                <span class="!text-[rgb(60,60,60)] dark:!text-white">Menu</span>
+                            </button>
+
+                            <div class="nav-link">
+                                <a href="javascript:void(0);" class="flex items-center gap-2 !no-underline !text-[rgb(60,60,60)] dark:!text-white">
+                                    <span class="">On this page</span>
+                                    <span href="" id="btn-mobile" class="flex items-center justify-center h-auto w-auto mt-1">
+                                        <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                                            <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                                        </svg>
+                                    </span>
+                                </a>
+
+                                <ul class="flex flex-col items-start gap-2 absolute bg-white dark:bg-black top-full left-0 right-0 mt-[10px] w-full h-auto rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu hash-list">
+                                    <li class="mb-5">
+                                        <a href="#" id="back-to-top">Back to top</a>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div><h1 id="hosting-your-own-smp-server" tabindex="-1">Hosting your own SMP Server</h1>
+<p>| Updated 12.10.2024 | Languages: EN, <a href="/docs/lang/fr/server.html">FR</a>, <a href="/docs/lang/cs/server.html">CZ</a>, <a href="/docs/lang/pl/server.html">PL</a> |</p>
+<h2 id="table-of-contents" tabindex="-1">Table of Contents</h2>
+<ul>
+<li><a href="#overview">Overview</a></li>
+<li><a href="#quick-start">Quick start</a> with systemd service</li>
+<li><a href="#installation-options">Installation options</a>
+<ul>
+<li><a href="#systemd-service">systemd service</a> with <a href="#installation-script">installation script</a> or <a href="#manual-deployment">manually</a></li>
+<li><a href="#docker-container">docker container</a></li>
+<li><a href="#linode-marketplace">Linode marketplace</a></li>
+</ul>
+</li>
+<li><a href="#verifying-server-binaries">Verifying server binaries</a></li>
+<li><a href="#configuration">Configuration</a>
+<ul>
+<li><a href="#interactively">Interactively</a></li>
+<li><a href="#via-command-line-options">Via command line options</a></li>
+</ul>
+</li>
+<li><a href="#further-configuration">Further configuration</a></li>
+<li><a href="#server-security">Server security</a>
+<ul>
+<li><a href="#initialization">Initialization</a></li>
+<li><a href="#private-keys">Private keys</a></li>
+<li><a href="#online-certificate-rotation">Online certificate rotation</a></li>
+</ul>
+</li>
+<li><a href="#tor-installation-and-configuration">Tor: installation and configuration</a>
+<ul>
+<li><a href="#installation-for-onion-address">Installation for onion address</a></li>
+<li><a href="#socks-port-for-smp-proxy">SOCKS port for SMP PROXY</a></li>
+</ul>
+</li>
+<li><a href="#server-information-page">Server information page</a></li>
+<li><a href="#documentation">Documentation</a>
+<ul>
+<li><a href="#smp-server-address">SMP server address</a></li>
+<li><a href="#systemd-commands">Systemd commands</a></li>
+<li><a href="#control-port">Control port</a></li>
+<li><a href="#daily-statistics">Daily statistics</a></li>
+</ul>
+</li>
+<li><a href="#reproduce-builds">Reproduce builds</a></li>
+<li><a href="#updating-your-smp-server">Updating your SMP server</a></li>
+<li><a href="#configuring-the-app-to-use-the-server">Configuring the app to use the server</a></li>
+</ul>
+<h2 id="overview" tabindex="-1">Overview</h2>
+<p>SMP server is the relay server used to pass messages in SimpleX network. SimpleX Chat apps have preset servers (for mobile apps these are smp11, smp12 and <a href="http://smp14.simplex.im">smp14.simplex.im</a>), but you can easily change app configuration to use other servers.</p>
+<p>SimpleX clients only determine which server is used to receive the messages, separately for each contact (or group connection with a group member), and these servers are only temporary, as the delivery address can change.</p>
+<p>To create SMP server, you'll need:</p>
+<ol>
+<li>VPS or any other server.</li>
+<li>Your own domain, pointed at the server (<code>smp.example.com</code>)</li>
+<li>A basic Linux knowledge.</li>
+</ol>
+<p><em>Please note</em>: when you change the servers in the app configuration, it only affects which servers will be used for the new contacts, the existing contacts will not automatically move to the new servers, but you can move them manually using <a href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html#change-your-delivery-address-beta">&quot;Change receiving address&quot;</a> button in contact/member information pages – it will be automated in the future.</p>
+<h2 id="quick-start" tabindex="-1">Quick start</h2>
+<p>To create SMP server as a systemd service, you'll need:</p>
+<ul>
+<li>VPS or any other server.</li>
+<li>Your server domain, with A and AAAA records specifying server IPv4 and IPv6 addresses (<code>smp1.example.com</code>)</li>
+<li>A basic Linux knowledge.</li>
+</ul>
+<p><em>Please note</em>: while you can run an SMP server without a domain name, in the near future client applications will start using server domain name in the invitation links (instead of <code>simplex.chat</code> domain they use now). In case a server does not have domain name and server pages (see below), the clients will be generaing the links with <code>simplex:</code> scheme that cannot be opened in the browsers.</p>
+<ol>
+<li>
+<p>Install server with <a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Installation script</a>.</p>
+</li>
+<li>
+<p>Adjust firewall:</p>
+<pre><code class="language-sh">ufw allow 80/tcp &amp;&amp;\
+ufw allow 443/tcp &amp;&amp;\
+ufw allow 5223/tcp
+</code></pre>
+</li>
+<li>
+<p>Init server:</p>
+<p>Replace <code>smp1.example.com</code> with your actual server domain.</p>
+<pre><code class="language-sh">su smp -c 'smp-server init --yes \
+                        --store-log \
+                        --no-password \
+                        --control-port \
+                        --socks-proxy \
+                        --source-code \
+                        --fqdn=smp1.example.com
+</code></pre>
+</li>
+<li>
+<p>Install tor:</p>
+<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
+
+echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list &amp;&amp;\
+curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null &amp;&amp;\
+apt update &amp;&amp; apt install -y tor deb.torproject.org-keyring
+</code></pre>
+</li>
+<li>
+<p>Configure tor:</p>
+<pre><code class="language-sh">tor-instance-create tor2 &amp;&amp;\
+mkdir /var/lib/tor/simplex-smp/ &amp;&amp;\
+chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ &amp;&amp;\
+chmod 700 /var/lib/tor/simplex-smp/
+</code></pre>
+<pre><code class="language-sh">vim /etc/tor/torrc
+</code></pre>
+<p>Paste the following:</p>
+<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seem to deploy onion address)
+Log notice file /var/log/tor/notices.log
+# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, keep standard configuration.
+SOCKSPort 0
+HiddenServiceNonAnonymousMode 1
+HiddenServiceSingleHopMode 1
+# smp-server hidden service host directory and port mappings
+HiddenServiceDir /var/lib/tor/simplex-smp/
+HiddenServicePort 5223 localhost:5223
+HiddenServicePort 443 localhost:443
+</code></pre>
+<pre><code class="language-sh">vim /etc/tor/instances/tor2/torrc
+</code></pre>
+<p>Paste the following:</p>
+<pre><code class="language-sh"># Log tor to systemd daemon
+Log notice syslog
+# Listen to local 9050 port for socks proxy
+SocksPort 9050
+</code></pre>
+</li>
+<li>
+<p>Start tor:</p>
+<pre><code class="language-sh">systemctl enable tor &amp;&amp;\
+systemctl start tor &amp;&amp;\
+systemctl restart tor &amp;&amp;\
+systemctl enable --now tor@tor2
+</code></pre>
+</li>
+<li>
+<p>Install Caddy:</p>
+<pre><code class="language-sh">sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl &amp;&amp;\
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg &amp;&amp;\
+curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list &amp;&amp;\
+sudo apt update &amp;&amp; sudo apt install caddy
+</code></pre>
+</li>
+<li>
+<p>Configure Caddy:</p>
+<pre><code class="language-sh">vim /etc/caddy/Caddyfile
+</code></pre>
+<p>Replace <code>smp1.example.com</code> with your actual server domain. Paste the following:</p>
+<pre><code>http://smp1.example.com {
+   redir https://smp1.example.com{uri} permanent
+}
+
+smp1.example.com:8443 {
+   tls {
+      key_type rsa4096
+   }
+}
+</code></pre>
+<pre><code class="language-sh">vim /usr/local/bin/simplex-servers-certs
+</code></pre>
+<p>Replace <code>smp1.example.com</code> with your actual server domain. Paste the following:</p>
+<pre><code class="language-sh">#!/usr/bin/env sh
+set -eu
+
+user='smp'
+group=&quot;$user&quot;
+
+domain='smp1.example.com'
+folder_in=&quot;/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${domain}&quot;
+folder_out='/etc/opt/simplex'
+key_name='web.key'
+cert_name='web.crt'
+
+# Copy certifiacte from Caddy directory to smp-server directory
+cp &quot;${folder_in}/${domain}.crt&quot; &quot;${folder_out}/${cert_name}&quot;
+# Assign correct permissions
+chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${cert_name}&quot;
+
+# Copy certifiacte key from Caddy directory to smp-server directory
+cp &quot;${folder_in}/${domain}.key&quot; &quot;${folder_out}/${key_name}&quot;
+# Assign correct permissions
+chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${key_name}&quot;
+</code></pre>
+<pre><code class="language-sh">chmod +x /usr/local/bin/simplex-servers-certs
+</code></pre>
+<pre><code class="language-sh">sudo crontab -e
+</code></pre>
+<p>Paste the following:</p>
+<pre><code class="language-sh"># Every week on 00:20 sunday
+20 0 * * 0 /usr/local/bin/simplex-servers-certs
+</code></pre>
+</li>
+<li>
+<p>Enable and start Caddy service:</p>
+<p>Wait until &quot;good to go&quot; has been printed.</p>
+<pre><code class="language-sh">systemctl enable --now caddy &amp;&amp;\
+sleep 10 &amp;&amp;\
+/usr/local/bin/simplex-servers-certs &amp;&amp;\
+echo 'good to go'
+</code></pre>
+</li>
+<li>
+<p>Enable and start smp-server:</p>
+<pre><code class="language-sh">systemctl enable --now smp-server.service
+</code></pre>
+</li>
+<li>
+<p>Print your address:</p>
+<pre><code class="language-sh">smp=&quot;$(journalctl --output cat -q _SYSTEMD_INVOCATION_ID=&quot;$(systemctl show -p InvocationID --value smp-server)&quot; | grep -m1 'Server address:' | awk '{print $NF}' | sed 's/:443.*//')&quot;
+tor=&quot;$(cat /var/lib/tor/simplex-smp/hostname)&quot;
+
+echo &quot;$smp,$tor&quot;
+</code></pre>
+</li>
+</ol>
+<h2 id="installation-options" tabindex="-1">Installation options</h2>
+<p>You can install SMP server in one of the following ways:</p>
+<ul>
+<li><a href="#systemd-service">systemd service</a>
+<ul>
+<li>using <a href="#installation-script">installation script</a> - <strong>recommended</strong></li>
+<li>or <a href="#manual-deployment">manually</a></li>
+</ul>
+</li>
+<li><a href="#docker-container">Docker container</a> from DockerHub</li>
+<li><a href="#linode-marketplace">Linode marketplace</a></li>
+</ul>
+<h3 id="systemd-service" tabindex="-1">systemd service</h3>
+<h4 id="installation-script" tabindex="-1">Installation script</h4>
+<p>This installation script will automatically install binaries, systemd services and additional scripts that will manage backups, updates and uninstallation. This is the recommended option due to its flexibility, easy updating, and being battle tested on our servers.</p>
+<p><strong>Please note</strong> that currently only Ubuntu distribution is supported.</p>
+<p>Run the following script on the server:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/simplex-chat/simplexmq/stable/install.sh -o simplex-server-install.sh &amp;&amp;\
+if echo '53fcdb4ceab324316e2c4cda7e84dbbb344f32550a65975a7895425e5a1be757 simplex-server-install.sh' | sha256sum -c; then
+  chmod +x ./simplex-server-install.sh
+  ./simplex-server-install.sh
+  rm ./simplex-server-install.sh
+else
+  echo &quot;SHA-256 checksum is incorrect!&quot;
+  rm ./simplex-server-install.sh
+fi
+</code></pre>
+<p>Type <code>1</code> and hit enter to install <code>smp-server</code>.</p>
+<h4 id="manual-deployment" tabindex="-1">Manual deployment</h4>
+<p>Manual installation is the most advanced deployment that provides the most flexibility. Generally recommended only for advanced users.</p>
+<ol>
+<li>
+<p>Install binary:</p>
+<ul>
+<li>
+<p>Using pre-compiled binaries:</p>
+<pre><code class="language-sh">curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server &amp;&amp; chmod +x /usr/local/bin/smp-server
+</code></pre>
+</li>
+<li>
+<p>Compiling from source:</p>
+<p>Please refer to <a href="https://github.com/simplex-chat/simplexmq#using-your-distribution">Build from source: Using your distribution</a></p>
+</li>
+</ul>
+</li>
+<li>
+<p>Create user and group for <code>smp-server</code>:</p>
+<pre><code class="language-sh">sudo useradd -m smp
+</code></pre>
+</li>
+<li>
+<p>Create necessary directories and assign permissions:</p>
+<pre><code class="language-sh">sudo mkdir -p /var/opt/simplex /etc/opt/simplex
+sudo chown smp:smp /var/opt/simplex /etc/opt/simplex
+</code></pre>
+</li>
+<li>
+<p>Allow <code>smp-server</code> port in firewall:</p>
+<pre><code class="language-sh"># For Ubuntu
+sudo ufw allow 5223/tcp
+sudo ufw allow 443/tcp
+sudo ufw allow 80/tcp
+# For Fedora
+sudo firewall-cmd --permanent --add-port=5223/tcp --add-port=443/tcp --add-port=80/tcp &amp;&amp; \
+sudo firewall-cmd --reload
+</code></pre>
+</li>
+<li>
+<p><strong>Optional</strong> — If you're using distribution with <code>systemd</code>, create <code>/etc/systemd/system/smp-server.service</code> file with the following content:</p>
+<pre><code class="language-sh">[Unit]
+Description=SMP server systemd service
+
+[Service]
+User=smp
+Group=smp
+Type=simple
+ExecStart=/usr/local/bin/smp-server start +RTS -N -RTS
+ExecStopPost=/usr/bin/env sh -c '[ -e &quot;/var/opt/simplex/smp-server-store.log&quot; ] &amp;&amp; cp &quot;/var/opt/simplex/smp-server-store.log&quot; &quot;/var/opt/simplex/smp-server-store.log.bak&quot;'
+LimitNOFILE=65535
+KillSignal=SIGINT
+TimeoutStopSec=infinity
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+[Install]
+WantedBy=multi-user.target
+</code></pre>
+<p>And execute <code>sudo systemctl daemon-reload</code>.</p>
+</li>
+</ol>
+<h3 id="docker-container" tabindex="-1">Docker container</h3>
+<p>You can deploy smp-server using Docker Compose. This is second recommended option due to its popularity and relatively easy deployment.</p>
+<p>This deployment provides two Docker Compose files: the <strong>automatic</strong> one and <strong>manual</strong>. If you're not sure, choose <strong>automatic</strong>.</p>
+<p>This will download images from <a href="https://hub.docker.com/r/simplexchat">Docker Hub</a>.</p>
+<h4 id="docker-automatic-setup" tabindex="-1">Docker: Automatic setup</h4>
+<p>This configuration provides quick and easy way to setup your SMP server: Caddy will automatically manage Let's Encrypt certificates and redirect HTTP to HTTPS, while smp-server will serve both <a href="#server-information-page">server information page</a> and SMP Protocol by 443 port. 5223 port is used as fallback.</p>
+<p><strong>Please note</strong> that you <em>must</em> have <code>80</code> and <code>443</code> ports unallocated by other servers.</p>
+<ol>
+<li>Create <code>smp-server</code> directory and switch to it:</li>
+</ol>
+<pre><code class="language-sh">mkdir smp-server &amp;&amp; cd smp-server
+</code></pre>
+<ol start="2">
+<li>Create <code>docker-compose.yml</code> file with the following content:</li>
+</ol>
+<p>You can also grab it from here - <a href="https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.yml">docker-compose-smp-complete.yml</a>. Don't forget to rename it to <code>docker-compose.yml</code>.</p>
+<pre><code class="language-yaml">name: SimpleX Chat - smp-server
+
+services:
+  oneshot:
+    image: ubuntu:latest
+    environment:
+      CADDYCONF: |
+        ${CADDY_OPTS:-}
+
+        http://{$$ADDR} {
+            redir https://{$$ADDR}{uri} permanent
+        }
+
+        {$$ADDR}:8443 {
+            tls {
+                key_type rsa4096
+            }
+        }
+    command: sh -c 'if [ ! -f /etc/caddy/Caddyfile ]; then printf &quot;$${CADDYCONF}&quot; &gt; /etc/caddy/Caddyfile; fi'
+    volumes:
+      - ./caddy_conf:/etc/caddy
+
+  caddy:
+    image: caddy:latest
+    depends_on:
+      oneshot:
+        condition: service_completed_successfully
+    cap_add:
+      - NET_ADMIN
+    environment:
+      ADDR: ${ADDR?&quot;Please specify the domain.&quot;}
+    volumes:
+      - ./caddy_conf:/etc/caddy
+      - caddy_data:/data
+      - caddy_config:/config
+    ports:
+      - 80:80
+    restart: unless-stopped
+    healthcheck:
+      test: &quot;test -d /data/caddy/certificates/${CERT_PATH:-acme-v02.api.letsencrypt.org-directory}/${ADDR} || exit 1&quot;
+      interval: 1s
+      retries: 60
+
+  smp-server:
+    image: ${SIMPLEX_IMAGE:-simplexchat/smp-server:latest}
+    depends_on:
+      caddy:
+        condition: service_healthy
+    environment:
+      ADDR: ${ADDR?&quot;Please specify the domain.&quot;}
+      PASS: ${PASS:-}
+    volumes:
+      - ./smp_configs:/etc/opt/simplex
+      - ./smp_state:/var/opt/simplex
+      - type: volume
+        source: caddy_data
+        target: /certificates
+        volume:
+          subpath: &quot;caddy/certificates/${CERT_PATH:-acme-v02.api.letsencrypt.org-directory}/${ADDR}&quot;
+    ports:
+      - 443:443
+      - 5223:5223
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
+</code></pre>
+<ol start="3">
+<li>In the same directory, create <code>.env</code> file with the following content:</li>
+</ol>
+<p>You can also grab it from here - <a href="https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-complete.env">docker-compose-smp-complete.env</a>. Don't forget to rename it to <code>.env</code>.</p>
+<p>Change variables according to your preferences.</p>
+<pre><code class="language-env"># Mandatory
+ADDR=your_ip_or_addr
+
+# Optional
+#PASS='123123'
+</code></pre>
+<ol start="4">
+<li>Start your containers:</li>
+</ol>
+<pre><code class="language-sh">docker compose up
+</code></pre>
+<h4 id="docker-manual-setup" tabindex="-1">Docker: Manual setup</h4>
+<p>If you know what you are doing, this configuration provides bare SMP server setup without automatically managed Let's Encrypt certificates by Caddy to serve <a href="#server-information-page">server information page</a> with 5223 port set as primary.</p>
+<p>This configuration allows you to retain the ability to manage 80 and 443 ports yourself. As a downside, SMP server *<em>can not</em> be served to 443 port.</p>
+<ol>
+<li>Create <code>smp-server</code> directory and switch to it:</li>
+</ol>
+<pre><code class="language-sh">mkdir smp-server &amp;&amp; cd smp-server
+</code></pre>
+<ol start="2">
+<li>Create <code>docker-compose.yml</code> file with the following content:</li>
+</ol>
+<p>You can also grab it from here - <a href="https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-manual.yml">docker-compose-smp-manual.yml</a>. Don't forget to rename it to <code>docker-compose.yml</code>.</p>
+<pre><code class="language-yaml">name: SimpleX Chat - smp-server
+
+services:
+  smp-server:
+    image: ${SIMPLEX_IMAGE:-simplexchat/smp-server:latest}
+    environment:
+      WEB_MANUAL: ${WEB_MANUAL:-1}
+      ADDR: ${ADDR?&quot;Please specify the domain.&quot;}
+      PASS: ${PASS:-}
+    volumes:
+      - ./smp_configs:/etc/opt/simplex
+      - ./smp_state:/var/opt/simplex
+    ports:
+      - 5223:5223
+    restart: unless-stopped
+</code></pre>
+<ol start="3">
+<li>In the same directory, create <code>.env</code> file with the following content:</li>
+</ol>
+<p>You can also grab it from here - <a href="https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/stable/scripts/docker/docker-compose-smp-manual.env">docker-compose-smp-manual.env</a>. Don't forget to rename it to <code>.env</code>.</p>
+<p>Change variables according to your preferences.</p>
+<pre><code class="language-env"># Mandatory
+ADDR=your_ip_or_addr
+
+# Optional
+#PASS='123123'
+WEB_MANUAL=1
+</code></pre>
+<ol start="4">
+<li>Start your containers:</li>
+</ol>
+<pre><code class="language-sh">docker compose up
+</code></pre>
+<h3 id="linode-marketplace" tabindex="-1">Linode marketplace</h3>
+<p>You can deploy smp-server upon creating new Linode VM. Please refer to: <a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></p>
+<h2 id="verifying-server-binaries" tabindex="-1">Verifying server binaries</h2>
+<p>Starting from v6.3 server builds are <a href="#reproduce-builds">reproducible</a>.</p>
+<p>That also allows us to sign server releases, confirming the integrity of GitHub builds.</p>
+<p>To verify server binaries after you downloaded them:</p>
+<ol>
+<li>
+<p>Download <code>_sha256sums</code> (hashes of all server binaries) and <code>_sha256sums.asc</code> (signature).</p>
+</li>
+<li>
+<p>Download our key FB44AF81A45BDE327319797C85107E357D4A17FC from <a href="https://keys.openpgp.org/search?q=chat%40simplex.chat">openpgp.org</a></p>
+</li>
+<li>
+<p>Import the key with <code>gpg --import FB44AF81A45BDE327319797C85107E357D4A17FC</code>. Key filename should be the same as its fingerprint, but please change it if necessary.</p>
+</li>
+<li>
+<p>Run <code>gpg --verify _sha256sums.asc _sha256sums</code>. It should print:</p>
+</li>
+</ol>
+<blockquote>
+<p>Good signature from &quot;SimpleX Chat <a href="mailto:chat@simplex.chat">chat@simplex.chat</a>&quot;</p>
+</blockquote>
+<ol start="5">
+<li>Compute the hashes of the binaries you plan to use with <code>shu256sum &lt;file&gt;</code> or with <code>openssl sha256 &lt;file&gt;</code> and compare them with the hashes in the file <code>_sha256sums</code> - they must be the same.</li>
+</ol>
+<p>That is it - you now verified authenticity of our GitHub server binaries.</p>
+<h2 id="configuration" tabindex="-1">Configuration</h2>
+<p>To see which options are available, execute <code>smp-server</code> without flags:</p>
+<pre><code class="language-sh">sudo su smp -c smp-server
+
+...
+Available commands:
+  init                     Initialize server - creates /etc/opt/simplex and
+                           /var/opt/simplex directories and configuration files
+  start                    Start server (configuration:
+                           /etc/opt/simplex/smp-server.ini)
+  delete                   Delete configuration and log files
+</code></pre>
+<p>You can get further help by executing <code>sudo su smp -c &quot;smp-server &lt;command&gt; -h&quot;</code></p>
+<p>After that, we need to configure <code>smp-server</code>:</p>
+<h3 id="interactively" tabindex="-1">Interactively</h3>
+<p>Execute the following command:</p>
+<pre><code class="language-sh">sudo su smp -c &quot;smp-server init&quot;
+</code></pre>
+<p>There are several options to consider:</p>
+<ul>
+<li>
+<p><code>Enable store log to restore queues and messages on server restart (Yn):</code></p>
+<p>Enter <code>y</code> to enable saving and restoring connections and messages when the server is restarted.</p>
+<p><em>Please note</em>: it is important to use SIGINT to restart the server, as otherwise the undelivered messages will not be restored. The connections will be restored irrespective of how the server is restarted, as unlike messages they are added to append-only log on every change.</p>
+</li>
+<li>
+<p><code>Enable logging daily statistics (yN):</code></p>
+<p>Enter <code>y</code> to enable logging statistics in CSV format, e.g. they can be used to show aggregate usage charts in <code>Grafana</code>.</p>
+</li>
+</ul>
+<p>These statistics include daily counts of created, secured and deleted queues, sent and received messages, and also daily, weekly, and monthly counts of active queues (that is, the queues that were used for any messages). We believe that this information does not include anything that would allow correlating different queues as belonging to the same users, but please <a href="/security/index.html">let us know</a>, confidentially, if you believe that this can be exploited in any way.</p>
+<ul>
+<li>
+<p><code>Require a password to create new messaging queues?</code></p>
+<p>Press <code>Enter</code> or enter your arbitrary password to password-protect <code>smp-server</code>, or <code>n</code> to disable password protection.</p>
+</li>
+<li>
+<p><code>Enter server FQDN or IP address for certificate (127.0.0.1):</code></p>
+<p>Enter your domain or ip address that your smp-server is running on - it will be included in server certificates and also printed as part of server address.</p>
+</li>
+</ul>
+<h3 id="via-command-line-options" tabindex="-1">Via command line options</h3>
+<p>Execute the following command:</p>
+<pre><code class="language-sh">sudo su smp -c &quot;smp-server init -h&quot;
+
+...
+Available options:
+  -l,--store-log           Enable store log for persistence
+  -s,--daily-stats         Enable logging daily server statistics
+  -a,--sign-algorithm ALG  Signature algorithm used for TLS certificates:
+                           ED25519, ED448 (default: ED448)
+  --ip IP                  Server IP address, used as Common Name for TLS online
+                           certificate if FQDN is not supplied
+                           (default: &quot;127.0.0.1&quot;)
+  -n,--fqdn FQDN           Server FQDN used as Common Name for TLS online
+                           certificate
+  --no-password            Allow creating new queues without password
+  --password PASSWORD      Set password to create new messaging queues
+  -y,--yes                 Non-interactive initialization using command-line
+                           options
+  -h,--help                Show this help text
+</code></pre>
+<p>You should determine which flags are needed for your use-case and then execute <code>smp-server init</code> with <code>-y</code> flag for non-interactive initialization:</p>
+<pre><code class="language-sh">sudo su smp -c &quot;smp-server init -y -&lt;your flag&gt; &lt;your option&gt;&quot;
+</code></pre>
+<p>For example, run:</p>
+<pre><code class="language-sh">sudo su smp -c &quot;smp-server init -y -l --ip 192.168.1.5 --password test&quot;
+</code></pre>
+<p>to initialize your <code>smp-server</code> configuration with:</p>
+<ul>
+<li>restoring connections and messages when the server is restarted (<code>-l</code> flag),</li>
+<li>IP address <code>192.168.1.5</code>,</li>
+<li>protect <code>smp-server</code> with a password <code>test</code>.</li>
+</ul>
+<hr>
+<p>After that, your installation is complete and you should see in your teminal output something like this:</p>
+<pre><code class="language-sh">Certificate request self-signature ok
+subject=CN = 127.0.0.1
+Server initialized, you can modify configuration in /etc/opt/simplex/smp-server.ini.
+Run `smp-server start` to start server.
+----------
+You should store CA private key securely and delete it from the server.
+If server TLS credential is compromised this key can be used to sign a new one, keeping the same server identity and established connections.
+CA private key location: /etc/opt/simplex/ca.key
+----------
+SMP server v3.4.0
+Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
+Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@&lt;hostnames&gt;
+</code></pre>
+<p>The server address above should be used in your client configuration, and if you added server password it should only be shared with the other people who you want to allow using your server to receive the messages (all your contacts will be able to send messages - it does not require a password). If you passed IP address or hostnames during the initialisation, they will be printed as part of server address, otherwise replace <code>&lt;hostnames&gt;</code> with the actual server hostnames.</p>
+<h2 id="further-configuration" tabindex="-1">Further configuration</h2>
+<p>All generated configuration, along with a description for each parameter, is available inside configuration file in <code>/etc/opt/simplex/smp-server.ini</code> for further customization. Depending on the smp-server version, the configuration file looks something like this:</p>
+<pre><code class="language-ini">[INFORMATION]
+# AGPLv3 license requires that you make any source code modifications
+# available to the end users of the server.
+# LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+# Include correct source code URI in case the server source code is modified in any way.
+# If any other information fields are present, source code property also MUST be present.
+
+source_code: https://github.com/simplex-chat/simplexmq
+
+# Declaring all below information is optional, any of these fields can be omitted.
+
+# Server usage conditions and amendments.
+# It is recommended to use standard conditions with any amendments in a separate document.
+# usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
+# condition_amendments: link
+
+# Server location and operator.
+# server_country: ISO-3166 2-letter code
+# operator: entity (organization or person name)
+# operator_country: ISO-3166 2-letter code
+# website:
+
+# Administrative contacts.
+# admin_simplex: SimpleX address
+# admin_email:
+# admin_pgp:
+# admin_pgp_fingerprint:
+
+# Contacts for complaints and feedback.
+# complaints_simplex: SimpleX address
+# complaints_email:
+# complaints_pgp:
+# complaints_pgp_fingerprint:
+
+# Hosting provider.
+# hosting: entity (organization or person name)
+# hosting_country: ISO-3166 2-letter code
+
+[STORE_LOG]
+# The server uses STM memory for persistence,
+# that will be lost on restart (e.g., as with redis).
+# This option enables saving memory to append only log,
+# and restoring it when the server is started.
+# Log is compacted on start (deleted objects are removed).
+enable: on
+
+# Undelivered messages are optionally saved and restored when the server restarts,
+# they are preserved in the .bak file until the next restart.
+restore_messages: on
+expire_messages_days: 21
+expire_ntfs_hours: 24
+
+# Log daily server statistics to CSV file
+log_stats: on
+
+[AUTH]
+# Set new_queues option to off to completely prohibit creating new messaging queues.
+# This can be useful when you want to decommission the server, but not all connections are switched yet.
+new_queues: on
+
+# Use create_password option to enable basic auth to create new messaging queues.
+# The password should be used as part of server address in client configuration:
+# smp://fingerprint:password@host1,host2
+# The password will not be shared with the connecting contacts, you must share it only
+# with the users who you want to allow creating messaging queues on your server.
+# create_password: password to create new queues (any printable ASCII characters without whitespace, '@', ':' and '/')
+
+# control_port_admin_password:
+# control_port_user_password:
+
+[TRANSPORT]
+# Host is only used to print server address on start.
+# You can specify multiple server ports.
+host: &lt;domain/ip&gt;
+port: 5223,443
+log_tls_errors: off
+
+# Use `websockets: 443` to run websockets server in addition to plain TLS.
+websockets: off
+# control_port: 5224
+
+[PROXY]
+# Network configuration for SMP proxy client.
+# `host_mode` can be 'public' (default) or 'onion'.
+# It defines prefferred hostname for destination servers with multiple hostnames.
+# host_mode: public
+# required_host_mode: off
+
+# The domain suffixes of the relays you operate (space-separated) to count as separate proxy statistics.
+# own_server_domains: 
+
+# SOCKS proxy port for forwarding messages to destination servers.
+# You may need a separate instance of SOCKS proxy for incoming single-hop requests.
+# socks_proxy: localhost:9050
+
+# `socks_mode` can be 'onion' for SOCKS proxy to be used for .onion destination hosts only (default)
+# or 'always' to be used for all destination hosts (can be used if it is an .onion server).
+# socks_mode: onion
+
+# Limit number of threads a client can spawn to process proxy commands in parrallel.
+# client_concurrency: 32
+
+[INACTIVE_CLIENTS]
+# TTL and interval to check inactive clients
+disconnect: off
+# ttl: 21600
+# check_interval: 3600
+
+[WEB]
+# Set path to generate static mini-site for server information and qr codes/links
+static_path: /var/opt/simplex/www
+
+# Run an embedded server on this port
+# Onion sites can use any port and register it in the hidden service config.
+# Running on a port 80 may require setting process capabilities.
+#http: 8000
+
+# You can run an embedded TLS web server too if you provide port and cert and key files.
+# Not required for running relay on onion address.
+https: 443
+cert: /etc/opt/simplex/web.crt
+key: /etc/opt/simplex/web.key
+</code></pre>
+<h2 id="server-security" tabindex="-1">Server security</h2>
+<h3 id="initialization" tabindex="-1">Initialization</h3>
+<p>Although it's convenient to initialize smp-server configuration directly on the server, operators <strong>ARE ADVISED</strong> to initialize smp-server fully offline to protect your SMP server CA private key.</p>
+<p>Follow the steps to quickly initialize the server offline:</p>
+<ol>
+<li>
+<p>Install Docker on your system.</p>
+</li>
+<li>
+<p>Deploy <a href="https://github.com/simplex-chat/simplexmq#using-docker">smp-server</a> locally.</p>
+</li>
+<li>
+<p>Destroy the container. All relevant configuration files and keys will be available at <code>$HOME/simplex/smp/config</code>.</p>
+</li>
+<li>
+<p>Move your <code>CA</code> private key (<code>ca.key</code>) to the safe place. For further explanation, see the next section: <a href="#private-keys">Server security: Private keys</a>.</p>
+</li>
+<li>
+<p>Copy all other configuration files <strong>except</strong> the CA key to the server:</p>
+<pre><code class="language-sh">rsync -hzasP $HOME/simplex/smp/config/ &lt;server_user&gt;@&lt;server_address&gt;:/etc/opt/simplex/
+</code></pre>
+</li>
+</ol>
+<h3 id="private-keys" tabindex="-1">Private keys</h3>
+<p>Connection to the smp server occurs via a TLS connection. During the TLS handshake, the client verifies smp-server CA and server certificates by comparing its fingerprint with the one included in server address. If server TLS credential is compromised, this key can be used to sign a new one, keeping the same server identity and established connections. In order to protect your smp-server from bad actors, operators <strong>ARE ADVISED</strong> to move CA private key to a safe place. That could be:</p>
+<ul>
+<li><a href="https://tails.net/">Tails</a> live usb drive with <a href="https://tails.net/doc/persistent_storage/create/index.en.html">persistent and encrypted storage</a>.</li>
+<li>Offline Linux laptop.</li>
+<li>Bitwarden.</li>
+<li>Any other safe storage that satisfy your security requirements.</li>
+</ul>
+<p>Follow the steps to secure your CA keys:</p>
+<ol>
+<li>
+<p>Login to your server via SSH.</p>
+</li>
+<li>
+<p>Copy the CA key to a safe place from this file:</p>
+<pre><code class="language-sh">/etc/opt/simplex/ca.key
+</code></pre>
+</li>
+<li>
+<p>Delete the CA key from the server. <strong>Please make sure you've saved you CA key somewhere safe. Otherwise, you would lose the ability to <a href="#online-certificate-rotation">rotate the online certificate</a></strong>:</p>
+<pre><code class="language-sh">rm /etc/opt/simplex/ca.key
+</code></pre>
+</li>
+</ol>
+<h3 id="online-certificate-rotation" tabindex="-1">Online certificate rotation</h3>
+<p>Operators of smp servers <strong>ARE ADVISED</strong> to rotate online certificate regularly (e.g., every 3 months). In order to do this, follow the steps:</p>
+<ol>
+<li>
+<p>Create relevant folders:</p>
+<pre><code class="language-sh">mkdir -p $HOME/simplex/smp/config
+</code></pre>
+</li>
+<li>
+<p>Copy the configuration files from the server to the local machine (if not yet):</p>
+<pre><code class="language-sh">rsync -hzasP &lt;server_user&gt;@&lt;server_address&gt;:/etc/opt/simplex/ $HOME/simplex/smp/config/
+</code></pre>
+</li>
+<li>
+<p><strong>Copy</strong> your CA private key from a safe place to the local machine and name it <code>ca.key</code>.</p>
+</li>
+<li>
+<p>Download latest <code>smp-server</code> binary <a href="https://github.com/simplex-chat/simplexmq/releases">from Github releases</a>:</p>
+<pre><code class="language-sh">curl -L 'https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64' -o smp-server
+</code></pre>
+</li>
+<li>
+<p>Put the <code>smp-server</code> binary to your <code>$PATH</code> and make it executable:</p>
+<pre><code class="language-sh">sudo mv smp-server /usr/local/bin/ &amp;&amp; chmod +x /usr/local/bin/smp-server
+</code></pre>
+</li>
+<li>
+<p>Export a variable to configure your path to smp-server configuration:</p>
+<pre><code class="language-sh">export SMP_SERVER_CFG_PATH=$HOME/simplex/smp/config
+</code></pre>
+</li>
+<li>
+<p>Execute the following command:</p>
+<pre><code class="language-sh">smp-server cert
+</code></pre>
+<p>This command should print:</p>
+<pre><code class="language-sh">Certificate request self-signature ok
+subject=CN = &lt;your domain or IP&gt;
+Generated new server credentials
+----------
+You should store CA private key securely and delete it from the server.
+If server TLS credential is compromised this key can be used to sign a new one, keeping the same server identity and established connections.
+CA private key location:
+$HOME/simplex/smp/config/ca.key
+----------
+</code></pre>
+</li>
+<li>
+<p>Remove the CA key from the config folder (make sure you have a backup!):</p>
+<pre><code class="language-sh">rm $HOME/simplex/smp/config/ca.key
+</code></pre>
+</li>
+<li>
+<p>Upload new certificates to the server:</p>
+<pre><code class="language-sh">rsync -hzasP $HOME/simplex/smp/config/ &lt;server_user&gt;@&lt;server_address&gt;:/etc/opt/simplex/
+</code></pre>
+</li>
+<li>
+<p>Connect to the server via SSH and restart the service:</p>
+<pre><code class="language-sh">ssh &lt;server_user&gt;@&lt;server_address&gt; &quot;systemctl restart smp-server&quot;
+</code></pre>
+</li>
+<li>
+<p>Done!</p>
+</li>
+</ol>
+<h2 id="tor-installation-and-configuration" tabindex="-1">Tor: installation and configuration</h2>
+<h3 id="installation-for-onion-address" tabindex="-1">Installation for onion address</h3>
+<p>SMP-server can also be deployed to be available via <a href="https://www.torproject.org">Tor</a> network. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Install tor:</p>
+<p>We're assuming you're using Ubuntu/Debian based distributions. If not, please refer to <a href="https://community.torproject.org/onion-services/setup/install/">offical tor documentation</a> or your distribution guide.</p>
+<ul>
+<li>
+<p>Configure offical Tor PPA repository:</p>
+<pre><code class="language-sh">CODENAME=&quot;$(lsb_release -c | awk '{print $2}')&quot;
+echo &quot;deb [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main
+deb-src [signed-by=/usr/share/keyrings/tor-archive-keyring.gpg] https://deb.torproject.org/torproject.org ${CODENAME} main&quot; &gt; /etc/apt/sources.list.d/tor.list
+</code></pre>
+</li>
+<li>
+<p>Import repository key:</p>
+<pre><code class="language-sh">curl --proto '=https' --tlsv1.2 -sSf https://deb.torproject.org/torproject.org/A3C4F0F979CAA22CDBA8F512EE8CBC9E886DDD89.asc | gpg --dearmor | tee /usr/share/keyrings/tor-archive-keyring.gpg &gt;/dev/null
+</code></pre>
+</li>
+<li>
+<p>Update repository index:</p>
+<pre><code class="language-sh">apt update
+</code></pre>
+</li>
+<li>
+<p>Install <code>tor</code> package:</p>
+<pre><code class="language-sh">apt install -y tor deb.torproject.org-keyring
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Configure tor:</p>
+<ul>
+<li>
+<p>File configuration:</p>
+<p>Open tor configuration with your editor of choice (<code>nano</code>,<code>vim</code>,<code>emacs</code>,etc.):</p>
+<pre><code class="language-sh">vim /etc/tor/torrc
+</code></pre>
+<p>And insert the following lines to the bottom of configuration. Please note lines starting with <code>#</code>: this is comments about each individual options.</p>
+<pre><code class="language-sh"># Enable log (otherwise, tor doesn't seem to deploy onion address)
+Log notice file /var/log/tor/notices.log
+# Enable single hop routing (2 options below are dependencies of the third) - It will reduce the latency at the cost of lower anonimity of the server - as SMP-server onion address is used in the clients together with public address, this is ok. If you deploy SMP-server with onion-only address, you may want to keep standard configuration instead.
+SOCKSPort 0
+HiddenServiceNonAnonymousMode 1
+HiddenServiceSingleHopMode 1
+# smp-server hidden service host directory and port mappings
+HiddenServiceDir /var/lib/tor/simplex-smp/
+HiddenServicePort 5223 localhost:5223
+HiddenServicePort 443 localhost:443
+</code></pre>
+</li>
+<li>
+<p>Create directories:</p>
+<pre><code class="language-sh">mkdir /var/lib/tor/simplex-smp/ &amp;&amp; chown debian-tor:debian-tor /var/lib/tor/simplex-smp/ &amp;&amp; chmod 700 /var/lib/tor/simplex-smp/
+</code></pre>
+</li>
+</ul>
+</li>
+<li>
+<p>Start tor:</p>
+<p>Enable <code>systemd</code> service and start tor. Offical <code>tor</code> is a bit flaky on the first start and may not create onion host address, so we're restarting it just in case.</p>
+<pre><code class="language-sh">systemctl enable --now tor &amp;&amp; systemctl restart tor
+</code></pre>
+</li>
+<li>
+<p>Display onion host:</p>
+<p>Execute the following command to display your onion host address:</p>
+<pre><code class="language-sh">cat /var/lib/tor/simplex-smp/hostname
+</code></pre>
+</li>
+</ol>
+<h3 id="socks-port-for-smp-proxy" tabindex="-1">SOCKS port for SMP PROXY</h3>
+<p>SMP-server versions starting from <code>v5.8.0-beta.0</code> can be configured to PROXY smp servers available exclusively through <a href="https://www.torproject.org">Tor</a> network to be accessible to the clients that do not use Tor. Run the following commands as <code>root</code> user.</p>
+<ol>
+<li>
+<p>Install tor as described in the <a href="#installation-for-onion-address">previous section</a>.</p>
+</li>
+<li>
+<p>Execute the following command to creatae a new Tor daemon instance:</p>
+<pre><code class="language-sh">tor-instance-create tor2
+</code></pre>
+</li>
+<li>
+<p>Open the <code>tor2</code> configuration and replace its content with the following lines:</p>
+<pre><code class="language-sh">vim /etc/tor/instances/tor2/torrc
+</code></pre>
+<pre><code class="language-sh"># Log tor to systemd daemon
+Log notice syslog
+# Listen to local 9050 port for socks proxy
+SocksPort 9050
+</code></pre>
+</li>
+<li>
+<p>Enable service at startup and start the daemon:</p>
+<pre><code class="language-sh">systemctl enable --now tor@tor2
+</code></pre>
+<p>You can check <code>tor2</code> logs with the following command:</p>
+<pre><code class="language-sh">journalctl -u tor@tor2
+</code></pre>
+</li>
+<li>
+<p>After <a href="#configuration">server initialization</a>, configure the <code>PROXY</code> section like so:</p>
+<pre><code class="language-ini">...
+[PROXY]
+socks_proxy: 127.0.0.1:9050
+own_server_domains: &lt;your domain suffixes if using `log_stats: on`&gt;
+...
+</code></pre>
+</li>
+</ol>
+<h2 id="server-information-page" tabindex="-1">Server information page</h2>
+<p>SMP server <strong>SHOULD</strong> be configured to serve Web page with server information that can include admin info, server info, provider info, etc. It will also serve connection links, generated using the mobile/desktop apps. Run the following commands as <code>root</code> user.</p>
+<p><em>Please note:</em> this configuration is supported since <code>v6.1.0-beta.2</code>.</p>
+<ol>
+<li>
+<p>Add the following to your smp-server configuration (please modify fields in [INFORMATION] section to include relevant information):</p>
+<pre><code class="language-sh">vim /etc/opt/simplex/smp-server.ini
+</code></pre>
+<pre><code class="language-ini">[TRANSPORT]
+# host is only used to print server address on start
+host: &lt;domain/ip&gt;
+port: 443,5223
+websockets: off
+log_tls_errors: off
+control_port: 5224
+
+[WEB]
+https: 443
+static_path: /var/opt/simplex/www
+cert: /etc/opt/simplex/web.crt
+key: /etc/opt/simplex/web.key
+
+[INFORMATION]
+# AGPLv3 license requires that you make any source code modifications
+# available to the end users of the server.
+# LICENSE: https://github.com/simplex-chat/simplexmq/blob/stable/LICENSE
+# Include correct source code URI in case the server source code is modified in any way.
+# If any other information fields are present, source code property also MUST be present.
+
+source_code: https://github.com/simplex-chat/simplexmq
+
+# Declaring all below information is optional, any of these fields can be omitted.
+
+# Server usage conditions and amendments.
+# It is recommended to use standard conditions with any amendments in a separate document.
+# usage_conditions: https://github.com/simplex-chat/simplex-chat/blob/stable/PRIVACY.md
+# condition_amendments: link
+
+# Server location and operator.
+server_country: &lt;YOUR_SERVER_LOCATION&gt;
+operator: &lt;YOUR_NAME&gt;
+operator_country: &lt;YOUR_LOCATION&gt;
+website: &lt;WEBSITE_IF_AVAILABLE&gt;
+
+# Administrative contacts.
+#admin_simplex: SimpleX address
+admin_email: &lt;EMAIL&gt;
+# admin_pgp:
+# admin_pgp_fingerprint:
+
+# Contacts for complaints and feedback.
+# complaints_simplex: SimpleX address
+complaints_email: &lt;COMPLAINTS_EMAIL&gt;
+# complaints_pgp:
+# complaints_pgp_fingerprint:
+
+# Hosting provider.
+hosting: &lt;HOSTING_PROVIDER_NAME&gt;
+hosting_country: &lt;HOSTING_PROVIDER_LOCATION&gt; 
+</code></pre>
+</li>
+<li>
+<p>Install the webserver. For easy deployment we'll describe the installtion process of <a href="https://caddyserver.com">Caddy</a> webserver on Ubuntu server:</p>
+<ol>
+<li>
+<p>Install the packages:</p>
+<pre><code class="language-sh">sudo apt install -y debian-keyring debian-archive-keyring apt-transport-https curl
+</code></pre>
+</li>
+<li>
+<p>Install caddy gpg key for repository:</p>
+<pre><code class="language-sh">curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | sudo gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg
+</code></pre>
+</li>
+<li>
+<p>Install Caddy repository:</p>
+<pre><code class="language-sh">curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | sudo tee /etc/apt/sources.list.d/caddy-stable.list
+</code></pre>
+</li>
+<li>
+<p>Install Caddy:</p>
+<pre><code class="language-sh">sudo apt update &amp;&amp; sudo apt install caddy
+</code></pre>
+</li>
+</ol>
+<p><a href="https://caddyserver.com/docs/install">Full Caddy instllation instructions</a></p>
+</li>
+<li>
+<p>Replace Caddy configuration with the following:</p>
+<p>Please replace <code>YOUR_DOMAIN</code> with your actual domain (<a href="http://smp.example.com">smp.example.com</a>).</p>
+<pre><code class="language-sh">vim /etc/caddy/Caddyfile
+</code></pre>
+<pre><code>http://YOUR_DOMAIN {
+   redir https://YOUR_DOMAIN{uri} permanent
+}
+
+YOUR_DOMAIN:8443 {
+   tls {
+      key_type rsa4096
+   }
+}
+</code></pre>
+</li>
+<li>
+<p>Enable and start Caddy service:</p>
+<pre><code class="language-sh">systemctl enable --now caddy
+</code></pre>
+</li>
+<li>
+<p>Create script to copy certificates to your smp directory:</p>
+<p>Please replace <code>YOUR_DOMAIN</code> with your actual domain (<a href="http://smp.example.com">smp.example.com</a>).</p>
+<pre><code class="language-sh">vim /usr/local/bin/simplex-servers-certs
+</code></pre>
+<pre><code class="language-sh">#!/usr/bin/env sh
+set -eu
+
+user='smp'
+group=&quot;$user&quot;
+
+domain='HOST'
+folder_in=&quot;/var/lib/caddy/.local/share/caddy/certificates/acme-v02.api.letsencrypt.org-directory/${domain}&quot;
+folder_out='/etc/opt/simplex'
+key_name='web.key'
+cert_name='web.crt'
+
+# Copy certifiacte from Caddy directory to smp-server directory
+cp &quot;${folder_in}/${domain}.crt&quot; &quot;${folder_out}/${cert_name}&quot;
+# Assign correct permissions
+chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${cert_name}&quot;
+
+# Copy certifiacte key from Caddy directory to smp-server directory
+cp &quot;${folder_in}/${domain}.key&quot; &quot;${folder_out}/${key_name}&quot;
+# Assign correct permissions
+chown &quot;$user&quot;:&quot;$group&quot; &quot;${folder_out}/${key_name}&quot;
+</code></pre>
+</li>
+<li>
+<p>Make the script executable and execute it:</p>
+<pre><code class="language-sh">chmod +x /usr/local/bin/simplex-servers-certs &amp;&amp; /usr/local/bin/simplex-servers-certs
+</code></pre>
+</li>
+<li>
+<p>Check if certificates were copied:</p>
+<pre><code class="language-sh">ls -haltr /etc/opt/simplex/web*
+</code></pre>
+</li>
+<li>
+<p>Create cronjob to copy certificates to smp directory in timely manner:</p>
+<pre><code class="language-sh">sudo crontab -e
+</code></pre>
+<pre><code class="language-sh"># Every week on 00:20 sunday
+20 0 * * 0 /usr/local/bin/simplex-servers-certs
+</code></pre>
+</li>
+<li>
+<p>Then:</p>
+<ul>
+<li>If you're running at least <code>v6.1.0-beta.2</code>, <a href="#systemd-commands">restart the server</a>.</li>
+<li>If you're running below <code>v6.1.0-beta.2</code>, <a href="#updating-your-smp-server">upgrade the server</a>.</li>
+</ul>
+</li>
+<li>
+<p>Access the webpage you've deployed from your browser (<code>https://smp.example.org</code>). You should see the smp-server information that you've provided in your ini file.</p>
+</li>
+</ol>
+<h2 id="documentation" tabindex="-1">Documentation</h2>
+<p>All necessary files for <code>smp-server</code> are located in <code>/etc/opt/simplex/</code> folder.</p>
+<p>Stored messages, connections, statistics and server log are located in <code>/var/opt/simplex/</code> folder.</p>
+<h3 id="smp-server-address" tabindex="-1">SMP server address</h3>
+<p>SMP server address has the following format:</p>
+<pre><code>smp://&lt;fingerprint&gt;[:&lt;password&gt;]@&lt;public_hostname&gt;[,&lt;onion_hostname&gt;]
+</code></pre>
+<ul>
+<li>
+<p><code>&lt;fingerprint&gt;</code></p>
+<p>Your <code>smp-server</code> fingerprint of certificate. You can check your certificate fingerprint in <code>/etc/opt/simplex/fingerprint</code>.</p>
+</li>
+<li>
+<p><strong>optional</strong> <code>&lt;password&gt;</code></p>
+<p>Your configured password of <code>smp-server</code>. You can check your configured pasword in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[AUTH]</code> section in <code>create_password:</code> field.</p>
+</li>
+<li>
+<p><code>&lt;public_hostname&gt;</code>, <strong>optional</strong> <code>&lt;onion_hostname&gt;</code></p>
+<p>Your configured hostname(s) of <code>smp-server</code>. You can check your configured hosts in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[TRANSPORT]</code> section in <code>host:</code> field.</p>
+</li>
+</ul>
+<h3 id="systemd-commands" tabindex="-1">Systemd commands</h3>
+<p>To start <code>smp-server</code> on host boot, run:</p>
+<pre><code class="language-sh">sudo systemctl enable smp-server.service
+
+Created symlink /etc/systemd/system/multi-user.target.wants/smp-server.service → /etc/systemd/system/smp-server.service.
+</code></pre>
+<p>To start <code>smp-server</code>, run:</p>
+<pre><code class="language-sh">sudo systemctl start smp-server.service
+</code></pre>
+<p>To check status of <code>smp-server</code>, run:</p>
+<pre><code class="language-sh">sudo systemctl status smp-server.service
+
+● smp-server.service - SMP server
+     Loaded: loaded (/etc/systemd/system/smp-server.service; enabled; vendor preset: enabled)
+     Active: active (running) since Sat 2022-11-23 19:23:21 UTC; 1min 48s ago
+   Main PID: 30878 (smp-server)
+     CGroup: /docker/5588ab759e80546b4296a7c50ffebbb1fb7b55b8401300e9201313b720989aa8/system.slice/smp-server.service
+             └─30878 smp-server start
+
+Nov 23 19:23:21 5588ab759e80 systemd[1]: Started SMP server.
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: SMP server v3.4.0
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@&lt;hostnames&gt;
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Store log: /var/opt/simplex/smp-server-store.log
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Listening on port 5223 (TLS)...
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
+</code></pre>
+<p>To stop <code>smp-server</code>, run:</p>
+<pre><code class="language-sh">sudo systemctl stop smp-server.service
+</code></pre>
+<p>To check tail of <code>smp-server</code> log, run:</p>
+<pre><code class="language-sh">sudo journalctl -fu smp-server.service
+
+Nov 23 19:23:21 5588ab759e80 systemd[1]: Started SMP server.
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: SMP server v3.4.0
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Fingerprint: d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Server address: smp://d5fcsc7hhtPpexYUbI2XPxDbyU2d3WsVmROimcL90ss=:V8ONoJ6ICwnrZnTC_QuSHfCEYq53uLaJKQ_oIC6-ve8=@&lt;hostnames&gt;
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Store log: /var/opt/simplex/smp-server-store.log
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: Listening on port 5223 (TLS)...
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: not expiring inactive clients
+Nov 23 19:23:21 5588ab759e80 smp-server[30878]: creating new queues requires password
+</code></pre>
+<h3 id="control-port" tabindex="-1">Control port</h3>
+<p>Enabling control port in the configuration allows administrator to see information about the smp-server in real-time. Additionally, it allows to delete queues for content moderation and see the debug info about the clients, sockets, etc. Enabling the control port requires setting the <code>admin</code> and <code>user</code> passwords.</p>
+<ol>
+<li>
+<p>Generate two passwords for each user:</p>
+<pre><code class="language-sh">tr -dc A-Za-z0-9 &lt;/dev/urandom | head -c 20; echo
+</code></pre>
+</li>
+<li>
+<p>Open the configuration file:</p>
+<pre><code class="language-sh">vim /etc/opt/simplex/smp-server.ini
+</code></pre>
+</li>
+<li>
+<p>Configure the control port and replace the passwords:</p>
+<pre><code class="language-ini">[AUTH]
+control_port_admin_password: &lt;your_randomly_generated_admin_password&gt;
+control_port_user_password: &lt;your_randomly_generated_user_password&gt;
+
+[TRANSPORT]
+control_port: 5224
+</code></pre>
+</li>
+<li>
+<p>Restart the server:</p>
+<pre><code class="language-sh">systemctl restart smp-server
+</code></pre>
+</li>
+</ol>
+<p>To access the control port, use:</p>
+<pre><code class="language-sh">nc 127.0.0.1 5224
+</code></pre>
+<p>or:</p>
+<pre><code class="language-sh">telnet 127.0.0.1 5224
+</code></pre>
+<p>Upon connecting, the control port should print:</p>
+<pre><code class="language-sh">SMP server control port
+'help' for supported commands
+</code></pre>
+<p>To authenticate, type the following and hit enter. Change the <code>my_generated_password</code> with the <code>user</code> or <code>admin</code> password from the configuration:</p>
+<pre><code class="language-sh">auth my_generated_password
+</code></pre>
+<p>Here's the full list of commands, their descriptions and who can access them.</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Description</th>
+<th>Requires <code>admin</code> role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>stats</code></td>
+<td>Real-time statistics. Fields described in <a href="#daily-statistics">Daily statistics</a></td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>stats-rts</code></td>
+<td>GHC/Haskell statistics. Can be enabled with <code>+RTS -T -RTS</code> option</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>clients</code></td>
+<td>Clients information. Useful for debugging.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>sockets</code></td>
+<td>General sockets information.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>socket-threads</code></td>
+<td>Thread infomation per socket. Useful for debugging.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>threads</code></td>
+<td>Threads information. Useful for debugging.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>server-info</code></td>
+<td>Aggregated server infomation.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>delete</code></td>
+<td>Delete known queue. Useful for content moderation.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>save</code></td>
+<td>Save queues/messages from memory.</td>
+<td>yes</td>
+</tr>
+<tr>
+<td><code>help</code></td>
+<td>Help menu.</td>
+<td>-</td>
+</tr>
+<tr>
+<td><code>quit</code></td>
+<td>Exit the control port.</td>
+<td>-</td>
+</tr>
+</tbody>
+</table>
+<h3 id="daily-statistics" tabindex="-1">Daily statistics</h3>
+<p>You can enable <code>smp-server</code> statistics for <code>Grafana</code> dashboard by setting value <code>on</code> in <code>/etc/opt/simplex/smp-server.ini</code>, under <code>[STORE_LOG]</code> section in <code>log_stats:</code> field.</p>
+<p>Logs will be stored as <code>csv</code> file in <code>/var/opt/simplex/smp-server-stats.daily.log</code>. Fields for the <code>csv</code> file are:</p>
+<pre><code class="language-sh">fromTime,qCreated,qSecured,qDeleted,msgSent,msgRecv,dayMsgQueues,weekMsgQueues,monthMsgQueues,msgSentNtf,msgRecvNtf,dayCountNtf,weekCountNtf,monthCountNtf,qCount,msgCount,msgExpired,qDeletedNew,qDeletedSecured,pRelays_pRequests,pRelays_pSuccesses,pRelays_pErrorsConnect,pRelays_pErrorsCompat,pRelays_pErrorsOther,pRelaysOwn_pRequests,pRelaysOwn_pSuccesses,pRelaysOwn_pErrorsConnect,pRelaysOwn_pErrorsCompat,pRelaysOwn_pErrorsOther,pMsgFwds_pRequests,pMsgFwds_pSuccesses,pMsgFwds_pErrorsConnect,pMsgFwds_pErrorsCompat,pMsgFwds_pErrorsOther,pMsgFwdsOwn_pRequests,pMsgFwdsOwn_pSuccesses,pMsgFwdsOwn_pErrorsConnect,pMsgFwdsOwn_pErrorsCompat,pMsgFwdsOwn_pErrorsOther,pMsgFwdsRecv,qSub,qSubAuth,qSubDuplicate,qSubProhibited,msgSentAuth,msgSentQuota,msgSentLarge,msgNtfs,msgNtfNoSub,msgNtfLost,qSubNoMsg,msgRecvGet,msgGet,msgGetNoMsg,msgGetAuth,msgGetDuplicate,msgGetProhibited,psSubDaily,psSubWeekly,psSubMonthly,qCount2,ntfCreated,ntfDeleted,ntfSub,ntfSubAuth,ntfSubDuplicate,ntfCount,qDeletedAllB,qSubAllB,qSubEnd,qSubEndB,ntfDeletedB,ntfSubB,msgNtfsB,msgNtfExpired
+</code></pre>
+<p><strong>Fields description</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field number</th>
+<th>Field name</th>
+<th>Field Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>fromTime</code></td>
+<td>Date of statistics</td>
+</tr>
+<tr>
+<td>Messaging queue:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>qCreated</code></td>
+<td>Created</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>qSecured</code></td>
+<td>Established</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>qDeleted</code></td>
+<td>Deleted</td>
+</tr>
+<tr>
+<td>Messages:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>msgSent</code></td>
+<td>Sent</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>msgRecv</code></td>
+<td>Received</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>dayMsgQueues</code></td>
+<td>Active queues in a day</td>
+</tr>
+<tr>
+<td>8</td>
+<td><code>weekMsgQueues</code></td>
+<td>Active queues in a week</td>
+</tr>
+<tr>
+<td>9</td>
+<td><code>monthMsgQueues</code></td>
+<td>Active queues in a month</td>
+</tr>
+<tr>
+<td>Messages with &quot;notification&quot; flag</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>10</td>
+<td><code>msgSentNtf</code></td>
+<td>Sent</td>
+</tr>
+<tr>
+<td>11</td>
+<td><code>msgRecvNtf</code></td>
+<td>Received</td>
+</tr>
+<tr>
+<td>12</td>
+<td><code>dayCountNtf</code></td>
+<td>Active queues in a day</td>
+</tr>
+<tr>
+<td>13</td>
+<td><code>weekCountNtf</code></td>
+<td>Active queues in a week</td>
+</tr>
+<tr>
+<td>14</td>
+<td><code>monthCountNtf</code></td>
+<td>Active queues in a month</td>
+</tr>
+<tr>
+<td>Additional statistics:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>15</td>
+<td><code>qCount</code></td>
+<td>Stored queues</td>
+</tr>
+<tr>
+<td>16</td>
+<td><code>msgCount</code></td>
+<td>Stored messages</td>
+</tr>
+<tr>
+<td>17</td>
+<td><code>msgExpired</code></td>
+<td>Expired messages</td>
+</tr>
+<tr>
+<td>18</td>
+<td><code>qDeletedNew</code></td>
+<td>New deleted queues</td>
+</tr>
+<tr>
+<td>19</td>
+<td><code>qDeletedSecured</code></td>
+<td>Secured deleted queues</td>
+</tr>
+<tr>
+<td>Requested sessions with all relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>20</td>
+<td><code>pRelays_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>21</td>
+<td><code>pRelays_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>22</td>
+<td><code>pRelays_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>23</td>
+<td><code>pRelays_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>24</td>
+<td><code>pRelays_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Requested sessions with own relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>25</td>
+<td><code>pRelaysOwn_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>26</td>
+<td><code>pRelaysOwn_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>27</td>
+<td><code>pRelaysOwn_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>28</td>
+<td><code>pRelaysOwn_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>29</td>
+<td><code>pRelaysOwn_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Message forwards to all relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>30</td>
+<td><code>pMsgFwds_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>31</td>
+<td><code>pMsgFwds_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>32</td>
+<td><code>pMsgFwds_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>33</td>
+<td><code>pMsgFwds_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>34</td>
+<td><code>pMsgFwds_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Message forward to own relays:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>35</td>
+<td><code>pMsgFwdsOwn_pRequests</code></td>
+<td>- requests</td>
+</tr>
+<tr>
+<td>36</td>
+<td><code>pMsgFwdsOwn_pSuccesses</code></td>
+<td>- successes</td>
+</tr>
+<tr>
+<td>37</td>
+<td><code>pMsgFwdsOwn_pErrorsConnect</code></td>
+<td>- connection errors</td>
+</tr>
+<tr>
+<td>38</td>
+<td><code>pMsgFwdsOwn_pErrorsCompat</code></td>
+<td>- compatability errors</td>
+</tr>
+<tr>
+<td>39</td>
+<td><code>pMsgFwdsOwn_pErrorsOther</code></td>
+<td>- other errors</td>
+</tr>
+<tr>
+<td>Received message forwards:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>40</td>
+<td><code>pMsgFwdsRecv</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Message queue subscribtion errors:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>41</td>
+<td><code>qSub</code></td>
+<td>All</td>
+</tr>
+<tr>
+<td>42</td>
+<td><code>qSubAuth</code></td>
+<td>Authentication erorrs</td>
+</tr>
+<tr>
+<td>43</td>
+<td><code>qSubDuplicate</code></td>
+<td>Duplicate SUB errors</td>
+</tr>
+<tr>
+<td>44</td>
+<td><code>qSubProhibited</code></td>
+<td>Prohibited SUB errors</td>
+</tr>
+<tr>
+<td>Message errors:</td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>45</td>
+<td><code>msgSentAuth</code></td>
+<td>Authentication errors</td>
+</tr>
+<tr>
+<td>46</td>
+<td><code>msgSentQuota</code></td>
+<td>Quota errors</td>
+</tr>
+<tr>
+<td>47</td>
+<td><code>msgSentLarge</code></td>
+<td>Large message errors</td>
+</tr>
+<tr>
+<td>48</td>
+<td><code>msgNtfs</code></td>
+<td>XXXXXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>49</td>
+<td><code>msgNtfNoSub</code></td>
+<td>XXXXXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>50</td>
+<td><code>msgNtfLost</code></td>
+<td>XXXXXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>51</td>
+<td><code>qSubNoMsg</code></td>
+<td>Removed, always 0</td>
+</tr>
+<tr>
+<td>52</td>
+<td><code>msgRecvGet</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>53</td>
+<td><code>msgGet</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>54</td>
+<td><code>msgGetNoMsg</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>55</td>
+<td><code>msgGetAuth</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>56</td>
+<td><code>msgGetDuplicate</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>57</td>
+<td><code>msgGetProhibited</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>58</td>
+<td><code>psSub_dayCount</code></td>
+<td>Removed, always 0</td>
+</tr>
+<tr>
+<td>59</td>
+<td><code>psSub_weekCount</code></td>
+<td>Removed, always 0</td>
+</tr>
+<tr>
+<td>60</td>
+<td><code>psSub_monthCount</code></td>
+<td>Removed, always 0</td>
+</tr>
+<tr>
+<td>61</td>
+<td><code>qCount</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>62</td>
+<td><code>ntfCreated</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>63</td>
+<td><code>ntfDeleted</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>64</td>
+<td><code>ntfSub</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>65</td>
+<td><code>ntfSubAuth</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>66</td>
+<td><code>ntfSubDuplicate</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>67</td>
+<td><code>ntfCount</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>68</td>
+<td><code>qDeletedAllB</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>69</td>
+<td><code>qSubAllB</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>70</td>
+<td><code>qSubEnd</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>71</td>
+<td><code>qSubEndB</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>72</td>
+<td><code>ntfDeletedB</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>73</td>
+<td><code>ntfSubB</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>74</td>
+<td><code>msgNtfsB</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+<tr>
+<td>75</td>
+<td><code>msgNtfExpired</code></td>
+<td>XXXXXXXXXXXXXXXXX</td>
+</tr>
+</tbody>
+</table>
+<p>To import <code>csv</code> to <code>Grafana</code> one should:</p>
+<ol>
+<li>
+<p>Install Grafana plugin: <a href="https://grafana.com/grafana/plugins/marcusolsson-csv-datasource/">Grafana - CSV datasource</a></p>
+</li>
+<li>
+<p>Allow local mode by appending following:</p>
+<pre><code class="language-sh">[plugin.marcusolsson-csv-datasource]
+allow_local_mode = true
+</code></pre>
+<p>... to <code>/etc/grafana/grafana.ini</code></p>
+</li>
+<li>
+<p>Add a CSV data source:</p>
+<ul>
+<li>In the side menu, click the Configuration tab (cog icon)</li>
+<li>Click Add data source in the top-right corner of the Data Sources tab</li>
+<li>Enter &quot;CSV&quot; in the search box to find the CSV data source</li>
+<li>Click the search result that says &quot;CSV&quot;</li>
+<li>In URL, enter a file that points to CSV content</li>
+</ul>
+</li>
+<li>
+<p>You're done! You should be able to create your own dashboard with statistics.</p>
+</li>
+</ol>
+<p>For further documentation, see: <a href="https://grafana.github.io/grafana-csv-datasource/">CSV Data Source for Grafana - Documentation</a></p>
+<h2 id="updating-your-smp-server" tabindex="-1">Updating your SMP server</h2>
+<p>To update your smp-server to latest version, choose your installation method and follow the steps:</p>
+<ul>
+<li>
+<p>Manual deployment</p>
+<ol>
+<li>
+<p>Stop the server:</p>
+<pre><code class="language-sh">sudo systemctl stop smp-server
+</code></pre>
+</li>
+<li>
+<p>Update the binary:</p>
+<pre><code class="language-sh"> curl -L https://github.com/simplex-chat/simplexmq/releases/latest/download/smp-server-ubuntu-20_04-x86-64 -o /usr/local/bin/smp-server &amp;&amp; chmod +x /usr/local/bin/smp-server
+</code></pre>
+</li>
+<li>
+<p>Start the server:</p>
+<pre><code class="language-sh">sudo systemctl start smp-server
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-installation-script">Offical installation script</a></p>
+<ol>
+<li>
+<p>Execute the followin command:</p>
+<pre><code class="language-sh">sudo simplex-servers-update
+</code></pre>
+<p>To install specific version, run:</p>
+<pre><code class="language-sh">export VER=&lt;version_from_github_releases&gt; &amp;&amp;\
+sudo -E simplex-servers-update
+</code></pre>
+</li>
+<li>
+<p>Done!</p>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://github.com/simplex-chat/simplexmq#using-docker">Docker container</a></p>
+<ol>
+<li>
+<p>Stop and remove the container:</p>
+<pre><code class="language-sh">docker rm $(docker stop $(docker ps -a -q --filter ancestor=simplexchat/smp-server --format=&quot;\{\{.ID\}\}&quot;))
+</code></pre>
+</li>
+<li>
+<p>Pull latest image:</p>
+<pre><code class="language-sh">docker pull simplexchat/smp-server:latest
+</code></pre>
+</li>
+<li>
+<p>Start new container:</p>
+<pre><code class="language-sh">docker run -d \
+  -p 5223:5223 \
+  -p 443:443 \
+  -v $HOME/simplex/smp/config:/etc/opt/simplex:z \
+  -v $HOME/simplex/smp/logs:/var/opt/simplex:z \
+  simplexchat/smp-server:latest
+</code></pre>
+</li>
+</ol>
+</li>
+<li>
+<p><a href="https://www.linode.com/marketplace/apps/simplex-chat/simplex-chat/">Linode Marketplace</a></p>
+<ol>
+<li>
+<p>Pull latest images:</p>
+<pre><code class="language-sh">docker-compose --project-directory /etc/docker/compose/simplex pull
+</code></pre>
+</li>
+<li>
+<p>Restart the containers:</p>
+<pre><code class="language-sh">docker-compose --project-directory /etc/docker/compose/simplex up -d --remove-orphans
+</code></pre>
+</li>
+<li>
+<p>Remove obsolete images:</p>
+<pre><code class="language-sh">docker image prune
+</code></pre>
+</li>
+</ol>
+</li>
+</ul>
+<h2 id="reproduce-builds" tabindex="-1">Reproduce builds</h2>
+<p>You can locally reproduce server binaries, following these instructions.</p>
+<p>If you are a security expert or researcher, you can help SimpleX network and users community by signing the release checksums – we will <a href="https://github.com/simplex-chat/simplexmq/releases/tag/v6.3.1">publish your signature</a>. Please reach out to us!</p>
+<p>To reproduce the build you must have:</p>
+<ul>
+<li>Linux machine</li>
+<li><code>x86-64</code> architecture</li>
+<li>Installed <code>docker</code>, <code>curl</code> and <code>git</code></li>
+</ul>
+<ol>
+<li>
+<p>Download script:</p>
+<pre><code class="language-sh">curl -LO 'https://raw.githubusercontent.com/simplex-chat/simplexmq/refs/heads/master/scripts/simplexmq-reproduce-builds.sh'
+</code></pre>
+</li>
+<li>
+<p>Make it executable:</p>
+<pre><code class="language-sh">chmod +x simplexmq-reproduce-builds.sh
+</code></pre>
+</li>
+<li>
+<p>Execute the script with the required tag:</p>
+<pre><code class="language-sh">./simplexmq-reproduce-builds.sh 'v6.3.1'
+</code></pre>
+<p>The script executes these steps (please review the script to confirm):</p>
+<ol>
+<li>builds all server binaries for the release in docker container.</li>
+<li>downloads binaries from the same GitHub release and compares them with the built binaries.</li>
+<li>if they all match, generates _sha256sums file with their checksums.</li>
+</ol>
+<p>This will take a while.</p>
+</li>
+<li>
+<p>After compilation, you should see the folder named as the tag (e.g., <code>v6.3.1</code>) with two subfolders:</p>
+<pre><code class="language-sh">ls v6.3.1
+</code></pre>
+<pre><code class="language-sh">from-source  prebuilt  _sha256sums
+</code></pre>
+<p>The file _sha256sums contains the hashes of all builds - you can compare it with the same file in GitHub release.</p>
+</li>
+</ol>
+<h2 id="configuring-the-app-to-use-the-server" tabindex="-1">Configuring the app to use the server</h2>
+<p>To configure the app to use your messaging server copy it's full address, including password, and add it to the app. You have an option to use your server together with preset servers or without them - you can remove or disable them.</p>
+<p>It is also possible to share the address of your server with your friends by letting them scan QR code from server settings - it will include server password, so they will be able to receive messages via your server as well.</p>
+<p><em>Please note</em>: you need SMP server version 4.0 to have password support. If you already have a deployed server, you can add password by adding it to server INI file.</p>
+<p><img src="./server_config_1.png" width="288">    <img src="./server_config_2.png" width="288">    <img src="./server_config_3.png" width="288"></p>
+</div>
+                </article>
+            </main>
+        </div>
+    </section>
+
+    
+<section class="bg-[#D9E7ED] dark:bg-[#0E2B57] py-[50px] footer page">
+    <div class="container">
+        <div class="flex flex-col lg:flex-row justify-between">
+            <div class="flex flex-col items-center lg:items-start">
+                <a href="/" class="h-full mb-14 dark:hidden"><img class="w-auto h-[46px]" src="/img/new/logo-light.png" alt="logo" /></a>
+                <a href="/" class="h-full mb-14 hidden dark:inline-block"><img class="w-auto h-[46px]" src="/img/new/logo-dark.png" alt="logo" /></a>
+
+                <div class="flex flex-col items-center lg:items-start lg:flex-row gap-[150px] lg:gap-[350px]">
+                    <div class="flex flex-col items-center lg:items-start">
+                        <a href="/about/"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            About & Contact us
+                        </a>
+                        <a href="/privacy/"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            Privacy Policy
+                        </a>
+                        <a href="/jobs/"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            Join team
+                        </a>
+                        <a href="https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            Donate
+                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                        </a>
+                    </div>
+                    <div class="flex flex-col items-center lg:items-start">
+                        <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            SimpleX Whitepaper
+                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                        </a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/protocol/simplex-chat.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            SimpleX Chat protocol
+                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                        </a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/CLI.md"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            Terminal CLI
+                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                        </a>
+                        <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/bots"
+                            target="_blank"
+                            class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
+                            SimpleX bots API
+                            <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <article class="mt-10 lg:mt-0">
+                <div class="h-[40px] flex flex-col gap-2 justify-center">
+                    <div class="flex gap-2 justify-center">
+                        <a href="https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 54 54" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M26.585 0C11.9025 0 0 11.9025 0 26.585C0 41.2674 11.9025 53.1699 26.585 53.1699C41.2674 53.1699 53.1699 41.2674 53.1699 26.585C53.1699 11.9025 41.2674 0 26.585 0ZM11.3862 17.3518L17.6366 23.4373L23.9313 17.3088L17.6787 11.2209L20.866 8.1179L27.1187 14.2061L33.4932 8L36.6199 11.044L30.2448 17.25L36.4982 23.3379L42.8733 17.1321L46 20.1761L39.6249 26.3818L45.8789 32.4702L42.6916 35.5732L36.4376 29.4848L30.0631 35.6906L36.3171 41.7791L33.1299 44.8821L26.8759 38.7936L20.5026 45L17.3759 41.956L23.8003 35.693L17.5493 29.6073L11.1255 35.8621L8 32.8194L14.4244 26.5646L8.17397 20.4792L11.3862 17.3518ZM27.0125 32.5656L33.311 26.4408L27.0576 20.3535L27.0568 20.3516L20.7615 26.4799L27.0125 32.5656Z"/>
+                            </svg>
+                        </a>
+                        <a href="https://primal.net/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M256 512C397.385 512 512 397.385 512 256C512 114.615 397.385 0 256 0C114.615 0 0 114.615 0 256C0 397.385 114.615 512 256 512ZM348.077 268.251C347.047 271.254 346.018 274.257 344.263 277.017C337.633 287.302 327.867 292.139 315.221 292.951C302.173 293.789 289.233 295.487 276.333 297.437C274.064 297.779 271.793 298.108 269.521 298.438C258.687 300.005 247.858 301.572 237.36 304.645C189.946 318.517 148.927 341.344 115.048 374.257C109.197 379.941 103.451 385.688 98.1836 391.819C95.7632 394.637 93.0278 397.201 89.1831 398.521L89.1304 398.538C87.9731 398.938 86.7466 399.359 85.6548 398.491C84.7729 397.79 84.9731 396.874 85.1665 395.992C85.1948 395.862 85.2231 395.733 85.248 395.605C85.6963 393.277 86.7407 391.14 88.1821 389.194C90.146 386.544 92.084 383.878 94.022 381.213C99.7344 373.356 105.446 365.5 111.82 358.036C121.707 346.457 133.167 336.2 144.787 326.072C168.56 305.352 195.75 289.087 225.833 276.646C228.757 275.438 231.732 274.327 234.707 273.217C236.528 272.538 238.349 271.858 240.158 271.155C240.361 271.076 240.574 271.007 240.789 270.938C241.635 270.663 242.518 270.377 243.024 269.423C242.177 268.706 241.15 268.783 240.177 268.857C239.968 268.873 239.762 268.889 239.561 268.896C217.297 269.744 195.694 273.47 174.884 280.725C167.117 283.432 159.668 286.729 152.295 290.172C149.855 291.311 147.46 292.248 145.208 290.121C142.917 287.958 143.432 285.598 144.912 283.182C154.453 267.61 165.746 253.295 179.889 240.66C197.997 224.483 219.395 213.954 244.032 208.49C276.996 201.18 306.323 208.416 332.639 226.84L333.331 227.326C337.818 230.48 342.154 233.529 348.424 232.938C356.094 232.213 362.589 229.362 367.853 224.391C376.977 215.774 378.435 205.5 372.124 194.314C365.358 182.325 356.674 171.414 347.996 160.512L347.97 160.479C344.757 156.442 341.94 152.257 340.075 147.559C337.776 141.771 339.282 136.798 343.771 132.374C346.562 129.623 349.879 127.444 353.499 125.654C352.84 124.302 351.792 124.372 350.828 124.437C350.692 124.445 350.558 124.454 350.427 124.459C349.885 124.479 349.345 124.565 348.806 124.651C348.214 124.745 347.624 124.839 347.031 124.847C346.607 124.852 346.152 124.89 345.689 124.929C343.945 125.074 342.084 125.23 341.357 123.684C340.391 121.631 341.399 119.227 343.191 117.554C347.403 113.623 352.741 112.595 358.621 113.133C364.851 113.703 370.044 116.374 374.959 119.561C377.904 121.469 380.753 123.504 383.548 125.587C386.107 127.494 385.938 128.352 382.863 129.358C378.374 130.828 373.854 132.237 369.158 133.088C368.043 133.29 366.97 133.568 365.925 133.915C365.13 134.178 364.353 134.481 363.586 134.82C356.43 137.985 354.645 142.229 357.784 148.742C360.525 154.429 364.434 159.469 368.344 164.509C369.887 166.498 371.431 168.487 372.902 170.517C373.603 171.483 374.306 172.449 375.008 173.415C379.468 179.541 383.926 185.666 387.914 192.062C400.479 212.217 392.457 231.471 374.209 243.009C372.334 244.194 370.384 245.277 368.434 246.36C365.527 247.975 362.621 249.589 359.962 251.543C354.495 255.563 350.765 260.588 348.648 266.601C348.455 267.149 348.266 267.7 348.077 268.251ZM364.513 333.922C365.149 335.249 364.924 336.668 364.888 338.06C364.714 340.459 365.214 342.489 363.518 344.059C362.183 344.074 361.458 343.352 360.753 342.65C360.563 342.461 360.375 342.273 360.177 342.103C356.286 338.75 352.875 334.988 348.808 331.769C341.752 326.184 333.477 324.483 324.302 324.521C315.342 324.559 307.177 327.164 299.004 329.771C297.717 330.183 296.429 330.594 295.138 330.995L289.747 332.666C278.586 336.121 267.42 339.577 256.422 343.413C246.833 346.757 238.413 339.996 239.31 331.924C240.31 322.924 243.14 314.443 250.956 307.944C254.783 304.762 259.324 303.146 264.323 302.431C267.762 301.938 271.221 301.553 274.679 301.168C276.062 301.014 277.446 300.859 278.828 300.698C279.451 300.625 280.078 300.607 280.639 301.144C280.923 302.208 280.246 302.979 279.585 303.731C279.429 303.91 279.273 304.088 279.131 304.268C274.998 309.516 270.639 314.606 265.876 319.418C265.727 319.568 265.549 319.722 265.365 319.879C264.61 320.528 263.763 321.258 264.454 322.215C265.352 323.459 266.887 322.692 268.166 322.415C273.744 321.205 279.287 319.864 284.829 318.523C294.818 316.107 304.808 313.69 315.003 312.043C328.089 309.928 340.422 311.512 351.549 318.553C357.728 322.463 361.604 327.85 364.513 333.922Z" />
+                            </svg>
+                        </a>
+                        <a rel="me" href="https://mastodon.social/@simplex" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M256 512C397.385 512 512 397.385 512 256C512 114.615 397.385 0 256 0C114.615 0 0 114.615 0 256C0 397.385 114.615 512 256 512ZM339.329 99.0275C317.654 93.9388 295.564 92.2207 273.231 91.3254C272.186 91.2944 271.157 91.2596 270.14 91.2251C268.091 91.1557 266.089 91.0879 264.086 91.0567C246.35 90.7812 228.654 91.5123 210.994 93.1846C197.065 94.5035 183.244 96.4768 169.675 99.9727C162.199 101.899 154.73 103.994 147.977 107.812C134.904 115.202 125.174 125.999 117.725 138.921C108.323 155.228 103.916 173.02 103.377 191.682C102.882 208.853 102.937 226.049 103.186 243.227C103.396 257.66 104.034 272.095 104.854 286.507C105.678 300.995 107.728 315.348 110.963 329.508C114.411 344.606 119.377 359.13 127.439 372.451C138.635 390.948 154.331 403.859 174.933 410.499C187.604 414.582 200.649 417.051 213.826 418.828C237.461 422.015 261.021 421.897 284.461 417.12C294.296 415.115 303.892 412.325 313.09 408.232C314.413 407.643 314.878 406.946 314.79 405.46C314.549 401.383 314.383 397.303 314.217 393.222C314.143 391.401 314.069 389.581 313.989 387.761C313.915 386.091 313.827 384.422 313.737 382.714C313.695 381.925 313.653 381.128 313.612 380.318C313.426 380.354 313.261 380.382 313.11 380.408C312.825 380.457 312.591 380.497 312.364 380.56C294.125 385.58 275.582 388.162 256.641 387.555C245.877 387.21 235.125 386.735 224.588 384.226C217.159 382.457 210.199 379.654 204.32 374.599C197.016 368.318 193.251 360.094 191.688 350.786C191.199 347.876 190.939 344.927 190.672 341.898C190.548 340.499 190.423 339.084 190.274 337.647C190.638 337.712 190.939 337.764 191.198 337.808C191.658 337.888 191.989 337.945 192.317 338.012C193.433 338.242 194.548 338.478 195.663 338.714C197.9 339.188 200.137 339.662 202.384 340.08C217.874 342.967 233.476 344.947 249.2 346.01C261.24 346.825 273.283 346.962 285.306 346.061C292.653 345.511 299.987 344.776 307.32 344.042C310.694 343.704 314.068 343.366 317.444 343.046C329.993 341.856 342.163 339.055 353.868 334.339C368.08 328.613 381.069 320.958 391.661 309.671C397.704 303.232 402.22 295.971 403.793 287.033C406.787 270.025 408.278 252.868 409.117 235.648C409.506 227.659 409.68 219.659 409.854 211.661C409.877 210.641 409.899 209.622 409.922 208.602C410.225 194.937 409.755 181.331 406.589 167.943C402.18 149.303 393.93 132.763 380.157 119.248C373.506 112.723 366.119 107.246 357.182 104.291C351.293 102.344 345.36 100.443 339.329 99.0275ZM206.301 147.05C215.154 146.705 223.699 148.074 231.686 152.148C239.099 156.066 244.656 161.596 248.834 168.559C250.24 170.904 251.634 173.256 253.028 175.609C253.877 177.042 254.725 178.475 255.577 179.906C255.751 180.198 255.939 180.481 256.169 180.825C256.289 181.005 256.42 181.202 256.567 181.426C256.835 180.985 257.092 180.564 257.34 180.156C257.857 179.31 258.338 178.52 258.815 177.728C259.514 176.567 260.2 175.397 260.885 174.228C262.344 171.739 263.803 169.25 265.39 166.845C274.175 153.529 286.908 147.555 302.51 147.037C311.492 146.739 320.132 148.161 328.153 152.407C340.022 158.69 347.454 168.621 351.49 181.281C353.776 188.451 354.772 195.835 354.782 203.337C354.809 224.399 354.804 245.462 354.8 266.525C354.798 274.145 354.797 281.765 354.796 289.385C354.796 291.539 354.794 291.541 352.618 291.541C345.311 291.541 338.005 291.541 330.699 291.541L322.729 291.541L320.556 291.541V289.22C320.556 282.775 320.555 276.331 320.555 269.886C320.555 249.152 320.555 228.417 320.557 207.683C320.557 203.313 320.182 198.991 318.855 194.802C316.363 186.935 311.094 182.212 302.904 181.058C297.135 180.245 291.436 180.588 286.145 183.355C279.524 186.817 276.269 192.781 274.923 199.777C274.066 204.228 273.672 208.827 273.621 213.366C273.507 223.706 273.527 234.048 273.547 244.39C273.555 248.39 273.563 252.389 273.563 256.389V258.442H239.519C239.519 257.757 239.52 257.127 239.519 256.498C239.515 252.169 239.515 247.841 239.515 243.512C239.515 232.533 239.514 221.553 239.453 210.574C239.422 205.073 238.685 199.648 236.607 194.488C233.57 186.946 228.11 182.277 220.046 181.187C216.643 180.726 213.072 180.737 209.67 181.204C202.089 182.246 197.072 186.701 194.521 193.923C193.001 198.228 192.528 202.699 192.528 207.236C192.526 227.665 192.526 248.094 192.526 268.522C192.526 275.434 192.527 282.345 192.527 289.256V291.425H158.285V289.671C158.285 281.418 158.28 273.166 158.274 264.914C158.259 244.215 158.245 223.516 158.321 202.817C158.362 191.725 160.39 180.983 165.938 171.217C174.826 155.574 188.484 147.745 206.301 147.05Z" />
+                            </svg>
+                        </a>
+                        <a href="https://lemmy.ml/c/simplex" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M211.627 320.142L211.601 320.334C209.791 327.491 205.635 332.28 198.898 334.602C186.776 338.78 174.062 329.797 173.658 317.008C173.314 306.088 182.578 296.189 194.836 297.369C205.769 298.421 213.652 308.883 211.697 319.667C211.669 319.825 211.647 319.984 211.627 320.142Z" />
+                                <path d="M330.616 332.344C330.429 332.469 330.237 332.586 330.048 332.707C318.654 339.342 304.653 333.087 301.724 320.752C299.125 309.809 306.901 298.809 318.043 297.573C326.881 296.592 335.193 301.875 338.096 309.993C341.069 318.313 338.059 327.36 330.616 332.344Z" />
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M256 512C397.385 512 512 397.385 512 256C512 114.615 397.385 0 256 0C114.615 0 0 114.615 0 256C0 397.385 114.615 512 256 512ZM452.87 191.71C450.247 181.005 444.82 172.018 435.126 165.783C434.537 165.485 433.964 165.181 433.398 164.88C432.158 164.222 430.954 163.582 429.697 163.069C421.154 159.584 412.3 159.367 403.337 160.925C394.095 162.532 385.533 165.973 377.487 170.658C368.828 175.701 361.835 182.561 355.71 190.334C355.44 190.676 355.214 191.051 355 191.363C355.081 191.515 355.095 191.577 355.134 191.609C355.439 191.858 355.746 192.107 356.062 192.346C363.56 198.034 370.116 204.62 375.603 212.22C384.395 224.398 389.771 237.954 392.392 252.617C392.594 253.748 392.832 254.873 393.053 256C405.488 253.396 416.484 248.669 426.037 242.977C434.382 238.003 441.402 231.567 446.721 223.474C453.126 213.727 455.673 203.145 452.87 191.71ZM74.0957 168.33C80.6572 163.052 88.1533 160.554 96.373 160.085C106.582 159.503 116.192 161.954 125.519 165.865C138.758 171.419 149.13 180.436 157.59 191.798C157.645 191.872 157.697 191.947 157.747 192.024C157.788 192.089 157.828 192.155 157.864 192.222C157.899 192.287 157.922 192.359 157.951 192.452L158 192.606C136.48 208.433 124.266 229.827 119.912 256C119.671 255.981 119.437 255.979 119.21 255.962C119.12 255.956 119.031 255.947 118.944 255.935C118.893 255.927 118.842 255.917 118.791 255.906C106.863 253.306 95.7129 248.715 85.4551 242.228C75.9717 236.23 68.2236 228.434 63.2119 218.255C60.3105 212.362 58.7051 206.12 59.0449 199.556C59.6875 187.16 64.5664 176.684 74.0957 168.33ZM296.621 382.67C313.312 376.036 328.495 366.898 342.24 355.14C350.237 348.229 357.383 340.69 363.479 332.195C374.055 317.459 380.766 301.307 381.77 283.001C382.441 270.745 381.724 258.632 378.58 246.731C373.914 229.066 364.635 214.348 350.251 202.935C340.804 195.439 330.173 190.161 318.777 186.34C303.993 181.384 288.724 179.122 273.21 178.32C260.704 177.674 248.214 178.026 235.744 179.201C225.53 180.164 215.431 181.775 205.499 184.357C192.461 187.748 180.062 192.636 168.799 200.14C153.032 210.644 142.032 224.79 136.08 242.792C132.337 254.113 130.976 265.771 131 277.642C131.021 287.482 132.225 297.122 135.406 306.482C139.866 319.601 146.978 331.165 156.084 341.527C172.32 360 192.19 373.328 214.92 382.551C215.081 382.616 215.245 382.674 215.409 382.729C215.558 382.778 215.706 382.824 215.852 382.868L215.863 382.873L215.922 382.891C216.04 382.927 216.154 382.963 216.265 383C216.304 382.079 216.324 381.166 216.344 380.259C216.363 379.391 216.383 378.528 216.419 377.671C216.463 376.613 216.532 375.562 216.659 374.519C218.164 362.141 224.289 352.646 235.222 346.599C246.337 340.452 258.246 339.604 270.208 343.455C285.366 348.334 293.935 359.08 296.154 374.799C296.398 376.527 296.456 378.281 296.516 380.085L296.519 380.13V380.173C296.546 380.995 296.574 381.826 296.621 382.67ZM281.743 368.861C282.872 371.457 283.575 374.328 283.881 377.463C285.312 392.157 273.662 404.387 259.753 405.812C254.162 406.385 248.779 405.674 243.706 403.293C235.694 399.535 231.077 393.124 229.513 384.525C228.687 379.986 228.794 375.442 230.311 371.038C230.366 370.862 230.425 370.687 230.485 370.511C233.364 362.156 239.321 357.018 247.744 354.776C255.238 352.782 262.649 353.215 269.807 356.412C275.688 359.393 279.581 363.572 281.743 368.861ZM145.243 347.723C144.674 347.919 144.148 348.073 143.643 348.279L123.101 356.65C118.053 358.706 113.004 360.758 107.952 362.804C106.823 363.261 105.612 363.671 104.412 363.772C100.998 364.058 98.0098 361.874 97.0557 358.587C96.1104 355.333 97.5312 351.907 100.529 350.27C100.976 350.025 101.452 349.834 101.927 349.644L102.222 349.524L134.319 336.439C134.889 336.207 135.449 335.954 136.141 335.656C135.967 335.363 138.582 338.852 141.055 342.154L142.903 344.622C143.673 345.648 144.331 346.526 144.754 347.085C145.023 347.442 145.197 347.669 145.243 347.723ZM369.278 345.862C370.302 344.697 371.534 343.236 372.724 341.826L372.735 341.812L372.741 341.803C375.005 339.122 377.106 336.631 377.315 336.716L383.333 339.168C391.872 342.647 400.41 346.126 408.957 349.581C411.084 350.441 412.807 351.698 413.645 353.882C414.726 356.697 414.287 359.323 412.218 361.528C410.094 363.792 407.413 364.428 404.511 363.378C401.243 362.196 398.05 360.808 394.829 359.496L368.187 348.632L368.005 348.56L367.679 348.44C367.526 348.385 367.379 348.335 367.243 348.289L366.935 348.182C367.13 348.228 368.055 347.256 369.278 345.862ZM342.492 371.036C342.825 370.833 330.406 379.116 330.827 379.667C338.286 389.524 345.667 399.273 353.053 409.019L353.185 409.193L353.426 409.513C353.677 409.84 353.935 410.16 354.22 410.453C358.062 414.399 364.663 412.838 366.314 407.583C367.117 405.031 366.513 402.746 364.907 400.64C360.587 394.974 356.3 389.283 352 383.602L342.492 371.036ZM169.228 372.739C169.013 373.018 172.123 375.052 175.2 377.064C178.211 379.033 181.189 380.98 180.99 381.244L174.88 389.313C169.871 395.926 164.864 402.539 159.871 409.163C158.534 410.936 156.953 412.256 154.675 412.554C151.731 412.939 149.331 411.952 147.65 409.532C145.926 407.052 145.868 404.406 147.351 401.768C147.473 401.55 147.608 401.34 147.752 401.135C147.942 400.86 148.147 400.594 148.352 400.328L148.613 399.985L169.228 372.739Z" />
+                                <path d="M211.584 320.586C209.815 327.718 205.697 332.587 199.022 334.947C187.008 339.195 174.408 330.062 174.009 317.062C173.668 305.961 182.848 295.898 194.995 297.097C205.829 298.167 213.642 308.802 211.704 319.765C211.665 319.99 211.64 320.217 211.584 320.586Z" />
+                                <path d="M329.711 333.271C318.43 340.029 304.431 333.604 301.503 320.932C298.905 309.69 306.679 298.39 317.818 297.12C326.654 296.113 334.965 301.539 337.867 309.879C340.84 318.426 337.83 327.72 330.389 332.84C330.202 332.968 330.01 333.089 329.711 333.271Z" />
+                            </svg>
+                        </a>
+                        <a href="mailto:chat@simplex.chat" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M512 256C512 397.385 397.385 512 256 512C114.615 512 0 397.385 0 256C0 114.615 114.615 0 256 0C397.385 0 512 114.615 512 256ZM149.744 205.384L166.479 218.68C192.394 239.268 218.153 259.732 243.918 280.188C254.117 288.285 257.065 288.23 267.363 280.05C310.416 245.847 353.478 211.655 396.54 177.463L400.139 174.605L413.302 164.153C414.537 163.173 415.803 162.232 418.049 160.511V167.062L418.05 212.292C418.05 257.522 418.051 302.752 418.045 347.982C418.044 359.363 414.904 362.477 403.495 362.477L283.932 362.479C225.163 362.479 166.395 362.479 107.626 362.477C96.1521 362.477 93.0066 359.391 93.0051 348.06C92.9968 287.587 93.001 227.114 93.001 166.641V160.359C112.401 175.751 130.933 190.456 149.744 205.384ZM116.095 149C126.458 157.244 135.905 164.758 145.633 172.489C166.835 189.321 187.943 206.083 209.045 222.84L255.556 259.775L395.017 149H116.095Z" />
+                            </svg>
+                        </a>
+                    </div>
+
+                    <div class="flex gap-2 justify-center">
+                        <a href="https://github.com/simplex-chat" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20.2907 0.926758C9.24635 0.926758 0.290527 10.1075 0.290527 21.4331C0.290527 30.4933 6.02118 38.18 13.9679 40.8915C14.9674 41.0813 15.3344 40.4467 15.3344 39.905C15.3344 39.4161 15.3158 37.8007 15.3072 36.0872C9.74314 37.3277 8.56906 33.6677 8.56906 33.6677C7.65927 31.2975 6.3484 30.6672 6.3484 30.6672C4.53379 29.3945 6.48519 29.4206 6.48519 29.4206C8.49355 29.5653 9.55105 31.5338 9.55105 31.5338C11.3349 34.6688 14.2298 33.7624 15.3711 33.2385C15.5506 31.9131 16.069 31.0085 16.6409 30.4964C12.1986 29.9779 7.52878 28.2195 7.52878 20.3621C7.52878 18.1232 8.31007 16.294 9.58947 14.8579C9.38181 14.3414 8.69723 12.2557 9.78322 9.43111C9.78322 9.43111 11.4627 8.87998 15.2847 11.5331C16.8801 11.0787 18.591 10.8509 20.2907 10.8431C21.9904 10.8509 23.7027 11.0787 25.301 11.5331C29.1183 8.87998 30.7955 9.43111 30.7955 9.43111C31.8842 12.2557 31.1992 14.3414 30.9916 14.8579C32.274 16.294 33.05 18.1232 33.05 20.3621C33.05 28.2382 28.3712 29.9724 23.9176
+                                    30.4801C24.635 31.1165 25.2742 32.3644 25.2742 34.2776C25.2742 37.0214 25.251 39.2296 25.251 39.905C25.251 40.4507 25.611 41.0902 26.6248 40.8888C34.5672 38.1742 40.2905 30.4903 40.2905 21.4331C40.2905 10.1075 31.336 0.926758 20.2907 0.926758Z" />
+                            </svg>
+                        </a>
+                        <a href="https://www.reddit.com/r/SimpleXChat/" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M20.874 40.9268C31.9197 40.9268 40.874 31.9724 40.874 20.9268C40.874 9.88108 31.9197 0.926758 20.874 0.926758C9.82834 0.926758 0.874023 9.88108 0.874023 20.9268C0.874023 31.9724 9.82834 40.9268 20.874 40.9268ZM30.4091 16.615C31.9031 16.615 33.1157 17.8276 33.1157 19.3216C33.1157 20.426 32.4445 21.3787 31.5567 21.8118C31.6 22.0716 31.6217 22.3315 31.6217 22.613C31.6217 26.7705 26.7929 30.1268 20.8165 30.1268C14.8402 30.1268 10.0114 26.7705 10.0114 22.613C10.0114 22.3315 10.0331 22.05 10.0764 21.7902C9.12362 21.3571 8.47402 20.426 8.47402 19.3216C8.47402 17.8276 9.68662 16.615 11.1807 16.615C11.8953 16.615 12.5665 16.9181 13.0429 17.3728C14.9051 16.0086 17.4819 15.1642 20.3618 15.0776L21.726 8.6248C21.7693 8.49488 21.8343 8.3866 21.9425 8.32164C22.0508 8.25668 22.1807 8.23504 22.3106 8.25668L26.7929 9.20944C27.0961 8.55984 27.7457 8.12676 28.5035 8.12676C29.5646 8.12676 30.4307 8.99292 30.4307
+                                    10.0539C30.4307 11.115 29.5646 11.9811 28.5035 11.9811C27.4642 11.9811 26.6197 11.1582 26.5764 10.1406L22.5705 9.29604L21.3362 15.0776C24.1512 15.1858 26.7063 16.052 28.5469 17.3728C29.0232 16.8964 29.6728 16.615 30.4091 16.615ZM16.5291 19.3216C15.4681 19.3216 14.602 20.1878 14.602 21.2488C14.602 22.3098 15.4681 23.176 16.5291 23.176C17.5902 23.176 18.4563 22.3098 18.4563 21.2488C18.4563 20.1878 17.5902 19.3216 16.5291 19.3216ZM20.7949 27.7449C21.5311 27.7449 24.0429 27.6582 25.3638 26.3374C25.5587 26.1425 25.5587 25.8394 25.4071 25.6228C25.2122 25.428 24.8874 25.428 24.6925 25.6228C23.848 26.4456 22.0941 26.7488 20.8165 26.7488C19.539 26.7488 17.7634 26.4456 16.9405 25.6228C16.7457 25.428 16.4209 25.428 16.226 25.6228C16.0311 25.8177 16.0311 26.1425 16.226 26.3374C17.5252 27.6366 20.0587 27.7449 20.7949 27.7449ZM23.0902 21.2488C23.0902 22.3098 23.9563 23.176 25.0173 23.176C26.0783 23.176 26.9445 22.3098 26.9445 21.2488C26.9445 20.1878 26.0783
+                                    19.3216 25.0173 19.3216C23.9563 19.3216 23.0902 20.1878 23.0902 21.2488Z" />
+                            </svg>
+                        </a>
+                        <a href="https://twitter.com/simplexchat" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M20.4575 40.9268C31.5032 40.9268 40.4575 31.9725 40.4575 20.9268C40.4575 9.88106 31.5032 0.926758 20.4575 0.926758C9.41182 0.926758 0.45752 9.88106 0.45752 20.9268C0.45752 31.9725 9.41182 40.9268 20.4575 40.9268ZM29.916 16.7766C29.916 23.1157 25.014 30.4265 16.0519 30.4265V30.423C13.4038 30.4265 10.8115 29.6795 8.58252 28.2719C8.96846 28.3174 9.35558 28.3397 9.74271 28.3409C11.9372 28.3432 14.0688 27.6182 15.7942 26.283C13.7101 26.2444 11.8802 24.9055 11.2425 22.9507C11.9716 23.0898 12.7245 23.0619 13.4418 22.869C11.1689 22.4165 9.53371 20.4504 9.53252 18.1671V18.1062C10.2106 18.478 10.9694 18.6835 11.7448 18.7057C9.60377 17.2981 8.94233 14.4948 10.2355 12.3026C12.7103 15.2992 16.3606 17.1207 20.2782 17.3147C19.8851 15.6487 20.4231 13.902 21.6878 12.7306C23.6507 10.9137 26.737 11.0073 28.5824 12.9387C29.6737 12.7271 30.7199 12.3327 31.677 11.7738C31.3125 12.8857 30.5513 13.828 29.5348 14.4277C30.5002
+                                    14.3155 31.4443 14.0609 32.3325 13.6728C31.6782 14.6362 30.8553 15.4781 29.9017 16.1562C29.916 16.362 29.916 16.5685 29.916 16.7766Z" />
+                            </svg>
+                        </a>
+                        <a href="https://www.linkedin.com/company/simplex-chat/" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 41 41" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M20.0408 0.926758C8.9951 0.926758 0.0407715 9.88109 0.0407715 20.9268C0.0407715 31.9724 8.9951 40.9268 20.0408 40.9268C31.0864 40.9268 40.0408 31.9724 40.0408 20.9268C40.0408 9.88109 31.0864 0.926758 20.0408 0.926758ZM9.6421 17.4916H14.1745V31.1098H9.6421V17.4916ZM14.4731 13.279C14.4437 11.9438 13.4889 10.9268 11.9383 10.9268C10.3878 10.9268 9.3741 11.9438 9.3741 13.279C9.3741 14.5866 10.3579 15.6328 11.8794 15.6328H11.9084C13.4889 15.6328 14.4731 14.5866 14.4731 13.279ZM25.3017 17.1718C28.2843 17.1718 30.5203 19.1187 30.5203 23.3015L30.5201 31.1098H25.9879V23.824C25.9879 21.994 25.3319 20.7453 23.6912 20.7453C22.439 20.7453 21.6932 21.5871 21.3656 22.4003C21.2458 22.6916 21.2164 23.0976 21.2164 23.5046V31.1101H16.6834C16.6834 31.1101 16.7431 18.7698 16.6834 17.492H21.2164V19.4208C21.8179 18.4936 22.8953 17.1718 25.3017 17.1718Z" />
+                            </svg>
+                        </a>
+                        <a href="https://simplex.chat/feed.rss" target="_blank">
+                            <svg class="fill-primary-light dark:fill-primary-dark" width="32" height="32" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path fill-rule="evenodd" clip-rule="evenodd" d="M256 512C397.385 512 512 397.385 512 256C512 114.615 397.385 0 256 0C114.615 0 0 114.615 0 256C0 397.385 114.615 512 256 512ZM132.791 157.572C215.586 161.137 279.503 196.841 323.612 267.517C344.138 302.436 354.186 339.959 354.57 380.122H406.814C409.639 231.301 280.977 103.1 132.791 106.05V157.572ZM309.994 343.843C311.593 356.035 313.096 367.877 314.65 380.116H261.161C260.496 344.968 248.303 314.452 223.472 289.485C198.613 264.491 168.097 252.282 132.755 251.38V199.743C198.318 196.346 288.694 244.344 309.994 343.843ZM132.766 336.706C129.293 354.261 137.796 370.323 154.848 378.004L155.461 378.242C156.267 378.558 156.912 378.81 157.577 378.985C173.012 383.066 186.298 379.318 196.604 367.168C206.463 355.544 208.397 342.145 201.87 328.354C195.205 314.271 183.419 307.215 167.834 307.356C151.188 307.509 135.971 320.504 132.766 336.706Z" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+            </article>
+        </div>
+        <a href="#" class="text-grey-black dark:text-white text-[16px] text-center lg:ltr:text-left lg:rtl:text-right font-medium leading-[28px] tracking-[0.01em] block mt-[60px]">© 2020-2025 SimpleX | Open-Source Project</a>
+    </div>
+</section>
+
+
+    <script src="/js/docs.js"></script>
+    <script src="/js/prism.min.js"></script>
+</body>
+
+</html>
