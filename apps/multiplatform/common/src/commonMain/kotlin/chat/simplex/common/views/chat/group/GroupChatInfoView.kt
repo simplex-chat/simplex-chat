@@ -867,8 +867,7 @@ fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = tr
       verticalAlignment = Alignment.CenterVertically,
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member, resize = true)
-      // ProfileImage(size = MEMBER_ROW_AVATAR_SIZE, blurred = member.blocked) // <-- speeds up scroll
+      MemberProfileImage(size = MEMBER_ROW_AVATAR_SIZE, member, async = true)
       Spacer(Modifier.width(DEFAULT_PADDING_HALF))
       Column {
         Row(verticalAlignment = Alignment.CenterVertically) {

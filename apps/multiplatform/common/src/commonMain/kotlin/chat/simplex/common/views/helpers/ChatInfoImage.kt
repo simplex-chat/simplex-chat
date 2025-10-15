@@ -12,12 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.unit.*
-import chat.simplex.common.model.BusinessChatType
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
@@ -26,19 +23,6 @@ import chat.simplex.common.ui.theme.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import kotlin.math.max
-
-import java.security.SecureRandom
-
-import androidx.compose.runtime.*
-import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.toComposeImageBitmap
-import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import java.io.ByteArrayInputStream
-import java.io.IOException
-import java.util.Base64
-import javax.imageio.ImageIO
 
 @Composable
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
@@ -71,7 +55,7 @@ fun ProfileImage(
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
   blurred: Boolean = false,
-  resize: Boolean = false
+  async: Boolean = false
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
@@ -99,44 +83,17 @@ fun ProfileImage(
         )
       }
     } else {
-      // original
-//      val imageBitmap = base64ToBitmap(image)
-
-      // with resize in-flight (~ as slow)
-//      val imageBitmap = if (resize)
-//        base64ToBitmap(resizeImageToStrSize(base64ToBitmap(image), 1000))
-//      else
-//        base64ToBitmap(image)
-
-      // base64 trimmed (corrupted) // <-- speeds up scroll
-//      val imageBitmap = if (resize)
-//        base64ToBitmap(image.take(1022))
-//      else
-//        base64ToBitmap(image)
-
-      // random string
-//      val randomStr = "data:image/jpg;base64," + randomBase64String()
-//      val imageBitmap = base64ToBitmap(randomStr)
-
-      // original
-//      Image(
-//        imageBitmap,
-//        stringResource(MR.strings.image_descr_profile_image),
-//        contentScale = ContentScale.Crop,
-//        modifier = ProfileIconModifier(size, blurred = blurred)
-//      )
-
-      // async
-      if (resize) {
+      if (async) {
         Base64AsyncImage(
-          image,
-          // modifier = modifier.size(64.dp), // reserve fixed size to avoid remeasure jank
+          base64ImageString = image,
+          contentDescription = stringResource(MR.strings.image_descr_profile_image),
+          contentScale = ContentScale.Crop,
           modifier = ProfileIconModifier(size, blurred = blurred)
         )
       } else {
         val imageBitmap = base64ToBitmap(image)
         Image(
-          imageBitmap,
+          bitmap = imageBitmap,
           contentDescription = stringResource(MR.strings.image_descr_profile_image),
           contentScale = ContentScale.Crop,
           modifier = ProfileIconModifier(size, blurred = blurred)
@@ -144,48 +101,6 @@ fun ProfileImage(
       }
     }
   }
-}
-
-@Composable
-fun Base64AsyncImage(
-  base64: String,
-  modifier: Modifier = Modifier
-) {
-  val imageBitmap by produceState<ImageBitmap?>(initialValue = null, base64) {
-    value = withContext(Dispatchers.IO) {
-      try {
-        val clean = base64
-          .removePrefix("data:image/png;base64,")
-          .removePrefix("data:image/jpg;base64,")
-        val bytes = Base64.getDecoder().decode(clean)
-        ImageIO.read(ByteArrayInputStream(bytes))?.toComposeImageBitmap()
-      } catch (e: Exception) {
-        e.printStackTrace()
-        null
-      }
-    }
-  }
-
-  imageBitmap?.let {
-    Image(bitmap = it, contentDescription = null, modifier = modifier)
-  }
-}
-
-fun randomBase64String(length: Int = 1000): String {
-  require(length > 0 && length % 4 == 0) { "length must be positive and a multiple of 4" }
-
-  // bytes required so that base64 length = 4 * ceil(bytes/3) == length
-  // For length divisible by 4 we can use bytes = (length / 4) * 3 which is multiple of 3,
-  // so there will be no '=' padding in the result.
-  val bytesNeeded = (length / 4) * 3
-  val bytes = ByteArray(bytesNeeded)
-  SecureRandom().nextBytes(bytes)
-
-  val encoded = Base64.getEncoder().encodeToString(bytes)
-  require(encoded.length == length) {
-    "unexpected encoded length: ${encoded.length} (expected $length)"
-  }
-  return encoded
 }
 
 @Composable
