@@ -1,4 +1,4 @@
-name: Build Eleventy
+name: Build Eleventy New
 
 on:
   push:
