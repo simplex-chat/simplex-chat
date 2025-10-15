@@ -396,8 +396,9 @@ struct GroupChatInfoView: View {
         var body: some View {
             let member = groupMember.wrapped
             let v1 = HStack{
-                MemberProfileImage(member, size: 38)
-                    .padding(.trailing, 2)
+//                MemberProfileImage(member, size: 38)
+//                    .padding(.trailing, 2)
+                ProfileImage(size: 38, blurred: member.blocked).padding(.trailing, 2) // <-- speeds up scroll
                 // TODO server connection status
                 VStack(alignment: .leading) {
                     let t = Text(member.chatViewName).foregroundColor(member.memberIncognito ? .indigo : theme.colors.onBackground)

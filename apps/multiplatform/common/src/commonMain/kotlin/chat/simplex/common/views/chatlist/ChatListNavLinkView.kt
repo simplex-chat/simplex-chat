@@ -257,11 +257,29 @@ suspend fun setGroupMembers(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatMo
     val currentMember = currentMembers.find { it.id == newMember.id }
     val currentMemberStats = currentMember?.activeConn?.connectionStats
     val newMemberConn = newMember.activeConn
+
+    // original code
     if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
       newMember.copy(activeConn = newMemberConn.copy(connectionStats = currentMemberStats))
     } else {
       newMember
     }
+
+    // without image
+//    val profileNoImage = newMember.memberProfile.copy(image = null)
+//    if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
+//      newMember.copy(memberProfile = profileNoImage, activeConn = newMemberConn.copy(connectionStats = currentMemberStats))
+//    } else {
+//      newMember.copy(memberProfile = profileNoImage)
+//    }
+
+    // small image (not implemented)
+//    val profileSmallImage = newMember.memberProfile.copy(image = null)
+//    if (currentMemberStats != null && newMemberConn != null && newMemberConn.connectionStats == null) {
+//      newMember.copy(memberProfile = profileSmallImage, activeConn = newMemberConn.copy(connectionStats = currentMemberStats))
+//    } else {
+//      newMember.copy(memberProfile = profileSmallImage)
+//    }
   }
   chatModel.groupMembersIndexes.value = emptyMap()
   chatModel.groupMembers.value = newMembers

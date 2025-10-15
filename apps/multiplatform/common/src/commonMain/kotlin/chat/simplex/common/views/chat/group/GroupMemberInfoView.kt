@@ -714,14 +714,16 @@ fun MemberProfileImage(
   size: Dp,
   mem: GroupMember,
   color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null
+  backgroundColor: Color? = null,
+  resize: Boolean = false
 ) {
   ProfileImage(
     size = size,
     image = mem.image,
     color = color,
     backgroundColor = backgroundColor,
-    blurred = mem.blocked
+    blurred = mem.blocked,
+    resize = resize
   )
 }
 
