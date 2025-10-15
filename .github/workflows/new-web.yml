@@ -11,6 +11,7 @@ on:
       - blog/**
       - docs/**
       - .github/workflows/web.yml
+      - .github/workflows/new-web.yml
       - PRIVACY.md
 
 jobs:
