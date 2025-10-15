@@ -1,19 +1,11 @@
 package chat.simplex.common.platform
 
-import androidx.compose.foundation.Image
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.produceState
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import boofcv.io.image.ConvertBufferedImage
 import boofcv.struct.image.GrayU8
 import chat.simplex.res.MR
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
 import org.jetbrains.skia.Image
 import java.awt.RenderingHints
 import java.awt.geom.AffineTransform
@@ -255,24 +247,4 @@ fun BufferedImage.hasAlpha(): Boolean {
     }
   }
   return false
-}
-
-@Composable
-actual fun Base64AsyncImage(
-  base64ImageString: String,
-  contentDescription: String?,
-  contentScale: ContentScale,
-  modifier: Modifier
-) {
-  val imageBitmap by produceState<ImageBitmap?>(initialValue = null, base64ImageString) {
-    value = withContext(Dispatchers.IO) { base64ToBitmap(base64ImageString) }
-  }
-  imageBitmap?.let {
-    Image(
-      bitmap = it,
-      contentDescription = contentDescription,
-      contentScale = contentScale,
-      modifier = modifier
-    )
-  }
 }

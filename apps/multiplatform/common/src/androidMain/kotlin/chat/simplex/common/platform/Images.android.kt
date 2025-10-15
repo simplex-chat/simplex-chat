@@ -6,11 +6,7 @@ import android.graphics.drawable.AnimatedImageDrawable
 import android.os.Build
 import android.util.Base64
 import android.webkit.MimeTypeMap
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.*
-import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.graphics.applyCanvas
 import androidx.core.graphics.drawable.toBitmap
 import androidx.core.graphics.scale
@@ -19,9 +15,6 @@ import boofcv.struct.image.GrayU8
 import chat.simplex.common.R
 import chat.simplex.common.views.helpers.errorBitmap
 import chat.simplex.common.views.helpers.getFileName
-import coil.compose.AsyncImage
-import coil.request.ImageRequest
-import coil.size.Size
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import java.net.URI
@@ -133,21 +126,3 @@ actual fun isAnimImage(uri: URI, drawable: Any?): Boolean {
 
 actual fun loadImageBitmap(inputStream: InputStream): ImageBitmap =
   BitmapFactory.decodeStream(inputStream).asImageBitmap()
-
-@Composable
-actual fun Base64AsyncImage(
-  base64ImageString: String,
-  contentDescription: String?,
-  contentScale: ContentScale,
-  modifier: Modifier
-) {
-  AsyncImage(
-    model = ImageRequest.Builder(LocalContext.current)
-      .data(base64ImageString)
-      .size(Size.ORIGINAL)
-      .build(),
-    contentDescription = contentDescription,
-    contentScale = contentScale,
-    modifier = modifier
-  )
-}
