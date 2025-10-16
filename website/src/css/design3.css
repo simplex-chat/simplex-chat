@@ -204,14 +204,13 @@
 }
 
 :root {
-    --bg-grad: linear-gradient(9.2deg,
-            #000000 0%,
-            #131d49 52%,
-            #3f5598 65%,
-            #c3faff 85%,
-            #fff6e0 90%);
+    --bg-grad: linear-gradient(10deg,
+            #e8f3ff 0%,
+            #c0e2ff 40%,
+            #e9ffff 80%,
+            #ffefd6 90%);
 
-    --nav-color: #ffffff;
+    --nav-color: #001796;
 
     /* Compute cover drawn size and inner safe frame (60% of full image on each axis) */
     /* --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
@@ -233,6 +232,17 @@
     --sec-vhu-desktop: calc(var(--sec-h) / 100);
 }
 
+:root.dark {
+    --bg-grad: linear-gradient(9.2deg,
+            #000000 0%,
+            #131d49 52%,
+            #3f5598 65%,
+            #c3faff 85%,
+            #fff6e0 90%);
+
+    --nav-color: #ffffff;
+}
+
 @media screen and (max-width: 767px) {
     :root {
         --sec-w: 100vw;
@@ -250,6 +260,11 @@ body.change-nav-color {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
+    border-color: #000;
+}
+
+.dark * {
+    border-color: #fff;
 }
 
 html {
@@ -259,14 +274,31 @@ html {
 
 html,
 body {
+    background: #fff;
+}
+
+.dark html,
+.dark body {
     background: #000;
 }
 
-.hidden {
+@media screen and (min-width: 768px) {
+    html {
+        overscroll-behavior: none;
+    }
+}
+
+/* .hidden {
     display: none !important;
     visibility: hidden !important;
     opacity: 0 !important;
 }
+
+:is(.dark .dark\:hidden) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+} */
 
 .lock-scroll {
     overflow: hidden !important;
@@ -285,6 +317,28 @@ p {
 }
 
 .gradient-text {
+    background: linear-gradient(100deg,
+            #ffb55d 0%,
+            #fff494 50%,
+            #fbffdd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.page .text-container a.gradient-text {
+    background: linear-gradient(90deg,
+            #001aa7 0%,
+            #0095e7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.dark .gradient-text,
+.dark .page .text-container a.gradient-text {
     background: linear-gradient(90deg,
             #019bfe 0%,
             #64fdff 58%,
@@ -348,10 +402,14 @@ section.page .area {
 
 /* --- COVER --- */
 section.cover {
-    background-image: url("/img/design_3/cover.jpg");
+    background-image: url("/img/design_3/cover-light.jpg");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
+}
+
+.dark section.cover {
+    background-image: url("/img/design_3/cover.jpg");
 }
 
 section.cover div.content {
@@ -385,11 +443,15 @@ section.cover div.content h2 {
 
 section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 200;
+    font-weight: 400;
     font-size: calc(var(--sec-vwu-desktop) * 1.6);
     align-items: center;
     color: #ffffff;
     max-width: calc(var(--sec-vwu-desktop) * 25);
+}
+
+.dark section.cover div.content p {
+    font-weight: 200;
 }
 
 section.cover div.socials {
@@ -434,10 +496,16 @@ main .section-bg {
 
     background-image: var(--bg-grad);
     background-position: center;
-    background-size: cover;
+    background-size: 102% 102%;
     background-repeat: no-repeat;
     z-index: -1;
     pointer-events: none;
+}
+
+.chrome-ios main .section-bg,
+.safari-ios main .section-bg {
+    height: 110lvh;
+    margin-bottom: -110lvh;
 }
 
 .page .area>.image:first-child {
@@ -449,10 +517,18 @@ main .section-bg {
 }
 
 .page-2 .image {
+    background-image: url("/img/design_3/section-2-desktop-light.webp");
+}
+
+.dark .page-2 .image {
     background-image: url("/img/design_3/section-2-desktop.webp");
 }
 
 .page-3 .image {
+    background-image: url("/img/design_3/section-3-desktop-light.webp");
+}
+
+.dark .page-3 .image {
     background-image: url("/img/design_3/section-3-desktop.webp");
 }
 
@@ -470,12 +546,21 @@ main .section-bg {
     }
 
     .page-2 .image {
-        background-image: url("/img/design_3/section-2-mobile.webp");
+        top: -6% !important;
+        background-image: url("/img/design_3/section-2-mobile-light.webp");
         background-size: cover !important;
         height: 75%;
     }
 
+    .dark .page-2 .image {
+        background-image: url("/img/design_3/section-2-mobile.webp");
+    }
+
     .page-3 .image {
+        background-image: url("/img/design_3/section-3-mobile-light.webp");
+    }
+
+    .dark .page-3 .image {
         background-image: url("/img/design_3/section-3-mobile.webp");
     }
 
@@ -510,6 +595,11 @@ main .section-bg {
     letter-spacing: -0.025em;
     line-height: 1.05;
     max-width: calc(var(--sec-vwu-desktop)*26);
+    color: #023789;
+}
+
+.dark .page .text-container h2 {
+    color: #ffffff;
 }
 
 .page .text-container p {
@@ -517,6 +607,11 @@ main .section-bg {
     font-weight: 200;
     font-size: calc(var(--sec-vwu-desktop)*1.62);
     max-width: calc(var(--sec-vwu-desktop)*23);
+    color: #000000;
+}
+
+.dark .page .text-container p {
+    color: #ffffff;
 }
 
 .page .text-container p span {
@@ -583,10 +678,26 @@ main .section-bg {
     max-width: calc(var(--sec-vwu-desktop)*21) !important;
 }
 
-.roadmap>p:first-child {
+.roadmap p:first-of-type {
     font-weight: 500;
+    background: linear-gradient(90deg, #001aa7 0%, #00bdd4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    display: inline-block;
+}
+
+.dark .roadmap p:first-of-type,
+.dark .roadmap>p:first-of-type {
+    background: none;
+    -webkit-background-clip: initial;
+    background-clip: initial;
+    -webkit-text-fill-color: #64fdff;
     color: #64fdff;
 }
+
+/* .dark .roadmap>p:first-child {} */
 
 .roadmap>p:nth-child(2) {
     font-weight: 500;
@@ -608,6 +719,11 @@ main .section-bg {
 
     /* --- COVER --- */
     section.cover {
+        background-image: url("/img/design_3/cover-mobile-light.webp");
+        background-size: cover;
+    }
+
+    .dark section.cover {
         background-image: url("/img/design_3/cover-mobile.jpg");
         background-size: cover;
     }
@@ -714,6 +830,19 @@ main .section-bg {
     }
 
     .roadmap p.title {
+        background: linear-gradient(90deg, #001aa7 0%, #00bdd4 100%);
+        -webkit-background-clip: text;
+        background-clip: text;
+        -webkit-text-fill-color: transparent;
+        color: transparent;
+        display: inline-block;
+    }
+
+    .dark .roadmap p.title {
+        background: none;
+        -webkit-background-clip: initial;
+        background-clip: initial;
+        -webkit-text-fill-color: #64fdff;
         color: #64fdff;
     }
 
@@ -1174,7 +1303,7 @@ header#navbar>a.logo {
     position: absolute;
     left: 16px;
     height: 100%;
-    display: flex;
+    /* display: flex; */
     align-items: center;
 }
 
@@ -1188,10 +1317,15 @@ header#navbar nav#menu>ul>hr {
 }
 
 header#navbar nav#menu ul.sub-menu hr {
+    border-top-width: 1px;
     height: 1px;
     width: 100%;
-    background: rgb(255, 255, 255);
-    opacity: 0.1;
+    color: #000;
+    opacity: 0.2;
+}
+
+.dark header#navbar nav#menu ul.sub-menu hr {
+    color: #fff;
 }
 
 header#navbar ul {
@@ -1230,10 +1364,14 @@ header#navbar ul a>span:first-child {
 }
 
 header#navbar ul a span svg {
-    fill: #fff;
+    fill: #001796;
     width: 10px;
     height: auto;
     transition: all 0.5s ease;
+}
+
+.dark header#navbar ul a span svg {
+    fill: #fff;
 }
 
 @media screen and (min-width: 768px) {
@@ -1258,7 +1396,7 @@ header#navbar ul.sub-menu {
     gap: 0.5rem;
     max-height: calc(100vh - 70px);
     position: absolute;
-    background: #181e43;
+    background: #fff;
     top: calc(100% + 8px);
     padding: 16px 0;
     min-width: 180px;
@@ -1269,12 +1407,21 @@ header#navbar ul.sub-menu {
     opacity: 0;
 }
 
+.dark header#navbar ul.sub-menu {
+    background: #181e43;
+}
+
 header#navbar ul.sub-menu li a {
     padding: 3px 20px;
     white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 4px;
+    color: #001796;
+}
+
+.dark header#navbar ul.sub-menu li a {
+    color: #ffffff;
 }
 
 header#navbar ul.sub-menu li a img {
@@ -1310,23 +1457,31 @@ header#navbar .nav-link:focus-within .sub-menu {
     align-items: center;
     justify-content: center;
     gap: 4px;
-    color: white;
+    color: #001796;
     text-decoration: none;
 }
 
+.dark .flag-container>a {
+    color: white;
+}
+
 .flag-container>a svg {
-    fill: #fff;
+    fill: #001796;
     width: 10px;
     height: auto;
 }
 
+.dark .flag-container>a svg {
+    fill: white;
+}
+
 @media screen and (min-width: 768px) {
     .flag-container>a {
-        color: var(--nav-color);
+        color: var(--nav-color) !important;
     }
 
     .flag-container>a svg {
-        fill: var(--nav-color);
+        fill: var(--nav-color) !important;
     }
 }
 
@@ -1367,13 +1522,17 @@ header#navbar button.theme-switch-btn svg {
 }
 
 header#navbar button.theme-switch-btn svg path {
-    fill: white;
+    fill: #001796;
     transition: all 0.3s ease;
+}
+
+.dark header#navbar button.theme-switch-btn svg path {
+    fill: white;
 }
 
 @media screen and (min-width: 768px) {
     header#navbar button.theme-switch-btn svg path {
-        fill: var(--nav-color);
+        fill: var(--nav-color) !important;
         transition: all 0.3s ease;
     }
 }
@@ -1396,9 +1555,13 @@ button#cross-btn {
 }
 
 #cross {
-    fill: white;
+    fill: #001796;
     width: 13px;
     height: auto;
+}
+
+.dark #cross {
+    fill: #ffffff;
 }
 
 #mobile-header {
@@ -1444,11 +1607,15 @@ button#cross-btn {
     header#navbar {
         height: 100%;
         width: 100%;
-        background: #0a0f2b;
+        background: #fff;
         visibility: hidden;
         opacity: 0;
         transition: all .3s ease;
         transform: translateX(-100%);
+    }
+
+    .dark header#navbar {
+        background: #0a0f2b;
     }
 
     header#navbar.open {
@@ -1504,6 +1671,11 @@ button#cross-btn {
         gap: 10px;
         padding: 0px;
         padding: 6px 2rem;
+        color: #001796;
+    }
+
+    .dark header#navbar nav#menu .nav-link a {
+        color: #ffffff;
     }
 
     header#navbar nav#menu .nav-link>a {
@@ -1512,7 +1684,6 @@ button#cross-btn {
     }
 
     header#navbar nav#menu ul.sub-menu hr {
-        opacity: 0.2;
         width: 100%;
     }
 
@@ -1545,8 +1716,12 @@ button#cross-btn {
 
     header#navbar nav#menu .sub-menu li a {
         font-family: "Manrope", "GT-Walsheim", sans-serif;
-        font-weight: 200;
+        font-weight: 300;
         width: 100%;
+    }
+
+    .dark header#navbar nav#menu .sub-menu li a {
+        font-weight: 200;
     }
 
     header#navbar nav#menu .active .sub-menu {
