@@ -23,6 +23,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.TerminalView
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.networkAndServers.*
 import chat.simplex.res.MR
@@ -78,6 +79,20 @@ fun ModalData.OnboardingConditionsView() {
                 ModalManager.fullscreen.showModal(endButtons = { ConditionsLinkButton() }) {
                   SimpleConditionsView(rhId = null)
                 }
+              }
+          )
+          Spacer(Modifier.height(DEFAULT_PADDING))
+          Text(
+            "Open console",
+            style = TextStyle(fontSize = 17.sp),
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colors.primary,
+            modifier = Modifier
+              .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+              ) {
+                ModalManager.start.showModalCloseable { TerminalView(false) }
               }
           )
         }
