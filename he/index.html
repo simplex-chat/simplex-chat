@@ -32,8 +32,8 @@
 
 <body>
     <header id="navbar">
-        <a class="logo" href="/"><img src="/img/design_3/logo-light.png" alt="logo" /></a>
-        
+        <a href="/he" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo" /></a>
+        <a href="/he" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo" /></a>
 
         <nav id="menu">
             <ul>
@@ -185,7 +185,9 @@
                 <path d="M225.368 385.712C222.968 387.046 219.368 390.112 217.368 392.646L213.768 397.312V426.379C213.768 458.246 213.901 458.779 222.968 465.446C228.168 469.312 240.701 469.312 245.901 465.446C254.834 458.779 255.101 457.979 255.501 428.246C256.034 397.579 255.234 394.379 246.834 387.979C241.101 383.579 231.634 382.512 225.368 385.712Z"/>
                 </svg>
 
-                <img src="/img/new/moon.svg" alt="" srcset="" class="moon hidden">
+                <svg class="moon" width="469" height="469" viewBox="5 5 20 23" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z"></path>
+                </svg>
             </button>
 
             <div class="nav-link flag-container">
@@ -438,7 +440,8 @@
         </div>
     </header>
     <div id="mobile-header">
-        <a class="logo" href="/"><img src="/img/new/logo-symbol-dark.svg" alt="logo" /></a>
+        <a href="/he" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+        <a href="/he" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
 
         <button id="hamburger" class="nav-toggle-btn">
             <svg viewBox="0 0 100 80" width="36" height="36">
@@ -737,6 +740,56 @@
         io.observe(cover);
     })();
 
+
+    // switch theme
+    const sunIcon = document.querySelector('.sun');
+    const moonIcon = document.querySelector('.moon');
+
+    const userTheme = localStorage.getItem('theme');
+    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const prismThemeLink = document.getElementById('prism-theme')
+
+    const iconToggle = () => {
+        sunIcon.classList.toggle('hidden');
+        moonIcon.classList.toggle('hidden');
+    }
+
+    const themeCheck = () => {
+        if(userTheme === 'dark' || (!userTheme && systemTheme)){
+            document.documentElement.classList.add('dark');
+            moonIcon.classList.add('hidden');
+            if(prismThemeLink){
+                prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
+            }
+        }
+        else{
+            sunIcon.classList.add('hidden');
+            if(prismThemeLink){
+                prismThemeLink.setAttribute('href','/css/prism-light.min.css')
+            }
+        }
+    }
+    themeCheck();
+
+    const themeSwitch = () => {
+        if(document.documentElement.classList.contains('dark')){
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('theme','light');
+            if(prismThemeLink){
+                prismThemeLink.setAttribute('href','/css/prism-light.min.css')
+            }
+            iconToggle();
+        }
+        else{
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('theme','dark');
+            if(prismThemeLink){
+                prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
+            }
+            iconToggle();
+        }
+    }
+
     window.addEventListener('click',(e)=>{
         if(e.target.closest('.nav-link')){
             if(e.target.closest('.nav-link').classList.contains('active')){
@@ -756,9 +809,9 @@
                 nav.classList.add('open');
             }
         }
-        // else if(e.target.closest('.theme-switch-btn')){
-        //     themeSwitch();
-        // }
+        else if(e.target.closest('.theme-switch-btn')){
+            themeSwitch();
+        }
     });
     </script>
 </body>
