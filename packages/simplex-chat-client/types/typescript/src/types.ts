@@ -959,6 +959,7 @@ export type ChatErrorType =
   | ChatErrorType.UserUnknown
   | ChatErrorType.ActiveUserExists
   | ChatErrorType.UserExists
+  | ChatErrorType.ChatRelayExists
   | ChatErrorType.DifferentActiveUser
   | ChatErrorType.CantDeleteActiveUser
   | ChatErrorType.CantDeleteLastUser
@@ -1035,6 +1036,7 @@ export namespace ChatErrorType {
     | "userUnknown"
     | "activeUserExists"
     | "userExists"
+    | "chatRelayExists"
     | "differentActiveUser"
     | "cantDeleteActiveUser"
     | "cantDeleteLastUser"
@@ -1136,6 +1138,10 @@ export namespace ChatErrorType {
   export interface UserExists extends Interface {
     type: "userExists"
     contactName: string
+  }
+
+  export interface ChatRelayExists extends Interface {
+    type: "chatRelayExists"
   }
 
   export interface DifferentActiveUser extends Interface {
@@ -2490,6 +2496,7 @@ export interface GroupMember {
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
+  isChatRelay: boolean
 }
 
 export interface GroupMemberAdmission {
@@ -2938,6 +2945,7 @@ export namespace NetworkError {
 export interface NewUser {
   profile?: Profile
   pastTimestamp: boolean
+  userChatRelay: boolean
 }
 
 export interface NoteFolder {
@@ -4380,6 +4388,7 @@ export interface User {
   autoAcceptMemberContacts: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
   uiThemes?: UIThemeEntityOverrides
+  userChatRelay: boolean
 }
 
 export interface UserContact {

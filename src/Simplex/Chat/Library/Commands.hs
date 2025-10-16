@@ -327,19 +327,20 @@ parseChatCommand = A.parseOnly chatCommandP . B.dropWhileEnd isSpace
 processChatCommand :: VersionRangeChat -> NetworkRequestMode -> ChatCommand -> CM ChatResponse
 processChatCommand vr nm = \case
   ShowActiveUser -> withUser' $ pure . CRActiveUser
-  CreateActiveUser NewUser {profile, pastTimestamp} -> do
+  CreateActiveUser NewUser {profile, pastTimestamp, userChatRelay} -> do
     forM_ profile $ \Profile {displayName} -> checkValidName displayName
     p@Profile {displayName} <- liftIO $ maybe generateRandomProfile pure profile
     u <- asks currentUser
     users <- withFastStore' getUsers
-    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash} ->
+    forM_ users $ \User {localDisplayName = n, activeUser, viewPwdHash, userChatRelay = userChatRelay'} -> do
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
+      when (userChatRelay && isTrue userChatRelay') $ throwChatError CEChatRelayExists
     (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
     auId <- withAgent $ \a -> createUser a smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
-      user <- createUserRecordAt db (AgentUserId auId) p True ts
+      user <- createUserRecordAt db (AgentUserId auId) p userChatRelay True ts
       mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
@@ -365,9 +366,16 @@ processChatCommand vr nm = \case
             let RandomAgentServers {smpServers = smp', xftpServers = xftp'} = as
             pure (uss, (smp', xftp'))
       copyServers :: UserOperatorServers -> UpdatedUserOperatorServers
-      copyServers UserOperatorServers {operator, smpServers, xftpServers} =
-        let new srv = AUS SDBNew srv {serverId = DBNewEntity}
-         in UpdatedUserOperatorServers {operator, smpServers = map new smpServers, xftpServers = map new xftpServers}
+      copyServers UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
+        let newSrv srv = AUS SDBNew srv {serverId = DBNewEntity}
+            newCRelay chatRelay = AUCR SDBNew chatRelay {chatRelayId = DBNewEntity}
+         in
+          UpdatedUserOperatorServers {
+            operator,
+            smpServers = map newSrv smpServers,
+            xftpServers = map newSrv xftpServers,
+            chatRelays = map newCRelay chatRelays
+          }
       coupleDaysAgo t = (`addUTCTime` t) . fromInteger . negate . (+ (2 * day)) <$> randomRIO (0, day)
       day = 86400
   ListUsers -> CRUsersList <$> withFastStore' getUsersInfo
@@ -1474,7 +1482,8 @@ processChatCommand vr nm = \case
       getServers db as ops opDomains user = do
         smpSrvs <- getProtocolServers db SPSMP user
         xftpSrvs <- getProtocolServers db SPXFTP user
-        uss <- groupByOperator (ops, smpSrvs, xftpSrvs)
+        chatRelays <- getChatRelays db user
+        uss <- groupByOperator (ops, smpSrvs, xftpSrvs, chatRelays)
         pure $ (aUserId user,) $ useServers as opDomains uss
   SetServerOperators operatorsRoles -> do
     ops <- serverOperators <$> withFastStore getServerOperators
@@ -1489,8 +1498,9 @@ processChatCommand vr nm = \case
   APIGetUserServers userId -> withUserId userId $ \user -> withFastStore $ \db -> do
     CRUserServers user <$> (liftIO . groupByOperator =<< getUserServers db user)
   APISetUserServers userId userServers -> withUserId userId $ \user -> do
-    errors <- validateAllUsersServers userId $ L.toList userServers
+    (errors, warnings) <- validateAllUsersServers userId $ L.toList userServers
     unless (null errors) $ throwCmdError $ "user servers validation error(s): " <> show errors
+    unless (null warnings) $ logWarn $ "user servers validation warning(s): " <> tshow warnings
     uss <- withFastStore $ \db -> do
       ts <- liftIO getCurrentTime
       mapM (setUserServers db user ts) userServers
@@ -1503,7 +1513,7 @@ processChatCommand vr nm = \case
       setProtocolServers a auId xftp'
     ok_
   APIValidateServers userId userServers -> withUserId userId $ \user ->
-    CRUserServersValidation user <$> validateAllUsersServers userId userServers
+    uncurry (CRUserServersValidation user) <$> validateAllUsersServers userId userServers
   APIGetUsageConditions -> do
     (usageConditions, acceptedConditions) <- withFastStore $ \db -> do
       usageConditions <- getCurrentUsageConditions db
@@ -3434,7 +3444,7 @@ processChatCommand vr nm = \case
     withServerProtocol p action = case userProtocol p of
       Just Dict -> action
       _ -> throwChatError $ CEServerProtocol $ AProtocolType p
-    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM [UserServersError]
+    validateAllUsersServers :: UserServersClass u => Int64 -> [u] -> CM ([UserServersError], [UserServersWarning])
     validateAllUsersServers currUserId userServers = withFastStore $ \db -> do
       users' <- filter (\User {userId} -> userId /= currUserId) <$> liftIO (getUsers db)
       others <- mapM (getUserOperatorServers db) users'
@@ -4034,18 +4044,21 @@ data ConnectViaContactResult
   = CVRConnectedContact Contact
   | CVRSentInvitation Connection (Maybe Profile)
 
-protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
-protocolServers p (operators, smpServers, xftpServers) = case p of
-  SPSMP -> (operators, smpServers, [])
-  SPXFTP -> (operators, [], xftpServers)
+-- TODO [chat relays] used for CLI specific APIs (same for `updatedServers` below) - add similar APIs for chat relays?
+protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
+protocolServers p (operators, smpServers, xftpServers, _chatRelays) = case p of
+  SPSMP -> (operators, smpServers, [], [])
+  SPXFTP -> (operators, [], xftpServers, [])
 
 -- disable preset and replace custom servers (groupByOperator always adds custom)
 updatedServers :: forall p. UserProtocol p => SProtocolType p -> [AUserServer p] -> UserOperatorServers -> UpdatedUserOperatorServers
-updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers} = case p' of
-  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers)
-  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers)
+updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers, chatRelays} = case p' of
+  SPSMP -> u (updateSrvs smpServers, map (AUS SDBStored) xftpServers, map (AUCR SDBStored) chatRelays)
+  SPXFTP -> u (map (AUS SDBStored) smpServers, updateSrvs xftpServers, map (AUCR SDBStored) chatRelays)
   where
-    u = uncurry $ UpdatedUserOperatorServers operator
+    u = uncurry3 $ UpdatedUserOperatorServers operator
+    uncurry3 :: (a -> b -> c -> d) -> ((a, b, c) -> d)
+    uncurry3 f ~(a,b,c) = f a b c
     updateSrvs :: [UserServer p] -> [AUserServer p]
     updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs (const []) operator
     disableSrv srv@UserServer {preset} =
@@ -4285,7 +4298,8 @@ chatCommandP =
       "/block #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure False),
       "/unblock #" *> (SetShowMemberMessages <$> displayNameP <* A.space <*> (char_ '@' *> displayNameP) <*> pure True),
       "/_create user " *> (CreateActiveUser <$> jsonP),
-      "/create user " *> (CreateActiveUser <$> newUserP),
+      "/create user " *> (CreateActiveUser <$> newUserP False),
+      "/create chat relay user " *> (CreateActiveUser <$> newUserP True),
       "/create bot " *> (CreateActiveUser <$> newBotUserP),
       "/users" $> ListUsers,
       "/_user " *> (APISetActiveUser <$> A.decimal <*> optional (A.space *> jsonP)),
@@ -4735,10 +4749,10 @@ chatCommandP =
                 k : ws -> pure (k, if null ws then Nothing else Just $ T.unwords ws)
               pure CBCCommand {label, keyword, params}
         quoted = A.char '\'' *> A.takeTill (== '\'') <* A.char '\''
-    newUserP = do
+    newUserP userChatRelay = do
       (cName, shortDescr) <- profileNameDescr
       let profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
-      pure NewUser {profile, pastTimestamp = False}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay}
     newBotUserP = do
       files_ <- optional $ "files=" *> onOffP <* A.space
       (cName, shortDescr) <- profileNameDescr
@@ -4746,7 +4760,7 @@ chatCommandP =
             Just True -> Nothing
             _ -> Just (emptyChatPrefs :: Preferences) {files = Just FilesPreference {allow = FANo}}
           profile = Just Profile {displayName = cName, fullName = "", shortDescr, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences}
-      pure NewUser {profile, pastTimestamp = False}
+      pure NewUser {profile, pastTimestamp = False, userChatRelay = False}
     jsonP :: J.FromJSON a => Parser a
     jsonP = J.eitherDecodeStrict' <$?> A.takeByteString
     groupProfile = do

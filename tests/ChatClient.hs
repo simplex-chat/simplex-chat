@@ -286,7 +286,7 @@ createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> I
 createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile False True
   startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
