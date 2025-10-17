@@ -15,8 +15,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
@@ -84,7 +83,7 @@ fun ModalData.OnboardingConditionsView() {
         Spacer(Modifier.weight(1f))
 
         Column(Modifier.widthIn(max = if (appPlatform.isAndroid) 450.dp else 1000.dp).align(Alignment.CenterHorizontally), horizontalAlignment = Alignment.CenterHorizontally) {
-          AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperators, selectedOperatorIds)
+          AcceptConditionsButton(enabled = selectedOperatorIds.value.isNotEmpty(), selectedOperatorIds)
           TextButtonBelowOnboardingButton(stringResource(MR.strings.onboarding_conditions_configure_server_operators)) {
             ModalManager.fullscreen.showModalCloseable { close ->
               ChooseServerOperators(serverOperators, selectedOperatorIds, close)
@@ -217,7 +216,6 @@ private fun SetOperatorsButton(enabled: Boolean, close: () -> Unit) {
 @Composable
 private fun AcceptConditionsButton(
   enabled: Boolean,
-  selectedOperators: State<List<ServerOperator>>,
   selectedOperatorIds: State<Set<Long>>
 ) {
   fun continueOnAccept() {
@@ -235,9 +233,7 @@ private fun AcceptConditionsButton(
     onclick = {
       withBGApi {
         val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
-        val acceptForOperators = selectedOperators.value.filter { !it.conditionsAcceptance.conditionsAccepted }
-        val operatorIds = acceptForOperators.map { it.operatorId }
-        val r = chatController.acceptConditions(chatModel.remoteHostId(), conditionsId = conditionsId, operatorIds = operatorIds)
+        val r = chatController.acceptConditions(chatModel.remoteHostId(), conditionsId = conditionsId, operatorIds = selectedOperatorIds.value.toList())
         if (r != null) {
           chatModel.conditions.value = r
           val enabledOperators = enabledOperators(r.serverOperators, selectedOperatorIds.value)
