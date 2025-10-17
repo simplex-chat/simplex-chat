@@ -37,7 +37,6 @@ fun ModalData.OnboardingConditionsView() {
     ModalView({}, showClose = false) {
       val serverOperators = remember { derivedStateOf { chatModel.conditions.value.serverOperators } }
       val selectedOperatorIds = remember { stateGetOrPut("selectedOperatorIds") { serverOperators.value.filter { it.enabled }.map { it.operatorId }.toSet() } }
-      val selectedOperators = remember { derivedStateOf { serverOperators.value.filter { selectedOperatorIds.value.contains(it.operatorId) } } }
 
       ColumnWithScrollBar(
         Modifier
