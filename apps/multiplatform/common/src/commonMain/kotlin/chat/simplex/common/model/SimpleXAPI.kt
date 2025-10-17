@@ -13,6 +13,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,12 +28,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
@@ -46,12 +49,17 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Date
 
 typealias ChatCtrl = Long
@@ -1709,6 +1717,11 @@ object ChatController {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.ApiCreateMyAddress(userId))
     if (r is API.Result && r.res is CR.UserContactLinkCreated) return r.res.connLinkContact
+    if (r is API.Error && r.err is ChatError.ChatErrorAgent && r.err.agentError is AgentErrorType.NOTICE) {
+      val e = r.err.agentError
+      showClientNoticeAlert(e.server, e.preset, e.expiresAt)
+      return null
+    }
     if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateUserAddress", generalGetString(MR.strings.error_creating_address), r)
@@ -2168,6 +2181,11 @@ object ChatController {
   suspend fun apiCreateGroupLink(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): GroupLink? {
     val r = sendCmdWithRetry(rh, CC.APICreateGroupLink(groupId, memberRole))
     if (r is API.Result && r.res is CR.GroupLinkCreated) return r.res.groupLink
+    if (r is API.Error && r.err is ChatError.ChatErrorAgent && r.err.agentError is AgentErrorType.NOTICE) {
+      val e = r.err.agentError
+      showClientNoticeAlert(e.server, e.preset, e.expiresAt)
+      return null
+    }
     if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateGroupLink", generalGetString(MR.strings.error_creating_link_for_group), r)
@@ -7297,6 +7315,7 @@ sealed class AgentErrorType {
     is RCP -> "RCP ${rcpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
+    is NOTICE -> "NOTICE $server $expiresAt"
     is INTERNAL -> "INTERNAL $internalErr"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
@@ -7310,6 +7329,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
+  @Serializable @SerialName("NOTICE") class NOTICE(val server: String, val preset: Boolean, val expiresAt: Instant?): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
@@ -8036,4 +8056,35 @@ enum class MsgType {
   MESSAGE,
   @SerialName("quota")
   QUOTA
+}
+
+fun showClientNoticeAlert(server: String, preset: Boolean, expiresAt: Instant?) {
+  var message = "Server: $server.\nConditions of use violation notice received from ${if (preset) "preset" else "this"} server.\nNo IDs shared, see How it works."
+  if (expiresAt != null) {
+    val tz = TimeZone.currentSystemDefault()
+    val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+    message += "\n\nNew addresses can be created after ${expiresAt.toLocalDateTime(tz).toJavaLocalDateTime().format(formatter)}."
+  }
+  AlertManager.shared.showAlertDialogButtonsColumn(title = "Not allowed", text = message) {
+    val uriHandler = LocalUriHandler.current
+    Column {
+      SectionItemView({ AlertManager.shared.hideAlert() }) {
+        Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+      if (preset) {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          uriHandler.openUriCatching(defaultConditionsLink)
+        }) {
+          Text(generalGetString(MR.strings.operator_conditions_of_use), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        uriHandler.openUriCatching(contentModerationPostLink)
+      }) {
+        Text(generalGetString(MR.strings.how_it_works), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  }
 }
