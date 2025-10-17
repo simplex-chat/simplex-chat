@@ -134,6 +134,7 @@ chatDirectTests = do
     it "both users have contact link" testMultipleUserAddresses
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
+    it "delete user with chat tags" testDeleteUserChatTags
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
@@ -2112,6 +2113,26 @@ testDeleteUser =
       alice <### ["ok", "completed deleting user"]
       alice ##> "/users"
       alice <## "no users"
+
+testDeleteUserChatTags :: HasCallStack => TestParams -> IO ()
+testDeleteUserChatTags =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_create tag {\"text\":\"my tag\"}"
+      alice <## "[{\"chatTagId\":1,\"chatTagText\":\"my tag\"}]"
+      alice ##> "/_tags @2 1"
+      alice <## "chat tags updated"
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      alice ##> "/_delete user 1 del_smp=off"
+      alice <## "ok"
+
+      alice ##> "/users"
+      alice <## "alisa (active)"
 
 testUsersDifferentCIExpirationTTL :: HasCallStack => TestParams -> IO ()
 testUsersDifferentCIExpirationTTL ps = do
