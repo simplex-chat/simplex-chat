@@ -368,7 +368,7 @@ a{
   pointer-events: none;
 }
 
-.menu-link{
+/* .menu-link{
   font-size: 16px;
   line-height: 33.42px;
   color: #0D0E12;
@@ -402,7 +402,6 @@ a{
     height: 1px;
     bottom: 0;
     right: 0;
-    /* background-color: initial; */
     transition: width 0.25s ease-out;
   }
   
@@ -462,16 +461,6 @@ header nav {
   transform: rotate(180deg);
 }
 
-/* @media (max-width: 1400px) {
-    .landing-page-header-article-paragraph {
-        width: 21rem;
-    }
-
-    .socials {
-        flex-wrap: nowrap;
-    }
-} */
-
 @media (min-width:1024px) {
 
   .nav-link:hover .sub-menu,
@@ -514,7 +503,7 @@ header nav {
   .flag-container .sub-menu{
     max-height: fit-content;
   }
-}
+} */
 
 .lock-scroll {
   overflow: hidden;
