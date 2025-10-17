@@ -287,3 +287,42 @@ window.addEventListener('click',(e)=>{
     }
 });
 </script>
+<script>
+    const navbar = document.querySelector('#navbar');
+    let scrollTimeout;
+    
+    window.addEventListener('scroll', () => {
+        // Add glassy effect while scrolling
+        navbar.classList.add('scrolling');
+        
+        // Clear previous timeout
+        clearTimeout(scrollTimeout);
+        
+        // Remove glassy effect after scrolling stops
+        scrollTimeout = setTimeout(() => {
+            const pages = document.querySelectorAll('.page');
+            let isSnappedToPage = false;
+            
+            // Check if we're at the very top of the document
+            if (window.scrollY < 5) {
+                isSnappedToPage = true;
+            }
+            
+            // Check if any page is perfectly aligned and filling the viewport
+            pages.forEach(page => {
+                const rect = page.getBoundingClientRect();
+                
+                // Check if page top is at viewport top AND page is tall enough to fill viewport
+                if (Math.abs(rect.top) < 5 && rect.height >= window.innerHeight - 10) {
+                    isSnappedToPage = true;
+                }
+            });
+            
+            // Only remove scrolling class if we're snapped to a page
+            if (isSnappedToPage) {
+                navbar.classList.remove('scrolling');
+            }
+            // Otherwise, keep the scrolling class (we're stuck in the middle)
+        }, 150);
+    });
+</script>

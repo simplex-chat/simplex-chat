@@ -10,6 +10,34 @@ body.change-nav-color {
     --nav-color: #001796;
 }
 
+header.scrolling .logo {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom-right-radius: 12px;
+    padding-right: 24px;
+    transition: all 0.3s ease;
+}
+
+header.scrolling nav#menu {
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    padding: 0px 50px;
+    border-bottom-right-radius: 12px;
+    border-bottom-left-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+header.scrolling .right-links{
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+    border-bottom-left-radius: 12px;
+    padding-left: 24px;
+    transition: all 0.3s ease;
+}
+
 /* NavBar */
 header#navbar {
     position: fixed;
@@ -27,7 +55,8 @@ header#navbar {
 
 header#navbar>a.logo {
     position: absolute;
-    left: 16px;
+    left: 0px;
+    padding-left: 16px;
     height: 100%;
     /* display: flex; */
     align-items: center;
@@ -266,7 +295,10 @@ header#navbar button.theme-switch-btn svg path {
 
 .right-links {
     position: absolute;
-    right: 16px;
+    top: 0;
+    right: 0px;
+    padding-right: 16px;
+    height: 100%;
     display: flex;
     align-items: center;
     gap: 1.5rem;
