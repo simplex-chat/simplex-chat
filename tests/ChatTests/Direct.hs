@@ -347,6 +347,7 @@ testRetryConnectingClientTimeout ps = do
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               }
         }
+    ChatConfig {presetServers = presetSrvs@PresetServers {netCfg}} = testCfg
     cfgZeroTimeout =
       (testCfg :: ChatConfig)
         { agentConfig =
@@ -354,9 +355,7 @@ testRetryConnectingClientTimeout ps = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          presetServers =
-            let def@PresetServers {netCfg} = presetServers testCfg
-             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
+          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
         }
     opts' =
       testOpts
