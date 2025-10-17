@@ -301,7 +301,7 @@ header#navbar button.theme-switch-btn svg path {
     top: 0;
     right: 0px;
     padding-right: 16px;
-    height: 100%;
+    height: 54px;
     display: flex;
     align-items: center;
     gap: 1.5rem;
@@ -397,7 +397,7 @@ button#cross-btn {
     }
 
     .right-links {
-        top: 16px;
+        top: 0px;
     }
 
     header#navbar ul a span svg {
