@@ -1,15 +1,39 @@
 ---
+title: "SimpleX Chat: private and secure messenger without any user IDs (not even random)"
+description: "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."
 templateEngineOverride: njk
 active_home: true
 ---
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Simplex Chat</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}"/>
+    <meta name="Content-Type" content="text/html;charset=utf-8"/>
+    {% if path %}
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ path }}" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}{{ path }}" />
+    {% else %}
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}/" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}/" />
+    {% endif %}
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="{{ title }}"/>
+    <meta property="og:description" content="{{ description }}"/>
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
+    <meta name="twitter:card" content="summary"/>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
     <link rel="stylesheet" href="/css/design3-nav.css">
