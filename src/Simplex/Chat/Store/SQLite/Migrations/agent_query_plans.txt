@@ -395,7 +395,7 @@ Query:
         JOIN connections c ON q.conn_id = c.conn_id
        WHERE  c.deleted = 0 AND q.deleted = 0
 Plan:
-SCAN q USING INDEX idx_rcv_queues_link_id
+SCAN q USING INDEX idx_rcv_queues_to_subscribe
 SEARCH c USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 USE TEMP B-TREE FOR DISTINCT
