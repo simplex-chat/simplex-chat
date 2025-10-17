@@ -15,6 +15,7 @@ header.scrolling .logo {
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-bottom-right-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     padding-right: 24px;
     transition: all 0.3s ease;
 }
@@ -26,6 +27,7 @@ header.scrolling nav#menu {
     padding: 0px 50px;
     border-bottom-right-radius: 12px;
     border-bottom-left-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     transition: all 0.3s ease;
 }
 
@@ -34,6 +36,7 @@ header.scrolling .right-links{
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     border-bottom-left-radius: 12px;
+    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     padding-left: 24px;
     transition: all 0.3s ease;
 }
