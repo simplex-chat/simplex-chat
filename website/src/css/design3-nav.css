@@ -349,6 +349,7 @@ button#cross-btn {
         visibility: visible;
         opacity: 1;
         transform: translateX(0);
+        z-index: 60000;
     }
 
     header#navbar>a.logo {
