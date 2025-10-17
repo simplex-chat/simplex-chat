@@ -445,15 +445,10 @@ section.cover div.content h2 {
 section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    /* font-weight: 400; */
     font-size: calc(var(--sec-vwu-desktop) * 1.6);
     align-items: center;
     color: #ffffff;
     max-width: calc(var(--sec-vwu-desktop) * 25);
-}
-
-.dark section.cover div.content p {
-    font-weight: 200;
 }
 
 section.cover div.socials {
@@ -567,6 +562,17 @@ main .section-bg {
         background-position: top;
     }
 
+    .page-2,
+    .dark .page-2,
+    .page-3,
+    .dark .page-3,
+    .page-4,
+    .dark .page-4,
+    .page-5,
+    .dark .page-5 {
+        background-image: none;
+    }
+
     .page-2 .image {
         top: -6% !important;
         background-image: url("/img/design_3/section-2-mobile-light.webp");
@@ -587,10 +593,18 @@ main .section-bg {
     }
 
     .page-4 .image {
+        background-image: url("/img/design_3/section-4-mobile-light.webp");
+    }
+
+    .dark .page-4 .image {
         background-image: url("/img/design_3/section-4-mobile.webp");
     }
 
     .page-5 .image {
+        background-image: url("/img/design_3/section-5-mobile-light.webp");
+    }
+
+    .dark .page-5 .image {
         background-image: url("/img/design_3/section-5-mobile.webp");
     }
 }
@@ -743,15 +757,18 @@ main .section-bg {
     }
 
     section.cover div.content h1 {
+        font-weight: 700;
         font-size: 30vw;
         max-width: calc(var(--sec-vwu-desktop) * 65);
     }
 
     section.cover div.content h2 {
+        font-weight: 400;
         font-size: 7vw;
     }
 
     section.cover div.content p {
+        font-weight: 400;
         font-size: 4.3vw;
         max-width: calc(var(--sec-vwu-desktop) * 65);
     }
@@ -780,14 +797,15 @@ main .section-bg {
 
     .page .text-container h2 {
         font-weight: 400;
-        font-size: 12vw;
-        max-width: 75vw !important;
+        font-size: 13.6vw;
+        max-width: 80vw !important;
+        line-height: 1;
     }
 
     .page .text-container p {
         font-weight: 300;
         font-size: 4.2vw;
-        max-width: 74vw !important;
+        max-width: 80vw !important;
     }
 
     .page .text-container p span {
@@ -797,7 +815,7 @@ main .section-bg {
     .page .text-container a {
         font-weight: 300;
         font-size: 4.2vw;
-        max-width: 74vw !important;
+        max-width: 80vw !important;
     }
 
     .page-3 .text-container,
@@ -806,29 +824,7 @@ main .section-bg {
     }
 
     .page-2 .text-container h2 {
-        max-width: 63vw !important;
-    }
-
-    .page-3 .text-container h2 {
-        max-width: 85vw !important;
-        font-size: 13vw;
-    }
-
-    .page-3 .text-container p {
-        max-width: 80vw !important;
-    }
-
-    .page-4 .text-container h2 {
-        max-width: 80vw !important;
-        font-size: 13vw;
-    }
-
-    .page-4 .text-container p {
-        max-width: 80vw !important;
-    }
-
-    .page-4 .text-container a {
-        max-width: 80vw !important;
+        max-width: 72vw !important;
     }
 
     .roadmap {
@@ -844,19 +840,11 @@ main .section-bg {
     }
 
     .roadmap p.title {
-        background: linear-gradient(90deg, #001aa7 0%, #00bdd4 100%);
-        -webkit-background-clip: text;
-        background-clip: text;
-        -webkit-text-fill-color: transparent;
-        color: transparent;
-        display: inline-block;
+        max-width: 85vw !important;
+        color: #009df7;
     }
 
     .dark .roadmap p.title {
-        background: none;
-        -webkit-background-clip: initial;
-        background-clip: initial;
-        -webkit-text-fill-color: #64fdff;
         color: #64fdff;
     }
 
