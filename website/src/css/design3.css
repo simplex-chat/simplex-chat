@@ -402,14 +402,14 @@ section.page .area {
 
 /* --- COVER --- */
 section.cover {
-    background-image: url("/img/design_3/cover-light.jpg");
+    background-image: url("/img/design_3/cover-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
     background-position: center;
     background-repeat: no-repeat;
 }
 
 .dark section.cover {
-    background-image: url("/img/design_3/cover.jpg");
+    background-image: url("/img/design_3/cover.webp");
 }
 
 section.cover div.content {
@@ -424,9 +424,9 @@ section.cover div.content {
 }
 
 section.cover div.content h1 {
-    font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 800;
-    font-size: calc(var(--sec-vwu-desktop) * 11.4);
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 600;
+    font-size: calc(var(--sec-vwu-desktop) * 11.7);
     line-height: 0.9;
     letter-spacing: -0.025em;
     color: #ffffff;
@@ -436,14 +436,16 @@ section.cover div.content h1 {
 
 section.cover div.content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
-    font-weight: 400;
+    font-weight: 300;
     font-size: calc(var(--sec-vwu-desktop) * 2.7);
     letter-spacing: -0.025em;
+    line-height: 1.2;
 }
 
 section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
-    font-weight: 400;
+    font-weight: 200;
+    /* font-weight: 400; */
     font-size: calc(var(--sec-vwu-desktop) * 1.6);
     align-items: center;
     color: #ffffff;
@@ -516,27 +518,47 @@ main .section-bg {
     background-repeat: no-repeat;
 }
 
-.page-2 .image {
+.page-2 {
     background-image: url("/img/design_3/section-2-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-.dark .page-2 .image {
+.dark .page-2 {
     background-image: url("/img/design_3/section-2-desktop.webp");
 }
 
-.page-3 .image {
+.page-3 {
     background-image: url("/img/design_3/section-3-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
 }
 
-.dark .page-3 .image {
+.dark .page-3 {
     background-image: url("/img/design_3/section-3-desktop.webp");
 }
 
-.page-4 .image {
+.page-4 {
+    background-image: url("/img/design_3/section-4-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .page-4 {
     background-image: url("/img/design_3/section-4-desktop.webp");
 }
 
-.page-5 .image {
+.page-5 {
+    background-image: url("/img/design_3/section-5-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .page-5 {
     background-image: url("/img/design_3/section-5-desktop.webp");
 }
 
@@ -590,7 +612,7 @@ main .section-bg {
 
 .page .text-container h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
-    font-weight: 400;
+    font-weight: 300;
     font-size: calc(var(--sec-vwu-desktop)*4.94);
     letter-spacing: -0.025em;
     line-height: 1.05;
@@ -678,22 +700,14 @@ main .section-bg {
     max-width: calc(var(--sec-vwu-desktop)*21) !important;
 }
 
-.roadmap p:first-of-type {
+.roadmap p:first-of-type,
+.roadmap>p:first-of-type {
     font-weight: 500;
-    background: linear-gradient(90deg, #001aa7 0%, #00bdd4 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    -webkit-text-fill-color: transparent;
-    color: transparent;
-    display: inline-block;
+    color: #009df7;
 }
 
 .dark .roadmap p:first-of-type,
 .dark .roadmap>p:first-of-type {
-    background: none;
-    -webkit-background-clip: initial;
-    background-clip: initial;
-    -webkit-text-fill-color: #64fdff;
     color: #64fdff;
 }
 
@@ -1413,6 +1427,7 @@ header#navbar ul.sub-menu {
 
 header#navbar ul.sub-menu li a {
     padding: 3px 20px;
+    font-weight: 400;
     white-space: nowrap;
     display: flex;
     align-items: center;
