@@ -8059,13 +8059,13 @@ enum class MsgType {
 }
 
 fun showClientNoticeAlert(server: String, preset: Boolean, expiresAt: Instant?) {
-  var message = "Server: $server.\nConditions of use violation notice received from ${if (preset) "preset" else "this"} server.\nNo IDs shared, see How it works."
+  var message = "Server: $server.\nConditions of use violation notice received from ${if (preset) "preset" else "this"} server.\nNo ID shared, see How it works."
   if (expiresAt != null) {
     val tz = TimeZone.currentSystemDefault()
     val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
     message += "\n\nNew addresses can be created after ${expiresAt.toLocalDateTime(tz).toJavaLocalDateTime().format(formatter)}."
   }
-  AlertManager.shared.showAlertDialogButtonsColumn(title = "Not allowed", text = message) {
+  AlertManager.shared.showAlertDialogButtonsColumn(title = "Not allowed", text = AnnotatedString(message)) {
     val uriHandler = LocalUriHandler.current
     Column {
       SectionItemView({ AlertManager.shared.hideAlert() }) {
