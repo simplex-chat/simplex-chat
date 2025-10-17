@@ -676,30 +676,35 @@ header nav {
 
 
 /* comparison */
-#comparison table thead th{
+#comparison table thead th,
+#how-secure-comparison table thead th{
   font-size: 16px;
   line-height: 36px;
   font-weight: 500;
   text-align: center;
 }
-#comparison table tbody td{
+#comparison table tbody td,
+#how-secure-comparison table tbody td{
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
 }
-#comparison table tbody tr > td:first-child{
+#comparison table tbody tr > td:first-child,
+#how-secure-comparison table tbody tr > td:first-child{
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
   text-align: left;
 }
 
-[dir="rtl"] #comparison table tbody tr > td:first-child{
+[dir="rtl"] #comparison table tbody tr > td:first-child,
+[dir="rtl"] #how-secure-comparison table tbody tr > td:first-child{
   text-align: right;
 }
 
 @media (min-width: 1024px) {
-  #comparison table tbody tr > td:first-child{
+  #comparison table tbody tr > td:first-child,
+  #how-secure-comparison table tbody tr > td:first-child{
     font-size: 18px;
     line-height: 36px;
   }  
