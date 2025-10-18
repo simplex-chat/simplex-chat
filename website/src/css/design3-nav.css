@@ -10,35 +10,44 @@ body.change-nav-color {
     --nav-color: #001796;
 }
 
-header.scrolling .logo {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+.logo {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-bottom-right-radius: 12px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     padding-right: 24px;
     transition: all 0.3s ease;
 }
 
-header.scrolling nav#menu {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+.dark .logo {
+    background: rgba(19, 29, 73, 0.05);
+}
+
+nav#menu {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     padding: 0px 50px;
     border-bottom-right-radius: 12px;
     border-bottom-left-radius: 12px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     transition: all 0.3s ease;
 }
 
-header.scrolling .right-links{
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(15px);
-    -webkit-backdrop-filter: blur(15px);
+.dark nav#menu {
+    background: rgba(19, 29, 73, 0.05);
+}
+
+.right-links {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-bottom-left-radius: 12px;
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.1);
     padding-left: 24px;
     transition: all 0.3s ease;
+}
+
+.dark .right-links {
+    background: rgba(19, 29, 73, 0.05);
 }
 
 /* NavBar */
