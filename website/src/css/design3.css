@@ -242,12 +242,12 @@
 @media screen and (max-width: 949px) {
     :root {
         /* Cover background for mobile */
-        --cover-bg-w: calc(min((3200 / 1080) * 100vw, (3200 / 1920) * 100vh));
-        --cover-bg-h: calc(min((1800 / 1080) * 100vw, (1800 / 1920) * 100vh));
+        --cover-bg-w: calc(min((3200 / 620) * 100vw, (3200 / 1080) * 100vh));
+        --cover-bg-h: calc(min((1800 / 620) * 100vw, (1800 / 1080) * 100vh));
 
         /* Drawn background size for mobile */
-        --sec-w: calc(min((1080 / 1080) * 100vw, (1080 / 1920) * 100vh));
-        --sec-h: calc(min((1920 / 1080) * 100vw, (1920 / 1920) * 100vh));
+        --sec-w: calc(min((620 / 620) * 100vw, (620 / 1080) * 100vh));
+        --sec-h: calc(min((1080 / 620) * 100vw, (1080 / 1080) * 100vh));
         --sec-vwu: calc(var(--sec-w) / 100);
         --sec-vhu: calc(var(--sec-h) / 100);
     }
@@ -408,6 +408,15 @@ section.cover {
 
 .dark section.cover {
     background-image: url("/img/design_3/cover.webp");
+}
+
+.chrome-ios section.cover,
+.safari-ios section.cover {
+    background-position: center calc(50% - calc(110lvh - 100svh) / 2);
+}
+
+.chrome-android section.cover {
+    background-position: center calc(50% - calc(100lvh - 100svh) / 2);
 }
 
 section.cover div.content {
@@ -571,11 +580,19 @@ main .section-bg {
         background-image: none;
     }
 
-    .page-2 .image {
-        top: -6% !important;
-        background-image: url("/img/design_3/section-2-mobile-light.webp");
-        background-size: cover !important;
-        height: 75%;
+    .page-2 {
+        background-image: url("/img/design_3/section-2-desktop-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.84);
+        background-position: 51.5% calc(50% - calc(var(--sec-vhu) * 18)) !important;
+    }
+
+    .chrome-ios .page-2,
+    .safari-ios .page-2 {
+        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 18) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-2 {
+        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 18) + (calc(100lvh - 100svh) / 2))) !important;
     }
 
     .dark .page-2 .image {
@@ -742,18 +759,6 @@ main .section-bg {
 }
 
 @media (max-width: 949px) {
-
-    /* --- COVER --- */
-    section.cover {
-        background-image: url("/img/design_3/cover-mobile-light.webp");
-        background-size: cover;
-    }
-
-    .dark section.cover {
-        background-image: url("/img/design_3/cover-mobile.jpg");
-        background-size: cover;
-    }
-
     section.cover div.content h1 {
         font-weight: 700;
         font-size: calc(var(--sec-vwu) * 30);
