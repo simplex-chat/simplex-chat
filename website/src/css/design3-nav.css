@@ -10,44 +10,46 @@ body.change-nav-color {
     --nav-color: #001796;
 }
 
-.logo {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom-right-radius: 12px;
-    padding-right: 24px;
-    transition: all 0.3s ease;
-}
+@media screen and (min-width: 950px) {
+    .logo {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom-right-radius: 12px;
+        padding-right: 24px;
+        transition: all 0.3s ease;
+    }
 
-.dark .logo {
-    background: rgba(19, 29, 73, 0.05);
-}
+    .dark .logo {
+        background: rgba(19, 29, 73, 0.05);
+    }
 
-nav#menu {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    padding: 0px 50px;
-    border-bottom-right-radius: 12px;
-    border-bottom-left-radius: 12px;
-    transition: all 0.3s ease;
-}
+    nav#menu {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        padding: 0px 50px;
+        border-bottom-right-radius: 12px;
+        border-bottom-left-radius: 12px;
+        transition: all 0.3s ease;
+    }
 
-.dark nav#menu {
-    background: rgba(19, 29, 73, 0.05);
-}
+    .dark nav#menu {
+        background: rgba(19, 29, 73, 0.05);
+    }
 
-.right-links {
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border-bottom-left-radius: 12px;
-    padding-left: 24px;
-    transition: all 0.3s ease;
-}
+    .right-links {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        border-bottom-left-radius: 12px;
+        padding-left: 24px;
+        transition: all 0.3s ease;
+    }
 
-.dark .right-links {
-    background: rgba(19, 29, 73, 0.05);
+    .dark .right-links {
+        background: rgba(19, 29, 73, 0.05);
+    }
 }
 
 /* NavBar */
@@ -141,7 +143,7 @@ header#navbar ul a span svg {
     fill: #fff;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 950px) {
     header#navbar nav#menu>ul>li>a {
         color: var(--nav-color);
     }
@@ -243,7 +245,7 @@ header#navbar .nav-link:focus-within .sub-menu {
     fill: white;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 950px) {
     .flag-container>a {
         color: var(--nav-color) !important;
     }
@@ -298,7 +300,7 @@ header#navbar button.theme-switch-btn svg path {
     fill: white;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 950px) {
     header#navbar button.theme-switch-btn svg path {
         fill: var(--nav-color) !important;
         transition: all 0.3s ease;
@@ -360,7 +362,7 @@ button#cross-btn {
     height: auto;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 949px) {
     #mobile-header {
         position: fixed;
         top: 0;
@@ -512,7 +514,7 @@ button#cross-btn {
 }
 
 /* underline animation on hover */
-@media (min-width:768px) {
+@media (min-width:950px) {
     .nav-link-text {
         display: inline-block;
         position: relative;
