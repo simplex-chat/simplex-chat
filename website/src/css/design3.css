@@ -512,14 +512,6 @@ main .section-bg {
     margin-bottom: -110lvh;
 }
 
-.page .area>.image:first-child {
-    position: absolute;
-    inset: 0;
-    background-size: contain;
-    background-position: center;
-    background-repeat: no-repeat;
-}
-
 .page-2 {
     background-image: url("/img/design_3/section-2-desktop-light.webp");
     background-size: var(--cover-bg-w) var(--cover-bg-h);
@@ -565,61 +557,79 @@ main .section-bg {
 }
 
 @media screen and (max-width: 949px) {
-    .page .area>.image:first-child {
-        background-position: top;
-    }
-
-    .page-2,
-    .dark .page-2,
-    .page-3,
-    .dark .page-3,
-    .page-4,
-    .dark .page-4,
-    .page-5,
-    .dark .page-5 {
-        background-image: none;
-    }
-
     .page-2 {
-        background-image: url("/img/design_3/section-2-desktop-light.webp");
+        background-image: url("/img/design_3/section-2-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
-        background-position: 51.5% calc(50% - calc(var(--sec-vhu) * 18)) !important;
+        background-position: 51.5% calc(50% - calc(var(--sec-vhu) * 2)) !important;
     }
 
     .chrome-ios .page-2,
     .safari-ios .page-2 {
-        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 18) + (calc(110lvh - 100svh) / 2))) !important;
+        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(110lvh - 100svh) / 2))) !important;
     }
 
     .chrome-android .page-2 {
-        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 18) + (calc(100lvh - 100svh) / 2))) !important;
+        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(100lvh - 100svh) / 2))) !important;
     }
 
-    .dark .page-2 .image {
+    .dark .page-2 {
         background-image: url("/img/design_3/section-2-mobile.webp");
     }
 
-    .page-3 .image {
+    .page-3 {
         background-image: url("/img/design_3/section-3-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.8);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 4.5)) !important;
     }
 
-    .dark .page-3 .image {
+    .chrome-ios .page-3,
+    .safari-ios .page-3 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 4.5) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-3 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 4.5) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-3 {
         background-image: url("/img/design_3/section-3-mobile.webp");
     }
 
-    .page-4 .image {
+    .page-4 {
         background-image: url("/img/design_3/section-4-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.84);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 2)) !important;
     }
 
-    .dark .page-4 .image {
+    .chrome-ios .page-4,
+    .safari-ios .page-4 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-4 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-4 {
         background-image: url("/img/design_3/section-4-mobile.webp");
     }
 
-    .page-5 .image {
+    .page-5 {
         background-image: url("/img/design_3/section-5-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.84);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 3)) !important;
     }
 
-    .dark .page-5 .image {
+    .chrome-ios .page-5,
+    .safari-ios .page-5 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 3) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-5 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 3) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-5 {
         background-image: url("/img/design_3/section-5-mobile.webp");
     }
 }
@@ -883,7 +893,7 @@ main .section-bg {
     .page-6 .group-images {
         width: 100%;
         height: 10%;
-        padding: calc(var(--sec-vhu) * 6) calc(var(--sec-vwu) * 3);
+        padding: calc(var(--sec-vhu) * 4) calc(var(--sec-vwu) * 3);
         top: 0;
         right: 0;
         grid-template-columns: repeat(8, 1fr);
