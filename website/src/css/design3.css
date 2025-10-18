@@ -226,8 +226,8 @@
     /* Drawn background size derived from viewport — no cropping (contain-like) */
     --sec-w: calc(min((1920 / 1920) * 100vw, (1920 / 1080) * 100vh));
     --sec-h: calc(min((1080 / 1920) * 100vw, (1080 / 1080) * 100vh));
-    --sec-vwu-desktop: calc(var(--sec-w) / 100);
-    --sec-vhu-desktop: calc(var(--sec-h) / 100);
+    --sec-vwu: calc(var(--sec-w) / 100);
+    --sec-vhu: calc(var(--sec-h) / 100);
 }
 
 :root.dark {
@@ -239,12 +239,17 @@
             #fff6e0 90%);
 }
 
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 949px) {
     :root {
-        --sec-w: 100vw;
-        --sec-h: 100svh;
-        --sec-vwu-desktop: calc(var(--sec-w) / 100);
-        --sec-vhu-desktop: calc(var(--sec-h) / 100);
+        /* Cover background for mobile */
+        --cover-bg-w: calc(min((3200 / 1080) * 100vw, (3200 / 1920) * 100vh));
+        --cover-bg-h: calc(min((1800 / 1080) * 100vw, (1800 / 1920) * 100vh));
+
+        /* Drawn background size for mobile */
+        --sec-w: calc(min((1080 / 1080) * 100vw, (1080 / 1920) * 100vh));
+        --sec-h: calc(min((1920 / 1080) * 100vw, (1920 / 1920) * 100vh));
+        --sec-vwu: calc(var(--sec-w) / 100);
+        --sec-vhu: calc(var(--sec-h) / 100);
     }
 }
 
@@ -274,7 +279,7 @@ body {
     background: #000;
 }
 
-@media screen and (min-width: 768px) {
+@media screen and (min-width: 950px) {
     html {
         overscroll-behavior: none;
     }
@@ -390,6 +395,7 @@ section.page .area {
     position: relative;
     width: var(--sec-w);
     height: var(--sec-h);
+    /* border: 2px solid red; */
 }
 
 /* --- COVER --- */
@@ -410,7 +416,7 @@ section.cover div.content {
     justify-content: center;
     align-items: center;
     text-align: center;
-    gap: calc(var(--sec-vhu-desktop) * 3.5);
+    gap: calc(var(--sec-vhu) * 3.5);
     width: var(--sec-w);
     height: var(--sec-h);
 }
@@ -418,18 +424,18 @@ section.cover div.content {
 section.cover div.content h1 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 600;
-    font-size: calc(var(--sec-vwu-desktop) * 11.7);
+    font-size: calc(var(--sec-vwu) * 11.7);
     line-height: 0.9;
     letter-spacing: -0.025em;
     color: #ffffff;
     text-align: center;
-    max-width: calc(var(--sec-vwu-desktop) * 25);
+    max-width: calc(var(--sec-vwu) * 25);
 }
 
 section.cover div.content h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 300;
-    font-size: calc(var(--sec-vwu-desktop) * 2.7);
+    font-size: calc(var(--sec-vwu) * 2.7);
     letter-spacing: -0.025em;
     line-height: 1.2;
 }
@@ -437,30 +443,30 @@ section.cover div.content h2 {
 section.cover div.content p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: calc(var(--sec-vwu-desktop) * 1.6);
+    font-size: calc(var(--sec-vwu) * 1.6);
     align-items: center;
     color: #ffffff;
-    max-width: calc(var(--sec-vwu-desktop) * 25);
+    max-width: calc(var(--sec-vwu) * 25);
 }
 
 section.cover div.socials {
     position: absolute;
     width: var(--sec-w);
-    bottom: calc(var(--sec-vhu-desktop) * 3);
-    padding: 0 calc(var(--sec-vwu-desktop) * 4);
+    bottom: calc(var(--sec-vhu) * 3);
+    padding: 0 calc(var(--sec-vwu) * 4);
 
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: calc(var(--sec-vwu-desktop) * 0.6);
+    gap: calc(var(--sec-vwu) * 0.6);
     flex-wrap: wrap;
 }
 
 section.cover div.socials a img {
     width: auto;
-    height: calc(var(--sec-vhu-desktop) * 4.2);
+    height: calc(var(--sec-vhu) * 4.2);
     border: #4f4f4f 1px solid;
-    border-radius: calc(var(--sec-vhu-desktop) * 0.8);
+    border-radius: calc(var(--sec-vhu) * 0.8);
 }
 
 section.cover div.socials a img.no-border {
@@ -481,7 +487,7 @@ main .section-bg {
     /* fallback */
     margin-bottom: -100lvh;
     /* cancel own layout height */
-    width: 100vw;
+    width: 100%;
 
     background-image: var(--bg-grad);
     background-position: center;
@@ -549,7 +555,7 @@ main .section-bg {
     background-image: url("/img/design_3/section-5-desktop.webp");
 }
 
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 949px) {
     .page .area>.image:first-child {
         background-position: top;
     }
@@ -609,9 +615,9 @@ main .section-bg {
     flex-direction: column;
     justify-content: center;
     align-items: flex-start;
-    gap: calc(var(--sec-vhu-desktop) * 3.25);
-    margin-right: calc(var(--sec-vwu-desktop)*7.5);
-    margin-left: calc(var(--sec-vwu-desktop)*7.5);
+    gap: calc(var(--sec-vhu) * 3.25);
+    margin-right: calc(var(--sec-vwu)*7.5);
+    margin-left: calc(var(--sec-vwu)*7.5);
     width: fit-content;
     z-index: 1;
 }
@@ -619,10 +625,10 @@ main .section-bg {
 .page .text-container h2 {
     font-family: "GT-Walsheim", "Manrope", sans-serif;
     font-weight: 300;
-    font-size: calc(var(--sec-vwu-desktop)*4.94);
+    font-size: calc(var(--sec-vwu)*4.94);
     letter-spacing: -0.025em;
     line-height: 1.05;
-    max-width: calc(var(--sec-vwu-desktop)*26);
+    max-width: calc(var(--sec-vwu)*26);
     color: #023789;
 }
 
@@ -633,8 +639,8 @@ main .section-bg {
 .page .text-container p {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: calc(var(--sec-vwu-desktop)*1.62);
-    max-width: calc(var(--sec-vwu-desktop)*23);
+    font-size: calc(var(--sec-vwu)*1.62);
+    max-width: calc(var(--sec-vwu)*23);
     color: #000000;
 }
 
@@ -649,28 +655,28 @@ main .section-bg {
 .page .text-container a {
     font-family: "Manrope", "GT-Walsheim", sans-serif;
     font-weight: 200;
-    font-size: calc(var(--sec-vwu-desktop)*1.62);
+    font-size: calc(var(--sec-vwu)*1.62);
     text-decoration: underline;
     text-decoration-line: underline;
     text-decoration-thickness: 0.5px;
     text-underline-offset: 4px;
-    max-width: calc(var(--sec-vwu-desktop)*14);
+    max-width: calc(var(--sec-vwu)*14);
 }
 
 .page-2 .text-container h2 {
-    max-width: calc(var(--sec-vwu-desktop)*26) !important;
+    max-width: calc(var(--sec-vwu)*26) !important;
 }
 
 .page-2 .text-container p {
-    max-width: calc(var(--sec-vwu-desktop)*23) !important;
+    max-width: calc(var(--sec-vwu)*23) !important;
 }
 
 .page-3 .text-container h2 {
-    max-width: calc(var(--sec-vwu-desktop)*29) !important;
+    max-width: calc(var(--sec-vwu)*29) !important;
 }
 
 .page-3 .text-container p {
-    max-width: calc(var(--sec-vwu-desktop)*31) !important;
+    max-width: calc(var(--sec-vwu)*31) !important;
 }
 
 .page-3 .text-container,
@@ -679,31 +685,31 @@ main .section-bg {
 }
 
 .page-4 .text-container h2 {
-    max-width: calc(var(--sec-vwu-desktop)*26) !important;
+    max-width: calc(var(--sec-vwu)*26) !important;
 }
 
 .page-4 .text-container p {
-    max-width: calc(var(--sec-vwu-desktop)*30) !important;
+    max-width: calc(var(--sec-vwu)*30) !important;
 }
 
 .page-4 .text-container a {
-    max-width: calc(var(--sec-vwu-desktop)*30) !important;
+    max-width: calc(var(--sec-vwu)*30) !important;
 }
 
 .page-5 .text-container h2 {
-    max-width: calc(var(--sec-vwu-desktop)*23) !important;
+    max-width: calc(var(--sec-vwu)*23) !important;
 }
 
 .page-5 .text-container p {
-    max-width: calc(var(--sec-vwu-desktop)*30) !important;
+    max-width: calc(var(--sec-vwu)*30) !important;
 }
 
 .page-6 .text-container p {
-    max-width: calc(var(--sec-vwu-desktop)*21) !important;
+    max-width: calc(var(--sec-vwu)*21) !important;
 }
 
 .page-6 .text-container a {
-    max-width: calc(var(--sec-vwu-desktop)*21) !important;
+    max-width: calc(var(--sec-vwu)*21) !important;
 }
 
 .roadmap p:first-of-type,
@@ -735,7 +741,7 @@ main .section-bg {
     display: none;
 }
 
-@media (max-width: 767px) {
+@media (max-width: 949px) {
 
     /* --- COVER --- */
     section.cover {
@@ -750,19 +756,19 @@ main .section-bg {
 
     section.cover div.content h1 {
         font-weight: 700;
-        font-size: 30vw;
-        max-width: calc(var(--sec-vwu-desktop) * 65);
+        font-size: calc(var(--sec-vwu) * 30);
+        max-width: calc(var(--sec-vwu) * 65);
     }
 
     section.cover div.content h2 {
         font-weight: 400;
-        font-size: 7vw;
+        font-size: calc(var(--sec-vwu) * 7);
     }
 
     section.cover div.content p {
         font-weight: 400;
-        font-size: 4.3vw;
-        max-width: calc(var(--sec-vwu-desktop) * 65);
+        font-size: calc(var(--sec-vwu) * 4.3);
+        max-width: calc(var(--sec-vwu) * 65);
     }
 
     section.cover div.socials {
@@ -780,24 +786,24 @@ main .section-bg {
     .page .text-container {
         justify-content: flex-end;
         align-items: flex-start;
-        gap: calc(var(--sec-vhu-desktop) * 3);
-        margin-right: 7vw !important;
-        margin-left: 7vw !important;
-        padding-bottom: 8vw;
+        gap: calc(var(--sec-vhu) * 2);
+        margin-right: calc(var(--sec-vwu) * 7) !important;
+        margin-left: calc(var(--sec-vwu) * 7) !important;
+        padding-bottom: calc(var(--sec-vwu) * 8);
         max-width: fit-content !important;
     }
 
     .page .text-container h2 {
         font-weight: 400;
-        font-size: 13.6vw;
-        max-width: 80vw !important;
+        font-size: calc(var(--sec-vwu) * 13.6);
+        max-width: calc(var(--sec-vwu) * 80) !important;
         line-height: 1;
     }
 
     .page .text-container p {
         font-weight: 300;
-        font-size: 4.2vw;
-        max-width: 80vw !important;
+        font-size: calc(var(--sec-vwu) * 4.2);
+        max-width: calc(var(--sec-vwu) * 80) !important;
     }
 
     .page .text-container p span {
@@ -806,8 +812,8 @@ main .section-bg {
 
     .page .text-container a {
         font-weight: 300;
-        font-size: 4.2vw;
-        max-width: 80vw !important;
+        font-size: calc(var(--sec-vwu) * 4.2);
+        max-width: calc(var(--sec-vwu) * 80) !important;
     }
 
     .page-3 .text-container,
@@ -816,11 +822,11 @@ main .section-bg {
     }
 
     .page-2 .text-container h2 {
-        max-width: 72vw !important;
+        max-width: calc(var(--sec-vwu) * 72) !important;
     }
 
     .roadmap {
-        width: 85vw !important;
+        width: calc(var(--sec-vwu) * 85) !important;
     }
 
     .roadmap>p:first-child {
@@ -832,7 +838,7 @@ main .section-bg {
     }
 
     .roadmap p.title {
-        max-width: 85vw !important;
+        max-width: calc(var(--sec-vwu) * 85) !important;
         color: #009df7;
     }
 
@@ -842,7 +848,7 @@ main .section-bg {
 
     .roadmap>p {
         font-weight: 400;
-        max-width: 90vw !important;
+        max-width: calc(var(--sec-vwu) * 90) !important;
     }
 }
 
@@ -851,37 +857,37 @@ main .section-bg {
     top: 0;
     right: 0;
     bottom: 0;
-    width: calc(var(--sec-vwu-desktop) * 65);
-    padding: calc(var(--sec-vhu-desktop) * 10.5) calc(var(--sec-vwu-desktop) * 2.5);
+    width: calc(var(--sec-vwu) * 65);
+    padding: calc(var(--sec-vhu) * 10.5) calc(var(--sec-vwu) * 2.5);
     z-index: 0;
 
     display: grid;
     grid-template-columns: repeat(8, 1fr);
     grid-template-rows: repeat(6, 1fr);
-    gap: calc(var(--sec-vwu-desktop) * 2.1);
+    gap: calc(var(--sec-vwu) * 2.1);
     z-index: 2;
 }
 
 .page-6 .group-images img {
     width: 100%;
     height: auto;
-    border-radius: calc(var(--sec-vhu-desktop) * 1.8);
+    border-radius: calc(var(--sec-vhu) * 1.8);
 }
 
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 949px) {
     .page-6 .group-images {
         width: 100%;
         height: 10%;
-        padding: calc(var(--sec-vhu-desktop) * 6) calc(var(--sec-vwu-desktop) * 3);
+        padding: calc(var(--sec-vhu) * 6) calc(var(--sec-vwu) * 3);
         top: 0;
         right: 0;
         grid-template-columns: repeat(8, 1fr);
         grid-template-rows: repeat(7, 1fr);
-        gap: calc(var(--sec-vwu-desktop) * 2.8);
+        gap: calc(var(--sec-vwu) * 2.8);
     }
 
     .page-6 .group-images img {
-        border-radius: calc(var(--sec-vhu-desktop) * 0.8);
+        border-radius: calc(var(--sec-vhu) * 0.8);
     }
 }
 
@@ -1081,7 +1087,7 @@ main .section-bg {
     --h: 1
 }
 
-@media screen and (max-width: 767px) {
+@media screen and (max-width: 949px) {
     .page-6 .group-images>a.simplex-image {
         --c: 4;
         --r: 4;
@@ -1284,7 +1290,7 @@ section.page.footer {
     min-height: fit-content;
 }
 
-@media screen and (max-width: 768px) {
+@media screen and (max-width: 950px) {
     section.page.footer {
         height: 100lvh;
         min-height: 100lvh;
@@ -1319,7 +1325,7 @@ section.page.footer {
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 950px) {
 
     .footer .container-md,
     .footer .container-sm,
