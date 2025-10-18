@@ -241,6 +241,12 @@
 
 @media screen and (max-width: 949px) {
     :root {
+        --bg-grad: linear-gradient(30deg,
+                #e8f3ff 0%,
+                #c0e2ff 40%,
+                #e9ffff 80%,
+                #ffefd6 90%);
+
         /* Cover background for mobile */
         --cover-bg-w: calc(min((3200 / 620) * 100vw, (3200 / 1080) * 100vh));
         --cover-bg-h: calc(min((1800 / 620) * 100vw, (1800 / 1080) * 100vh));
@@ -250,6 +256,15 @@
         --sec-h: calc(min((1080 / 620) * 100vw, (1080 / 1080) * 100vh));
         --sec-vwu: calc(var(--sec-w) / 100);
         --sec-vhu: calc(var(--sec-h) / 100);
+    }
+
+    :root.dark {
+        --bg-grad: linear-gradient(30deg,
+                #000000 0%,
+                #131d49 52%,
+                #3f5598 65%,
+                #c3faff 85%,
+                #fff6e0 90%);
     }
 }
 
