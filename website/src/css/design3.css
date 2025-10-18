@@ -286,12 +286,12 @@ html {
 
 html,
 body {
-    background: #fff;
+    background: #ccf9fc;
 }
 
 .dark html,
 .dark body {
-    background: #000;
+    background: #2d3f64;
 }
 
 @media screen and (min-width: 950px) {
