@@ -124,7 +124,7 @@
     <string name="server_error">помилка</string>
     <string name="server_connecting">підключення</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Ви підключені до сервера для отримання повідомлень від цього контакту.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Спроба підключитися до сервера для отримання повідомлень від цього контакту (помилка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Спроба підключитися до сервера для отримання повідомлень від цього контакту (помилка: %1$s).</string>
     <string name="deleted_description">видалено</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Спроба підключитися до сервера для отримання повідомлень від цього контакту.</string>
     <string name="marked_deleted_description">відзначено як видалено</string>

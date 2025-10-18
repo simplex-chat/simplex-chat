@@ -87,7 +87,6 @@ library
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
-      Simplex.Chat.Types.Util
       Simplex.Chat.Util
   if !flag(client_library)
       exposed-modules:
