@@ -1,7 +1,7 @@
 ---
-layout: layouts/community_vouchers.html
+layout: layouts/token.html
 title: "Simplex Chat"
-permalink: "/community-vouchers/index.html"
+permalink: "/token/index.html"
 ---
 
 # Community Vouchers
