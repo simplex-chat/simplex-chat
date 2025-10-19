@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "@openzeppelin/contracts@5.4.0/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts@5.4.0/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts@5.4.0/access/Ownable.sol";
 import "@openzeppelin/contracts@5.4.0/utils/Base64.sol";
 import "@openzeppelin/contracts@5.4.0/utils/Strings.sol";
 
-contract NFTNumbered is ERC721, Ownable {
+contract NFTNumbered is ERC721Enumerable, Ownable {
     address public minter;
     bool public mintingEnabled;
     string public description;
@@ -60,7 +60,6 @@ contract NFTNumbered is ERC721, Ownable {
         require(to == address(0) || balanceOf(to) == 0, "Recipient already owns this token, only one token per address is allowed");
         return super._update(to, tokenId, auth);
     }
-
 
     /// @notice Returns embedded JSON metadata URI.
     /// @param id Token ID.
