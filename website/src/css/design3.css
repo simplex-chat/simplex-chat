@@ -497,6 +497,21 @@ section.cover div.socials a img.no-border {
     border: none;
 }
 
+.publications-btns {
+    position: absolute;
+    bottom: 24px;
+    left: 16px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+}
+
+.publications-btns img {
+    height: 40px;
+}
+
 /* --- MAIN SECTIONS --- */
 main {
     position: relative;
