@@ -53,12 +53,12 @@
         <link id="prism-theme" rel="stylesheet" href="/css/prism-light.min.css"/>
         <link href="/css/style.css" rel="stylesheet"/>
         <link rel="stylesheet" href="/css/doc.css"/>
+        <link rel="stylesheet" href="/css/design3-nav.css">
         <script async defer src="https://buttons.github.io/buttons.js"></script>
     </head>
 
     <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
-        <section class="w-full bg-transparent fixed top-0 z-50">
-            
+        
 
 
     
@@ -100,182 +100,168 @@
     
 
 
-<header class="">
-    <div class="flex items-center flex-row justify-end m-auto px-4 lg:px-7 h-[66px]">
-        <a href="/fr" class="h-full hidden dark:hidden lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-light.png" alt="logo" /></a>
-        <a href="/fr" class="h-full hidden dark:lg:flex items-center ltr:mr-auto rtl:ml-auto"><img class="w-auto max-h-[50px] pr-10" src="/img/new/logo-dark.png" alt="logo" /></a>
-        <a href="/fr" class="dark:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
-        <a href="/fr" class="hidden dark:inline-block dark:lg:hidden lg:hidden ltr:mr-auto rtl:ml-auto"><img class="h-[32px]" src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+<header id="navbar">
+    <a href="/fr" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo" /></a>
+    <a href="/fr" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo" /></a>
 
-        <nav class="bg-[#F0F1F2] dark:bg-gradient-radial-mobile dark:lg:bg-none lg:bg-transparent fixed top-[66px] left-0 right-0 bottom-0 h-[calc(100vh-66px)] lg:h-[66px] lg:top-0 lg:relative" id="menu">
-            <div class="flex flex-col lg:flex-row justify-between lg:items-center gap-5 xl:gap-10 px-4 lg:px-0 h-full">
-                <ul class="flex flex-col lg:flex-row lg:items-center gap-3 py-4 lg:py-0 lg:gap-5 xl:gap-8">
+    <nav id="menu">
+        <ul>
+            <li class="nav-link ">
+                <a href="/fr">
+                    <span class="nav-link-text">Accueil</span>
+                </a>
+            </li>
 
-                    <li class="nav-link relative ">
-                        <a href="/fr" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Accueil</span>
-                        </a>
-                    </li>
+            <hr>
 
-                    <hr class="dark:opacity-[0.1]" >
+            <li class="nav-link ">
+                <a href="/directory/">
+                    <span class="nav-link-text">Directory</span>
+                </a>
+            </li>
 
-                    <li class="nav-link relative ">
-                        <a href="/directory/" class="flex items-center justify-between gap-2 lg:py-5 whitespace-nowrap">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Directory</span>
-                        </a>
-                    </li>
+            <hr>
 
-                    <hr class="dark:opacity-[0.1]" >
-
-                    <li class="nav-link relative">
-                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Guide</span>
-                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
-                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                                </svg>
-                            </span>
-                        </a>
-
-                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
-                            
-                                <li><a href="/docs/guide/readme.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Prise en main</a></li>
-                            
-                                <li><a href="/docs/guide/send-messages.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Envoi de messages</a></li>
-                            
-                                <li><a href="/docs/guide/secret-groups.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Groupes secrets</a></li>
-                            
-                                <li><a href="/docs/guide/chat-profiles.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Profils de chat</a></li>
-                            
-                                <li><a href="/docs/guide/managing-data.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Gestion des données</a></li>
-                            
-                                <li><a href="/docs/guide/audio-video-calls.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Appels audio et vidéo</a></li>
-                            
-                                <li><a href="/docs/guide/privacy-security.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Protection de la vie privée et sécurité</a></li>
-                            
-                                <li><a href="/docs/guide/app-settings.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Paramètres de l'app</a></li>
-                            
-                                <li><a href="/docs/guide/making-connections.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Établir des connexions</a></li>
-                            
-                        </ul>
-                    </li>
-
-                    <hr class="dark:opacity-[0.1]" >
-
-                    <li class="nav-link relative">
-                        <a href="javascript:void(0);" class="flex items-center justify-between gap-2 lg:py-5">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] text-black dark:text-white before:bg-black dark:before:bg-white">Référence</span>
-                            <span href="" id="btn-mobile" class="flex items-center justify-center h-[36px] w-[36px] lg:h-auto lg:w-auto mt-1">
-                                <svg class="fill-black dark:fill-white" width="10" height="6" viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                    <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                                </svg>
-                            </span>
-                        </a>
-
-                        <ul class="flex flex-col items-start gap-2 lg:h-fit lg:absolute lg:bg-white dark:lg:bg-black top-full lg:mt-[10px] lg:py-4 min-w-[180px] rounded-md lg:shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu">
-                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
-                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
-                                >Whitepaper
-                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                            </a></li>
-                            <li><a href="/privacy" class="lg:px-[20px] inline-block"
-                                >Politique de confidentialité</a></li>
-                            <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
-                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
-                                >Protocole SMP
-                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                            </a></li>
-                            <li><a href="/docs/protocol/simplex-chat.html" class="lg:px-[20px] inline-block"
-                                >Protocole de chat</a></li>
-                            <li><a href="/docs/glossary.html" class="lg:px-[20px] inline-block"
-                                >Glossaire</a></li>
-
-                            <hr class=" h-[1px] w-full dark:opacity-[0.1]">
-
-                            
-                                <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Plateforme SimpleX</a></li>
-                            
-                                <li><a href="/docs/business.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX pour les entreprises</a></li>
-                            
-                                <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Service de répertoire SimpleX</a></li>
-                            
-                                <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accéder à la base de données des chats</a></li>
-                            
-                                <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hébergement d'un serveur SMP</a></li>
-                            
-                                <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hébergement d'un serveur XFTP</a></li>
-                            
-                                <li><a href="/docs/webrtc.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Serveurs WebRTC</a></li>
-                            
-                                <li><a href="/downloads/" class=" lg:px-[20px] inline-block whitespace-nowrap">Téléchargements</a></li>
-                            
-                                <li><a href="/transparency/" class=" lg:px-[20px] inline-block whitespace-nowrap">Transparence</a></li>
-                            
-                                <li><a href="/security/" class=" lg:px-[20px] inline-block whitespace-nowrap">Sécurité</a></li>
-                            
-                                <li><a href="/faq/" class=" lg:px-[20px] inline-block whitespace-nowrap">FAQ</a></li>
-                            
-
-                            <hr class=" h-[1px] w-full dark:opacity-[0.1]">
-
-                            <li><a href="/docs/translations.html"
-                                class="lg:px-[20px] flex items-center gap-1"
-                                >Traduire SimpleX Chat
-                            </a></li>
-                            <li><a href="/docs/android.html"
-                                class="lg:px-[20px] flex items-center gap-1"
-                                >Accéder aux fichiers Android
-                            </a></li>
-                            <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
-                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
-                                >Exemple de chatbot
-                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                            </a></li>
-                            <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
-                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
-                                >TypeScript SDK
-                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                            </a></li>
-                            <li><a href="/docs/cli.html" class="lg:px-[20px] inline-block"
-                                >Terminal CLI</a></li>
-                            <li><a href="https://github.com/simplex-chat/simplexmq"
-                                target="_blank" class="lg:px-[20px] flex items-center gap-1"
-                                >SimpleXMQ
-                                <svg class="float-right" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                            </a></li>
-                        </ul>
-                    </li>
-
-                    <hr class="dark:opacity-[0.1]" >
-
-                    <li class="nav-link relative ">
-                        <a href="/blog" class="flex items-center justify-between gap-2 lg:py-5">
-                            <span class="text-[16px] leading-[26px] tracking-[0.01em] nav-link-text text-black dark:text-white before:bg-black dark:before:bg-white">Blog</span>
-                        </a>
-                    </li>
-                </ul>
-
-                <a href="https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations"
-                    target="_blank" class="whitespace-nowrap flex items-center gap-1 self-center text-white dark:text-black text-[16px] font-medium tracking-[0.02em] rounded-[34px] bg-primary-light dark:bg-primary-dark py-3 lg:py-2 px-20 lg:px-5 mb-auto lg:mb-0"
-                    >Faire un don
+            <li class="nav-link">
+                <a href="javascript:void(0);">
+                    <span class="">Guide</span>
+                    <span href="" id="btn-mobile">
+                        <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                        </svg>
+                    </span>
                 </a>
 
-                <div class="inline-block dark:hidden self-center mt-[8px]">
-                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
-                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
-                </div>
+                <ul class="sub-menu">
+                    
+                        <li><a href="/docs/guide/readme.html" class="">Prise en main</a></li>
+                    
+                        <li><a href="/docs/guide/send-messages.html" class="">Envoi de messages</a></li>
+                    
+                        <li><a href="/docs/guide/secret-groups.html" class="">Groupes secrets</a></li>
+                    
+                        <li><a href="/docs/guide/chat-profiles.html" class="">Profils de chat</a></li>
+                    
+                        <li><a href="/docs/guide/managing-data.html" class="">Gestion des données</a></li>
+                    
+                        <li><a href="/docs/guide/audio-video-calls.html" class="">Appels audio et vidéo</a></li>
+                    
+                        <li><a href="/docs/guide/privacy-security.html" class="">Protection de la vie privée et sécurité</a></li>
+                    
+                        <li><a href="/docs/guide/app-settings.html" class="">Paramètres de l'app</a></li>
+                    
+                        <li><a href="/docs/guide/making-connections.html" class="">Établir des connexions</a></li>
+                    
+                </ul>
+            </li>
 
-                <div class="hidden dark:inline-block self-center mt-[8px]">
-                    <a class="github-button" href="https://github.com/simplex-chat/simplex-chat" data-size="large"
-                        data-color-scheme="no-preference: dark; light: dark; dark: dark;"
-                        data-show-count="true" aria-label="Star simplex-chat on GitHub">Star</a>
-                </div>
-            </div>
-        </nav>
+            <hr>
+
+            <li class="nav-link">
+                <a href="javascript:void(0);">
+                    <span class="">Référence</span>
+                    <span href="" id="btn-mobile">
+                        <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                        </svg>
+                    </span>
+                </a>
+
+                <ul class="sub-menu">
+                    <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
+                        target="_blank">Whitepaper
+                        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                    </a></li>
+                    <li><a href="/privacy">Politique de confidentialité</a></li>
+                    <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
+                        target="_blank">Protocole SMP
+                        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                    </a></li>
+                    <li><a href="/docs/protocol/simplex-chat.html">Protocole de chat</a></li>
+                    <li><a href="/docs/glossary.html">Glossaire</a></li>
+
+                    <hr>
+
+                    
+                        <li><a href="/docs/simplex.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Plateforme SimpleX</a></li>
+                    
+                        <li><a href="/docs/business.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX pour les entreprises</a></li>
+                    
+                        <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Service de répertoire SimpleX</a></li>
+                    
+                        <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Accéder à la base de données des chats</a></li>
+                    
+                        <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hébergement d'un serveur SMP</a></li>
+                    
+                        <li><a href="/docs/xftp-server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hébergement d'un serveur XFTP</a></li>
+                    
+                        <li><a href="/docs/webrtc.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Serveurs WebRTC</a></li>
+                    
+                        <li><a href="/downloads/" class=" lg:px-[20px] inline-block whitespace-nowrap">Téléchargements</a></li>
+                    
+                        <li><a href="/transparency/" class=" lg:px-[20px] inline-block whitespace-nowrap">Transparence</a></li>
+                    
+                        <li><a href="/security/" class=" lg:px-[20px] inline-block whitespace-nowrap">Sécurité</a></li>
+                    
+                        <li><a href="/faq/" class=" lg:px-[20px] inline-block whitespace-nowrap">FAQ</a></li>
+                    
+
+                    <hr>
+
+                    <li><a href="/docs/translations.html"
+                    >Traduire SimpleX Chat
+                    </a></li>
+                    <li><a href="/docs/android.html"
+                    >Accéder aux fichiers Android
+                    </a></li>
+                    <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
+                        target="_blank">Exemple de chatbot
+                        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                    </a></li>
+                    <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
+                        target="_blank">TypeScript SDK
+                        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                    </a></li>
+                    <li><a href="/docs/cli.html">Terminal CLI</a></li>
+                    <li><a href="https://github.com/simplex-chat/simplexmq"
+                        target="_blank">SimpleXMQ
+                        <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
+                    </a></li>
+                </ul>
+            </li>
+
+            <hr>
+
+            <li class="nav-link ">
+                <a href="/blog">
+                    <span class="nav-link-text">Blog</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="right-links">
+        <button href="#" class="theme-switch-btn">
+            <svg class="sun" width="469" height="469" viewBox="0 0 469 469" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M225.768 1.44594C220.301 3.84594 214.701 10.6459 213.768 15.9793C213.234 18.3793 213.101 31.7126 213.368 45.7126L213.768 71.1793L217.634 76.1126C226.701 88.1126 242.968 87.5793 252.301 75.0459C254.968 71.5793 255.101 69.5793 255.101 42.2459C255.101 14.9126 254.968 12.9126 252.301 9.44594C250.834 7.44594 248.034 4.51261 246.168 3.17928C241.768 -0.154057 231.101 -1.08739 225.768 1.44594Z"/>
+            <path d="M72.9687 65.3128C63.7687 71.5794 60.1687 81.4461 63.7687 91.1794C65.502 95.4461 98.702 129.446 104.035 132.379C106.035 133.446 110.569 134.246 114.035 134.246C126.035 134.246 134.435 125.846 134.435 113.846C134.435 110.379 133.635 105.846 132.569 103.846C129.635 98.5128 95.6353 65.3128 91.3687 63.5794C85.102 61.3128 77.902 61.9794 72.9687 65.3128Z"/>
+            <path d="M377.102 63.7128C373.102 65.3128 338.969 98.7794 336.302 103.846C335.236 105.846 334.436 110.379 334.436 113.846C334.436 125.846 342.836 134.246 354.836 134.246C358.302 134.246 362.836 133.446 364.836 132.379C370.169 129.446 403.369 95.4461 405.102 91.1794C408.702 81.4461 405.102 71.5794 395.902 65.3128C391.102 61.9794 383.102 61.3128 377.102 63.7128Z"/>
+            <path d="M211.635 108.246C185.635 113.179 163.502 125.046 144.302 144.112C117.902 170.512 104.968 203.579 106.835 240.246C109.768 297.712 149.102 344.912 205.902 359.179C218.568 362.379 250.302 362.379 262.968 359.179C310.435 347.312 345.768 312.646 358.702 265.046C362.435 251.446 362.835 219.446 359.368 205.712C347.368 158.112 312.302 122.379 265.235 110.112C251.768 106.512 225.502 105.579 211.635 108.246Z"/>
+            <path d="M12.4349 214.779C-0.498477 220.379 -4.09848 237.579 5.23486 248.246C11.2349 255.046 15.6349 255.846 45.3682 255.313C74.0349 254.913 75.1015 254.646 81.6349 245.713C85.9015 239.979 85.5015 228.113 80.8349 221.979C74.4349 213.713 71.2349 212.913 42.1682 212.913C23.7682 213.046 15.2349 213.579 12.4349 214.779Z"/>
+            <path d="M396.035 215.179C393.635 216.379 390.035 219.445 388.035 221.979C383.368 228.112 382.968 239.979 387.235 245.712C394.035 254.779 394.301 254.912 426.435 254.912C458.568 254.912 458.835 254.779 465.635 245.712C469.501 240.512 469.501 227.979 465.635 222.779C458.968 213.845 458.301 213.579 428.035 213.179C404.435 212.912 399.768 213.179 396.035 215.179Z"/>
+            <path d="M103.101 336.779C96.7013 340.779 65.368 373.179 63.768 377.313C57.368 394.513 74.168 411.313 91.368 404.913C95.6347 403.179 129.635 369.979 132.568 364.646C135.368 359.446 134.968 349.046 131.768 343.846C126.168 334.646 112.035 331.179 103.101 336.779Z"/>
+            <path d="M344.035 336.912C341.635 338.379 338.569 341.445 337.102 343.845C333.902 349.045 333.502 359.445 336.302 364.645C339.235 369.979 373.235 403.179 377.502 404.912C387.235 408.512 397.102 404.912 403.369 395.712C406.702 390.779 407.369 383.579 405.102 377.312C403.369 373.045 370.169 339.045 364.835 336.112C359.635 333.312 349.235 333.712 344.035 336.912Z"/>
+            <path d="M225.368 385.712C222.968 387.046 219.368 390.112 217.368 392.646L213.768 397.312V426.379C213.768 458.246 213.901 458.779 222.968 465.446C228.168 469.312 240.701 469.312 245.901 465.446C254.834 458.779 255.101 457.979 255.501 428.246C256.034 397.579 255.234 394.379 246.834 387.979C241.101 383.579 231.634 382.512 225.368 385.712Z"/>
+            </svg>
+
+            <svg class="moon" width="469" height="469" viewBox="5 5 20 23" xmlns="http://www.w3.org/2000/svg">
+                <path d="M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z"></path>
+            </svg>
+        </button>
 
         
-        <div class="nav-link relative flag-container">
-            <a href="javascript:void(0);" class="flex items-center justify-end ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 h-6 w-8 whitespace-nowrap">
+        <div class="nav-link flag-container">
+            <a href="javascript:void(0);">
                 
                     
                 
@@ -290,9 +276,10 @@
                     
                 
                     
-                        
-                            <img src="/img/flags/fr.svg" alt="" srcset="">
-                        
+                        <p style="text-align:center;">fr</p>
+                        <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
+                            <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
+                        </svg>
                     
                 
                     
@@ -319,15 +306,15 @@
                 
             </a>
 
-            <ul class="flex flex-col items-start gap-2 h-fit absolute top-11 -left-10 bg-white dark:bg-black mt-[10px] py-4 min-w-[170px] rounded-md shadow-[0_0_3px_rgb(60_72_88_/_15%)] sub-menu overflow-auto">
+            <ul class="sub-menu">
                 
                     
                         
                             
                                 <li>
                                     
-                                        <a href="/docs/android.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/en.svg" alt="" srcset="">
+                                        <a href="/docs/android.html" class="flag-anchor">
+                                            <img src="/img/flags/en.svg" alt="" srcset="">
                                             <p>English</p>
                                         </a>
                                     
@@ -377,8 +364,8 @@
                             
                                 <li>
                                     
-                                        <a href="/docs/lang/cs/android.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/cs.svg" alt="" srcset="">
+                                        <a href="/docs/lang/cs/android.html" class="flag-anchor">
+                                            <img src="/img/flags/cs.svg" alt="" srcset="">
                                             <p>Čeština</p>
                                         </a>
                                     
@@ -432,8 +419,8 @@
                             
                                 <li>
                                     
-                                        <a href="/docs/lang/fr/android.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/fr.svg" alt="" srcset="">
+                                        <a href="/docs/lang/fr/android.html" class="flag-anchor">
+                                            <img src="/img/flags/fr.svg" alt="" srcset="">
                                             <p>Français</p>
                                         </a>
                                     
@@ -491,8 +478,8 @@
                             
                                 <li>
                                     
-                                        <a href="/docs/lang/pl/android.html" class="px-[20px] flex items-center gap-4 flag-anchor whitespace-nowrap">
-                                            <img class="h-4" src="/img/flags/pl.svg" alt="" srcset="">
+                                        <a href="/docs/lang/pl/android.html" class="flag-anchor">
+                                            <img src="/img/flags/pl.svg" alt="" srcset="">
                                             <p>Polski</p>
                                         </a>
                                     
@@ -515,22 +502,28 @@
         </div>
         
 
-        <button href="#" class="flex items-center justify-center h-[36px] w-[36px] ltr:ml-8 ltr:lg:ml-4 ltr:xl:ml-8 rtl:mr-8 rtl:lg:mr-4 rtl:xl:mr-8 theme-switch-btn">
-            <img src="/img/new/sun.svg"  alt="" srcset="" class="sun">
-            <img src="/img/new/moon.svg" alt="" srcset="" class="moon">
-        </button>
-
-        <button href="" id="btn-mobile" class="flex lg:hidden items-center justify-center h-[36px] w-[36px] ltr:ml-8 ltr:lg:ml-5 ltr:xl:ml-10 rtl:mr-8 rtl:lg:mr-5 rtl:xl:mr-10 nav-toggle-btn">
-            <img src="/img/new/hamburger.svg" id="hamburger" alt="" srcset="">
-            <svg class="fill-black dark:fill-white hidden" id="cross" width="13" height="13" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
-            </svg>
+        <button id="cross-btn" class="nav-toggle-btn">
+            <svg id="cross" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
+        </svg>
         </button>
     </div>
 </header>
+<div id="mobile-header">
+    <a href="/fr" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
+    <a href="/fr" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
+
+    <button id="hamburger" class="nav-toggle-btn">
+        <svg viewBox="0 0 100 80" width="36" height="36">
+            <rect width="100" height="15"></rect>
+            <rect y="30" width="100" height="15"></rect>
+            <rect y="60" width="100" height="15"></rect>
+        </svg>
+    </button>
+</div>
 
 
-<SCript>
+<script>
 // switch theme
 const sunIcon = document.querySelector('.sun');
 const moonIcon = document.querySelector('.moon');
@@ -559,6 +552,7 @@ const themeCheck = () => {
         }
     }
 }
+themeCheck();
 
 const themeSwitch = () => {
     if(document.documentElement.classList.contains('dark')){
@@ -579,7 +573,8 @@ const themeSwitch = () => {
     }
 }
 
-const nav = document.querySelector('header nav');
+const nav = document.querySelector('header#navbar');
+
 window.addEventListener('click',(e)=>{
     if(e.target.closest('.nav-link')){
         if(e.target.closest('.nav-link').classList.contains('active')){
@@ -594,39 +589,16 @@ window.addEventListener('click',(e)=>{
         document.body.classList.toggle('lock-scroll');
         if(nav.classList.contains('open')){
             nav.classList.remove('open');
-            document.getElementById('hamburger').classList.remove('hidden');
-            document.getElementById('cross').classList.add('hidden');
         }
         else{
             nav.classList.add('open');
-            document.getElementById('hamburger').classList.add('hidden');
-            document.getElementById('cross').classList.remove('hidden');
         }
     }
     else if(e.target.closest('.theme-switch-btn')){
         themeSwitch();
     }
-})
-
-themeCheck();
-
-const changeHeaderBg = ()=>{
-    const header = document.querySelector('header')
-    const scrollValue = window.scrollY
-    if(scrollValue > 5){
-        header.classList.add('bg-primary-bg-light');
-        header.classList.add('dark:bg-primary-bg-dark');
-    }
-    else{
-        header.classList.remove('bg-primary-bg-light');
-        header.classList.remove('dark:bg-primary-bg-dark');
-    }
-}
-
-window.addEventListener('scroll',changeHeaderBg);
-</SCript>
-
-        </section>
+});
+</script>
 
         <section id="doc" class="bg-white dark:bg-[#17203D] mt-[66px]">
             <div>
