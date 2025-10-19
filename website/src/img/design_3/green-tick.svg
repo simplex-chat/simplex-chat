@@ -1,0 +1,11 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+    <!-- Checkmark stroke with painted style -->
+    <path
+        d="M 35 100 L 42 108 L 50 118 L 58 128 L 68 138 L 75 145 L 80 148 L 85 145 L 95 135 L 110 115 L 125 95 L 140 75 L 155 55 L 165 42 L 170 35"
+        stroke="#4CAF50" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+
+    <!-- Darker overlay for depth -->
+    <path
+        d="M 35 100 L 42 108 L 50 118 L 58 128 L 68 138 L 75 145 L 80 148 L 85 145 L 95 135 L 110 115 L 125 95 L 140 75 L 155 55 L 165 42 L 170 35"
+        stroke="#388E3C" stroke-width="20" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.6" />
+</svg>

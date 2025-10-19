@@ -1,12 +1,43 @@
+---
+title: "SimpleX Chat: private and secure messenger without any user IDs (not even random)"
+description: "SimpleX Chat - a private and encrypted messenger without any user IDs (not even random ones)! Make a private connection via link / QR code to send messages and make calls."
+templateEngineOverride: njk
+active_home: true
+---
+
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ page.url | getlang }}"
+    {% for language in languages.languages %}
+        {% if language.label == page.url | getlang %}
+            dir="{{ "rtl" if language.rtl else "ltr" }}"
+        {% endif %}
+    {% endfor %}>
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-    <title>Simplex Chat</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="transparent">
+    <title>{{ title }}</title>
+    <meta name="description" content="{{ description }}"/>
+    <meta name="Content-Type" content="text/html;charset=utf-8"/>
+    {% if path %}
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}{{ path }}" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}{{ path }}" />
+    {% else %}
+    <meta http-equiv="onion-location" content="{% cfg 'onionLocation' %}/" />
+    <meta property="og:url" content="{% cfg 'siteLocation' %}/" />
+    {% endif %}
+    <meta property="og:type" content="website"/>
+    <meta property="og:title" content="{{ title }}"/>
+    <meta property="og:description" content="{{ description }}"/>
+    <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
+    <meta name="twitter:card" content="summary"/>
+    <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
+
     <link href="/css/tailwind.css" rel="stylesheet"/>
     <link rel="stylesheet" href="/css/design3.css">
+    <link rel="stylesheet" href="/css/design3-nav.css">
     <script src="/js/flag-anchor.js"></script>
     <script>
         function detectMobileBrowser() {
@@ -31,183 +62,7 @@
 </head>
 
 <body>
-    <header id="navbar">
-        <a href="/{{ '' if lang == 'en' else lang }}" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo" /></a>
-        <a href="/{{ '' if lang == 'en' else lang }}" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo" /></a>
-
-        <nav id="menu">
-            <ul>
-                <li class="nav-link">
-                    <a href="/{{ '' if lang == 'en' else lang }}">
-                        <span class="nav-link-text">{{ "home" | i18n({}, lang ) | safe }}</span>
-                    </a>
-                </li>
-
-                <hr>
-
-                <li class="nav-link">
-                    <a href="/directory/">
-                        <span class="nav-link-text">{{ "directory" | i18n({}, lang ) | safe }}</span>
-                    </a>
-                </li>
-
-                <hr>
-
-                <li class="nav-link">
-                    <a href="javascript:void(0);">
-                        <span class="">{{ "guide" | i18n({}, lang ) | safe }}</span>
-                        <span href="" id="btn-mobile">
-                            <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        </span>
-                    </a>
-
-                    <ul class="sub-menu">
-                        {% for guide in guide_dropdown.items %}
-                            <li><a href="{{ guide.url | url }}" class="{{ "active" if page.url == guide.url | url else '' }}">{{ guide.title | i18n({}, lang ) | safe }}</a></li>
-                        {% endfor %}
-                    </ul>
-                </li>
-
-                <hr>
-
-                <li class="nav-link">
-                    <a href="javascript:void(0);">
-                        <span class="">{{ "reference" | i18n({}, lang ) | safe }}</span>
-                        <span href="" id="btn-mobile">
-                            <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        </span>
-                    </a>
-
-                    <ul class="sub-menu">
-                        <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md"
-                            target="_blank">Whitepaper
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                        </a></li>
-                        <li><a href="/privacy">{{ "terms-and-privacy-policy" | i18n({}, lang ) | safe }}</a></li>
-                        <li><a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/simplex-messaging.md"
-                            target="_blank">{{ "smp-protocol" | i18n({}, lang ) | safe }}
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                        </a></li>
-                        <li><a href="/docs/protocol/simplex-chat.html">{{ "chat-protocol" | i18n({}, lang ) | safe }}</a></li>
-                        <li><a href="/docs/glossary.html">{{ "glossary" | i18n({}, lang ) | safe }}</a></li>
-
-                        <hr>
-
-                        {% for doc in docs_dropdown.items %}
-                            <li><a href="{{ doc.url | url }}" class="{{ "active" if page.url == doc.url | url else '' }} lg:px-[20px] inline-block whitespace-nowrap">{{ doc.title | i18n({}, lang ) | safe }}</a></li>
-                        {% endfor %}
-
-                        <hr>
-
-                        <li><a href="/docs/translations.html"
-                        >{{ "docs-dropdown-7" | i18n({}, lang ) | safe }}
-                        </a></li>
-                        <li><a href="/docs/android.html"
-                        >{{ "docs-dropdown-2" | i18n({}, lang ) | safe }}
-                        </a></li>
-                        <li><a href="https://github.com/simplex-chat/simplex-chat/blob/stable/apps/simplex-bot-advanced/Main.hs"
-                            target="_blank">{{ "chat-bot-example" | i18n({}, lang ) | safe }}
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                        </a></li>
-                        <li><a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript"
-                            target="_blank">TypeScript SDK
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                        </a></li>
-                        <li><a href="/docs/cli.html">{{ "terminal-cli" | i18n({}, lang ) | safe }}</a></li>
-                        <li><a href="https://github.com/simplex-chat/simplexmq"
-                            target="_blank">SimpleXMQ
-                            <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" focusable="false" x="0px" y="0px" viewBox="0 0 100 100" width="15" height="15"><path fill="currentColor" d="M18.8,85.1h56l0,0c2.2,0,4-1.8,4-4v-32h-8v28h-48v-48h28v-8h-32l0,0c-2.2,0-4,1.8-4,4v56C14.8,83.3,16.6,85.1,18.8,85.1z"></path> <polygon fill="currentColor" points="45.7,48.7 51.3,54.3 77.2,28.5 77.2,37.2 85.2,37.2 85.2,14.9 62.8,14.9 62.8,22.9 71.5,22.9"></polygon></svg>
-                        </a></li>
-                    </ul>
-                </li>
-
-                <hr>
-
-                <li class="nav-link">
-                    <a href="/blog">
-                        <span class="nav-link-text">{{ "blog" | i18n({}, lang ) | safe }}</span>
-                    </a>
-                </li>
-            </ul>
-        </nav>
-
-        <div class="right-links">
-            <button href="#" class="theme-switch-btn">
-                <svg class="sun" width="469" height="469" viewBox="0 0 469 469" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M225.768 1.44594C220.301 3.84594 214.701 10.6459 213.768 15.9793C213.234 18.3793 213.101 31.7126 213.368 45.7126L213.768 71.1793L217.634 76.1126C226.701 88.1126 242.968 87.5793 252.301 75.0459C254.968 71.5793 255.101 69.5793 255.101 42.2459C255.101 14.9126 254.968 12.9126 252.301 9.44594C250.834 7.44594 248.034 4.51261 246.168 3.17928C241.768 -0.154057 231.101 -1.08739 225.768 1.44594Z"/>
-                <path d="M72.9687 65.3128C63.7687 71.5794 60.1687 81.4461 63.7687 91.1794C65.502 95.4461 98.702 129.446 104.035 132.379C106.035 133.446 110.569 134.246 114.035 134.246C126.035 134.246 134.435 125.846 134.435 113.846C134.435 110.379 133.635 105.846 132.569 103.846C129.635 98.5128 95.6353 65.3128 91.3687 63.5794C85.102 61.3128 77.902 61.9794 72.9687 65.3128Z"/>
-                <path d="M377.102 63.7128C373.102 65.3128 338.969 98.7794 336.302 103.846C335.236 105.846 334.436 110.379 334.436 113.846C334.436 125.846 342.836 134.246 354.836 134.246C358.302 134.246 362.836 133.446 364.836 132.379C370.169 129.446 403.369 95.4461 405.102 91.1794C408.702 81.4461 405.102 71.5794 395.902 65.3128C391.102 61.9794 383.102 61.3128 377.102 63.7128Z"/>
-                <path d="M211.635 108.246C185.635 113.179 163.502 125.046 144.302 144.112C117.902 170.512 104.968 203.579 106.835 240.246C109.768 297.712 149.102 344.912 205.902 359.179C218.568 362.379 250.302 362.379 262.968 359.179C310.435 347.312 345.768 312.646 358.702 265.046C362.435 251.446 362.835 219.446 359.368 205.712C347.368 158.112 312.302 122.379 265.235 110.112C251.768 106.512 225.502 105.579 211.635 108.246Z"/>
-                <path d="M12.4349 214.779C-0.498477 220.379 -4.09848 237.579 5.23486 248.246C11.2349 255.046 15.6349 255.846 45.3682 255.313C74.0349 254.913 75.1015 254.646 81.6349 245.713C85.9015 239.979 85.5015 228.113 80.8349 221.979C74.4349 213.713 71.2349 212.913 42.1682 212.913C23.7682 213.046 15.2349 213.579 12.4349 214.779Z"/>
-                <path d="M396.035 215.179C393.635 216.379 390.035 219.445 388.035 221.979C383.368 228.112 382.968 239.979 387.235 245.712C394.035 254.779 394.301 254.912 426.435 254.912C458.568 254.912 458.835 254.779 465.635 245.712C469.501 240.512 469.501 227.979 465.635 222.779C458.968 213.845 458.301 213.579 428.035 213.179C404.435 212.912 399.768 213.179 396.035 215.179Z"/>
-                <path d="M103.101 336.779C96.7013 340.779 65.368 373.179 63.768 377.313C57.368 394.513 74.168 411.313 91.368 404.913C95.6347 403.179 129.635 369.979 132.568 364.646C135.368 359.446 134.968 349.046 131.768 343.846C126.168 334.646 112.035 331.179 103.101 336.779Z"/>
-                <path d="M344.035 336.912C341.635 338.379 338.569 341.445 337.102 343.845C333.902 349.045 333.502 359.445 336.302 364.645C339.235 369.979 373.235 403.179 377.502 404.912C387.235 408.512 397.102 404.912 403.369 395.712C406.702 390.779 407.369 383.579 405.102 377.312C403.369 373.045 370.169 339.045 364.835 336.112C359.635 333.312 349.235 333.712 344.035 336.912Z"/>
-                <path d="M225.368 385.712C222.968 387.046 219.368 390.112 217.368 392.646L213.768 397.312V426.379C213.768 458.246 213.901 458.779 222.968 465.446C228.168 469.312 240.701 469.312 245.901 465.446C254.834 458.779 255.101 457.979 255.501 428.246C256.034 397.579 255.234 394.379 246.834 387.979C241.101 383.579 231.634 382.512 225.368 385.712Z"/>
-                </svg>
-
-                <svg class="moon" width="469" height="469" viewBox="5 5 20 23" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M10.895 7.574c0 7.55 5.179 13.67 11.567 13.67 1.588 0 3.101-0.38 4.479-1.063-1.695 4.46-5.996 7.636-11.051 7.636-6.533 0-11.83-5.297-11.83-11.83 0-4.82 2.888-8.959 7.023-10.803-0.116 0.778-0.188 1.573-0.188 2.39z"></path>
-                </svg>
-            </button>
-
-            <div class="nav-link flag-container">
-                <a href="javascript:void(0);">
-                    {% for language in languages.languages %}
-                        {% if language.label == page.url | getlang %}
-                            <p style="text-align:center;">{{ language.label }}</p>
-                            <svg viewBox="0 0 10 6" xmlns="http://www.w3.org/2000/svg">
-                                <path fill-rule="evenodd" clip-rule="evenodd" d="M1.50447 0.902966C1.21571 0.627397 0.747525 0.627397 0.458761 0.902966C0.169996 1.17853 0.169996 1.62532 0.458761 1.90089L4.21933 5.48961C4.25543 5.52406 4.29433 5.5542 4.33533 5.58003C4.62234 5.76088 5.01237 5.73074 5.26504 5.48961L9.02561 1.90089C9.31438 1.62532 9.31438 1.17853 9.02561 0.902966C8.73685 0.627397 8.26867 0.627397 7.97991 0.902966L4.74219 3.99273L1.50447 0.902966Z"/>
-                            </svg>
-                        {% endif %}
-                    {% endfor %}
-                </a>
-
-                <ul class="sub-menu">
-                    {% for language in languages.languages %}
-                        {% if language.enabled %}
-                            <li>
-                                {% if language.flag %}
-                                    <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">
-                                        <img src="{{ language.flag }}" alt="" srcset="">
-                                        <p>{{ language.name }}</p>
-                                    </a>
-                                {% else %}
-                                    <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">
-                                        <div style="background-color:{{ language.iconBg }}; color:{{ language.textColor }}; width:21.33px; height:16px">
-                                            <p style="text-align:center; font-size:7px">{{ language.iconText }}</p>
-                                        </div>
-                                        <p>{{ language.name }}</p>
-                                    </a>
-                                {% endif %}
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-                </ul>
-            </div>
-
-            <button id="cross-btn" class="nav-toggle-btn">
-                <svg id="cross" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12.7973 11.5525L7.59762 6.49833L12.7947 1.44675C13.055 1.19371 13.0658 0.771991 12.8188 0.505331C12.5718 0.238674 12.1602 0.227644 11.8999 0.480681L6.65343 5.58028L1.09979 0.182228C0.839522 -0.070157 0.427909 -0.059127 0.18094 0.207531C-0.0660305 0.474191 -0.0552645 0.895911 0.205003 1.14894L5.70862 6.49833L0.20247 11.851C-0.0577975 12.104 -0.0685635 12.5257 0.178407 12.7924C0.306324 12.9306 0.477936 13 0.650181 13C0.811033 13 0.971873 12.9397 1.09726 12.817L6.65343 7.41639L11.9025 12.5186C12.0285 12.6406 12.1893 12.7015 12.3495 12.7015C12.5218 12.7015 12.6934 12.6321 12.8213 12.4939C13.0689 12.2273 13.0582 11.8062 12.7973 11.5525Z" />
-            </svg>
-            </button>
-        </div>
-    </header>
-    <div id="mobile-header">
-        <a href="/{{ '' if lang == 'en' else lang }}" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-symbol-light.svg" alt="" srcset=""></a>
-        <a href="/{{ '' if lang == 'en' else lang }}" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-symbol-dark.svg" alt="" srcset=""></a>
-
-        <button id="hamburger" class="nav-toggle-btn">
-            <svg viewBox="0 0 100 80" width="36" height="36">
-                <rect width="100" height="15"></rect>
-                <rect y="30" width="100" height="15"></rect>
-                <rect y="60" width="100" height="15"></rect>
-            </svg>
-        </button>
-    </div>
+    {% include "navbar.html" %}
 
     <div class="screen">
         <section class="page-1 cover page">
@@ -232,7 +87,6 @@
 
             <section class="page-2 page">
                 <div class="area">
-                    <div class="image"></div>
                     <div class="text-container">
                         <h2>World's Most Secure Messaging</h2>
                         <p>SimpleX messaging has cutting-edge end-to-end encryption.</p>
@@ -244,7 +98,6 @@
 
             <section class="page-3 page">
                 <div class="area">
-                    <div class="image"></div>
                     <div class="text-container">
                         <h2>You Own<br>The Next Web</h2>
                         <p>SimpleX is founded on the belief that <span>you must own your identity, contacts and communities.</span></p>
@@ -255,7 +108,6 @@
 
             <section class="page-4 page">
                 <div class="area">
-                    <div class="image"></div>
                     <div class="text-container">
                         <h2>Communities That Last</h2>
                         <p>You will support your favorite groups with future Community vouchers.</p>
@@ -267,7 +119,6 @@
 
             <section class="page-5 page">
                 <div class="area">
-                    <div class="image"></div>
                     <div class="text-container">
                         <h2>SimpleX Roadmap to Free Internet</h2>
                         <div class="roadmap">
@@ -305,7 +156,8 @@
                         <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
                         <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
                         <a href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" class="simplex-image" title="SimpleX users group" target="_blank">
-                            <img src="/img/new/logo-symbol-dark.svg">
+                            <img class="block dark:hidden" src="/img/new/logo-symbol-light.svg">
+                            <img class="hidden dark:block" src="/img/new/logo-symbol-dark.svg">
                         </a>
                         <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
                         <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
@@ -340,18 +192,8 @@
     <script src="/js/directory.js"></script>
     <script src="/js/design3.js"></script>
     <script>
-    (function setVH(){
-        const apply = () =>
-        document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
-        apply();
-        window.addEventListener('resize', apply);
-        window.addEventListener('orientationchange', apply);
-    })();
-
-    const nav = document.querySelector('header#navbar');
-
     (function navColorOnScroll(){
-        const header = nav; // same element
+        const header = document.querySelector('header#navbar');
         const cover = document.querySelector('.page-1.cover');
         if (!header || !cover || !('IntersectionObserver' in window)) {
             window.addEventListener('load', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
@@ -367,80 +209,6 @@
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
     })();
-
-
-    // switch theme
-    const sunIcon = document.querySelector('.sun');
-    const moonIcon = document.querySelector('.moon');
-
-    const userTheme = localStorage.getItem('theme');
-    const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    const prismThemeLink = document.getElementById('prism-theme')
-
-    const iconToggle = () => {
-        sunIcon.classList.toggle('hidden');
-        moonIcon.classList.toggle('hidden');
-    }
-
-    const themeCheck = () => {
-        if(userTheme === 'dark' || (!userTheme && systemTheme)){
-            document.documentElement.classList.add('dark');
-            moonIcon.classList.add('hidden');
-            if(prismThemeLink){
-                prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
-            }
-        }
-        else{
-            sunIcon.classList.add('hidden');
-            if(prismThemeLink){
-                prismThemeLink.setAttribute('href','/css/prism-light.min.css')
-            }
-        }
-    }
-    themeCheck();
-
-    const themeSwitch = () => {
-        if(document.documentElement.classList.contains('dark')){
-            document.documentElement.classList.remove('dark');
-            localStorage.setItem('theme','light');
-            if(prismThemeLink){
-                prismThemeLink.setAttribute('href','/css/prism-light.min.css')
-            }
-            iconToggle();
-        }
-        else{
-            document.documentElement.classList.add('dark');
-            localStorage.setItem('theme','dark');
-            if(prismThemeLink){
-                prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
-            }
-            iconToggle();
-        }
-    }
-
-    window.addEventListener('click',(e)=>{
-        if(e.target.closest('.nav-link')){
-            if(e.target.closest('.nav-link').classList.contains('active')){
-                e.target.closest('.nav-link').classList.remove('active');
-            }
-            else{
-                document.querySelectorAll('.nav-link').forEach(el => el.classList.remove('active'))
-                e.target.closest('.nav-link').classList.add('active');
-            }
-        }
-        else if(e.target.closest('.nav-toggle-btn')){
-            document.body.classList.toggle('lock-scroll');
-            if(nav.classList.contains('open')){
-                nav.classList.remove('open');
-            }
-            else{
-                nav.classList.add('open');
-            }
-        }
-        else if(e.target.closest('.theme-switch-btn')){
-            themeSwitch();
-        }
-    });
     </script>
 </body>
 
