@@ -11,8 +11,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const fDroidBtn = document.querySelector('.f-droid-btn');
     const testflightBtn = document.querySelector('.testflight-btn');
     const androidBtn = document.querySelector('.android-btn');
+    const desktopAppBtn = document.querySelector('.desktop-app-btn');
 
-    if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn || !testflightBtn || !androidBtn) return;
+    if (!googlePlayBtn || !appleStoreBtn || !fDroidBtn || !testflightBtn || !androidBtn || !desktopAppBtn) return;
 
 
     if (isMobile.Android()) {
@@ -27,9 +28,10 @@ document.addEventListener('DOMContentLoaded', () => {
     else {
         appleStoreBtn.classList.remove('hidden');
         googlePlayBtn.classList.remove('hidden');
-        fDroidBtn.classList.remove('hidden');
-        testflightBtn.classList.remove('hidden');
-        androidBtn.classList.remove('hidden');
+        desktopAppBtn.classList.remove('hidden');
+        // fDroidBtn.classList.remove('hidden');
+        // testflightBtn.classList.remove('hidden');
+        // androidBtn.classList.remove('hidden');
     }
 
     showPromotedGroups();
