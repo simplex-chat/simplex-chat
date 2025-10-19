@@ -17,10 +17,7 @@ contract MultiERC1155 is ERC1155, Ownable {
 
     // for name and description avoid or escape double quotes, so it can be used in JSON
     struct TokenInfo {
-        string name;
-        string description;
-        string image;
-        string propertiesJson; // Arbitrary JSON object string
+        string tokenUri;
         uint totalSupply; // 0 for unlimited
         bool enabled;
     }
@@ -48,7 +45,7 @@ contract MultiERC1155 is ERC1155, Ownable {
     event TokenRemoved(uint indexed tokenId);
     event TokenUpdated(uint indexed tokenId, bool newEnabled, uint newTotalSupply);
     event TokenLocked(uint indexed tokenId);
-    
+
     constructor() ERC1155("") Ownable(msg.sender) {
         admin = msg.sender;
         minter = msg.sender;
@@ -94,11 +91,8 @@ contract MultiERC1155 is ERC1155, Ownable {
     }
 
     function _addToken(TokenInfo memory info) internal {
-        require(bytes(info.name).length > 0, "Token name required");
-        require(bytes(info.description).length > 0, "Token description required");
-        require(bytes(info.image).length > 0, "Token image URI required");
-        require(bytes(info.propertiesJson).length >= 2, "Token properties JSON required");
-
+        require(bytes(info.tokenUri).length > 0, "Token tokenUri required");
+        
         uint id = _nextTokenId++;
         require(!tokens[id].exists, "Contract error: token ID already exists");
 
@@ -201,19 +195,6 @@ contract MultiERC1155 is ERC1155, Ownable {
     function uri(uint id) public view virtual override returns (string memory) {
         TokenState storage token = tokens[id];
         require(token.exists, "Invalid token ID");
-        TokenInfo storage info = token.tokenInfo;
-
-        string memory json = Base64.encode(
-            bytes(
-                string.concat(
-                    '{"name":"', info.name,
-                    '","description":"', info.description,
-                    '","image":"', info.image,
-                    '","properties":', info.propertiesJson,
-                    '}'
-                )
-            )
-        );
-        return string.concat("data:application/json;base64,", json);
+        return token.tokenInfo.tokenUri;
     }
 }

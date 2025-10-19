@@ -14,10 +14,7 @@ contract MultiERC1155Test {
     address public recipient = address(0x4);
 
     MultiERC1155.TokenInfo defaultInfo = MultiERC1155.TokenInfo({
-        name: "Test Token",
-        description: "Test Description",
-        image: "https://test.com/image.png",
-        propertiesJson: "{}",
+        tokenUri: "https://example.com/token.json",
         totalSupply: 0,
         enabled: true
     });
@@ -27,14 +24,6 @@ contract MultiERC1155Test {
         MultiERC1155.TokenInfo memory newInfo = defaultInfo;
         (bool success, ) = address(ct).call(abi.encodeWithSignature("addToken((string,bool,string,string,string,uint256))", newInfo));
         Assert.equal(success, true, "addToken success");
-    }
-
-    // Helper to validate TokenInfo
-    function validateTokenInfo(MultiERC1155.TokenInfo memory info) internal {
-        Assert.greaterThan(bytes(info.name).length, uint(0), "Name length > 0");
-        Assert.greaterThan(bytes(info.description).length, uint(0), "Description length > 0");
-        Assert.greaterThan(bytes(info.image).length, uint(0), "Image length > 0");
-        Assert.ok(bytes(info.propertiesJson).length >= uint(2), "Properties JSON length >= 2");
     }
 
     // Constructor Test
@@ -47,11 +36,10 @@ contract MultiERC1155Test {
         uint[] memory ids = ct.getTokenIds();
         Assert.equal(ids.length, uint(1), "One token ID added");
         Assert.equal(ids[0], uint(1), "First token ID is 1");
-        (MultiERC1155.TokenInfo memory tokenInfo, uint currentSupply, bool exists, bool locked) = ct.tokens(1);
+        (, uint currentSupply, bool exists, bool locked) = ct.tokens(1);
         Assert.equal(exists, true, "Token 1 exists");
         Assert.equal(locked, false, "Token 1 not locked");
         Assert.equal(currentSupply, uint(0), "Token 1 supply 0");
-        validateTokenInfo(tokenInfo);
     }
 
     // setAdmin Test
@@ -112,10 +100,7 @@ contract MultiERC1155Test {
     // addToken Test
     function testAddToken() public {
         MultiERC1155.TokenInfo memory newInfo = MultiERC1155.TokenInfo({
-            name: "New Token",
-            description: "New Desc",
-            image: "new.png",
-            propertiesJson: "{}",
+            tokenUri: "https://example.com/new_token.json",
             totalSupply: 100,
             enabled: true
         });
@@ -143,10 +128,7 @@ contract MultiERC1155Test {
 
     function testAddTokenRevertInvalidInfo() public {
         MultiERC1155.TokenInfo memory invalidInfo = MultiERC1155.TokenInfo({
-            name: "",
-            description: "Desc",
-            image: "img",
-            propertiesJson: "{}",
+            tokenUri: "",
             totalSupply: 0,
             enabled: true
         });
