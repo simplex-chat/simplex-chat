@@ -30,14 +30,13 @@
         <link rel="stylesheet" href="/css/blog.css">
         <link href="/css/tailwind.css" rel="stylesheet"/>
         <link rel="stylesheet" href="/css/style.css">
+        <link rel="stylesheet" href="/css/design3-nav.css">
         <script async defer src="https://buttons.github.io/buttons.js"></script>
         <script src="/js/flag-anchor.js"></script>
         {% block js_scripts %}{% endblock %}
     </head>
     <body class="bg-white dark:bg-[#0C0B13]">
-        <section class="w-full bg-transparent fixed top-0 z-50">
-            {% include "navbar.html" %}
-        </section>
+        {% include "navbar.html" %}
 
         {{ content | applyGlossary | safe }}
 
