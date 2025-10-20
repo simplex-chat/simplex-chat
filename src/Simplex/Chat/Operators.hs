@@ -47,7 +47,6 @@ import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types (ConnLinkContact, User)
-import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Protocol (sameConnLinkContact)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
@@ -439,14 +438,14 @@ groupByOperator' = groupByOperator_
 {-# INLINE groupByOperator' #-}
 
 groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> IO [f UserOperatorServers]
-groupByOperator_ (ops, smpSrvs, xftpSrvs, chatRelays) = do
+groupByOperator_ (ops, smpSrvs, xftpSrvs, cRelays) = do
   let ops' = mapMaybe sequence ops
       customOp_ = find (isNothing . unbox) ops
   ss <- mapM ((\op -> (serverDomains (unbox op),) <$> newIORef (mkUS . Just <$> op))) ops'
   custom <- newIORef $ maybe (box $ mkUS Nothing) (mkUS <$>) customOp_
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
   mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
-  mapM_ (addChatRelay ss custom) chatRelays
+  mapM_ (addChatRelay ss custom) cRelays
   opSrvs <- mapM (readIORef . snd) ss
   customSrvs <- readIORef custom
   pure $ opSrvs <> [customSrvs]

@@ -231,7 +231,6 @@ data ChatController = ChatController
     eventSeq :: TVar Int,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe RemoteHostId, Either ChatError ChatEvent),
-    connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -354,7 +353,6 @@ data ChatCommand
   | APIEndCall ContactId
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
-  | APIGetNetworkStatuses
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
@@ -729,7 +727,6 @@ data ChatResponse
   | CRGroupAliasUpdated {user :: User, toGroup :: GroupInfo}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -829,7 +826,7 @@ data ChatEvent
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
   | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CEvtNetworkStatus {server :: SMPServer, networkStatus :: NetworkStatus, connections :: [AgentConnId]}
+  | CEvtSubscriptionStatus {server :: SMPServer, subscriptionStatus :: SubscriptionStatus, connections :: [AgentConnId]}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
@@ -909,7 +906,7 @@ allowRemoteEvent = \case
 
 logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
-  CEvtNetworkStatus {} -> True
+  CEvtSubscriptionStatus {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True
@@ -1472,10 +1469,6 @@ chatModifyVar f = lift . chatModifyVar' f
 chatModifyVar' :: (ChatController -> TVar a) -> (a -> a) -> CM' ()
 chatModifyVar' f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar' #-}
-
-setContactNetworkStatus :: Contact -> NetworkStatus -> CM' ()
-setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
-setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar' connNetworkStatuses $ M.insert agentConnId status
 
 onChatError :: CM a -> CM b -> CM a
 a `onChatError` onErr = a `catchAllErrors` \e -> onErr >> throwError e

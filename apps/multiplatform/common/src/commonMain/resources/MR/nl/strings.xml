@@ -913,7 +913,7 @@
     <string name="simplex_link_mode">SimpleX links</string>
     <string name="simplex_link_invitation">Eenmalige SimpleX uitnodiging</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Er wordt geprobeerd verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %1$s).</string>
     <string name="unknown_message_format">onbekend berichtformaat</string>
     <string name="simplex_link_mode_browser">Via browser</string>
     <string name="description_via_contact_address_link">via contact adres link</string>

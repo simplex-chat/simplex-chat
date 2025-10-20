@@ -47,6 +47,7 @@ This file is generated automatically.
 - [ChatType](#chattype)
 - [ChatWallpaper](#chatwallpaper)
 - [ChatWallpaperScale](#chatwallpaperscale)
+- [ClientNotice](#clientnotice)
 - [Color](#color)
 - [CommandError](#commanderror)
 - [CommandErrorType](#commanderrortype)
@@ -288,6 +289,12 @@ AGENT:
 - type: "AGENT"
 - agentErr: [SMPAgentError](#smpagenterror)
 
+NOTICE:
+- type: "NOTICE"
+- server: string
+- preset: bool
+- expiresAt: UTCTime?
+
 INTERNAL:
 - type: "INTERNAL"
 - internalErr: string
@@ -315,6 +322,7 @@ INACTIVE:
 
 **Record type**:
 - reason: [BlockingReason](#blockingreason)
+- notice: [ClientNotice](#clientnotice)?
 
 
 ---
@@ -1379,6 +1387,14 @@ self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // J
 - "fill"
 - "fit"
 - "repeat"
+
+
+---
+
+## ClientNotice
+
+**Record type**:
+- ttl: int64?
 
 
 ---

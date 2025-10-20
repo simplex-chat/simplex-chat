@@ -14,7 +14,7 @@
     <string name="server_error">ошибка</string>
     <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>

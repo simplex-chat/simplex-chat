@@ -13,6 +13,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -27,12 +28,14 @@ import dev.icerock.moko.resources.compose.painterResource
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
+import chat.simplex.common.views.chat.item.contentModerationPostLink
 import chat.simplex.common.views.chat.item.showContentBlockedAlert
 import chat.simplex.common.views.chat.item.showQuotedItemDoesNotExistAlert
 import chat.simplex.common.views.chatlist.openGroupChat
 import chat.simplex.common.views.migration.MigrationFileLinkData
 import chat.simplex.common.views.onboarding.OnboardingStage
 import chat.simplex.common.views.usersettings.*
+import chat.simplex.common.views.usersettings.networkAndServers.defaultConditionsLink
 import chat.simplex.common.views.usersettings.networkAndServers.serverHostname
 import com.charleskorn.kaml.Yaml
 import com.charleskorn.kaml.YamlConfiguration
@@ -46,12 +49,17 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toLocalDateTime
 import kotlinx.serialization.*
 import kotlinx.serialization.builtins.*
 import kotlinx.serialization.descriptors.*
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.json.*
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 import java.util.Date
 
 typealias ChatCtrl = Long
@@ -632,7 +640,7 @@ object ChatController {
       val chats = apiGetChats(rhId)
       chatModel.chatsContext.updateChats(chats, keepingChatId = keepingChatId)
     }
-    chatModel.userTags.value = apiGetChatTags(rhId).takeIf { hasUser } ?: emptyList()
+    chatModel.userTags.value = if (hasUser) apiGetChatTags(rhId) ?: emptyList() else emptyList()
     chatModel.activeChatTagFilter.value = null
     chatModel.updateChatTags(rhId)
   }
@@ -1709,6 +1717,11 @@ object ChatController {
     val userId = kotlin.runCatching { currentUserId("apiCreateUserAddress") }.getOrElse { return null }
     val r = sendCmdWithRetry(rh, CC.ApiCreateMyAddress(userId))
     if (r is API.Result && r.res is CR.UserContactLinkCreated) return r.res.connLinkContact
+    if (r is API.Error && r.err is ChatError.ChatErrorAgent && r.err.agentError is AgentErrorType.NOTICE) {
+      val e = r.err.agentError
+      showClientNoticeAlert(e.server, e.preset, e.expiresAt)
+      return null
+    }
     if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateUserAddress", generalGetString(MR.strings.error_creating_address), r)
@@ -1840,13 +1853,6 @@ object ChatController {
   suspend fun apiCallStatus(rh: Long?, contact: Contact, status: WebRTCCallStatus): Boolean {
     val r = sendCmd(rh, CC.ApiCallStatus(contact, status))
     return r.result is CR.CmdOk
-  }
-
-  suspend fun apiGetNetworkStatuses(rh: Long?): List<ConnNetworkStatus>? {
-    val r = sendCmd(rh, CC.ApiGetNetworkStatuses())
-    if (r is API.Result && r.res is CR.NetworkStatuses) return r.res.networkStatuses
-    Log.e(TAG, "apiGetNetworkStatuses bad response: ${r.responseType} ${r.details}")
-    return null
   }
 
   suspend fun apiChatRead(rh: Long?, type: ChatType, id: Long): Boolean {
@@ -2175,6 +2181,11 @@ object ChatController {
   suspend fun apiCreateGroupLink(rh: Long?, groupId: Long, memberRole: GroupMemberRole = GroupMemberRole.Member): GroupLink? {
     val r = sendCmdWithRetry(rh, CC.APICreateGroupLink(groupId, memberRole))
     if (r is API.Result && r.res is CR.GroupLinkCreated) return r.res.groupLink
+    if (r is API.Error && r.err is ChatError.ChatErrorAgent && r.err.agentError is AgentErrorType.NOTICE) {
+      val e = r.err.agentError
+      showClientNoticeAlert(e.server, e.preset, e.expiresAt)
+      return null
+    }
     if (r == null) return null
     if (!(networkErrorAlert(r))) {
       apiErrorAlert("apiCreateGroupLink", generalGetString(MR.strings.error_creating_link_for_group), r)
@@ -2546,12 +2557,15 @@ object ChatController {
               chatModel.replaceConnReqView(conn.id, "@${r.contact.contactId}")
               chatModel.chatsContext.removeChat(rhId, conn.id)
             }
+            if (r.contact.id == chatModel.chatId.value && conn != null) {
+              chatModel.chatAgentConnId.value = conn.agentConnId
+              chatModel.chatSubStatus.value = SubscriptionStatus.Active
+            }
           }
         }
         if (r.contact.directOrUsed) {
           ntfManager.notifyContactConnected(r.user, r.contact)
         }
-        chatModel.setContactNetworkStatus(r.contact, NetworkStatus.Connected())
       }
       is CR.ContactConnecting -> {
         if (active(r.user) && r.contact.directOrUsed) {
@@ -2576,7 +2590,6 @@ object ChatController {
             }
           }
         }
-        chatModel.setContactNetworkStatus(r.contact, NetworkStatus.Connected())
       }
       is CR.ReceivedContactRequest -> {
         val contactRequest = r.contactRequest
@@ -2618,18 +2631,12 @@ object ChatController {
           }
         }
       }
-      // ContactsSubscribed, ContactsDisconnected are only used in CLI,
-      // They have to be used here for remote desktop to process these status updates.
-      is CR.ContactsSubscribed -> updateContactsStatus(r.contactRefs, NetworkStatus.Connected())
-      is CR.ContactsDisconnected -> updateContactsStatus(r.contactRefs, NetworkStatus.Disconnected())
-      is CR.NetworkStatusResp -> {
-        for (cId in r.connections) {
-          chatModel.networkStatuses[cId] = r.networkStatus
-        }
-      }
-      is CR.NetworkStatuses -> {
-        for (s in r.networkStatuses) {
-          chatModel.networkStatuses[s.agentConnId] = s.networkStatus
+      is CR.SubscriptionStatusEvt -> {
+        val chatAgentConnId = chatModel.chatAgentConnId.value
+        if (chatAgentConnId != null && r.connections.contains(chatAgentConnId)) {
+          withContext(Dispatchers.Main) {
+            chatModel.chatSubStatus.value = r.subscriptionStatus
+          }
         }
       }
       is CR.ChatInfoUpdated ->
@@ -2915,9 +2922,6 @@ object ChatController {
           withContext(Dispatchers.Main) {
             chatModel.chatsContext.upsertGroupMember(rhId, r.groupInfo, r.member)
           }
-        }
-        if (r.memberContact != null) {
-          chatModel.setContactNetworkStatus(r.memberContact, NetworkStatus.Connected())
         }
       }
       is CR.GroupUpdated ->
@@ -3231,12 +3235,6 @@ object ChatController {
     m.users.clear()
     m.users.addAll(users)
     getUserChatData(null)
-    val statuses = apiGetNetworkStatuses(null)
-    if (statuses != null) {
-      chatModel.networkStatuses.clear()
-      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-      chatModel.networkStatuses.putAll(ss)
-    }
   }
 
   private fun activeUser(rhId: Long?, user: UserLike): Boolean =
@@ -3349,12 +3347,6 @@ object ChatController {
     }
   }
 
-  private fun updateContactsStatus(contactRefs: List<ContactRef>, status: NetworkStatus) {
-    for (c in contactRefs) {
-      chatModel.networkStatuses[c.agentConnId] = status
-    }
-  }
-
   suspend fun switchUIRemoteHost(rhId: Long?) = showProgressIfNeeded {
     // TODO lock the switch so that two switches can't run concurrently?
     chatModel.chatId.value = null
@@ -3380,12 +3372,6 @@ object ChatController {
         chatModel.secondaryChatsContext.value?.chats?.clear()
         chatModel.secondaryChatsContext.value?.popChatCollector?.clear()
       }
-    }
-    val statuses = apiGetNetworkStatuses(rhId)
-    if (statuses != null) {
-      chatModel.networkStatuses.clear()
-      val ss = statuses.associate { it.agentConnId to it.networkStatus }.toMap()
-      chatModel.networkStatuses.putAll(ss)
     }
     getUserChatData(rhId)
   }
@@ -3645,7 +3631,6 @@ sealed class CC {
   class ApiSendCallExtraInfo(val contact: Contact, val extraInfo: WebRTCExtraInfo): CC()
   class ApiEndCall(val contact: Contact): CC()
   class ApiCallStatus(val contact: Contact, val callStatus: WebRTCCallStatus): CC()
-  class ApiGetNetworkStatuses(): CC()
   class ApiAcceptContact(val incognito: Boolean, val contactReqId: Long): CC()
   class ApiRejectContact(val contactReqId: Long): CC()
   class ApiChatRead(val type: ChatType, val id: Long, val scope: GroupChatScope?): CC()
@@ -3844,7 +3829,6 @@ sealed class CC {
     is ApiSendCallExtraInfo -> "/_call extra @${contact.apiId} ${json.encodeToString(extraInfo)}"
     is ApiEndCall -> "/_call end @${contact.apiId}"
     is ApiCallStatus -> "/_call status @${contact.apiId} ${callStatus.value}"
-    is ApiGetNetworkStatuses -> "/_network_statuses"
     is ApiChatRead -> "/_read chat ${chatRef(type, id, scope)}"
     is ApiChatItemsRead -> "/_read chat items ${chatRef(type, id, scope)} ${itemIds.joinToString(",")}"
     is ApiChatUnread -> "/_unread chat ${chatRef(type, id, scope = null)} ${onOff(unreadChat)}"
@@ -4019,7 +4003,6 @@ sealed class CC {
     is ApiSendCallExtraInfo -> "apiSendCallExtraInfo"
     is ApiEndCall -> "apiEndCall"
     is ApiCallStatus -> "apiCallStatus"
-    is ApiGetNetworkStatuses -> "apiGetNetworkStatuses"
     is ApiChatRead -> "apiChatRead"
     is ApiChatItemsRead -> "apiChatItemsRead"
     is ApiChatUnread -> "apiChatUnread"
@@ -6159,12 +6142,7 @@ sealed class CR {
   @Serializable @SerialName("contactRequestRejected") class ContactRequestRejected(val user: UserRef, val contactRequest: UserContactRequest, val contact_: Contact?): CR()
   @Serializable @SerialName("contactUpdated") class ContactUpdated(val user: UserRef, val toContact: Contact): CR()
   @Serializable @SerialName("groupMemberUpdated") class GroupMemberUpdated(val user: UserRef, val groupInfo: GroupInfo, val fromMember: GroupMember, val toMember: GroupMember): CR()
-  // TODO remove below
-  @Serializable @SerialName("contactsSubscribed") class ContactsSubscribed(val server: String, val contactRefs: List<ContactRef>): CR()
-  @Serializable @SerialName("contactsDisconnected") class ContactsDisconnected(val server: String, val contactRefs: List<ContactRef>): CR()
-  // TODO remove above
-  @Serializable @SerialName("networkStatus") class NetworkStatusResp(val networkStatus: NetworkStatus, val connections: List<String>): CR()
-  @Serializable @SerialName("networkStatuses") class NetworkStatuses(val user_: UserRef?, val networkStatuses: List<ConnNetworkStatus>): CR()
+  @Serializable @SerialName("subscriptionStatus") class SubscriptionStatusEvt(val subscriptionStatus: SubscriptionStatus, val connections: List<String>): CR()
   @Serializable @SerialName("chatInfoUpdated") class ChatInfoUpdated(val user: UserRef, val chatInfo: ChatInfo): CR()
   @Serializable @SerialName("newChatItems") class NewChatItems(val user: UserRef, val chatItems: List<AChatItem>): CR()
   @Serializable @SerialName("chatItemsStatusesUpdated") class ChatItemsStatusesUpdated(val user: UserRef, val chatItems: List<AChatItem>): CR()
@@ -6345,10 +6323,7 @@ sealed class CR {
     is ContactRequestRejected -> "contactRequestRejected"
     is ContactUpdated -> "contactUpdated"
     is GroupMemberUpdated -> "groupMemberUpdated"
-    is ContactsSubscribed -> "contactsSubscribed"
-    is ContactsDisconnected -> "contactsDisconnected"
-    is NetworkStatusResp -> "networkStatus"
-    is NetworkStatuses -> "networkStatuses"
+    is SubscriptionStatusEvt -> "subscriptionStatus"
     is ChatInfoUpdated -> "chatInfoUpdated"
     is NewChatItems -> "newChatItems"
     is ChatItemsStatusesUpdated -> "chatItemsStatusesUpdated"
@@ -6521,10 +6496,7 @@ sealed class CR {
     is ContactRequestRejected -> withUser(user, "contactRequest: ${json.encodeToString(contactRequest)}\ncontact_: ${json.encodeToString(contact_)}")
     is ContactUpdated -> withUser(user, json.encodeToString(toContact))
     is GroupMemberUpdated -> withUser(user, "groupInfo: $groupInfo\nfromMember: $fromMember\ntoMember: $toMember")
-    is ContactsSubscribed -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
-    is ContactsDisconnected -> "server: $server\ncontacts:\n${json.encodeToString(contactRefs)}"
-    is NetworkStatusResp -> "networkStatus $networkStatus\nconnections: $connections"
-    is NetworkStatuses -> withUser(user_, json.encodeToString(networkStatuses))
+    is SubscriptionStatusEvt -> "subscriptionStatus $subscriptionStatus\nconnections: $connections"
     is ChatInfoUpdated -> withUser(user, json.encodeToString(chatInfo))
     is NewChatItems -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
     is ChatItemsStatusesUpdated -> withUser(user, chatItems.joinToString("\n") { json.encodeToString(it) })
@@ -6747,7 +6719,8 @@ class ConnectionStats(
   val rcvQueuesInfo: List<RcvQueueInfo>,
   val sndQueuesInfo: List<SndQueueInfo>,
   val ratchetSyncState: RatchetSyncState,
-  val ratchetSyncSupported: Boolean
+  val ratchetSyncSupported: Boolean,
+  var subStatus: SubscriptionStatus?
 ) {
   val ratchetSyncAllowed: Boolean get() =
     ratchetSyncSupported && listOf(RatchetSyncState.Allowed, RatchetSyncState.Required).contains(ratchetSyncState)
@@ -6762,8 +6735,10 @@ class ConnectionStats(
 @Serializable
 class RcvQueueInfo(
   val rcvServer: String,
+  var status: QueueStatus,
   val rcvSwitchStatus: RcvSwitchStatus?,
-  var canAbortSwitch: Boolean
+  var canAbortSwitch: Boolean,
+  var subStatus: SubscriptionStatus
 )
 
 @Serializable
@@ -6777,6 +6752,7 @@ enum class RcvSwitchStatus {
 @Serializable
 class SndQueueInfo(
   val sndServer: String,
+  var status: QueueStatus,
   val sndSwitchStatus: SndSwitchStatus?
 )
 
@@ -6812,6 +6788,39 @@ enum class RatchetSyncState {
   @SerialName("required") Required,
   @SerialName("started") Started,
   @SerialName("agreed") Agreed
+}
+
+@Serializable
+enum class QueueStatus {
+  @SerialName("new") New,
+  @SerialName("confirmed") Confirmed,
+  @SerialName("secured") Secured,
+  @SerialName("active") Active,
+  @SerialName("disabled") Disabled
+}
+
+@Serializable
+sealed class SubscriptionStatus {
+  @Serializable @SerialName("active") object Active: SubscriptionStatus()
+  @Serializable @SerialName("pending") object Pending: SubscriptionStatus()
+  @Serializable @SerialName("removed") class Removed(val subError: String): SubscriptionStatus()
+  @Serializable @SerialName("noSub") object NoSub: SubscriptionStatus()
+
+  val statusString: String get() =
+    when (this) {
+      is Active -> generalGetString(MR.strings.server_connected)
+      is Pending -> generalGetString(MR.strings.server_connecting)
+      is Removed -> generalGetString(MR.strings.server_error)
+      is NoSub -> generalGetString(MR.strings.server_no_sub)
+    }
+
+  val statusExplanation: String get() =
+    when (this) {
+      is Active -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
+      is Pending -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
+      is Removed -> String.format(generalGetString(MR.strings.error_connecting_to_server_to_receive_messages), subError)
+      is NoSub -> generalGetString(MR.strings.not_connected_to_server_to_receive_messages_no_sub)
+    }
 }
 
 interface SimplexAddress {
@@ -7306,6 +7315,7 @@ sealed class AgentErrorType {
     is RCP -> "RCP ${rcpErr.string}"
     is BROKER -> "BROKER ${brokerErr.string}"
     is AGENT -> "AGENT ${agentErr.string}"
+    is NOTICE -> "NOTICE $server $expiresAt"
     is INTERNAL -> "INTERNAL $internalErr"
     is CRITICAL -> "CRITICAL $offerRestart $criticalErr"
     is INACTIVE -> "INACTIVE"
@@ -7319,6 +7329,7 @@ sealed class AgentErrorType {
   @Serializable @SerialName("RCP") class RCP(val rcpErr: RCErrorType): AgentErrorType()
   @Serializable @SerialName("BROKER") class BROKER(val brokerAddress: String, val brokerErr: BrokerErrorType): AgentErrorType()
   @Serializable @SerialName("AGENT") class AGENT(val agentErr: SMPAgentError): AgentErrorType()
+  @Serializable @SerialName("NOTICE") class NOTICE(val server: String, val preset: Boolean, val expiresAt: Instant?): AgentErrorType()
   @Serializable @SerialName("INTERNAL") class INTERNAL(val internalErr: String): AgentErrorType()
   @Serializable @SerialName("CRITICAL") data class CRITICAL(val offerRestart: Boolean, val criticalErr: String): AgentErrorType()
   @Serializable @SerialName("INACTIVE") object INACTIVE: AgentErrorType()
@@ -8045,4 +8056,35 @@ enum class MsgType {
   MESSAGE,
   @SerialName("quota")
   QUOTA
+}
+
+fun showClientNoticeAlert(server: String, preset: Boolean, expiresAt: Instant?) {
+  var message = "Server: $server.\nConditions of use violation notice received from ${if (preset) "preset" else "this"} server.\nNo ID shared, see How it works."
+  if (expiresAt != null) {
+    val tz = TimeZone.currentSystemDefault()
+    val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT)
+    message += "\n\nNew addresses can be created after ${expiresAt.toLocalDateTime(tz).toJavaLocalDateTime().format(formatter)}."
+  }
+  AlertManager.shared.showAlertDialogButtonsColumn(title = "Not allowed", text = AnnotatedString(message)) {
+    val uriHandler = LocalUriHandler.current
+    Column {
+      SectionItemView({ AlertManager.shared.hideAlert() }) {
+        Text(generalGetString(MR.strings.ok), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+      if (preset) {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          uriHandler.openUriCatching(defaultConditionsLink)
+        }) {
+          Text(generalGetString(MR.strings.operator_conditions_of_use), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+      SectionItemView({
+        AlertManager.shared.hideAlert()
+        uriHandler.openUriCatching(contentModerationPostLink)
+      }) {
+        Text(generalGetString(MR.strings.how_it_works), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+      }
+    }
+  }
 }

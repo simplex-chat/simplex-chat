@@ -589,7 +589,7 @@
     <string name="rcv_group_event_member_deleted">已删除 %1$s</string>
     <string name="snd_group_event_member_deleted">你删除了 %1$s</string>
     <string name="profile_will_be_sent_to_contact_sending_link">你的个人资料将发送给你收到此链接的联系人。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">正在尝试连接到用于从该联系人接收消息的服务器（错误：%1$s）。</string>
+    <string name="error_connecting_to_server_to_receive_messages">正在尝试连接到用于从该联系人接收消息的服务器（错误：%1$s）。</string>
     <string name="connected_to_server_to_receive_messages_from_contact">你已连接到用于接收该联系人消息的服务器。</string>
     <string name="description_you_shared_one_time_link">你分享了一次性链接</string>
     <string name="message_delivery_error_desc">很可能此联系人已经删除了与你的联系。</string>
