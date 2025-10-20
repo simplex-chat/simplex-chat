@@ -5,7 +5,7 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module MobileTests where
+module MobileTests (mobileTests) where
 
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -38,7 +38,7 @@ import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
 import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
@@ -111,38 +111,6 @@ chatStarted =
   chatStartedTagged
 #endif
 
-networkStatuses :: LB.ByteString
-networkStatuses =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  networkStatusesSwift
-#else
-  networkStatusesTagged
-#endif
-
-memberSubSummary :: LB.ByteString
-memberSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  memberSubSummarySwift
-#else
-  memberSubSummaryTagged
-#endif
-
-userContactSubSummary :: LB.ByteString
-userContactSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  userContactSubSummarySwift
-#else
-  userContactSubSummaryTagged
-#endif
-
-pendingSubSummary :: LB.ByteString
-pendingSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  pendingSubSummarySwift
-#else
-  pendingSubSummaryTagged
-#endif
-
 parsedMarkdown :: LB.ByteString
 parsedMarkdown =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -167,7 +135,7 @@ testChatApi ps = do
   let tmp = tmpPath ps
       dbPrefix = tmp </> "1"
       f = dbPrefix <> chatSuffix
-  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) MCYesUp
+  Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) (MigrationConfig MCYesUp Nothing)
   Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
@@ -175,7 +143,6 @@ testChatApi ps = do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown

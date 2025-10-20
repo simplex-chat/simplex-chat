@@ -111,10 +111,6 @@ public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntit
         title = groupMsgNtfTitle(groupInfo, groupMember, hideContent: hideContent)
         body = NSLocalizedString("message received", comment: "notification")
         targetContentIdentifier = groupInfo.id
-    case .sndFileConnection:
-        title = NSLocalizedString("Sent file event", comment: "notification")
-    case .rcvFileConnection:
-        title = NSLocalizedString("Received file event", comment: "notification")
     case .userContactConnection:
         title = NSLocalizedString("New contact request", comment: "notification")
     }

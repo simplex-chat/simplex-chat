@@ -6,7 +6,6 @@ module Simplex.Chat.Store
     ChatLockEntity (..),
     UserMsgReceiptSettings (..),
     UserContactLink (..),
-    GroupLink (..),
     GroupLinkInfo (..),
     AddressSettings (..),
     AutoAccept (..),
@@ -16,17 +15,16 @@ module Simplex.Chat.Store
   )
 where
 
-import Simplex.Chat.Store.Groups (GroupLink (..))
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Messaging.Agent.Store.Common (DBStore (..), withTransaction)
 import Simplex.Messaging.Agent.Store.Interface (DBOpts, createDBStore)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, MigrationError)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig, MigrationError)
 #if defined(dbPostgres)
 import Simplex.Chat.Store.Postgres.Migrations
 #else
 import Simplex.Chat.Store.SQLite.Migrations
 #endif
 
-createChatStore :: DBOpts -> MigrationConfirmation -> IO (Either MigrationError DBStore)
+createChatStore :: DBOpts -> MigrationConfig -> IO (Either MigrationError DBStore)
 createChatStore dbCreateOpts = createDBStore dbCreateOpts migrations

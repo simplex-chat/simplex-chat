@@ -142,6 +142,7 @@ shortLinkTests = do
   it "changing profile should update address short link data" testShortLinkAddressChangeProfile
   it "changing auto-reply message should update address short link data" testShortLinkAddressChangeAutoReply
   it "changing group profile should update short link data" testShortLinkGroupChangeProfile
+  it "receiving group profile update should update short link data" testShortLinkGroupChangeProfileReceived
 
 testUpdateProfile :: HasCallStack => TestParams -> IO ()
 testUpdateProfile =
@@ -320,27 +321,27 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
       cLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         getContactLink alice True
-      alice <## "server disconnected localhost ()"
+      alice <## "disconnected 1 connections on server localhost"
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
       _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> cLink)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "server connected localhost ()"
+        alice <## "subscribed 1 connections on server localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
         _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> cLink)
         alice <#? bob
-      alice <## "server disconnected localhost ()"
-      bob <## "server disconnected localhost ()"
+      alice <## "disconnected 1 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
       alice ##> "/ac bob"
       alice <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "server connected localhost ()"
-        bob <## "server connected localhost ()"
+        alice <## "subscribed 1 connections on server localhost"
+        bob <## "subscribed 1 connections on server localhost"
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
         concurrently_
@@ -350,8 +351,8 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
         bob <# "alice> message 1"
         bob #> "@alice message 2"
         alice <# "bob> message 2"
-      alice <## "server disconnected localhost (@bob)"
-      bob <## "server disconnected localhost (@alice)"
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
@@ -1085,7 +1086,7 @@ testPlanAddressConnecting ps = do
 
     threadDelay 100000
   withTestChat ps "alice" $ \alice -> do
-    alice <## "Your address is active! To show: /sa"
+    alice <## "subscribed 1 connections on server localhost"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1093,6 +1094,7 @@ testPlanAddressConnecting ps = do
     alice <## "bob (Bob): accepting contact request, you can send messages to contact"
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "subscribed 1 connections on server localhost"
     bob <## "alice (Alice): contact is connected"
     bob @@@ [("@alice", "Audio/video calls: enabled")]
     bob ##> ("/_connect plan 1 " <> cLink)
@@ -1128,7 +1130,7 @@ testPlanAddressConnectingSlow ps = do
 
     threadDelay 100000
   withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
-    alice <## "Your address is active! To show: /sa"
+    alice <## "subscribed 1 connections on server localhost"
     alice <## "bob (Bob) wants to connect to you!"
     alice <## "to accept: /ac bob"
     alice <## "to reject: /rc bob (the sender will NOT be notified)"
@@ -1136,6 +1138,7 @@ testPlanAddressConnectingSlow ps = do
     alice <## "bob (Bob): accepting contact request..."
   withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
+    bob <## "subscribed 1 connections on server localhost"
     bob @@@ [("@alice", "")]
     bob ##> ("/_connect plan 1 " <> cLink)
     bob <## "contact address: connecting to contact alice"
@@ -1545,10 +1548,12 @@ testSetConnectionIncognitoProhibitedDuringNegotiation ps = do
     bob <## "confirmation sent!"
   withTestChat ps "alice" $ \alice -> do
     threadDelay 250000
+    alice <## "subscribed 1 connections on server localhost"
     alice <## "bob (Bob): contact is connected"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChat ps "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
       bob <## "alice (Alice): contact is connected"
       alice <##> bob
       alice `hasContactProfiles` ["alice", "bob"]
@@ -1566,9 +1571,11 @@ testSetConnectionIncognitoProhibitedDuringNegotiationSlow ps = do
     bob <## "confirmation sent!"
   withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     threadDelay 250000
+    alice <## "subscribed 1 connections on server localhost"
     alice ##> "/_set incognito :1 on"
     alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
     withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
@@ -1657,11 +1664,11 @@ testJoinGroupIncognito =
       alice <## "group #secret_club is created"
       alice <## "to add members use /a secret_club <name> or /create link #secret_club"
       -- alice invites bob
-      alice ##> "/a secret_club bob admin"
+      alice ##> "/a secret_club bob member"
       concurrentlyN_
         [ alice <## "invitation to join the group #secret_club sent to bob",
           do
-            bob <## "#secret_club: alice invites you to join the group as admin"
+            bob <## "#secret_club: alice invites you to join the group as member"
             bob <## "use /j secret_club to accept"
         ]
       bob ##> "/j secret_club"
@@ -1669,11 +1676,11 @@ testJoinGroupIncognito =
         (alice <## "#secret_club: bob joined the group")
         (bob <## "#secret_club: you joined the group")
       -- alice invites cath
-      alice ##> ("/a secret_club " <> cathIncognito <> " admin")
+      alice ##> ("/a secret_club " <> cathIncognito <> " member")
       concurrentlyN_
         [ alice <## ("invitation to join the group #secret_club sent to " <> cathIncognito),
           do
-            cath <## "#secret_club: alice invites you to join the group as admin"
+            cath <## "#secret_club: alice invites you to join the group as member"
             cath <## ("use /j secret_club to join incognito as " <> cathIncognito)
         ]
       -- cath uses the same incognito profile when joining group, cath and bob don't merge contacts
@@ -1687,15 +1694,12 @@ testJoinGroupIncognito =
             bob <## ("#secret_club: alice added " <> cathIncognito <> " to the group (connecting...)")
             bob <## ("#secret_club: new member " <> cathIncognito <> " is connected")
         ]
-      -- cath cannot invite to the group because her membership is incognito
-      cath ##> "/a secret_club dan"
-      cath <## "you are using an incognito profile for this group - prohibited to invite contacts"
       -- alice invites dan
-      alice ##> "/a secret_club dan admin"
+      alice ##> "/a secret_club dan member"
       concurrentlyN_
         [ alice <## "invitation to join the group #secret_club sent to dan",
           do
-            dan <## "#secret_club: alice invites you to join the group as admin"
+            dan <## "#secret_club: alice invites you to join the group as member"
             dan <## "use /j secret_club to accept"
         ]
       dan ##> "/j secret_club"
@@ -1754,39 +1758,39 @@ testJoinGroupIncognito =
       alice ##> "/ms secret_club"
       alice
         <### [ "alice (Alice): owner, you, created group",
-               "bob (Bob): admin, invited, connected",
-               ConsoleString $ cathIncognito <> ": admin, invited, connected",
-               "dan (Daniel): admin, invited, connected"
+               "bob (Bob): member, invited, connected",
+               ConsoleString $ cathIncognito <> ": member, invited, connected",
+               "dan (Daniel): member, invited, connected"
              ]
       bob ##> "/ms secret_club"
       bob
         <### [ "alice (Alice): owner, host, connected",
-               "bob (Bob): admin, you, connected",
-               ConsoleString $ cathIncognito <> ": admin, connected",
-               "dan (Daniel): admin, connected"
+               "bob (Bob): member, you, connected",
+               ConsoleString $ cathIncognito <> ": member, connected",
+               "dan (Daniel): member, connected"
              ]
       cath ##> "/ms secret_club"
       cath
         <### [ "alice (Alice): owner, host, connected",
-               "bob_1 (Bob): admin, connected",
-               ConsoleString $ "i " <> cathIncognito <> ": admin, you, connected",
-               "dan_1 (Daniel): admin, connected"
+               "bob_1 (Bob): member, connected",
+               ConsoleString $ "i " <> cathIncognito <> ": member, you, connected",
+               "dan_1 (Daniel): member, connected"
              ]
       dan ##> "/ms secret_club"
       dan
         <### [ "alice (Alice): owner, host, connected",
-               "bob (Bob): admin, connected",
-               ConsoleString $ cathIncognito <> ": admin, connected",
-               "dan (Daniel): admin, you, connected"
+               "bob (Bob): member, connected",
+               ConsoleString $ cathIncognito <> ": member, connected",
+               "dan (Daniel): member, you, connected"
              ]
       -- remove member
-      bob ##> ("/rm secret_club " <> cathIncognito)
+      alice ##> ("/rm secret_club " <> cathIncognito)
       concurrentlyN_
-        [ bob <## ("#secret_club: you removed " <> cathIncognito <> " from the group"),
-          alice <## ("#secret_club: bob removed " <> cathIncognito <> " from the group"),
-          dan <## ("#secret_club: bob removed " <> cathIncognito <> " from the group"),
+        [ alice <## ("#secret_club: you removed " <> cathIncognito <> " from the group"),
+          bob <## ("#secret_club: alice removed " <> cathIncognito <> " from the group"),
+          dan <## ("#secret_club: alice removed " <> cathIncognito <> " from the group"),
           do
-            cath <## "#secret_club: bob_1 removed you from the group"
+            cath <## "#secret_club: alice removed you from the group"
             cath <## "use /d #secret_club to delete the group"
         ]
       bob #> "#secret_club hi"
@@ -3031,11 +3035,11 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "server disconnected localhost ()"
+      alice <## "disconnected 1 connections on server localhost"
       bob ##> "/_connect contact @2 text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "server connected localhost ()"
+        alice <## "subscribed 1 connections on server localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "invitation link: known prepared contact alice"
@@ -3049,8 +3053,8 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
         alice <##> bob
-      alice <## "server disconnected localhost (@bob)"
-      bob <## "server disconnected localhost (@alice)"
+      alice <## "disconnected 1 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
@@ -3196,11 +3200,11 @@ testShortLinkAddressConnectRetry ps =
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "server disconnected localhost ()"
+      alice <## "disconnected 1 connections on server localhost"
       bob ##> "/_connect contact @2 text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "server connected localhost ()"
+        alice <## "subscribed 1 connections on server localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "contact address: known prepared contact alice"
@@ -3221,8 +3225,8 @@ testShortLinkAddressConnectRetry ps =
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
         alice <##> bob
-      alice <## "server disconnected localhost (@bob)"
-      bob <## "server disconnected localhost (@alice)"
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
   where
     tmp = tmpPath ps
     serverCfg' =
@@ -3251,11 +3255,11 @@ testShortLinkAddressConnectRetryIncognito ps =
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "server disconnected localhost ()"
+      alice <## "disconnected 1 connections on server localhost"
       bob ##> "/_connect contact @2 incognito=on text hello"
       bob <##. "smp agent error: BROKER"
-      bobIncognito <- withSmpServer' serverCfg' $ do
-        alice <## "server connected localhost ()"
+      withSmpServer' serverCfg' $ do
+        alice <## "subscribed 1 connections on server localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "contact address: known prepared contact alice"
@@ -3284,9 +3288,8 @@ testShortLinkAddressConnectRetryIncognito ps =
         bob ?<# "alice> hi"
         bob ?#> "@alice hey"
         alice <# (bobIncognito <> "> hey")
-        pure bobIncognito
-      alice <## ("server disconnected localhost (@" <> bobIncognito <> ")")
-      bob <## "server disconnected localhost (@alice)"
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
   where
     tmp = tmpPath ps
     serverCfg' =
@@ -3541,15 +3544,15 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
         bob <## "#team: group is prepared"
         pure shortLink
-      alice <## "server disconnected localhost (@bob)"
-      bob <## "server disconnected localhost (@alice)"
+      alice <## "disconnected 2 connections on server localhost"
+      bob <## "disconnected 1 connections on server localhost"
       bob ##> "/_connect group #1"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "group link: known prepared group #team"
-        alice <## "server connected localhost (@bob)"
-        bob <## "server connected localhost (@alice)"
+        alice <## "subscribed 2 connections on server localhost"
+        bob <## "subscribed 1 connections on server localhost"
         threadDelay 250000
         bob ##> "/_connect group #1"
         bob <## "#team: connection started"
@@ -3568,8 +3571,8 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         bob <# "#team alice> 1"
         bob #> "#team 2"
         alice <# "#team bob> 2"
-      alice <## "server disconnected localhost (@bob)"
-      bob <## "server disconnected localhost (@alice)"
+      alice <## "disconnected 3 connections on server localhost"
+      bob <## "disconnected 2 connections on server localhost"
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
@@ -4121,6 +4124,44 @@ testShortLinkGroupChangeProfile = testChat3 aliceProfile bobProfile cathProfile 
       alice <## "changed to #club"
       cath <## "alice updated group #team:"
       cath <## "changed to #club"
+
+      bob ##> ("/_connect plan 1 " <> shortLink)
+      bob <## "group link: ok to connect"
+      groupSLinkData <- getTermLine bob
+      bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
+      bob <## "#club: group is prepared"
+      bob ##> "/_connect group #1"
+      bob <## "#club: connection started"
+      alice <## "bob (Bob): accepting request to join group #club..."
+      concurrentlyN_
+        [ alice <## "#club: bob joined the group",
+          do
+            bob <## "#club: joining the group..."
+            bob <## "#club: you joined the group"
+            bob <## "#club: member cath (Catherine) is connected",
+          do
+            cath <## "#club: alice added bob (Bob) to the group (connecting...)"
+            cath <## "#club: new member bob is connected"
+        ]
+      alice #> "#club 1"
+      [bob, cath] *<# "#club alice> 1"
+      bob #> "#club 2"
+      [alice, cath] *<# "#club bob> 2"
+      cath #> "#club 3"
+      [alice, bob] *<# "#club cath> 3"
+
+testShortLinkGroupChangeProfileReceived :: HasCallStack => TestParams -> IO ()
+testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cathProfile test
+  where
+    test alice bob cath = do
+      createGroup2' "team" alice (cath, GROwner) True
+      alice ##> "/create link #team"
+      (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
+
+      cath ##> "/gp team club"
+      cath <## "changed to #club"
+      alice <## "cath updated group #team:"
+      alice <## "changed to #club"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
       bob <## "group link: ok to connect"

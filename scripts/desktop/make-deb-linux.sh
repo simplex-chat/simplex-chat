@@ -37,8 +37,12 @@ export SOURCE_DATE_EPOCH=1704067200
 
 dpkg-deb -R ./release/main/deb/simplex*.deb ./extracted
 
+# Source the distribution variables (VERSION_CODENAME)
+. /etc/os-release
+
 rm -f ./extracted/opt/*imple*/lib/app/*skiko-awt-runtime-linux*
 sed -i -e '/skiko-awt-runtime-linux/d' ./extracted/opt/*imple*/lib/app/simplex.cfg
+sed -i "/Version/ s/\$/~$VERSION_CODENAME/" ./extracted/DEBIAN/control
 find ./extracted/ -exec touch -d "@$SOURCE_DATE_EPOCH" {} +
 
 dpkg-deb --build --root-owner-group --uniform-compression ./extracted ./release/main/deb/simplex_${ARCH}.deb

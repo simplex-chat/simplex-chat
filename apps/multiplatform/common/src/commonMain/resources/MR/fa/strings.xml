@@ -35,7 +35,7 @@
     <string name="connect_via_link_verb">متصل شدن</string>
     <string name="non_content_uri_alert_title">مسیر نامعتبر فایل</string>
     <string name="app_was_crashed">برنامه از کار افتاد</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">در حال تلاش برای اتصال به سرور مورد استفاده برای دریافت پیام‌ها از این مخاطب (خطا: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">در حال تلاش برای اتصال به سرور مورد استفاده برای دریافت پیام‌ها از این مخاطب (خطا: %1$s).</string>
     <string name="deleted_description">حذف شد</string>
     <string name="marked_deleted_description">علامت گذاشته شده به عنوان حذف شده</string>
     <string name="moderated_item_description">توسط %s حذف شد</string>

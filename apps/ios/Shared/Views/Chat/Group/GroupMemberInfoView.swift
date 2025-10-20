@@ -160,7 +160,15 @@ struct GroupMemberInfoView: View {
 
                     if let connStats = connectionStats {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
-                            // TODO network connection status
+                            if let subStatus = connStats.subStatus {
+                                SubStatusRow(status: subStatus)
+                                    .onTapGesture {
+                                        showAlert(
+                                            NSLocalizedString("Network status", comment: "alert title"),
+                                            message: subStatus.statusExplanation
+                                        )
+                                    }
+                            }
                             Button("Change receiving address") {
                                 alert = .switchAddressAlert
                             }
@@ -396,7 +404,6 @@ struct GroupMemberInfoView: View {
                             ItemsModel.shared.loadOpenChat(memberContact.id) {
                                 dismissAllSheets(animated: true)
                             }
-                            NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
                         }
                     } catch let error {
                         logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
