@@ -329,7 +329,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
-  XGrpRelayAcpt :: ConnLinkContact -> ChatMsgEvent 'Json -- TBC short/long/any
+  XGrpRelayAcpt :: ConnLinkContact -> ChatMsgEvent 'Json -- TODO [chat relays] TBC short/long/any
   XGrpRelayReady :: ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
@@ -1223,7 +1223,13 @@ data ContactShortLinkData = ContactShortLinkData
   deriving (Show)
 
 data GroupShortLinkData = GroupShortLinkData
-  { groupProfile :: GroupProfile
+  { groupProfile :: GroupProfile,
+    chatRelays :: [ChatRelayInfo]
+  }
+  deriving (Show)
+
+data ChatRelayInfo = ChatRelayInfo
+  { relayLink :: ConnLinkContact
   }
   deriving (Show)
 

@@ -118,7 +118,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
--- TODO [chat relay] filter out chat relay users where necessary (e.g. loading list of users for UI)
+-- TODO [chat relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
