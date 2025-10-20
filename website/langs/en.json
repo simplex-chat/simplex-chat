@@ -298,5 +298,12 @@
     "index-directory-p1": "Hundreds of thousands people already trust SimpleX messaging.",
     "index-directory-p2": "Find your communities in SimpleX directory and create your own!",
     "index-directory-cta": "View SimpleX Directory",
-    "index-directory-users-group-title": "SimpleX users group"
+    "index-directory-users-group-title": "SimpleX users group",
+    "how-secure-comparison-title": "How secure is end-to-end encryption in different messengers?",
+    "how-secure-message-padding": "Message padding",
+    "how-secure-repudiation-deniability": "Repudiation (deniability)",
+    "how-secure-forward-secrecy": "Forward secrecy",
+    "how-secure-break-in-recovery": "Break-in recovery",
+    "how-secure-two-factor-key-exchange": "2-factor key exchange",
+    "how-secure-post-quantum-hybrid-crypto": "Post-quantum hybrid crypto"
 }
