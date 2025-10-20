@@ -349,7 +349,6 @@ undocumentedCommands =
     "APIGetContactCode",
     "APIGetGroupMemberCode",
     "APIGetNetworkConfig",
-    "APIGetNetworkStatuses",
     "APIGetNtfConns",
     "APIGetNtfToken",
     "APIGetReactionMembers",
