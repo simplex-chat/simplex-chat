@@ -217,7 +217,7 @@ templateEngineOverride: njk
 
 <section id="how-secure-comparison" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] px-5">
     <div class="text-grey-black dark:text-white container flex flex-col">
-        <h2 class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">How secure is end-to-end encryption in different messengers?</h2>
+        <h2 class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">{{ "how-secure-comparison-title" | i18n({}, lang ) | safe }}</h2>
 
         <div class="w-full overflow-auto">
             <table class="w-full border-separate border-spacing-x-5 border-spacing-y-2">
@@ -252,7 +252,7 @@ templateEngineOverride: njk
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="min-w-[210px]">Message padding</td>
+                        <td class="min-w-[210px]">{{ "how-secure-message-padding" | i18n({}, lang ) | safe }}</td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
@@ -261,7 +261,7 @@ templateEngineOverride: njk
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Repudiation (deniability)</td>
+                        <td class="min-w-[210px]">{{ "how-secure-repudiation-deniability" | i18n({}, lang ) | safe }}</td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
@@ -270,7 +270,7 @@ templateEngineOverride: njk
                         <td class="min-w-[100px] h-[52px] flex justify-center items-center gap-0"><img class="h-[34px]" src="/img/design_3/green-tick.svg" alt="" srcset=""> <sup class="text-[#e2b01b] font-bold text-[18px]">1</sup></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Forward secrecy</td>
+                        <td class="min-w-[210px]">{{ "how-secure-forward-secrecy" | i18n({}, lang ) | safe }}</td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
@@ -279,7 +279,7 @@ templateEngineOverride: njk
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Break-in recovery</td>
+                        <td class="min-w-[210px]">{{ "how-secure-break-in-recovery" | i18n({}, lang ) | safe }}</td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
@@ -288,7 +288,7 @@ templateEngineOverride: njk
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">2-factor key exchange</td>
+                        <td class="min-w-[210px]">{{ "how-secure-two-factor-key-exchange" | i18n({}, lang ) | safe }}</td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
@@ -297,7 +297,7 @@ templateEngineOverride: njk
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Post-quantum hybrid crypto</td>
+                        <td class="min-w-[210px]">{{ "how-secure-post-quantum-hybrid-crypto" | i18n({}, lang ) | safe }}</td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
                         <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
