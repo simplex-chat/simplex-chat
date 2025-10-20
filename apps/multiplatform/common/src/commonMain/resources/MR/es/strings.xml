@@ -2166,7 +2166,7 @@
     <string name="no_message_servers_configured_for_receiving">Sin servidores para recibir mensajes.</string>
     <string name="operator_server_alert_title">Servidor del operador</string>
     <string name="or_to_share_privately">O para compartir en privado</string>
-    <string name="onboarding_select_network_operators_to_use">Selecciona los operadores de red a utilizar.</string>
+    <string name="onboarding_select_network_operators_to_use">Selecciona operadores a usar.</string>
     <string name="share_address_publicly">Compartir dirección públicamente</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Compartir enlaces de un solo uso y direcciones SimpleX es seguro a través de cualquier medio.</string>
     <string name="onboarding_network_operators_update">Actualizar</string>

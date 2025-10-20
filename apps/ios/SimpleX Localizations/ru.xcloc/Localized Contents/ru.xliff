@@ -3881,9 +3881,9 @@ snd error text</note>
         <target>Хэш в адресе пересылающего сервера не соответствует сертификату: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Возможно, хэш сертификата в адресе сервера неверный</target>
+        <target state="translated">Возможно, хэш сертификата в адресе сервера неверный.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
@@ -6821,9 +6821,9 @@ swipe action</note>
         <target>Одобрять членов</target>
         <note>admission stage</note>
       </trans-unit>
-      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve">
+      <trans-unit id="Review members before admitting (&quot;knocking&quot;)." xml:space="preserve" approved="no">
         <source>Review members before admitting ("knocking").</source>
-        <target>Одобрять членов для вступления в группу.</target>
+        <target state="translated">Вручную одобрять членов для вступления в группу.</target>
         <note>admission stage description</note>
       </trans-unit>
       <trans-unit id="Revoke" xml:space="preserve">
@@ -7352,14 +7352,14 @@ chat item action</note>
         <target>Протокол сервера изменен.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>Сервер требует авторизации для создания очередей, проверьте пароль</target>
+        <target state="translated">Сервер требует авторизации для создания очередей, проверьте пароль.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target>Сервер требует авторизации для загрузки, проверьте пароль</target>
+        <target state="translated">Сервер требует авторизации для загрузки, проверьте пароль.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -8001,9 +8001,9 @@ report reason</note>
         <target>Нажмите Соединиться, чтобы отправить запрос</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Tap Connect to use bot" xml:space="preserve">
+      <trans-unit id="Tap Connect to use bot" xml:space="preserve" approved="no">
         <source>Tap Connect to use bot</source>
-        <target>Нажмите Соединиться, чтобы использовать бот.</target>
+        <target state="translated">Нажмите Соединиться, чтобы использовать бот</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Create SimpleX address in the menu to create it later." xml:space="preserve">

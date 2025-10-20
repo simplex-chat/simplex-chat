@@ -3870,9 +3870,9 @@ snd error text</note>
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Можливо, в адресі сервера неправильно вказано відбиток сертифіката</target>
+        <target state="translated">Відбиток в адресі сервера не співпадає з сертифікатом.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
@@ -7333,14 +7333,14 @@ chat item action</note>
         <target>Протокол сервера змінено.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to create queues, check password.</source>
-        <target>Сервер вимагає авторизації для створення черг, перевірте пароль</target>
+        <target state="translated">Сервер вимагає авторизації для створення черг, перевірте пароль.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
         <source>Server requires authorization to upload, check password.</source>
-        <target>Сервер вимагає авторизації для завантаження, перевірте пароль</target>
+        <target state="translated">Сервер вимагає авторизації для завантаження, перевірте пароль.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">

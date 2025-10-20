@@ -2512,4 +2512,23 @@
     <string name="chat_banner_your_contact">Ваш контакт</string>
     <string name="chat_banner_your_group">Ваша група</string>
     <string name="context_user_picker_your_profile">Ваш профіль</string>
+    <string name="allow_files_and_media_only_if">Дозволяйте файли та медіа лише за умови, що ваш контакт їх дозволяє.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Дозвольте своїм контактам надсилати файли та медіа.</string>
+    <string name="chat_banner_bot">Бот</string>
+    <string name="both_you_and_your_contact_can_send_files">Ви, і ваш контакт можете надсилати файли та медіа.</string>
+    <string name="settings_section_title_contact_requests_from_groups">ЗАПИТИ НА ЗВ’ЯЗОК ВІД ГРУП</string>
+    <string name="deprecated_options_section">Застарілі опції</string>
+    <string name="error_marking_member_support_chat_read">Помилка при відмітці як прочитане</string>
+    <string name="files_prohibited_in_this_chat">Файли та медіа заборонені у цьому чаті.</string>
+    <string name="smp_proxy_error_unknown_ca">Відбиток у адресі сервера переадресації не співпадає з сертифікатом: %1$s.</string>
+    <string name="network_error_unknown_ca">Відбиток у адресі сервера не співпадає з сертифікатом: %1$s.</string>
+    <string name="member_is_deleted_cant_accept_request">Користувача видалено - не може прийняти запит.</string>
+    <string name="only_you_can_send_files">Тільки ви можете надсилати файли та медіа.</string>
+    <string name="only_your_contact_can_send_files">Лише ваш контакт може надсилати файли та медіа.</string>
+    <string name="privacy_chat_list_open_clean_web_link">Відкрити чисте посилання</string>
+    <string name="privacy_chat_list_open_full_web_link">Відкрити повне посилання</string>
+    <string name="open_to_use_bot">Відкрити для використання бота</string>
+    <string name="prohibit_sending_files_and_media">Заборонити надсилання файлів і медіа.</string>
+    <string name="sanitize_links_toggle">Видалити відстеження посилань</string>
+    <string name="rcv_direct_event_group_inv_link_received">запит на підключення до групи %1$s</string>
 </resources>
