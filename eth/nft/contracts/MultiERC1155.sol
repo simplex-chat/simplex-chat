@@ -92,7 +92,7 @@ contract MultiERC1155 is ERC1155, Ownable {
 
     function _addToken(TokenInfo memory info) internal {
         require(bytes(info.tokenUri).length > 0, "Token tokenUri required");
-        
+
         uint id = _nextTokenId++;
         require(!tokens[id].exists, "Contract error: token ID already exists");
 

@@ -2,29 +2,29 @@
 pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts@5.4.0/access/Ownable.sol";
-import "./NFTNumbered.sol";
+import "./MultiERC1155.sol";
 
 contract NFTMinter is Ownable {
-    NFTNumbered public nft;
+    MultiERC1155 public nft;
     uint public mintEndTime;
 
     constructor(address _nftAddress) Ownable(msg.sender) {
-        nft = NFTNumbered(_nftAddress);
+        nft = MultiERC1155(_nftAddress);
     }
 
     event NFTUpdated(address indexed newNFT);
     event MintEndUpdated(uint256 newTime);
 
     /// @notice Allows anyone to mint one NFT for free (gas only), if eligible.
-    function mint() external {
+    function mint(uint tokenId) external {
         require(block.timestamp < mintEndTime, "Minting ended");
-        nft.safeMint(msg.sender);
+        nft.mint(msg.sender, tokenId, 1, "");
     }
 
     /// @notice Update the target NFT contract.
     /// @param newNFT The new NFT contract address.
     function setNFT(address newNFT) external onlyOwner {
-        nft = NFTNumbered(newNFT);
+        nft = MultiERC1155(newNFT);
         emit NFTUpdated(newNFT);
     }
 
