@@ -3870,9 +3870,9 @@ snd error text</note>
         <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
         <source>Fingerprint in server address does not match certificate.</source>
-        <target>Можливо, в адресі сервера неправильно вказано відбиток сертифіката</target>
+        <target state="translated">Відбиток в адресі сервера не співпадає з сертифікатом.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
