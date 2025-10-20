@@ -1,0 +1,35 @@
+sequenceDiagram
+  participant OSMP as Owner's<br>SMP server
+  participant O as Owner
+  participant R as Chat relay(s)
+  participant RSMP as Chat relays'<br>SMP server(s)
+  participant M as Member
+
+note over OSMP, RSMP: Owner creates new group, adds chat relays
+
+O -->> O: 1. Create new group
+O ->> OSMP: 2. Create short link<br>(group entry point)
+OSMP -->> O:
+O -->> O: 3. Add link to group profile
+O -->> O: 4. Choose chat relays
+par With each relay
+    O ->> R: 5. Contact request<br>(x.grp.relay.inv)
+    R ->> RSMP: 6. Create relay link
+    RSMP -->> R:
+    R ->> O: 7. Accept request<br>(x.grp.relay.acpt)
+    O ->> OSMP: 8. Update short link<br>(add relay link)
+    OSMP -->> O:
+    O ->> R: 9. Notify relay link added<br>(x.grp.info)
+    R ->> OSMP: 10. Retrieve short link data
+    OSMP -->> R:
+    R -->> R: 11. Check relay link added
+    R ->> O: 12. Confirm to owner<br>(x.grp.relay.ready)
+end
+O -->> O: 13. Share group short link<br>(social, out-of-band)
+
+note over OSMP, M: New member connects
+
+M ->> OSMP: 1. Retrieve short link data
+OSMP -->> M:
+M ->> R: 2. Connect via relay link(s)
+R -->> M:

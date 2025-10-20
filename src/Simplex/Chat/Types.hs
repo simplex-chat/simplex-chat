@@ -732,7 +732,8 @@ data GroupProfile = GroupProfile
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission
+    memberAdmission :: Maybe GroupMemberAdmission,
+    groupLink :: Maybe ConnLinkContact
   }
   deriving (Eq, Show)
 
@@ -810,6 +811,13 @@ data GroupLinkRejection = GroupLinkRejection
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+data GroupRelayInvitation = GroupRelayInvitation
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
