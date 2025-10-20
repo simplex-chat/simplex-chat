@@ -349,9 +349,9 @@ prohibitedSimplexLinks :: GroupInfo -> GroupMember -> Maybe MarkdownList -> Bool
 prohibitedSimplexLinks gInfo m ft =
   not (groupFeatureMemberAllowed SGFSimplexLinks m gInfo)
     && maybe False (any ftIsSimplexLink) ft
-  where
-    ftIsSimplexLink :: FormattedText -> Bool
-    ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
+
+ftIsSimplexLink :: FormattedText -> Bool
+ftIsSimplexLink FormattedText {format} = maybe False isSimplexLink format
 
 roundedFDCount :: Int -> Int
 roundedFDCount n
@@ -659,8 +659,8 @@ receiveFileEvt' user ft userApprovedRelays rcvInline_ filePath_ = do
 
 rctFileCancelled :: ChatError -> Bool
 rctFileCancelled = \case
-  ChatErrorAgent (SMP _ SMP.AUTH) _ -> True
-  ChatErrorAgent (CONN DUPLICATE _) _ -> True
+  ChatErrorAgent (SMP _ SMP.AUTH) _ _ -> True
+  ChatErrorAgent (CONN DUPLICATE _) _ _ -> True
   _ -> False
 
 acceptFileReceive :: User -> RcvFileTransfer -> Bool -> Maybe Bool -> Maybe FilePath -> CM AChatItem
@@ -927,7 +927,7 @@ acceptGroupJoinRequestAsync
     (groupMemberId, memberId) <- withStore $ \db ->
       createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
     currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
-    let Profile {displayName} = userProfileInGroup user (fromIncognitoProfile <$> incognitoProfile)
+    let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
           XGrpLinkInv $
@@ -1053,7 +1053,7 @@ introduceToRemaining vr user gInfo m = do
 introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
 introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
-  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo m) msgScope
+  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo gInfo m) msgScope
   sendIntroductions introduceToMembers
   where
     sendIntroductions members = do
@@ -1068,7 +1068,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Ju
           processIntro intro `catchAllErrors` eToView
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
-      let mInfo = memberInfo reMember
+      let mInfo = memberInfo gInfo reMember
           mRestrictions = memberRestrictions reMember
        in XGrpMemIntro mInfo mRestrictions
     shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
@@ -1083,6 +1083,34 @@ introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Ju
     processIntro intro@GroupMemberIntro {introId} = do
       void $ sendDirectMemberMessage conn (memberIntro $ reMember intro) groupId
       withStore' $ \db -> updateIntroStatus db introId GMIntroSent
+
+userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
+userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
+{-# INLINE userProfileInGroup #-}
+
+userProfileInGroup' :: User -> Bool -> Maybe Profile -> Profile
+userProfileInGroup' User {profile = p} allowSimplexLinks incognitoProfile =
+  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
+   in redactedMemberProfile allowSimplexLinks p'
+
+memberInfo :: GroupInfo -> GroupMember -> MemberInfo
+memberInfo g m@GroupMember {memberId, memberRole, memberProfile, activeConn} =
+  MemberInfo
+    { memberId,
+      memberRole,
+      v = ChatVersionRange . peerChatVRange <$> activeConn,
+      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile
+    }
+  where
+    allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
+
+redactedMemberProfile :: Bool -> Profile -> Profile
+redactedMemberProfile allowSimplexLinks Profile {displayName, fullName, shortDescr, image, peerType} =
+  Profile {displayName, fullName, shortDescr = removeSimplexLink =<< shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType}
+  where
+    removeSimplexLink s
+      | allowSimplexLinks = Just s
+      | otherwise = maybe (Just s) (\fts -> if any ftIsSimplexLink fts then Nothing else Just s) $ parseMaybeMarkdownList s
 
 sendHistory :: User -> GroupInfo -> GroupMember -> CM ()
 sendHistory _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
@@ -1814,7 +1842,7 @@ deliverMessagesB msgReqs = do
       Left _ce -> (prev, Left (AP.INTERNAL "ChatError, skip")) -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
-    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae Nothing
+    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae (AgentConnId "") Nothing
     createDelivery :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError ([Int64], PQEncryption))
     createDelivery db ((Connection {connId}, _, (_, msgIds)), (agentMsgId, pqEnc')) = do
       Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
@@ -1858,7 +1886,8 @@ sendGroupMessages user gInfo scope members events = do
             _ -> False
     sendProfileUpdate = do
       let members' = filter (`supportsVersion` memberProfileUpdateVersion) members
-          profileUpdateEvent = XInfo $ redactedMemberProfile $ fromLocalProfile p
+          allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+          profileUpdateEvent = XInfo $ redactedMemberProfile allowSimplexLinks $ fromLocalProfile p
       void $ sendGroupMessage' user gInfo members' profileUpdateEvent
       currentTs <- liftIO getCurrentTime
       withStore' $ \db -> updateUserMemberProfileSentAt db user gInfo currentTs

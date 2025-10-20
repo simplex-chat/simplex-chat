@@ -806,7 +806,7 @@
     <string name="update_network_settings_question">¿Actualizar la configuración de red\?</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor para recibir mensajes de este contacto.</string>
     <string name="unknown_message_format">formato de mensaje desconocido</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Intentando conectar con el servidor para recibir mensajes de este contacto (error: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Intentando conectar con el servidor para recibir mensajes de este contacto (error: %1$s).</string>
     <string name="error_smp_test_failed_at_step">Prueba no superada en el paso %s.</string>
     <string name="tap_to_start_new_chat">Pulsa para iniciar chat nuevo</string>
     <string name="share_message">Compartir mensaje…</string>

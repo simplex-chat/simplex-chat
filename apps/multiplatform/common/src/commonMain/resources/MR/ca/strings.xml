@@ -1556,7 +1556,7 @@
     <string name="error_parsing_uri_desc">Comproveu que l\'enllaç SimpleX sigui correcte.</string>
     <string name="sending_files_not_yet_supported">l\'enviament de fitxers encara no està suportat</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Intentant connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">S\'està provant de connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte (error: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">S\'està provant de connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte (error: %1$s).</string>
     <string name="connect_use_current_profile">Usar perfil actual</string>
     <string name="connect_use_new_incognito_profile">Usar nou perfil incògnit</string>
     <string name="app_was_crashed">Error aplicació</string>

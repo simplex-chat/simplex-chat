@@ -5,7 +5,7 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module MobileTests where
+module MobileTests (mobileTests) where
 
 import ChatTests.DBUtils
 import ChatTests.Utils
@@ -111,14 +111,6 @@ chatStarted =
   chatStartedTagged
 #endif
 
-networkStatuses :: LB.ByteString
-networkStatuses =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  networkStatusesSwift
-#else
-  networkStatusesTagged
-#endif
-
 parsedMarkdown :: LB.ByteString
 parsedMarkdown =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
@@ -151,7 +143,6 @@ testChatApi ps = do
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` networkStatuses
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown

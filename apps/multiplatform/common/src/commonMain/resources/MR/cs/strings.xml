@@ -493,7 +493,7 @@
     <string name="you_will_join_group">Připojtíte se ke všem členům skupiny.</string>
     <string name="connect_via_link_verb">Připojení</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Pokoušíte se připojit k serveru používaném pro příjem zpráv od tohoto kontaktu (chyba: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Pokoušíte se připojit k serveru používaném pro příjem zpráv od tohoto kontaktu (chyba: %1$s).</string>
     <string name="marked_deleted_description">označeno jako smazáno</string>
     <string name="sending_files_not_yet_supported">Odesílání souborů zatím není podporováno</string>
     <string name="receiving_files_not_yet_supported">přijímání souborů zatím není podporováno</string>

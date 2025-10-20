@@ -1131,7 +1131,7 @@
     <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
     <string name="choose_file_title">اختيار ملف</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">إرسال غير مصرح به</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
     <string name="la_notice_turn_on">تشغيل</string>
     <string name="webrtc_ice_servers">خوادم WebRTC ICE</string>
     <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملف تعريف متخفي لهذه المجموعة - لمنع مشاركة ملفك التعريفي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>

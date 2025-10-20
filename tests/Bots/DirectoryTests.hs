@@ -1232,8 +1232,8 @@ testRestoreDirectory ps = do
   restoreDirectoryService ps 11 $ \superUser _dsLink ->
     withTestChat ps "bob" $ \bob ->
       withTestChat ps "cath" $ \cath -> do
-        bob <## "5 connections subscribed"
-        cath <## "5 connections subscribed"
+        bob <## "subscribed 5 connections on server localhost"
+        cath <## "subscribed 5 connections on server localhost"
         listGroups superUser bob cath
         groupFoundN 3 bob "privacy"
         groupFound bob "security"
@@ -1365,7 +1365,7 @@ restoreDirectoryService :: HasCallStack => TestParams -> Int -> (TestCC -> Strin
 restoreDirectoryService ps connCount test = do
   dsLink <-
     withTestChat ps serviceDbPrefix $ \ds -> do
-      ds .<## (show connCount <> " connections subscribed")
+      ds .<## ("subscribed " <> show connCount <> " connections on server localhost")
       ds ##> "/sa"
       dsLink <- getContactLink ds False
       ds <## "auto_accept on"
@@ -1381,8 +1381,8 @@ withDirectoryOwnersGroup ps cfg dsLink createOwnersGroup webFolder test = do
   runDirectory cfg opts $
     withTestChatCfg ps cfg "super_user" $ \superUser -> do
       if createOwnersGroup
-        then superUser <## "2 connections subscribed"
-        else superUser <## "1 connections subscribed"
+        then superUser <## "subscribed 2 connections on server localhost"
+        else superUser <## "subscribed 1 connections on server localhost"
       test superUser dsLink
 
 runDirectory :: ChatConfig -> DirectoryOpts -> IO () -> IO ()

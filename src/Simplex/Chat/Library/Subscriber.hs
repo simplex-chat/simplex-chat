@@ -104,13 +104,13 @@ processAgentMessage _ _ (DEL_RCVQS delQs) =
 processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
-  eToView $ ChatErrorAgent e Nothing
+  eToView $ ChatErrorAgent e (AgentConnId "") Nothing
 processAgentMessage corrId connId msg = do
-  lockEntity <- critical (withStore (`getChatLockEntity` AgentConnId connId))
+  lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
     vr <- chatVersionRange
     -- getUserByAConnId never throws logical errors, only SEDBBusyError can be thrown here
-    critical (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
+    critical connId (withStore' (`getUserByAConnId` AgentConnId connId)) >>= \case
       Just user -> processAgentMessageConn vr user corrId connId msg `catchAllErrors` eToView
       _ -> throwChatError $ CENoConnectionUser (AgentConnId connId)
 
@@ -121,43 +121,28 @@ processAgentMessage corrId connId msg = do
 -- - without ACK the message delivery will be stuck,
 -- - with ACK message will be lost, as it failed to be saved.
 -- Full app restart is likely to resolve database condition and the message will be received and processed again.
-critical :: CM a -> CM a
-critical a =
+critical :: ConnId -> CM a -> CM a
+critical agentConnId a =
   a `catchAllErrors` \case
-    ChatErrorStore SEDBBusyError {message} -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+    ChatErrorStore SEDBBusyError {message} -> throwError $ ChatErrorAgent (CRITICAL True message) (AgentConnId agentConnId) Nothing
     e -> throwError e
 
 processAgentMessageNoConn :: AEvent 'AENone -> CM ()
 processAgentMessageNoConn = \case
   CONNECT p h -> hostEvent $ CEvtHostConnected p h
   DISCONNECT p h -> hostEvent $ CEvtHostDisconnected p h
-  DOWN srv conns -> serverEvent srv conns NSDisconnected CEvtContactsDisconnected
-  UP srv conns -> serverEvent srv conns NSConnected CEvtContactsSubscribed
+  DOWN srv conns -> serverEvent srv SSPending conns
+  UP srv conns -> serverEvent srv SSActive conns
   SUSPENDED -> toView CEvtChatSuspended
   DEL_USER agentUserId -> toView $ CEvtAgentUserDeleted agentUserId
-  ERRS cErrs -> errsEvent cErrs
+  ERRS cErrs -> errsEvent $ L.toList cErrs
   where
     hostEvent :: ChatEvent -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
-    serverEvent srv conns nsStatus event = do
-      chatModifyVar connNetworkStatuses $ \m -> foldl' (\m' cId -> M.insert cId nsStatus m') m connIds
-      ifM (asks $ coreApi . config) (notifyAPI connIds) notifyCLI
-      where
-        connIds = map AgentConnId conns
-        notifyAPI = toView . CEvtNetworkStatus nsStatus
-        notifyCLI = do
-          cs <- withStore' (`getConnectionsContacts` conns)
-          toView $ event srv cs
+    serverEvent :: SMPServer -> SubscriptionStatus -> [ConnId] -> CM ()
+    serverEvent srv nsStatus conns = toView $ CEvtSubscriptionStatus srv nsStatus $ map AgentConnId conns
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
-    errsEvent cErrs = do
-      vr <- chatVersionRange
-      errs <- lift $ rights <$> withStoreBatch' (\db -> map (getChatErr vr db) cErrs)
-      toView $ CEvtChatErrors errs
-      where
-        getChatErr :: VersionRangeChat -> DB.Connection -> (ConnId, AgentErrorType) -> IO ChatError
-        getChatErr vr db (connId, err) =
-          let acId = AgentConnId connId
-           in ChatErrorAgent err <$> (getUserByAConnId db acId $>>= \user -> eitherToMaybe <$> runExceptT (getConnectionEntity db vr user acId))
+    errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
 processAgentMsgSndFile :: ACorrId -> SndFileId -> AEvent 'AESndFile -> CM ()
 processAgentMsgSndFile _corrId aFileId msg = do
@@ -365,7 +350,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
   -- as in this case no need to ACK message - we can't process messages for this connection anyway.
   -- SEDBException will be re-trown as CRITICAL as it is likely to indicate a temporary database condition
   -- that will be resolved with app restart.
-  entity <- critical $ withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
+  entity <- critical agentConnId $ withStore (\db -> getConnectionEntity db vr user $ AgentConnId agentConnId) >>= updateConnStatus
   case agentMessage of
     END -> case entity of
       RcvDirectMsgConnection _ (Just ct) -> toView $ CEvtContactAnotherClient user ct
@@ -416,12 +401,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         CONF confId pqSupport _ connInfo -> do
           conn' <- processCONFpqSupport conn pqSupport
           -- [incognito] send saved profile
-          (conn'', inGroup) <- saveConnInfo conn' connInfo
+          (conn'', gInfo_) <- saveConnInfo conn' connInfo
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          let profileToSend =
-                if inGroup
-                  then userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
-                  else userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
+          let profileToSend = case gInfo_ of
+                Just gInfo -> userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
+                Nothing -> userProfileDirect user (fromLocalProfile <$> incognitoProfile) Nothing True
           -- [async agent commands] no continuation needed, but command should be asynchronous for stability
           allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
         INFO pqSupport connInfo -> do
@@ -446,13 +430,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         MWARN _ err ->
           processConnMWARN connEntity conn err
         MERR _ err -> do
-          eToView (ChatErrorAgent err $ Just connEntity)
+          eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
           processConnMERR connEntity conn err
         MERRS _ err -> do
           -- error cannot be AUTH error here
-          eToView (ChatErrorAgent err $ Just connEntity)
+          eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         ERR err -> do
-          eToView (ChatErrorAgent err $ Just connEntity)
+          eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -548,7 +532,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
               -- [incognito] send saved profile
               incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-              let profileToSend = userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
+              let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
               allowAgentConnectionAsync user conn'' confId $ XInfo profileToSend
               toView $ CEvtBusinessLinkConnecting user gInfo host ct
             _ -> messageError "CONF for existing contact must have x.grp.mem.info or x.info"
@@ -572,7 +556,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               ct' = ct {activeConn = Just conn'} :: Contact
           -- [incognito] print incognito profile used for this contact
           incognitoProfile <- forM customUserProfileId $ \profileId -> withStore (\db -> getProfileById db userId profileId)
-          lift $ setContactNetworkStatus ct' NSConnected
           toView $ CEvtContactConnected user ct' (fmap fromLocalProfile incognitoProfile)
           let createE2EItem = createInternalChatItem user (CDDirectRcv ct') (CIRcvDirectE2EEInfo $ E2EInfo $ Just pqEnc) Nothing
           -- TODO [short links] get contact request by contactRequestId, check encryption (UserContactRequest.pqSupport)?
@@ -653,7 +636,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
             when (directOrUsed ct && sqSecured) $ do
-              lift $ setContactNetworkStatus ct NSConnected
               toView $ CEvtContactSndReady user ct
               when (connChatVersion >= batchSend2Version) $ forM_ viaUserContactLink $ \userContactLinkId -> do
                 (ucl, _) <- withStore $ \db -> getUserContactLinkById db userId userContactLinkId
@@ -667,14 +649,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           processConnMWARN connEntity conn err
         MERR msgId err -> do
           updateDirectItemStatus ct conn msgId (CISSndError $ agentSndError err)
-          eToView (ChatErrorAgent err $ Just connEntity)
+          eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
           processConnMERR connEntity conn err
         MERRS msgIds err -> do
           -- error cannot be AUTH error here
           updateDirectItemsStatusMsgs ct conn (L.toList msgIds) (CISSndError $ agentSndError err)
-          eToView (ChatErrorAgent err $ Just connEntity)
+          eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         ERR err -> do
-          eToView (ChatErrorAgent err $ Just connEntity)
+          eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         -- TODO add debugging output
         _ -> pure ()
@@ -754,7 +736,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 (gInfo', m') <- withStore $ \db -> updatePreparedUserAndHostMembersInvited db vr user gInfo m glInv
                 -- [incognito] send saved profile
                 incognitoProfile <- forM customUserProfileId $ \pId -> withStore (\db -> getProfileById db userId pId)
-                let profileToSend = userProfileInGroup user (fromLocalProfile <$> incognitoProfile)
+                let profileToSend = userProfileInGroup user gInfo (fromLocalProfile <$> incognitoProfile)
                 allowAgentConnectionAsync user conn' confId $ XInfo profileToSend
                 toView $ CEvtGroupLinkConnecting user gInfo' m'
               XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
@@ -767,7 +749,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               XGrpMemInfo memId _memProfile
                 | sameMemberId memId m -> do
                     let GroupMember {memberId = membershipMemId} = membership
-                        membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
+                        allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+                        membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
                     -- TODO update member profile
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId $ XGrpMemInfo membershipMemId membershipProfile
@@ -847,7 +830,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             where
               sendXGrpLinkMem gInfo'' = do
                 let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
-                    profileToSend = userProfileInGroup user (fromIncognitoProfile <$> incognitoProfile)
+                    profileToSend = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
                 void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
@@ -1058,16 +1041,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       MERR msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSError $ agentSndError err)
         -- group errors are silenced to reduce load on UI event log
-        -- eToView (ChatErrorAgent err $ Just connEntity)
+        -- eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         processConnMERR connEntity conn err
       MERRS msgIds err -> do
         let newStatus = GSSError $ agentSndError err
         -- error cannot be AUTH error here
         withStore' $ \db -> forM_ msgIds $ \msgId ->
           updateGroupItemsErrorStatus db msgId (groupMemberId' m) newStatus `catchAll_` pure ()
-        eToView (ChatErrorAgent err $ Just connEntity)
+        eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
       ERR err -> do
-        eToView (ChatErrorAgent err $ Just connEntity)
+        eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -1160,10 +1143,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
-        eToView (ChatErrorAgent err $ Just connEntity)
+        eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         processConnMERR connEntity conn err
       ERR err -> do
-        eToView (ChatErrorAgent err $ Just connEntity)
+        eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
       -- TODO add debugging output
       _ -> pure ()
@@ -1409,7 +1392,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
-        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) Nothing
+        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) (AgentConnId "") Nothing
         Left e -> do
           withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
@@ -1467,7 +1450,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     notifyMemberConnected gInfo m ct_ = do
       (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
       memberConnectedChatItem gInfo' scopeInfo m'
-      lift $ mapM_ (`setContactNetworkStatus` NSConnected) ct_
       toView $ CEvtConnectedToGroupMember user gInfo' m' ct_
 
     probeMatchingMembers :: Contact -> IncognitoEnabled -> CM ()
@@ -2273,7 +2255,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processMemberProfileUpdate :: GroupInfo -> GroupMember -> Profile -> Bool -> Maybe UTCTime -> CM GroupMember
     processMemberProfileUpdate gInfo m@GroupMember {memberProfile = p, memberContactId} p' createItems itemTs_
-      | redactedMemberProfile (fromLocalProfile p) /= redactedMemberProfile p' = do
+      | redactedMemberProfile allowSimplexLinks (fromLocalProfile p) /= redactedMemberProfile allowSimplexLinks p' = do
           updateBusinessChatProfile gInfo
           case memberContactId of
             Nothing -> do
@@ -2300,6 +2282,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       | otherwise =
           pure m
       where
+        allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m gInfo
         updateBusinessChatProfile g@GroupInfo {businessChat} = case businessChat of
           Just bc | isMainBusinessMember bc m -> do
             g' <- withStore $ \db -> updateGroupProfileFromMember db user g p'
@@ -2524,7 +2507,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       toView $ CEvtContactAndMemberAssociated user c2 g m1 c2'
       pure c2'
 
-    saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Bool)
+    saveConnInfo :: Connection -> ConnInfo -> CM (Connection, Maybe GroupInfo)
     saveConnInfo activeConn connInfo = do
       ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage activeConn connInfo
       conn' <- updatePeerChatVRange activeConn chatVRange
@@ -2532,18 +2515,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         XInfo p -> do
           ct <- withStore $ \db -> createDirectContact db vr user conn' p
           toView $ CEvtContactConnecting user ct
-          pure (conn', False)
+          pure (conn', Nothing)
         XGrpLinkInv glInv -> do
           (gInfo, host) <- withStore $ \db -> createGroupInvitedViaLink db vr user conn' glInv
           toView $ CEvtGroupLinkConnecting user gInfo host
-          pure (conn', True)
+          pure (conn', Just gInfo)
         XGrpLinkReject glRjct@GroupLinkRejection {rejectionReason} -> do
           (gInfo, host) <- withStore $ \db -> createGroupRejectedViaLink db vr user conn' glRjct
           toView $ CEvtGroupLinkConnecting user gInfo host
           toViewTE $ TEGroupLinkRejected user gInfo rejectionReason
-          pure (conn', True)
+          pure (conn', Just gInfo)
         -- TODO show/log error, other events in SMP confirmation
-        _ -> pure (conn', False)
+        _ -> pure (conn', Nothing)
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msgScope_ msg brokerTs = do
@@ -2632,14 +2615,17 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
-              GroupMemberIntro {introId} <- withStore $ \db -> saveIntroInvitation db reMember m introInv
-              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo m) introInv) (Just introId) $
+              introId <- withStore $ \db -> do
+                GroupMemberIntro {introId} <- getIntroduction db reMember m
+                liftIO $ updateIntroStatus db introId GMIntroInvReceived
+                pure introId
+              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) (Just introId) $
                 withStore' $
                   \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
-    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) introInv@IntroInvitation {groupConnReq, directConnReq} = do
+    xGrpMemFwd gInfo@GroupInfo {membership, chatSettings} m memInfo@(MemberInfo memId memRole memChatVRange _) IntroInvitation {groupConnReq, directConnReq} = do
       let GroupMember {memberId = membershipMemId} = membership
       checkHostRole m memRole
       toMember <-
@@ -2654,10 +2640,11 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       -- TODO            add GSMemIntroInvitedPending, GSMemConnectedPending, etc.?
       -- TODO            keep as is? (GSMemIntroInvited has no purpose)
       let newMemberStatus = if memberPending toMember then memberStatus toMember else GSMemIntroInvited
-      withStore' $ \db -> saveMemberInvitation db toMember introInv newMemberStatus
+      withStore' $ \db -> updateGroupMemberStatus db userId toMember newMemberStatus
       subMode <- chatReadVar subscriptionMode
       -- [incognito] send membership incognito profile, create direct connection as incognito
-      let membershipProfile = redactedMemberProfile $ fromLocalProfile $ memberProfile membership
+      let membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
+          allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
       groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode

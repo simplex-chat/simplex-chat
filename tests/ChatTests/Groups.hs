@@ -94,8 +94,8 @@ chatGroupTests = do
     -- TODO [postgres] this test hangs with PostgreSQL
     it "send multiple messages (many chat batches)" testSendMultiManyBatches
 #endif
-    xit'' "shared message body is reused" testSharedMessageBody
-    xit'' "shared batch body is reused" testSharedBatchBody
+    it "shared message body is reused" testSharedMessageBody
+    it "shared batch body is reused" testSharedBatchBody
   describe "async group connections" $ do
     xit "create and join group when clients go offline" testGroupAsync
   describe "group links" $ do
@@ -1774,10 +1774,10 @@ testGroupDelayedModeration ps = do
       alice <## "message marked deleted by you"
       cath <# "#team cath> [marked deleted by alice] hi"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "2 connections subscribed"
+      bob <## "subscribed 2 connections on server localhost"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "3 connections subscribed"
+        cath <## "subscribed 3 connections on server localhost"
         cath <## "#team: member bob (Bob) is connected"
         bob
           <### [ "#team: new member cath is connected",
@@ -1828,13 +1828,13 @@ testGroupDelayedModerationFullDelete ps = do
       cath <## "updated group preferences:"
       cath <## "Full deletion: on"
     withTestChatCfg ps cfg "bob" $ \bob -> do
-      bob <## "2 connections subscribed"
+      bob <## "subscribed 2 connections on server localhost"
       bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
       bob <## "alice updated group #team:"
       bob <## "updated group preferences:"
       bob <## "Full deletion: on"
       withTestChatCfg ps cfg "cath" $ \cath -> do
-        cath <## "3 connections subscribed"
+        cath <## "subscribed 3 connections on server localhost"
         cath <## "#team: member bob (Bob) is connected"
         bob
           <### [ "#team: new member cath is connected",
@@ -2004,7 +2004,7 @@ testSharedMessageBody ps =
         withNewTestChatOpts ps opts' "cath" cathProfile $ \cath -> do
           createGroup3 "team" alice bob cath
 
-    alice <##. "server disconnected localhost"
+    alice <## "disconnected 4 connections on server localhost"
     alice #> "#team hello"
     bodiesCount1 <- withCCAgentTransaction alice $ \db ->
       DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
@@ -2014,9 +2014,9 @@ testSharedMessageBody ps =
       withTestChatOpts ps opts' "bob" $ \bob ->
         withTestChatOpts ps opts' "cath" $ \cath -> do
           concurrentlyN_
-            [ alice <##. "server connected localhost",
-              bob <## "3 connections subscribed",
-              cath <## "3 connections subscribed"
+            [ alice <## "subscribed 4 connections on server localhost",
+              bob <## "subscribed 3 connections on server localhost",
+              cath <## "subscribed 3 connections on server localhost"
             ]
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
@@ -2024,7 +2024,7 @@ testSharedMessageBody ps =
             DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
           bodiesCount2 `shouldBe` [[0]]
 
-    alice <##. "server disconnected localhost"
+    alice <## "disconnected 4 connections on server localhost"
   where
     tmp = tmpPath ps
     serverCfg' =
@@ -2048,7 +2048,7 @@ testSharedBatchBody ps =
         withNewTestChatOpts ps opts' "cath" cathProfile $ \cath -> do
           createGroup3 "team" alice bob cath
 
-    alice <##. "server disconnected localhost"
+    alice <## "disconnected 4 connections on server localhost"
 
     let cm i = "{\"msgContent\": {\"type\": \"text\", \"text\": \"message " <> show i <> "\"}}"
         cms = intercalate ", " (map cm [1 .. 300 :: Int])
@@ -2064,9 +2064,9 @@ testSharedBatchBody ps =
       withTestChatOpts ps opts' "bob" $ \bob ->
         withTestChatOpts ps opts' "cath" $ \cath -> do
           concurrentlyN_
-            [ alice <##. "server connected localhost",
-              bob <## "3 connections subscribed",
-              cath <## "3 connections subscribed"
+            [ alice <## "subscribed 4 connections on server localhost",
+              bob <## "subscribed 3 connections on server localhost",
+              cath <## "subscribed 3 connections on server localhost"
             ]
           forM_ [(1 :: Int) .. 300] $ \i -> do
             concurrently_
@@ -2076,7 +2076,7 @@ testSharedBatchBody ps =
             DB.query_ db "SELECT count(1) FROM snd_message_bodies" :: IO [[Int]]
           bodiesCount2 `shouldBe` [[0]]
 
-    alice <##. "server disconnected localhost"
+    alice <## "disconnected 4 connections on server localhost"
   where
     tmp = tmpPath ps
     serverCfg' =
@@ -2115,7 +2115,7 @@ testGroupAsync ps = do
       bob <# "#team alice> hello bob"
   withTestChat ps "alice" $ \alice -> do
     withNewTestChat ps "cath" cathProfile $ \cath -> do
-      alice <## "2 connections subscribed"
+      alice <## "subscribed 2 connections on server localhost"
       connectUsers alice cath
       alice ##> "/a team cath"
       concurrentlyN_
@@ -2135,18 +2135,18 @@ testGroupAsync ps = do
     withTestChat ps "cath" $ \cath -> do
       concurrentlyN_
         [ do
-            bob <## "2 connections subscribed"
+            bob <## "subscribed 2 connections on server localhost"
             bob <## "#team: alice added cath (Catherine) to the group (connecting...)"
             bob <# "#team alice> hello cath"
             bob <## "#team: new member cath is connected",
           do
-            cath <## "3 connections subscribed"
+            cath <## "subscribed 3 connections on server localhost"
             cath <## "#team: member bob (Bob) is connected"
         ]
   threadDelay 500000
   withTestChat ps "bob" $ \bob -> do
     withNewTestChat ps "dan" danProfile $ \dan -> do
-      bob <## "4 connections subscribed"
+      bob <## "subscribed 4 connections on server localhost"
       connectUsers bob dan
       bob ##> "/a team dan"
       concurrentlyN_
@@ -2167,15 +2167,15 @@ testGroupAsync ps = do
       withTestChat ps "dan" $ \dan -> do
         concurrentlyN_
           [ do
-              alice <## "4 connections subscribed"
+              alice <## "subscribed 4 connections on server localhost"
               alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
               alice <## "#team: new member dan is connected",
             do
-              cath <## "4 connections subscribed"
+              cath <## "subscribed 4 connections on server localhost"
               cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
               cath <## "#team: new member dan is connected",
             do
-              dan <## "5 connections subscribed"
+              dan <## "subscribed 5 connections on server localhost"
               dan <## "#team: member alice (Alice) is connected"
               dan <## "#team: member cath (Catherine) is connected"
           ]
@@ -2185,10 +2185,10 @@ testGroupAsync ps = do
       withTestChat ps "cath" $ \cath -> do
         withTestChat ps "dan" $ \dan -> do
           concurrentlyN_
-            [ alice <## "6 connections subscribed",
-              bob <## "6 connections subscribed",
-              cath <## "6 connections subscribed",
-              dan <## "6 connections subscribed"
+            [ alice <## "subscribed 6 connections server localhost",
+              bob <## "subscribed 6 connections server localhost",
+              cath <## "subscribed 6 connections server localhost",
+              dan <## "subscribed 6 connections server localhost"
             ]
           alice #> "#team hello"
           concurrentlyN_
@@ -3529,12 +3529,12 @@ testPlanGroupLinkConnecting ps = do
     threadDelay 100000
   withTestChat ps "alice" $ \alice -> do
     alice
-      <### [ "1 connections subscribed",
+      <### [ "subscribed 1 connections on server localhost",
              "bob (Bob): accepting request to join group #team..."
            ]
   withTestChat ps "bob" $ \bob -> do
     threadDelay 500000
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
     bob <## "#team: joining the group..."
     bob <## "#team: you joined the group"
 
@@ -3576,12 +3576,12 @@ testPlanGroupLinkConnectingSlow ps = do
     threadDelay 100000
   withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
     alice
-      <### [ "1 connections subscribed",
+      <### [ "subscribed 1 connections on server localhost",
              "bob (Bob): accepting request to join group #team..."
            ]
   withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
     threadDelay 500000
-    bob <## "1 connections subscribed"
+    bob <## "subscribed 1 connections on server localhost"
     bob <## "#team: joining the group..."
 
     bob ##> ("/_connect plan 1 " <> gLink)
@@ -3606,7 +3606,7 @@ testGroupMsgDecryptError ps =
       alice <# "#team bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob" $ \bob -> do
-      bob <## "2 connections subscribed"
+      bob <## "subscribed 2 connections on server localhost"
       alice #> "#team hello again"
       bob <# "#team alice> skipped message ID 9..11"
       bob <# "#team alice> hello again"
@@ -3617,7 +3617,7 @@ setupDesynchronizedRatchet :: HasCallStack => TestParams -> TestCC -> IO ()
 setupDesynchronizedRatchet ps alice = do
   copyDb "bob" "bob_old"
   withTestChat ps "bob" $ \bob -> do
-    bob <## "2 connections subscribed"
+    bob <## "subscribed 2 connections on server localhost"
     alice #> "#team 1"
     bob <# "#team alice> 1"
     bob #> "#team 2"
@@ -3627,7 +3627,7 @@ setupDesynchronizedRatchet ps alice = do
     bob #> "#team 4"
     alice <# "#team bob> 4"
   withTestChat ps "bob_old" $ \bob -> do
-    bob <## "2 connections subscribed"
+    bob <## "subscribed 2 connections on server localhost"
     bob ##> "/sync #team alice"
     bob <## "error: command is prohibited, synchronizeRatchet: not allowed"
     alice #> "#team 1"
@@ -3655,7 +3655,7 @@ testGroupSyncRatchet ps =
       alice <# "#team bob> hey"
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "2 connections subscribed"
+      bob <## "subscribed 2 connections on server localhost"
       bob `send` "#team 1"
       -- "send prohibited" error is not printed in group as SndMessage is created,
       -- but it should be displayed in per member snd statuses
@@ -3700,7 +3700,7 @@ testGroupSyncRatchetCodeReset ps =
       aliceInfo bob True
     setupDesynchronizedRatchet ps alice
     withTestChat ps "bob_old" $ \bob -> do
-      bob <## "2 connections subscribed"
+      bob <## "subscribed 2 connections on server localhost"
       bob ##> "/sync #team alice"
       bob <## "connection synchronization started"
       alice <## "#team bob: connection synchronization agreed"
@@ -4429,7 +4429,7 @@ testMemberContactInvitedConnectionReplaced ps = do
   where
     subscriptions :: TestCC -> Int -> IO ()
     subscriptions cc n =
-      cc <## (show n <> " connections subscribed")
+      cc <## ("subscribed " <> show n <> " connections on server localhost")
     checkConnectionsWork alice bob = do
       alice <##> bob
       alice @@@ [("@bob", "hey"), ("@cath", "sent invitation to join group team as admin"), ("#team", "connected")]
@@ -7001,7 +7001,7 @@ testGroupMemberInactive ps = do
       threadDelay 1500000
 
       withTestChatCfgOpts ps cfg' opts' "bob" $ \bob -> do
-        bob <## "2 connections subscribed"
+        bob <## "subscribed 2 connections on server localhost"
         bob <# "#team alice> 1"
         bob <# "#team alice> 2"
         bob <#. "#team alice> skipped message ID"
@@ -8284,7 +8284,7 @@ testChannelsSenderDeduplicateOwn ps = do
           dan #> "#team 6"
 
           withTestChatCfg ps cfg "bob" $ \bob -> do
-            bob <## "6 connections subscribed"
+            bob <## "subscribed 6 connections server localhost"
             bob
               <### [ WithTime "#team alice> 1",
                      WithTime "#team alice> 2",

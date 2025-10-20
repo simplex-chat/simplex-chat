@@ -2077,7 +2077,7 @@
     <string name="image_decoding_exception_desc">Imaginea nu poate fi decodificată. Vă rugăm să încercați o altă imagine sau să contactați dezvoltatorii.</string>
     <string name="xftp_servers_per_user">Serverele pentru fișierele noi ale profilului tău de conversații actual</string>
     <string name="alert_message_no_group">Acest grup nu mai există.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Se încearcă conectarea la serverul folosit pentru a primi mesaje de la acest contact (eroare: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Se încearcă conectarea la serverul folosit pentru a primi mesaje de la acest contact (eroare: %1$s).</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Actualizarea setărilor va reconecta clientul la toate serverele.</string>
     <string name="this_string_is_not_a_connection_link">Acest șir de caractere nu este un link!</string>
     <string name="remote_ctrl_error_timeout">S-a atins timpul de expirare la conectarea la desktop</string>

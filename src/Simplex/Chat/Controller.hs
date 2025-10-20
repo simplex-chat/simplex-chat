@@ -69,7 +69,7 @@ import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
-import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
+import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
@@ -155,7 +155,6 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
-    coreApi :: Bool,
     deliveryWorkerDelay :: Int64, -- microseconds
     deliveryBucketSize :: Int,
     highlyAvailable :: Bool,
@@ -232,7 +231,6 @@ data ChatController = ChatController
     eventSeq :: TVar Int,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe RemoteHostId, Either ChatError ChatEvent),
-    connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -293,6 +291,7 @@ data ChatCommand
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
+  | ShowConnectionsDiff Bool
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
@@ -354,7 +353,6 @@ data ChatCommand
   | APIEndCall ContactId
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
-  | APIGetNetworkStatuses
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
@@ -634,6 +632,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
+  | CRConnectionsDiff {showIds :: Bool, userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
@@ -728,7 +727,6 @@ data ChatResponse
   | CRGroupAliasUpdated {user :: User, toGroup :: GroupInfo}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
@@ -826,13 +824,9 @@ data ChatEvent
   | CEvtContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
+  | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtConnSubError {user :: User, agentConnId :: AgentConnId, chatError :: ChatError}
-  | CEvtConnSubSummary {user :: User, connSubResults :: [ConnSubResult]}
-  | CEvtNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
-  | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
+  | CEvtSubscriptionStatus {server :: SMPServer, subscriptionStatus :: SubscriptionStatus, connections :: [AgentConnId]}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
@@ -912,9 +906,7 @@ allowRemoteEvent = \case
 
 logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
-  CEvtContactsDisconnected {} -> True
-  CEvtContactsSubscribed {} -> True
-  CEvtConnSubError {} -> True
+  CEvtSubscriptionStatus {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True
@@ -1243,7 +1235,7 @@ data SlowSQLQuery = SlowSQLQuery
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
-  | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
+  | ChatErrorAgent {agentError :: AgentErrorType, agentConnId :: AgentConnId, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   | ChatErrorRemoteCtrl {remoteCtrlError :: RemoteCtrlError}
@@ -1477,10 +1469,6 @@ chatModifyVar' :: (ChatController -> TVar a) -> (a -> a) -> CM' ()
 chatModifyVar' f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar' #-}
 
-setContactNetworkStatus :: Contact -> NetworkStatus -> CM' ()
-setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
-setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar' connNetworkStatuses $ M.insert agentConnId status
-
 onChatError :: CM a -> CM b -> CM a
 a `onChatError` onErr = a `catchAllErrors` \e -> onErr >> throwError e
 {-# INLINE onChatError #-}
@@ -1577,7 +1565,7 @@ withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
     >>= liftIO . runExceptT . action
-    >>= liftEither . first (`ChatErrorAgent` Nothing)
+    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "") Nothing)
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action

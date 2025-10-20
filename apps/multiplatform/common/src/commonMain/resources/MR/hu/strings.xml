@@ -1317,7 +1317,7 @@
     <string name="image_decoding_exception_desc">A kép nem dekódolható. Próbálja meg egy másik képpel, vagy lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="non_content_uri_alert_text">Érvénytelen fájlelérési útvonalat osztott meg. Jelentse a problémát az alkalmazás fejlesztőinek.</string>
     <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profil ugyanezzel a megjelenítendő névvel. Válasszon egy másik nevet.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (hiba: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (hiba: %1$s).</string>
     <string name="stop_rcv_file__message">A fájl fogadása le fog állni.</string>
     <string name="la_please_remember_to_store_password">Ne felejtse el, vagy tárolja biztonságosan – az elveszett jelszót nem lehet visszaállítani!</string>
     <string name="video_will_be_received_when_contact_completes_uploading">A videó akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>

@@ -201,7 +201,7 @@
     <string name="reset_verb">Ripristina</string>
     <string name="ok">OK</string>
     <string name="connect_via_contact_link">Connettere via indirizzo del contatto?</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Tentativo di connessione al server usato per ricevere messaggi da questo contatto (errore: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questo contatto (errore: %1$s).</string>
     <string name="you_will_join_group">Ti connetterai a tutti i membri del gruppo.</string>
     <string name="connection_local_display_name">connessione %1$d</string>
     <string name="simplex_link_mode_description">Descrizione</string>

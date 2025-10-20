@@ -601,7 +601,8 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
     withBGApi {
-      planAndConnect(rhId, uri, close = null)
+      chatModel.appOpenUrlConnecting.value = true
+      planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
   }
 }
@@ -670,7 +671,9 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
                 // if some other text is pasted, enter search mode
                 focusRequester.requestFocus()
               } else {
-                connectProgressManager.cancelConnectProgress()
+                if (!chatModel.appOpenUrlConnecting.value) {
+                  connectProgressManager.cancelConnectProgress()
+                }
                 if (listState.layoutInfo.totalItemsCount > 0) {
                   listState.scrollToItem(0)
                 }
