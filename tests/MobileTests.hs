@@ -136,7 +136,7 @@ testChatApi ps = do
       dbPrefix = tmp </> "1"
       f = dbPrefix <> chatSuffix
   Right st <- createChatStore (DBOpts f "myKey" False True DB.TQOff) (MigrationConfig MCYesUp Nothing)
-  Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
+  Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} False True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"

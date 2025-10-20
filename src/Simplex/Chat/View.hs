@@ -123,7 +123,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRApiChats u chats -> ttyUser u $ if testView then testViewChats chats else [viewJSON chats]
   CRChats chats -> viewChats ts tz chats
   CRApiChat u chat _ -> ttyUser u $ if testView then testViewChat chat else [viewJSON chat]
-  CRChatTags u tags -> ttyUser u $ [viewJSON tags]
+  CRChatTags u tags -> ttyUser u [viewJSON tags]
   CRServerTestResult u srv testFailure -> ttyUser u $ viewServerTestResult srv testFailure
   CRServerOperatorConditions (ServerOperatorConditions ops _ ca) -> viewServerOperators ops ca
   CRUserServers u uss -> ttyUser u $ concatMap viewUserServers uss <> (if testView then [] else serversUserHelp)
@@ -1465,11 +1465,12 @@ subStatusStr = \case
   SSNoSub -> "no subscription"
 
 viewUserServers :: UserOperatorServers -> [StyledString]
-viewUserServers (UserOperatorServers _ [] []) = []
-viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
+viewUserServers (UserOperatorServers _ [] [] []) = []
+viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
   [plain $ maybe "Your servers" shortViewOperator operator]
     <> viewServers SPSMP smpServers
     <> viewServers SPXFTP xftpServers
+    <> viewChatRelays chatRelays
   where
     viewServers :: (ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [UserServer p] -> [StyledString]
     viewServers _ [] = []
@@ -1492,6 +1493,19 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers} =
           | otherwise = "disabled (servers known)"
           where
             rs = operatorRoles p op
+    viewChatRelays :: [UserChatRelay] -> [StyledString]
+    viewChatRelays [] = []
+    viewChatRelays cRelays
+      | maybe True (\ServerOperator {enabled} -> enabled) operator =
+          ["Chat relays"] <> map (plain . ("    " <>) . viewChatRelay) cRelays
+      | otherwise = []
+      where
+        viewChatRelay UserChatRelay {name, address, preset, tested, enabled} = name <> chatrelayAddress <> chatrelayInfo
+          where
+            chatrelayAddress = "(" <> safeDecodeUtf8 (strEncode address) <> ")"
+            chatrelayInfo = if null chatrelayInfo_ then "" else parens $ T.intercalate ", " chatrelayInfo_
+            chatrelayInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
+            testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
 
 serversUserHelp :: [StyledString]
 serversUserHelp =
@@ -2409,6 +2423,7 @@ viewChatError isCmd logLevel testView = \case
     CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
+    CEChatRelayExists -> ["chat realy user already exists"]
     CEUserUnknown -> ["user does not exist or incorrect password"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]
     CECantDeleteActiveUser _ -> ["cannot delete active user"]

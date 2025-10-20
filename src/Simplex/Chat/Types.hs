@@ -118,6 +118,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
+-- TODO [chat relay] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -133,13 +134,15 @@ data User = User
     sendRcptsSmallGroups :: Bool,
     autoAcceptMemberContacts :: BoolDef,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
-    uiThemes :: Maybe UIThemeEntityOverrides
+    uiThemes :: Maybe UIThemeEntityOverrides,
+    userChatRelay :: BoolDef
   }
   deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    pastTimestamp :: Bool
+    pastTimestamp :: Bool,
+    userChatRelay :: Bool
   }
   deriving (Show)
 
@@ -945,7 +948,8 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupSupportChat
+    supportChat :: Maybe GroupSupportChat,
+    isChatRelay :: BoolDef
   }
   deriving (Eq, Show)
 
@@ -1027,7 +1031,8 @@ data NewGroupMember = NewGroupMember
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     memProfileId :: Int64,
-    memContactId :: Maybe Int64
+    memContactId :: Maybe Int64,
+    isChatRelay :: Bool
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
