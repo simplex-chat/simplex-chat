@@ -113,9 +113,10 @@ module.exports = function (ty) {
 
       allContentNodes.forEach((node) => {
         const regex = new RegExp(`(?<![/#])\\b${term.term}\\b`, 'gi')
-        const replacement = `<span data-glossary="tooltip-${id}" class="glossary-term">${term.term}</span>`
         const beforeContent = node.innerHTML
-        node.innerHTML = node.innerHTML.replace(regex, replacement)
+        node.innerHTML = node.innerHTML.replace(regex, (match) => {
+          return `<span data-glossary="tooltip-${id}" class="glossary-term">${match}</span>`
+        })
         if (beforeContent !== node.innerHTML && !changeNoted) {
           changeNoted = true
         }

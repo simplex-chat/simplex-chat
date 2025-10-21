@@ -414,6 +414,10 @@ section.page .area {
     /* border: 2px solid red; */
 }
 
+#directory .area {
+    position: relative;
+}
+
 /* --- COVER --- */
 section.cover {
     background-image: url("/img/design_3/cover-light.webp");
@@ -630,11 +634,9 @@ main .section-bg {
     top: 0;
     inset: 0;
     height: 100lvh;
-    /* fallback */
     margin-bottom: -100lvh;
     /* cancel own layout height */
     width: 100%;
-
     background-image: var(--bg-grad);
     background-position: center;
     background-size: 102% 102%;
