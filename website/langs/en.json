@@ -303,7 +303,13 @@
     "how-secure-message-padding": "Message padding",
     "how-secure-repudiation-deniability": "Repudiation (deniability)",
     "how-secure-forward-secrecy": "Forward secrecy",
-    "how-secure-break-in-recovery": "Break-in recovery",
+    "how-secure-break-in-recovery": "Post-compromise security",
     "how-secure-two-factor-key-exchange": "2-factor key exchange",
-    "how-secure-post-quantum-hybrid-crypto": "Post-quantum hybrid crypto"
+    "how-secure-post-quantum-hybrid-crypto": "Post-quantum hybrid crypto",
+    "messengers-comparison-section-list-point-1": "Briar pads messages to the size rounded up to 1024 bytes, Signal - to 160 bytes",
+    "messengers-comparison-section-list-point-2": "Repudiation does not include client-server connection.",
+    "messengers-comparison-section-list-point-3": "It appears that the usage of cryptographic signatures compromises repudiation (deniability), but it needs to be clarified.",
+    "messengers-comparison-section-list-point-4": "Multi-device implementation compromises post-compromise security of Double Ratchet",
+    "messengers-comparison-section-list-point-5": "2-factor key exchange is optional via security code verification.",
+    "messengers-comparison-section-list-point-6": "Post-quantum key agreement is \"sparse\" &mdash; it protects only some of the ratchet steps."
 }
