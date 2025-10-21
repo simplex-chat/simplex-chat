@@ -85,7 +85,7 @@ Notes:
     - Step 3. Add link to group profile - local, automatic upon synchronous response from step 2. No recovery needed.
     - Step 4. Choose chat relays - TBC automatic or user action? User action: confirm to auto-select, or let user choose?
       This action is local but user action should be remembered - at this point `group_relays` records should be created and associated with group, in status `CRSNew`.
-      Further recovery can be done per relay record based on status.
+      Further recovery can be done per relay record based on status:
       - Step 5. Contact request to relay. Contact request should be done via asynchronous agent action. New connection (for contact request) should be associated with relay, relay status moves to `CRSInvited`.
         - Member connection, link `group_members` to `group_relays`.
         Recovery from `CRSInvited` status is not needed, at this point owner waits for relay response.
