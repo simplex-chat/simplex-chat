@@ -23,8 +23,8 @@ SimpleX utility tokens will be launched in March-July 2026 as a temporary way to
 To reward SimpleX users we offer an **additional 20% discount via free SimpleX NFT** &mdash; get it here!
 
 **Token summary**
-- full name: **SimpleX Network Utility Token**.
-- symbol: to be confirmed.
+- full name: **SimpleX Utility Token**.
+- symbol: SMPX.
 - network: Etherium mainnet, with Arbitrum One support to be added later.
 - standard: ERC20, with contract-enforced supply limit.
 - supply: 500,000,000 tokens nominated 0.1 operator credit, initially equal to USD 0.1, including:
