@@ -961,6 +961,18 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
+-- TODO [chat relays] review; consider where to use it:
+-- TODO   - GroupMember?
+-- TODO   - separate list of relays in GroupInfo?
+-- TODO   - only on request?
+data ChatRelayStatus
+  = CRSInvited
+  | CRSAccepted
+  | CRSAdded
+  | CRSNotified
+  | CRSConfirmed
+  deriving (Eq, Show)
+
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
     unread :: Int64,
