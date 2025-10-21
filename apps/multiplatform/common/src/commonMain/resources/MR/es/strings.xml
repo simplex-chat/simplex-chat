@@ -804,9 +804,9 @@
     <string name="member_role_will_be_changed_with_invitation">El rol cambiará a %s y el miembro recibirá una invitación nueva.</string>
     <string name="update_network_settings_confirmation">Actualizar</string>
     <string name="update_network_settings_question">¿Actualizar la configuración de red\?</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor para recibir mensajes de este contacto.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor usado para recibir mensajes de esta conexión.</string>
     <string name="unknown_message_format">formato de mensaje desconocido</string>
-    <string name="error_connecting_to_server_to_receive_messages">Intentando conectar con el servidor para recibir mensajes de este contacto (error: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Error al conectar con el servidor usado para recibir mensajes de esta conexión: (error: %1$s).</string>
     <string name="error_smp_test_failed_at_step">Prueba no superada en el paso %s.</string>
     <string name="tap_to_start_new_chat">Pulsa para iniciar chat nuevo</string>
     <string name="share_message">Compartir mensaje…</string>
@@ -916,7 +916,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
     <string name="you_will_join_group">Conectarás con todos los miembros del grupo.</string>
     <string name="sender_you_pronoun">tu</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de esta conexión.</string>
     <string name="description_via_contact_address_link">mediante dirección de contacto</string>
     <string name="description_via_group_link">mediante enlace de grupo</string>
     <string name="description_you_shared_one_time_link">enlace de un solo uso</string>
@@ -2535,4 +2535,6 @@
     <string name="network_error_unknown_ca">La huella en la dirección del servidor no coincide con el certificado: %1$s.</string>
     <string name="proxy_destination_error_unknown_ca">La huella en la dirección del servidor de destino no coincide con el certificado: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">La huella en la dirección del servidor de reenvío no coincide con el certificado: %1$s.</string>
+    <string name="server_no_sub">Sin suscripciones</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</string>
 </resources>
