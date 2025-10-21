@@ -978,11 +978,11 @@ data GroupRelayStatus
 
 -- Own status tracked by relay in a group
 data GroupRelayOwnStatus
-  = RSGInvited
-  | RSGLinkCreated
-  | RSGAccepted
-  | RSGNotified
-  | RSGConfirmed
+  = GROSInvited
+  | GROSLinkCreated
+  | GROSAccepted
+  | GROSNotified
+  | GROSConfirmed
 
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,

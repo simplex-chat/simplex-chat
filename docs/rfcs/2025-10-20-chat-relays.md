@@ -106,14 +106,14 @@ Notes:
   - For relay:
 
     - Relay tracks its own status in group (`GroupRelayOwnStatus`).
-    - Step 6. Upon receiving invitation from group owner, initial relay status is `RSGInvited`.
-      Relay should create its link for the group, should be done via asynchronous agent action, status moves to `RSGLinkCreated`.
+    - Step 6. Upon receiving invitation from group owner, initial relay status is `GROSInvited`.
+      Relay should create its link for the group, should be done via asynchronous agent action, status moves to `GROSLinkCreated`.
       Continuation is to save and associate relay link with group record, send `x.grp.relay.acpt`,
-      status moves to `RSGAccepted`.
+      status moves to `GROSAccepted`.
       - Relay link connection is a user contact link, more specifically group link - we can re-use group link machinery that links `user_contact_links` to `groups`.
-    - Step 10, 11. Upon receiving `x.grp.info` from owner, if relay is in `RSGAccepted` status, status moves to `RSGNotified`.
-      Retrieve short link (asynchronous agent action? synchronous with retry?). If relay link is present send confirmation to owner `x.grp.relay.ready`, status moves to `RSGConfirmed`. Otherwise break (recovery for owner is to re-add relay).
-    - Should recover in `RSGInvited`, `RSGLinkCreated`, `RSGNotified` statuses.
+    - Step 10, 11. Upon receiving `x.grp.info` from owner, if relay is in `GROSAccepted` status, status moves to `GROSNotified`.
+      Retrieve short link (asynchronous agent action? synchronous with retry?). If relay link is present send confirmation to owner `x.grp.relay.ready`, status moves to `GROSConfirmed`. Otherwise break (recovery for owner is to re-add relay).
+    - Should recover in `GROSInvited`, `GROSLinkCreated`, `GROSNotified` statuses.
     - Similar to owner recovery mechanism - maintenance process on start?
 
 ## Protocol for removing chat relay from group, restoring connection to group
