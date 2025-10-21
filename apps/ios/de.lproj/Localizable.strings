@@ -849,7 +849,7 @@ swipe action */
 "blocked" = "Blockiert";
 
 /* rcv group event chat item */
-"blocked %@" = "%@ wurde blockiert";
+"blocked %@" = "hat %@ blockiert";
 
 /* blocked chat item
 marked deleted chat item preview text */
@@ -1191,7 +1191,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Die Nutzungsbedingungen der/des folgenden Betreiber(s) wurden schon akzeptiert: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Nutzungsbedingungen";
 
 /* No comment provided by engineer. */
@@ -1348,7 +1348,7 @@ set passcode view */
 "connection established" = "Verbindung hergestellt";
 
 /* No comment provided by engineer. */
-"Connection is blocked by server operator:\n%@" = "Die Verbindung wurde vom Server-Betreiber blockiert:\n%@";
+"Connection is blocked by server operator:\n%@" = "Die Verbindung wurde vom Serverbetreiber blockiert:\n%@";
 
 /* No comment provided by engineer. */
 "Connection not ready." = "Verbindung noch nicht bereit.";
@@ -2438,6 +2438,9 @@ file error text
 snd error text */
 "Error: %@" = "Fehler: %@";
 
+/* server test error */
+"Error: %@." = "Fehler: %@.";
+
 /* No comment provided by engineer. */
 "Error: no database file" = "Fehler: Keine Datenbankdatei";
 
@@ -2511,7 +2514,7 @@ snd error text */
 "File errors:\n%@" = "Datei-Fehler:\n%@";
 
 /* file error text */
-"File is blocked by server operator:\n%@." = "Datei wurde vom Server-Betreiber blockiert:\n%@.";
+"File is blocked by server operator:\n%@." = "Die Datei wurde vom Serverbetreiber blockiert:\n%@.";
 
 /* file error text */
 "File not found - most likely file was deleted or cancelled." = "Datei nicht gefunden - höchstwahrscheinlich wurde die Datei gelöscht oder der Transfer abgebrochen.";
@@ -2573,8 +2576,17 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Chats schneller finden";
 
+/* No comment provided by engineer. */
+"Fingerprint in destination server address does not match certificate: %@." = "Fingerabdruck in der Zielserveradresse stimmt nicht mit dem Zertifikat überein: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in forwarding server address does not match certificate: %@." = "Fingerabdruck in der Weiterleitungsserveradresse stimmt nicht mit dem Zertifikat überein: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in server address does not match certificate: %@." = "Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein: %@.";
+
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig";
+"Fingerprint in server address does not match certificate." = "Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein.";
 
 /* No comment provided by engineer. */
 "Fix" = "Reparieren";
@@ -3539,7 +3551,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Netzwerkeinstellungen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Netzwerkstatus";
 
 /* delete after time */
@@ -4267,9 +4279,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "Bestätigung erhalten…";
 
-/* notification */
-"Received file event" = "Datei-Ereignis empfangen";
-
 /* message info title */
 "Received message" = "Empfangene Nachricht";
 
@@ -4831,9 +4840,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Direkt gesendet";
 
-/* notification */
-"Sent file event" = "Datei-Ereignis wurde gesendet";
-
 /* message info title */
 "Sent message" = "Gesendete Nachricht";
 
@@ -4880,10 +4886,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "Server-Warteschlangen-Information: %1$@\n\nZuletzt empfangene Nachricht: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Um Warteschlangen zu erzeugen benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort";
+"Server requires authorization to create queues, check password." = "Der Server erfordert zum Erstellen von Warteschlangen eine Autorisierung. Bitte überprüfen Sie das Passwort.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Bitte das Passwort überprüfen - für den Upload benötigt der Server eine Berechtigung";
+"Server requires authorization to upload, check password." = "Der Server erfordert zum Hochladen eine Autorisierung. Bitte überprüfen Sie das Passwort.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Server Test ist fehlgeschlagen!";
@@ -5578,12 +5584,6 @@ report reason */
 "Transport sessions" = "Transport-Sitzungen";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Beim Versuch die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Türkische Bedienoberfläche";
 
 /* No comment provided by engineer. */
@@ -5611,7 +5611,7 @@ report reason */
 "Unblock member?" = "Mitglied freigeben?";
 
 /* rcv group event chat item */
-"unblocked %@" = "%@ wurde freigegeben";
+"unblocked %@" = "hat %@ freigegeben";
 
 /* No comment provided by engineer. */
 "Undelivered messages" = "Nicht ausgelieferte Nachrichten";
@@ -6074,9 +6074,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Sie sind bereits Mitglied dieser Gruppe!\nVerbindungsanfrage wiederholen?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sie sind zu der Gruppe eingeladen";

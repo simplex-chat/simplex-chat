@@ -1191,7 +1191,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "A feltételek már el lettek fogadva a következő üzemeltető(k) számára: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Használati feltételek";
 
 /* No comment provided by engineer. */
@@ -2266,7 +2266,7 @@ chat item action */
 "Error decrypting file" = "Hiba történt a fájl visszafejtésekor";
 
 /* alert title */
-"Error deleting chat" = "Hiba a taggal való csevegés törlésekor";
+"Error deleting chat" = "Hiba a csevegés törlésekor";
 
 /* alert title */
 "Error deleting chat database" = "Hiba történt a csevegési adatbázis törlésekor";
@@ -2438,6 +2438,9 @@ file error text
 snd error text */
 "Error: %@" = "Hiba: %@";
 
+/* server test error */
+"Error: %@." = "Hiba: %@.";
+
 /* No comment provided by engineer. */
 "Error: no database file" = "Hiba: nincs adatbázisfájl";
 
@@ -2573,8 +2576,17 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Csevegési üzenetek gyorsabb megtalálása";
 
+/* No comment provided by engineer. */
+"Fingerprint in destination server address does not match certificate: %@." = "A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in forwarding server address does not match certificate: %@." = "A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in server address does not match certificate: %@." = "A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %@.";
+
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Lehetséges, hogy a kiszolgáló címében szereplő tanúsítvány-ujjlenyomat helytelen";
+"Fingerprint in server address does not match certificate." = "A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal.";
 
 /* No comment provided by engineer. */
 "Fix" = "Javítás";
@@ -3539,7 +3551,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Hálózati beállítások";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Hálózat állapota";
 
 /* delete after time */
@@ -4267,9 +4279,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "visszaigazolás fogadása…";
 
-/* notification */
-"Received file event" = "Fogadott fájlesemény";
-
 /* message info title */
 "Received message" = "Fogadott üzenetbuborék színe";
 
@@ -4831,9 +4840,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Közvetlenül küldött";
 
-/* notification */
-"Sent file event" = "Elküldött fájlesemény";
-
 /* message info title */
 "Sent message" = "Üzenetbuborék színe";
 
@@ -4880,10 +4886,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "a kiszolgáló várólista információi: %1$@\n\nutoljára fogadott üzenet: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát";
+"Server requires authorization to create queues, check password." = "A kiszolgálónak engedélyre van szüksége a várólisták létrehozásához, ellenőrizze a jelszavát.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze jelszavát";
+"Server requires authorization to upload, check password." = "A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze a jelszavát.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Sikertelen kiszolgáló teszt!";
@@ -5578,12 +5584,6 @@ report reason */
 "Transport sessions" = "Munkamenetek átvitele";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (hiba: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Török kezelőfelület";
 
 /* No comment provided by engineer. */
@@ -6074,9 +6074,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "A csatlakozás már folyamatban van a csoporthoz!\nMegismétli a csatlakozási kérést?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Ön már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Ön meghívást kapott a csoportba";
