@@ -68,6 +68,13 @@ Notes:
 
   Overall it just seems a natural and convenient way to store group link for all members, rather than having it separately.
 
+- On updating group link data with one relay link at a time vs waiting for all links.
+
+  - Overhead is minimal - one request to owner's SMP server per relay.
+  - Waiting for a relay to send relay link can take indefinitely long.
+  - In proposed protocol owner doesn't have to wait for links from all relays for simplicity and to minimize wait time - it allows owner to conclude group creation potentially earlier, in case some relays are stuck or offline (owner can add their links later, once they successfully send it).
+  - Alternatively owner could collect all relay links first and make a single update of group link data, then notify all relays at once.
+
 - Owner should reject contact requests to their group link.
 
 - Chat relay should reject contact requests to its relay link until chat relay confirms it is attached to the group link data. Can be based on `GroupRelayOwnStatus`, see below.
@@ -79,6 +86,7 @@ Notes:
 - Recovery.
 
   - For owner:
+
     - Owner should be able to continue creating group from any step.
     - Step 1. Create new group - initial.
     - Step 2. Create short link - first real step, can be synchronous, if it fails can restart (requires user action).
@@ -185,6 +193,7 @@ M ->> M: 8. Deduplicate message
 Notes:
 
 - New relay doesn't have group history.
+
   - We can prohibit to remove last relay without adding new one.
   - Relays can synchronize history.
   - Can be considered after MVP.
