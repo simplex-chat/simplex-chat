@@ -1222,12 +1222,14 @@ data ContactShortLinkData = ContactShortLinkData
   }
   deriving (Show)
 
+-- TODO [chat relays] owner's public key for signing group actions and messages
 data GroupShortLinkData = GroupShortLinkData
   { groupProfile :: GroupProfile,
     chatRelays :: [ChatRelayInfo]
   }
   deriving (Show)
 
+-- TODO [chat relays] relays public keys
 data ChatRelayInfo = ChatRelayInfo
   { relayLink :: ConnLinkContact
   }
