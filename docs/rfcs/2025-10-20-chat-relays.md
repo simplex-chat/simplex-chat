@@ -4,19 +4,18 @@
 
 ```mermaid
 sequenceDiagram
-  participant OSMP as Owner's<br>SMP server
-  participant O as Owner
-  participant R as Chat relay(s)
-  participant RSMP as Chat relays'<br>SMP server(s)
-  participant M as Member
+    participant O as Owner
+    participant OSMP as Owner's<br>SMP server
+    participant R as Chat relay(s)
+    participant RSMP as Chat relays'<br>SMP server(s)
 
-note over OSMP, RSMP: Owner creates new group, adds chat relays
+note over O, RSMP: Owner creates new group, adds chat relays
 
-O -->> O: 1. Create new group
+O ->> O: 1. Create new group
 O ->> OSMP: 2. Create short link<br>(group entry point)
 OSMP -->> O:
-O -->> O: 3. Add link to group profile
-O -->> O: 4. Choose chat relays
+O ->> O: 3. Add link to group profile
+O ->> O: 4. Choose chat relays
 par With each relay
     O ->> R: 5. Contact request<br>(x.grp.relay.inv)
     R ->> RSMP: 6. Create relay link
@@ -27,24 +26,24 @@ par With each relay
     O ->> R: 9. Notify relay link added<br>(x.grp.info)
     R ->> OSMP: 10. Retrieve short link data
     OSMP -->> R:
-    R -->> R: 11. Check relay link added
+    R ->> R: 11. Check relay link added
     R ->> O: 12. Confirm to owner<br>(x.grp.relay.ready)
 end
-O -->> O: 13. Share group short link<br>(social, out-of-band)
+create participant M as Member
+O -->> M: 13. Share group short link<br>(social, out-of-band)
 
-note over OSMP, M: New member connects
+note over O, M: New member connects
 
 M ->> OSMP: 14. Retrieve short link data
 OSMP -->> M:
-M -->> M: 15. Prepare group record,<br>save relay links
-M ->> R: 16. Connect via relay link(s)
+M ->> R: 15. Connect via relay link(s)
 R -->> M:
 
 note over O, M: Message forwarding
 
-O ->> R: 17. Send message
-R ->> M: 18. Forward message
-M -->> M: 19. Deduplicate message
+O ->> R: 16. Send message
+R ->> M: 17. Forward message
+M ->> M: 18. Deduplicate message
 ```
 
 Notes:
@@ -78,13 +77,13 @@ Notes:
 
 ```mermaid
 sequenceDiagram
-  participant OSMP as Owner's<br>SMP server
-  participant O as Owner
-  participant R as Chat relay
-  participant RSMP as Chat relays'<br>SMP server(s)
-  participant M as Member
+    participant O as Owner
+    participant OSMP as Owner's<br>SMP server
+    participant R as Chat relay
+    participant RSMP as Chat relays'<br>SMP server(s)
+    participant M as Member
 
-note over OSMP, M: Scenario 1. Owner deletes chat relay, notifies relay
+note over O, M: Scenario 1. Owner deletes chat relay, notifies relay
 
 par Owner to chat relay
     O ->> R: 1a. Delete chat relay<br>(x.grp.mem.del)
@@ -92,29 +91,22 @@ par Owner to chat relay
         R ->> RSMP: 2a. Delete relay link
     and Chat relay to members
         R ->> M: 2b. Forward relay is deleted
-        M -->> M: 3. Delete connections with relay
     end
 and Owner to SMP
     O ->> OSMP: 1b. Remove relay link<br>(update group link data)
-    OSMP -->> O:
-and
-    O -->> O: 1c. Delete connection with relay
 end
 
-note over OSMP, M: Scenario 2. Owner deletes chat relay, fails to notify relay
+note over O, M: Scenario 2. Owner deletes chat relay, fails to notify relay
 
 par Owner to chat relay
     O --x R: 1a. Fail to notify relay
 and Owner to SMP
     O ->> OSMP: 1b. Remove relay link<br>(update group link data)
-    OSMP -->> O:
-and
-    O -->> O: 1c. Delete connection with relay
 end
 loop Chat relay periodic checks
     R ->> OSMP: 2. Retrieve short link data for served gorup
     OSMP -->> R:
-    R --x R: 3. Check relay link added
+    R -x R: 3. Check relay link present
 end
 par Chat relay to SMP
     destroy RSMP
@@ -122,30 +114,29 @@ par Chat relay to SMP
 and Chat relay to members
     destroy R
     R ->> M: 4b. Notify relay is deleted
-    M -->> M: 5. Delete connections with relay
 end
 
-note over OSMP, M: Last relay is deleted
+note over O, M: Last relay is deleted
 
 O --x M: Owner can't send messages to members
-M -->> M: Attempt to restore<br>connection to group (manual)
+M ->> M: Attempt to restore<br>connection to group (manual)
 M ->> OSMP: Retrieve short link data
 OSMP -->> M:
-M --x M: Members can't restore connection to group
+M -x M: Members can't restore connection to group
 
-note over OSMP, M: Restore connection to group
+note over O, M: Restore connection to group
 
 create participant NR as New chat relay
-O <<-->> NR: 1. Add new relay, relay creates and sends link
-O <<-->> OSMP: 2. Update short link<br>(add relay link)
-M -->> M: 3. Attempt to restore<br>connection to group (manual)
+O <<->> NR: 1. Add new relay, relay creates and sends link
+O <<->> OSMP: 2. Update short link<br>(add relay link)
+M ->> M: 3. Attempt to restore<br>connection to group (manual)
 M ->> OSMP: 4. Retrieve short link data
 OSMP -->> M:
 M ->> NR: 5. Connect via relay link
 NR -->> M:
 O ->> NR: 6. Send message
 NR ->> M: 7. Forward message
-M -->> M: 8. Deduplicate message
+M ->> M: 8. Deduplicate message
 ```
 
 Notes:
