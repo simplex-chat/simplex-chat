@@ -2,7 +2,7 @@
 
 <img src="/img/design_3/secure_messaging_light.jpg" width="38%" class="float-to-right dark:hidden">
 
-<img src="/img/design_3/secure_messaging_dark.jpg" width="38%" class="float-to-right dark">
+<img src="/img/design_3/secure_messaging_dark.jpg" width="38%" class="float-to-right hidden dark:block">
 
 **Ultimate security**: SimpleX network uses the most secure end-to-end encryption, with continuous post-quantum key exchange to protect all messages and metadata.
 
