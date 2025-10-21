@@ -1191,7 +1191,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Le condizioni sono già state accettate per i seguenti operatori: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Condizioni d'uso";
 
 /* No comment provided by engineer. */
@@ -2438,6 +2438,9 @@ file error text
 snd error text */
 "Error: %@" = "Errore: %@";
 
+/* server test error */
+"Error: %@." = "Errore: %@.";
+
 /* No comment provided by engineer. */
 "Error: no database file" = "Errore: nessun file di database";
 
@@ -2573,8 +2576,17 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Trova le chat più velocemente";
 
+/* No comment provided by engineer. */
+"Fingerprint in destination server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server di destinazione non corrisponde al certificato: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in forwarding server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server di inoltro non corrisponde al certificato: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in server address does not match certificate: %@." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato: %@.";
+
 /* server test error */
-"Fingerprint in server address does not match certificate." = "Probabilmente l'impronta del certificato nell'indirizzo del server è sbagliata";
+"Fingerprint in server address does not match certificate." = "L'impronta digitale nell'indirizzo del server non corrisponde al certificato.";
 
 /* No comment provided by engineer. */
 "Fix" = "Correggi";
@@ -3539,7 +3551,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Impostazioni di rete";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Stato della rete";
 
 /* delete after time */
@@ -4267,9 +4279,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "conferma ricevuta…";
 
-/* notification */
-"Received file event" = "Evento file ricevuto";
-
 /* message info title */
 "Received message" = "Messaggio ricevuto";
 
@@ -4831,9 +4840,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Inviato direttamente";
 
-/* notification */
-"Sent file event" = "Evento file inviato";
-
 /* message info title */
 "Sent message" = "Messaggio inviato";
 
@@ -4880,10 +4886,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "info coda server: %1$@\n\nultimo msg ricevuto: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password." = "Il server richiede l'autorizzazione di creare code, controlla la password";
+"Server requires authorization to create queues, check password." = "Il server richiede l'autorizzazione di creare code, controlla la password.";
 
 /* server test error */
-"Server requires authorization to upload, check password." = "Il server richiede l'autorizzazione per il caricamento, controllare la password";
+"Server requires authorization to upload, check password." = "Il server richiede l'autorizzazione per l'invio, controlla la password.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test del server fallito!";
@@ -5578,12 +5584,6 @@ report reason */
 "Transport sessions" = "Sessioni di trasporto";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Tentativo di connessione al server usato per ricevere messaggi da questo contatto (errore: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Tentativo di connessione al server usato per ricevere messaggi da questo contatto.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Interfaccia in turco";
 
 /* No comment provided by engineer. */
@@ -6074,9 +6074,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Stai già entrando nel gruppo!\nRipetere la richiesta di ingresso?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Sei connesso/a al server usato per ricevere messaggi da questo contatto.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sei stato/a invitato/a al gruppo";

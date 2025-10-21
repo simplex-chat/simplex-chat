@@ -1191,7 +1191,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Koşullar çoktan operatör(ler) tarafından kabul edildi: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Kullanım koşulları";
 
 /* No comment provided by engineer. */
@@ -3539,7 +3539,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Ağ ayarları";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Ağ durumu";
 
 /* delete after time */
@@ -4267,9 +4267,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "onaylama alındı…";
 
-/* notification */
-"Received file event" = "Dosya etkinliği alındı";
-
 /* message info title */
 "Received message" = "Mesaj alındı";
 
@@ -4830,9 +4827,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Sent directly" = "Direkt gönderildi";
-
-/* notification */
-"Sent file event" = "Dosya etkinliği gönderildi";
 
 /* message info title */
 "Sent message" = "Mesaj gönderildi";
@@ -5578,12 +5572,6 @@ report reason */
 "Transport sessions" = "Taşıma oturumları";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Türkçe arayüz";
 
 /* No comment provided by engineer. */
@@ -6074,9 +6062,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Gruba zaten katılıyorsunuz!\nKatılma isteği tekrarlansın mı?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Bu kişiden mesaj almak için kullanılan sunucuya bağlısınız.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Gruba davet edildiniz";

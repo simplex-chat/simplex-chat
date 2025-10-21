@@ -2223,7 +2223,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "ネットワーク設定";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "ネットワーク状況";
 
 /* delete after time */
@@ -2594,9 +2594,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "確認を受け取りました…";
 
-/* notification */
-"Received file event" = "ファイル受信イベント";
-
 /* message info title */
 "Received message" = "受信したメッセージ";
 
@@ -2866,9 +2863,6 @@ chat item action */
 
 /* copied message info */
 "Sent at: %@" = "送信日時: %@";
-
-/* notification */
-"Sent file event" = "送信済みファイルイベント";
 
 /* message info title */
 "Sent message" = "送信";
@@ -3205,12 +3199,6 @@ chat item action */
 "Transport isolation" = "トランスポート隔離";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "この連絡先からのメッセージの受信に使用されるサーバーに接続しようとしています (エラー: %@)。";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "このコンタクトから受信するメッセージのサーバに接続しようとしてます。";
-
-/* No comment provided by engineer. */
 "Turn off" = "オフにする";
 
 /* No comment provided by engineer. */
@@ -3437,9 +3425,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "すでに %@ に接続されています。";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "この連絡先から受信するメッセージのサーバに既に接続してます。";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "グループ招待が届きました";
