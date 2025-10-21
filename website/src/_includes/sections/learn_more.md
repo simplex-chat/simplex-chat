@@ -1,30 +1,21 @@
-# Learn More
+# The world's most secure messaging
 
-## The First Messenger Without User IDs
+<img src="/img/design_3/secure_messaging_light.jpg" width="50%" class="float-to-right dark:hidden">
 
-Unlike other messaging apps, SimpleX Chat has no user identifiers at all - not even random numbers. This protects both your messages and your metadata, hiding who you communicate with from servers and observers.
+<img src="/img/design_3/secure_messaging_dark.jpg" width="50%" class="float-to-right hidden dark:block">
 
-## Why It Matters
+**Ultimate security**: SimpleX network uses the most secure end-to-end encryption, with continuous post-quantum key exchange to protect all messages and metadata.
 
-**Complete Privacy**: Other apps use phone numbers, usernames, or IDs. SimpleX uses none of these, making it impossible to build your social graph.
+**Unique privacy**: SimpleX network has no user profile IDs, not even random numbers or keys. It provides better privacy of your contacts, protecting who you talk with from network servers.
 
-**No Spam**: You can't be contacted unless you share a one-time invitation link.
+**No spam**: nobody can contact you unless you share 1-time link or long-term address.
 
-**Your Data**: Everything stays on your device. Servers only hold messages temporarily until delivered.
+**Data ownership**: only your device stores your profiles, contacts and messages. You can securely move your data to another device. Servers store encrypted messages only while your device is offline.
 
-**True Decentralization**: Use your own servers or the provided ones - everyone can still communicate.
+**Secure decentralization**: you control which servers to connect to. For security 4 different servers are used in each chat &mdash; they can't observe which IP addresses talk to each other.
 
-## Key Features
+#### How to connect to others
 
-- 🔐 Double ratchet end-to-end encryption with post-quantum resistance
-- 📱 Mobile apps for iOS and Android, desktop apps for all platforms
-- 🎭 Incognito mode, disappearing messages, multiple profiles
-- 🌐 Tor support and private message routing
-- 💾 Encrypted local database and files
-- 🚀 Open source with security audits by Trail of Bits
-
-## How It Works
-
-Connect by sharing a QR code or link. SimpleX uses disposable message queues instead of user addresses - like having a different phone number for each contact, automatically managed.
-
-[Get Started](https://simplex.chat/downloads/) | [Read the Docs](https://github.com/simplex-chat/simplex-chat)
+- Tap new chat button in the corner, then create 1-time link.
+- Share the link with your contact via any other messenger or email - it is secure.
+- Ask your contact to use the link in the app - click it after the app is installed or paste into the search field in the app.
