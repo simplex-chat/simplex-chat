@@ -234,7 +234,7 @@
     "glossary": "Glosario",
     "stable-and-beta-versions-built-by-developers": "Versiones estables y beta compilados por los desarrolladores",
     "f-droid-page-simplex-chat-repo-section-text": "Para añadirlo a tu cliente F-Droid <span class='hide-on-mobile'>escanea el código QR</span> usa esta URL:",
-    "docs-dropdown-8": "Servicio Simplex Directory",
+    "docs-dropdown-8": "Directorio SimpleX",
     "simplex-chat-repo": "Repositorio Simplex Chat",
     "simplex-chat-via-f-droid": "SimpleX Chat en F-Droid",
     "f-droid-org-repo": "Repositorio F-Droid.org",
@@ -255,5 +255,7 @@
     "docs-dropdown-11": "FAQ",
     "docs-dropdown-12": "Seguridad",
     "docs-dropdown-14": "SimpleX para empresas",
-    "hero-overlay-card-3-p-3": "Trail of Bits ha revisado el diseño criptográfico de los protocolos de red SimpleX en julio del 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Saber más</a>."
+    "hero-overlay-card-3-p-3": "Trail of Bits ha revisado el diseño criptográfico de los protocolos de red SimpleX en julio del 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Saber más</a>.",
+    "directory": "Directorio",
+    "about-and-contact-us": "Acerca de & Contacta con nosotros"
 }

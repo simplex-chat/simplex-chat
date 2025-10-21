@@ -237,7 +237,7 @@
     "signing-key-fingerprint": "Impronta della chiave di firma (SHA-256)",
     "f-droid-org-repo": "Repo di F-Droid.org",
     "stable-versions-built-by-f-droid-org": "Versioni stabili compilate da F-Droid.org",
-    "docs-dropdown-8": "Servizio directory di SimpleX",
+    "docs-dropdown-8": "Directory di SimpleX",
     "simplex-chat-via-f-droid": "SimpleX Chat via F-Droid",
     "simplex-chat-repo": "Repo di SimpleX Chat",
     "stable-and-beta-versions-built-by-developers": "Versioni stabili e beta compilate dagli sviluppatori",
@@ -255,5 +255,7 @@
     "docs-dropdown-12": "Sicurezza",
     "docs-dropdown-11": "Domande frequenti",
     "hero-overlay-card-3-p-3": "Trail of Bits ha analizzato la progettazione crittografica dei protocolli della rete SimpleX nel luglio 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Leggi di più</a>.",
-    "docs-dropdown-14": "SimpleX per il lavoro"
+    "docs-dropdown-14": "SimpleX per il lavoro",
+    "about-and-contact-us": "Informazioni e contatti",
+    "directory": "Directory"
 }

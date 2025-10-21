@@ -232,7 +232,7 @@
     "docs-dropdown-2": "الوصول إلى ملفات اندرويد",
     "docs-dropdown-3": "الوصول إلى قاعدة بيانات الدردشة",
     "glossary": "المعجم",
-    "docs-dropdown-8": "SimpleX خدمة الدليل",
+    "docs-dropdown-8": "دليل SimpleX",
     "simplex-chat-via-f-droid": "SimpleX Chat عبر F-Droid",
     "simplex-chat-repo": "مستودع SimpleX Chat",
     "stable-and-beta-versions-built-by-developers": "الإصدارات الثابتة والتجريبية التي أنشأها المطورون",
@@ -255,5 +255,7 @@
     "docs-dropdown-11": "الأسئلة الأكثر شيوعًا",
     "docs-dropdown-12": "الأمان",
     "hero-overlay-card-3-p-3": "قامت Trail of Bits بمراجعة التصميم التعموي لبروتوكولات شبكة SimpleX في يوليو 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">اقرأ المزيد</a>.",
-    "docs-dropdown-14": "SimpleX للأعمال التجارية"
+    "docs-dropdown-14": "SimpleX للأعمال التجارية",
+    "directory": "دليل",
+    "about-and-contact-us": "عن واتصل بنا"
 }

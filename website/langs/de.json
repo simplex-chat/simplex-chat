@@ -237,7 +237,7 @@
     "stable-versions-built-by-f-droid-org": "Von F-Droid.org erstellte stabile Versionen",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX-Chat- und F-Droid.org-Repositorys signieren ihre Builds mit verschiedenen Schlüsseln. Zum Umschalten bitte <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>die Chat-Datenbank exportieren</a> und die App neu installieren.",
     "releases-to-this-repo-are-done-1-2-days-later": "Die Versionen für dieses Repository werden einige Tage später erstellt",
-    "docs-dropdown-8": "SimpleX-Verzeichnisdienst",
+    "docs-dropdown-8": "SimpleX-Verzeichnis",
     "simplex-chat-via-f-droid": "SimpleX Chat per F-Droid",
     "simplex-chat-repo": "SimpleX-Chat-Repository",
     "stable-and-beta-versions-built-by-developers": "Von den Entwicklern erstellte stabile und Beta-Versionen",
@@ -255,5 +255,7 @@
     "docs-dropdown-11": "FAQ",
     "docs-dropdown-12": "Sicherheit",
     "hero-overlay-card-3-p-3": "Trail of Bits hat das kryptografische Design des Netzwerk-Protokolls von SimpleX im Juli 2024 überprüft. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Hier finden Sie weitere Informationen dazu</a>.",
-    "docs-dropdown-14": "SimpleX für geschäftliche Anwendungen"
+    "docs-dropdown-14": "SimpleX für geschäftliche Anwendungen",
+    "about-and-contact-us": "Über uns & Kontakt",
+    "directory": "Verzeichnis"
 }
