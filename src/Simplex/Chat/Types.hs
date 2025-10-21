@@ -958,7 +958,7 @@ data GroupMember = GroupMember
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
     isChatRelay :: BoolDef,
-    relayStatus :: Maybe RelayStatusInGroup
+    relayStatus :: Maybe GroupRelayOwnStatus
   }
   deriving (Eq, Show)
 
@@ -967,17 +967,17 @@ data GroupMember = GroupMember
 -- TODO   - GroupMember?
 -- TODO   - separate list of relays in GroupInfo?
 -- TODO   - only on request?
-data ChatRelayStatus
-  = CRSNew
-  | CRSInvited
-  | CRSAccepted
-  | CRSAdded
-  | CRSNotified
-  | CRSConfirmed
+data GroupRelayStatus
+  = GRSNew
+  | GRSInvited
+  | GRSAccepted
+  | GRSAdded
+  | GRSNotified
+  | GRSConfirmed
   deriving (Eq, Show)
 
--- Own status tracked by relay in group
-data RelayStatusInGroup
+-- Own status tracked by relay in a group
+data GroupRelayOwnStatus
   = RSGInvited
   | RSGLinkCreated
   | RSGAccepted
