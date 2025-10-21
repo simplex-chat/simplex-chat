@@ -56,7 +56,7 @@ Notes:
 
 - On adding group short link to group profile (step 3).
 
-  For protocol purposes it's only a means of informing chat relays about it in step 9 (x.grp.info).
+  For protocol purposes it's only a means of informing chat relays about it (profile is passed in steps 5, x.grp.relay.inv, and 9, x.grp.info).
 
   Alternatively it could be sent as a standalone object in initial contact request to relay (step 5, x.grp.relay.inv), or in step 9 in special event.
 
