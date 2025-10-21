@@ -17,7 +17,7 @@ OSMP -->> O:
 O ->> O: 3. Add link to group profile
 O ->> O: 4. Choose chat relays
 par With each relay
-    O ->> R: 5. Contact request<br>(x.grp.relay.inv)
+    O ->> R: 5. Contact request<br>(x.grp.relay.inv<br>incl. group link)
     R ->> RSMP: 6. Create relay link
     RSMP -->> R:
     R ->> O: 7. Accept request<br>(x.grp.relay.acpt<br>incl. relay link)
@@ -123,6 +123,63 @@ Notes:
       Retrieve short link (asynchronous agent action? synchronous with retry?). If relay link is present send confirmation to owner `x.grp.relay.ready`, status moves to `GROSConfirmed`. Otherwise break (recovery for owner is to re-add relay).
     - Should recover in `GROSInvited`, `GROSLinkCreated`, `GROSNotified` statuses.
     - Similar to owner recovery mechanism - maintenance process on start?
+
+- On decreasing number of protocol steps.
+
+  - In proposed protocol main steps for adding a chat relay are:
+    - 5. Group owner: Contact request to relay.
+    - 6. Chat relay: Create relay link.
+    - 7. Chat relay: Accept request to be relay, send relay link to owner.
+    - 8. Group owner: Update group link data with relay link.
+    - 9. Group owner: Notify relay.
+    - 10, 11. Chat relay: Retrieve group link data and check presence of relay link.
+    - 12. Chat relay: Confirm to owner.
+
+  - Steps 5, 6, 7, 8 are fundamental to group functioning. Owner has to request a relay to serve group (contact request), relay has to provide a relay link for the group, for new members to join directly and only to relay.
+
+  - Step 6 could be circumvented: by maintaining a pool of readily available links, relay could immediately provide one. Rather than decreasing number of steps in protocol, it moves this step as a side activity of a relay, overall making it slightly more complex. The advantage to this approach is decrease in wait time for the owner. However, as group setup is a one-time activity it seems an unnecessary complication at this stage.
+
+  - Steps 9, 10, 11, 12 are notifying/acknowledging and not as crucial to group functioning in happy path. However, without these assurances, some edge cases arise.
+
+    For relay, without receiving notification from owner and checking presence of relay link in group link data, it would have to always accept requests to relay link, even if it was obtained illegitimately (wasn't properly shared by owner in group link data). It could cause a race with owner cancelling adding relay to the group. It may have a potential for an exploit of relay, however, with relay checking for group link periodically/on start and removing itself from group on absence of relay link, it may be acceptable to omit these steps from protocol. (See below - Protocol for removing chat relay from group, scenario 2).
+
+    For owner, not waiting for relay confirmation can lead to preemptively sharing group link and new members trying to connect to relay before it confirmed presence of relay link and is ready to accept requests, resulting in rejections. It's not a problem if relay notification step is also omitted (as above) and relay always accepts requests.
+
+    In practice, the only normal way to learn a relay link would be after it is added to the group link, so there shouldn't be a race. So, relay can consider all requests to relay link as legitimate as soon as they come, before checking group link data and discovering relay link is not present, in which case relay proceed to remove itself from group as below.
+
+  - Steps 9-11 could be replaced by relay polling group link data.
+
+  - Step 12 could be replaced by owner checking that relay link is active, or simply doing nothing in case relay notification is omitted as above - owner considers that, since provided, relay link is working.
+
+Simplified protocol (with reduced number of steps):
+
+```mermaid
+sequenceDiagram
+    participant O as Owner
+    participant OSMP as Owner's<br>SMP server
+    participant R as Chat relay(s)
+    participant RSMP as Chat relays'<br>SMP server(s)
+
+note over O, RSMP: Owner creates new group, adds chat relays
+
+loop
+R ->> RSMP: 0. Prepare pool of<br>available relay links
+RSMP -->> R:
+end
+O ->> O: 1. Create new group<br>(local, user action)
+O ->> OSMP: 2. Create short link<br>(group entry point)
+OSMP -->> O:
+O ->> O: 3. Add link to group profile<br>(local, automatic)
+O ->> O: 4. Choose chat relays<br>(local, automatic/user choice)
+par With each relay
+    O ->> R: 5. Contact request<br>(x.grp.relay.inv<br>incl. group link)
+    R ->> O: 6. Accept request<br>(x.grp.relay.acpt<br>incl. relay link)
+    O ->> OSMP: 7. Update short link<br>(add relay link)
+    OSMP -->> O:
+end
+create participant M as Member
+O -->> M: 8. Share group short link<br>(social, out-of-band)
+```
 
 ## Protocol for removing chat relay from group, restoring connection to group
 
