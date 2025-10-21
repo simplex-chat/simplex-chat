@@ -467,7 +467,8 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
-    viaGroupLinkUri :: Maybe ConnReqContact
+    viaGroupLinkUri :: Maybe ConnReqContact,
+    relayOwnStatus :: Maybe GroupRelayOwnStatus
   }
   deriving (Eq, Show)
 
@@ -957,16 +958,23 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    isChatRelay :: BoolDef,
-    relayStatus :: Maybe GroupRelayOwnStatus
+    isChatRelay :: BoolDef, -- marker for all members that this member is a chat relay
+    relayData :: Maybe GroupRelay -- owner's additional data for a chat relay
+  }
+  deriving (Eq, Show)
+
+-- TODO [chat relays] review; consider where to use it:
+-- TODO   - GroupMember? (now)
+-- TODO   - separate list of relays in GroupInfo?
+-- TODO   - only on request?
+data GroupRelay = GroupRelay
+  { groupRelayId :: Int64,
+    relayStatus :: GroupRelayStatus,
+    relayLink :: ConnLinkContact
   }
   deriving (Eq, Show)
 
 -- Status tracked by owner per relay
--- TODO [chat relays] review; consider where to use it:
--- TODO   - GroupMember?
--- TODO   - separate list of relays in GroupInfo?
--- TODO   - only on request?
 data GroupRelayStatus
   = GRSNew
   | GRSInvited
