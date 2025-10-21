@@ -391,11 +391,6 @@ section.page {
     z-index: 2;
 }
 
-section.page-2 {
-    position: absolute;
-    top: 0;
-}
-
 .chrome-ios section.page,
 .safari-ios section.page {
     min-height: 110lvh;
@@ -417,6 +412,10 @@ section.page .area {
     height: var(--sec-h);
     z-index: 11;
     /* border: 2px solid red; */
+}
+
+#directory .area {
+    position: relative;
 }
 
 /* --- COVER --- */
@@ -633,14 +632,11 @@ main {
 main .section-bg {
     position: sticky;
     top: 0;
-    left: 0;
-    right: 0;
+    inset: 0;
     height: 100lvh;
-    /* fallback */
-    /* margin-bottom: -100lvh; */
+    margin-bottom: -100lvh;
     /* cancel own layout height */
     width: 100%;
-
     background-image: var(--bg-grad);
     background-position: center;
     background-size: 102% 102%;
