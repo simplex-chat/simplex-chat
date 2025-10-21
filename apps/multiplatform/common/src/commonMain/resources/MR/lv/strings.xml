@@ -26,7 +26,6 @@
     <string name="server_error">kļūda</string>
     <string name="server_connecting">notiek savienošana</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Jūs esat izveidojis savienojumu ar serveri, kas tiek izmantots ziņojumu saņemšanai no šīs kontaktpersonas.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Tiek mēģināts izveidot savienojumu ar serveri, kas tiek izmantots ziņojumu saņemšanai no šīs kontaktpersonas (kļūda: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Mēģina izveidot savienojumu ar serveri, kas tiek izmantots ziņojumu saņemšanai no šīs kontaktpersonas.</string>
     <string name="deleted_description">izdzēsts</string>
     <string name="marked_deleted_description">atzīmēts kā izdzēsts</string>
