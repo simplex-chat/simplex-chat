@@ -70,8 +70,50 @@ Notes:
 
 - Owner should reject contact requests to their group link.
 
-- Chat relay should reject contact requests to its relay link until chat relay confirms it is attached to the group link data.
+- Chat relay should reject contact requests to its relay link until chat relay confirms it is attached to the group link data. Can be based on `RelayStatusInGroup`, see below.
 
+- Owner public key for signing group actions and messages can be stored as part of group short link data (`GroupShortLinkData`).
+
+- Relays public keys can be stored as part of relay info in link data (`ChatRelayInfo`), sent to owner in `x.grp.relay.acpt`.
+
+- Recovery.
+
+  - For owner:
+    - Owner should be able to continue creating group from any step.
+    - Step 1. Create new group - initial.
+    - Step 2. Create short link - first real step, can be synchronous, if it fails can restart (requires user action).
+    - Step 3. Add link to group profile - local, automatic upon synchronous response from step 2. No recovery needed.
+    - Step 4. Choose chat relays - TBC automatic or user action? User action: confirm to auto-select, or let user choose?
+      This action is local but user action should be remembered - at this point `group_relays` records should be created and associated with group, in status `CRSNew`.
+      Further recovery can be done per relay record based on status.
+      - Step 5. Contact request to relay. Contact request should be done via asynchronous agent action. New connection (for contact request) should be associated with relay, relay status moves to `CRSInvited`.
+        - New type connection entity via new `connections.group_relay_id` field?
+        - Member connection, and link `group_members` to `group_relays`? This option seems simpler.
+        Recovery from `CRSInvited` status is not needed, at this point owner waits for relay response.
+      - Step 7. Receive `x.grp.relay.acpt` to relay connection. Save relay link on relay record, relay status moves to `CRSAccepted`.
+      - Step 8. Collect all relay links for relays with status `CRSAccepted` and greater (further down protocol), update short link data. Update of link data should be done via asynchronous agent action. Relay status moves to `CRSAdded`.
+      - Step 9. Upon receiving response for link data update, send `x.grp.info` to relay, relay status moves to `CRSNotified`.
+        - Response is received asynchronously in receive loop - need to introduce correlation between link and events.
+        - `x.grp.info` doesn't have to contain actual group profile update in this case, here it's only a trigger for relay to check link data. (Relay should know based on its state to not dismiss even if profile doesn't change). Could be a special protocol event, but not necessary.
+      - Step 12. Receive confirmation from relay, relay status moves to `CRSConfirmed`. At this point owner knows relay is functional for the group and can advertise link with it, or wait for remaining relays.
+    - Relay status updates can be displayed to owner in UI via events.
+    - Owner should have an ability to cancel adding relay mid-progress (remove relay), and to retry from start (relay is stuck in `CRSInvited` or `CRSNotified` status).
+    - TBC recovery mechanism for initial steps and per relay.
+      - Maintenance process on start, spawning forks per group and per relay?
+      - Workers? Doesn't seem justified for the case.
+    - TODO Asynchronous version of `setConnShortLink`.
+
+  - For relay:
+
+    - Relay tracks its own status in group (`RelayStatusInGroup`).
+    - Step 6. Upon receiving invitation from group owner, initial relay status is `RSGInvited`.
+      Relay should create its link for the group, should be done via asynchronous agent action, status moves to `RSGLinkCreated`.
+      Continuation is to save and associate relay link with group record (`groups.relay_link`), send `x.grp.relay.acpt`,
+      status moves to `RSGAccepted`.
+    - Step 10, 11. Upon receiving `x.grp.info` from owner, if relay is in `RSGAccepted` status, status moves to `RSGNotified`.
+      Retrieve short link (asynchronous agent action? synchronous with retry?). If relay link is present send confirmation to owner `x.grp.relay.ready`, status moves to `RSGConfirmed`. Otherwise break (recovery for owner is to re-add relay).
+    - Should recover in `RSGInvited`, `RSGLinkCreated`, `RSGNotified` statuses.
+    - Similar to owner recovery mechanism - maintenance process on start?
 
 ## Protocol for removing chat relay from group, restoring connection to group
 

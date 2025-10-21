@@ -957,21 +957,32 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    isChatRelay :: BoolDef
+    isChatRelay :: BoolDef,
+    relayStatus :: Maybe RelayStatusInGroup
   }
   deriving (Eq, Show)
 
+-- Status tracked by owner per relay
 -- TODO [chat relays] review; consider where to use it:
 -- TODO   - GroupMember?
 -- TODO   - separate list of relays in GroupInfo?
 -- TODO   - only on request?
 data ChatRelayStatus
-  = CRSInvited
+  = CRSNew
+  | CRSInvited
   | CRSAccepted
   | CRSAdded
   | CRSNotified
   | CRSConfirmed
   deriving (Eq, Show)
+
+-- Own status tracked by relay in group
+data RelayStatusInGroup
+  = RSGInvited
+  | RSGLinkCreated
+  | RSGAccepted
+  | RSGNotified
+  | RSGConfirmed
 
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
