@@ -42,7 +42,7 @@ active_home: true
     <script>
         function detectMobileBrowser() {
             const ua = navigator.userAgent;
-            
+
             // Chrome on iOS
             if (/CriOS/.test(ua)) {
                 document.documentElement.classList.add('chrome-ios');
@@ -154,7 +154,7 @@ active_home: true
                         <h2>{{ "index-token-h2" | i18n({}, lang) }}</h2>
                         <p>{{ "index-token-p1" | i18n({}, lang) }}</p>
                         <p>{{ "index-token-p2" | i18n({}, lang) }}</p>
-                        <a class="gradient-text" href="/token">{{ "index-token-cta" | i18n({}, lang) }}</a>
+                        <a class="gradient-text" href="/token">{{ "index-token-cta" | i18n({}, lang) | safe }}</a>
                     </div>
                 </div>
             </section>
