@@ -127,13 +127,13 @@ Notes:
 - On decreasing number of protocol steps.
 
   - In proposed protocol main steps for adding a chat relay are:
-    - 5. Group owner: Contact request to relay.
-    - 6. Chat relay: Create relay link.
-    - 7. Chat relay: Accept request to be relay, send relay link to owner.
-    - 8. Group owner: Update group link data with relay link.
-    - 9. Group owner: Notify relay.
-    - 10, 11. Chat relay: Retrieve group link data and check presence of relay link.
-    - 12. Chat relay: Confirm to owner.
+    - Step 5. Group owner: Contact request to relay.
+    - Step 6. Chat relay: Create relay link.
+    - Step 7. Chat relay: Accept request to be relay, send relay link to owner.
+    - Step 8. Group owner: Update group link data with relay link.
+    - Step 9. Group owner: Notify relay.
+    - Steps 10, 11. Chat relay: Retrieve group link data and check presence of relay link.
+    - Step 12. Chat relay: Confirm to owner.
 
   - Steps 5, 6, 7, 8 are fundamental to group functioning. Owner has to request a relay to serve group (contact request), relay has to provide a relay link for the group, for new members to join directly and only to relay.
 
