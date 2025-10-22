@@ -62,12 +62,11 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
 
   when (chat.chatInfo) {
     is ChatInfo.Direct -> {
-      val contactNetworkStatus = chatModel.contactNetworkStatus(chat.chatInfo.contact)
       val defaultClickAction = { if (chatModel.chatId.value != chat.id) scope.launch { directChatAction(chat.remoteHostId, chat.chatInfo.contact, chatModel) } }
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, contactNetworkStatus, disabled, linkMode, inProgress = false, progressByTimeout = false, defaultClickAction)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, disabled, linkMode, inProgress = false, progressByTimeout = false, defaultClickAction)
           }
         },
         click = defaultClickAction,
@@ -87,7 +86,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress.value, progressByTimeout, defaultClickAction)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, disabled, linkMode, inProgress.value, progressByTimeout, defaultClickAction)
           }
         },
         click = defaultClickAction,
@@ -107,7 +106,7 @@ fun ChatListNavLinkView(chat: Chat, nextChatSelected: State<Boolean>) {
       ChatListNavLinkLayout(
         chatLinkPreview = {
           tryOrShowError("${chat.id}ChatListNavLink", error = { ErrorChatListItem() }) {
-            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, null, disabled, linkMode, inProgress = false, progressByTimeout = false, defaultClickAction)
+            ChatPreviewView(chat, showChatPreviews, chatModel.draft.value, chatModel.draftChatId.value, chatModel.currentUser.value?.profile?.displayName, disabled, linkMode, inProgress = false, progressByTimeout = false, defaultClickAction)
           }
         },
         click = defaultClickAction,
@@ -744,7 +743,6 @@ fun acceptContactRequest(
         }
         inProgress?.value = false
       }
-      chatModel.setContactNetworkStatus(contact, NetworkStatus.Connected())
       close?.invoke(chat)
     } else {
       inProgress?.value = false
@@ -1057,7 +1055,6 @@ fun PreviewChatListNavLinkDirect() {
           null,
           null,
           null,
-          null,
           disabled = false,
           linkMode = SimplexLinkMode.DESCRIPTION,
           inProgress = false,
@@ -1100,7 +1097,6 @@ fun PreviewChatListNavLinkGroup() {
             chatStats = Chat.ChatStats()
           ),
           true,
-          null,
           null,
           null,
           null,

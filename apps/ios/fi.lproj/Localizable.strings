@@ -1983,7 +1983,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Verkkoasetukset";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Verkon tila";
 
 /* delete after time */
@@ -2348,9 +2348,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "vahvistus saatu…";
 
-/* notification */
-"Received file event" = "Tiedoston vastaanottotapahtuma";
-
 /* message info title */
 "Received message" = "Vastaanotettu viesti";
 
@@ -2641,9 +2638,6 @@ chat item action */
 
 /* copied message info */
 "Sent at: %@" = "Lähetetty klo: %@";
-
-/* notification */
-"Sent file event" = "Lähetetty tiedosto tapahtuma";
 
 /* message info title */
 "Sent message" = "Lähetetty viesti";
@@ -2980,12 +2974,6 @@ chat item action */
 "Transport isolation" = "Kuljetuksen eristäminen";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Yritetään muodostaa yhteyttä palvelimeen, jota käytetään tämän kontaktin viestien vastaanottamiseen (virhe: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta.";
-
-/* No comment provided by engineer. */
 "Turn off" = "Sammuta";
 
 /* No comment provided by engineer. */
@@ -3212,9 +3200,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Olet jo muodostanut yhteyden %@:n kanssa.";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";

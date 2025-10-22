@@ -106,8 +106,9 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
-      coreApi = False,
       highlyAvailable = False,
+      deliveryWorkerDelay = 0,
+      deliveryBucketSize = 10000,
       deviceNameForRemote = "",
       chatHooks = defaultChatHooks
     }
@@ -148,7 +149,6 @@ newChatController
     eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
-    connNetworkStatuses <- TM.emptyIO
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- TM.emptyIO
@@ -190,7 +190,6 @@ newChatController
           eventSeq,
           inputQ,
           outputQ,
-          connNetworkStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -251,7 +250,7 @@ newChatController
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains}
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

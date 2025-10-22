@@ -283,29 +283,6 @@ class ChatTagsModel: ObservableObject {
     }
 }
 
-class NetworkModel: ObservableObject {
-    // map of connections network statuses, key is agent connection id
-    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
-
-    static let shared = NetworkModel()
-
-    private init() { }
-
-    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] = status
-        }
-    }
-
-    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] ?? .unknown
-        } else {
-            .unknown
-        }
-    }
-}
-
 /// ChatItemWithMenu can depend on previous or next item for it's appearance
 /// This dummy model is used to force an update of all chat items,
 /// when they might have changed appearance.
@@ -374,6 +351,8 @@ final class ChatModel: ObservableObject {
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
+    @Published var chatAgentConnId: String?
+    @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
@@ -385,6 +364,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: UserContactLink?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
+    @Published var appOpenUrlLater: URL?
     @Published var deviceToken: DeviceToken?
     @Published var savedToken: DeviceToken?
     @Published var tokenRegistered = false

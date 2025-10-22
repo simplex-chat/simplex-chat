@@ -2307,7 +2307,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Nastavení sítě";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Stav sítě";
 
 /* delete after time */
@@ -2678,9 +2678,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "obdržel potvrzení…";
 
-/* notification */
-"Received file event" = "Událost přijatého souboru";
-
 /* message info title */
 "Received message" = "Přijatá zpráva";
 
@@ -2974,9 +2971,6 @@ chat item action */
 
 /* copied message info */
 "Sent at: %@" = "Posláno v: % @";
-
-/* notification */
-"Sent file event" = "Odeslaná událost souboru";
 
 /* message info title */
 "Sent message" = "Poslaná zpráva";
@@ -3319,12 +3313,6 @@ chat item action */
 "Transport isolation" = "Izolace transportu";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Pokus o připojení k serveru používanému k přijímání zpráv od tohoto kontaktu (chyba: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Pokus o připojení k serveru používanému pro příjem zpráv od tohoto kontaktu.";
-
-/* No comment provided by engineer. */
 "Turn off" = "Vypnout";
 
 /* No comment provided by engineer. */
@@ -3551,9 +3539,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Již jste připojeni k %@.";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Jste připojeni k serveru, který se používá k přijímání zpráv od tohoto kontaktu.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Jste pozváni do skupiny";

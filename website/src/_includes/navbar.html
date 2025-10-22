@@ -129,7 +129,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('jobs' not in page.url) and ('about' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('token' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}
@@ -143,7 +143,7 @@
             </a>
 
             <ul class="sub-menu">
-                {% if ("docs" in page.url) or ('downloads' in page.url) %}
+                {% if ("docs" in page.url) or ('downloads' in page.url) or ('security' in page.url) or ('transparency' in page.url) or ('jobs' in page.url) or ('faq' in page.url) %}
                     {% for supportedLang in supportedLangsForDoc %}
                         {% for language in languages.languages %}
                             {% if language.label == supportedLang %}
@@ -167,7 +167,7 @@
                     {% endfor %}
                 {% else %}
                     {% for language in languages.languages %}
-                        {% if language.enabled %}
+                        {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) %}
                             <li>
                                 {% if language.flag %}
                                     <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">

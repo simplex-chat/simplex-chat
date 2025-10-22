@@ -1143,7 +1143,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Les conditions sont déjà acceptées pour ces opérateurs : **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Conditions d'utilisation";
 
 /* No comment provided by engineer. */
@@ -3323,7 +3323,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Paramètres réseau";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "État du réseau";
 
 /* delete after time */
@@ -3925,9 +3925,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "confimation reçu…";
 
-/* notification */
-"Received file event" = "Événement de fichier reçu";
-
 /* message info title */
 "Received message" = "Message reçu";
 
@@ -4377,9 +4374,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Sent directly" = "Envoyé directement";
-
-/* notification */
-"Sent file event" = "Événement de fichier envoyé";
 
 /* message info title */
 "Sent message" = "Message envoyé";
@@ -5031,12 +5025,6 @@ chat item action */
 "Transport sessions" = "Sessions de transport";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact (erreur : %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Tentative de connexion au serveur utilisé pour recevoir les messages de ce contact.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Interface en turc";
 
 /* No comment provided by engineer. */
@@ -5485,9 +5473,6 @@ chat item action */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Vous êtes déjà membre de ce groupe !\nRépéter la demande d'adhésion ?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Vous êtes connecté·e au serveur utilisé pour recevoir les messages de ce contact.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Vous êtes invité·e au groupe";

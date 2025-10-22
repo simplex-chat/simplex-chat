@@ -49,7 +49,6 @@ import Data.Word (Word16)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
@@ -581,6 +580,10 @@ groupFeatureMemberAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupMemb
 groupFeatureMemberAllowed feature GroupMember {memberRole} =
   groupFeatureMemberAllowed' feature memberRole . fullGroupPreferences
 
+groupFeatureUserAllowed :: GroupFeatureRoleI f => SGroupFeature f -> GroupInfo -> Bool
+groupFeatureUserAllowed feature GroupInfo {membership = GroupMember {memberRole}, fullGroupPreferences} =
+  groupFeatureMemberAllowed' feature memberRole fullGroupPreferences
+
 mergeUserChatPrefs :: User -> Contact -> FullPreferences
 mergeUserChatPrefs user ct = mergeUserChatPrefs' user (contactConnIncognito ct) (userPreferences ct)
 
@@ -673,21 +676,12 @@ profilesMatch
   LocalProfile {displayName = n2, fullName = fn2, image = i2} =
     n1 == n2 && fn1 == fn2 && i1 == i2
 
-redactedMemberProfile :: Profile -> Profile
-redactedMemberProfile Profile {displayName, fullName, shortDescr, image, peerType} =
-  Profile {displayName, fullName, shortDescr, image, contactLink = Nothing, preferences = Nothing, peerType}
-
 data IncognitoProfile = NewIncognito Profile | ExistingIncognito LocalProfile
 
 fromIncognitoProfile :: IncognitoProfile -> Profile
 fromIncognitoProfile = \case
   NewIncognito p -> p
   ExistingIncognito lp -> fromLocalProfile lp
-
-userProfileInGroup :: User -> Maybe Profile -> Profile
-userProfileInGroup User {profile = p} incognitoProfile =
-  let p' = fromMaybe (fromLocalProfile p) incognitoProfile
-   in redactedMemberProfile p'
 
 userProfileDirect :: User -> Maybe Profile -> Maybe Contact -> Bool -> Profile
 userProfileDirect user@User {profile = p} incognitoProfile ct canFallbackToUserTTL =
@@ -870,15 +864,6 @@ data BusinessChatInfo = BusinessChatInfo
   }
   deriving (Eq, Show)
 
-memberInfo :: GroupMember -> MemberInfo
-memberInfo GroupMember {memberId, memberRole, memberProfile, activeConn} =
-  MemberInfo
-    { memberId,
-      memberRole,
-      v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile $ fromLocalProfile memberProfile
-    }
-
 data MemberRestrictionStatus
   = MRSBlocked
   | MRSUnrestricted
@@ -986,6 +971,11 @@ data GroupMemberRef = GroupMemberRef {groupMemberId :: Int64, profile :: Profile
 groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
+
+-- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
+-- TODO   - in channels members should directly connect only to relays
+isMemberRelay :: GroupMember -> Bool
+isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1759,8 +1749,7 @@ data GroupMemberIntro = GroupMemberIntro
   { introId :: Int64,
     reMember :: GroupMember,
     toMember :: GroupMember,
-    introStatus :: GroupMemberIntroStatus,
-    introInvitation :: Maybe IntroInvitation
+    introStatus :: GroupMemberIntroStatus
   }
   deriving (Show)
 
@@ -1798,26 +1787,6 @@ serializeIntroStatus = \case
   GMIntroReConnected -> "re-con"
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
-
-data NetworkStatus
-  = NSUnknown
-  | NSConnected
-  | NSDisconnected
-  | NSError {connectionError :: String}
-  deriving (Eq, Ord, Show)
-
-netStatusStr :: NetworkStatus -> String
-netStatusStr = \case
-  NSUnknown -> "unknown"
-  NSConnected -> "connected"
-  NSDisconnected -> "disconnected"
-  NSError e -> "error: " <> e
-
-data ConnNetworkStatus = ConnNetworkStatus
-  { agentConnId :: AgentConnId,
-    networkStatus :: NetworkStatus
-  }
-  deriving (Show)
 
 type CommandId = Int64
 
@@ -2007,10 +1976,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NS") ''NetworkStatus)
-
-$(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 
 $(JQ.deriveJSON defaultJSON ''Connection)
 

@@ -26,7 +26,7 @@ module.exports = {
 
         // What makes SimpleX private
         'card-bg-light': '#ffffff',
-        'card-desc-bg-light': '#D9E7ED', 
+        'card-desc-bg-light': '#DBEEFF',
         'card-bg-dark': '#17203D',
         'card-desc-bg-dark': '#1B325C',
       }

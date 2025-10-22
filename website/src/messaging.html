@@ -8,7 +8,7 @@ templateEngineOverride: njk
 
 <section id="article" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[95px] px-5">
     <div class="container">
-        {% mdInclude "sections/learn_more.md" %}
+        {% mdInclude "sections/messaging.md" %}
     </div>
 </section>
 
@@ -208,16 +208,16 @@ templateEngineOverride: njk
                     <li> {{ "comparison-section-list-point-4" | i18n({}, lang ) | safe }}</li>
                     <li> {{ "comparison-section-list-point-5" | i18n({}, lang ) | safe }}</li>
                     <li> {{ "comparison-section-list-point-6" | i18n({}, lang ) | safe }}</li>
-                    <li> {{ "comparison-section-list-point-7" | i18n({}, lang ) | safe }} - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">{{ "see-here" | i18n({}, lang ) | safe }}</a></li>
+                    <li> {{ "comparison-section-list-point-7" | i18n({}, lang ) | safe }} &mdash; <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">{{ "see-here" | i18n({}, lang ) | safe }}</a></li>
                 </ol>
             </div>
         </div>
     </div>
 </section>
 
-<section id="how-secure-comparison" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] px-5">
+<section id="messengers-comparison" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] px-5">
     <div class="text-grey-black dark:text-white container flex flex-col">
-        <h2 class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">How secure is end-to-end encryption in different messengers?</h2>
+        <h2 class="text-[35px] leading-[43px] md:leading-[55px] lg:leading-[36px] text-center font-bold mb-12 lg:mb-[90px]">{{ "how-secure-comparison-title" | i18n({}, lang ) | safe }}</h2>
 
         <div class="w-full overflow-auto">
             <table class="w-full border-separate border-spacing-x-5 border-spacing-y-2">
@@ -245,68 +245,84 @@ templateEngineOverride: njk
                             <p>Signal</p>
                         </th>
                         <th class="pb-4">
-                            <img class="h-[60px] mr-auto ml-auto" alt="simplex logo" src="/img/new/logo-symbol-light.svg"/>
+                            <img class="h-[60px] mr-auto ml-auto dark:hidden" alt="simplex logo" src="/img/new/logo-symbol-light.svg"/>
+                            <img class="h-[60px] mr-auto ml-auto hidden dark:block" alt="simplex logo" src="/img/new/logo-symbol-dark.svg"/>
                             <p>SimpleX</p>
                         </th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
-                        <td class="min-w-[210px]">Message padding</td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
+                        <td class="min-w-[210px]">{{ "how-secure-message-padding" | i18n({}, lang ) | safe }}</td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>1</sup></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup class="red-ballot-x">1</sup></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Repudiation (deniability)</td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px] flex justify-center items-center gap-0"><img class="h-[34px]" src="/img/design_3/green-tick.svg" alt="" srcset=""> <sup class="text-[#e2b01b] font-bold text-[18px]">1</sup></td>
+                        <td class="min-w-[210px]">{{ "how-secure-repudiation-deniability" | i18n({}, lang ) | safe }}</td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>2</sup></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>3</sup></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Forward secrecy</td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
+                        <td class="min-w-[210px]">{{ "how-secure-forward-secrecy" | i18n({}, lang ) | safe }}</td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Break-in recovery</td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
+                        <td class="min-w-[210px]">{{ "how-secure-break-in-recovery" | i18n({}, lang ) | safe }}</td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span><sup>4</sup></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">2-factor key exchange</td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/green-tick.svg" alt="" srcset=""></td>
+                        <td class="min-w-[210px]">{{ "how-secure-two-factor-key-exchange" | i18n({}, lang ) | safe }}</td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>5</sup></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>5</sup></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>5</sup></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
                     </tr>
                     <tr>
-                        <td class="min-w-[210px]">Post-quantum hybrid crypto</td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/red-x.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px]"><img class="h-[34px] mr-auto ml-auto" src="/img/design_3/yellow-tick.svg" alt="" srcset=""></td>
-                        <td class="min-w-[100px] h-[52px] flex justify-center items-center"><img class="h-[34px]" src="/img/design_3/green-tick.svg" alt="" srcset=""> <sup class="text-[#e2b01b] font-bold text-[18px]">2</sup></td>
+                        <td class="min-w-[210px]">{{ "how-secure-post-quantum-hybrid-crypto" | i18n({}, lang ) | safe }}</td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria red-ballot-x"><span class="criteria-mark">✗</span></td>
+                        <td class="criteria yellow-check"><span class="criteria-mark">✔︎</span><sup>6</sup></td>
+                        <td class="criteria green-check"><span class="criteria-mark">✔︎</span></td>
                     </tr>
                 </tbody>
             </table>
+        </div>
+
+        <hr class="block mb-8 mx-5 dark:opacity-[0.2]">
+
+        <div>
+            <div class="px-5">
+                <ol class="text-sm lg:text-base font-medium leading-6 list-decimal list-inside">
+                    <li> {{ "messengers-comparison-section-list-point-1" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "messengers-comparison-section-list-point-2" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "messengers-comparison-section-list-point-3" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "messengers-comparison-section-list-point-4" | i18n({}, lang ) | safe }} &mdash; <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://eprint.iacr.org/2021/626.pdf" target="_blank">{{ "see-here" | i18n({}, lang ) | safe }}</a>.</li>
+                    <li> {{ "messengers-comparison-section-list-point-5" | i18n({}, lang ) | safe }}</li>
+                    <li> {{ "messengers-comparison-section-list-point-6" | i18n({}, lang ) | safe }}</li>
+                </ol>
+            </div>
         </div>
     </div>
 </section>

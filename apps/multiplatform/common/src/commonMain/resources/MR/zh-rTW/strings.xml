@@ -238,7 +238,7 @@
     <string name="server_error">錯誤</string>
     <string name="server_connecting">連接中</string>
     <string name="connected_to_server_to_receive_messages_from_contact">你已連接到此聯絡人使用的伺服器以接收訊息。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">嘗試連接至用於接收此聯絡人訊息的伺服器 (錯誤：%1$s)。</string>
+    <string name="error_connecting_to_server_to_receive_messages">嘗試連接至用於接收此聯絡人訊息的伺服器 (錯誤：%1$s)。</string>
     <string name="trying_to_connect_to_server_to_receive_messages">正在嘗試連接到用於接收此聯絡人訊息伺服器。</string>
     <string name="deleted_description">已刪除</string>
     <string name="marked_deleted_description">已標記為已刪除</string>
