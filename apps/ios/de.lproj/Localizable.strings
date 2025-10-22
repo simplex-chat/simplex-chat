@@ -2238,6 +2238,9 @@ chat item action */
 /* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Fehler beim Verbinden mit dem Weiterleitungsserver %@. Bitte versuchen Sie es später erneut.";
 
+/* subscription status explanation */
+"Error connecting to the server used to receive messages from this connection: %@" = "Fehler beim Herstellen der Verbindung zum Server, der für den Empfang von Nachrichten dieser Verbindung genutzt wird: %@";
+
 /* No comment provided by engineer. */
 "Error creating address" = "Fehler beim Erstellen der Adresse";
 
@@ -3710,6 +3713,9 @@ snd error text */
 /* servers error */
 "No servers to send files." = "Keine Server für das Versenden von Dateien.";
 
+/* No comment provided by engineer. */
+"no subscription" = "Kein Abonnement";
+
 /* copied message info in history */
 "no text" = "Kein Text";
 
@@ -4706,7 +4712,7 @@ chat item action */
 "Secured" = "Abgesichert";
 
 /* No comment provided by engineer. */
-"Security assessment" = "Sicherheits-Gutachten";
+"Security assessment" = "Security-Gutachten";
 
 /* No comment provided by engineer. */
 "Security code" = "Sicherheitscode";
@@ -5583,6 +5589,9 @@ report reason */
 /* No comment provided by engineer. */
 "Transport sessions" = "Transport-Sitzungen";
 
+/* subscription status explanation */
+"Trying to connect to the server used to receive messages from this connection." = "Versuche eine Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.";
+
 /* No comment provided by engineer. */
 "Turkish interface" = "Türkische Bedienoberfläche";
 
@@ -6075,8 +6084,14 @@ report reason */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Sie sind bereits Mitglied dieser Gruppe!\nVerbindungsanfrage wiederholen?";
 
+/* subscription status explanation */
+"You are connected to the server used to receive messages from this connection." = "Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.";
+
 /* No comment provided by engineer. */
 "You are invited to group" = "Sie sind zu der Gruppe eingeladen";
+
+/* subscription status explanation */
+"You are not connected to the server used to receive messages from this connection (no subscription)." = "Sie sind nicht mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird (kein Abonnement).";
 
 /* No comment provided by engineer. */
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "Sie sind nicht mit diesen Servern verbunden. Zur Auslieferung von Nachrichten an diese Server wird privates Routing genutzt.";

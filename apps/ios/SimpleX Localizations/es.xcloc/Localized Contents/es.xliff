@@ -3310,9 +3310,9 @@ chat item action</note>
         <target>Error al conectar con el servidor de reenvío %@. Por favor, inténtalo más tarde.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve" approved="no">
+      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
         <source>Error connecting to the server used to receive messages from this connection: %@</source>
-        <target state="translated">Error al conectar con el servidor usado para recibir mensajes de esta conexión: %@</target>
+        <target>Error al conectar con el servidor usado para recibir mensajes de esta conexión: %@</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -8476,9 +8476,9 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Sesiones de transporte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve" approved="no">
+      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this connection.</source>
-        <target state="translated">Intentando conectar con el servidor usado para recibir mensajes de esta conexión.</target>
+        <target>Intentando conectar con el servidor usado para recibir mensajes de esta conexión.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
@@ -9190,9 +9190,9 @@ Repeat join request?</source>
 ¿Repetir solicitud de admisión?</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve" approved="no">
+      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this connection.</source>
-        <target state="translated">Estás conectado al servidor usado para recibir mensajes de esta conexión.</target>
+        <target>Estás conectado al servidor usado para recibir mensajes de esta conexión.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -9200,9 +9200,9 @@ Repeat join request?</source>
         <target>Has sido invitado a un grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve" approved="no">
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
-        <target state="translated">No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</target>
+        <target>No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10264,9 +10264,9 @@ pref value</note>
         <target>sin cifrar</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no subscription" xml:space="preserve" approved="no">
+      <trans-unit id="no subscription" xml:space="preserve">
         <source>no subscription</source>
-        <target state="translated">sin suscripciones</target>
+        <target>sin suscripciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">

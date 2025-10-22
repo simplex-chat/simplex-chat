@@ -3310,9 +3310,9 @@ chat item action</note>
         <target>Fehler beim Verbinden mit dem Weiterleitungsserver %@. Bitte versuchen Sie es später erneut.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve" approved="no">
+      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
         <source>Error connecting to the server used to receive messages from this connection: %@</source>
-        <target state="translated">Fehler beim Herstellen der Verbindung zum Server, der für den Empfang von Nachrichten dieser Verbindung genutzt wird: %@</target>
+        <target>Fehler beim Herstellen der Verbindung zum Server, der für den Empfang von Nachrichten dieser Verbindung genutzt wird: %@</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -7058,9 +7058,9 @@ chat item action</note>
         <target>Abgesichert</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Security assessment" xml:space="preserve" approved="no">
+      <trans-unit id="Security assessment" xml:space="preserve">
         <source>Security assessment</source>
-        <target state="translated">Security-Gutachten</target>
+        <target>Security-Gutachten</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Security code" xml:space="preserve">
@@ -8476,9 +8476,9 @@ Sie werden aufgefordert, die Authentifizierung abzuschließen, bevor diese Funkt
         <target>Transport-Sitzungen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve" approved="no">
+      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this connection.</source>
-        <target state="translated">Versuche eine Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</target>
+        <target>Versuche eine Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
@@ -9190,9 +9190,9 @@ Repeat join request?</source>
 Verbindungsanfrage wiederholen?</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve" approved="no">
+      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this connection.</source>
-        <target state="translated">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</target>
+        <target>Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -9200,9 +9200,9 @@ Verbindungsanfrage wiederholen?</target>
         <target>Sie sind zu der Gruppe eingeladen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve" approved="no">
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
-        <target state="translated">Sie sind nicht mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird (kein Abonnement).</target>
+        <target>Sie sind nicht mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird (kein Abonnement).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10264,9 +10264,9 @@ pref value</note>
         <target>Keine E2E-Verschlüsselung</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no subscription" xml:space="preserve" approved="no">
+      <trans-unit id="no subscription" xml:space="preserve">
         <source>no subscription</source>
-        <target state="translated">Kein Abonnement</target>
+        <target>Kein Abonnement</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">

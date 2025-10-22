@@ -2238,6 +2238,9 @@ chat item action */
 /* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Hiba történt a(z) %@ továbbítókiszolgálóhoz való kapcsolódáskor. Próbálja meg később.";
 
+/* subscription status explanation */
+"Error connecting to the server used to receive messages from this connection: %@" = "Hiba történt a kapcsolódáskor ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál: %@";
+
 /* No comment provided by engineer. */
 "Error creating address" = "Hiba történt a cím létrehozásakor";
 
@@ -3709,6 +3712,9 @@ snd error text */
 
 /* servers error */
 "No servers to send files." = "Nincsenek fájlküldő-kiszolgálók.";
+
+/* No comment provided by engineer. */
+"no subscription" = "nincs előfizetés";
 
 /* copied message info in history */
 "no text" = "nincs szöveg";
@@ -5583,6 +5589,9 @@ report reason */
 /* No comment provided by engineer. */
 "Transport sessions" = "Munkamenetek átvitele";
 
+/* subscription status explanation */
+"Trying to connect to the server used to receive messages from this connection." = "Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.";
+
 /* No comment provided by engineer. */
 "Turkish interface" = "Török kezelőfelület";
 
@@ -6075,8 +6084,14 @@ report reason */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "A csatlakozás már folyamatban van a csoporthoz!\nMegismétli a csatlakozási kérést?";
 
+/* subscription status explanation */
+"You are connected to the server used to receive messages from this connection." = "Ön kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.";
+
 /* No comment provided by engineer. */
 "You are invited to group" = "Ön meghívást kapott a csoportba";
+
+/* subscription status explanation */
+"You are not connected to the server used to receive messages from this connection (no subscription)." = "Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetés).";
 
 /* No comment provided by engineer. */
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "Ön nem kapcsolódik ezekhez a kiszolgálókhoz. A privát útválasztás az üzenetek kézbesítésére szolgál.";
