@@ -63,12 +63,13 @@ active_home: true
 
 <body>
     {% include "navbar.html" %}
+    {% set lang = page.url | getlang %}
 
     <div class="screen">
         <section class="page-1 cover page">
             <div class="area">
                 <div class="content">
-                    <h1>{{ "index-hero-h1" | i18n({}, lang) }}</h1>
+                    <h1>{{ "index-hero-h1" | i18n({}, lang) | safe }}</h1>
                     <h2 class="gradient-text">{{ "index-hero-h2" | i18n({}, lang) | safe }}</h2>
                     <p>{{ "index-hero-p1" | i18n({}, lang) }}</p>
 
@@ -76,18 +77,18 @@ active_home: true
                         <a href="/downloads" class="desktop-app-btn hidden" title="{{ 'index-hero-download-desktop-btn-title' | i18n({}, lang) }}">
                             <div class="btn-content">
                                 <div>
-                                    <img class="no-border" src="/img/design_3/socials/linux.png" />
+                                    <img class="no-border" src="/img/design_3/socials/linux.png">
                                     <img class="no-border" src="/img/design_3/socials/apple.png" alt="">
                                     <img class="no-border" src="/img/design_3/socials/windows.png" alt="">
                                 </div>
                                 <p>Download Desktop App</p>
                             </div>
                         </a>
-                        <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg" /></a>
-                        <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="{{ 'index-google-play-title' | i18n({}, lang) }}"><img src="/img/new/google_play.svg" /></a>
-                        <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid.svg" /></a>
-                        <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" /></a>
-                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img src="/img/design_3/android-dark.png" /></a>
+                        <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg"></a>
+                        <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="/img/new/google_play.svg"></a>
+                        <a class="f-droid-btn hidden" href="{{ '' if lang == 'en' else '/' ~ lang }}/fdroid" title="{{ 'index-f-droid-title' | i18n({}, lang) }}"><img src="/img/new/f_droid.svg"></a>
+                        <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" title="{{ 'index-testflight-title' | i18n({}, lang) }}"></a>
+                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img src="/img/design_3/android-dark.png"></a>
                     </div>
                     <div class="security-btns">
                         <a title="{{ 'index-security-assessment-title' | i18n({}, lang) }}" href="https://www.trailofbits.com/about" target="_blank">
@@ -100,7 +101,7 @@ active_home: true
                             2024
                         </a>
                         <p class="security-audits">
-                            {{ 'index-security-audits-label' | i18n({}, lang) }}
+                            {{ 'index-security-audits-label' | i18n({}, lang) | safe }}
                         </p>
                     </div>
                     <div class="publications-btns">
@@ -133,7 +134,7 @@ active_home: true
                         <h2>{{ "worlds-most-secure-messaging" | i18n({}, lang ) | safe }}</h2>
                         <p>{{ "index-messaging-p1" | i18n({}, lang) }}</p>
                         <p>{{ "index-messaging-p2" | i18n({}, lang) | safe }}</p>
-                        <a class="gradient-text" href="/messaging">{{ "index-messaging-cta" | i18n({}, lang) }}</a>
+                        <a class="gradient-text" href="{{ '' if lang == 'en' else '/' ~ lang }}/messaging">{{ "index-messaging-cta" | i18n({}, lang) }}</a>
                     </div>
                 </div>
             </section>
