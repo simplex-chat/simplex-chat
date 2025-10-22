@@ -18,8 +18,8 @@
     <string name="server_connected">connesso</string>
     <string name="server_error">errore</string>
     <string name="server_connecting">in connessione</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Sei connesso al server usato per ricevere messaggi da questo contatto.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questo contatto.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Sei connesso/a al server usato per ricevere messaggi da questa connessione.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questa connessione.</string>
     <string name="deleted_description">eliminato</string>
     <string name="marked_deleted_description">contrassegnato eliminato</string>
     <string name="sending_files_not_yet_supported">l\'invio di file non è ancora supportato</string>
@@ -2539,4 +2539,6 @@
     <string name="proxy_destination_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server di destinazione non corrisponde al certificato: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server di inoltro non corrisponde al certificato: %1$s.</string>
     <string name="network_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server non corrisponde al certificato: %1$s.</string>
+    <string name="server_no_sub">nessuna iscrizione</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Non sei connesso/a al server usato per ricevere messaggi da questa connessione (nessuna iscrizione).</string>
 </resources>

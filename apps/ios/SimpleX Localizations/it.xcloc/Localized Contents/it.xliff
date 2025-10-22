@@ -3312,6 +3312,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
         <source>Error connecting to the server used to receive messages from this connection: %@</source>
+        <target>Errore di connessione al server usato per ricevere messaggi da questa connessione: %@</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
@@ -8477,6 +8478,7 @@ Ti verrà chiesto di completare l'autenticazione prima di attivare questa funzio
       </trans-unit>
       <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
         <source>Trying to connect to the server used to receive messages from this connection.</source>
+        <target>Tentativo di connessione al server usato per ricevere messaggi da questa connessione.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
@@ -9190,6 +9192,7 @@ Ripetere la richiesta di ingresso?</target>
       </trans-unit>
       <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
         <source>You are connected to the server used to receive messages from this connection.</source>
+        <target>Sei connesso/a al server usato per ricevere messaggi da questa connessione.</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
@@ -9199,6 +9202,7 @@ Ripetere la richiesta di ingresso?</target>
       </trans-unit>
       <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
+        <target>Non sei connesso/a al server usato per ricevere messaggi da questa connessione (nessuna iscrizione).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10262,6 +10266,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="no subscription" xml:space="preserve">
         <source>no subscription</source>
+        <target>nessuna iscrizione</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">

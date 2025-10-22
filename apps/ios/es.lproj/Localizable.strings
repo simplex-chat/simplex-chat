@@ -2238,6 +2238,9 @@ chat item action */
 /* alert message */
 "Error connecting to forwarding server %@. Please try later." = "Error al conectar con el servidor de reenvío %@. Por favor, inténtalo más tarde.";
 
+/* subscription status explanation */
+"Error connecting to the server used to receive messages from this connection: %@" = "Error al conectar con el servidor usado para recibir mensajes de esta conexión: %@";
+
 /* No comment provided by engineer. */
 "Error creating address" = "Error al crear dirección";
 
@@ -3709,6 +3712,9 @@ snd error text */
 
 /* servers error */
 "No servers to send files." = "Sin servidores para enviar archivos.";
+
+/* No comment provided by engineer. */
+"no subscription" = "sin suscripciones";
 
 /* copied message info in history */
 "no text" = "sin texto";
@@ -5583,6 +5589,9 @@ report reason */
 /* No comment provided by engineer. */
 "Transport sessions" = "Sesiones de transporte";
 
+/* subscription status explanation */
+"Trying to connect to the server used to receive messages from this connection." = "Intentando conectar con el servidor usado para recibir mensajes de esta conexión.";
+
 /* No comment provided by engineer. */
 "Turkish interface" = "Interfaz en turco";
 
@@ -6075,8 +6084,14 @@ report reason */
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "¡En proceso de unirte al grupo!\n¿Repetir solicitud de admisión?";
 
+/* subscription status explanation */
+"You are connected to the server used to receive messages from this connection." = "Estás conectado al servidor usado para recibir mensajes de esta conexión.";
+
 /* No comment provided by engineer. */
 "You are invited to group" = "Has sido invitado a un grupo";
+
+/* subscription status explanation */
+"You are not connected to the server used to receive messages from this connection (no subscription)." = "No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).";
 
 /* No comment provided by engineer. */
 "You are not connected to these servers. Private routing is used to deliver messages to them." = "No tienes conexión directa a estos servidores. Los mensajes destinados a estos usan enrutamiento privado.";
