@@ -9202,7 +9202,7 @@ Megismétli a csatlakozási kérést?</target>
       </trans-unit>
       <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve" approved="no">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
-        <target state="translated">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetése).</target>
+        <target state="translated">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetés).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10266,7 +10266,7 @@ pref value</note>
       </trans-unit>
       <trans-unit id="no subscription" xml:space="preserve" approved="no">
         <source>no subscription</source>
-        <target state="translated">nincs előfizetése</target>
+        <target state="translated">nincs előfizetés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
