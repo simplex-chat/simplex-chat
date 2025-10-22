@@ -1767,7 +1767,7 @@ window.addEventListener('scroll',changeHeaderBg);
         与大多数 P2P 网络不同，SimpleX 在设计上没有任何类型的全局用户标识符，甚至临时的也没有。SimpleX 仅使用临时的成对标识符，提供更好的匿名性和元数据保护。
     </li>
     <li>
-        P2P 并未解决<a href="https://zh.wikipedia.org/wiki/%E4%B8%AD%E9%97%B4%E4%BA%BA%E6%94%BB%E5%87%BB">中间人攻击(<span data-glossary="tooltip-mitm-attack" class="glossary-term">MITM attack</span>)</a> 问题。大多数现有的 P2P 实现没有使用带外通讯来进行初始密钥的交换，而 SimpleX 使用带外通讯，或者在某些情况下，使用预先存在的安全和可信连接来进行初始密钥交换。
+        P2P 并未解决<a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">中间人攻击(<span data-glossary="tooltip-mitm-attack" class="glossary-term">MITM attack</span>)</a> 问题。大多数现有的 P2P 实现没有使用带外通讯来进行初始密钥的交换，而 SimpleX 使用带外通讯，或者在某些情况下，使用预先存在的安全和可信连接来进行初始密钥交换。
     </li>
     <li>
         P2P 实现（如 <a href="https://zh.wikipedia.org/wiki/BitTorrent_(%E5%8D%8F%E8%AE%AE)">BitTorrent</a>）可能会被某些互联网提供商阻止。 SimpleX 与传输协议无关 — 它可以在标准网络协议上工作，例如 WebSockets。
