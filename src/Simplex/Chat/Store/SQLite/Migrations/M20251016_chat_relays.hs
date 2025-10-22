@@ -51,6 +51,9 @@ ALTER TABLE group_members ADD COLUMN group_relay_id INTEGER REFERENCES group_rel
 CREATE INDEX idx_group_members_group_relay_id ON group_members(group_relay_id);
 
 ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
+
+ALTER TABLE connections ADD COLUMN group_member_id_low_priority INTEGER REFERENCES group_members ON DELETE CASCADE;
+CREATE INDEX idx_connections_group_member_id_low_priority ON connections(group_member_id_low_priority);
 |]
 
 down_m20251016_chat_relays :: Query
@@ -70,4 +73,7 @@ DROP INDEX idx_group_members_group_relay_id;
 ALTER TABLE group_members DROP COLUMN group_relay_id;
 
 ALTER TABLE groups DROP COLUMN relay_own_status;
+
+DROP INDEX idx_connections_group_member_id_low_priority;
+ALTER TABLE connections DROP COLUMN group_member_id_low_priority;
 |]

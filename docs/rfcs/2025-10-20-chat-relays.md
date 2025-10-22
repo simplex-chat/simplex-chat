@@ -215,7 +215,7 @@ par With each relay
     R ->> O: 10. Accept request<br>(x.grp.relay.acpt<br>incl. relay link)
     note over O, R: Priority connection<br>with relay is ready
     O ->> OSMP: 11. Update short link<br>(add relay link)
-    O ->> R: 12. Connect via relay link
+    O ->> R: 12. Connect via relay link<br>(share same owner key)
     note over O, R: Owner: Messages connection with relay is ready,<br>relay link is tested<br>Relay: Relay link is active
 end
 create participant M as Member
@@ -224,7 +224,11 @@ O -->> M: 13. Share group short link<br>(social, out-of-band)
 note over O, M: New member connects
 
 M ->> OSMP: 14. Retrieve short link data
-M ->> R: 15. Connect via relay link(s)
+par Priority connection
+    M ->> R: 15a. Connect via relay link
+and Messages connection
+    M ->> R: 15b. Connect via relay link<br>(share same member key/<br>identifier to correlate)
+end
 
 note over O, M: Message forwarding
 
@@ -233,6 +237,11 @@ R ->> M: 17. Forward message
 M ->> M: 18. Deduplicate message
 ```
 
+Notes:
+
+- Invitation sent in step 12 should contain same key as in group link, for relay to match connection to the same owner and "active" relay link (add to `XContact` message).
+
+- Add new connection entity, special for groups with relay, referencing member record - parallel to first member connection.
 
 ## Protocol for removing chat relay from group, restoring connection to group
 
