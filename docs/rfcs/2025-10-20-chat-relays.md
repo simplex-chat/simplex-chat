@@ -79,10 +79,6 @@ Notes:
 
 - Chat relay should reject contact requests to its relay link until chat relay confirms it is attached to the group link data. Can be based on `GroupRelayOwnStatus`, see below.
 
-- Owner public key for signing group actions and messages can be stored as part of group short link data (`GroupShortLinkData`).
-
-- Relays public keys can be stored as part of relay info in link data (`ChatRelayInfo`), sent to owner in `x.grp.relay.acpt`.
-
 - Recovery.
 
   - For owner:
@@ -316,3 +312,21 @@ Notes:
   - We can prohibit to remove last relay without adding new one.
   - Relays can synchronize history.
   - Can be considered after MVP.
+
+## TODO list
+
+- Chat commands for creating group with relays.
+- Protocol events processing.
+- Recovery for both owner and relay when adding relay to group.
+- Agent `prepareConnectionToJoin` api to return link that will be created.
+- Asynchronous version of agent `setConnShortLink` api, correlation in chat.
+- Agent to support adding relays to link (it has stub `relays :: [ConnShortLink 'CMContact]`).
+- New connection entity for secondary member-in-relayed-group connection - priority/messages connections.
+- Differentiate connection usage by priority in chat logic (receiving messages vs sending requests to relay).
+- Finalize model - statuses, schema.
+- UI for relay management (user level, similar to list of servers).
+- UI for creating group with relays.
+- UI for managing relays in group.
+- Relay status updates events on adding relays for UI integration.
+- Relay removal.
+- Relay periodic checks for relay link presence, auto-removal on absence.
