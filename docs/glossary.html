@@ -39,6 +39,8 @@
         
     
         
+    
+        
     >
 
     <head>
@@ -63,6 +65,8 @@
 
     
         
+    
+
     
 
     
@@ -304,6 +308,8 @@
                 
                     
                 
+                    
+                
             </a>
 
             <ul class="sub-menu">
@@ -319,6 +325,8 @@
                                         </a>
                                     
                                 </li>
+                            
+                        
                             
                         
                             
@@ -745,6 +753,8 @@ window.addEventListener('click',(e)=>{
                     <div><h1 id="glossary" tabindex="-1">Glossary</h1>
 <p>Choosing a private messenger requires the understanding of many technical terms, that many users, even quite technical, often misunderstand. This list is aiming to fill this knowledge gap. Please suggest any changes or additions.</p>
 <p>While this glossary aims to be factual and objective, it is not completely unbiased. We designed SimpleX to be the most private, secure and resilient communication network, and some definitions reflect this view.</p>
+<h2 id="2-factor-key-exchange" tabindex="-1">2-factor key exchange</h2>
+<p>The ability of communication service to ensure the security of the <a href="#key-agreement-protocol">key agreement protocol</a> against <a href="#man-in-the-middle-attack">man-in-the-middle</a>.</p>
 <h2 id="address-portability" tabindex="-1">Address portability</h2>
 <p>Similarly to <a href="https://en.wikipedia.org/wiki/Local_number_portability">phone number portability</a> (the ability of the customer to transfer the service to another provider without changing the number), the address portability means the ability of a communication service customer to change the service provider without changing the service address. Many <a href="#federated-network">federated networks</a> support SRV records to provide address portability, but allowing service users to set up their own domains for the addresses is not as commonly supported by the available server and client software as for email.</p>
 <h2 id="anonymous-credentials" tabindex="-1">Anonymous credentials</h2>
@@ -794,7 +804,7 @@ window.addEventListener('click',(e)=>{
 <p>Also known as perfect forward secrecy, it is a feature of a <a href="#key-agreement-protocol">key agreement protocol</a> that ensures that session keys will not be compromised even if long-term secrets used in the session key exchange are compromised. Forward secrecy protects past sessions against future compromises of session or long-term keys.</p>
 <p><a href="https://en.wikipedia.org/wiki/Forward_secrecy">Wikipedia</a></p>
 <h2 id="key-agreement-protocol" tabindex="-1">Key agreement protocol</h2>
-<p>Also known as key exchange, it is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for <a href="#end-to-end-encryption">end-to-end encryption</a> to work.</p>
+<p>Also known as key exchange, it is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for <a href="#end-to-end-encryption">end-to-end encryption</a> to work. Unless it is possible to secure the key exchange via <a href="#2-factor-key-exchange">some second factor</a>, e.g. security code verification, it can be vulnerable to <a href="#man-in-the-middle-attack">man-in-the-middle attack</a>.</p>
 <p><a href="https://en.wikipedia.org/wiki/Key-agreement_protocol">Wikipedia</a></p>
 <h2 id="key-exchange" tabindex="-1">Key exchange</h2>
 <p><a href="#key-agreement-protocol">Key agreement protocol</a>.</p>
@@ -834,9 +844,9 @@ window.addEventListener('click',(e)=>{
 <h2 id="perfect-forward-secrecy" tabindex="-1">Perfect forward secrecy</h2>
 <p><a href="#forward-secrecy">Forward secrecy</a>.</p>
 <h2 id="post-compromise-security" tabindex="-1">Post-compromise security</h2>
-<p>Also known as break-in recovery, it is the quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. <a href="#double-ratchet-algorithm">Double-ratchet algorithm</a> has this quality.</p>
+<p>The quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. <a href="#double-ratchet-algorithm">Double-ratchet algorithm</a> has this quality.</p>
 <h2 id="post-quantum-cryptography" tabindex="-1">Post-quantum cryptography</h2>
-<p>Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2023 there is no system or algorithm that is proven to be secure against such attacks, or even to be secure against attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum cryptographic systems in combination with the traditional cryptographic systems.</p>
+<p>Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2025 there is no system or algorithm that is <em>proven</em> to be secure against such attacks, or even to be secure against attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum hybrid cryptography - combining post-quantum and traditional algorigthms.</p>
 <p><a href="https://en.wikipedia.org/wiki/Post-quantum_cryptography">Wikipedia</a></p>
 <h2 id="privacy" tabindex="-1">Privacy</h2>
 <p>Someone's right to keep (or the state when they keep) their personal matters and relationships secret (e.g., <a href="https://dictionary.cambridge.org/dictionary/english/privacy">Cambridge dictionary</a>). Privacy of communication systems should include the privacy of connections and meta-data, not only the privacy of the content of messages. <a href="#end-to-end-encryption">End-to-end encryption</a> on its own does not provide privacy, as it only protects message content and not connections or meta-data.</p>
@@ -857,7 +867,7 @@ window.addEventListener('click',(e)=>{
     </section>
 
     
-<section class="bg-[#D9E7ED] dark:bg-[#0E2B57] py-[50px] footer page">
+<section class="bg-[#D3E9FF] dark:bg-[#080D25] py-[50px] footer page">
     <div class="container">
         <div class="flex flex-col lg:flex-row justify-between">
             <div class="flex flex-col items-center lg:items-start">

@@ -39,6 +39,8 @@
         
     
         
+    
+        
     >
 
 <head>
@@ -67,7 +69,7 @@
     <script>
         function detectMobileBrowser() {
             const ua = navigator.userAgent;
-            
+
             // Chrome on iOS
             if (/CriOS/.test(ua)) {
                 document.documentElement.classList.add('chrome-ios');
@@ -106,6 +108,8 @@
 
     
         
+    
+
     
 
     
@@ -333,6 +337,8 @@
                 
                     
                 
+                    
+                
             </a>
 
             <ul class="sub-menu">
@@ -350,27 +356,7 @@
                         
                     
                         
-                            <li>
-                                
-                                    <a href="/ar/" class="flag-anchor">
-                                        <div style="background-color:green; color:white; width:21.33px; height:16px">
-                                            <p style="text-align:center; font-size:7px">العربية</p>
-                                        </div>
-                                        <p>العربية</p>
-                                    </a>
-                                
-                            </li>
-                        
                     
-                        
-                            <li>
-                                
-                                    <a href="/cs/" class="flag-anchor">
-                                        <img src="/img/flags/cs.svg" alt="" srcset="">
-                                        <p>Čeština</p>
-                                    </a>
-                                
-                            </li>
                         
                     
                         
@@ -396,36 +382,9 @@
                         
                     
                         
-                            <li>
-                                
-                                    <a href="/fi/" class="flag-anchor">
-                                        <img src="/img/flags/fi.svg" alt="" srcset="">
-                                        <p>Suomi</p>
-                                    </a>
-                                
-                            </li>
-                        
                     
                         
-                            <li>
-                                
-                                    <a href="/fr/" class="flag-anchor">
-                                        <img src="/img/flags/fr.svg" alt="" srcset="">
-                                        <p>Français</p>
-                                    </a>
-                                
-                            </li>
-                        
                     
-                        
-                            <li>
-                                
-                                    <a href="/he/" class="flag-anchor">
-                                        <img src="/img/flags/il.svg" alt="" srcset="">
-                                        <p>עִברִית</p>
-                                    </a>
-                                
-                            </li>
                         
                     
                         
@@ -434,6 +393,17 @@
                                     <a href="/hu/" class="flag-anchor">
                                         <img src="/img/flags/hu.svg" alt="" srcset="">
                                         <p>Magyar</p>
+                                    </a>
+                                
+                            </li>
+                        
+                    
+                        
+                            <li>
+                                
+                                    <a href="/id/" class="flag-anchor">
+                                        <img src="/img/flags/id.svg" alt="" srcset="">
+                                        <p>Indonesia</p>
                                     </a>
                                 
                             </li>
@@ -451,69 +421,15 @@
                         
                     
                         
-                            <li>
-                                
-                                    <a href="/ja/" class="flag-anchor">
-                                        <img src="/img/flags/jp.svg" alt="" srcset="">
-                                        <p>日本語</p>
-                                    </a>
-                                
-                            </li>
+                    
                         
                     
                         
-                            <li>
-                                
-                                    <a href="/nl/" class="flag-anchor">
-                                        <img src="/img/flags/nl.svg" alt="" srcset="">
-                                        <p>Nederlands</p>
-                                    </a>
-                                
-                            </li>
+                    
                         
                     
                         
-                            <li>
-                                
-                                    <a href="/pl/" class="flag-anchor">
-                                        <img src="/img/flags/pl.svg" alt="" srcset="">
-                                        <p>Polski</p>
-                                    </a>
-                                
-                            </li>
-                        
                     
-                        
-                            <li>
-                                
-                                    <a href="/pt_BR/" class="flag-anchor">
-                                        <img src="/img/flags/br.svg" alt="" srcset="">
-                                        <p>Português</p>
-                                    </a>
-                                
-                            </li>
-                        
-                    
-                        
-                            <li>
-                                
-                                    <a href="/uk/" class="flag-anchor">
-                                        <img src="/img/flags/ua.svg" alt="" srcset="">
-                                        <p>Українська</p>
-                                    </a>
-                                
-                            </li>
-                        
-                    
-                        
-                            <li>
-                                
-                                    <a href="/zh_Hans/" class="flag-anchor">
-                                        <img src="/img/flags/cn.svg" alt="" srcset="">
-                                        <p>简体中文</p>
-                                    </a>
-                                
-                            </li>
                         
                     
                         
@@ -631,21 +547,64 @@ window.addEventListener('click',(e)=>{
     }
 });
 </script>
+    
 
     <div class="screen">
         <section class="page-1 cover page">
             <div class="area">
                 <div class="content">
-                    <h1>Be Free</h1>
+                    <h1>Be<br>Free</h1>
                     <h2 class="gradient-text">Freedom & Security<br>of Your Communications</h2>
                     <p>The first network where you own your identity, contacts, and groups.</p>
-                </div>
-                <div class="socials">
-                    <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg" /></a>
-                    <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img src="/img/new/google_play.svg" /></a>
-                    <a class="f-droid-btn hidden" href="/he/fdroid" title="SimpleX F-Droid Repository"><img src="/img/new/f_droid.svg" /></a>
-                    <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" /></a>
-                    <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img src="/img/design_3/android-dark.png" /></a>
+
+                    <div class="socials">
+                        <a href="/downloads" class="desktop-app-btn hidden" title="Download SimpleX Desktop App">
+                            <div class="btn-content">
+                                <div>
+                                    <img class="no-border" src="/img/design_3/socials/linux.png">
+                                    <img class="no-border" src="/img/design_3/socials/apple.png" alt="">
+                                    <img class="no-border" src="/img/design_3/socials/windows.png" alt="">
+                                </div>
+                                <p>Download Desktop App</p>
+                            </div>
+                        </a>
+                        <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg"></a>
+                        <a class="google-play-btn hidden" href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank"><img src="/img/new/google_play.svg"></a>
+                        <a class="f-droid-btn hidden" href="/he/fdroid" title="SimpleX app via F-Droid"><img src="/img/new/f_droid.svg"></a>
+                        <a class="testflight-btn hidden" href="https://testflight.apple.com/join/DWuT2LQu" target="_blank"><img class="no-border" src="/img/design_3/testflight-dark.png" title="SimpleX iOS beta-release on TestFlight"></a>
+                        <a class="android-btn hidden" href="https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk" target="_blank"><img src="/img/design_3/android-dark.png"></a>
+                    </div>
+                    <div class="security-btns">
+                        <a title="Security Audits" href="https://www.trailofbits.com/about" target="_blank">
+                            <img src="/img/design_3/publications/trail-of-bits.png" alt="Trail of Bits">
+                        </a>
+                        <a class="box-btn btn-1" title="Security Audit 2022" href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">
+                            2022
+                        </a>
+                        <a class="box-btn btn-2" title="Security Audit 2024" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">
+                            2024
+                        </a>
+                        <p class="security-audits">
+                            Security<br>Audits
+                        </p>
+                    </div>
+                    <div class="publications-btns">
+                        <a title="Privacy Guides messenger recommendations" href="https://www.privacyguides.org/en/real-time-communication/#simplex-chat" target="_blank">
+                            <img src="/img/design_3/publications/privacy-guides.png" alt="Privacy Guides">
+                        </a>
+                        <a title="Whonix messenger recommendations" href="https://www.whonix.org/wiki/Chat#Recommendation" target="_blank">
+                            <img src="/img/design_3/publications/whonix.png" alt="Whonix">
+                        </a>
+                        <a title="Heise Online publications" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank">
+                            <img src="/img/design_3/publications/heise.png" alt="Heise">
+                        </a>
+                        <a title="Review by Mike Kuketz" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank">
+                            <img src="/img/design_3/publications/kuketz-blog.png" alt="Kuketz Blog">
+                        </a>
+                        <a title="OptOut podcast interview" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank">
+                            <img src="/img/design_3/publications/optout.png" alt="Opt Out">
+                        </a>
+                    </div>
                 </div>
             </div>
         </section>
@@ -653,39 +612,39 @@ window.addEventListener('click',(e)=>{
         <main>
             <div class="section-bg"></div>
 
-            <section class="page-2 page">
+            <section id="messaging" class="page-2 page">
                 <div class="area">
                     <div class="text-container">
-                        <h2>World's Most Secure Messaging</h2>
+                        <h2>World&apos;s Most Secure Messaging</h2>
                         <p>SimpleX messaging has cutting-edge end-to-end encryption.</p>
-                        <p>For your security, servers can’t see your messages <span>or who you talk to.</span></p>
-                        <a class="gradient-text" href="/learn-more">Learn more about SimpleX messaging</a>
+                        <p>For your security and privacy, servers can&apos;t see your messages <span>and who you talk to</span>.</p>
+                        <a class="gradient-text" href="/he/messaging">Learn more about SimpleX messaging</a>
                     </div>
                 </div>
             </section>
 
-            <section class="page-3 page">
+            <section id="nextweb" class="page-3 page">
                 <div class="area">
                     <div class="text-container">
                         <h2>You Own<br>The Next Web</h2>
-                        <p>SimpleX is founded on the belief that <span>you must own your identity, contacts and communities.</span></p>
+                        <p>SimpleX is founded on the belief that <span>you must own your identity, contacts and communities</span>.</p>
                         <p>Open and decentralized network lets you connect with people and share ideas: be free and secure.</p>
                     </div>
                 </div>
             </section>
 
-            <section class="page-4 page">
+            <section id="token" class="page-4 page">
                 <div class="area">
                     <div class="text-container">
                         <h2>Communities That Last</h2>
-                        <p>You will support your favorite groups with future Community vouchers.</p>
+                        <p>You will support your favorite groups with future Community Vouchers.</p>
                         <p>Vouchers will pay for servers, to let your communities stay free and independent.</p>
-                        <a class="gradient-text" href="/community-vouchers">Learn more about Community Vouchers</a>
+                        <a class="gradient-text" href="/token">Learn more and <strong>get your free NFT</strong><br>for 20% discount on SimpleX Token!</a>
                     </div>
                 </div>
             </section>
 
-            <section class="page-5 page">
+            <section id="roadmap" class="page-5 page">
                 <div class="area">
                     <div class="text-container">
                         <h2>SimpleX Roadmap to Free Internet</h2>
@@ -696,7 +655,7 @@ window.addEventListener('click',(e)=>{
                         </div>
                         <div class="roadmap">
                             <p>2026 </p>
-                            <p class="title"><span>: </span>Sustainable Communities & Servers</p>
+                            <p class="title"><span>: </span>Sustainable Communities &amp; Servers</p>
                             <p>Launching Community Vouchers</p>
                         </div>
                         <div class="roadmap">
@@ -707,52 +666,51 @@ window.addEventListener('click',(e)=>{
                     </div>
                 </div>
             </section>
-
-            <section class="page-6 page">
-                <div class="area">
-                    <div class="group-images">
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" class="simplex-image" title="SimpleX users group" target="_blank">
-                            <img class="block dark:hidden" src="/img/new/logo-symbol-light.svg">
-                            <img class="hidden dark:block" src="/img/new/logo-symbol-dark.svg">
-                        </a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                        <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
-                    </div>
-                    <div class="text-container">
-                        <h2>Join SimpleX Communities</h2>
-                        <p>Hundreds of thousands people already trust SimpleX messaging.</p>
-                        <p>Find your communities in SimpleX directory and create your own!</p>
-                        <a class="gradient-text" href="/directory">View SimpleX Directory</a>
-                    </div>
+        </main>
+        <section id="directory" class="page-6 page">
+            <div class="area">
+                <div class="group-images">
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM" class="simplex-image" title="SimpleX users group" target="_blank">
+                        <img class="block dark:hidden" src="/img/new/logo-symbol-light.svg">
+                        <img class="hidden dark:block" src="/img/new/logo-symbol-dark.svg">
+                    </a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
+                    <a href="/directory" class="group-image" target="_blank"><img src="/img/group.svg"></a>
                 </div>
-            </section>
-
-            
-<section class="bg-[#D9E7ED] dark:bg-[#0E2B57] py-[50px] footer page">
+                <div class="text-container">
+                    <h2>Join SimpleX Communities</h2>
+                    <p>Hundreds of thousands people already trust SimpleX messaging.</p>
+                    <p>Find your communities in SimpleX directory and create your own!</p>
+                    <a class="gradient-text" href="/directory">View SimpleX Directory</a>
+                </div>
+            </div>
+        </section>
+        
+<section class="bg-[#D3E9FF] dark:bg-[#080D25] py-[50px] footer page">
     <div class="container">
         <div class="flex flex-col lg:flex-row justify-between">
             <div class="flex flex-col items-center lg:items-start">
@@ -881,8 +839,6 @@ window.addEventListener('click',(e)=>{
     </div>
 </section>
 
-
-        </main>
     </div>
 
 

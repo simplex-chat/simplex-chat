@@ -5,49 +5,17 @@
   Medium(500), Bold(700), Ultra-Bold(800), Black(900)
 ======================= */
 
-/* Thin */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Trial.woff2") format("woff2");
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Oblique-Trial.woff2") format("woff2");
-  font-weight: 100;
-  font-style: oblique;
-  font-display: swap;
-}
-
-/* Ultra-Light */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Trial.woff2") format("woff2");
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Oblique-Trial.woff2") format("woff2");
-  font-weight: 200;
-  font-style: oblique;
-  font-display: swap;
-}
-
 /* Light */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light-Oblique.woff2") format("woff2");
   font-weight: 300;
   font-style: oblique;
   font-display: swap;
@@ -56,14 +24,14 @@
 /* Regular */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular-Oblique.woff2") format("woff2");
   font-weight: 400;
   font-style: oblique;
   font-display: swap;
@@ -72,14 +40,14 @@
 /* Medium */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium-Oblique.woff2") format("woff2");
   font-weight: 500;
   font-style: oblique;
   font-display: swap;
@@ -88,47 +56,15 @@
 /* Bold */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold-Oblique.woff2") format("woff2");
   font-weight: 700;
-  font-style: oblique;
-  font-display: swap;
-}
-
-/* Ultra-Bold */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Trial.woff2") format("woff2");
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Oblique-Trial.woff2") format("woff2");
-  font-weight: 800;
-  font-style: oblique;
-  font-display: swap;
-}
-
-/* Black */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Trial.woff2") format("woff2");
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Oblique-Trial.woff2") format("woff2");
-  font-weight: 900;
   font-style: oblique;
   font-display: swap;
 }
@@ -392,7 +328,7 @@ a{
     position: relative;
     color: #0D0E12;
   }
-  
+
   .nav-link-text::before,
   .active .nav-link-text::before,
   .menu-link::before {
@@ -404,7 +340,7 @@ a{
     right: 0;
     transition: width 0.25s ease-out;
   }
-  
+
   .menu-link::before {
     background-color: #0D0E12;
   }
@@ -677,20 +613,20 @@ header nav {
 
 /* comparison */
 #comparison table thead th,
-#how-secure-comparison table thead th{
+#messengers-comparison table thead th{
   font-size: 16px;
   line-height: 36px;
   font-weight: 500;
   text-align: center;
 }
 #comparison table tbody td,
-#how-secure-comparison table tbody td{
+#messengers-comparison table tbody td{
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
 }
 #comparison table tbody tr > td:first-child,
-#how-secure-comparison table tbody tr > td:first-child{
+#messengers-comparison table tbody tr > td:first-child{
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
@@ -698,16 +634,52 @@ header nav {
 }
 
 [dir="rtl"] #comparison table tbody tr > td:first-child,
-[dir="rtl"] #how-secure-comparison table tbody tr > td:first-child{
+[dir="rtl"] #messengers-comparison table tbody tr > td:first-child{
   text-align: right;
 }
 
 @media (min-width: 1024px) {
   #comparison table tbody tr > td:first-child,
-  #how-secure-comparison table tbody tr > td:first-child{
+  #messengers-comparison table tbody tr > td:first-child{
     font-size: 18px;
     line-height: 36px;
-  }  
+  }
+}
+
+#messengers-comparison table td.criteria {
+  min-width: 100px;
+  height: 52px;
+  text-align: center;
+}
+
+#messengers-comparison table tbody span.criteria-mark {
+  font-size: 28px;
+}
+
+#messengers-comparison table tbody sup {
+  font-size: 14px;
+}
+
+@media (min-width: 1024px) {
+  #messengers-comparison table tbody span.criteria-mark {
+    font-size: 36px;
+  }
+
+  #messengers-comparison table tbody sup {
+    font-size: 18px;
+  }
+}
+
+#messengers-comparison table .green-check {
+  color: #1DB100;
+}
+
+#messengers-comparison table .yellow-check {
+  color: #FFD932;
+}
+
+#messengers-comparison table .red-ballot-x {
+  color: #EE220C;
 }
 
 /* hero */
@@ -925,7 +897,7 @@ p a{
   position: fixed;
   width: 320px;
   max-width: 100%;
-  z-index: 10001; 
+  z-index: 10001;
   transition: opacity .5s;
   padding-left: 5px;
   padding-right: 5px;
