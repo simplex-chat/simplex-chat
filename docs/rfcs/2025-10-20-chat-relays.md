@@ -209,7 +209,7 @@ O ->> OSMP: 4. Create group link<br>with profile as data
 O ->> O: 5. Choose chat relays<br>(local, automatic/user choice)
 par With each relay
     O ->> R: 6. Contact request<br>(x.grp.relay.inv<br>incl. group link)
-    R ->> OSMP: 7. Retrive group link data
+    R ->> OSMP: 7. Retrieve group link data
     R ->> R: 8. Validate group profile,<br>verify profile signature
     R ->> RSMP: 9. Create relay link
     R ->> O: 10. Accept request<br>(x.grp.relay.acpt<br>incl. relay link)
