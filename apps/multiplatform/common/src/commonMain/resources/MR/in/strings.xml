@@ -103,7 +103,7 @@
     <string name="servers_info_sessions_connecting">Menghubungkan</string>
     <string name="error_parsing_uri_title">Tautan tidak valid</string>
     <string name="error_parsing_uri_desc">Periksa apakah tautan SimpleX sudah benar.</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Anda terhubung ke server yang digunakan untuk menerima pesan dari kontak ini.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Anda terhubung ke server yang digunakan untuk menerima pesan dari koneksi ini.</string>
     <string name="error_connecting_to_server_to_receive_messages">Mencoba menyambung ke server yang digunakan untuk menerima pesan dari kontak ini (error: %1$s).</string>
     <string name="database_migration_in_progress">Migrasi basis data sedang berlangsung,
 \nmemerlukan waktu beberapa menit.</string>
@@ -307,7 +307,7 @@
     <string name="receipts_section_contacts">Kontak</string>
     <string name="marked_deleted_items_description">%d pesan dihapus</string>
     <string name="deleted_description">dihapus</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Mencoba terhubung ke server untuk menerima pesan dari kontak ini.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Mencoba terhubung ke server untuk menerima pesan dari koneksi ini.</string>
     <string name="saved_description">disimpan</string>
     <string name="display_name_invited_to_connect">diundang untuk terhubung</string>
     <string name="simplex_link_mode_description">Deskripsi</string>
@@ -2507,4 +2507,6 @@
     <string name="proxy_destination_error_unknown_ca">Sidik jari di alamat server tujuan tidak cocok dengan sertifikat: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">Sidik jari pada alamat server penerusan tidak cocok dengan sertifikat: %1$s.</string>
     <string name="network_error_unknown_ca">Sidik jari di alamat server tidak cocok dengan sertifikat: %1$s.</string>
+    <string name="server_no_sub">tidak berlangganan</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Anda tidak terhubung ke server yang digunakan untuk menerima pesan dari koneksi ini (tidak berlangganan).</string>
 </resources>

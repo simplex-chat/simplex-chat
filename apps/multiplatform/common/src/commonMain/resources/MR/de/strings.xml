@@ -13,9 +13,9 @@
     <string name="server_connected">Verbunden</string>
     <string name="server_error">Fehler</string>
     <string name="server_connecting">Verbinde</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</string>
     <string name="error_connecting_to_server_to_receive_messages">Beim Versuch, die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %1$s).</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Versuche eine Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">Gelöscht</string>
     <string name="marked_deleted_description">als gelöscht markiert</string>
@@ -2610,4 +2610,6 @@
     <string name="proxy_destination_error_unknown_ca">Fingerabdruck in der Zielserveradresse stimmt nicht mit dem Zertifikat überein: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">Fingerabdruck in der Weiterleitungsserveradresse stimmt nicht mit dem Zertifikat überein: %1$s.</string>
     <string name="network_error_unknown_ca">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein: %1$s.</string>
+    <string name="server_no_sub">Kein Abonnement</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Sie sind nicht mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird (kein Abonnement).</string>
 </resources>

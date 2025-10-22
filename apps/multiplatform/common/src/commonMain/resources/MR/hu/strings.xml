@@ -1317,12 +1317,12 @@
     <string name="image_decoding_exception_desc">A kép nem dekódolható. Próbálja meg egy másik képpel, vagy lépjen kapcsolatba a fejlesztőkkel.</string>
     <string name="non_content_uri_alert_text">Érvénytelen fájlelérési útvonalat osztott meg. Jelentse a problémát az alkalmazás fejlesztőinek.</string>
     <string name="failed_to_create_user_duplicate_desc">Már van egy csevegési profil ugyanezzel a megjelenítendő névvel. Válasszon egy másik nevet.</string>
-    <string name="error_connecting_to_server_to_receive_messages">Kapcsolódási kísérlet ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (hiba: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Hiba történt a kapcsolódáskor ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál: %1$s.</string>
     <string name="stop_rcv_file__message">A fájl fogadása le fog állni.</string>
     <string name="la_please_remember_to_store_password">Ne felejtse el, vagy tárolja biztonságosan – az elveszett jelszót nem lehet visszaállítani!</string>
     <string name="video_will_be_received_when_contact_completes_uploading">A videó akkor érkezik meg, amikor a küldője befejezte annak feltöltését.</string>
     <string name="description_you_shared_one_time_link_incognito">Ön egy egyszer használható meghívót osztott meg inkognitóban</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Ön már kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Ön kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál.</string>
     <string name="you_can_enable_delivery_receipts_later">Később engedélyezheti a beállításokban</string>
     <string name="you_will_be_connected_when_group_host_device_is_online">Akkor lesz kapcsolódva a csoporthoz, amikor a csoport tulajdonosának eszköze online lesz, várjon, vagy ellenőrizze később!</string>
     <string name="mtr_error_different">különböző átköltöztetés az alkalmazásban/adatbázisban: %s / %s</string>
@@ -2503,4 +2503,6 @@
     <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="network_error_unknown_ca">A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
+    <string name="server_no_sub">nincs előfizetés</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetés).</string>
 </resources>
