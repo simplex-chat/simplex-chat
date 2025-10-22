@@ -2503,6 +2503,6 @@
     <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="network_error_unknown_ca">A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
-    <string name="server_no_sub">nincs előfizetése</string>
-    <string name="not_connected_to_server_to_receive_messages_no_sub">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetése).</string>
+    <string name="server_no_sub">nincs előfizetés</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetés).</string>
 </resources>
