@@ -181,6 +181,59 @@ create participant M as Member
 O -->> M: 8. Share group short link<br>(social, out-of-band)
 ```
 
+### Update: Establishing connection pairs
+
+- [Channels forwarding rfc](./2025-08-11-channels-forwarding.md) discussed creating connections pairs between relay and members with different priority for passing regular messages and for relay responding to member requests.
+
+  In protocol for adding chat relays we can replace explicit notification/acknowledgement steps with relay link test by owner, establishing second connection via relay link to be used for passing messages.
+
+- Client can "know" link that will be created before creating it on server - so we can add it to profile before adding profile to group short link data.
+
+  TODO agent prepare connection api to return link that will be created.
+
+- Pass only link in invitation step for relay to retrieve group profile and check it before accepting.
+
+```mermaid
+sequenceDiagram
+    participant O as Owner
+    participant OSMP as Owner's<br>SMP server
+    participant R as Chat relay(s)
+    participant RSMP as Chat relays'<br>SMP server(s)
+
+note over O, RSMP: Owner creates new group, adds chat relays
+
+O ->> O: 1. Create new group<br>(local, user action)
+O ->> O: 2. Prepare group link,<br>owner key (local, agent)
+O ->> O: 3. Add link, owner key<br>to group profile<br>(local, automatic)
+O ->> OSMP: 4. Create group link<br>with profile as data
+O ->> O: 5. Choose chat relays<br>(local, automatic/user choice)
+par With each relay
+    O ->> R: 6. Contact request<br>(x.grp.relay.inv<br>incl. group link)
+    R ->> OSMP: 7. Retrive group link data
+    R ->> R: 8. Validate group profile,<br>verify profile signature
+    R ->> RSMP: 9. Create relay link
+    R ->> O: 10. Accept request<br>(x.grp.relay.acpt<br>incl. relay link)
+    note over O, R: Priority connection<br>with relay is ready
+    O ->> OSMP: 11. Update short link<br>(add relay link)
+    O ->> R: 12. Connect via relay link
+    note over O, R: Owner: Messages connection with relay is ready,<br>relay link is tested<br>Relay: Relay link is active
+end
+create participant M as Member
+O -->> M: 13. Share group short link<br>(social, out-of-band)
+
+note over O, M: New member connects
+
+M ->> OSMP: 14. Retrieve short link data
+M ->> R: 15. Connect via relay link(s)
+
+note over O, M: Message forwarding
+
+O ->> R: 16. Send message
+R ->> M: 17. Forward message
+M ->> M: 18. Deduplicate message
+```
+
+
 ## Protocol for removing chat relay from group, restoring connection to group
 
 ```mermaid
