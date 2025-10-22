@@ -150,6 +150,12 @@ struct ContentView: View {
         }
         .onAppear {
             reactOnDarkThemeChanges(systemInDarkThemeCurrently)
+            if #available(iOS 26.0, *) {
+                if !keyboardLoaded {
+                    DispatchQueue.main.async(execute: preloadVirtualKeyboard)
+                    keyboardLoaded = true
+                }
+            }
         }
         .onChange(of: colorScheme) { scheme in
             // It's needed to update UI colors when iOS wants to make screenshot after going to background,
@@ -468,6 +474,21 @@ struct ContentView: View {
                 ))
             }
         }
+    }
+}
+
+fileprivate var keyboardLoaded: Bool = false
+
+@available(iOS 26.0, *)
+fileprivate func preloadVirtualKeyboard() {
+    let scenes = UIApplication.shared.connectedScenes
+    let windowScene = scenes.first as? UIWindowScene
+    if let wnd = windowScene?.windows.first {
+        let field = UITextField()
+        wnd.addSubview(field)
+        field.becomeFirstResponder()
+        field.resignFirstResponder()
+        field.removeFromSuperview()
     }
 }
 
