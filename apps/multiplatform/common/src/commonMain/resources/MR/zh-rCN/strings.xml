@@ -590,7 +590,7 @@
     <string name="snd_group_event_member_deleted">你删除了 %1$s</string>
     <string name="profile_will_be_sent_to_contact_sending_link">你的个人资料将发送给你收到此链接的联系人。</string>
     <string name="error_connecting_to_server_to_receive_messages">正在尝试连接到用于从该联系人接收消息的服务器（错误：%1$s）。</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">你已连接到用于接收该联系人消息的服务器。</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">你已连接到用于接收该连接消息的服务器。</string>
     <string name="description_you_shared_one_time_link">你分享了一次性链接</string>
     <string name="message_delivery_error_desc">很可能此联系人已经删除了与你的联系。</string>
     <string name="icon_descr_profile_image_placeholder">资料图片占位符</string>
@@ -777,7 +777,7 @@
     <string name="send_us_an_email">给我们发电子邮件</string>
     <string name="smp_servers">SMP 服务器</string>
     <string name="sending_files_not_yet_supported">尚不支持发送文件</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">正在尝试连接到用于从该联系人接收消息的服务器。</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">尝试连接到用于从该连接接收消息的服务器。</string>
     <string name="receiving_files_not_yet_supported">尚不支持接收文件</string>
     <string name="unknown_message_format">未知消息格式</string>
     <string name="smp_servers_test_server">测试服务器</string>
@@ -2523,4 +2523,6 @@
     <string name="proxy_destination_error_unknown_ca">目标服务器地址的指纹和证书不匹配：%1$s。</string>
     <string name="smp_proxy_error_unknown_ca">转发服务器地址的指纹和证书不匹配：%1$s。</string>
     <string name="network_error_unknown_ca">服务器地址证书和证书不匹配：%1$s。</string>
+    <string name="server_no_sub">无订阅</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">未连接到用于从该连接接收消息的服务器（无订阅）。</string>
 </resources>
