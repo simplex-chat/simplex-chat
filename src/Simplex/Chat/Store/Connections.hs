@@ -19,7 +19,8 @@ module Simplex.Chat.Store.Connections
     getUCLConnsToSub,
     getMemberConnsToSub,
     getPendingConnsToSub,
-    unsetConnectionToSubscribe,
+    shouldSyncConnections,
+    setConnectionsSyncTs,
   )
 where
 
@@ -28,13 +29,14 @@ import Control.Monad.IO.Class
 import Data.Bitraversable (bitraverse)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
+import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Protocol
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (ConnId)
-import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
+import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (eitherToMaybe)
@@ -321,9 +323,21 @@ getPendingConnsToSub db User {userId} filterToSubscribe =
         AND conn_status != ?
       |]
 
-unsetConnectionToSubscribe :: DB.Connection -> User -> IO ()
-unsetConnectionToSubscribe db User {userId} =
+shouldSyncConnections :: DB.Connection -> IO Bool
+shouldSyncConnections db =
+  fromOnlyBI . head
+    <$> DB.query_
+      db
+      "SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1"
+
+setConnectionsSyncTs :: DB.Connection -> IO ()
+setConnectionsSyncTs db = do
+  currentTs <- getCurrentTime
   DB.execute
     db
-    "UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1"
-    (Only userId)
+    [sql|
+      UPDATE connections_sync
+      SET should_sync = 0, last_sync_ts = ?
+      WHERE connections_sync_id = 1
+    |]
+    (Only currentTs)

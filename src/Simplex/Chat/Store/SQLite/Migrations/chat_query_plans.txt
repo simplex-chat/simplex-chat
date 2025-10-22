@@ -1356,20 +1356,6 @@ SEARCH ct USING COVERING INDEX idx_contacts_contact_profile_id (contact_profile_
 SEARCH c USING COVERING INDEX idx_connections_contact_id (contact_id=?) LEFT-JOIN
 
 Query: 
-          SELECT ct.contact_id, c.connection_id, c.agent_conn_id, ct.local_display_name
-          FROM contacts ct
-          JOIN connections c ON c.contact_id = ct.contact_id
-          WHERE c.agent_conn_id IN (SELECT conn_id FROM temp_conn_ids)
-            AND c.conn_type = ?
-            AND ct.deleted = 0
-        
-Plan:
-SEARCH c USING INDEX sqlite_autoindex_connections_1 (agent_conn_id=?)
-LIST SUBQUERY 1
-SCAN temp_conn_ids
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
           SELECT g.group_id
           FROM groups g
           JOIN group_members mu ON mu.group_id = g.group_id
@@ -3130,18 +3116,6 @@ Plan:
 SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
 
 Query: 
-        SELECT agent_conn_id
-        FROM connections
-        WHERE user_id = ?
-       AND to_subscribe = 1 
-        AND conn_type = ?
-        AND contact_id IS NULL
-        AND conn_status != ?
-      
-Plan:
-SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
-
-Query: 
         SELECT c.agent_conn_id
         FROM connections c
         JOIN contacts ct ON ct.contact_id = c.contact_id
@@ -3157,34 +3131,11 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
         SELECT c.agent_conn_id
         FROM connections c
-        JOIN contacts ct ON ct.contact_id = c.contact_id
-        WHERE c.user_id = ?
-       AND c.to_subscribe = 1 
-        AND c.conn_status != ?
-        AND ct.contact_status = ? AND ct.deleted = 0
-      
-Plan:
-SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
-SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT c.agent_conn_id
-        FROM connections c
         JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
         WHERE c.user_id = ?
         AND c.conn_status != ?
 Plan:
 SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
-SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT c.agent_conn_id
-        FROM connections c
-        JOIN user_contact_links ucl ON ucl.user_contact_link_id = c.user_contact_link_id
-        WHERE c.user_id = ?
-       AND c.to_subscribe = 1  AND c.conn_status != ?
-Plan:
-SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
 SEARCH ucl USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -3514,7 +3465,7 @@ Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
 Query: 
-        SELECT group_member_intro_id, group_queue_info, direct_queue_info, intro_status
+        SELECT group_member_intro_id, intro_status
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       
@@ -3810,17 +3761,6 @@ LIST SUBQUERY 1
 SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
 
 Query: 
-        UPDATE group_member_intros
-        SET intro_status = ?,
-            group_queue_info = ?,
-            direct_queue_info = ?,
-            updated_at = ?
-        WHERE group_member_intro_id = ?
-      
-Plan:
-SEARCH group_member_intros USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
         UPDATE group_member_intros SET intro_status='fwd'
         WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
           AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
@@ -3870,31 +3810,6 @@ MATERIALIZE user_groups
 SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_to_subscribe (user_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
-
-Query: 
-        WITH user_groups AS MATERIALIZED (
-          SELECT g.group_id
-          FROM groups g
-          JOIN group_members mu ON mu.group_id = g.group_id
-          WHERE g.user_id = ?
-            AND mu.contact_id = ?
-            AND mu.member_status NOT IN (?,?,?)
-        )
-        SELECT c.agent_conn_id
-        FROM connections c
-        JOIN group_members m ON m.group_member_id = c.group_member_id
-        JOIN user_groups ug ON ug.group_id = m.group_id
-        WHERE c.user_id = ?
-          AND c.conn_status != ?
-          AND m.member_status NOT IN (?,?,?)
-       AND c.to_subscribe = 1
-Plan:
-MATERIALIZE user_groups
-SEARCH mu USING INDEX idx_group_members_contact_id (contact_id=?)
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH c USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ug USING AUTOMATIC COVERING INDEX (group_id=?)
 
@@ -4727,6 +4642,14 @@ Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+      UPDATE connections_sync
+      SET should_sync = 0, last_sync_ts = ?
+      WHERE connections_sync_id = 1
+    
+Plan:
+SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
       UPDATE contact_profiles
       SET contact_link = ?, updated_at = ?
       WHERE user_id = ? AND contact_profile_id = ?
@@ -4794,17 +4717,6 @@ Query:
       UPDATE group_members
       SET member_restriction = ?, updated_at = ?
       WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-    
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE group_members
-      SET member_status = ?,
-          group_queue_info = ?,
-          direct_queue_info = ?,
-          updated_at = ?
-      WHERE group_member_id = ?
     
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -5155,7 +5067,7 @@ Query:
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-  
+   
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
                   AND m.group_member_id NOT IN (
@@ -5597,9 +5509,6 @@ Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ? 
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_item_ts (user_id=? AND group_id=? AND msg_content_tag=?)
 
-Query: CREATE TABLE temp_conn_ids (conn_id BLOB)
-Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan CREATE TABLE temp_conn_ids (conn_id BLOB)": table temp_conn_ids already exists
-
 Query: CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)
 Error: SQLite3 returned ErrorError while attempting to perform prepare "explain query plan CREATE TABLE temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)": table temp_delete_members already exists
 
@@ -5729,6 +5638,17 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 Query: DELETE FROM commands WHERE user_id = ? AND command_id = ?
 Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: DELETE FROM connections WHERE contact_id = (SELECT contact_id FROM contacts WHERE local_display_name = 'cath')
+Plan:
+SEARCH connections USING INDEX idx_connections_contact_id (contact_id=?)
+SCALAR SUBQUERY 1
+SCAN contacts USING COVERING INDEX sqlite_autoindex_contacts_1
+SEARCH msg_deliveries USING COVERING INDEX idx_msg_deliveries_agent_msg_id (connection_id=?)
+SEARCH commands USING COVERING INDEX idx_commands_connection_id (connection_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_connection_id (connection_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_connection_id (connection_id=?)
+SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_member_conn_id (grp_direct_inv_from_member_conn_id=?)
 
 Query: DELETE FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
@@ -6000,13 +5920,7 @@ SEARCH contacts USING COVERING INDEX sqlite_autoindex_contacts_2 (user_id=?)
 SEARCH display_names USING COVERING INDEX sqlite_autoindex_display_names_2 (user_id=?)
 SEARCH contact_profiles USING COVERING INDEX idx_contact_profiles_user_id (user_id=?)
 
-Query: DROP TABLE IF EXISTS temp_conn_ids
-Plan:
-
 Query: DROP TABLE IF EXISTS temp_delete_members
-Plan:
-
-Query: DROP TABLE temp_conn_ids
 Plan:
 
 Query: DROP TABLE temp_delete_members
@@ -6104,9 +6018,6 @@ Plan:
 Query: INSERT INTO snd_files (file_id, file_status, file_descr_id, group_member_id, connection_id, created_at, updated_at) VALUES (?,?,?,?,?,?,?)
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: INSERT INTO temp_conn_ids (conn_id) VALUES (?)
-Plan:
 
 Query: INSERT INTO user_contact_links (user_id, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, created_at, updated_at) VALUES (?,?,?,?,?,?,?)
 Plan:
@@ -6346,6 +6257,10 @@ Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? A
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT should_sync FROM connections_sync WHERE connections_sync_id = 1
+Plan:
+SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT user_contact_link_id FROM contact_requests WHERE contact_request_id = ?
 Plan:
 SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
@@ -6418,9 +6333,9 @@ Query: UPDATE connections SET security_code = ?, security_code_verified_at = ?, 
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE connections SET to_subscribe = 0 WHERE user_id = ? AND to_subscribe = 1
+Query: UPDATE connections_sync SET should_sync = 1 WHERE connections_sync_id = 1
 Plan:
-SEARCH connections USING INDEX idx_connections_to_subscribe (user_id=? AND to_subscribe=?)
+SEARCH connections_sync USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE contact_requests SET business_group_id = ? WHERE contact_request_id = ?
 Plan:

@@ -72,9 +72,6 @@ fun ChatInfoView(
   val connStats = remember(contact.id, connectionStats) { mutableStateOf(connectionStats) }
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   if (chat != null && currentUser != null) {
-    val contactNetworkStatus = remember(chatModel.networkStatuses.toMap(), contact) {
-      mutableStateOf(chatModel.contactNetworkStatus(contact))
-    }
     val chatRh = chat.remoteHostId
     val sendReceipts = remember(contact.id) { mutableStateOf(SendReceipts.fromBool(contact.chatSettings.sendRcpts, currentUser.sendRcptsContacts)) }
     val chatItemTTL = remember(contact.id) { mutableStateOf(if (contact.chatItemTTL != null) ChatItemTTL.fromSeconds(contact.chatItemTTL) else null) }
@@ -101,7 +98,6 @@ fun ChatInfoView(
         setChatTTLAlert(chatsCtx, chat.remoteHostId, chat.chatInfo, chatItemTTL, previousChatTTL, deletingItems)
       },
       connStats = connStats,
-      contactNetworkStatus.value,
       customUserProfile,
       localAlias,
       connectionCode,
@@ -524,7 +520,6 @@ fun ChatInfoLayout(
   chatItemTTL: MutableState<ChatItemTTL?>,
   setChatItemTTL: (ChatItemTTL?) -> Unit,
   connStats: MutableState<ConnectionStats?>,
-  contactNetworkStatus: NetworkStatus,
   customUserProfile: Profile?,
   localAlias: String,
   connectionCode: String?,
@@ -643,13 +638,16 @@ fun ChatInfoLayout(
 
     if (contact.ready && contact.active) {
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
-        SectionItemView({
-          AlertManager.shared.showAlertMsg(
-            generalGetString(MR.strings.network_status),
-            contactNetworkStatus.statusExplanation
-          )
-        }) {
-          NetworkStatusRow(contactNetworkStatus)
+        val chatSubStatus = chatModel.chatSubStatus.value
+        if (chatSubStatus != null) {
+          SectionItemView({
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.network_status),
+              chatSubStatus.statusExplanation
+            )
+          }) {
+            SubStatusRow(chatSubStatus)
+          }
         }
         if (cStats != null) {
           SwitchAddressButton(
@@ -1063,7 +1061,7 @@ fun InfoViewActionButton(
 }
 
 @Composable
-private fun NetworkStatusRow(networkStatus: NetworkStatus) {
+fun SubStatusRow(subStatus: SubscriptionStatus) {
   Row(
     Modifier.fillMaxSize(),
     horizontalArrangement = Arrangement.SpaceBetween,
@@ -1086,25 +1084,24 @@ private fun NetworkStatusRow(networkStatus: NetworkStatus) {
       horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
       Text(
-        networkStatus.statusString,
+        subStatus.statusString,
         color = MaterialTheme.colors.secondary
       )
-      ServerImage(networkStatus)
+      ServerImage(subStatus)
     }
   }
 }
 
 @Composable
-private fun ServerImage(networkStatus: NetworkStatus) {
+private fun ServerImage(subStatus: SubscriptionStatus) {
   Box(Modifier.size(18.dp)) {
-    when (networkStatus) {
-      is NetworkStatus.Connected ->
+    when (subStatus) {
+      is SubscriptionStatus.Active ->
         Icon(painterResource(MR.images.ic_circle_filled), stringResource(MR.strings.icon_descr_server_status_connected), tint = Color.Green)
-      is NetworkStatus.Disconnected ->
+      is SubscriptionStatus.Pending ->
         Icon(painterResource(MR.images.ic_pending_filled), stringResource(MR.strings.icon_descr_server_status_disconnected), tint = MaterialTheme.colors.secondary)
-      is NetworkStatus.Error ->
+      is SubscriptionStatus.Removed, SubscriptionStatus.NoSub ->
         Icon(painterResource(MR.images.ic_error_filled), stringResource(MR.strings.icon_descr_server_status_error), tint = MaterialTheme.colors.secondary)
-      else -> Icon(painterResource(MR.images.ic_circle), stringResource(MR.strings.icon_descr_server_status_pending), tint = MaterialTheme.colors.secondary)
     }
   }
 }
@@ -1455,7 +1452,6 @@ fun PreviewChatInfoLayout() {
       connectionCode = "123",
       developerTools = false,
       connStats = remember { mutableStateOf(null) },
-      contactNetworkStatus = NetworkStatus.Connected(),
       onLocalAliasChanged = {},
       customUserProfile = null,
       openPreferences = {},

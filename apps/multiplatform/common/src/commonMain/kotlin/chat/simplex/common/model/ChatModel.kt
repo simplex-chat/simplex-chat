@@ -96,11 +96,12 @@ object ChatModel {
   val dbMigrationInProgress = mutableStateOf(false)
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  val chatAgentConnId = mutableStateOf<String?>(null)
+  val chatSubStatus = mutableStateOf<SubscriptionStatus?>(null)
   val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
   val secondaryChatsContext = mutableStateOf<ChatsContext?>(null)
@@ -133,6 +134,7 @@ object ChatModel {
 
   // set when app is opened via contact or invitation URI (rhId, uri)
   val appOpenUrl = mutableStateOf<Pair<Long?, String>?>(null)
+  val appOpenUrlConnecting = mutableStateOf<Boolean>(false)
 
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
   val newChatSheetVisible = mutableStateOf(false)
@@ -1146,21 +1148,6 @@ object ChatModel {
     showingInvitation.value = showingInvitation.value?.copy(connChatUsed = true)
   }
 
-  fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    val conn = contact.activeConn
-    if (conn != null) {
-      networkStatuses[conn.agentConnId] = status
-    }
-  }
-
-  fun contactNetworkStatus(contact: Contact): NetworkStatus {
-    val conn = contact.activeConn
-    return if (conn != null)
-      networkStatuses[conn.agentConnId] ?: NetworkStatus.Unknown()
-    else
-      NetworkStatus.Unknown()
-  }
-
   fun addTerminalItem(item: TerminalItem) {
     val maxItems = if (appPreferences.developerTools.get()) 500 else 200
     if (terminalsVisible.isNotEmpty()) {
@@ -1719,30 +1706,6 @@ sealed class ChatInfo: SomeChat, NamedChat {
       else -> null
     }
 }
-
-@Serializable
-sealed class NetworkStatus {
-  val statusString: String get() =
-    when (this) {
-      is Connected -> generalGetString(MR.strings.server_connected)
-      is Error -> generalGetString(MR.strings.server_error)
-      else -> generalGetString(MR.strings.server_connecting)
-    }
-  val statusExplanation: String get() =
-    when (this) {
-      is Connected -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
-      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), connectionError)
-      else -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
-    }
-
-  @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
-  @Serializable @SerialName("connected") class Connected: NetworkStatus()
-  @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
-  @Serializable @SerialName("error") class Error(val connectionError: String): NetworkStatus()
-}
-
-@Serializable
-data class ConnNetworkStatus(val agentConnId: String, val networkStatus: NetworkStatus)
 
 @Serializable
 data class Contact(

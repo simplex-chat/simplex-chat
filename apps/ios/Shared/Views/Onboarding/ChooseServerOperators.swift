@@ -63,8 +63,6 @@ struct OnboardingConditionsView: View {
     @State private var notificationsModeNavLinkActive = false
     @State private var justOpened = true
 
-    var selectedOperators: [ServerOperator] { serverOperators.filter { selectedOperatorIds.contains($0.operatorId) } }
-
     var body: some View {
         GeometryReader { g in
             let v = ScrollView {
@@ -169,9 +167,7 @@ struct OnboardingConditionsView: View {
                 Task {
                     do {
                         let conditionsId = ChatModel.shared.conditions.currentConditions.conditionsId
-                        let acceptForOperators = selectedOperators.filter { !$0.conditionsAcceptance.conditionsAccepted }
-                        let operatorIds = acceptForOperators.map { $0.operatorId }
-                        let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: operatorIds)
+                        let r = try await acceptConditions(conditionsId: conditionsId, operatorIds: Array(selectedOperatorIds))
                         await MainActor.run {
                             ChatModel.shared.conditions = r
                         }

@@ -63,6 +63,7 @@ module Simplex.Chat.Store.Groups
     getScopeMemberIdViaMemberId,
     getGroupMembers,
     getGroupModerators,
+    getGroupRelays,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
     deleteGroupChatItems,
@@ -97,7 +98,6 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberRole,
     createIntroductions,
     updateIntroStatus,
-    saveIntroInvitation,
     getIntroduction,
     getIntroducedGroupMemberIds,
     getForwardIntroducedMembers,
@@ -107,7 +107,6 @@ module Simplex.Chat.Store.Groups
     getForwardScopeMember,
     createIntroReMember,
     createIntroToMemberContact,
-    saveMemberInvitation,
     getMatchingContacts,
     getMatchingMembers,
     getMatchingMemberContacts,
@@ -914,23 +913,6 @@ getGroupInfoByName db vr user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db vr user gId
 
-groupMemberQuery :: Query
-groupMemberQuery =
-  [sql|
-    SELECT
-      m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
-      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-    FROM group_members m
-    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-    LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-  |]
-
 getGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db vr user@User {userId} groupId groupMemberId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFound groupMemberId) $
@@ -1026,12 +1008,22 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
       (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
+-- TODO [channels fwd] retrieve relays based on knowledge about member from protocol, not role (isMemberRelay)
+getGroupRelays :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
+getGroupRelays db vr user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
+      (userId, groupId, userContactId, GRAdmin)
+
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember vr user)
     <$> DB.query
       db
       ( groupMemberQuery
+          <> " "
           <> [sql|
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
@@ -1041,10 +1033,6 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
               |]
       )
       (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
-
-toContactMember :: VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
-toContactMember vr User {userContactId} (memberRow :. connRow) =
-  (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection vr connRow}
 
 getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
 getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
@@ -1553,7 +1541,7 @@ createIntroductions db chatV members toMember = do
             |]
             (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
           introId <- insertedRowId db
-          pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
+          pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending}
       where
         checkInverseIntro :: IO (Maybe Int64)
         checkInverseIntro =
@@ -1575,56 +1563,21 @@ updateIntroStatus db introId introStatus = do
     |]
     (introStatus, currentTs, introId)
 
-saveIntroInvitation :: DB.Connection -> GroupMember -> GroupMember -> IntroInvitation -> ExceptT StoreError IO GroupMemberIntro
-saveIntroInvitation db reMember toMember introInv@IntroInvitation {groupConnReq} = do
-  intro <- getIntroduction db reMember toMember
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      [sql|
-        UPDATE group_member_intros
-        SET intro_status = ?,
-            group_queue_info = ?,
-            direct_queue_info = ?,
-            updated_at = ?
-        WHERE group_member_intro_id = ?
-      |]
-      (GMIntroInvReceived, groupConnReq, directConnReq introInv, currentTs, introId intro)
-  pure intro {introInvitation = Just introInv, introStatus = GMIntroInvReceived}
-
-saveMemberInvitation :: DB.Connection -> GroupMember -> IntroInvitation -> GroupMemberStatus -> IO ()
-saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnReq, directConnReq} newMemberStatus = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET member_status = ?,
-          group_queue_info = ?,
-          direct_queue_info = ?,
-          updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (newMemberStatus, groupConnReq, directConnReq, currentTs, groupMemberId)
-
 getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
-getIntroduction db reMember toMember = ExceptT $ do
-  toIntro
-    <$> DB.query
+getIntroduction db reMember toMember = ExceptT $
+  firstRow toIntro SEIntroNotFound $
+    DB.query
       db
       [sql|
-        SELECT group_member_intro_id, group_queue_info, direct_queue_info, intro_status
+        SELECT group_member_intro_id, intro_status
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       |]
       (groupMemberId' reMember, groupMemberId' toMember)
   where
-    toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
-    toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
-      let introInvitation = IntroInvitation <$> groupConnReq <*> pure directConnReq
-       in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
-    toIntro _ = Left SEIntroNotFound
+    toIntro :: (Int64, GroupMemberIntroStatus) -> GroupMemberIntro
+    toIntro (introId, introStatus) =
+      GroupMemberIntro {introId, reMember, toMember, introStatus}
 
 getIntroducedGroupMemberIds :: DB.Connection -> GroupMember -> IO [GroupMemberId]
 getIntroducedGroupMemberIds db invitee =

@@ -243,9 +243,9 @@ fun MainScreen() {
       ModalManager.fullscreen.showOneTimePasscodeInView()
       AlertManager.privacySensitive.showInView()
       if (onboarding == OnboardingStage.OnboardingComplete) {
-        LaunchedEffect(chatModel.currentUser.value, chatModel.appOpenUrl.value) {
+        LaunchedEffect(chatModel.chatRunning.value, chatModel.currentUser.value, chatModel.appOpenUrl.value) {
           val (rhId, url) = chatModel.appOpenUrl.value ?: (null to null)
-          if (url != null) {
+          if (url != null && chatModel.chatRunning.value == true) {
             chatModel.appOpenUrl.value = null
             connectIfOpenedViaUri(rhId, url, chatModel)
           }
