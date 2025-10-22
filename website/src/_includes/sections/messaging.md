@@ -1,8 +1,8 @@
-# The world's most secure messaging
+# The World's Most Secure Messaging
 
-<img src="/img/design_3/secure_messaging_light.jpg" width="50%" class="float-to-right dark:hidden">
+<img src="/img/design_3/secure_messaging_light.jpg" width="33%" class="float-to-right dark:hidden">
 
-<img src="/img/design_3/secure_messaging_dark.jpg" width="50%" class="float-to-right hidden dark:block">
+<img src="/img/design_3/secure_messaging_dark.jpg" width="33%" class="float-to-right hidden dark:block">
 
 **Ultimate security**: SimpleX network uses the most secure end-to-end encryption, with continuous post-quantum key exchange to protect all messages and metadata.
 

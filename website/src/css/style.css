@@ -5,49 +5,17 @@
   Medium(500), Bold(700), Ultra-Bold(800), Black(900)
 ======================= */
 
-/* Thin */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Trial.woff2") format("woff2");
-  font-weight: 100;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Thin-Oblique-Trial.woff2") format("woff2");
-  font-weight: 100;
-  font-style: oblique;
-  font-display: swap;
-}
-
-/* Ultra-Light */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Trial.woff2") format("woff2");
-  font-weight: 200;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Light-Oblique-Trial.woff2") format("woff2");
-  font-weight: 200;
-  font-style: oblique;
-  font-display: swap;
-}
-
 /* Light */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light.woff2") format("woff2");
   font-weight: 300;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Light-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light-Oblique.woff2") format("woff2");
   font-weight: 300;
   font-style: oblique;
   font-display: swap;
@@ -56,14 +24,14 @@
 /* Regular */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Regular-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular-Oblique.woff2") format("woff2");
   font-weight: 400;
   font-style: oblique;
   font-display: swap;
@@ -72,14 +40,14 @@
 /* Medium */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium.woff2") format("woff2");
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Medium-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium-Oblique.woff2") format("woff2");
   font-weight: 500;
   font-style: oblique;
   font-display: swap;
@@ -88,47 +56,15 @@
 /* Bold */
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2") format("woff2");
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 @font-face {
   font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Bold-Oblique-Trial.woff2") format("woff2");
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold-Oblique.woff2") format("woff2");
   font-weight: 700;
-  font-style: oblique;
-  font-display: swap;
-}
-
-/* Ultra-Bold */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Trial.woff2") format("woff2");
-  font-weight: 800;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Ultra-Bold-Oblique-Trial.woff2") format("woff2");
-  font-weight: 800;
-  font-style: oblique;
-  font-display: swap;
-}
-
-/* Black */
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Trial.woff2") format("woff2");
-  font-weight: 900;
-  font-style: normal;
-  font-display: swap;
-}
-@font-face {
-  font-family: "GT-Walsheim";
-  src: url("/fonts/GT-Walsheim/GT-Walsheim-Black-Oblique-Trial.woff2") format("woff2");
-  font-weight: 900;
   font-style: oblique;
   font-display: swap;
 }
