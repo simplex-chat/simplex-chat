@@ -45,8 +45,7 @@ struct ChatListNavLink: View {
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
     @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
-//    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
-    @State private var oneHandUI = false
+    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = false
     @ObservedObject var chat: Chat
     @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var showContactRequestDialog = false
