@@ -587,12 +587,14 @@ struct ChatListSearchBar: View {
             ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
-                    TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
-                        .disabled(searchShowingSimplexLink)
-                        .focused($searchFocussed)
-                        .frame(maxWidth: .infinity)
+                    HStack(spacing: 4) {
+                        Image(systemName: "magnifyingglass")
+                        TextField("Search or paste SimpleX link", text: $searchText)
+                            .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
+                            .disabled(searchShowingSimplexLink)
+                            .focused($searchFocussed)
+                            .frame(maxWidth: .infinity)
+                    }
                     if connectProgressManager.showConnectProgress != nil {
                         ProgressView()
                     }
