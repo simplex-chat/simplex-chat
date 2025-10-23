@@ -69,18 +69,18 @@ struct NewChatSheet: View {
         }.onDisappear {
             ConnectProgressManager.shared.cancelConnectProgress()
         }
-        if #available(iOS 16.0, *), oneHandUI {
-            let sheetHeight: CGFloat = showArchive ? 575 : 500
-            v.presentationDetents(
-                allowSmallSheet ? [.height(sheetHeight), .large] : [.large],
-                selection: Binding(
-                    get: { isLargeSheet || !allowSmallSheet ? .large : .height(sheetHeight) },
-                    set: { isLargeSheet = $0 == .large }
-                )
-            )
-        } else {
+//        if #available(iOS 16.0, *), oneHandUI {
+//            let sheetHeight: CGFloat = showArchive ? 575 : 500
+//            v.presentationDetents(
+//                allowSmallSheet ? [.height(sheetHeight), .large] : [.large],
+//                selection: Binding(
+//                    get: { isLargeSheet || !allowSmallSheet ? .large : .height(sheetHeight) },
+//                    set: { isLargeSheet = $0 == .large }
+//                )
+//            )
+//        } else {
             v
-        }
+//        }
     }
 
     private func viewBody(_ showArchive: Bool) -> some View {

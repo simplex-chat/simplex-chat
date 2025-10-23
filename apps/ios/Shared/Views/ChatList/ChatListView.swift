@@ -154,7 +154,8 @@ struct ChatListView: View {
     // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
     @State private var viewOnScreen = true
 
-    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+//    @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
+    @State private var oneHandUI = false
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
@@ -168,7 +169,8 @@ struct ChatListView: View {
     }
     
     private var viewBody: some View {
-        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
+        ZStack(alignment: .topLeading) {
+//        ZStack(alignment: oneHandUI ? .bottomLeading : .topLeading) {
             NavStackCompat(
                 isActive: Binding(
                     get: { chatModel.chatId != nil },
@@ -205,9 +207,10 @@ struct ChatListView: View {
             chatList
                 .background(theme.colors.background)
                 .navigationBarTitleDisplayMode(.inline)
-                .navigationBarHidden(searchMode || oneHandUI)
+//                .navigationBarHidden(searchMode || oneHandUI)
+                .navigationBarHidden(searchMode)
         }
-        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
         .onAppear {
             if #unavailable(iOS 16.0), !viewOnScreen {
                 viewOnScreen = true
@@ -235,14 +238,14 @@ struct ChatListView: View {
                 secondaryButton: .cancel()
             ))
         }
-        .safeAreaInset(edge: .top) {
-            if oneHandUI { Divider().background(tm) }
-        }
-        .safeAreaInset(edge: .bottom) {
-            if oneHandUI {
-                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
-            }
-        }
+//        .safeAreaInset(edge: .top) {
+//            if oneHandUI { Divider().background(tm) }
+//        }
+//        .safeAreaInset(edge: .bottom) {
+//            if oneHandUI {
+//                Divider().padding(.bottom, Self.hasHomeIndicator ? 0 : 8).background(tm)
+//            }
+//        }
         .sheet(item: $sheet) { sheet in
             if #available(iOS 16.0, *) {
                 sheet.content.presentationDetents([.fraction(sheet.fraction)])
@@ -261,22 +264,22 @@ struct ChatListView: View {
     
     @ViewBuilder func withToolbar(_ material: Material, content: () -> some View) -> some View {
         if #available(iOS 16.0, *) {
-            if oneHandUI {
-                content()
-                    .toolbarBackground(.hidden, for: .bottomBar)
-                    .toolbar { bottomToolbar }
-            } else {
+//            if oneHandUI {
+//                content()
+//                    .toolbarBackground(.hidden, for: .bottomBar)
+//                    .toolbar { bottomToolbar }
+//            } else {
                 content()
                     .toolbarBackground(.automatic, for: .navigationBar)
                     .toolbarBackground(material)
                     .toolbar { topToolbar }
-            }
+//            }
         } else {
-            if oneHandUI {
-                content().toolbar { bottomToolbarGroup() }
-            } else {
+//            if oneHandUI {
+//                content().toolbar { bottomToolbarGroup() }
+//            } else {
                 content().toolbar { topToolbar }
-            }
+//            }
         }
     }
     
@@ -351,17 +354,17 @@ struct ChatListView: View {
                             searchChatFilteredBySimplexLink: $searchChatFilteredBySimplexLink,
                             parentSheet: $sheet
                         )
-                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//                        .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                         .frame(maxWidth: .infinity)
-                        .padding(.top, oneHandUI ? 8 : 0)
+//                        .padding(.top, oneHandUI ? 8 : 0)
                         .id("searchBar")
                     }
                     if #available(iOS 16.0, *) {
                         ForEach(cs, id: \.viewId) { chat in
                             ChatListNavLink(chat: chat, parentSheet: $sheet)
-                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//                                .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                                 .padding(.trailing, -16)
                                 .disabled(chatModel.chatRunning != true || chatModel.deletedChats.contains(chat.chatInfo.id))
                                 .listRowBackground(Color.clear)
@@ -370,7 +373,7 @@ struct ChatListView: View {
                     } else {
                         ForEach(cs, id: \.viewId) { chat in
                             ChatListNavLink(chat: chat,  parentSheet: $sheet)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
                             .background { theme.colors.background } // Hides default list selection colour
@@ -380,14 +383,14 @@ struct ChatListView: View {
                     if !oneHandUICardShown {
                         OneHandUICard()
                             .padding(.vertical, 6)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
                     if !addressCreationCardShown {
                         AddressCreationCard()
                             .padding(.vertical, 6)
-                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//                            .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowBackground(Color.clear)
                     }
@@ -412,7 +415,7 @@ struct ChatListView: View {
             }
             if cs.isEmpty && !chatModel.chats.isEmpty {
                 noChatsView()
-                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
+//                    .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                     .foregroundColor(.secondary)
             }
         }
