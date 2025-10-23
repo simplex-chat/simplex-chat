@@ -622,36 +622,36 @@ struct ChatListSearchBar: View {
 //                }
             }
         }
-        .onChange(of: searchFocussed) { sf in
-            searchMode = sf
-        }
-        .onChange(of: searchText) { t in
-            if ignoreSearchTextChange {
-                ignoreSearchTextChange = false
-            } else {
-                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
-                    searchFocussed = false
-                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
-                        ignoreSearchTextChange = true
-                        searchText = simplexLinkText(linkType, smpHosts)
-                    }
-                    searchShowingSimplexLink = true
-                    searchChatFilteredBySimplexLink = nil
-                    connect(link.text)
-                } else {
-                    if t != "" { // if some other text is pasted, enter search mode
-                        searchFocussed = true
-                    } else {
-                        ConnectProgressManager.shared.cancelConnectProgress()
-                    }
-                    searchShowingSimplexLink = false
-                    searchChatFilteredBySimplexLink = nil
-                }
-            }
-        }
-        .onChange(of: chatTagsModel.activeFilter) { _ in
-            searchText = ""
-        }
+//        .onChange(of: searchFocussed) { sf in
+//            searchMode = sf
+//        }
+//        .onChange(of: searchText) { t in
+//            if ignoreSearchTextChange {
+//                ignoreSearchTextChange = false
+//            } else {
+//                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+//                    searchFocussed = false
+//                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
+//                        ignoreSearchTextChange = true
+//                        searchText = simplexLinkText(linkType, smpHosts)
+//                    }
+//                    searchShowingSimplexLink = true
+//                    searchChatFilteredBySimplexLink = nil
+//                    connect(link.text)
+//                } else {
+//                    if t != "" { // if some other text is pasted, enter search mode
+//                        searchFocussed = true
+//                    } else {
+//                        ConnectProgressManager.shared.cancelConnectProgress()
+//                    }
+//                    searchShowingSimplexLink = false
+//                    searchChatFilteredBySimplexLink = nil
+//                }
+//            }
+//        }
+//        .onChange(of: chatTagsModel.activeFilter) { _ in
+//            searchText = ""
+//        }
     }
 
     private func toggleFilterButton() -> some View {
