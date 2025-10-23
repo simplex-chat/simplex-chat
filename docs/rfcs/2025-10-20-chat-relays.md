@@ -99,7 +99,7 @@ deactivate M
 
 Notes:
 
-- Create connections pairs between relay and members with different priority for passing regular messages and for relay responding to member requests.
+- Protocol extension: Create connections pairs between relay and members with different priority for passing regular messages and for relay responding to member requests.
 
   Invitation sent in step 12 should contain same key as in group link, for relay to match connection to the same owner and "active" relay link (add to `XContact` message).
 
