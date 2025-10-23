@@ -55,7 +55,7 @@ par With each relay
     note left of O: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
     create participant M as Member
     R --> M:
-    note over R, M: At this point relay can accept<br>connection requests from members
+    note over R, M: At this point relay can accept<br>connection requests from members,<br>relay won't check group link<br>until receives x.grp.relay.ready<br>(won't auto-remove itself)
     O ->> OSMP: 12. Update group link<br>(add relay link)
     deactivate O
     OSMP -->> O: Group link updated
