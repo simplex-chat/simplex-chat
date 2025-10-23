@@ -3330,6 +3330,16 @@ Plan:
 SEARCH chat_item_versions USING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
 
 Query: 
+        SELECT chat_tag_id, chat_tag_emoji, chat_tag_text
+        FROM chat_tags
+        WHERE user_id = ?
+        ORDER BY tag_order
+      
+Plan:
+SEARCH chat_tags USING INDEX idx_chat_tags_user_id (user_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
         SELECT command_id, connection_id, command_function, command_status
         FROM commands
         WHERE user_id = ? AND command_id = ?
@@ -4330,6 +4340,20 @@ Query:
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+    
+Plan:
+
+Query: 
+      INSERT INTO chat_tags (user_id, chat_tag_emoji, chat_tag_text, tag_order)
+      VALUES (?,?,?, COALESCE((SELECT MAX(tag_order) + 1 FROM chat_tags WHERE user_id = ?), 1))
+    
+Plan:
+SCALAR SUBQUERY 1
+SEARCH chat_tags USING INDEX idx_chat_tags_user_id (user_id=?)
+
+Query: 
+      INSERT INTO chat_tags_chats (contact_id, chat_tag_id)
+      VALUES (?,?)
     
 Plan:
 
