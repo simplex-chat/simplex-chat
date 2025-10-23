@@ -47,54 +47,53 @@ par With each relay
     note right of R: Relay status: Accepted
     note left of O: Relay status: Accepted
     note over O, R: RPC connection<br>with relay is ready
-    O ->> R: 11. Connect via relay link<br>(share same owner key)
-    deactivate O
-    R -->> O: Accept messaging connection
-    activate O
-    note right of R: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
-    note left of O: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
+    opt Protocol extension - 2 connections
+        O ->> R: 11*. Connect via relay link<br>(share same owner key)
+        deactivate O
+        R -->> O: Accept messaging connection
+        activate O
+        note right of R: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
+        note left of O: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
+        note over O, R: Owner: Messaging connection with relay is ready,<br>relay link is tested
+    end
     create participant M as Member
     R --> M:
-    note over R, M: At this point relay can accept<br>connection requests from members,<br>relay won't check group link<br>until receives x.grp.relay.ready<br>(won't auto-remove itself)
+    note over R, M: At this point relay can accept<br>connection requests from members
     O ->> OSMP: 12. Update group link<br>(add relay link)
     deactivate O
     OSMP -->> O: Group link updated
-    activate O
-    O ->> R: 13. Notify relay<br>(x.grp.relay.ready)
-    deactivate O
-    activate R
     note left of O: Relay status: Active
-    note right of R: Relay status: Active
-    par Start relay checking thread
-        R ->> OSMP: 14. Retrieve group link data
-        deactivate R
-        OSMP -->> R: Group link data
-        activate R
-        R ->> R: 15. Validate relay link<br>is present in group link
-        opt Relay link absent
-            R ->> R: 16. Remove self from group<br>(relay removal protocol) 
-        end
-        deactivate R
-    end
-    note over O, R: Owner: Messaging connection with relay is ready,<br>relay link is tested<br>Relay: Relay link is active
 end
-O -->> M: 17. Share group short link<br>(social, out-of-band)
+
+note over O, M: Chat relay checks link - monitoring
+
+loop Periodically
+    R ->> OSMP: Retrieve group link data for served gorup
+    OSMP -->> R: Group link data
+    activate R
+    R ->> R: Check relay link present
+    deactivate R
+    note right of R: Relay status: Active
+end
 
 note over O, M: New member connects
 
-M ->> OSMP: 18. Retrieve short link data
+O -->> M: 13. Share group link<br>(social, out-of-band)
+M ->> OSMP: 14. Retrieve short link data
 par RPC connection
-    M ->> R: 19a. Connect via relay link
-and Messaging connection
-    M ->> R: 19b. Connect via relay link<br>(share same member key/<br>identifier to correlate)
+    M ->> R: 15a. Connect via relay link
+and
+    opt Protocol extension - Messaging connection
+        M ->> R: 15b*. Connect via relay link<br>(share same member key/<br>identifier to correlate)
+    end
 end
 
 note over O, M: Message forwarding
 
-O ->> R: 20. Send message
-R ->> M: 21. Forward message
+O ->> R: 16. Send message
+R ->> M: 17. Forward message
 activate M
-M ->> M: 22. Deduplicate message
+M ->> M: 18. Deduplicate message
 deactivate M
 ```
 
@@ -142,7 +141,7 @@ sequenceDiagram
     participant RSMP as Chat relay<br>SMP server
     participant M as Member
 
-note over O, M: Scenario 1. Owner deletes chat relay, notifies relay
+note over O, M: Owner deletes chat relay, notifies relay
 
 O ->> OSMP: Remove relay link<br>(update group link data)
 O ->> R: Delete chat relay<br>(x.grp.mem.del)<br>over RPC connection
@@ -156,20 +155,13 @@ note over O, M: Scenario 2. Owner deletes chat relay, fails to notify relay
 
 O ->> OSMP: Remove relay link<br>(update group link data)
 O --x R: Fail to notify relay
-loop Chat relay periodic checks
-    R ->> OSMP: Retrieve group link data for served gorup
-    OSMP -->> R: Group link data
-    activate R
-    R ->> R: Check relay link present
-    deactivate R
-    opt Relay link absent
-        par Chat relay to SMP
-            destroy RSMP
-            R ->> RSMP: Delete relay link 
-        and Chat relay to members
-            destroy R
-            R ->> M: Notify relay is deleted<br>over RPC connection
-        end
+opt Chat relay identifies<br>connection with owner is deleted
+    par Chat relay to SMP
+        destroy RSMP
+        R ->> RSMP: Delete relay link 
+    and Chat relay to members
+        destroy R
+        R ->> M: Notify relay is deleted<br>over RPC connection
     end
 end
 
