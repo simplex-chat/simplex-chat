@@ -131,6 +131,14 @@ Notes:
 
 - Possible optimization for chat relays: maintaining a pool of readily available links, relay could immediately provide one. The advantage to this approach is decrease in wait time for the owner. However, as group setup is a one-time activity it seems an unnecessary complication at this stage.
 
+- What should be in relay link user data:
+
+  - Relay key for group.
+  - Relay identity if provided.
+    Operator relays want to provide identity for trust.
+    User relays may not want to provide identity.
+    Relay identity: profile, certificate, relay identity key (global across groups).
+
 ## Protocol for removing chat relay from group, restoring connection to group
 
 ```mermaid
@@ -224,4 +232,4 @@ Notes:
 - UI for managing relays in group.
 - Relay status updates events on adding relays for UI integration.
 - Relay removal.
-- Relay periodic checks for relay link presence, auto-removal on absence.
+- Relay periodic checks for monitoring relay link presence.
