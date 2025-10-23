@@ -587,39 +587,39 @@ struct ChatListSearchBar: View {
             ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
-                    HStack(spacing: 4) {
+//                    HStack(spacing: 4) {
                         Image(systemName: "magnifyingglass")
                         TextField("Search or paste SimpleX link", text: $searchText)
-                            .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
-                            .disabled(searchShowingSimplexLink)
-                            .focused($searchFocussed)
-                            .frame(maxWidth: .infinity)
-                    }
-                    if connectProgressManager.showConnectProgress != nil {
-                        ProgressView()
-                    }
-                    if !searchText.isEmpty {
-                        Image(systemName: "xmark.circle.fill")
-                            .onTapGesture {
-                                searchText = ""
-                            }
-                    }
+//                            .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
+//                            .disabled(searchShowingSimplexLink)
+//                            .focused($searchFocussed)
+//                            .frame(maxWidth: .infinity)
+//                    }
+//                    if connectProgressManager.showConnectProgress != nil {
+//                        ProgressView()
+//                    }
+//                    if !searchText.isEmpty {
+//                        Image(systemName: "xmark.circle.fill")
+//                            .onTapGesture {
+//                                searchText = ""
+//                            }
+//                    }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
                 .foregroundColor(theme.colors.secondary)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
 
-                if searchFocussed {
-                    Text("Cancel")
-                        .foregroundColor(theme.colors.primary)
-                        .onTapGesture {
-                            searchText = ""
-                            searchFocussed = false
-                        }
-                } else if m.chats.count > 0 {
+//                if searchFocussed {
+//                    Text("Cancel")
+//                        .foregroundColor(theme.colors.primary)
+//                        .onTapGesture {
+//                            searchText = ""
+//                            searchFocussed = false
+//                        }
+//                } else if m.chats.count > 0 {
                     toggleFilterButton()
-                }
+//                }
             }
         }
         .onChange(of: searchFocussed) { sf in
