@@ -17,7 +17,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- - TBC also inverse link from group_relays to group_members? (group_relays.group_member_id)
 -- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (GroupRelayStatus)
 -- - connections.group_member_id_messaging - secondary connection for a group member in relayed group
--- TODO link between group_relays and chat_relays
+-- TODO [chat relays] link between group_relays and chat_relays
 m20251018_chat_relays :: Query
 m20251018_chat_relays =
   [sql|
@@ -42,10 +42,12 @@ ALTER TABLE users ADD COLUMN is_user_chat_relay INTEGER NOT NULL DEFAULT 0;
 CREATE TABLE group_relays(
   group_relay_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   relay_status TEXT NOT NULL,
   relay_link BLOB
 );
 CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
+CREATE INDEX idx_group_relays_group_member_id ON group_relays(group_member_id);
 
 ALTER TABLE group_members ADD COLUMN is_chat_relay INTEGER NOT NULL DEFAULT 0;
 
@@ -67,6 +69,7 @@ DROP TABLE chat_relays;
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 DROP INDEX idx_group_relays_group_id;
+DROP INDEX idx_group_relays_group_member_id;
 DROP TABLE group_relays;
 
 ALTER TABLE group_members DROP COLUMN is_chat_relay;
