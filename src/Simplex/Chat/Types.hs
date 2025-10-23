@@ -468,7 +468,7 @@ data GroupInfo = GroupInfo
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
     viaGroupLinkUri :: Maybe ConnReqContact,
-    relayOwnStatus :: Maybe GroupRelayOwnStatus
+    relayOwnStatus :: Maybe GroupRelayStatus
   }
   deriving (Eq, Show)
 
@@ -974,33 +974,12 @@ data GroupRelay = GroupRelay
   }
   deriving (Eq, Show)
 
--- -- Status tracked by owner per relay
--- data GroupRelayStatus
---   = GRSNew
---   | GRSInvited
---   | GRSAccepted
---   | GRSAdded
---   | GRSNotified
---   | GRSConfirmed
---   deriving (Eq, Show)
-
--- -- Own status tracked by relay in a group
--- data GroupRelayOwnStatus
---   = GROSInvited
---   | GROSLinkCreated
---   | GROSAccepted
---   | GROSNotified
---   | GROSConfirmed
-
--- TODO [chat relays] single type for statuses both on owner and relay side?
 data GroupRelayStatus
   = GRSNew -- only for owner
   | GRSInvited
-  | GRSVerified -- only for relay
-  | GRSLinkCreated -- only for relay
   | GRSAccepted
   | GRSAdded -- only for owner
-  | GRSConfirmed
+  | GRSActive
   deriving (Eq, Show)
 
 data GroupSupportChat = GroupSupportChat

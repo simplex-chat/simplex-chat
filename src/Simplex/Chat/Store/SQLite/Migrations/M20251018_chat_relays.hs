@@ -15,8 +15,9 @@ import Database.SQLite.Simple.QQ (sql)
 -- - group_members.group_relay_id - associates group_members record with a group_relays record for a group owner;
 --     receiving event to member connection, owner can match it to the relay
 -- - TBC also inverse link from group_relays to group_members? (group_relays.group_member_id)
--- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (GroupRelayOwnStatus)
+-- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (GroupRelayStatus)
 -- - connections.group_member_id_messaging - secondary connection for a group member in relayed group
+-- TODO link between group_relays and chat_relays
 m20251018_chat_relays :: Query
 m20251018_chat_relays =
   [sql|
