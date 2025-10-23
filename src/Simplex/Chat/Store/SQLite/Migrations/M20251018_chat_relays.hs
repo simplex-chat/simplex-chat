@@ -1,12 +1,12 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20251016_chat_relays where
+module Simplex.Chat.Store.SQLite.Migrations.M20251018_chat_relays where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
-m20251016_chat_relays :: Query
-m20251016_chat_relays =
+m20251018_chat_relays :: Query
+m20251018_chat_relays =
   [sql|
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
@@ -30,8 +30,8 @@ ALTER TABLE users ADD COLUMN is_user_chat_relay INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE group_members ADD COLUMN is_chat_relay INTEGER NOT NULL DEFAULT 0;
 |]
 
-down_m20251016_chat_relays :: Query
-down_m20251016_chat_relays =
+down_m20251018_chat_relays :: Query
+down_m20251018_chat_relays =
   [sql|
 ALTER TABLE group_members DROP COLUMN is_chat_relay;
 

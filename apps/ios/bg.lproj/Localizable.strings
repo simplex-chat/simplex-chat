@@ -1167,7 +1167,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Условията вече са приети за тези оператори: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Условия за ползване";
 
 /* No comment provided by engineer. */
@@ -2912,7 +2912,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Мрежови настройки";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Състояние на мрежата";
 
 /* delete after time */
@@ -3361,9 +3361,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "получено потвърждение…";
 
-/* notification */
-"Received file event" = "Събитие за получен файл";
-
 /* message info title */
 "Received message" = "Получено съобщение";
 
@@ -3711,9 +3708,6 @@ chat item action */
 
 /* copied message info */
 "Sent at: %@" = "Изпратено на: %@";
-
-/* notification */
-"Sent file event" = "Събитие за изпратен файл";
 
 /* message info title */
 "Sent message" = "Изпратено съобщение";
@@ -4131,12 +4125,6 @@ chat item action */
 "Transport isolation" = "Транспортна изолация";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Опит за свързване със сървъра, използван за получаване на съобщения от този контакт.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Турски интерфейс";
 
 /* No comment provided by engineer. */
@@ -4492,9 +4480,6 @@ chat item action */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Вече се присъединихте към групата!\nИзпрати отново заявката за присъединяване?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Вие сте свързани към сървъра, използван за получаване на съобщения от този контакт.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Поканени сте в групата";

@@ -665,7 +665,7 @@ CREATE TABLE operator_usage_conditions(
 );
 CREATE TABLE chat_tags(
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER REFERENCES users,
+  user_id INTEGER REFERENCES users ON DELETE CASCADE,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
   tag_order INTEGER NOT NULL

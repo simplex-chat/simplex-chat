@@ -18,8 +18,8 @@
     <string name="server_connected">connesso</string>
     <string name="server_error">errore</string>
     <string name="server_connecting">in connessione</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Sei connesso al server usato per ricevere messaggi da questo contatto.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questo contatto.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Sei connesso/a al server usato per ricevere messaggi da questa connessione.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Tentativo di connessione al server usato per ricevere messaggi da questa connessione.</string>
     <string name="deleted_description">eliminato</string>
     <string name="marked_deleted_description">contrassegnato eliminato</string>
     <string name="sending_files_not_yet_supported">l\'invio di file non è ancora supportato</string>
@@ -73,7 +73,7 @@
     <string name="error_deleting_pending_contact_connection">Errore di eliminazione della connessione del contatto in attesa</string>
     <string name="error_changing_address">Errore cambiando l\'indirizzo</string>
     <string name="error_smp_test_failed_at_step">Test fallito al passo %s.</string>
-    <string name="error_smp_test_server_auth">Il server richiede l\'autorizzazione di creare code, controlla la password</string>
+    <string name="error_smp_test_server_auth">Il server richiede l\'autorizzazione di creare code, controlla la password.</string>
     <string name="smp_server_test_connect">Connetti</string>
     <string name="smp_server_test_create_queue">Crea coda</string>
     <string name="smp_server_test_secure_queue">Coda sicura</string>
@@ -210,7 +210,7 @@
     <string name="you_are_already_connected_to_vName_via_this_link">Sei già connesso a %1$s.</string>
     <string name="connection_error_auth_desc">A meno che il tuo contatto non abbia eliminato la connessione o che questo link non sia già stato usato, potrebbe essere un errore; per favore segnalalo.
 \nPer connetterti, chiedi al tuo contatto di creare un altro link di connessione e controlla di avere una connessione di rete stabile.</string>
-    <string name="error_smp_test_certificate">Probabilmente l\'impronta del certificato nell\'indirizzo del server è sbagliata</string>
+    <string name="error_smp_test_certificate">L\'impronta digitale nell\'indirizzo del server non corrisponde al certificato.</string>
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Per migliorare la privacy, <b>SimpleX funziona in secondo piano</b> invece di usare le notifiche push.]]></string>
     <string name="turn_off_battery_optimization"><![CDATA[<b>Consentilo</b> nella prossima schermata per ricevere le notifiche immediatamente.]]></string>
     <string name="simplex_service_notification_title">Servizio SimpleX Chat</string>
@@ -1015,7 +1015,7 @@
     <string name="waiting_for_video">In attesa del video</string>
     <string name="error_loading_xftp_servers">Errore nel caricamento dei server XFTP</string>
     <string name="error_saving_xftp_servers">Errore nel salvataggio dei server XFTP</string>
-    <string name="error_xftp_test_server_auth">Il server richiede l\'autorizzazione per l\'invio, controlla la password</string>
+    <string name="error_xftp_test_server_auth">Il server richiede l\'autorizzazione per l\'invio, controlla la password.</string>
     <string name="smp_server_test_compare_file">Confronta file</string>
     <string name="smp_server_test_create_file">Crea file</string>
     <string name="smp_server_test_download_file">Scarica file</string>
@@ -2437,7 +2437,7 @@
     <string name="delete_member_support_chat_alert_title">Eliminare la chat con il membro?</string>
     <string name="reject_pending_member_alert_title">Rifiutare il membro?</string>
     <string name="delete_member_support_chat_button">Elimina chat</string>
-    <string name="error_deleting_member_support_chat">Errore di eliminazione della chat con il membro</string>
+    <string name="error_deleting_member_support_chat">Errore di eliminazione della chat</string>
     <string name="add_short_link">Aggiorna l\'indirizzo</string>
     <string name="accept_contact_request">Accetta la richiesta di contatto</string>
     <string name="compose_view_add_message">Aggiungi un messaggio</string>
@@ -2535,5 +2535,10 @@
     <string name="privacy_chat_list_open_full_web_link">Apri link completo</string>
     <string name="sanitize_links_toggle">Rimuovi il tracciamento del link</string>
     <string name="simplex_link_relay">Link del relay SimpleX</string>
-    <string name="error_marking_member_support_chat_read">Errore nel segnare la chat con il membro come letta</string>
+    <string name="error_marking_member_support_chat_read">Errore nel segnare la lettura</string>
+    <string name="proxy_destination_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server di destinazione non corrisponde al certificato: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server di inoltro non corrisponde al certificato: %1$s.</string>
+    <string name="network_error_unknown_ca">L\'impronta digitale nell\'indirizzo del server non corrisponde al certificato: %1$s.</string>
+    <string name="server_no_sub">nessuna iscrizione</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Non sei connesso/a al server usato per ricevere messaggi da questa connessione (nessuna iscrizione).</string>
 </resources>
