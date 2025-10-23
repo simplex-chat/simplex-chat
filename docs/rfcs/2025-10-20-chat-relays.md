@@ -22,10 +22,13 @@ deactivate O
 OSMP -->> O: Group link created
 activate O
 O ->> O: 5. Choose chat relays<br>(automatic/user choice)
+note left of O: Relay status: New
 par With each relay
     O ->> R: 6. Contact request<br>(x.grp.relay.inv<br>incl. group link)
     deactivate O
     activate R
+    note left of O: Relay status: Invited
+    note right of R: Relay status: Invited
     R ->> OSMP: 7. Retrieve group link data
     deactivate R
     OSMP -->> R: Group link data
@@ -41,45 +44,57 @@ par With each relay
     R ->> O: 10. Accept request<br>(x.grp.relay.acpt<br>incl. relay link)
     deactivate R
     activate O
+    note right of R: Relay status: Accepted
+    note left of O: Relay status: Accepted
     note over O, R: RPC connection<br>with relay is ready
-    O ->> OSMP: 11. Update group link<br>(add relay link)
+    O ->> R: 11. Connect via relay link<br>(share same owner key)
+    deactivate O
+    R -->> O: Accept messaging connection
+    activate O
+    note right of R: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
+    note left of O: Relay status: Accepted,<br>"Connected" implied from<br>messaging connection
+    create participant M as Member
+    R --> M:
+    note over R, M: At this point relay can accept<br>connection requests from members
+    O ->> OSMP: 12. Update group link<br>(add relay link)
     deactivate O
     OSMP -->> O: Group link updated
     activate O
-    O ->> R: 12. Connect via relay link<br>(share same owner key)
+    O ->> R: 13. Notify relay<br>(x.grp.relay.ready)
     deactivate O
+    activate R
+    note left of O: Relay status: Active
+    note right of R: Relay status: Active
     par Start relay checking thread
-        activate R
-        R ->> OSMP: 13. Retrieve group link data
+        R ->> OSMP: 14. Retrieve group link data
         deactivate R
         OSMP -->> R: Group link data
         activate R
-        R ->> R: 14. Validate relay link<br>is present in group link
+        R ->> R: 15. Validate relay link<br>is present in group link
         opt Relay link absent
-            R ->> R: 15. Remove self from group<br>(relay removal protocol) 
+            R ->> R: 16. Remove self from group<br>(relay removal protocol) 
         end
         deactivate R
     end
     note over O, R: Owner: Messaging connection with relay is ready,<br>relay link is tested<br>Relay: Relay link is active
 end
-create participant M as Member
-O -->> M: 16. Share group short link<br>(social, out-of-band)
+O -->> M: 17. Share group short link<br>(social, out-of-band)
 
 note over O, M: New member connects
 
-M ->> OSMP: 17. Retrieve short link data
+M ->> OSMP: 18. Retrieve short link data
 par RPC connection
-    M ->> R: 18a. Connect via relay link
+    M ->> R: 19a. Connect via relay link
 and Messaging connection
-    M ->> R: 18b. Connect via relay link<br>(share same member key/<br>identifier to correlate)
+    M ->> R: 19b. Connect via relay link<br>(share same member key/<br>identifier to correlate)
 end
 
 note over O, M: Message forwarding
 
-O ->> R: 19. Send message
-R ->> M: 20. Forward message
+O ->> R: 20. Send message
+R ->> M: 21. Forward message
 activate M
-M ->> M: 21. Deduplicate message
+M ->> M: 22. Deduplicate message
 deactivate M
 ```
 
@@ -114,8 +129,6 @@ Notes:
 - Lock owner group link from accepting connection on SMP server, possibly has some implementation gaps.
 
   Reject in owner code for foolproofing.
-
-- Chat relay should hold contact requests to its relay link from anyone other than owner until owner connects via it (step 12). Based on `GroupRelayStatus`.
 
 - Possible optimization for chat relays: maintaining a pool of readily available links, relay could immediately provide one. The advantage to this approach is decrease in wait time for the owner. However, as group setup is a one-time activity it seems an unnecessary complication at this stage.
 
@@ -207,7 +220,7 @@ Notes:
 - Chat commands for creating group with relays.
 - Protocol events processing.
 - Recovery for both owner and relay when adding relay to group.
-- Mechanism for relay to hold requests to relay link, until owner connects / relay checks.
+- On each subscription retrieve group link data for all groups, actualize connections for present relay links.
 - Agent `prepareConnectionToJoin` api to return link that will be created.
 - Asynchronous version of agent `setConnShortLink` api, correlation in chat.
 - Agent to support adding relays to link (it has stub `relays :: [ConnShortLink 'CMContact]`).
