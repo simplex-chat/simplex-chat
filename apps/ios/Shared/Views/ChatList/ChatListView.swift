@@ -623,7 +623,7 @@ struct ChatListSearchBar: View {
             }
         }
         .onChange(of: searchFocussed) { sf in
-            withAnimation { searchMode = sf }
+            searchMode = sf
         }
         .onChange(of: searchText) { t in
             if ignoreSearchTextChange {
