@@ -143,7 +143,8 @@ import Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks
 import Simplex.Chat.Store.SQLite.Migrations.M20250919_group_summary
 import Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections
 import Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
-import Simplex.Chat.Store.SQLite.Migrations.M20251016_chat_relays
+import Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
+import Simplex.Chat.Store.SQLite.Migrations.M20251018_chat_relays
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -287,7 +288,8 @@ schemaMigrations =
     ("20250919_group_summary", m20250919_group_summary, Just down_m20250919_group_summary),
     ("20250922_remove_unused_connections", m20250922_remove_unused_connections, Just down_m20250922_remove_unused_connections),
     ("20251007_connections_sync", m20251007_connections_sync, Just down_m20251007_connections_sync),
-    ("20251016_chat_relays", m20251016_chat_relays, Just down_m20251016_chat_relays)
+    ("20251017_chat_tags_cascade", m20251017_chat_tags_cascade, Just down_m20251017_chat_tags_cascade),
+    ("20251018_chat_relays", m20251018_chat_relays, Just down_m20251018_chat_relays)
   ]
 
 -- | The list of migrations in ascending order by date

@@ -2479,7 +2479,7 @@ ALTER TABLE ONLY test_chat_schema.chat_tags_chats
 
 
 ALTER TABLE ONLY test_chat_schema.chat_tags
-    ADD CONSTRAINT chat_tags_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id);
+    ADD CONSTRAINT chat_tags_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
 
 
 

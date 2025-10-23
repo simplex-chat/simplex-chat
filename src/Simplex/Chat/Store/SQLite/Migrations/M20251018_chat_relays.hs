@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20251016_chat_relays where
+module Simplex.Chat.Store.SQLite.Migrations.M20251018_chat_relays where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
@@ -16,8 +16,9 @@ import Database.SQLite.Simple.QQ (sql)
 --     receiving event to member connection, owner can match it to the relay
 -- - TBC also inverse link from group_relays to group_members? (group_relays.group_member_id)
 -- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (GroupRelayOwnStatus)
-m20251016_chat_relays :: Query
-m20251016_chat_relays =
+-- - connections.group_member_id_messaging - secondary connection for a group member in relayed group
+m20251018_chat_relays :: Query
+m20251018_chat_relays =
   [sql|
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
@@ -52,12 +53,12 @@ CREATE INDEX idx_group_members_group_relay_id ON group_members(group_relay_id);
 
 ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
 
-ALTER TABLE connections ADD COLUMN group_member_id_low_priority INTEGER REFERENCES group_members ON DELETE CASCADE;
-CREATE INDEX idx_connections_group_member_id_low_priority ON connections(group_member_id_low_priority);
+ALTER TABLE connections ADD COLUMN group_member_id_messaging INTEGER REFERENCES group_members ON DELETE CASCADE;
+CREATE INDEX idx_connections_group_member_id_messaging ON connections(group_member_id_messaging);
 |]
 
-down_m20251016_chat_relays :: Query
-down_m20251016_chat_relays =
+down_m20251018_chat_relays :: Query
+down_m20251018_chat_relays =
   [sql|
 DROP INDEX idx_chat_relays_user_id;
 DROP TABLE chat_relays;
@@ -74,6 +75,6 @@ ALTER TABLE group_members DROP COLUMN group_relay_id;
 
 ALTER TABLE groups DROP COLUMN relay_own_status;
 
-DROP INDEX idx_connections_group_member_id_low_priority;
-ALTER TABLE connections DROP COLUMN group_member_id_low_priority;
+DROP INDEX idx_connections_group_member_id_messaging;
+ALTER TABLE connections DROP COLUMN group_member_id_messaging;
 |]
