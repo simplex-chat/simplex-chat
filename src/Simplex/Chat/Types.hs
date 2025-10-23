@@ -978,7 +978,6 @@ data GroupRelayStatus
   = GRSNew -- only for owner
   | GRSInvited
   | GRSAccepted
-  | GRSAdded -- only for owner
   | GRSActive
   deriving (Eq, Show)
 
