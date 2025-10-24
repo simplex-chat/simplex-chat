@@ -150,6 +150,7 @@ testCoreOpts =
       logFile = Nothing,
       tbqSize = 16,
       deviceName = Nothing,
+      chatRelay = False,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing
