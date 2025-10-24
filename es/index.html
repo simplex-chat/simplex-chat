@@ -651,7 +651,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h1 class="primary-header text-center xl:text-left xl:rtl:text-right font-bold text-[38px] md:text-[55px] leading-[46px] md:leading-[63px] mb-2 xl:mb-8">Privacidad redefinida</h1>
                         <h2 class="secondary-header text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[38px] leading-[36px] md:leading-[43px] mb-2 xl:mb-8 tracking-[0.01em]">La primera aplicación de mensajería<br>sin ID de usuario</h2>
                         <p class="landing-page-header-article-paragraph text-black dark:text-white text-center xl:text-justify text-[16px] leading-[24px] mb-[20px] header-description">
-                            Las demás aplicaciones usan ID de usuario: Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br> SimpleX no los tiene, <strong>ni siquiera números aleatorios</strong>.<br> Esto mejora radicalmente su privacidad.
+                            Las demás aplicaciones usan ID de usuario: Signal, Matrix, Session, Briar, Jami, Cwtch, etc.<br> SimpleX no los tiene, <strong>ni siquiera usa números aleatorios</strong>.<br> Esto mejora radicalmente tu privacidad.
                         </p>
                         <a href="javascript:void(0)" data-show-overlay="why-ids-bad-for-privacy" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-center xl:text-left xl:rtl:text-right text-[14px] xl:text-[16px] leading-[34px] underline-offset-2">¿Por qué los ID de usuario son perjudiciales para la privacidad?</a>
                         
@@ -664,16 +664,16 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Cuando los usuarios asumen identidades persistentes, aunque sólo se trate de un número aleatorio como un identificador de sesión, existe el riesgo de que el proveedor de red o un atacante puedan observar cómo se conectan los usuarios y la cantidad de mensajes que envían.
+    Cuando los usuarios asumen identidades persistentes, aunque sólo se trate de un número aleatorio como un identificador de sesión, existe el riesgo de que el proveedor de red o un atacante puedan observar cómo se conectan y la cantidad de mensajes que envían.
 </p>
 <p>
     A continuación podrían correlacionar esta información con las redes sociales públicas existentes y averiguar las identidades reales de los usuarios.
 </p>
 <p>
-    Incluso con las aplicaciones más privadas que utilizan los servicios de Tor v3, si habla con dos contactos a través de un mismo perfil se puede probar que estas están conectados con la misma persona.
+    Incluso con las aplicaciones más privadas que usan los servicios de Tor v3, si hablas con dos contactos a través de un mismo perfil se puede probar que estos están conectados con la misma persona.
 </p>
 <p>
-    SimpleX protege frente estos ataques al no disponer de ID de usuario por diseño. Y si usa el modo incógnito, tendrá un nombre mostrado diferente por cada contacto, evitando cualquier dato compartido entre ellos.
+    SimpleX protege frente estos ataques al no disponer de ID de usuario por diseño. Y si usas el modo incógnito, tendrás un nombre diferente por cada contacto, evitando cualquier dato compartido entre ellos.
 </p>
                         </div>
                     </div>
@@ -709,19 +709,19 @@ window.addEventListener('scroll',changeHeaderBg);
     Muchos usuarios se preguntan: <em>si SimpleX no tiene identificadores de usuario, ¿cómo puede saber dónde entregar los mensajes?</em>
 </p>
 <p>
-    Para entregar los mensajes, en lugar del identificador de usuario empleado por las demás redes, SimpleX utiliza identificadores de colas de mensajes por pares, siendo temporales, anónimos e independientes por cada conexión — no hay identificadores a largo plazo.
+    Para entregar los mensajes, en lugar del identificador de usuario empleado por las demás redes, SimpleX utiliza identificadores de colas de mensajes por pares, siendo temporales, anónimos e independientes por cada conexión. No hay identificadores a largo plazo.
 </p>
 <p>
-    Usted define qué servidor(es) se usan para recibir los mensajes; sus contactos — los servidores que se usan para enviar los mensajes. Es probable que cada conversación use dos servidores distintos.
+    Tu defines qué servidor(es) se usan para recibir los mensajes. Tus contactos definenen qué servidores usarás para enviar los mensajes. Es muy probable que cada conversación use dos servidores distintos.
 </p>
 <p>
-    Este diseño evita que se filtren metadatos de usuario a nivel de aplicación. Para mejorar aún más la privacidad y proteger su dirección IP, puede conectarse a los servidores de mensajería a través de la red Tor.
+    Este diseño evita que se filtren metadatos de usuario a nivel de aplicación. Para mejorar aún más la privacidad y proteger tu dirección IP, puedes conectarte a los servidores de mensajería a través de la red Tor.
 </p>
 <p>
     Los perfiles de usuario, contactos y grupos sólo se almacenan en los dispositivos cliente; los mensajes se envían con cifrado de doble capa de extremo a extremo .
 </p>
 <p>
-    Podrá encontrar más información en <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">el informe técnico SimpleX</a>.
+    Encontrarás más información en el<a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">SimpleX whitepaper</a>.
 </p>
                         </div>
                     </div>
@@ -812,7 +812,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         </div>
 
                         <div>
-                            <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">Obtenga SimpleX <a href="/downloads">desktop app</a></p>
+                            <p class="text-black dark:text-white hidden md:block text-center xl:text-left xl:rtl:text-right text-[16px] leading-[26px] mb-[11px] md:mt-6">Obtén SimpleX <a href="/downloads">para desktop</a></p>
                             <div class="socials flex items-center justify-center xl:justify-start gap-4 flex-wrap mt-[30px]">
                                 <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
                                 <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
@@ -849,10 +849,10 @@ window.addEventListener('scroll',changeHeaderBg);
 
                     <article class="w-full xl:max-w-[600px] landing-page-header-article px-5">
                         <h2 class="text-active-blue text-center xl:text-left xl:rtl:text-right font-bold text-[28px] md:text-[35px] leading-[36px] md:leading-[43px] mb-[28px]">
-                            Haga una conexión privada
+                            Crea una conexión privada
                         </h2>
                         <p class="text-center text-black dark:text-white xl:text-justify leading-[24px] text-[16px] mb-10 xl:mb-[25px] header-description">
-                            El vídeo muestra cómo se conecta con sus amistades a través del código QR de un solo uso, en persona o a través de videollamada. También puede conectarse compartiendo un enlace de invitación.
+                            El vídeo muestra cómo te conectas con tus amistades a través del código QR de un solo uso, en persona o a través de videollamada. También puedes conectarte compartiendo un enlace de invitación.
                         </p>
                     </article>
 
@@ -892,7 +892,7 @@ window.addEventListener('scroll',changeHeaderBg);
 <section id="why-privacy" class="bg-secondary-bg-light dark:bg-secondary-bg-dark py-[90px] px-5 lg:h-[888px]">
     <div class="container">
         <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-4 md:mb-8">Por qué es <span class="gradient-text">importante</span> la privacidad</h2>
-        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">Preservar la privacidad de sus metadatos — <span class="text-active-blue">con quién habla</span> — le protege de:</p>
+        <p class="text-center text-[18px] md:text-[20px] font-medium mb-7 md:mb-16 lg:mb-20 text-black dark:text-white">Preservar la privacidad de tus metadatos, <span class="text-active-blue">con quién te comunicas</span>, te protege de:</p>
         <div class="flex flex-col lg:flex-row gap-[20px] mb-[62px] lg:mb-[90px]">
 
             
@@ -914,16 +914,16 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Muchas grandes empresas usan la información de con quién está conectado para calcular sus ingresos, venderle productos que realmente no necesita y determinar su precio.
+    Las grandes empresas usan la información relativa a tus contactos para calcular tus ingresos, venderte productos que realmente no necesitas y para determinar sus precios.
 </p>
 <p>
     Los minoristas en línea saben que las personas con menos ingresos son más propensas a hacer compras urgentes, por lo que pueden cobrar precios más altos o eliminar descuentos.
 </p>
 <p>
-    Algunas compañías financieras y de seguros usan gráficos sociales para determinar primas y tipos de interés. A menudo eso genera un mayor desembolso a personas con menos ingresos — se conoce como <a href="https://fairbydesign.com/povertypremium/" target="_blank">"prima de pobreza"</a>.
+    Algunas compañías financieras y de seguros usan las gráficas sociales para determinar primas y tipos de interés. Eso genera a menudo un mayor desembolso a personas con menores ingresos, conocido como <a href="https://fairbydesign.com/povertypremium/" target="_blank">"prima de pobreza"</a>.
 </p>
 <p>
-    La red SimpleX protege la privacidad de sus conexiones mejor que cualquier alternativa, impidiendo por completo que su gráfico social esté disponible para empresas u organizaciones. Incluso cuando se emplean los servidores configurados en SimpleX Chat, los operadores de servidores desconocen el número de usuarios o sus conexiones.
+    La red SimpleX protege la privacidad de tus conexiones mejor que cualquier alternativa, impidiendo por completo que tu gráfica social esté disponible para empresas u organizaciones. Incluso cuando se emplean los servidores configurados en SimpleX Chat, los operadores de servidores desconocen el número de usuarios o sus conexiones.
 </p>
 
                         </div>
@@ -961,13 +961,13 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    No hace mucho que vimos cómo las principales elecciones eran manipuladas por <a href="https://es.wikipedia.org/wiki/Escándalo_Facebook-Cambridge_Analytica" target="_blank">una reputada consultora</a> que usaba nuestros gráficos sociales para distorsionar nuestra visión del mundo real y manipular nuestros votos.
+    Hace poco vimos cómo las principales elecciones eran manipuladas por <a href="https://es.wikipedia.org/wiki/Escándalo_Facebook-Cambridge_Analytica" target="_blank">una reputada compañía consultora</a> que usaba nuestras gráficas sociales para distorsionar nuestra visión del mundo real y manipular nuestros votos.
 </p>
 <p>
-    Para ser objetivo y tomar decisiones independientes usted necesita tener el controlar de su espacio de información. Sólo es posible si usa una red de comunicaciónes privada que no tenga acceso a su gráfico social.
+    Para ser objetivo y tomar decisiones independientes necesitas tener el controlar de tu espacio de información. Sólo es posible si usas una red de comunicaciónes privada que no tenga acceso a tu gráfica social.
 </p>
 <p>
-    SimpleX es la primera red que por diseño no tiene identificadores de usuario, protegiendo así su grafico de conexiones mejor que cualquier alternativa conocida.
+    SimpleX es la primera red que por diseño no tiene identificadores de usuario, protegiendo así tu gráfica de conexiones mejor que cualquier alternativa conocida.
 </p>
 
                         </div>
@@ -994,27 +994,27 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:w-[70%] lg:w-full flex flex-col items-center md:items-start lg:items-center gap-5 mb-[54px] md:mb-0 lg:mb-[54px]">
                     <p class="font-medium text-xl text-center text-grey-black dark:text-white">Enjuiciamiento por asociación inocente</p>
                     
-                    <a href="javascript:void(0);" data-show-overlay="privacy-protects-freedom" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">La privacidad protege su libertad</a>
+                    <a href="javascript:void(0);" data-show-overlay="privacy-protects-freedom" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] text-center underline-offset-2">La privacidad protege tu libertad</a>
                     
     
     <div id="privacy-protects-freedom" data-scroll-to="why-privacy" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">La privacidad protege su libertad</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 lg:max-w-[448px]">La privacidad protege tu libertad</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Todos deberían preocuparse por la privacidad y la seguridad de sus comunicaciones — las conversaciones inofensivas pueden ponerle en peligro incluso aunque no tenga nada que ocultar.
+    Todos deberían preocuparse por la privacidad y la seguridad de sus comunicaciones. Las conversaciones inofensivas pueden ponerte en peligro incluso aunque no tengas nada que ocultar.
 </p>
 <p>
-    Una de las historias más estremecedoras es la experiencia de <a href="https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi" target="_blank">Mohamedou Ould Salahi</a> descrita en sus memorias y plasmada en la película The Mauritanian. Fue internado en la prisión militar de Guantánamo sin juicio previo, donde fue torturado durante 15 años tras una llamada telefónica a su pariente en Afganistán, bajo sospecha de estar implicado en los atentados del 11-S a pesar de que vivía en Alemania desde hacía 10 años.
+    Una de las historias más estremecedoras es la experiencia de <a href="https://en.wikipedia.org/wiki/Mohamedou_Ould_Slahi" target="_blank">Mohamedou Ould Salahi</a> descrita en sus memorias y plasmada en la película The Mauritanian. Fue internado en la prisión militar de Guantánamo sin juicio previo, donde fue torturado durante 15 años tras una llamada telefónica a su pariente en Afganistán, bajo la sospecha de estar implicado en los atentados del 11-S a pesar de que vivía en Alemania desde hacía 10 años.
 </p>
 <p>
     Personas corrientes son detenidas por lo que comparten en Internet, incluso a través de sus cuentas "anónimas" e <a href="https://www.dailymail.co.uk/news/article-11282263/Moment-police-swoop-house-devout-catholic-mother-malicious-online-posts.html" target="_blank">incluso en países democráticos</a>.
 </p>
 <p>
-    No basta con usar mensajería cifrada de extremo a extremo, todos deberíamos utilizar las aplicaciones de mensajería que protegen la privacidad de nuestras redes personales y con quién estamos conectados.
+    No basta con usar mensajería cifrada de extremo a extremo, todos deberíamos usar las aplicaciones de mensajería que protejan la privacidad de nuestras redes personales y con quién nos comunicamos.
 </p>
 
                         </div>
@@ -1036,7 +1036,7 @@ window.addEventListener('scroll',changeHeaderBg);
             
 
         </div>
-        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">¡Asegúrese de que su aplicación de mensajería no puede acceder a sus datos!</p>
+        <p class="text-center w-full max-w-[900px] text-[20px] leading-[28px] m-auto text-black dark:text-white">¡Asegúrate que la mensajería no puede acceder a tus datos!</p>
     </div>
 </section>
 
@@ -1059,23 +1059,23 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <h1 class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#1</h1>
-                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Su privacidad es completa</h3>
+                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">La privacidad es completa</h3>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
                                 
                                     <div class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left md:rtl:text-right">
                                         <p style="padding-bottom:6px;">
-    SimpleX protege la privacidad de su perfil, contactos y metadatos, ocultándolos de los servidores de la red SimpleX y de cualquier observador.
+    SimpleX protege la privacidad de tu perfil, contactos y metadatos, ocultándolos de los servidores SimpleX y de cualquier observador.
 </p>
 <p>
-    A diferencia de cualquier otra red de mensajería existente, SimpleX no tiene identificadores asignados a los usuarios — <strong> ni siquiera números aleatorios </strong>.
+    A diferencia de cualquier otra red de mensajería existente, SimpleX no tiene identificadores asignados a los usuarios, <strong>ni siquiera números aleatorios</strong>.
 </p>
 
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="privacy-of-identity-contacts-metadata" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubra más</a>
+                                    <a href="javascript:void(0)" data-show-overlay="privacy-of-identity-contacts-metadata" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubre más</a>
                                 
                             </div>
                         </div>
@@ -1110,20 +1110,20 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <h1 class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#2</h1>
-                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Está protegido<br>contra el spam y abuso</h3>
+                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Estás protegido<br>contra el spam y el abuso</h3>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
                                 
                                     <div class="w-full max-w-[541px] text-[16px] leading-[24px] tracking-[0.02em] mb-[36px] text-grey-black dark:text-white text-center md:text-left md:rtl:text-right">
                                         <p>
-    Al no tener identificadores o dirección permanente en la red SimpleX, nadie puede ponerse en contacto con usted salvo que comparta una dirección de usuario de un solo uso o una dirección temporal en forma de enlace o código QR.
+    Al no tener identificadores o dirección permanente en la red SimpleX, nadie puede ponerse en contacto contigo salvo que compartas una dirección de usuario de un solo uso o una dirección temporal en forma de enlace o código QR.
 </p>
 
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="protection-from-spam-and-abuse" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubra más</a>
+                                    <a href="javascript:void(0)" data-show-overlay="protection-from-spam-and-abuse" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubre más</a>
                                 
                             </div>
                         </div>
@@ -1158,7 +1158,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <h1 class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#3</h1>
-                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Usted controla sus datos</h3>
+                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">Tu gestionas tus datos</h3>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -1168,13 +1168,13 @@ window.addEventListener('scroll',changeHeaderBg);
     SimpleX almacena todos los datos de usuario únicamente en los dispositivos cliente usando un <strong>formato cifrado y portable de la base de datos</strong>, la cual puede ser transferida a otro dispositivo.
 </p>
 <p>
-    Los mensajes cifrados de extremo a extremo (E2E) se mantienen temporalmente en los servidores relay SimpleX hasta que se reciben, y después son borrados permanentemente.
+    Los mensajes cifrados de extremo a extremo (E2E) se mantienen temporalmente en los servidores SimpleX hasta que se entregan al destinatario, y después se borran definitivamente.
 </p>
 
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="you-control-your-data" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubra más</a>
+                                    <a href="javascript:void(0)" data-show-overlay="you-control-your-data" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubre más</a>
                                 
                             </div>
                         </div>
@@ -1209,7 +1209,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <div class="card-content absolute md:static px-4 md:px-0 bottom-[80px] right-1 left-1 h-[180px] md:h-fit pt-5 lg:pt-0 bg-primary-bg-light dark:bg-primary-bg-dark">
                             <div class="content-head">
                                 <h1 class="text-[35px] lg:text-[65px] font-bold tracking-[0.06em] text-active-blue text-center md:text-left md:rtl:text-right">#4</h1>
-                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">La red SimpleX le pertenece</h3>
+                                <h3 class="w-full max-w-[617px] text-[25px] leading-[33px] lg:text-[35px] lg:leading-[45px] text-center md:text-left md:rtl:text-right font-bold text-grey-black dark:text-white">La red SimpleX te pertenece</h3>
                             </div>
 
                             <div class="content-body py-5 md:py-7">
@@ -1219,13 +1219,13 @@ window.addEventListener('scroll',changeHeaderBg);
     La red SimpleX está completamente descentralizada y es independiente de cualquier criptodivisa o de cualquier red salvo Internet.
 </p>
 <p>
-    Puede <strong>usar SimpleX con sus propios servidores</strong> o con los servidores proporcionados por nosotros para contactar con cualquier usuario.
+    Puedes <strong>usar SimpleX con tus propios servidores</strong> o con los servidores proporcionados por nosotros para contactar con cualquier usuario.
 </p>
 
                                     </div>
                                 
                                 
-                                    <a href="javascript:void(0)" data-show-overlay="you-own-simplex-network" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubra más</a>
+                                    <a href="javascript:void(0)" data-show-overlay="you-own-simplex-network" class="open-overlay-btn underline text-primary-light dark:text-primary-dark block text-[16px] underline-offset-4 tracking-[0.02em] text-center md:text-left md:rtl:text-right">Descubre más</a>
                                 
                             </div>
                         </div>
@@ -1274,19 +1274,19 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="privacy-of-identity-contacts-metadata" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">Privacidad total de su identidad, perfil, contactos y metadatos</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">Privacidad total de tu identidad, perfil, contactos y metadatos</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    A diferencia de otras redes de mensajería, SimpleX <strong>no tiene identificadores asignados a los usuarios</strong>. No depende de números de teléfono, direcciones basadas en dominios (como es el caso del email o XMPP), nombres de usuario, claves públicas o incluso números aleatorios para identificar a sus usuarios — Los operadores de servidores SimpleX desconocen cuántas personas utilizan sus servidores.
+    A diferencia de otras redes de mensajería, SimpleX <strong>no tiene identificadores asignados a los usuarios</strong>. No depende de números de teléfono, direcciones basadas en dominios (como es el caso del email o XMPP), nombres de usuario, claves públicas o incluso números aleatorios para identificar a sus usuarios. Los operadores de servidores SimpleX desconocen cuántas personas usan sus servidores.
 </p>
 <p>
-    Para enviar mensajes, SimpleX utiliza <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">direcciones anónimas por pares</a> de colas de mensajes unidireccionales, separadas para mensajes recibidos y enviados, y normalmente a través de servidores diferentes.
+    Para la entrega de mensajes, SimpleX usa <a href="https://csrc.nist.gov/glossary/term/Pairwise_Pseudonymous_Identifier">direcciones anónimas por pares</a> de colas de mensajes unidireccionales separadas para mensajes salientes y entrantes a través de servidores diferentes.
 </p>
 <p>
-    Este diseño protege la privacidad de la persona que se comunica con usted ocultándole a los servidores de la red SimpleX y de cualquier observador. Para ocultar su dirección IP a los servidores puede <strong>conectarse a los servidores SimpleX mediante Tor</strong>.
+    Este diseño protege la privacidad de la persona que se comunica contigo ocultándole a los servidores de la red SimpleX y de cualquier observador. Para ocultar tu dirección IP a los servidores puedes <strong>conectarte a los servidores SimpleX mediante Tor</strong>.
 </p>
 
                         </div>
@@ -1322,10 +1322,10 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Al no tener identificadores en la red SimpleX, nadie puede ponerse en contacto con usted salvo que comparta una dirección de usuario de un solo uso o una dirección temporal en forma de enlace o código QR.
+    Al no tener identificadores en la red SimpleX, nadie puede ponerse en contacto contigo salvo que compartas una dirección de usuario de un solo uso o una dirección temporal en forma de enlace o código QR.
 </p>
 <p>
-    Incluso con la dirección de usuario opcional, aunque puede utilizarse para enviar solicitudes de contacto spam, puedes cambiarla o eliminarla por completo sin perder ninguna de tus conexiones.
+    Incluso con la dirección de usuario opcional, aunque pueda usarse para enviar solicitudes de contacto spam, puedes cambiarla o eliminarla por completo sin perder ninguna de tus conexiones.
 </p>
 
                         </div>
@@ -1364,13 +1364,13 @@ window.addEventListener('scroll',changeHeaderBg);
     SimpleX Chat almacena todos los datos de usuario únicamente en los dispositivos cliente usando un <strong>formato cifrado y portable de la base de datos</strong>, la cual puede ser exportada y transferida a cualquier dispositivo compatible.
 </p>
 <p>
-    Los mensajes cifrados de extremo a extremo (E2E) se mantienen temporalmente en los servidores relay SimpleX hasta que se reciben, y después son borrados permanentemente.
+    Los mensajes cifrados de extremo a extremo (E2E) se mantienen temporalmente en los servidores SimpleX hasta que se entregan al destinatario, y después se borran definitivamente.
 </p>
 <p>
     A diferencia de los servidores de redes federadas (correo electrónico, XMPP o Matrix), los servidores SimpleX no almacenan cuentas de usuario, sólo retransmiten mensajes, protegiendo así la privacidad de ambas partes.
 </p>
 <p>
-    No hay identificadores ni texto cifrado en común entre el tráfico de servidor enviado y el recibido — si alguien lo está monitorizando, difícilmente podría determinar quién se comunica con quién, incluso si el protocolo TLS se ve comprometido.
+    No hay identificadores ni texto cifrado en común entre el tráfico de servidor enviado y el recibido. Si alguien te está monitorizando, difícilmente podría determinar quién se comunica con quién, incluso si el protocolo TLS se ve comprometido.
 </p>
 
                         </div>
@@ -1400,19 +1400,19 @@ window.addEventListener('scroll',changeHeaderBg);
     
     <div id="you-own-simplex-network" data-scroll-to="why-simplex" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <h1 class="text-3xl font-bold text-active-blue mb-6 ">Totalmente descentralizado — los usuarios son dueños de la red SimpleX</h1>
+            <h1 class="text-3xl font-bold text-active-blue mb-6 ">Totalmente descentralizado, los usuarios son dueños de la red SimpleX</h1>
             <div class="flex flex-col-reverse lg:flex-row gap-10 justify-between">
                 
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Puede <strong>usar SimpleX con sus propios servidores</strong> y aún así comunicarse con personas que usen los servidores preconfigurados en la aplicación.
+    Puedes <strong>usar SimpleX con tus propios servidores</strong> y aún así comunicarte con personas que usen los servidores preconfigurados de la aplicación.
 </p>
 <p>
-    La red SimpleX utiliza un <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">protocolo abierto</a> y proporciona <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript" target="_blank">SDK para crear chatbots</a>, permitiendo implementar servicios con los que los usuarios pueden interactuar mediante las aplicaciones SimpleX Chat — esperamos conocer los servicios SimpleX que pueda usted crear.
+    La red SimpleX usa un <a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">protocolo abierto</a> y proporciona el <a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript" target="_blank">SDK para crear chatbots</a>, permitiendo implementar servicios con los que los usuarios interactúen con las aplicaciones SimpleX Chat — esperamos con interés ver los servicios SimpleX que creará usted.
 </p>
 <p>
-    Si está pensando en desarrollar para la red SimpleX, por ejemplo un chat bot para los usuarios de SimpleX o la integración de las librerías SimpleX Chat en sus aplicaciones móviles, por favor <a href="https://simplex.chat/contact#/?v=1&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D" target="_blank">póngase en contacto</a> para cualquier consejo o soporte.
+    Si estás considerando desarrollar para la red SimpleX, por ejemplo un chatbot para los usuarios de SimpleX o la integración de las librerías SimpleX Chat en tus aplicaciones móviles, por favor <a href="https://simplex.chat/contact#/?v=1&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D" target="_blank">ponte en contacto</a> para consejos y soporte.
 </p>
 
                         </div>
@@ -1464,7 +1464,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-1.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-1-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Mensajes cifrados E2E con sintáxis markdown y edición</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Mensajes cifrados E2E<br>con sintáxis markdown y edición</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1480,7 +1480,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-3.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-3-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Grupos descentralizados cifrados E2E — sólo los usuarios conocen su existencia</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Grupos descentralizados cifrados E2E, sólo los usuarios saben de su existencia</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1504,7 +1504,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-6.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-6-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Llamadas y videollamadas con cifrado E2E</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Llamadas y videollamadas<br>con cifrado E2E</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1512,7 +1512,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-7.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-7-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Almacenamiento portable y cifrado — podrá transferir su perfil a otro dispositivo</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Almacenamiento portable y cifrado, podrás transferir tu perfil a otro dispositivo</p>
             </div>
             
             <div class="flex flex-col items-center">
@@ -1520,7 +1520,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/feature-8.svg" alt="" class="dark:hidden">
                     <img src="/img/new/feature-8-dark.svg" alt="" class="hidden dark:block">
                 </div>
-                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Modo incógnito —<br>exclusivo de SimpleX Chat</p>
+                <p class="text-grey-black dark:text-white text-[16px] font-medium text-center w-full max-w-[265px]">Modo Incógnito<br>exclusivo de SimpleX Chat</p>
             </div>
             
         </div>
@@ -1542,12 +1542,12 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-10-dark.svg" alt="">
                     </div>
                     <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Identificadores por pares anónimos temporales</h3>
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Identificadores por pares temporales y anónimos</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX usa direcciones y credenciales temporales anónimas por pares para cada contacto de usuario o miembro de grupo.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">SimpleX usa direcciones y credenciales temporales y anónimas por pares para cada contacto o miembro del grupo.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Esto permite entregar mensajes sin identificadores de perfil de usuario y proporcionando una mayor privacidad de metadatos que las alternativas.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Esto permite entregar mensajes sin identificadores del perfil de usuario y proporcionar mayor privacidad de metadatos que las alternativas.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Pulsa para cerrar</p>
@@ -1578,12 +1578,12 @@ window.addEventListener('scroll',changeHeaderBg);
                         <img class="w-full max-w-[223px] h-full max-h-[226px] hidden dark:block" src="/img/new/private-1-dark.svg" alt="">
                     </div>
                     <div class="card-content flex flex-col items-center justify-between h-[138px] absolute bottom-0 py-6 px-6 bg-card-desc-bg-light dark:bg-card-desc-bg-dark rounded-b-[20px]">
-                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Doble capa de<br>cifrado de extremo a extremo</h3>
+                        <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Doble capa de cifrado<br>de extremo a extremo</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Protocolo de '<a href="https://en.wikipedia.org/wiki/Double_Ratchet_Algorithm">Double Ratchet</a>' —<br>Mensajería <a href="https://es.wikipedia.org/wiki/Off_the_record_messaging">OTR</a> con <a href="https://es.wikipedia.org/wiki/Perfect_forward_secrecy">secreto perfecto hacia adelante</a> y recuperación de intrusión.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">NaCL cryptobox por cada cola de mensajes para prevenir la correlación de tráfico entre colas si el protocolo TLS se ve comprometido.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Y si el protocolo TLS se ve comprometido, NaCL cryptobox en cada cola de mensajes para prevenir la correlación de tráfico entre las colas.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Pulsa para cerrar</p>
@@ -1617,7 +1617,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Capa de cifrado<br>adicional en el servidor</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Capa de cifrado adicional en la entrega desde el servidor al destinatario, para prevenir la correlación entre los tráficos de recepción y envío del servidor si el protocolo TLS se ve comprometido.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Capa de cifrado adicional desde el servidor al destinatario, para prevenir la correlación entre el tráficos de entrada y salida del servidor si el protocolo TLS se ve comprometido.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Pulsa para cerrar</p>
@@ -1633,7 +1633,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Mezcla de mensajes<br>para prevenir la correlación</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Los servidores SimpleX actúan como nodos de mezcla de baja latencia — los mensajes entrantes y salientes siguen un orden diferente.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Los servidores SimpleX actúan como nodos de mezcla de baja latencia, los mensajes entrantes y salientes siguen un orden diferente.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Pulsa para cerrar</p>
@@ -1669,7 +1669,7 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Acceso opcional<br>a través de Tor</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Para proteger tu dirección IP puedes acceder a los servidores a través de la red Tor u otras redes de transporte superpuesto.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Para proteger tu dirección IP, puedes acceder a los servidores a través Tor u otra red superpuesta de transporte.</p>
                             
                             <p class="text-grey-black dark:text-white text-[14px] text-center">Para usar SimpleX a través de Tor, instala la aplicación <a href="https://guardianproject.info/apps/org.torproject.android/" target="_blank">Orbot</a> y activa el proxy SOCKS5 (o VPN <a href="https://apps.apple.com/us/app/orbot/id1609461599?platform=iphone" target="_blank">en iOS</a>).</p>
                             
@@ -1687,9 +1687,9 @@ window.addEventListener('scroll',changeHeaderBg);
                         <h3 class="text-grey-black dark:text-white text-[18px] my-4 font-bold leading-[26px] tracking-[0.01em] text-center">Colas de mensajes<br>unidireccionales</h3>
                         <div class="flex-1 py-3 flex flex-col gap-3">
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Cada cola de mensajes transmite los mensajes en un solo sentido, con las distintas direcciones de envío y recepción.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Cada cola de mensajes transmite los mensajes en un sol sentido. entre las direcciónes de envío y recepción.</p>
                             
-                            <p class="text-grey-black dark:text-white text-[14px] text-center">Esto reduce los vectores de ataque y los metadatos disponibles, en comparación con los agentes de mensajes tradicionales.</p>
+                            <p class="text-grey-black dark:text-white text-[14px] text-center">Esto reduce los vectores de ataque y los metadatos disponibles en comparación con los brokers de mensajes tradicionales.</p>
                             
                         </div>
                         <p class="text-grey-black dark:text-white text-[12px] text-center">Pulsa para cerrar</p>
@@ -1744,9 +1744,9 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/network-1-dark.svg" alt="" class="hidden dark:block">
                 </div>
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
-                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">Distinto de las redes P2P</h3>
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">Distinta de las redes P2P</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        Todos los mensajes se envían a través de los servidores, proporcionando mayor privacidad para los metadatos y una entrega asincrónica fiable de mensajes, evitando al mismo tiempo muchos de los <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">problemas asociados a las redes P2P</a>.
+                        Todos los mensajes se envían a través de los servidores, proporcionando mejor privacidad para los metadatos y entrega asíncrona fiable, evitando al mismo tiempo muchos de los <a href="javascript:void(0)" data-show-overlay="comparison-with-p2p-protocols" class="open-overlay-btn">problemas asociados a las redes P2P</a>.
                         
     
     </p><div id="comparison-with-p2p-protocols" data-scroll-to="network" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
@@ -1757,26 +1757,26 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    Los protocolos y aplicaciones de mensajería <a href="https://en.wikipedia.org/wiki/Peer-to-peer">P2P</a> presentan varios problemas que los hacen menos fiables que SimpleX, más complejos de analizar y más vulnerables a varios tipos de ataques.
+    Los protocolos y aplicaciones de mensajería <a href="https://en.wikipedia.org/wiki/Peer-to-peer">P2P</a> presentan varios problemas que los hacen menos fiables que SimpleX, más complejos de analizar y más vulnerables a ciertos tipos de ataques.
 </p>
 <ol style="list-style: auto; padding-left: 1em;">
     <li>
-        Para enrutar mensajes las redes P2P se basan en alguna variante de <a href="https://es.wikipedia.org/wiki/Tabla_de_hash_distribuida">DHT</a>. Los diseños DHT tienen que equilibrar la garantía de entrega con la latencia. SimpleX ofrece mayor garantía de entrega y menor latencia que P2P, ya que un mensaje puede transmitirse en paralelo y de forma redundante a través de varios servidores elegidos por el destinatario. En las redes P2P el mensaje se transmite secuencialmente por <em>O(log N)</em> nodos, usando nodos elegidos por el algoritmo.
+        Para enrutar mensajes, las redes P2P se basan en alguna variante de <a href="https://es.wikipedia.org/wiki/Tabla_de_hash_distribuida">DHT</a>. Los diseños DHT tienen que equilibrar la garantía de entrega y latencia. SimpleX ofrece mayor garantía de entrega y menor latencia que P2P ya que el mensaje puede transmitirse en paralelo y de forma redundante a través de varios servidores elegidos por el destinatario. En las redes P2P el mensaje se transmite secuencialmente por <em>O(log N)</em> nodos, usando nodos elegidos por el algoritmo.
     </li>
     <li>
         Por diseño SimpleX, a diferencia de la mayoría de las redes P2P, no tiene identificadores globales de usuario de ningún tipo, ni siquiera temporales, y sólo usa identificadores temporales por pares, lo que proporciona un mejor anonimato y protección de los metadatos.
     </li>
     <li>
-        P2P no resuelve el problema del <a href="https://es.wikipedia.org/wiki/Ataque_de_intermediario">ataque MITM</a> , y la mayoría de las implementaciones existentes no utilizan mensajes fuera de banda para el intercambio inicial de claves. SimpleX utiliza mensajes fuera de banda, o en algunos casos conexiones seguras y de confianza preexistentes para el intercambio inicial de claves.
+        P2P no resuelve el problema del <a href="https://es.wikipedia.org/wiki/Ataque_de_intermediario">ataque MITM</a> , y la mayoría de implementaciones existentes no usan mensajes fuera de banda para el intercambio de claves inicial. SimpleX usa mensajes fuera de banda, o en algunos casos conexiones seguras y de confianza preexistentes para el intercambio inicial de claves.
     </li>
     <li>
-        Algunos proveedores de Internet pueden bloquear las aplicaciones P2P (como <a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>). SimpleX es independiente del transporte — puede trabajar con protocolos web estándar, por ejemplo WebSockets.
+        Algunos proveedores de Internet pueden bloquear las aplicaciones P2P (como <a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>). SimpleX es independiente del transporte. Puede trabajar con protocolos web estándar, por ejemplo WebSockets.
     </li>
     <li>
-        Todas las redes P2P conocidas pueden ser vulnerables al ataque <a href="https://es.wikipedia.org/wiki/Ataque_Sybil">Sybil</a>, porque cada nodo es susceptible de ser descubierto y la red funciona como una unidad. Las medidas de mitigación conocidas requieren un componente centralizado o bien <a href="https://en.wikipedia.org/wiki/Proof_of_work">pruebas de trabajo</a> costosas. La red SimpleX no tiene capacidad para descubrir los servidores, está fragmentada y funciona como múltiples subredes aisladas haciendo imposibles los ataques a toda la red.
+        Todas las redes P2P conocidas pueden ser vulnerables al ataque <a href="https://es.wikipedia.org/wiki/Ataque_Sybil">Sybil</a> porque cada nodo es susceptible de ser descubierto y la red funciona como una unidad. Las medidas de mitigación conocidas requieren un componente centralizado o bien costosas <a href="https://en.wikipedia.org/wiki/Proof_of_work">pruebas de trabajo</a>. La red SimpleX no tiene la capacidad para descubrir los servidores, está fragmentada y funciona como múltiples subredes aisladas haciendo imposibles los ataques a toda la red.
     </li>
     <li>
-        Las redes P2P pueden ser vulnerables al <a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent">ataque DRDoS</a>, donde los clientes pueden retransmitir y amplificar el tráfico, provocando una denegación de servicio en toda la red. Los clientes SimpleX sólo retransmiten el tráfico desde una conexión conocida y no pueden ser utilizados por un atacante para amplificar el tráfico en toda la red.
+        Las redes P2P pueden ser vulnerables al <a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent">ataque DRDoS</a>, en el que los clientes retransmiten y amplifican el tráfico provocando el bloqueo del servicio en la red. Los clientes SimpleX sólo transmiten el tráfico desde una conexión conocida y no pueden ser usados por un atacante para amplificar el tráfico en toda la red.
     </li>
 </ol>
                         </div>
@@ -1811,9 +1811,9 @@ window.addEventListener('scroll',changeHeaderBg);
                     <img src="/img/new/network-2-dark.svg" alt="" class="hidden dark:block">
                 </div>
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
-                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">Distinto de las redes federadas</h3>
+                    <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">Distinta de las redes federadas</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        Los servidores relay SimpleX NO almacenan perfiles de usuario, contactos ni mensajes entregados, NO se conectan entre sí y NO existe un directorio de servidores.
+                        Los servidores de SimpleX NO almacenan perfiles de usuario, contactos, o mensajes entregados. NO contactan entre sí y NO existe un directorio de servidores.
                     </p>
                 </div>
             </div>
@@ -1828,7 +1828,7 @@ window.addEventListener('scroll',changeHeaderBg);
                 <div class="md:flex-[2] flex flex-col items-center justify-center">
                     <h3 class="text-active-blue text-xl font-bold text-center md:text-left lg:text-center self-stretch">Red Simplex</h3>
                     <p class="text-black dark:text-white text-base font-normal text-center md:text-left lg:text-center">
-                        Los servidores proporcionan <span class="text-active-blue">colas unidireccionales</span> para conectar a los usuarios, pero no pueden ver el mapa de conexión de la red — sólo la tienen los usuarios.
+                        los servidores proporcionan <span class="text-active-blue">colas unidireccionales</span> para conectar a los usuarios pero no ven la gráfica de conexiónes red, sólo los usuarios pueden verla.
                     </p>
                 </div>
             </div>
@@ -1887,7 +1887,7 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-1.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Puedes crear contactos y grupos, y mantener conversaciones bidireccionales como en cualquier aplicación de mensajería.
+                            Puedes crear contactos y grupos, y mantener conversaciones bidireccionales igual que en cualquier aplicación de mensajería.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
                             ¿Cómo puede funcionar con colas unidireccionales y sin identificadores de usuario?
@@ -1900,10 +1900,10 @@ window.addEventListener('scroll',changeHeaderBg);
                     <div class="flex flex-col justify-center items-center">
                         <img class="h-[340px] mb-[74px] mt-[74px] md:hidden" src="/img/new/explained-2.svg" alt="">
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Por cada conexión se usan dos colas de mensajes separadas para que el envío y recepción se hagan a través de servidores diferentes.
+                            Por cada conexión se usan dos colas de mensajes separadas, para que el envío y la recepción se realicen a través de servidores diferentes.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            Los servidores solo transmiten mensajes en un sentido para no disponer de la imagen completa de la conversación y conexiones del usuario.
+                            Los servidores sólo transmiten en un sentido para no disponer de la conversación completa o las conexiones del usuario.
                         </p>
                     </div>
                 </div>
@@ -1916,7 +1916,7 @@ window.addEventListener('scroll',changeHeaderBg);
                             Para cada cola los servidores disponen de credenciales separadas y anónimas, por lo que desconocen a qué usuarios pertenecen.
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            El usuario puede mejorar aún más la privacidad de sus metadatos haciendo uso de la red Tor para acceder a los servidores, evitando así la correlación por dirección IP.
+                            El usuario puede mejorar aún más la privacidad de sus metadatos, haciendo uso de la red Tor para acceder a los servidores, evitando así la correlación por dirección IP.
                         </p>
                     </div>
                 </div>
@@ -2065,14 +2065,14 @@ window.addEventListener("load", function () {
         <div>
             <div class="px-5">
                 <ol class="text-sm lg:text-base font-medium leading-6 list-decimal list-inside">
-                    <li> Generalmente basado en un número de teléfono, en algunos casos en nombres de usuario</li>
+                    <li> Generalmente basada en un número de teléfono, y en algunos casos en nombres de usuario</li>
                     <li> Direcciones basadas en DNS</li>
                     <li> Clave pública o algun otro ID único a nivel global</li>
-                    <li> Los servidores de retransmisión no pueden comprometer la encriptación e2e. Para evitar posibles ataques, verifique el código de seguridad mediante un canal alternativo</li>
-                    <li> Si los servidores del operador se ven comprometidos. Verifique el código de seguridad en Signal y alguna otra aplicación para mitigarlo</li>
+                    <li> Los servidores no pueden comprometer el cifrado E2E. Para evitar posibles ataques, verifica el código de seguridad mediante un canal alternativo</li>
+                    <li> Si los servidores del operador se ven comprometidos. Verifica el código de seguridad en Signal y otras aplicaciónes para mitigarlo</li>
                     <li> No protege la privacidad de los metadatos del usuario</li>
-                    <li> A pesar de que las redes P2P son distribuidas, no son federadas — funcionan como una única red</li>
-                    <li> Las redes P2P o bien tienen una autoridad central o toda la red puede verse comprometida - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">ver aquí</a></li>
+                    <li> A pesar de que las redes P2P son distribuidas, no son federadas. Funcionan como una única red</li>
+                    <li> Las redes P2P, o bien disponen de una autoridad central, o bien la red completa podría verse comprometida - <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">ver aquí</a></li>
                 </ol>
             </div>
         </div>
@@ -2085,19 +2085,19 @@ window.addEventListener("load", function () {
 
 <section id="join-simplex" class="bg-primary-bg-light dark:bg-primary-bg-dark lg:h-[855px] py-[90px] px-5">
     <div class="container flex flex-col items-center">
-        <h2 class="text-[38px] leading-[36px] md:leading-[55px] text-grey-black dark:text-white text-center font-bold mb-5"><span class="text-active-blue">Únase a</span> SimpleX</h2>
-        <p class="text-black dark:text-white text-base text-center mb-14">Le invitamos a unirse a la conversación</p>
+        <h2 class="text-[38px] leading-[36px] md:leading-[55px] text-grey-black dark:text-white text-center font-bold mb-5"><span class="text-active-blue">Únete a</span> SimpleX</h2>
+        <p class="text-black dark:text-white text-base text-center mb-14">Te invitamos a unirte a la conversación</p>
 
         <div class="flex flex-col items-center gap-5 self-stretch mb-12">
-            <a href="https://www.reddit.com/r/SimpleXChat/" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Únase a la comunidad REDDIT</a>
-            <a href="https://github.com/simplex-chat" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Únase a nosotros en GitHub</a>
-            <a href="https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:border-none bg-white dark:bg-[rgba(112,240,249,0.2)] border border-[#0053D0]">Para ayudarnos haga una donación aquí</a>
+            <a href="https://www.reddit.com/r/SimpleXChat/" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Únete a la comunidad REDDIT</a>
+            <a href="https://github.com/simplex-chat" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:bg-primary-bg-dark dark:border-primary-dark dark:border bg-[#D9ECFF]">Únete a nosotros en GitHub</a>
+            <a href="https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations" class="flex items-center justify-center h-11 w-full max-w-[294px] font-medium text-base rounded-[34px] tracking-[0.02em] text-primary-light dark:text-primary-dark dark:border-none bg-white dark:bg-[rgba(112,240,249,0.2)] border border-[#0053D0]">Dona aquí para ayudarnos</a>
         </div>
 
-        <p class="text-grey-black dark:text-white text-base text-center mb-7">Suscríbase para recibir nuestras actualizaciones</p>
+        <p class="text-grey-black dark:text-white text-base text-center mb-7">Suscríbete para recibir actualizaciones</p>
 
         <form class="flex items-center w-full max-w-[540px] mb-20" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=ad6037a2fe" method="post" target="_blank" novalidate="">
-            <input name="EMAIL" type="text" class="h-[44px] ltr:rounded-l-[34px] rtl:rounded-r-[34px] bg-transparent border border-primary-light focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5 placeholder:text-grey-black placeholder:dark:text-white placeholder:text-base placeholder:font-normal placeholder:tracking-[0.01em]" placeholder="Escriba su dirección de correo electrónico">
+            <input name="EMAIL" type="text" class="h-[44px] ltr:rounded-l-[34px] rtl:rounded-r-[34px] bg-transparent border border-primary-light focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5 placeholder:text-grey-black placeholder:dark:text-white placeholder:text-base placeholder:font-normal placeholder:tracking-[0.01em]" placeholder="Escribe tu correo electrónico">
             <span aria-hidden="true" class="hidden">
                 <input type="text" name="b_ddd892b258ae36e5438e6d4e1_ad6037a2fe" tabindex="-1" value="">
             </span>
@@ -2106,7 +2106,7 @@ window.addEventListener("load", function () {
 
         <hr class="block mb-7 mx-5 dark:opacity-[0.2] w-full">
 
-        <p class="text-grey-black dark:text-white text-center mb-7">Obtenga SimpleX <a href="/downloads">desktop app</a></p>
+        <p class="text-grey-black dark:text-white text-center mb-7">Obtén SimpleX <a href="/downloads">para desktop</a></p>
         <div class="flex items-center justify-center gap-4 flex-wrap">
             <a href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img class="h-[40px] w-auto" src="/img/new/apple_store.svg"></a>
             <a href="https://play.google.com/store/apps/details?id=chat.simplex.app" target="_blank" title="Public iOS preview on TestFlight"><img class="h-[40px] w-auto" src="/img/new/google_play.svg"></a>
@@ -2140,7 +2140,7 @@ window.addEventListener("load", function () {
                     <div class="flex flex-col items-center lg:items-start">
                         <a href="/about/"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
-                            Acerca de & Contacta con nosotros
+                            Quiénes somos & Contacto
                         </a>
                         <a href="/privacy/"
                             class="text-grey-black dark:text-white text-[14px] font-medium leading-[28px] tracking-[0.01em] mb-3 flex items-center gap-1">
