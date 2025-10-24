@@ -95,7 +95,8 @@ kotlin {
 
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        val cameraXVersion = "1.3.4"
+        // https://issuetracker.google.com/issues/351313880
+        val cameraXVersion = "1.5.1"
         implementation("androidx.camera:camera-core:${cameraXVersion}")
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
