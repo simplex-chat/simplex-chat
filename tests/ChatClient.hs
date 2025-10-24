@@ -284,10 +284,10 @@ nextVersion :: Version v -> Version v
 nextVersion (Version v) = Version (v + 1)
 
 createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
+createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {chatRelay}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile False True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile chatRelay True
   startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC

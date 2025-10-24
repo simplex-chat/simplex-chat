@@ -42,7 +42,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, chatRelay, yesToUpMigrations, migrationBackupPath}, createBot, maintenance} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath}, createBot, maintenance} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -61,16 +61,15 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       cc <- newChatController db u_ cfg opts backgroundMode
       u <- maybe (createActiveUser cc coreOptions createBot) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
-      unless maintenance $ do
-        when chatRelay $ createRelayUserAddress cc
-        forM_ (preStartHook chatHooks) ($ cc)
+      unless maintenance $ forM_ (preStartHook chatHooks) ($ cc)
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatOpts {maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatOpts {coreOptions = CoreChatOpts {chatRelay}, maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
+      when chatRelay $ askCreateRelayAddress cc
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
@@ -104,7 +103,7 @@ selectActiveUser CoreChatOpts {chatRelay} users st
         loop
         where
           loop = do
-            nStr <- getWithPrompt $ "user number (1 .. " <> show (length users) <> ")"
+            nStr <- withPrompt ("user number (1 .. " <> show (length users) <> "): ") getLine
             case readMaybe nStr :: Maybe Int of
               Nothing -> putStrLn "not a number" >> loop
               Just n
@@ -133,7 +132,7 @@ createActiveUser cc CoreChatOpts {chatRelay} = \case
         loop
   where
     loop = do
-      displayName <- T.pack <$> getWithPrompt "display name"
+      displayName <- T.pack <$> withPrompt "display name: " getLine
       createUser loop $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
     createUser onError p =
@@ -141,14 +140,16 @@ createActiveUser cc CoreChatOpts {chatRelay} = \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
-createRelayUserAddress :: ChatController -> IO ()
-createRelayUserAddress cc =
-  execChatCommand' CreateMyAddress 0 `runReaderT` cc >>= \case
-    Right (CRUserContactLinkCreated _ address) -> do
-      putStrLn "Chat relay address is created:"
-      putStrLn $ addressStr address
-    Left (ChatErrorStore SEDuplicateContactLink) -> pure ()
-    r -> printResponseEvent (Nothing, Nothing) (config cc) r
+askCreateRelayAddress :: ChatController -> IO ()
+askCreateRelayAddress cc = do
+  ok <- onOffPrompt "Create relay address" True
+  when ok $
+    execChatCommand' CreateMyAddress 0 `runReaderT` cc >>= \case
+      Right (CRUserContactLinkCreated _ address) -> do
+        putStrLn "Chat relay address is created:"
+        putStrLn $ addressStr address
+      Left (ChatErrorStore SEDuplicateContactLink) -> pure ()
+      r -> printResponseEvent (Nothing, Nothing) (config cc) r
   where
     addressStr :: CreatedLinkContact -> String
     addressStr (CCLink cReq shortLink) = B.unpack $ maybe cReqStr strEncode shortLink
@@ -164,8 +165,19 @@ printResponseEvent hu cfg = \case
   Left e -> do
     putStrLn $ serializeChatError True cfg e
 
-getWithPrompt :: String -> IO String
-getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine
+withPrompt :: String -> IO a -> IO a
+withPrompt s a = putStr s >> hFlush stdout >> a
+
+onOffPrompt :: String -> Bool -> IO Bool
+onOffPrompt prompt def =
+  withPrompt (prompt <> if def then " (Yn): " else " (yN): ") $
+    getLine >>= \case
+      "" -> pure def
+      "y" -> pure True
+      "Y" -> pure True
+      "n" -> pure False
+      "N" -> pure False
+      _ -> putStrLn "Invalid input, please enter 'y' or 'n'" >> onOffPrompt prompt def
 
 userStr :: User -> String
 userStr User {localDisplayName, profile = LocalProfile {fullName}} =
