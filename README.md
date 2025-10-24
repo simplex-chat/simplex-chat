@@ -54,23 +54,9 @@ If you are interested in helping us to integrate open-source language models, an
 
 ## Join user groups
 
-You can join the groups created by other users via the new [directory service](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion). We are not responsible for the content shared in these groups.
+You can find the groups created by users in [SimpleX Directory](https://simplex.chat/directory/). It is also available as [SimpleX bot](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) that allows to add your own groups and communities to the directory. We are not responsible for the content shared in these groups.
 
 **Please note**: The groups below are created for the users to be able to ask questions, make suggestions and ask questions about SimpleX Chat only.
-
-You also can:
-- criticize the app, and make comparisons with other messengers.
-- share new messengers you think could be interesting for privacy, as long as you don't spam.
-- share some privacy related publications, infrequently.
-- having preliminary approved with the admin in direct message, share the link to a group you created, but only once. Once the group has more than 10 members it can be submitted to [SimpleX Directory Service](./docs/DIRECTORY.md) where the new users will be able to discover it.
-
-You must:
-- be polite to other users
-- avoid spam (too frequent messages, even if they are relevant)
-- avoid any personal attacks or hostility.
-- avoid sharing any content that is not relevant to the above (that includes, but is not limited to, discussing politics or any aspects of society other than privacy, security, technology and communications, sharing any content that may be found offensive by other users, etc.).
-
-Messages not following these rules will be deleted, the right to send messages may be revoked, and the access to the new members to the group may be temporarily restricted, to prevent re-joining under a different name - our imperfect group moderation does not have a better solution at the moment.
 
 You can join an English-speaking users group if you want to ask any questions: [#SimpleX users group](https://smp4.simplex.im/g#hr4lvFeBmndWMKTwqiodPz3VBo_6UmdGWocXd1SupsM)
 
@@ -81,11 +67,7 @@ There is also a group [#simplex-devs](https://smp6.simplex.im/g#Drx3efC-n418AuSp
 - social apps and services
 - etc.
 
-There are groups in other languages, that we have the apps interface translated into. These groups are for testing, and asking questions to other SimpleX Chat users:
-
-[\#SimpleX-DE](https://smp6.simplex.im/g#V6tQ-lJqsdgJJdJiLPtP326oQFKHvwinIbgruZ9K2oU) (German-speaking), [\#SimpleX-ES](https://smp5.simplex.im/g#xJ5kwDLq2305O5FmpUzvgRIXXAcAJ9S5BItCd2Wmloc) (Spanish-speaking), [\#SimpleX-FR](https://smp6.simplex.im/g#cVOpB0CKd6hEf2aWQ6sJ22E2DVgQLtdHoiSdKxXeKqk) (French-speaking), [\#SimpleX-RU](https://smp5.simplex.im/g#vwXRdfG5SgtaG6aVcITiUGd--Ux0rY1IuH4QXYxlq3U) (Russian-speaking), [\#SimpleX-IT](https://smp5.simplex.im/g#BtRcjsl29ULFNBSE2OPhp1UwZfW7PW9gUYFQTKHdjqU) (Italian-speaking).
-
-You can join either by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
+You can join these and other groups by opening these links in the app or by opening them in a desktop browser and scanning the QR code.
 
 ## Follow our updates
 
@@ -165,8 +147,7 @@ It is possible to donate via:
 - BTC: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
 - XMR: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
-- ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- ETH/USDT (Ethereum, Arbitrum One): 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a
 - ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
 - ZEC shielded: u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq
 - DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf

@@ -971,7 +971,7 @@
     <string name="tap_to_activate_profile">Toque para ativar o perfil.</string>
     <string name="unhide_chat_profile">Mostrar perfil de chat</string>
     <string name="unhide_profile">Mostrar perfil</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Tentando se conectar ao servidor utilizado para receber mensagens deste contato (erro:%1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Tentando se conectar ao servidor utilizado para receber mensagens deste contato (erro:%1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Tentando se conectar ao servidor utilizado para receber mensagens deste contato.</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Você está conectado ao servidor usado para receber mensagens desse contato.</string>
     <string name="smp_servers_your_server">Seu servidor</string>

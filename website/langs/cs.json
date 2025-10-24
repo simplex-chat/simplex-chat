@@ -238,7 +238,7 @@
     "f-droid-page-simplex-chat-repo-section-text": "Chcete-li jej přidat do vašeho F-Droid clienta, <span class='hide-on-mobile'> naskenujte QR kód nebo</span> použijte tuto adresu URL:",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat a F-Droid.org repozitáře jsou podepsané různými klíči. Chcete-li přepnout, prosím <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exportujte</a> chat databázi a přeinstalujte aplikaci.",
     "comparison-section-list-point-4a": "SimpleX relé nemůže ohrozit šifrování e2e. Ověřte bezpečnostní kód, který zmírňuje mimo pásmový útok na kanál",
-    "docs-dropdown-8": "Služba SimpleX Directory",
+    "docs-dropdown-8": "SimpleX Directory",
     "please-enable-javascript": "Prosím, povolte JavaScript k zobrazení QR kódu.",
     "please-use-link-in-mobile-app": "Prosím použijte odkaz v mobilní aplikaci",
     "simplex-chat-via-f-droid": "SimpleX Chat přes F-Droid",
@@ -255,5 +255,7 @@
     "docs-dropdown-11": "FAQ (často kladené dotazy)",
     "docs-dropdown-12": "Bezpečnost",
     "hero-overlay-card-3-p-3": "Trail of Bits přezkoumala kryptografický design síťových protokolů SimpleX v červenci 2024. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Přečíst více</a>.",
-    "docs-dropdown-14": "SimpleX pro podnikání"
+    "docs-dropdown-14": "SimpleX pro podnikání",
+    "directory": "Složka",
+    "about-and-contact-us": "O nás & Kontakt"
 }

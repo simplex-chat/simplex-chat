@@ -196,12 +196,13 @@ struct UserAddressView: View {
         progressIndicator = true
         Task {
             do {
-                if let connLinkContact = try await apiCreateUserAddress() {
-                    DispatchQueue.main.async {
+                let connLinkContact = try await apiCreateUserAddress()
+                DispatchQueue.main.async {
+                    if let connLinkContact {
                         chatModel.userAddress = UserContactLink(connLinkContact)
                         alert = .shareOnCreate
-                        progressIndicator = false
                     }
+                    progressIndicator = false
                 }
             } catch let error {
                 logger.error("UserAddressView apiCreateUserAddress: \(responseError(error))")

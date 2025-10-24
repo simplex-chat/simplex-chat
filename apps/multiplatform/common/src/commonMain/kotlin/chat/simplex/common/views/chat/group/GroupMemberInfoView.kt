@@ -109,7 +109,6 @@ fun GroupMemberInfoView(
               }
               openDirectChat(rhId, memberContact.contactId)
               closeAll()
-              chatModel.setContactNetworkStatus(memberContact, NetworkStatus.Connected())
             }
             progressIndicator = false
           }
@@ -495,6 +494,17 @@ fun GroupMemberInfoLayout(
     if (cStats != null) {
       SectionDividerSpaced()
       SectionView(title = stringResource(MR.strings.conn_stats_section_title_servers)) {
+        val subStatus = cStats.subStatus
+        if (subStatus != null) {
+          SectionItemView({
+            AlertManager.shared.showAlertMsg(
+              generalGetString(MR.strings.network_status),
+              subStatus.statusExplanation
+            )
+          }) {
+            SubStatusRow(subStatus)
+          }
+        }
         SwitchAddressButton(
           disabled = cStats.rcvQueuesInfo.any { it.rcvSwitchStatus != null } || !member.sendMsgEnabled,
           switchAddress = switchMemberAddress
@@ -714,14 +724,16 @@ fun MemberProfileImage(
   size: Dp,
   mem: GroupMember,
   color: Color = MaterialTheme.colors.secondaryVariant,
-  backgroundColor: Color? = null
+  backgroundColor: Color? = null,
+  async: Boolean = false
 ) {
   ProfileImage(
     size = size,
     image = mem.image,
     color = color,
     backgroundColor = backgroundColor,
-    blurred = mem.blocked
+    blurred = mem.blocked,
+    async = async
   )
 }
 

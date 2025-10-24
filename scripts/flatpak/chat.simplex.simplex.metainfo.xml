@@ -38,6 +38,48 @@
   </description>
 
   <releases>
+    <release version="6.4.6" date="2025-10-05">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.6:</p>
+        <ul>
+          <li>fixed opening SimpleX links from outside of the app.</li>
+        </ul>
+        <p>New in v6.4-6.4.5:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+          <li>better information about network errors.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.5" date="2025-09-08">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.5:</p>
+        <ul>
+          <li>fixes for chats with admins.</li>
+          <li>better information about network errors.</li>
+        </ul>
+        <p>New in v6.4-6.4.4:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.4.4" date="2025-08-28">
       <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
       <description>

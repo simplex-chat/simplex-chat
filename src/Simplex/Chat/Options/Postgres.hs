@@ -42,7 +42,7 @@ chatDbOptsP _appDir defaultDbName = do
       ( long "pool-size"
           <> metavar "DB_POOL_SIZE"
           <> help "Database connection pool size"
-          <> value 1
+          <> value 10
           <> showDefault
       )
   dbCreateSchema <-
@@ -51,6 +51,9 @@ chatDbOptsP _appDir defaultDbName = do
           <> help "Create database schema when it does not exist"
       )
   pure ChatDbOpts {dbConnstr, dbSchemaPrefix, dbPoolSize, dbCreateSchema}
+
+migrationBackupPathP :: Parser (Maybe FilePath)
+migrationBackupPathP = pure Nothing
 
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbConnstr} = dbConnstr
@@ -78,7 +81,7 @@ mobileDbOpts schemaPrefix connstr = do
     ChatDbOpts
       { dbConnstr,
         dbSchemaPrefix,
-        dbPoolSize = 1,
+        dbPoolSize = 10,
         dbCreateSchema = True
       }
 
