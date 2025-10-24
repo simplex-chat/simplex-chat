@@ -587,69 +587,71 @@ struct ChatListSearchBar: View {
             ScrollView([.horizontal], showsIndicators: false) { TagsView(parentSheet: $parentSheet, searchText: $searchText) }
             HStack(spacing: 12) {
                 HStack(spacing: 4) {
-                    Image(systemName: "magnifyingglass")
-                    TextField("Search or paste SimpleX link", text: $searchText)
-                        .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
-                        .disabled(searchShowingSimplexLink)
-                        .focused($searchFocussed)
-                        .frame(maxWidth: .infinity)
-                    if connectProgressManager.showConnectProgress != nil {
-                        ProgressView()
-                    }
-                    if !searchText.isEmpty {
-                        Image(systemName: "xmark.circle.fill")
-                            .onTapGesture {
-                                searchText = ""
-                            }
-                    }
+//                    HStack(spacing: 4) {
+                        Image(systemName: "magnifyingglass")
+                        TextField("Search or paste SimpleX link", text: $searchText)
+//                            .foregroundColor(searchShowingSimplexLink ? theme.colors.secondary : theme.colors.onBackground)
+//                            .disabled(searchShowingSimplexLink)
+//                            .focused($searchFocussed)
+//                            .frame(maxWidth: .infinity)
+//                    }
+//                    if connectProgressManager.showConnectProgress != nil {
+//                        ProgressView()
+//                    }
+//                    if !searchText.isEmpty {
+//                        Image(systemName: "xmark.circle.fill")
+//                            .onTapGesture {
+//                                searchText = ""
+//                            }
+//                    }
                 }
                 .padding(EdgeInsets(top: 7, leading: 7, bottom: 7, trailing: 7))
                 .foregroundColor(theme.colors.secondary)
                 .background(Color(.tertiarySystemFill))
                 .cornerRadius(10.0)
 
-                if searchFocussed {
-                    Text("Cancel")
-                        .foregroundColor(theme.colors.primary)
-                        .onTapGesture {
-                            searchText = ""
-                            searchFocussed = false
-                        }
-                } else if m.chats.count > 0 {
+//                if searchFocussed {
+//                    Text("Cancel")
+//                        .foregroundColor(theme.colors.primary)
+//                        .onTapGesture {
+//                            searchText = ""
+//                            searchFocussed = false
+//                        }
+//                } else if m.chats.count > 0 {
                     toggleFilterButton()
-                }
+//                }
             }
         }
-        .onChange(of: searchFocussed) { sf in
-            withAnimation { searchMode = sf }
-        }
-        .onChange(of: searchText) { t in
-            if ignoreSearchTextChange {
-                ignoreSearchTextChange = false
-            } else {
-                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
-                    searchFocussed = false
-                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
-                        ignoreSearchTextChange = true
-                        searchText = simplexLinkText(linkType, smpHosts)
-                    }
-                    searchShowingSimplexLink = true
-                    searchChatFilteredBySimplexLink = nil
-                    connect(link.text)
-                } else {
-                    if t != "" { // if some other text is pasted, enter search mode
-                        searchFocussed = true
-                    } else {
-                        ConnectProgressManager.shared.cancelConnectProgress()
-                    }
-                    searchShowingSimplexLink = false
-                    searchChatFilteredBySimplexLink = nil
-                }
-            }
-        }
-        .onChange(of: chatTagsModel.activeFilter) { _ in
-            searchText = ""
-        }
+//        .onChange(of: searchFocussed) { sf in
+//            searchMode = sf
+//        }
+//        .onChange(of: searchText) { t in
+//            if ignoreSearchTextChange {
+//                ignoreSearchTextChange = false
+//            } else {
+//                if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
+//                    searchFocussed = false
+//                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
+//                        ignoreSearchTextChange = true
+//                        searchText = simplexLinkText(linkType, smpHosts)
+//                    }
+//                    searchShowingSimplexLink = true
+//                    searchChatFilteredBySimplexLink = nil
+//                    connect(link.text)
+//                } else {
+//                    if t != "" { // if some other text is pasted, enter search mode
+//                        searchFocussed = true
+//                    } else {
+//                        ConnectProgressManager.shared.cancelConnectProgress()
+//                    }
+//                    searchShowingSimplexLink = false
+//                    searchChatFilteredBySimplexLink = nil
+//                }
+//            }
+//        }
+//        .onChange(of: chatTagsModel.activeFilter) { _ in
+//            searchText = ""
+//        }
     }
 
     private func toggleFilterButton() -> some View {

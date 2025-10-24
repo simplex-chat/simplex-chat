@@ -373,7 +373,7 @@ struct ContactsListSearchBar: View {
         }
         .padding(.top, 24)
         .onChange(of: searchFocussed) { sf in
-            withAnimation { searchMode = sf }
+            searchMode = sf
         }
         .onChange(of: searchText) { t in
             if ignoreSearchTextChange {
