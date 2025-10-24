@@ -15,6 +15,7 @@ where
 
 import Control.Logger.Simple
 import Control.Monad
+import Control.Monad.Except
 import Control.Monad.Reader
 import qualified Data.ByteString.Char8 as B
 import Data.List (find)
@@ -56,20 +57,20 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       exitFailure
     run db@ChatDatabase {chatStore} = do
       users <- withTransaction chatStore getUsers
-      u_ <- selectActiveUser coreOptions users chatStore
+      u_ <- selectActiveUser coreOptions chatStore users
       let backgroundMode = not maintenance
       cc <- newChatController db u_ cfg opts backgroundMode
       u <- maybe (createActiveUser cc coreOptions createBot) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
       unless maintenance $ forM_ (preStartHook chatHooks) ($ cc)
-      runSimplexChat opts u cc chat
+      runSimplexChat cfg opts u cc chat
 
-runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatOpts {coreOptions = CoreChatOpts {chatRelay}, maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
+runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay}, maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
-      when chatRelay $ askCreateRelayAddress cc
+      when (chatRelay && not testView) $ askCreateRelayAddress cc u
       forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
@@ -80,8 +81,8 @@ sendChatCmdStr cc s = runReaderT (execChatCommand Nothing (encodeUtf8 $ T.pack s
 sendChatCmd :: ChatController -> ChatCommand -> IO (Either ChatError ChatResponse)
 sendChatCmd cc cmd = runReaderT (execChatCommand' cmd 0) cc
 
-selectActiveUser :: CoreChatOpts -> [User] -> DBStore -> IO (Maybe User)
-selectActiveUser CoreChatOpts {chatRelay} users st
+selectActiveUser :: CoreChatOpts -> DBStore -> [User] -> IO (Maybe User)
+selectActiveUser CoreChatOpts {chatRelay} st users
   | chatRelay =
       case find (\User {userChatRelay} -> isTrue userChatRelay) users of
         Just u
@@ -140,17 +141,22 @@ createActiveUser cc CoreChatOpts {chatRelay} = \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 
-askCreateRelayAddress :: ChatController -> IO ()
-askCreateRelayAddress cc = do
-  ok <- onOffPrompt "Create relay address" True
-  when ok $
-    execChatCommand' CreateMyAddress 0 `runReaderT` cc >>= \case
-      Right (CRUserContactLinkCreated _ address) -> do
-        putStrLn "Chat relay address is created:"
-        putStrLn $ addressStr address
-      Left (ChatErrorStore SEDuplicateContactLink) -> pure ()
-      r -> printResponseEvent (Nothing, Nothing) (config cc) r
+askCreateRelayAddress :: ChatController -> User -> IO ()
+askCreateRelayAddress cc@ChatController {chatStore} user =
+  withTransaction chatStore (\db -> runExceptT $ getUserAddress db user) >>= \case
+    Right _ -> pure ()
+    Left SEUserContactLinkNotFound -> promptCreate
+    Left e -> printChatError (config cc) $ ChatErrorStore e
   where
+    promptCreate :: IO ()
+    promptCreate = do
+      ok <- onOffPrompt "Create relay address" True
+      when ok $
+        execChatCommand' CreateMyAddress 0 `runReaderT` cc >>= \case
+          Right (CRUserContactLinkCreated _ address) -> do
+            putStrLn "Chat relay address is created:"
+            putStrLn $ addressStr address
+          r -> printResponseEvent (Nothing, Nothing) (config cc) r
     addressStr :: CreatedLinkContact -> String
     addressStr (CCLink cReq shortLink) = B.unpack $ maybe cReqStr strEncode shortLink
       where
@@ -162,8 +168,10 @@ printResponseEvent hu cfg = \case
     ts <- getCurrentTime
     tz <- getCurrentTimeZone
     putStrLn $ serializeChatResponse hu cfg ts tz (fst hu) r
-  Left e -> do
-    putStrLn $ serializeChatError True cfg e
+  Left e -> printChatError cfg e
+
+printChatError :: ChatConfig -> ChatError -> IO ()
+printChatError cfg e = putStrLn $ serializeChatError True cfg e
 
 withPrompt :: String -> IO a -> IO a
 withPrompt s a = putStr s >> hFlush stdout >> a

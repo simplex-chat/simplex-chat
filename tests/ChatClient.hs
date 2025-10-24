@@ -317,7 +317,7 @@ startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user 
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
-  chatAsync <- async $ runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
+  chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
