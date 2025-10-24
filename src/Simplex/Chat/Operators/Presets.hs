@@ -10,6 +10,7 @@ import qualified Data.List.NonEmpty as L
 import Simplex.Chat.Operators
 import Simplex.Messaging.Agent.Env.SQLite (ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Store.Entity
+import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ProtocolType (..), SMPServer)
 
 operatorSimpleXChat :: NewServerOperator
@@ -85,6 +86,14 @@ disabledSimplexChatSMPServers =
   [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
     "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
     "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
+  ]
+
+-- TODO [chat relays] real chat relays
+simplexChatRelays :: [NewUserChatRelay]
+simplexChatRelays =
+  [ presetChatRelay True "chat_relay_1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp111.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"),
+    presetChatRelay True "chat_relay_2" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp222.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"),
+    presetChatRelay True "chat_relay_3" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp333.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]

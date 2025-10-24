@@ -15,7 +15,7 @@ import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
 import Simplex.Chat.Library.Commands (_defaultNtfServers)
 import Simplex.Chat.Operators
-import Simplex.Chat.Operators.Presets (operatorSimpleXChat)
+import Simplex.Chat.Operators.Presets (operatorSimpleXChat, simplexChatRelays)
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Output
@@ -50,7 +50,9 @@ terminalChatConfig =
                         ],
                     useSMP = 3,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    chatRelays = simplexChatRelays,
+                    useChatRelays = 2
                   }
               ],
             ntf = _defaultNtfServers,

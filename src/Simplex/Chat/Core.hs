@@ -118,7 +118,7 @@ createActiveUser cc = \case
       createUser loop $ mkProfile displayName
     mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
     createUser onError p =
-      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False}) 0 `runReaderT` cc >>= \case
+      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False, userChatRelay = False}) 0 `runReaderT` cc >>= \case
         Right (CRActiveUser user) -> pure user
         r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
 

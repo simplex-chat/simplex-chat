@@ -57,6 +57,7 @@ module Simplex.Chat.Store.Profiles
     getContactWithoutConnViaShortAddress,
     updateUserAddressSettings,
     getProtocolServers,
+    getChatRelays,
     insertProtocolServer,
     getUpdateServerOperators,
     getServerOperators,
@@ -125,11 +126,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
-createUserRecord db auId p activeUser = createUserRecordAt db auId p activeUser =<< liftIO getCurrentTime
+createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> Bool -> ExceptT StoreError IO User
+createUserRecord db auId p userChatRelay activeUser = createUserRecordAt db auId p userChatRelay activeUser =<< liftIO getCurrentTime
 
-createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
-createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
+createUserRecordAt :: DB.Connection -> AgentUserId -> Profile -> Bool -> Bool -> UTCTime -> ExceptT StoreError IO User
+createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} userChatRelay activeUser currentTs =
   checkConstraint SEDuplicateName . liftIO $ do
     when activeUser $ DB.execute_ db "UPDATE users SET active_user = 0"
     let showNtfs = True
@@ -157,7 +158,7 @@ createUserRecordAt db (AgentUserId auId) Profile {displayName, fullName, shortDe
       (profileId, displayName, userId, BI True, currentTs, currentTs, currentTs)
     contactId <- insertedRowId db
     DB.execute db "UPDATE users SET contact_id = ? WHERE user_id = ?" (contactId, userId)
-    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, Nothing)
+    pure $ toUser $ (userId, auId, contactId, profileId, BI activeUser, order) :. (displayName, fullName, shortDescr, image, Nothing, peerType, userPreferences) :. (BI showNtfs, BI sendRcptsContacts, BI sendRcptsSmallGroups, BI autoAcceptMemberContacts, Nothing, Nothing, Nothing, Nothing, BI userChatRelay)
 
 -- TODO [mentions]
 getUsersInfo :: DB.Connection -> IO [UserInfo]
@@ -610,6 +611,49 @@ serverColumns p (ProtoServerWithAuth ProtocolServer {host, port, keyHash} auth_)
       auth = safeDecodeUtf8 . unBasicAuth <$> auth_
    in (protocol, host, port, keyHash, auth)
 
+getChatRelays :: DB.Connection -> User -> IO [UserChatRelay]
+getChatRelays db User {userId} =
+  map toChatRelay
+    <$> DB.query
+      db
+      [sql|
+        SELECT chat_relay_id, address, name, domains, preset, tested, enabled
+        FROM chat_relays
+        WHERE user_id = ?
+      |]
+      (Only userId)
+  where
+    toChatRelay :: (DBEntityId, ConnLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
+    toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
+      UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+
+insertChatRelay :: DB.Connection -> User -> UTCTime -> NewUserChatRelay -> IO UserChatRelay
+insertChatRelay db User {userId} ts speer@UserChatRelay {address, name, domains, preset, tested, enabled} = do
+  crId <-
+    fromOnly . head
+      <$> DB.query
+        db
+        [sql|
+          INSERT INTO chat_relays
+            (address, name, domains, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?)
+          RETURNING chat_relay_id
+        |]
+        (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
+  pure speer {chatRelayId = DBEntityId crId}
+
+updateChatRelay :: DB.Connection -> UTCTime -> UserChatRelay -> IO ()
+updateChatRelay db ts UserChatRelay {chatRelayId, address, name, domains, preset, tested, enabled} =
+  DB.execute
+    db
+    [sql|
+      UPDATE chat_relays
+      SET address = ?, name = ?, domains = ?,
+          preset = ?, tested = ?, enabled = ?, updated_at = ?
+      WHERE chat_relay_id = ?
+    |]
+    (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, ts, chatRelayId)
+
 getServerOperators :: DB.Connection -> ExceptT StoreError IO ServerOperatorConditions
 getServerOperators db = do
   currentConditions <- getCurrentUsageConditions db
@@ -621,12 +665,13 @@ getServerOperators db = do
     let conditionsAction = usageConditionsAction ops currentConditions now
     pure ServerOperatorConditions {serverOperators = ops, currentConditions, conditionsAction}
 
-getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP])
+getUserServers :: DB.Connection -> User -> ExceptT StoreError IO ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
 getUserServers db user =
-  (,,)
+  (,,,)
     <$> (map Just . serverOperators <$> getServerOperators db)
     <*> liftIO (getProtocolServers db SPSMP user)
     <*> liftIO (getProtocolServers db SPXFTP user)
+    <*> liftIO (getChatRelays db user)
 
 setServerOperators :: DB.Connection -> NonEmpty ServerOperator -> IO ()
 setServerOperators db ops = do
@@ -839,20 +884,29 @@ setUserServers :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers
 setUserServers db user ts = checkConstraint SEUniqueID . liftIO . setUserServers' db user ts
 
 setUserServers' :: DB.Connection -> User -> UTCTime -> UpdatedUserOperatorServers -> IO UserOperatorServers
-setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers} = do
+setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, smpServers, xftpServers, chatRelays} = do
   mapM_ (updateServerOperator db ts) operator
-  smpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPSMP) smpServers
-  xftpSrvs' <- catMaybes <$> mapM (upsertOrDelete SPXFTP) xftpServers
-  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs'}
+  smpSrvs' <- catMaybes <$> mapM (upsertOrDeleteSrv SPSMP) smpServers
+  xftpSrvs' <- catMaybes <$> mapM (upsertOrDeleteSrv SPXFTP) xftpServers
+  cRelays' <- catMaybes <$> mapM upsertOrDeleteCRelay chatRelays
+  pure UserOperatorServers {operator, smpServers = smpSrvs', xftpServers = xftpSrvs', chatRelays = cRelays'}
   where
-    upsertOrDelete :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
-    upsertOrDelete p (AUS _ s@UserServer {serverId, deleted}) = case serverId of
+    upsertOrDeleteSrv :: ProtocolTypeI p => SProtocolType p -> AUserServer p -> IO (Maybe (UserServer p))
+    upsertOrDeleteSrv p (AUS _ s@UserServer {serverId, deleted}) = case serverId of
       DBNewEntity
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertProtocolServer db p user ts s
       DBEntityId srvId
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
+    upsertOrDeleteCRelay :: AUserChatRelay -> IO (Maybe UserChatRelay)
+    upsertOrDeleteCRelay (AUCR _ speer@UserChatRelay {chatRelayId, deleted}) = case chatRelayId of
+      DBNewEntity
+        | deleted -> pure Nothing
+        | otherwise -> Just <$> insertChatRelay db user ts speer
+      DBEntityId speerId
+        | deleted -> Nothing <$ DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, speerId, BI False)
+        | otherwise -> Just speer <$ updateChatRelay db ts speer
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do
