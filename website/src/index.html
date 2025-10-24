@@ -250,6 +250,91 @@ active_home: true
         io.observe(cover);
     })();
     </script>
+    <script>
+    (function sectionHeaderState(){
+    const mobileHeader = document.getElementById('mobile-header');
+    const cover     = document.querySelector('.page-1.cover');
+    const main      = document.querySelector('main');
+    const directory = document.querySelector('#directory'); // treated as 'main'
+    const footer    = document.querySelector('footer, .footer, #footer'); // robust
+    if (!mobileHeader) return;
+
+    // Observe these regions; #directory maps to the 'main' state.
+    const targets = [
+        { key: 'cover',  el: cover },
+        { key: 'main',   el: main },
+        { key: 'footer', el: footer }
+    ];
+    if (directory) targets.push({ key: 'main', el: directory });
+
+    const observed = targets.filter(t => t.el);
+    if (!observed.length) return;
+
+    const THRESH = 0.7; // require 70% of the viewport height covered
+
+    function clearHeaderClasses(){
+        mobileHeader.classList.remove('cover','main','footer');
+    }
+    function apply(key){
+        clearHeaderClasses();
+        if (key) mobileHeader.classList.add(key);
+    }
+
+    // Vertical viewport coverage ratio (0..1) for an element
+    function viewportCoverageY(el){
+        const r  = el.getBoundingClientRect();
+        const vh = window.innerHeight || document.documentElement.clientHeight;
+        const top = Math.max(0, r.top);
+        const bottom = Math.min(vh, r.bottom);
+        const visibleY = Math.max(0, bottom - top);
+        return visibleY / Math.max(1, vh);
+    }
+
+    // Compute the max viewport-coverage ratio per key across elements with that key
+    function computeKeyMax(measure){
+        const keyMax = { cover: 0, main: 0, footer: 0 };
+        for (const t of observed) {
+        const r = measure(t.el) || 0;
+        if (r > keyMax[t.key]) keyMax[t.key] = r;
+        }
+        return keyMax;
+    }
+
+    if ('IntersectionObserver' in window) {
+        // We still use IO to schedule updates efficiently, but measure coverage per frame
+        const io = new IntersectionObserver(() => {
+        const keyMax = computeKeyMax(viewportCoverageY);
+
+        // Footer wins whenever it covers >=90% of the viewport
+        if (keyMax.footer >= THRESH) { apply('footer'); return; }
+
+        // Otherwise pick the most covered between cover/main (must also be >=90%)
+        let bestKey = null, bestRatio = THRESH;
+        for (const [k, r] of Object.entries(keyMax)) {
+            if (k === 'footer') continue;
+            if (r >= bestRatio) { bestKey = k; bestRatio = r; }
+        }
+        if (bestKey) apply(bestKey); else clearHeaderClasses();
+        }, { threshold: [0, 0.5, 0.7, 1], rootMargin: '0px' });
+
+        observed.forEach(t => io.observe(t.el));
+    } else {
+        // Fallback for older browsers
+        function tick(){
+        const keyMax = computeKeyMax(viewportCoverageY);
+        if (keyMax.footer >= THRESH) { apply('footer'); return; }
+        let bestKey = null, bestRatio = THRESH;
+        for (const [k, r] of Object.entries(keyMax)) {
+            if (k === 'footer') continue;
+            if (r >= bestRatio) { bestKey = k; bestRatio = r; }
+        }
+        if (bestKey) apply(bestKey); else clearHeaderClasses();
+        }
+        ['scroll','resize','load'].forEach(ev => window.addEventListener(ev, tick, { passive: true }));
+        tick();
+    }
+    })();
+    </script>
 </body>
 
 </html>
