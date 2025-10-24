@@ -25,7 +25,7 @@ owsf2TaggedJSONTest = do
   activeUserExistsSwift `to` activeUserExistsTagged
   activeUserSwift `to` activeUserTagged
   chatStartedSwift `to` chatStartedTagged
-  networkStatusesSwift `to` networkStatusesTagged
+  connectionsDiffSwift `to` connectionsDiffTagged
   parsedMarkdownSwift `to` parsedMarkdownTagged
   where
     to :: LB.ByteString -> LB.ByteString -> IO ()

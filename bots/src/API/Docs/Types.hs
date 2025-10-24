@@ -42,6 +42,7 @@ import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
 import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
@@ -228,6 +229,7 @@ chatTypesDocsData =
     (sti @CIMentionMember, STRecord, "", [], "", ""),
     (sti @CIReactionCount, STRecord, "", [], "", ""),
     (sti @CITimed, STRecord, "", [], "", ""),
+    (sti @ClientNotice, STRecord, "", [], "", ""),
     (sti @Color, STEnum, "", [], "", ""),
     (sti @CommandError, STUnion, "", [], "", ""),
     (sti @CommandErrorType, STUnion, "", [], "", ""),
@@ -413,6 +415,7 @@ deriving instance Generic CIMention
 deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
+deriving instance Generic ClientNotice
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType

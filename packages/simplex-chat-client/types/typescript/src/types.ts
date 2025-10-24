@@ -65,6 +65,7 @@ export type AgentErrorType =
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
   | AgentErrorType.AGENT
+  | AgentErrorType.NOTICE
   | AgentErrorType.INTERNAL
   | AgentErrorType.CRITICAL
   | AgentErrorType.INACTIVE
@@ -82,6 +83,7 @@ export namespace AgentErrorType {
     | "RCP"
     | "BROKER"
     | "AGENT"
+    | "NOTICE"
     | "INTERNAL"
     | "CRITICAL"
     | "INACTIVE"
@@ -152,6 +154,13 @@ export namespace AgentErrorType {
     agentErr: SMPAgentError
   }
 
+  export interface NOTICE extends Interface {
+    type: "NOTICE"
+    server: string
+    preset: boolean
+    expiresAt?: string // ISO-8601 timestamp
+  }
+
   export interface INTERNAL extends Interface {
     type: "INTERNAL"
     internalErr: string
@@ -174,6 +183,7 @@ export interface AutoAccept {
 
 export interface BlockingInfo {
   reason: BlockingReason
+  notice?: ClientNotice
 }
 
 export enum BlockingReason {
@@ -1585,6 +1595,10 @@ export enum ChatWallpaperScale {
   Fill = "fill",
   Fit = "fit",
   Repeat = "repeat",
+}
+
+export interface ClientNotice {
+  ttl?: number // int64
 }
 
 export enum Color {

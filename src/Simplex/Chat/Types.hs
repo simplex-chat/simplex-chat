@@ -49,7 +49,6 @@ import Data.Word (Word16)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Chat.Types.Util
 import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
@@ -1789,26 +1788,6 @@ serializeIntroStatus = \case
   GMIntroToConnected -> "to-con"
   GMIntroConnected -> "con"
 
-data NetworkStatus
-  = NSUnknown
-  | NSConnected
-  | NSDisconnected
-  | NSError {connectionError :: String}
-  deriving (Eq, Ord, Show)
-
-netStatusStr :: NetworkStatus -> String
-netStatusStr = \case
-  NSUnknown -> "unknown"
-  NSConnected -> "subscribed"
-  NSDisconnected -> "disconnected"
-  NSError e -> "error: " <> e
-
-data ConnNetworkStatus = ConnNetworkStatus
-  { agentConnId :: AgentConnId,
-    networkStatus :: NetworkStatus
-  }
-  deriving (Show)
-
 type CommandId = Int64
 
 aCorrId :: CommandId -> ACorrId
@@ -1997,10 +1976,6 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "IB") ''InvitedBy)
 $(JQ.deriveJSON defaultJSON ''GroupMemberSettings)
 
 $(JQ.deriveJSON defaultJSON ''SecurityCode)
-
-$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "NS") ''NetworkStatus)
-
-$(JQ.deriveJSON defaultJSON ''ConnNetworkStatus)
 
 $(JQ.deriveJSON defaultJSON ''Connection)
 

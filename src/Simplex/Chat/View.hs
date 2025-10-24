@@ -232,7 +232,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRRcvStandaloneFileCreated u ft -> ttyUser u $ receivingFileStandalone "started" ft
   CRSndStandaloneFileCreated u ft -> ttyUser u $ uploadingFileStandalone "started" ft
   CRStandaloneFileInfo info_ -> maybe ["no file information in URI"] (\j -> [viewJSON j]) info_
-  CRNetworkStatuses u statuses -> if testView then ttyUser' u $ viewNetworkStatuses statuses else []
   CRJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CRMemberAccepted u g m -> ttyUser u $ viewMemberAccepted g m
   CRMemberSupportChatRead u g m -> ttyUser u $ viewSupportChatRead g m
@@ -457,7 +456,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtNetworkStatus srv status conns -> [plain $ netStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -1174,12 +1173,6 @@ viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
 viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
 viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
 
-viewNetworkStatuses :: [ConnNetworkStatus] -> [StyledString]
-viewNetworkStatuses = map viewStatuses . L.groupBy ((==) `on` netStatus) . sortOn netStatus
-  where
-    netStatus ConnNetworkStatus {networkStatus} = networkStatus
-    viewStatuses ss@(s :| _) = plain $ show (L.length ss) <> " connections " <> netStatusStr (netStatus s)
-
 viewUserJoinedGroup :: GroupInfo -> [StyledString]
 viewUserJoinedGroup g@GroupInfo {membership} =
   case incognitoMembershipProfile g of
@@ -1429,21 +1422,30 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
   ]
 
 viewConnDiffSync :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
-viewConnDiffSync userDiff connDiff =
-  viewConnDiffSummary userDiff connDiff
-    <> ["removed extra users in agent" | not (null $ extraIds userDiff)]
-    <> ["removed extra connections in agent" | not (null $ extraIds connDiff)]
+viewConnDiffSync userDiff connDiff
+  | noDiff userDiff && noDiff connDiff = []
+  | otherwise =
+      viewConnDiffSummary' userDiff connDiff
+        <> ["removed extra users in agent" | not (null $ extraIds userDiff)]
+        <> ["removed extra connections in agent" | not (null $ extraIds connDiff)]
+  where
+    noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
 
 viewConnDiffSummary :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
 viewConnDiffSummary userDiff connDiff
   | noDiff userDiff && noDiff connDiff =
       ["no difference between agent and chat connections"]
   | otherwise =
-      ["connections difference summary:"]
-        <> showDatabaseDiff "users" userDiff
-        <> showDatabaseDiff "connections" connDiff
+      viewConnDiffSummary' userDiff connDiff
   where
     noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
+
+viewConnDiffSummary' :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffSummary' userDiff connDiff =
+  ["connections difference summary:"]
+    <> showDatabaseDiff "users" userDiff
+    <> showDatabaseDiff "connections" connDiff
+  where
     showDatabaseDiff name DatabaseDiff {missingIds, extraIds} =
       ["number of missing " <> name <> " in agent: " <> sShow (length missingIds) | not (null missingIds)]
         <> ["number of extra " <> name <> " in agent: " <> sShow (length extraIds) | not (null extraIds)]
@@ -1463,6 +1465,13 @@ viewConnDiffIds userDiff connDiff
         <> ["extra " <> name <> " in agent (agent IDs): " <> showIds extraIds | not (null extraIds)]
       where
         showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
+
+subStatusStr :: SubscriptionStatus -> String
+subStatusStr = \case
+  SSActive -> "subscribed"
+  SSPending -> "disconnected"
+  SSRemoved e -> "removed: " <> e
+  SSNoSub -> "no subscription"
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []

@@ -87,7 +87,6 @@ library
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
-      Simplex.Chat.Types.Util
       Simplex.Chat.Util
   if !flag(client_library)
       exposed-modules:
@@ -121,6 +120,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250919_group_summary
           Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_unused_connections
           Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
+          Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -265,6 +265,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250919_group_summary
           Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections
           Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
+          Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

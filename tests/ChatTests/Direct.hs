@@ -134,6 +134,7 @@ chatDirectTests = do
     it "both users have contact link" testMultipleUserAddresses
     it "create user with same servers" testCreateUserSameServers
     it "delete user" testDeleteUser
+    it "delete user with chat tags" testDeleteUserChatTags
     it "users have different chat item TTL configuration, chat items expire" testUsersDifferentCIExpirationTTL
     it "chat items expire after restart for all users according to per user configuration" testUsersRestartCIExpiration
     it "chat items only expire for users who configured expiration" testEnableCIExpirationOnlyForOneUser
@@ -180,8 +181,6 @@ chatDirectTests = do
       testReqVRange vr11 supportedChatVRange
       testReqVRange vr11 vr11
     it "update peer version range on received messages" testUpdatePeerChatVRange
-  describe "network statuses" $ do
-    it "should get network statuses" testGetNetworkStatuses
   where
     testInvVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnInvChatVRange vr1 vr2
     testReqVRange vr1 vr2 = it (vRangeStr vr1 <> " - " <> vRangeStr vr2) $ testConnReqChatVRange vr1 vr2
@@ -349,6 +348,7 @@ testRetryConnectingClientTimeout ps = do
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               }
         }
+    ChatConfig {presetServers = presetSrvs@PresetServers {netCfg}} = testCfg
     cfgZeroTimeout =
       (testCfg :: ChatConfig)
         { agentConfig =
@@ -356,9 +356,7 @@ testRetryConnectingClientTimeout ps = do
               { quotaExceededTimeout = 1,
                 messageRetryInterval = RetryInterval2 {riFast = fastRetryInterval, riSlow = fastRetryInterval}
               },
-          presetServers =
-            let def@PresetServers {netCfg} = presetServers testCfg
-             in def {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
+          presetServers = presetSrvs {netCfg = (netCfg :: NetworkConfig) {tcpTimeout = NetworkTimeout 10 10}}
         }
     opts' =
       testOpts
@@ -2113,6 +2111,26 @@ testDeleteUser =
       alice ##> "/users"
       alice <## "no users"
 
+testDeleteUserChatTags :: HasCallStack => TestParams -> IO ()
+testDeleteUserChatTags =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/_create tag {\"text\":\"my tag\"}"
+      alice <## "[{\"chatTagId\":1,\"chatTagText\":\"my tag\"}]"
+      alice ##> "/_tags @2 1"
+      alice <## "chat tags updated"
+
+      alice ##> "/create user alisa"
+      showActiveUser alice "alisa"
+
+      alice ##> "/_delete user 1 del_smp=off"
+      alice <## "ok"
+
+      alice ##> "/users"
+      alice <## "alisa (active)"
+
 testUsersDifferentCIExpirationTTL :: HasCallStack => TestParams -> IO ()
 testUsersDifferentCIExpirationTTL ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
@@ -3323,18 +3341,6 @@ testUpdatePeerChatVRange ps =
       contactInfoChatVRange bob supportedChatVRange
   where
     cfg11 = testCfg {chatVRange = vr11} :: ChatConfig
-
-testGetNetworkStatuses :: HasCallStack => TestParams -> IO ()
-testGetNetworkStatuses ps = do
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
-    withNewTestChat ps "bob" bobProfile $ \bob -> do
-      connectUsers alice bob
-      alice ##> "/_network_statuses"
-      alice <## "1 connections subscribed"
-  withTestChat ps "alice" $ \alice ->
-    withTestChat ps "bob" $ \bob -> do
-      alice <## "subscribed 1 connections on server localhost"
-      bob <## "subscribed 1 connections on server localhost"
 
 vr11 :: VersionRangeChat
 vr11 = mkVersionRange (VersionChat 1) (VersionChat 1)

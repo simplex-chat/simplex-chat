@@ -28,11 +28,11 @@ chatStartedSwift = "{\"result\":{\"_owsf\":true,\"chatStarted\":{}}}"
 chatStartedTagged :: LB.ByteString
 chatStartedTagged = "{\"result\":{\"type\":\"chatStarted\"}}"
 
-networkStatusesSwift :: LB.ByteString
-networkStatusesSwift = "{\"result\":{\"_owsf\":true,\"networkStatuses\":{\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}}"
+connectionsDiffSwift :: LB.ByteString
+connectionsDiffSwift = "{\"result\":{\"_owsf\":true,\"connectionsDiff\":{\"userIds\":{\"missingIds\":[],\"extraIds\":[]},\"connIds\":{\"missingIds\":[],\"extraIds\":[]}}}}"
 
-networkStatusesTagged :: LB.ByteString
-networkStatusesTagged = "{\"result\":{\"type\":\"networkStatuses\",\"user_\":" <> userJSON <> ",\"networkStatuses\":[]}}"
+connectionsDiffTagged :: LB.ByteString
+connectionsDiffTagged = "{\"result\":{\"type\":\"connectionsDiff\",\"userIds\":{\"missingIds\":[],\"extraIds\":[]},\"connIds\":{\"missingIds\":[],\"extraIds\":[]}}}"
 
 userJSON :: LB.ByteString
 userJSON = "{\"userId\":1,\"agentUserId\":\"1\",\"userContactId\":1,\"localDisplayName\":\"alice\",\"profile\":{\"profileId\":1,\"displayName\":\"alice\",\"fullName\":\"\",\"shortDescr\":\"Alice\",\"localAlias\":\"\"},\"fullPreferences\":{\"timedMessages\":{\"allow\":\"yes\"},\"fullDelete\":{\"allow\":\"no\"},\"reactions\":{\"allow\":\"yes\"},\"voice\":{\"allow\":\"yes\"},\"files\":{\"allow\":\"always\"},\"calls\":{\"allow\":\"yes\"},\"sessions\":{\"allow\":\"no\"},\"commands\":[]},\"activeUser\":true,\"activeOrder\":1,\"showNtfs\":true,\"sendRcptsContacts\":true,\"sendRcptsSmallGroups\":true,\"autoAcceptMemberContacts\":false}"

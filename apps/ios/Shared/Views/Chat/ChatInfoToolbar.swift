@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var m: ChatModel
     @ObservedObject var chat: Chat
     var imageSize: CGFloat = 32
 
@@ -56,6 +57,13 @@ struct ChatInfoToolbar: View {
                             .padding(.top, -2)
                     }
                 }
+            if let contact = chat.chatInfo.contact,
+               contact.ready && contact.active,
+               let chatSubStatus = m.chatSubStatus,
+               chatSubStatus != .active {
+                SubStatusView(status: chatSubStatus)
+                    .padding(.leading, 4)
+            }
         }
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
@@ -67,6 +75,30 @@ struct ChatInfoToolbar: View {
             .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
+    }
+
+    struct SubStatusView: View {
+        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+        @EnvironmentObject var theme: AppTheme
+        var status: SubscriptionStatus
+
+        var body: some View {
+            switch status {
+            case .active: EmptyView()
+            case .pending: ProgressView()
+            case .removed: subStatusError()
+            case .noSub: subStatusError()
+            }
+        }
+
+        @ViewBuilder private func subStatusError() -> some View {
+            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
+            Image(systemName: "exclamationmark.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
+                .foregroundColor(theme.colors.secondary)
+        }
     }
 }
 
