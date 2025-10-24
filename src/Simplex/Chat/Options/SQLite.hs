@@ -76,8 +76,8 @@ toDBOpts ChatDbOpts {dbFilePrefix, dbKey, trackQueries, vacuumOnMigration} dbSuf
     { dbFilePath = dbFilePrefix <> dbSuffix,
       dbKey,
       keepKey,
-      track = trackQueries,
-      vacuum = vacuumOnMigration
+      vacuum = vacuumOnMigration,
+      track = trackQueries
     }
 
 chatSuffix :: String
