@@ -118,7 +118,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
--- TODO [chat relay] filter out chat relay users where necessary (e.g. loading list of users for UI)
+-- TODO [chat relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -467,7 +467,8 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
-    viaGroupLinkUri :: Maybe ConnReqContact
+    viaGroupLinkUri :: Maybe ConnReqContact,
+    relayOwnStatus :: Maybe GroupRelayStatus
   }
   deriving (Eq, Show)
 
@@ -732,7 +733,8 @@ data GroupProfile = GroupProfile
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission
+    memberAdmission :: Maybe GroupMemberAdmission,
+    groupLink :: Maybe ConnLinkContact
   }
   deriving (Eq, Show)
 
@@ -810,6 +812,13 @@ data GroupLinkRejection = GroupLinkRejection
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+data GroupRelayInvitation = GroupRelayInvitation
+  { fromMember :: MemberIdRole,
+    invitedMember :: MemberIdRole,
+    groupProfile :: GroupProfile
   }
   deriving (Eq, Show)
 
@@ -949,8 +958,27 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    isChatRelay :: BoolDef
+    isChatRelay :: BoolDef, -- marker for all members that this member is a chat relay
+    relayData :: Maybe GroupRelay -- owner's additional data for a chat relay
   }
+  deriving (Eq, Show)
+
+-- TODO [chat relays] review; consider where to use it:
+-- TODO   - GroupMember? (now)
+-- TODO   - separate list of relays in GroupInfo?
+-- TODO   - only on request?
+data GroupRelay = GroupRelay
+  { groupRelayId :: Int64,
+    relayStatus :: GroupRelayStatus,
+    relayLink :: ConnLinkContact
+  }
+  deriving (Eq, Show)
+
+data GroupRelayStatus
+  = GRSNew -- only for owner
+  | GRSInvited
+  | GRSAccepted
+  | GRSActive
   deriving (Eq, Show)
 
 data GroupSupportChat = GroupSupportChat
