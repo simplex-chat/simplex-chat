@@ -1422,21 +1422,30 @@ viewUserPrivacy User {userId} User {userId = userId', localDisplayName = n', sho
   ]
 
 viewConnDiffSync :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
-viewConnDiffSync userDiff connDiff =
-  viewConnDiffSummary userDiff connDiff
-    <> ["removed extra users in agent" | not (null $ extraIds userDiff)]
-    <> ["removed extra connections in agent" | not (null $ extraIds connDiff)]
+viewConnDiffSync userDiff connDiff
+  | noDiff userDiff && noDiff connDiff = []
+  | otherwise =
+      viewConnDiffSummary' userDiff connDiff
+        <> ["removed extra users in agent" | not (null $ extraIds userDiff)]
+        <> ["removed extra connections in agent" | not (null $ extraIds connDiff)]
+  where
+    noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
 
 viewConnDiffSummary :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
 viewConnDiffSummary userDiff connDiff
   | noDiff userDiff && noDiff connDiff =
       ["no difference between agent and chat connections"]
   | otherwise =
-      ["connections difference summary:"]
-        <> showDatabaseDiff "users" userDiff
-        <> showDatabaseDiff "connections" connDiff
+      viewConnDiffSummary' userDiff connDiff
   where
     noDiff DatabaseDiff {missingIds, extraIds} = null missingIds && null extraIds
+
+viewConnDiffSummary' :: DatabaseDiff AgentUserId -> DatabaseDiff AgentConnId -> [StyledString]
+viewConnDiffSummary' userDiff connDiff =
+  ["connections difference summary:"]
+    <> showDatabaseDiff "users" userDiff
+    <> showDatabaseDiff "connections" connDiff
+  where
     showDatabaseDiff name DatabaseDiff {missingIds, extraIds} =
       ["number of missing " <> name <> " in agent: " <> sShow (length missingIds) | not (null missingIds)]
         <> ["number of extra " <> name <> " in agent: " <> sShow (length extraIds) | not (null extraIds)]
