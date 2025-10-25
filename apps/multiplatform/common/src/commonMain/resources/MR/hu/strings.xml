@@ -1142,7 +1142,7 @@
     <string name="this_QR_code_is_not_a_link">Ez a QR-kód nem egy hivatkozás!</string>
     <string name="waiting_for_file">Várakozás a fájlra</string>
     <string name="core_simplexmq_version">simplexmq: v%s (%2s)</string>
-    <string name="unlink_desktop">Szétkapcsolás</string>
+    <string name="unlink_desktop">Leválasztás</string>
     <string name="incognito_random_profile">Véletlenszerű profil</string>
     <string name="wrong_passphrase_title">Érvénytelen jelmondat!</string>
     <string name="prohibit_message_reactions_group">A reakciók hozzáadása az üzenetekhez le van tiltva.</string>
@@ -1269,7 +1269,7 @@
     <string name="chat_with_the_founder">Ötletek és javaslatok</string>
     <string name="database_downgrade_warning">Figyelmeztetés: néhány adat elveszhet!</string>
     <string name="tap_to_start_new_chat">Koppintson ide az új csevegés indításához</string>
-    <string name="waiting_for_desktop">Várakozás a számítógépre…</string>
+    <string name="waiting_for_desktop">Várakozás a számítógép-alkalmazásra…</string>
     <string name="next_generation_of_private_messaging">Az üzenetváltás jövője</string>
     <string name="update_network_settings_question">Módosítja a hálózati beállításokat?</string>
     <string name="waiting_for_mobile_to_connect">Várakozás a hordozható eszköz társítására:</string>
