@@ -218,12 +218,12 @@ html {
 
 html,
 body {
-    background: #ccf9fc;
+    background: #ffffff;
 }
 
 .dark html,
 .dark body {
-    background: #2d3f64;
+    background: #0a0f2b;
 }
 
 @media screen and (min-width: 950px) {
@@ -301,11 +301,19 @@ p {
 }
 
 /* Make the viewport the scroll snap container (works in iOS Safari) */
-html,
-body {
+html {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+}
+
+html.lock-scroll {
+    scroll-snap-type: none !important;
+}
+
+.lock-scroll body {
+    overflow: hidden !important;
+    height: 100svh;
 }
 
 section.page {
