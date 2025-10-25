@@ -25,6 +25,8 @@ done
 
 npm install
 cp node_modules/lottie-web/build/player/lottie.min.js src/js
+cp node_modules/ethers/dist/ethers.umd.min.js src/js
+cp node_modules/ethers/dist/ethers.umd.js.map src/js
 node merge_translations.js
 node customize_docs_frontmatter.js
 
