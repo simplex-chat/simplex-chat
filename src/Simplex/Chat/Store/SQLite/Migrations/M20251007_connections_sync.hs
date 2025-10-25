@@ -15,7 +15,7 @@ CREATE TABLE connections_sync(
   last_sync_ts TEXT
 );
 
-INSERT INTO connections_sync (connections_sync_id, should_sync, last_sync_ts) VALUES (1,0,NULL);
+INSERT INTO connections_sync (connections_sync_id, should_sync, last_sync_ts) VALUES (1, 1, NULL);
 |]
 
 down_m20251007_connections_sync :: Query
