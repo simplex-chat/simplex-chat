@@ -20,7 +20,7 @@ These vouchers are blockchain utility tokens &mdash; to focus purely on server c
 
 SMPX token is v1 of Community Vouchers. We are aiming to launch it in 2026.
 
-Mint a free SimpleX NFT for testnet access and feedback. The NFT is non-transferable, one per wallet.
+<a href="javascript:void(0)" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">Mint a free SimpleX NFT</a> for testnet access and feedback. The NFT is non-transferable, one per wallet.
 
 **Preliminary token overview**
 - full name: **SimpleX Community Voucher**.
