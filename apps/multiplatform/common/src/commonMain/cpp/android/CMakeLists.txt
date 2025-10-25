@@ -57,6 +57,9 @@ set_target_properties( support PROPERTIES IMPORTED_LOCATION
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
 
+# https://developer.android.com/guide/practices/page-sizes#cmake
+target_link_options(app-lib PRIVATE "-Wl,-z,max-page-size=16384")
+
 target_link_libraries( # Specifies the target library.
     app-lib
 
