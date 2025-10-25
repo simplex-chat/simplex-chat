@@ -252,87 +252,101 @@ active_home: true
     </script>
     <script>
     (function sectionHeaderState(){
-    const mobileHeader = document.getElementById('mobile-header');
-    const cover     = document.querySelector('.page-1.cover');
-    const main      = document.querySelector('main');
-    const directory = document.querySelector('#directory'); // treated as 'main'
-    const footer    = document.querySelector('footer, .footer, #footer'); // robust
-    if (!mobileHeader) return;
+        const mobileHeader = document.getElementById('mobile-header');
+        if (!mobileHeader) return;
 
-    // Observe these regions; #directory maps to the 'main' state.
-    const targets = [
-        { key: 'cover',  el: cover },
-        { key: 'main',   el: main },
-        { key: 'footer', el: footer }
-    ];
-    if (directory) targets.push({ key: 'main', el: directory });
+        const cover     = document.querySelector('.page-1.cover');
+        const messaging = document.getElementById('messaging');
+        const nextweb   = document.getElementById('nextweb');
+        const token     = document.getElementById('token');
+        const roadmap   = document.getElementById('roadmap');
+        const directory = document.getElementById('directory');
+        const footer    = document.querySelector('footer, .footer, #footer');
 
-    const observed = targets.filter(t => t.el);
-    if (!observed.length) return;
+        const observed = [
+            { key: 'cover',  el: cover },
+            { key: 'main',   el: messaging },
+            { key: 'main',   el: nextweb },
+            { key: 'main',   el: token },
+            { key: 'main',   el: roadmap },
+            { key: 'main',   el: directory },
+            { key: 'footer', el: footer }
+        ].filter(t => t.el);
 
-    const THRESH = 0.7; // require 70% of the viewport height covered
+        if (!observed.length) return;
 
-    function clearHeaderClasses(){
-        mobileHeader.classList.remove('cover','main','footer');
-    }
-    function apply(key){
-        clearHeaderClasses();
-        if (key) mobileHeader.classList.add(key);
-    }
+        const MIN_COVER = 0.02;
 
-    // Vertical viewport coverage ratio (0..1) for an element
-    function viewportCoverageY(el){
-        const r  = el.getBoundingClientRect();
-        const vh = window.innerHeight || document.documentElement.clientHeight;
-        const top = Math.max(0, r.top);
-        const bottom = Math.min(vh, r.bottom);
-        const visibleY = Math.max(0, bottom - top);
-        return visibleY / Math.max(1, vh);
-    }
-
-    // Compute the max viewport-coverage ratio per key across elements with that key
-    function computeKeyMax(measure){
-        const keyMax = { cover: 0, main: 0, footer: 0 };
-        for (const t of observed) {
-        const r = measure(t.el) || 0;
-        if (r > keyMax[t.key]) keyMax[t.key] = r;
+        function clear(){
+            mobileHeader.classList.remove('cover','main','footer');
         }
-        return keyMax;
-    }
 
-    if ('IntersectionObserver' in window) {
-        // We still use IO to schedule updates efficiently, but measure coverage per frame
-        const io = new IntersectionObserver(() => {
-        const keyMax = computeKeyMax(viewportCoverageY);
-
-        // Footer wins whenever it covers >=90% of the viewport
-        if (keyMax.footer >= THRESH) { apply('footer'); return; }
-
-        // Otherwise pick the most covered between cover/main (must also be >=90%)
-        let bestKey = null, bestRatio = THRESH;
-        for (const [k, r] of Object.entries(keyMax)) {
-            if (k === 'footer') continue;
-            if (r >= bestRatio) { bestKey = k; bestRatio = r; }
+        function apply(key){
+            clear();
+            if (key) mobileHeader.classList.add(key);
         }
-        if (bestKey) apply(bestKey); else clearHeaderClasses();
-        }, { threshold: [0, 0.5, 0.7, 1], rootMargin: '0px' });
 
-        observed.forEach(t => io.observe(t.el));
-    } else {
-        // Fallback for older browsers
-        function tick(){
-        const keyMax = computeKeyMax(viewportCoverageY);
-        if (keyMax.footer >= THRESH) { apply('footer'); return; }
-        let bestKey = null, bestRatio = THRESH;
-        for (const [k, r] of Object.entries(keyMax)) {
-            if (k === 'footer') continue;
-            if (r >= bestRatio) { bestKey = k; bestRatio = r; }
+        function viewportCoverageY(el){
+            const r  = el.getBoundingClientRect();
+            const vh = window.innerHeight || document.documentElement.clientHeight;
+            const visibleY = Math.max(0, Math.min(vh, r.bottom) - Math.max(0, r.top));
+            return visibleY / Math.max(1, vh);
         }
-        if (bestKey) apply(bestKey); else clearHeaderClasses();
+
+        function computeKeyMax(){
+            const keyMax = { cover: 0, main: 0, footer: 0 };
+            for (const t of observed) {
+                const ratio = viewportCoverageY(t.el);
+                if (ratio > keyMax[t.key]) keyMax[t.key] = ratio;
+            }
+            return keyMax;
         }
-        ['scroll','resize','load'].forEach(ev => window.addEventListener(ev, tick, { passive: true }));
-        tick();
-    }
+
+        let lastKey = null;
+        let rafId = null;
+
+        function update(){
+            rafId = null; // Reset RAF flag
+
+            const keyMax = computeKeyMax();
+
+            let bestKey = null, best = MIN_COVER;
+            for (const [k, r] of Object.entries(keyMax)) {
+                if (r > best) { best = r; bestKey = k; }
+            }
+
+            // Only update DOM if state actually changed
+            if (bestKey !== lastKey) {
+                if (bestKey) {
+                    apply(bestKey);
+                } else {
+                    clear();
+                }
+                lastKey = bestKey;
+            }
+        }
+
+        function scheduleUpdate(){
+            if (rafId) return; // Already scheduled
+            rafId = requestAnimationFrame(update);
+        }
+
+        let observer = null;
+
+        if ('IntersectionObserver' in window) {
+            observer = new IntersectionObserver(scheduleUpdate, {
+                threshold: [0, 0.02, 0.1, 0.25, 0.5, 0.75, 1],
+                rootMargin: '0px 0px -35% 0px'
+            });
+            observed.forEach(t => observer.observe(t.el));
+            scheduleUpdate(); // Initial update
+        } else {
+            // Fallback for older browsers
+            ['scroll','resize','load'].forEach(ev => 
+                window.addEventListener(ev, scheduleUpdate, { passive: true })
+            );
+            scheduleUpdate();
+        }
     })();
     </script>
 </body>
