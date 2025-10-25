@@ -652,7 +652,7 @@ window.addEventListener('click',(e)=>{
 
 <section id="why-simplex" class="bg-primary-bg-light dark:bg-primary-bg-dark py-[90px] overflow-hidden px-0 sm:px-1 xl:h-[888px]">
     <div class="container scale-100">
-        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-14 px-5 sm:px-4">为什么 SimpleX 是 <span class="gradient-text">独特的</span></h2>
+        <h2 class="text-grey-black dark:text-white text-[35px] leading-[45px] md:leading-[55px] lg:text-[45px] text-center font-bold mb-14 px-5 sm:px-4">为什么 SimpleX 是<span class="gradient-text">独特的</span></h2>
 
         <div class="swiper unique-swiper px-5 sm:px-4 py-2">
             <div class="swiper-wrapper mb-16">
@@ -1018,10 +1018,10 @@ window.addEventListener('click',(e)=>{
     您可以<strong>将 SimpleX 与您自己的服务器一起使用</strong>，并且仍然可以与使用应用中预配置服务器的人们进行通信。
 </p>
 <p>
-    SimpleX 网络使用<a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">开放协议</a>并提供<a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript" target="_blank">用于创建聊天机器人的 SDK</a>， 允许用户实现通过 SimpleX Chat 应用程序与之交互的服务—— 我们真的很期待看到您会依托SimpleX构建哪些服务。
+    SimpleX 网络使用<a href="https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md" target="_blank">开放协议</a>并提供<a href="https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript" target="_blank">用于创建聊天机器人的 SDK</a>， 允许用户实现通过 SimpleX Chat 应用程序与之交互的服务—我们真的很期待看到您会依托SimpleX构建哪些服务。
 </p>
 <p>
-    如果您正在考虑为在SimpleX 网络上开发，例如，为 SimpleX 应用程序用户开发聊天机器人，或将 SimpleX 聊天库集成到您的移动应用程序中，请 <a href="https://simplex.chat/contact#/?v=1&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D" target="_blank">联系我们</a> 以获取建议和支持。
+    如果您正在考虑为在SimpleX 网络上开发，例如，为 SimpleX 应用程序用户开发聊天机器人，或将 SimpleX 聊天库集成到您的移动应用，请 <a href="https://simplex.chat/contact#/?v=1&amp;smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23MCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%3D" target="_blank">联系我们</a>获取建议和支持。
 </p>
 
                         </div>
@@ -1366,11 +1366,11 @@ window.addEventListener('click',(e)=>{
                     <div class="lg:max-w-[448px]">
                         <div class="text-grey-black dark:text-white flex flex-col gap-6 text-base">
                             <p>
-    <a href="https://zh.wikipedia.org/wiki/%E5%B0%8D%E7%AD%89%E7%B6%B2%E8%B7%AF">P2P</a> 消息传递协议和应用程序存在各种问题，使得它们不如 SimpleX 可靠，分析起来更复杂，并且 容易受到多种类型的攻击。
+    <a href="https://en.wikipedia.org/wiki/Peer-to-peer">P2P</a> 消息传递协议和应用程序存在各种问题，使得它们不如 SimpleX 可靠，分析起来更复杂，并且 容易受到多种类型的攻击。
 </p>
 <ol style="list-style: auto; padding-left: 1em;">
     <li>
-        P2P 网络依赖于<a href="https://zh.wikipedia.org/wiki/%E5%88%86%E6%95%A3%E5%BC%8F%E9%9B%9C%E6%B9%8A%E8%A1%A8"> 分布式散列表(DHT) </a> 的某些变体来路由消息。 DHT 在设计上必须平衡可达性和延迟。 SimpleX 比 P2P 具有更好的可达性和更低的延迟，因为消息可以通过通讯双方选择的多个服务器并行地冗余传递。若是在 P2P 网络中，消息则需要使用算法选择，并依次通过 <em>O(log N)</em> 个节点。
+        P2P 网络依赖于<a href="https://en.wikipedia.org/wiki/Distributed_hash_table">分布式散列表(DHT) </a> 的某些变体来路由消息。 DHT 在设计上必须平衡可达性和延迟。 SimpleX 比 P2P 具有更好的可达性和更低的延迟，因为消息可以通过通讯双方选择的多个服务器并行地冗余传递。若是在 P2P 网络中，消息则需要使用算法选择，并依次通过 <em>O(log N)</em> 个节点。
     </li>
     <li>
         与大多数 P2P 网络不同，SimpleX 在设计上没有任何类型的全局用户标识符，甚至临时的也没有。SimpleX 仅使用临时的成对标识符，提供更好的匿名性和元数据保护。
@@ -1379,13 +1379,13 @@ window.addEventListener('click',(e)=>{
         P2P 并未解决<a href="https://en.wikipedia.org/wiki/Man-in-the-middle_attack">中间人攻击(<span data-glossary="tooltip-mitm-attack" class="glossary-term">MITM Attack</span>)</a> 问题。大多数现有的 P2P 实现没有使用带外通讯来进行初始密钥的交换，而 SimpleX 使用带外通讯，或者在某些情况下，使用预先存在的安全和可信连接来进行初始密钥交换。
     </li>
     <li>
-        P2P 实现（如 <a href="https://zh.wikipedia.org/wiki/BitTorrent_(%E5%8D%8F%E8%AE%AE)">BitTorrent</a>）可能会被某些互联网提供商阻止。 SimpleX 与传输协议无关 — 它可以在标准网络协议上工作，例如 WebSockets。
+        P2P 实现（如<a href="https://en.wikipedia.org/wiki/BitTorrent">BitTorrent</a>）可能会被某些互联网提供商阻止。 SimpleX 与传输协议无关 — 它可以在标准网络协议上工作，例如 WebSockets。
     </li>
     <li>
-        所有已知的 P2P 网络都可能受到 <a href="https://en.wikipedia.org/wiki/Sybil_attack">Sybil 攻击</a>，因为每个节点都是可发现的，并且网络作为一个整体运行。 已知的缓解措施不是需要一个中心化的组件就是需要昂贵的<a href="https://en.wikipedia.org/wiki/Proof_of_work">工作量证明</a>。而 SimpleX 网络没有服务器可发现性，它是碎片化的并且作为多个隔离的子网运行，这样全网络范围的攻击便无从实现。
+        所有已知的 P2P 网络都可能受到<a href="https://en.wikipedia.org/wiki/Sybil_attack">Sybil 攻击</a>，因为每个节点都是可发现的，并且网络作为一个整体运行。 已知的缓解措施不是需要一个中心化的组件就是需要昂贵的<a href="https://en.wikipedia.org/wiki/Proof_of_work">工作量证明</a>。而 SimpleX 网络没有服务器可发现性，它是碎片化的并且作为多个隔离的子网运行，这样全网络范围的攻击便无从实现。
     </li>
     <li>
-        P2P 网络可能受到 <a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent">DRDoS 攻击</a> 。客户端有能力重新广播和放大流量，从而导致整个网络范围内的服务中断。 SimpleX 客户端仅中继来自已知连接的流量，因此不能被攻击者用来放大整个网络的流量。
+        P2P 网络可能受到 <a href="https://www.usenix.org/conference/woot15/workshop-program/presentation/p2p-file-sharing-hell-exploiting-bittorrent">分布式反射拒绝服务攻击</a> 。客户端有能力重新广播和放大流量，从而导致整个网络范围内的服务中断。 SimpleX 客户端仅中继来自已知连接的流量，因此不能被攻击者用来放大整个网络的流量。
     </li>
 </ol>
                         </div>
@@ -1512,7 +1512,7 @@ window.addEventListener('click',(e)=>{
                             对于每个连接，您都会使用两个单独的消息队列，通过不同的服务器发送和接收消息。
                         </p>
                         <p class="text-black dark:text-white text-[16px] font-normal text-center">
-                            服务器只会单向传输消息，而无法掌握用户的对话或连接的全貌。
+                            服务器只单向传输消息，无法掌握用户的对话或连接的全貌。
                         </p>
                     </div>
                 </div>
@@ -1679,7 +1679,7 @@ window.addEventListener("load", function () {
                     <li> 公钥或其他一些全球唯一的 ID</li>
                     <li> SimpleX 中继无法破坏 e2e 加密。 验证安全代码以减轻对带外通道的攻击</li>
                     <li> 如果运营商的服务器受到威胁。 验证 Signal 和其他一些应用程序中的安全代码以缓解该问题</li>
-                    <li> 不保护用户的元数据</li>
+                    <li> 不保护用户的元数据隐私</li>
                     <li> P2P 是分布式的，但并非联邦式的 — 它们作为单个网络运行</li>
                     <li> P2P 网络要么拥有中央权威，要么整个网络可能被攻陷 — <a class="underline text-primary-light dark:text-primary-dark underline-offset-2" href="https://github.com/simplex-chat/simplex-chat/blob/stable/docs/SIMPLEX.md#comparison-with-p2p-messaging-protocols">参见此处</a></li>
                 </ol>
