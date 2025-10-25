@@ -12,7 +12,7 @@ Group or channel owners can select network operators for better reliability and 
 
 These vouchers are blockchain utility tokens &mdash; to focus purely on server capacity usage, like prepaid telephone cards.
 
-## SMPX: Community Voucher Token planned for 2026 🚀
+## SMPX: Community Voucher Token planned for 2026
 
 <img src="/img/design_3/simplex_nft_light.png" width="30%" class="float-to-right dark:hidden">
 
