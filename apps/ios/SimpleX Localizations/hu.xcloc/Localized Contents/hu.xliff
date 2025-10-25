@@ -8593,9 +8593,9 @@ To connect, please ask your contact to create another connection link and check 
 A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcsolattartási hivatkozást, és ellenőrizze, hogy a hálózati kapcsolat stabil-e.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Unlink" xml:space="preserve">
+      <trans-unit id="Unlink" xml:space="preserve" approved="no">
         <source>Unlink</source>
-        <target>Szétkapcsolás</target>
+        <target state="translated">Leválasztás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Unlink desktop?" xml:space="preserve">
@@ -10521,9 +10521,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>ismeretlen</target>
         <note>connection info</note>
       </trans-unit>
-      <trans-unit id="unknown servers" xml:space="preserve">
+      <trans-unit id="unknown servers" xml:space="preserve" approved="no">
         <source>unknown servers</source>
-        <target>ismeretlen átjátszók</target>
+        <target state="translated">ismeretlen kiszolgálók</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="unknown status" xml:space="preserve">
