@@ -274,11 +274,14 @@ window.addEventListener('click',(e)=>{
         }
     }
     else if(e.target.closest('.nav-toggle-btn')){
-        document.body.classList.toggle('lock-scroll');
         if(nav.classList.contains('open')){
             nav.classList.remove('open');
+            document.getElementById('mobile-header').classList.remove('nav-open');
+            document.documentElement.classList.remove('lock-scroll');
         }
         else{
+            document.documentElement.classList.add('lock-scroll');
+            document.getElementById('mobile-header').classList.add('nav-open');
             nav.classList.add('open');
         }
     }
