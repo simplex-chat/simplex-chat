@@ -113,7 +113,7 @@ contract NFTNumbered is ERC721Enumerable, Ownable {
         revert("Unknown token ID");
     }
 
-    /// @notice Withdraw any accidental ETH (safety).
+    /// @notice Withdraw any accidental ETH.
     function withdraw() external onlyOwner {
         (bool success, ) = payable(owner()).call{value: address(this).balance}("");
         require(success, "Withdraw failed");

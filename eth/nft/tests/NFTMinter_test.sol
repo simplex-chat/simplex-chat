@@ -24,7 +24,7 @@ contract NFTMinterTest {
             "SIMPLEXNFT",
             "https://ipfs.io/ipfs/abcd"
         );
-        m = new NFTMinter(address(s));
+        m = new NFTMinter(address(s), 0, 0, false);
     }
 
     function testCreateMinter() public {
@@ -34,13 +34,14 @@ contract NFTMinterTest {
     }
 
     function testMinting() public {
+        m.setMintStartTime(block.timestamp + 86400);
         try m.mint() {
             Assert.ok(false, "expected revert");
         } catch Error(string memory reason) {
-            Assert.equal(reason, "Minting ended", "bad reason");
+            Assert.equal(reason, "Minting not started", "bad reason");
         } catch (bytes memory) {
             Assert.ok(false, "unexpected error");
         }
-        m.setMintUntil(block.timestamp + 86400);
+        m.setMintStartTime(0);
     }
 }
