@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-        
+
 pragma solidity >=0.4.22 <0.9.0;
 
 // This import is automatically injected by Remix
-import "remix_tests.sol"; 
+import "remix_tests.sol";
 
 // This import is required to use custom transaction context
 // Although it may fail compilation in 'Solidity Compiler' plugin
@@ -21,7 +21,7 @@ contract NFTMinterTest {
     function beforeAll() public {
         s = new NFTNumbered(
             "SimpleX NFT: SMPX testnet access",
-            "SIMPLEX2026",
+            "SIMPLEXNFT",
             "https://ipfs.io/ipfs/abcd"
         );
         m = new NFTMinter(address(s));
@@ -44,4 +44,3 @@ contract NFTMinterTest {
         m.setMintUntil(block.timestamp + 86400);
     }
 }
-    
