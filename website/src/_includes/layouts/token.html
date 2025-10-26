@@ -37,7 +37,7 @@
 
     <div id="mint-simplex-nft" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
         <div class="overlay-card w-full md:w-fit md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:h-fit md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
-            <div>
+            <!-- <div>
                 <button id="connectButton">Connect Wallet</button>
                 <p id="account"></p>
                 <button id="readButton">Read Mint until time</button>
@@ -45,74 +45,400 @@
                 <input id="inputValue" type="text" placeholder="Enter address">
                 <button id="writeButton">Mint token to you</button>
                 <p id="writeResult"></p>
-            </div>
+            </div> -->
+            <div id="app-content"></div>
 
             <script>
-                // Replace these with your actual contract details
-                const nftAddress = '';
+                function showOrMintSimplexNft() {
+                    document.getElementById('mint-simplex-nft').classList.remove('hidden');
+                    if (!window.appState) initApp(); // TODO rename, maybe make local
+                    render(); // TODO rename, maybe make local
+                };
+
+                const selectedNetwork = 'ethereum'; // Options: 'ethereum', 'arbitrum', 'hoodi'
+                const networks = {
+                    ethereum: {
+                        chainId: '0x1',
+                        minterAddress: ''
+                    },
+                    arbitrum: {
+                        chainId: '0xa4b1',
+                        minterAddress: ''
+                    },
+                    hoodi: {
+                        chainId: '0x88bb0',
+                        minterAddress: ''
+                    }
+                };
+                const currentConfig = networks[selectedNetwork];
+                const minterAddress = currentConfig.minterAddress;
+
                 const nftABI = [
-                    // Minimal ABI example: assume a contract with getValue() and setValue(uint256)
-                    'function name() view returns (string)',
-                    'function mint(address)'
+                    'function balanceOf(address owner) view returns (uint256)',
+                    'function tokenOfOwnerByIndex(address owner, uint256 index) view returns (uint256)',
+                    'function tokenURI(uint256 tokenId) view returns (string)',
+                    'function mintingLocked() view returns (bool)',
+                    'function nextTokenId() view returns (uint256)',
+                    'function nextTokenURI() view returns (string)'
                 ];
 
-                const minterAddress = '';
                 const minterABI = [
-                    'function mintEndTime() view returns (uint)',
-                    'function mint(uint)',
-                ]
+                    'function nft() view returns (address)',
+                    'function mintEndTime() view returns (uint256)',
+                    'function mint()'
+                ];
 
+                const STATES = {
+                    NOT_CONNECTED: 'not_connected',
+                    LOADING: 'loading',
+                    OWNED: 'owned',
+                    NO_NFT: 'no_nft',
+                    MINTING: 'minting',
+                    MINTED: 'minted',
+                    ERROR: 'error'
+                };
+
+                let appState;
                 let provider;
                 let signer;
                 let nftContract;
                 let minterContract;
+                let nextPollInterval;
+                let mintPollInterval;
+
+                function initApp() {
+                    appState = {
+                        state: STATES.NOT_CONNECTED,
+                        address: '',
+                        nftAddress: '',
+                        hasToken: false,
+                        tokenId: null,
+                        metadata: null,
+                        nextId: null,
+                        nextUri: null,
+                        nextMetadata: null,
+                        canMint: true,
+                        mintEndTime: 0,
+                        locked: false,
+                        error: null,
+                        lastRetry: null
+                    };
+
+                    if (window.ethereum) {
+                        window.ethereum.on('accountsChanged', accounts => {
+                            if (accounts.length > 0) appState.address = accounts[0];
+                            else resetConnection();
+                            render();
+                        });
+
+                        window.ethereum.on('chainChanged', () => {
+                            window.location.reload();
+                        });
+                    }
+                }
+
+                function resetConnection() {
+                    appState.state = STATES.NOT_CONNECTED;
+                    appState.address = '';
+                    provider = null;
+                    signer = null;
+                    nftContract = null;
+                    minterContract = null;
+                }
+
+                async function connectWallet() {
+                    if (!window.ethereum) {
+                        appState.state = STATES.NOT_CONNECTED;
+                        render();
+                        return;
+                    }
+
+                    try {
+                        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                        appState.address = accounts[0];
+                        provider = new ethers.BrowserProvider(window.ethereum);
+                        signer = await provider.getSigner();
+                        const network = await provider.getNetwork();
+
+                        if (network.chainId.toString(16) !== currentConfig.chainId.slice(2).toLowerCase()) {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: currentConfig.chainId }]
+                            });
+                        }
+
+                        minterContract = new ethers.Contract(minterAddress, minterABI, signer);
+
+                        appState.state = STATES.LOADING;
+                        render();
+                        await loadData();
+                    } catch (error) {
+                        handleError(error, connectWallet);
+                    }
+                }
+
+                async function switchAccount() {
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_requestPermissions',
+                            params: [{ eth_accounts: {} }]
+                        });
+                    } catch (error) {
+                        handleError(error, switchAccount);
+                    }
+                }
+
+                async function loadData() { // TODO rename, make local
+                    try {
+                        appState.nftAddress = await minterContract.nft();
+                        nftContract = new ethers.Contract(appState.nftAddress, nftABI, signer);
+                        await checkCanMint();
+                        await checkBalance();
+                    } catch (error) {
+                        handleError(error, loadData);
+                    }
+                }
+
+                async function checkCanMint() {
+                    appState.locked = await nftContract.mintingLocked();
+                    appState.mintEndTime = Number(await minterContract.mintEndTime());
+                    const currentTime = Math.floor(Date.now() / 1000);
+                    appState.canMint = !appState.locked && currentTime < appState.mintEndTime;
+                }
+
+                async function checkBalance() {
+                    const balance = Number(await nftContract.balanceOf(appState.address));
+                    if (balance > 0) {
+                        appState.hasToken = true;
+                        appState.tokenId = Number(await nftContract.tokenOfOwnerByIndex(appState.address, 0));
+                        const uri = await nftContract.tokenURI(appState.tokenId);
+                        appState.metadata = await loadMetadata(uri);
+                        appState.state = STATES.OWNED;
+                    } else {
+                        appState.hasToken = false;
+                        await loadNext();
+                        appState.state = STATES.NO_NFT;
+                        startNextPolling();
+                    }
+                    render();
+                }
+
+                async function loadNext() {
+                    if (!appState.canMint) return;
+                    try {
+                        const newNextId = Number(await nftContract.nextTokenId());
+                        const newNextUri = await nftContract.nextTokenURI();
+                        if (newNextId !== appState.nextId || newNextUri !== appState.nextUri) {
+                            appState.nextId = newNextId;
+                            if (newNextUri !== appState.nextUri) {
+                                appState.nextUri = newNextUri;
+                                appState.nextMetadata = await loadMetadata(newNextUri);
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Failed to load next:', error);
+                    }
+                }
+
+                function replaceIPFS(uri) {
+                    return uri ? uri.replace(/^ipfs:\/\//, 'https://ipfs.io/ipfs/') : '';
+                }
+
+                async function loadMetadata(uri) {
+                    let proxyUri = replaceIPFS(uri)
+                    const response = await fetch(proxyUri);
+                    return await response.json();
+                }
+
+                function startNextPolling() {
+                    if (nextPollInterval) clearInterval(nextPollInterval);
+                    nextPollInterval = setInterval(async () => {
+                        if (appState.state === STATES.NO_NFT && appState.canMint) {
+                            await loadNext();
+                            render();
+                        } else {
+                            clearInterval(nextPollInterval);
+                            nextPollInterval = null;
+                        }
+                    }, 5000);
+                }
+
+                async function mintNft() {
+                    if (!appState.canMint) return;
+                    appState.state = STATES.MINTING;
+                    render();
+                    try {
+                        const tx = await minterContract.mint();
+                        await tx.wait();
+                        // Start polling for balance change
+                        mintPollInterval = setInterval(async () => {
+                            try {
+                                const balance = Number(await nftContract.balanceOf(appState.address));
+                                if (balance > 0) {
+                                    clearInterval(mintPollInterval);
+                                    mintPollInterval = null;
+                                    appState.hasToken = true;
+                                    appState.tokenId = Number(await nftContract.tokenOfOwnerByIndex(appState.address, 0));
+                                    const uri = await nftContract.tokenURI(appState.tokenId);
+                                    appState.metadata = await loadMetadata(uri);
+                                    appState.state = STATES.MINTED;
+                                    render();
+                                }
+                            } catch (error) {
+                                // TODO show error
+                                console.error('Polling error:', error);
+                            }
+                        }, 5000);
+                    } catch (error) {
+                        handleError(error, mintNft);
+                        appState.state = STATES.NO_NFT;
+                        render();
+                    }
+                }
+
+                function handleError(error, retryFunc) {
+                    appState.error = error.reason || error.message || 'An unknown error occurred';
+                    appState.lastRetry = retryFunc;
+                    appState.state = STATES.ERROR;
+                    render();
+                }
+
+                function render() {
+                    const content = document.getElementById('app-content');
+                    content.innerHTML = '';
+
+                    // Always show account if connected
+                    if (appState.address) {
+                        const ellipsisAddr = appState.address.slice(0, 6) + '...' + appState.address.slice(-4);
+                        content.innerHTML += `<p>Connected: ${ellipsisAddr}</p>`;
+                        content.innerHTML += `<button id="switchAccount">Switch Account</button>`;
+                        document.getElementById('switchAccount').onclick = switchAccount;
+                    }
+
+                    switch (appState.state) {
+                        case STATES.NOT_CONNECTED:
+                            if (!window.ethereum) {
+                                content.innerHTML += `<p>No MetaMask detected. Please install it.</p><a href="https://metamask.io/download/" target="_blank">Install MetaMask</a>`;
+                            }
+                            content.innerHTML += `<button id="connect">Connect Wallet</button>`;
+                            document.getElementById('connect').onclick = connectWallet;
+                            break;
+
+                        case STATES.LOADING:
+                            content.innerHTML += `<div class="spinner">Loading...</div>`; // TODO CSS for .spinner
+                            break;
+
+                        case STATES.MINTED:
+                            content.innerHTML += `<p>Congratulations! You minted your NFT.</p>`; // TODO animation CSS
+                            // intentional fallthrough
+                        case STATES.OWNED:
+                            content.innerHTML += `<p>Your NFT #${appState.tokenId}</p>`;
+                            const meta = appState.metadata;
+                            if (meta) {
+                                if (meta.image) {
+                                    content.innerHTML += `<img src="${replaceIPFS(meta.image)}" alt="NFT Image" style="max-width: 300px;">`;
+                                }
+                                content.innerHTML += `<p>Name: ${meta.name || 'N/A'}</p>`;
+                                content.innerHTML += `<p>Description: ${meta.description || 'N/A'}</p>`;
+                            }
+                            break;
+
+                        case STATES.NO_NFT:
+                            if (!appState.canMint) {
+                                if (appState.locked) {
+                                    content.innerHTML += `<p>NFT minting is locked and no longer allowed.</p>`;
+                                } else {
+                                    const endDate = new Date(appState.mintEndTime * 1000).toLocaleString();
+                                    content.innerHTML += `<p>Minting ended on ${endDate}.</p>`;
+                                }
+                            } else {
+                                content.innerHTML += `<p>Next NFT #${appState.nextId}</p>`;
+                                const nextMeta = appState.nextMetadata;
+                                if (nextMeta) {
+                                    if (nextMeta.image) {
+                                        content.innerHTML += `<img src="${replaceIPFS(nextMeta.image)}" alt="Next NFT Image" style="max-width: 300px;">`;
+                                    }
+                                    content.innerHTML += `<p>Name: ${nextMeta.name || 'N/A'}</p>`;
+                                    content.innerHTML += `<p>Description: ${nextMeta.description || 'N/A'}</p>`;
+                                }
+                                content.innerHTML += `<button id="mintBtn">Mint #${appState.nextId}</button>`;
+                                document.getElementById('mintBtn').onclick = mintNft;
+                            }
+                            break;
+
+                        case STATES.MINTING:
+                            content.innerHTML += `<div class="spinner">Minting... Please wait.</div>`;
+                            break;
+
+                        case STATES.ERROR:
+                            content.innerHTML += `<p>Error: ${appState.error}</p>`;
+                            content.innerHTML += `<button id="retry">Retry</button>`;
+                            document.getElementById('retry').onclick = async () => {
+                                appState.error = null;
+                                appState.state = STATES.LOADING;
+                                render();
+                                try {
+                                    await appState.lastRetry();
+                                } catch (error) {
+                                    handleError(error, appState.lastRetry);
+                                }
+                            };
+                            break;
+                    }
+                }
+
+
+
+
+
+
 
                 // Connect wallet (MetaMask)
-                document.getElementById('connectButton').onclick = async () => {
-                    if (typeof window.ethereum !== 'undefined') {
-                        try {
-                            provider = new ethers.BrowserProvider(window.ethereum);
-                            const accounts = await provider.send('eth_requestAccounts', []);
-                            signer = await provider.getSigner();
-                            nftContract = new ethers.Contract(nftAddress, nftABI, signer);
-                            minterContract = new ethers.Contract(minterAddress, minterABI, signer);
-                            console.log(accounts);
-                            document.getElementById('account').textContent = `Connected: ${accounts[0]}`;
-                        } catch (error) {
-                            console.error('Connection failed:', error);
-                            document.getElementById('account').textContent = 'Connection failed';
-                        }
-                    } else {
-                        alert('Install MetaMask!');
-                    }
-                };
+                // document.getElementById('connectButton').onclick = async () => {
+                //     if (typeof window.ethereum !== 'undefined') {
+                //         try {
+                //             provider = new ethers.BrowserProvider(window.ethereum);
+                //             const accounts = await provider.send('eth_requestAccounts', []);
+                //             signer = await provider.getSigner();
+                //             nftContract = new ethers.Contract(nftAddress, nftABI, signer);
+                //             minterContract = new ethers.Contract(minterAddress, minterABI, signer);
+                //             console.log(accounts);
+                //             document.getElementById('account').textContent = `Connected: ${accounts[0]}`;
+                //         } catch (error) {
+                //             console.error('Connection failed:', error);
+                //             document.getElementById('account').textContent = 'Connection failed';
+                //         }
+                //     } else {
+                //         alert('Install MetaMask!');
+                //     }
+                // };
 
-                // Read from contract (no gas/tx needed)
-                document.getElementById('readButton').onclick = async () => {
-                    if (!nftContract || !minterContract) return alert('Connect wallet first');
-                    try {
-                        const value = await minterContract.mintEndTime();
-                        document.getElementById('readResult').textContent = `Value: ${value.toString()}`;
-                    } catch (error) {
-                        alert(`Read failed: ${error}`);
-                        console.error('Read failed:', error);
-                    }
-                };
+                // // Read from contract (no gas/tx needed)
+                // document.getElementById('readButton').onclick = async () => {
+                //     if (!nftContract || !minterContract) return alert('Connect wallet first');
+                //     try {
+                //         const value = await minterContract.mintEndTime();
+                //         document.getElementById('readResult').textContent = `Value: ${value.toString()}`;
+                //     } catch (error) {
+                //         alert(`Read failed: ${error}`);
+                //         console.error('Read failed:', error);
+                //     }
+                // };
 
-                // Write to contract (requires signing and gas)
-                document.getElementById('writeButton').onclick = async () => {
-                    if (!nftContract) return alert('Connect wallet first');
-                    const input = document.getElementById('inputValue').value;
-                    if (!input) return alert('Enter a value');
-                    try {
-                        const tx = await minterContract.mint(input);
-                        await tx.wait(); // Wait for confirmation
-                        document.getElementById('writeResult').textContent = `Tx successful: ${tx.hash}`;
-                    } catch (error) {
-                        alert(`Write failed: ${error.reason}`);
-                        console.error('Write failed:', error);
-                    }
-                };
+                // // Write to contract (requires signing and gas)
+                // document.getElementById('writeButton').onclick = async () => {
+                //     if (!nftContract) return alert('Connect wallet first');
+                //     const input = document.getElementById('inputValue').value;
+                //     if (!input) return alert('Enter a value');
+                //     try {
+                //         const tx = await minterContract.mint(input);
+                //         await tx.wait(); // Wait for confirmation
+                //         document.getElementById('writeResult').textContent = `Tx successful: ${tx.hash}`;
+                //     } catch (error) {
+                //         alert(`Write failed: ${error.reason}`);
+                //         console.error('Write failed:', error);
+                //     }
+                // };
             </script>
 
             <svg class="close-overlay-btn" id="cross" width="16" height="16" viewBox="0 0 13 13" xmlns="http://www.w3.org/2000/svg">
