@@ -62,7 +62,7 @@
                     },
                     hoodi: {
                         chainId: '0x88bb0',
-                        minterAddress: '0xF587D636FDb67F292D1C2381Cf38c70d661e1F3D' // TODO update contract
+                        minterAddress: '0xdaF242166be93A7f9835C2792958F3b6c424F845'
                     }
                 };
                 const currentConfig = networks[selectedNetwork];
@@ -80,9 +80,9 @@
 
                 const minterABI = [
                     'function nft() view returns (address)',
-                    'function mintStartTime() view returns (uint)', // TODO update contract
+                    'function mintStartTime() view returns (uint)',
                     'function mintEndTime() view returns (uint)',
-                    'function paused()', // TODO update contract
+                    'function paused() view returns (bool)',
                     'function mint()'
                 ];
 
@@ -167,10 +167,12 @@
                 }
 
                 async function loadAccount(accounts) {
+                    console.log('loadAccount');
                     appState.address = accounts[0];
                     provider = new ethers.BrowserProvider(window.ethereum);
                     signer = await provider.getSigner();
                     const network = await provider.getNetwork();
+                    console.log('hasNetwork');
 
                     if (network.chainId.toString(16) !== currentConfig.chainId.slice(2).toLowerCase()) {
                         await window.ethereum.request({
@@ -200,6 +202,7 @@
                 async function loadData() { // TODO rename, make local
                     try {
                         appState.nftAddress = await minterContract.nft();
+                        console.log('has NFT');
                         nftContract = new ethers.Contract(appState.nftAddress, nftABI, signer);
                         await checkCanMint();
                         await checkBalance();
@@ -209,6 +212,7 @@
                 }
 
                 async function checkCanMint() {
+                    console.log('checkCanMint');
                     appState.locked = await nftContract.mintingLocked();
                     appState.mintStartTime = Number(await minterContract.mintStartTime());
                     appState.mintEndTime = Number(await minterContract.mintEndTime());
@@ -221,6 +225,7 @@
                 }
 
                 async function checkBalance() {
+                    console.log('checkBalance');
                     appState.totalSupply = Number(await nftContract.totalSupply());
                     const balance = Number(await nftContract.balanceOf(appState.address));
                     if (balance > 0) {
@@ -384,6 +389,10 @@
                                             content.innerHTML += `<p>${attr.trait_type}: ${attr.value}</p>`;
                                         }
                                     }
+                                    if (appState.mintEndTime > 0) {
+                                        const endDate = new Date(appState.mintEndTime * 1000).toLocaleString();
+                                        content.innerHTML += `<p>You can mint SimpleX NFT until ${endDate}</p>`;
+                                    }
                                 }
                                 }
                                 content.innerHTML += `<button id="mintBtn">Mint #${appState.nextId}</button>`;
@@ -397,7 +406,7 @@
                                     const endDate = new Date(appState.mintEndTime * 1000).toLocaleString();
                                     content.innerHTML += `<p>Minting ended on ${endDate}.</p>`;
                                 } else if (appState.currentTime <= appState.mintStartTime) {
-                                    const startDate = new Date(appState.mintEndTime * 1000).toLocaleString();
+                                    const startDate = new Date(appState.mintStartTime * 1000).toLocaleString();
                                     content.innerHTML += `<p>Minting will start on ${startDate}.</p>`;
                                 }
                             }
