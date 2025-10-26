@@ -55,7 +55,7 @@
                     render(); // TODO rename, maybe make local
                 };
 
-                const selectedNetwork = 'ethereum'; // Options: 'ethereum', 'arbitrum', 'hoodi'
+                const selectedNetwork = 'hoodi'; // Options: 'ethereum', 'arbitrum', 'hoodi'
                 const networks = {
                     ethereum: {
                         chainId: '0x1',
@@ -67,7 +67,7 @@
                     },
                     hoodi: {
                         chainId: '0x88bb0',
-                        minterAddress: ''
+                        minterAddress: '0xF587D636FDb67F292D1C2381Cf38c70d661e1F3D' // TODO update contract
                     }
                 };
                 const currentConfig = networks[selectedNetwork];
@@ -85,6 +85,7 @@
                 const minterABI = [
                     'function nft() view returns (address)',
                     'function mintEndTime() view returns (uint256)',
+                    'function paused()', // TODO update contract
                     'function mint()'
                 ];
 
