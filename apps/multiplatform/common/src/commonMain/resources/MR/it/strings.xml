@@ -2014,7 +2014,7 @@
     <string name="info_view_connect_button">connetti</string>
     <string name="contact_deleted">Contatto eliminato!</string>
     <string name="confirm_delete_contact_question">Confermare l\'eliminazione del contatto?</string>
-    <string name="compose_message_placeholder">Messaggio</string>
+    <string name="compose_message_placeholder">Chatta</string>
     <string name="selected_chat_items_nothing_selected">Nessuna selezione</string>
     <string name="select_verb">Seleziona</string>
     <string name="selected_chat_items_selected_n">Selezionato %d</string>
