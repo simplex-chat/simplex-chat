@@ -539,3 +539,36 @@ button#cross-btn {
         right: auto;
     }
 }
+
+#mobile-header.cover {
+    background: #d7fbfe09;
+}
+
+.dark #mobile-header.cover {
+    background: #283b630a;
+}
+
+#mobile-header.main {
+    background: #ffefd60e;
+}
+
+.dark #mobile-header.main {
+    background: #fff6e00a;
+}
+
+#mobile-header.nav-open {
+    background: #ffffff0c;
+}
+
+.dark #mobile-header.nav-open {
+    background: #0a0f2b0f;
+}
+
+#mobile-header.footer {
+    background: #d3e9ff11;
+}
+
+.dark #mobile-header.footer {
+    background: #080d250e;
+    --nav-color: #ffffff;
+}
