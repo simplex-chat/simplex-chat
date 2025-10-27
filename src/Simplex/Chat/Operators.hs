@@ -271,6 +271,13 @@ data UserChatRelay' s = UserChatRelay
   }
   deriving (Show)
 
+-- for setting chat relays via CLI API
+data CLINewRelay = CLINewRelay
+  { address :: ConnLinkContact,
+    name :: Text
+  }
+  deriving (Show)
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
@@ -503,16 +510,16 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
     chatRelayErrs :: UserServersClass u => [u] -> [UserServersError]
-    chatRelayErrs uss = concatMap duplicateErrs_ speers
+    chatRelayErrs uss = concatMap duplicateErrs_ cRelays
       where
-        speers = filter (\(AUCR _ UserChatRelay {deleted}) -> not deleted) $ userChatRelays uss
+        cRelays = filter (\(AUCR _ UserChatRelay {deleted}) -> not deleted) $ userChatRelays uss
         duplicateErrs_ (AUCR _ UserChatRelay {name, address}) =
           [USEDuplicateChatRelayName name | name `elem` duplicateNames]
             <> [USEDuplicateChatRelayAddress name address | address `elem` duplicateAddresses]
         duplicateNames = snd $ foldl' addDuplicate (S.empty, S.empty) allNames
-        allNames = map (\(AUCR _ speer) -> name speer) speers
+        allNames = map (\(AUCR _ UserChatRelay {name}) -> name) cRelays
         duplicateAddresses = snd $ foldl' addAddress ([], []) allAddresses
-        allAddresses = map (\(AUCR _ speer) -> address speer) speers
+        allAddresses = map (\(AUCR _ UserChatRelay {address}) -> address) cRelays
         addAddress :: ([ConnLinkContact], [ConnLinkContact]) -> ConnLinkContact -> ([ConnLinkContact], [ConnLinkContact])
         addAddress (xs, dups) x
           | any (sameConnLinkContact x) xs = (xs, x : dups)
@@ -524,8 +531,8 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
       | noChatRelays opEnabled = [USWNoChatRelays user]
       | otherwise = []
       where
-        noChatRelays cond = not $ any speerEnabled $ userChatRelays $ filter cond uss
-        speerEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
+        noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
+        relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
     userChatRelays :: UserServersClass u => [u] -> [AUserChatRelay]
     userChatRelays = map aUserChatRelay' . concatMap chatRelays'
     opEnabled :: UserServersClass u => u -> Bool

@@ -150,10 +150,14 @@ testCoreOpts =
       logFile = Nothing,
       tbqSize = 16,
       deviceName = Nothing,
+      chatRelay = False,
       highlyAvailable = False,
       yesToUpMigrations = False,
       migrationBackupPath = Nothing
     }
+
+relayTestOpts :: ChatOpts
+relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
@@ -283,10 +287,10 @@ nextVersion :: Version v -> Version v
 nextVersion (Version v) = Version (v + 1)
 
 createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
+createTestChat ps cfg opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {chatRelay}} dbPrefix profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile False True
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile chatRelay True
   startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
@@ -316,7 +320,7 @@ startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user 
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
   void $ execChatCommand' (SetTempFolder "tests/tmp/tmp") 0 `runReaderT` cc
-  chatAsync <- async $ runSimplexChat opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
+  chatAsync <- async $ runSimplexChat cfg opts user cc $ \_u cc' -> runChatTerminal ct cc' opts
   unless maintenance $ atomically $ readTVar (agentAsync cc) >>= \a -> when (isNothing a) retry
   termQ <- newTQueueIO
   termAsync <- async $ readTerminalOutput t termQ
