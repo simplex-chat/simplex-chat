@@ -2026,19 +2026,22 @@ processChatCommand vr nm = \case
     CRContactsList user <$> withFastStore' (\db -> getUserContacts db vr user)
   ListContacts -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APIListContacts userId
-  APICreateMyAddress userId -> withUserId userId $ \user -> do
+  APICreateMyAddress userId -> withUserId userId $ \user@User {userChatRelay} -> do
     withFastStore' (\db -> runExceptT $ getUserAddress db user) >>= \case
       Left SEUserContactLinkNotFound -> pure ()
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
-    -- TODO [chat relays] add relay key, identity to link data
+    -- TODO [chat relays] relay address creation:
+    -- TODO               - add relay key, identity to link data
+    -- TODO               - validate short link is created (returned by agent)
     let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userData) Nothing IKPQOn subMode
     ccLink' <- shortenCreatedLink ccLink
-    withFastStore $ \db -> createUserContactLink db user connId ccLink' subMode
-    pure $ CRUserContactLinkCreated user ccLink'
+    let ccLink'' = if isTrue userChatRelay then createdRelayLink ccLink' else ccLink'
+    withFastStore $ \db -> createUserContactLink db user connId ccLink'' subMode
+    pure $ CRUserContactLinkCreated user ccLink''
   CreateMyAddress -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APICreateMyAddress userId
   APIDeleteMyAddress userId -> withUserId userId $ \user@User {profile = p} -> do

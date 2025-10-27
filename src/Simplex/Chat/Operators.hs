@@ -46,9 +46,9 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
-import Simplex.Chat.Types (ConnLinkContact, User)
+import Simplex.Chat.Types (ShortLinkContact, User)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
-import Simplex.Messaging.Agent.Protocol (sameConnLinkContact)
+import Simplex.Messaging.Agent.Protocol (sameShortLinkContact)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
@@ -261,7 +261,7 @@ deriving instance Show AUserChatRelay
 
 data UserChatRelay' s = UserChatRelay
   { chatRelayId :: DBEntityId' s,
-    address :: ConnLinkContact,
+    address :: ShortLinkContact,
     name :: Text,
     domains :: [Text],
     preset :: Bool,
@@ -273,7 +273,7 @@ data UserChatRelay' s = UserChatRelay
 
 -- for setting chat relays via CLI API
 data CLINewRelay = CLINewRelay
-  { address :: ConnLinkContact,
+  { address :: ShortLinkContact,
     name :: Text
   }
   deriving (Show)
@@ -318,15 +318,15 @@ newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
 
-presetChatRelay :: Bool -> Text -> [Text] -> ConnLinkContact -> NewUserChatRelay
+presetChatRelay :: Bool -> Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
 presetChatRelay = newChatRelay_ True
 {-# INLINE presetChatRelay #-}
 
-newChatRelay :: Text -> [Text] -> ConnLinkContact -> NewUserChatRelay
+newChatRelay :: Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
 newChatRelay = newChatRelay_ False True
 {-# INLINE newChatRelay #-}
 
-newChatRelay_ :: Bool -> Bool -> Text -> [Text] -> ConnLinkContact -> NewUserChatRelay
+newChatRelay_ :: Bool -> Bool -> Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
 newChatRelay_ preset enabled name domains !address =
   UserChatRelay {chatRelayId = DBNewEntity, address, name, domains, preset, tested = Nothing, enabled, deleted = False}
 
@@ -477,7 +477,7 @@ data UserServersError
   | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
   | USEDuplicateChatRelayName {duplicateChatRelay :: Text}
-  | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ConnLinkContact}
+  | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
   deriving (Show)
 
 data UserServersWarning = USWNoChatRelays {user :: Maybe User}
@@ -520,9 +520,9 @@ validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs other
         allNames = map (\(AUCR _ UserChatRelay {name}) -> name) cRelays
         duplicateAddresses = snd $ foldl' addAddress ([], []) allAddresses
         allAddresses = map (\(AUCR _ UserChatRelay {address}) -> address) cRelays
-        addAddress :: ([ConnLinkContact], [ConnLinkContact]) -> ConnLinkContact -> ([ConnLinkContact], [ConnLinkContact])
+        addAddress :: ([ShortLinkContact], [ShortLinkContact]) -> ShortLinkContact -> ([ShortLinkContact], [ShortLinkContact])
         addAddress (xs, dups) x
-          | any (sameConnLinkContact x) xs = (xs, x : dups)
+          | any (sameShortLinkContact x) xs = (xs, x : dups)
           | otherwise = (x : xs, dups)
     currUserWarns = noChatRelaysWarns Nothing curr
     otherUserWarns (user, uss) = noChatRelaysWarns (Just user) uss
