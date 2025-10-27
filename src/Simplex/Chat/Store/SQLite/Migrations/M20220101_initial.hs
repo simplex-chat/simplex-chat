@@ -139,8 +139,7 @@ CREATE TABLE group_member_intros (
   to_group_member_id INTEGER NOT NULL REFERENCES group_members (group_member_id) ON DELETE CASCADE,
   group_queue_info BLOB,
   direct_queue_info BLOB,
-  intro_status TEXT NOT NULL, -- see GroupMemberIntroStatus
-  UNIQUE (re_group_member_id, to_group_member_id)
+  intro_status TEXT NOT NULL
 );
 
 CREATE TABLE files (
