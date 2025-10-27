@@ -8,7 +8,7 @@ import Test.Hspec hiding (it)
 chatRelayTests :: SpecWith TestParams
 chatRelayTests = do
   describe "configure chat relays" $ do
-    fit "get and set chat relays" testGetSetChatRelays
+    it "get and set chat relays" testGetSetChatRelays
 
 testGetSetChatRelays :: HasCallStack => TestParams -> IO ()
 testGetSetChatRelays ps =
