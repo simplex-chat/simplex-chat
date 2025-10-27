@@ -1474,8 +1474,8 @@ processChatCommand vr nm = \case
           let relays' = map aUserRelay relays
           processChatCommand vr nm $ APISetUserServers userId $ L.map (updatedRelays relays') userServers
     where
-      aUserRelay :: ConnLinkContact -> AUserChatRelay
-      aUserRelay address = AUCR SDBNew $ newChatRelay "" [""] address
+      aUserRelay :: CLINewRelay -> AUserChatRelay
+      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay name [""] address
   APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
   APISetServerOperators operators -> do
     as <- asks randomAgentServers
@@ -4878,7 +4878,11 @@ chatCommandP =
       optional ("yes" *> A.space) *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
-    chatRelaysP = strP `A.sepBy1` A.char ' ' -- TODO [chat relays] parse name, domains
+    chatRelaysP = chatRelayP `A.sepBy1` A.char ' '
+    chatRelayP = do
+      name <- "name=" *> text1P
+      address <- _strP
+      pure CLINewRelay {name, address}
     operatorRolesP = do
       operatorId' <- A.decimal
       enabled' <- A.char ':' *> onOffP

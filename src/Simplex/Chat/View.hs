@@ -1508,11 +1508,11 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
           ["  Chat relays"] <> map (plain . ("    " <>) . viewChatRelay) cRelays
       | otherwise = []
       where
-        viewChatRelay UserChatRelay {name, address, preset, tested, enabled} = name <> chatRelayAddress <> chatRelayInfo
+        viewChatRelay UserChatRelay {name, address, preset, tested, enabled} = name <> relayAddress <> relayInfo
           where
-            chatRelayAddress = "(" <> safeDecodeUtf8 (strEncode address) <> ")"
-            chatRelayInfo = if null chatRelayInfo_ then "" else parens $ T.intercalate ", " chatRelayInfo_
-            chatRelayInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
+            relayAddress = ": " <> safeDecodeUtf8 (strEncode address)
+            relayInfo = if null relayInfo_ then "" else parens $ T.intercalate ", " relayInfo_
+            relayInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
             testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
 
 serversUserHelp :: [StyledString]

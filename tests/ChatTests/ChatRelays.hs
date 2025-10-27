@@ -21,29 +21,29 @@ testGetSetChatRelays ps =
         cath ##> "/ad"
         (cathSLink, _cLink) <- getContactLinks cath True
 
-        -- alice ##> "/_relays 1"
-
-        alice ##> ("/relays " <> bobSLink)
+        alice ##> ("/relays name=bob_relay " <> bobSLink)
         alice <## "ok"
 
         alice ##> "/relays"
         alice <## "Your servers"
         alice <## "  Chat relays"
-        alice <## ("    (" <> bobSLink <> ")")
+        alice <## ("    bob_relay: " <> bobSLink)
 
-        alice ##> ("/relays " <> cathSLink)
+        alice ##> ("/relays name=cath_relay " <> cathSLink)
         alice <## "ok"
 
         alice ##> "/relays"
         alice <## "Your servers"
         alice <## "  Chat relays"
-        alice <## ("    (" <> cathSLink <> ")")
+        alice <## ("    cath_relay: " <> cathSLink)
 
-        -- alice ##> ("/relays " <> bobSLink <> " " <> cathSLink)
-        -- alice <## "ok"
+        alice ##> ("/relays name=bob_relay " <> bobSLink <> " name=cath_relay " <> cathSLink)
+        alice <## "ok"
 
-        -- alice ##> "/relays"
-        -- alice <## "Your servers"
-        -- alice <## "  Chat relays"
-        -- alice <## ("    (" <> bobSLink <> ")")
-        -- alice <## ("    (" <> cathSLink <> ")")
+        alice ##> "/relays"
+        alice <## "Your servers"
+        alice <## "  Chat relays"
+        alice
+          <### [ ConsoleString $ "    bob_relay: " <> bobSLink,
+                 ConsoleString $ "    cath_relay: " <> cathSLink
+               ]

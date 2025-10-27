@@ -630,7 +630,7 @@ getChatRelays db User {userId} =
       UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
 
 insertChatRelay :: DB.Connection -> User -> UTCTime -> NewUserChatRelay -> IO UserChatRelay
-insertChatRelay db User {userId} ts speer@UserChatRelay {address, name, domains, preset, tested, enabled} = do
+insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains, preset, tested, enabled} = do
   crId <-
     fromOnly . head
       <$> DB.query
@@ -642,7 +642,7 @@ insertChatRelay db User {userId} ts speer@UserChatRelay {address, name, domains,
           RETURNING chat_relay_id
         |]
         (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
-  pure speer {chatRelayId = DBEntityId crId}
+  pure relay {chatRelayId = DBEntityId crId}
 
 updateChatRelay :: DB.Connection -> UTCTime -> UserChatRelay -> IO ()
 updateChatRelay db ts UserChatRelay {chatRelayId, address, name, domains, preset, tested, enabled} =
@@ -902,13 +902,13 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
     upsertOrDeleteCRelay :: AUserChatRelay -> IO (Maybe UserChatRelay)
-    upsertOrDeleteCRelay (AUCR _ speer@UserChatRelay {chatRelayId, deleted}) = case chatRelayId of
+    upsertOrDeleteCRelay (AUCR _ relay@UserChatRelay {chatRelayId, deleted}) = case chatRelayId of
       DBNewEntity
         | deleted -> pure Nothing
-        | otherwise -> Just <$> insertChatRelay db user ts speer
-      DBEntityId speerId
-        | deleted -> Nothing <$ DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, speerId, BI False)
-        | otherwise -> Just speer <$ updateChatRelay db ts speer
+        | otherwise -> Just <$> insertChatRelay db user ts relay
+      DBEntityId relayId
+        | deleted -> Nothing <$ DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, relayId, BI False)
+        | otherwise -> Just relay <$ updateChatRelay db ts relay
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
 createCall db user@User {userId} Call {contactId, callId, callUUID, chatItemId, callState} callTs = do

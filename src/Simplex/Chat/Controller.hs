@@ -390,7 +390,7 @@ data ChatCommand
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
   | GetUserChatRelays
-  | SetUserChatRelays [ConnLinkContact]
+  | SetUserChatRelays [CLINewRelay]
   -- TODO [chat relays] commands to test chat relay
   -- | APITestChatRelay UserId ConnLinkContact
   -- | TestChatRelay ConnLinkContact
