@@ -264,6 +264,15 @@ a{
   text-fill-color: transparent;
 }
 
+.dark .gradient-text {
+  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
 .dark .border-gradient {
   background:
     linear-gradient(#11182F, #11182F) padding-box,
