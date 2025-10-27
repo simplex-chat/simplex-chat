@@ -91,9 +91,9 @@ disabledSimplexChatSMPServers =
 -- TODO [chat relays] real chat relays
 simplexChatRelays :: [NewUserChatRelay]
 simplexChatRelays =
-  [ presetChatRelay True "chat_relay_1" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp111.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"),
-    presetChatRelay True "chat_relay_2" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp222.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D"),
-    presetChatRelay True "chat_relay_3" ["simplex.im"] (either error id $ strDecode "simplex:/contact#/?v=2-7&smp=smp%3A%2F%2FLcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI%3D%40smp333.simplex.im%2Fu8A5BHVvIPOf83Qk%23%2F%3Fv%3D1-3%26dh%3DMCowBQYDK2VuAyEAiyjKN0nmkp3mFzQxHiLTtRkX3rcp_BKfYF4xtwF9g1o%253D")
+  [ presetChatRelay True "chat_relay_1" ["simplex.im"] (either error id $ strDecode "https://smp111.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),
+    presetChatRelay True "chat_relay_2" ["simplex.im"] (either error id $ strDecode "https://smp222.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),
+    presetChatRelay True "chat_relay_3" ["simplex.im"] (either error id $ strDecode "https://smp333.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y")
   ]
 
 fluxSMPServers :: [NewUserServer 'PSMP]
