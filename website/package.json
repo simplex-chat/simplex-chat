@@ -20,6 +20,7 @@
     "@11ty/eleventy-plugin-rss": "^1.2.0",
     "@simplex-chat/webrtc": "^0.1.1",
     "common-tags": "^1.8.2",
+    "ethers": "^6.15.0",
     "fast-uri": "^2.1.0",
     "markdown-it-anchor": "^8.6.4",
     "markdown-it-replace-link": "^1.1.0",
