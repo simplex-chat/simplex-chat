@@ -625,7 +625,7 @@ getChatRelays db User {userId} =
       |]
       (Only userId)
   where
-    toChatRelay :: (DBEntityId, ConnLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
+    toChatRelay :: (DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
     toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
       UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
 

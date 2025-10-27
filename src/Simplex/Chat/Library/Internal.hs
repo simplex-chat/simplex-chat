@@ -1272,6 +1272,12 @@ createdGroupLink (CCLink cReq shortLink) = CCLink cReq (toShortGroupLink <$> sho
 toShortGroupLink :: ShortLinkContact -> ShortLinkContact
 toShortGroupLink (CSLContact sch _ srv k) = CSLContact sch CCTGroup srv k
 
+createdRelayLink :: CreatedLinkContact -> CreatedLinkContact
+createdRelayLink (CCLink cReq shortLink) = CCLink cReq (toShortRelayLink <$> shortLink)
+
+toShortRelayLink :: ShortLinkContact -> ShortLinkContact
+toShortRelayLink (CSLContact sch _ srv k) = CSLContact sch CCTRelay srv k
+
 deleteGroupLink' :: User -> GroupInfo -> CM ()
 deleteGroupLink' user gInfo = do
   vr <- chatVersionRange
