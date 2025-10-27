@@ -283,7 +283,7 @@
     "index-token-h2": "Időtálló közösségek",
     "index-token-p1": "A jövőben közösségi utalványokkal támogathatja a kedvenc csoportjait.",
     "index-token-p2": "Az utalványokkal fizetni tudja a kiszolgálókat, hogy a közösségek szabadok és függetlenek maradhassanak.",
-    "index-token-cta": "Tudjon meg többet, és <strong>szerezzen ingyenes NFT-t</strong><br>20% kedvezménnyel a SimpleX Tokenre!",
+    "index-token-cta": "Tudjon meg többet, és <strong>szerezzen ingyenes NFT-t</strong><br>az előzetes tesztelésért.",
     "index-roadmap-h2": "A SimpleX ütemterve a szabad internethez",
     "index-roadmap-2025": "2025",
     "index-roadmap-2025-title": "Skálázódás nagy közösségekre",
@@ -305,11 +305,11 @@
     "how-secure-forward-secrecy": "Kompromittálás előtti titkosságvédelem",
     "how-secure-break-in-recovery": "Kompromittálás utáni titkosságvédelem",
     "how-secure-two-factor-key-exchange": "Kétlépcsős kulcscsere",
-    "how-secure-post-quantum-hybrid-crypto": "Hibrid kriptográfia a kvantum számítógépek megjelenése utánra",
+    "how-secure-post-quantum-hybrid-crypto": "Kvantumbiztos, hibrid kriptográfia",
     "messengers-comparison-section-list-point-1": "A Briar 1024 bájtra, a Signal pedig 160 bájtra kerekítve tölti ki az üzenetek tartalmát",
     "messengers-comparison-section-list-point-2": "A letagadhatóság nem foglalja magába a kliens és a kiszolgáló közötti kapcsolatot.",
     "messengers-comparison-section-list-point-3": "Úgy tűnik, hogy a kriptográfiai aláírások használata rontja a letagadhatóságot, de ez tisztázásra szorul.",
     "messengers-comparison-section-list-point-4": "A többeszközös megvalósítás rontja a dupla racsni kompromittálás utáni biztonságát",
     "messengers-comparison-section-list-point-5": "A kétlépcsős kulcscsere nem követelmény a biztonsági kód ellenőrzéséhez.",
-    "messengers-comparison-section-list-point-6": "A posztkvantum kulcscsere „ritka” &mdash; csak a racsnis lépések egy részét védi."
+    "messengers-comparison-section-list-point-6": "A kvantumbiztos kulcscsere „ritka” &mdash; csak a racsnis lépések egy részét védi."
 }
