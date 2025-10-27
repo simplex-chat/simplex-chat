@@ -1442,7 +1442,7 @@ processChatCommand vr nm = \case
     pure $ CRConnNtfMessages ntfMsgs
   GetUserProtoServers (AProtocolType p) -> withUser $ \user -> withServerProtocol p $ do
     srvs <- withFastStore (`getUserServers` user)
-    liftIO $ CRUserServers user <$> groupByOperator (protocolServers p srvs)
+    liftIO $ CRUserServers user <$> groupByOperator (onlyProtocolServers p srvs)
   SetUserProtoServers (AProtocolType (p :: SProtocolType p)) srvs -> withUser $ \user@User {userId} -> withServerProtocol p $ do
     userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
     case L.nonEmpty userServers_ of
@@ -1461,6 +1461,21 @@ processChatCommand vr nm = \case
     lift $ CRServerTestResult user srv <$> withAgent' (\a -> testProtocolServer a nm (aUserId user) server)
   TestProtoServer srv -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APITestProtoServer userId srv
+  GetUserChatRelays -> withUser $ \user -> do
+    srvs <- withFastStore (`getUserServers` user)
+    liftIO $ CRUserServers user <$> groupByOperator (onlyRelays srvs)
+  SetUserChatRelays relays -> withUser $ \user@User {userId} -> do
+    userServers_ <- liftIO . groupByOperator =<< withFastStore (`getUserServers` user)
+    case L.nonEmpty userServers_ of
+      Nothing -> throwCmdError "no relays"
+      Just userServers -> case relays of
+        [] -> throwCmdError "no relays"
+        _ -> do
+          let relays' = map aUserRelay relays
+          processChatCommand vr nm $ APISetUserServers userId $ L.map (updatedRelays relays') userServers
+    where
+      aUserRelay :: CLINewRelay -> AUserChatRelay
+      aUserRelay CLINewRelay {address, name} = AUCR SDBNew $ newChatRelay name [""] address
   APIGetServerOperators -> CRServerOperatorConditions <$> withFastStore getServerOperators
   APISetServerOperators operators -> do
     as <- asks randomAgentServers
@@ -2017,6 +2032,7 @@ processChatCommand vr nm = \case
       Left e -> throwError $ ChatErrorStore e
       Right _ -> throwError $ ChatErrorStore SEDuplicateContactLink
     subMode <- chatReadVar subscriptionMode
+    -- TODO [chat relays] add relay key, identity to link data
     let userData = contactShortLinkData (userProfileDirect user Nothing Nothing True) Nothing
     -- TODO [certs rcv]
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userData) Nothing IKPQOn subMode
@@ -4041,9 +4057,8 @@ data ConnectViaContactResult
   = CVRConnectedContact Contact
   | CVRSentInvitation Connection (Maybe Profile)
 
--- TODO [chat relays] used for CLI specific APIs (same for `updatedServers` below) - add similar APIs for chat relays?
-protocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
-protocolServers p (operators, smpServers, xftpServers, _chatRelays) = case p of
+onlyProtocolServers :: UserProtocol p => SProtocolType p -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
+onlyProtocolServers p (operators, smpServers, xftpServers, _chatRelays) = case p of
   SPSMP -> (operators, smpServers, [], [])
   SPXFTP -> (operators, [], xftpServers, [])
 
@@ -4060,6 +4075,19 @@ updatedServers p' srvs UserOperatorServers {operator, smpServers, xftpServers, c
     updateSrvs pSrvs = map disableSrv pSrvs <> maybe srvs (const []) operator
     disableSrv srv@UserServer {preset} =
       AUS SDBStored $ if preset then srv {enabled = False} else srv {deleted = True}
+
+onlyRelays :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay])
+onlyRelays (operators, _smpServers, _xftpServers, chatRelays) = (operators, [], [], chatRelays)
+
+-- disable preset and replace custom chat relays (groupByOperator always adds custom)
+updatedRelays :: [AUserChatRelay] -> UserOperatorServers -> UpdatedUserOperatorServers
+updatedRelays relays UserOperatorServers {operator, smpServers, xftpServers, chatRelays} =
+  UpdatedUserOperatorServers operator (map (AUS SDBStored) smpServers) (map (AUS SDBStored) xftpServers) (updateRelays chatRelays)
+  where
+    updateRelays :: [UserChatRelay] -> [AUserChatRelay]
+    updateRelays pRelays = map disableRelay pRelays <> maybe relays (const []) operator
+    disableRelay relay@UserChatRelay {preset} =
+      AUCR SDBStored $ if preset then relay {enabled = False} else relay {deleted = True}
 
 type ComposedMessageReq = (ComposedMessage, Maybe CIForwardedFrom, (Text, Maybe MarkdownList), Map MemberName CIMention)
 
@@ -4436,6 +4464,8 @@ chatCommandP =
       "/xftp " *> (SetUserProtoServers (AProtocolType SPXFTP) . map (AProtoServerWithAuth SPXFTP) <$> protocolServersP),
       "/smp" $> GetUserProtoServers (AProtocolType SPSMP),
       "/xftp" $> GetUserProtoServers (AProtocolType SPXFTP),
+      "/relays " *> (SetUserChatRelays <$> chatRelaysP),
+      "/relays" $> GetUserChatRelays,
       "/_operators" $> APIGetServerOperators,
       "/_operators " *> (APISetServerOperators <$> jsonP),
       "/operators " *> (SetServerOperators . L.fromList <$> operatorRolesP `A.sepBy1` A.char ','),
@@ -4848,6 +4878,11 @@ chatCommandP =
       optional ("yes" *> A.space) *> (TMEEnableSetTTL <$> timedTTLP)
         <|> ("yes" $> TMEEnableKeepTTL)
         <|> ("no" $> TMEDisableKeepTTL)
+    chatRelaysP = chatRelayP `A.sepBy1` A.char ' '
+    chatRelayP = do
+      name <- "name=" *> text1P
+      address <- _strP
+      pure CLINewRelay {name, address}
     operatorRolesP = do
       operatorId' <- A.decimal
       enabled' <- A.char ':' *> onOffP

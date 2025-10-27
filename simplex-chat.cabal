@@ -533,6 +533,7 @@ test-suite simplex-chat-test
       ChatClient
       ChatTests
       ChatTests.ChatList
+      ChatTests.ChatRelays
       ChatTests.Direct
       ChatTests.DBUtils
       ChatTests.Files

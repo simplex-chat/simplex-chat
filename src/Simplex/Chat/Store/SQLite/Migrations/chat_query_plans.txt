@@ -963,6 +963,14 @@ Query:
 Plan:
 
 Query: 
+          INSERT INTO chat_relays
+            (address, name, domains, preset, tested, enabled, user_id, created_at, updated_at)
+          VALUES (?,?,?,?,?,?,?,?,?)
+          RETURNING chat_relay_id
+        
+Plan:
+
+Query: 
           INSERT INTO group_members
             ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
               user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
@@ -5667,6 +5675,10 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd
 SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
+Query: DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?
+Plan:
+SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: DELETE FROM commands WHERE user_id = ? AND command_id = ?
 Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
@@ -6058,7 +6070,7 @@ Plan:
 Query: INSERT INTO user_contact_links (user_id, group_id, group_link_id, local_display_name, conn_req_contact, short_link_contact, short_link_data_set, short_link_large_data_set, group_link_member_role, auto_accept, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO users (agent_user_id, local_display_name, active_user, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, created_at, updated_at) VALUES (?,?,?,?,0,?,?,?,?,?,?)
+Query: INSERT INTO users (agent_user_id, local_display_name, active_user, is_user_chat_relay, active_order, contact_id, show_ntfs, send_rcpts_contacts, send_rcpts_small_groups, auto_accept_member_contacts, created_at, updated_at) VALUES (?,?,?,?,?,0,?,?,?,?,?,?)
 Plan:
 
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
