@@ -329,7 +329,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
   XGrpRelayInv :: ConnLinkContact -> ChatMsgEvent 'Json
-  XGrpRelayAcpt :: ConnLinkContact -> ChatMsgEvent 'Json -- TODO [chat relays] TBC short/long/any
+  XGrpRelayAcpt :: ConnLinkContact -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
