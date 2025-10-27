@@ -389,6 +389,11 @@ data ChatCommand
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | GetUserChatRelays
+  | SetUserChatRelays [ConnLinkContact]
+  -- TODO [chat relays] commands to test chat relay
+  -- | APITestChatRelay UserId ConnLinkContact
+  -- | TestChatRelay ConnLinkContact
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)

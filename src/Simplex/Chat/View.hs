@@ -24,7 +24,6 @@ import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
@@ -1506,14 +1505,14 @@ viewUserServers UserOperatorServers {operator, smpServers, xftpServers, chatRela
     viewChatRelays [] = []
     viewChatRelays cRelays
       | maybe True (\ServerOperator {enabled} -> enabled) operator =
-          ["Chat relays"] <> map (plain . ("    " <>) . viewChatRelay) cRelays
+          ["  Chat relays"] <> map (plain . ("    " <>) . viewChatRelay) cRelays
       | otherwise = []
       where
-        viewChatRelay UserChatRelay {name, address, preset, tested, enabled} = name <> chatrelayAddress <> chatrelayInfo
+        viewChatRelay UserChatRelay {name, address, preset, tested, enabled} = name <> chatRelayAddress <> chatRelayInfo
           where
-            chatrelayAddress = "(" <> safeDecodeUtf8 (strEncode address) <> ")"
-            chatrelayInfo = if null chatrelayInfo_ then "" else parens $ T.intercalate ", " chatrelayInfo_
-            chatrelayInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
+            chatRelayAddress = "(" <> safeDecodeUtf8 (strEncode address) <> ")"
+            chatRelayInfo = if null chatRelayInfo_ then "" else parens $ T.intercalate ", " chatRelayInfo_
+            chatRelayInfo_ = ["preset" | preset] <> testedInfo <> ["disabled" | not enabled]
             testedInfo = maybe [] (\t -> ["test: " <> if t then "passed" else "failed"]) tested
 
 serversUserHelp :: [StyledString]

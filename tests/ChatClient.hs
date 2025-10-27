@@ -156,6 +156,9 @@ testCoreOpts =
       migrationBackupPath = Nothing
     }
 
+relayTestOpts :: ChatOpts
+relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
+
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
 getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbOptions = (dbOptions testCoreOpts) {dbKey}}}
@@ -437,8 +440,8 @@ getTermLine cc@TestCC {printOutput} =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
-      -- when True $ do
-      when printOutput $ do
+      when True $ do
+      -- when printOutput $ do
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
