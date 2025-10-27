@@ -89,13 +89,27 @@
                 transform: rotate(360deg);
             }
         }
-        #nft-app-content .nft-image {
-            max-width: 320px;
-            display: block;
-            margin-bottom: 20px;
+        #nft-app-content #nft-image-container {
+            min-width: 420px;
+            min-height: 420px;
+            overflow: hidden;
+            position: relative;
             border-radius: 10px;
+            margin-bottom: 20px;
         }
-
+        #nft-app-content .nft-image {
+            max-width: 420px;
+            display: block;
+        }
+        #nft-app-content .nft-id-overlay {
+            position: absolute;
+            top: 6.5%;
+            right: 4%;
+            font-size: 1.5em;
+            font-weight: bold;
+            text-align: right;
+            color: #023787;
+        }
         #nft-app-content #next-nft-image-container {
             min-width: 200px;
             min-height: 200px;
@@ -107,7 +121,6 @@
         #nft-app-content .next-nft-image {
             max-width: 200px;
             display: block;
-            filter: blur(5px);
         }
         #nft-app-content .mint-it-overlay {
             position: absolute;
@@ -117,12 +130,10 @@
             font-size: 1.5em;
             font-weight: bold;
             color: white;
-            text-shadow: 0 0 5px black;
         }
         #nft-app-content .congrats {
             font-size: 1.5em;
             font-weight: bold;
-            text-align: center;
             margin-bottom: 10px;
         }
         #nft-app-content .owned-text,
@@ -137,21 +148,32 @@
             margin-bottom: 20px;
             max-width: 80%;
         }
-        @media (min-width: 768px) {
-            #nft-app-content {
-                max-width: 1276px;
+        @media (max-width: 480px) {
+            #nft-app-content #nft-image-container {
+                min-width: 100%;
+                min-height: 100%;
+                overflow: hidden;
+                position: relative;
+                border-radius: 10px;
+                margin-bottom: 20px;
             }
+            #nft-app-content .nft-image {
+                max-width: 100%;
+                display: block;
+            }
+        }
+        @media (min-width: 960px) {
             #nft-app-content .nft-display {
                 align-items: flex-start;
                 flex-direction: row;
                 justify-content: center;
                 gap: 20px;
-                max-width: 63%;
                 margin: 0 auto;
             }
             #nft-app-content .metadata {
                 text-align: left;
                 justify-content: left;
+                max-width: 420px;
             }
         }
         #nft-app-content .error {
@@ -163,9 +185,10 @@
             text-align: center;
             margin-bottom: 10px;
         }
-        #nft-app-content .install-link {
-            color: #007bff;
-            text-decoration: underline;
+        #nft-app-content .no-metamask img {
+            display: inline;
+            width: 200px;
+            border-radius: 10px;
         }
         #nft-app-content .trait-line {
             font-size: 0.85em;
@@ -177,8 +200,6 @@
         #nft-app-content .collapse-link {
             margin-left: 5px;
             text-decoration: none;
-        }
-        #nft-app-content .collapse-link {
             color: darkgray;
         }
     </style>
@@ -192,7 +213,7 @@
     </section>
 
     <div id="mint-simplex-nft" class="overlay hidden fixed top-0 left-0 bottom-0 right-0 before:absolute before:w-full before:h-full bg-transparent before:bg-secondary-bg-light dark:before:bg-primary-bg-dark before:opacity-90 items-center justify-center p-3 md:p-10 z-[10000]">
-        <div class="overlay-card w-full md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:max-h-[660px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
+        <div class="overlay-card w-full md:max-w-[1276px] bg-white dark:bg-card-bg-dark opacity-100 h-full md:max-h-[720px] z-[10001] rounded-md shadow-[0px_3px_12px_rgba(0,0,0,0.2)] p-6 py-10 sm:p-14 overflow-auto scale-100">
             <h1 id="nft-app-title" class="text-4xl font-bold text-active-blue mb-6 text-center gradient-text">Mint SimpleX NFT</h1>
             <div id="nft-app-content"></div>
 
@@ -215,15 +236,18 @@
                 const networks = {
                     ethereum: {
                         chainId: '0x1',
-                        minterAddress: ''
+                        minterAddress: '',
+                        explorerHost: 'etherscan.io'
                     },
                     arbitrum: {
                         chainId: '0xa4b1',
-                        minterAddress: ''
+                        minterAddress: '',
+                        explorerHost: 'arbiscan.io'
                     },
                     hoodi: {
                         chainId: '0x88bb0',
-                        minterAddress: '0xdaF242166be93A7f9835C2792958F3b6c424F845'
+                        minterAddress: '0xdaF242166be93A7f9835C2792958F3b6c424F845',
+                        explorerHost: 'hoodi.etherscan.io'
                     }
                 };
                 const currentConfig = networks[selectedNetwork];
@@ -242,7 +266,7 @@
 
                 const minterABI = [
                     'function nft() view returns (address)',
-                    'function mintCount() view returns (uint)',
+                    'function mintCount() view returns (uint)', // not used
                     'function mintStartTime() view returns (uint)',
                     'function mintEndTime() view returns (uint)',
                     'function paused() view returns (bool)',
@@ -395,7 +419,7 @@
 
                 async function checkBalance() {
                     appState.name = await nftContract.name();
-                    appState.totalMinted = Math.max(Number(await nftContract.totalSupply()), Number(await minterContract.mintCount()));
+                    appState.totalMinted = await nftContract.totalSupply();
                     const balance = Number(await nftContract.balanceOf(appState.address));
                     if (balance > 0) {
                         appState.hasToken = true;
@@ -417,15 +441,12 @@
 
                 async function loadNext() {
                     try {
-                        appState.totalMinted = Math.max(Number(await nftContract.totalSupply()), Number(await minterContract.mintCount()));
-                        const newNextId = Number(await nftContract.nextTokenId());
+                        appState.totalMinted = await nftContract.totalSupply();
+                        appState.nextId = Number(await nftContract.nextTokenId());
                         const newNextUri = await nftContract.nextTokenURI();
-                        if (newNextId !== appState.nextId || newNextUri !== appState.nextUri) {
-                            appState.nextId = newNextId;
-                            if (newNextUri !== appState.nextUri) {
-                                appState.nextUri = newNextUri;
-                                appState.nextMetadata = await loadMetadata(newNextUri);
-                            }
+                        if (newNextUri !== appState.nextUri) {
+                            appState.nextUri = newNextUri;
+                            appState.nextMetadata = await loadMetadata(newNextUri);
                         }
                     } catch (error) {
                         console.error('Failed to load next:', error);
@@ -446,8 +467,8 @@
                     if (ownedPollInterval) clearInterval(ownedPollInterval);
                     ownedPollInterval = setInterval(async () => {
                         if (appState.state === STATES.OWNED || appState.state === STATES.MINTED) {
-                            appState.totalMinted = Math.max(Number(await nftContract.totalSupply()), Number(await minterContract.mintCount()));
                             const balance = Number(await nftContract.balanceOf(appState.address));
+                            const totalMinted = await nftContract.totalSupply();
                             if (balance === 0) {
                                 appState.hasToken = false;
                                 appState.state = STATES.NO_NFT;
@@ -456,8 +477,10 @@
                                 await loadNext();
                                 renderNftApp();
                                 startNextPolling();
+                            } else if (appState.totalMinted != totalMinted) {
+                                appState.totalMinted = totalMinted;
+                                renderNftApp();
                             }
-                            renderNftApp();
                         } else {
                             clearInterval(ownedPollInterval);
                             ownedPollInterval = null;
@@ -498,6 +521,7 @@
                                     appState.hasToken = true;
                                     appState.tokenId = Number(await nftContract.tokenOfOwnerByIndex(appState.address, 0));
                                     const uri = await nftContract.tokenURI(appState.tokenId);
+                                    appState.totalMinted = await nftContract.totalSupply();
                                     appState.metadata = await loadMetadata(uri);
                                     appState.error = null;
                                     appState.state = STATES.MINTED;
@@ -532,7 +556,7 @@
 
                     if (appState.address) {
                         const ellipsisAddr = appState.address.slice(0, 6) + '...' + appState.address.slice(-4);
-                        content.innerHTML += `<div class="account-info"><span>Account: ${ellipsisAddr}</span><a id="switchAccount" class="switch-link">Switch Account</a></div>`;
+                        content.innerHTML += `<div class="account-info"><span>Account: ${ellipsisAddr}</span><a id="switchAccount" class="switch-link">Change</a></div>`;
                         setTimeout(() => document.getElementById('switchAccount').onclick = switchAccount, 0);
                     }
 
@@ -540,11 +564,15 @@
                         case STATES.NOT_CONNECTED:
                             if (window.ethereum) {
                                 content.innerHTML += `<div style="text-align: center; margin-top: 20px;">
-                                    <button class="btn btn-primary btn-large" id="connect">Connect Wallet</button>
+                                    <p class="mb-5"><img src="/img/design_3/simplex_nft_smpx.jpg" width="200" style="display: inline; border-radius: 10px;"></p>
+                                    <button class="btn btn-primary" id="connect">Connect Wallet</button>
                                 </div>`;
                                 setTimeout(() => document.getElementById('connect').onclick = connectWallet, 0);
                             } else {
-                                content.innerHTML += `<p class="no-metamask">No MetaMask installed.</p><a href="https://metamask.io/download/" target="_blank" class="install-link">Install MetaMask</a>`;
+                                content.innerHTML += `<p class="no-metamask"><img src="/img/design_3/simplex_nft_smpx.jpg"></p>
+                                    <p class="no-metamask">
+                                        <a href="https://metamask.io/download/" target="_blank">Install MetaMask wallet</a>
+                                    </p>`;
                             }
                             break;
 
@@ -554,26 +582,32 @@
 
                         case STATES.MINTED:
                         case STATES.OWNED:
-                            content.innerHTML += appState.state == STATES.MINTED
-                                ? `<p class="congrats">Congratulations! You minted SimpleX NFT #${appState.tokenId}.</p>`
-                                : `<p class="congrats">You have SimpleX NFT #${appState.tokenId}</p>`;
                             const meta = appState.metadata;
+                            let html = `<div class="nft-display">`;
                             if (meta) {
                                 title.innerText = `Your ${meta.name}`;
-                                let html = `<div class="nft-display">`;
                                 if (meta.image) {
-                                    html += `<img src="${replaceIPFS(meta.image)}" alt="NFT Image" class="nft-image">`;
+                                    html += `<div id="nft-image-container">
+                                        <img src="${replaceIPFS(meta.image)}" alt="NFT Image" class="nft-image">
+                                        <div class="nft-id-overlay">#${appState.tokenId}</div>
+                                    </div>`;
                                 }
-                                html += `<div class="metadata">`;
+                            }
+                            html += `<div class="metadata">`;
+                            html += appState.state == STATES.MINTED
+                                ? `<p class="congrats">You minted SimpleX NFT #${appState.tokenId}!</p>`
+                                : `<p class="congrats">You have SimpleX NFT #${appState.tokenId}</p>`;
+                            if (meta) {
                                 if (meta.description) html += `<p>${meta.description}</p>`;
                                 html += renderAttributes(meta.attributes, appState.openedTraits);
                                 html += '<p>';
-                                if (Number.isFinite(appState.totalMinted)) html += `<strong>${appState.totalMinted} NFTs minted</strong>. `;
-                                html += `<a href="https://hoodi.etherscan.io/nft/${appState.nftAddress}/${appState.tokenId}" target="_blank"><span>Explorer ${linkSvg}</span></a>`;
+                                html += `<strong>${appState.totalMinted} NFTs minted</strong>. `;
+                                html += `<a href="https://${currentConfig.explorerHost}/nft/${appState.nftAddress}/${appState.tokenId}" target="_blank"><span>Explorer ${linkSvg}</span></a>`;
                                 html += '</p>';
-                                html += `</div></div>`;
-                                content.innerHTML += html
                             }
+                            html += `</div></div>`;
+                            content.innerHTML += html
+
                             content.innerHTML += renderSignupForm();
                             break;
 
@@ -621,8 +655,8 @@
                         html += `<div class="metadata">`;
                         if (nextMeta.description) html += `<p>${nextMeta.description}</p>`;
                         html += '<p>';
-                        if (Number.isFinite(appState.totalMinted)) html += `<strong>${appState.totalMinted} NFTs minted</strong>. `;
-                        html += `<a href="https://hoodi.etherscan.io/token/${appState.nftAddress}" target="_blank"><span>Explorer ${linkSvg}</span></a>`;
+                        html += `<strong>${appState.totalMinted} NFTs minted</strong>. `;
+                        html += `<a href="https://${currentConfig.explorerHost}/token/${appState.nftAddress}" target="_blank"><span>Explorer ${linkSvg}</span></a>`;
                         html += '</p>';
                         if (withAttributes) {
                             html += renderAttributes(nextMeta.attributes, appState.nextOpenedTraits);
@@ -671,8 +705,8 @@
                                 const isOpened = openedTraits.has(String(i));
                                 let truncatedValue = attr.value;
                                 html += `<p class="trait-line" data-key="${i}">`
-                                if (attr.value.length > 63) {
-                                    truncatedValue = attr.value.slice(0, 63) + '...';
+                                if (attr.value.length > 41) {
+                                    truncatedValue = attr.value.slice(0, 41) + '...';
                                     html += `<span class="trait-type">${attr.trait_type}: </span>
                                             <span class="truncated-value" style="display: ${isOpened ? 'none' : 'inline'};">${truncatedValue}</span>
                                             <a href="#" class="more-link" style="display: ${!isOpened ? 'inline' : 'none'};">More</a>
@@ -720,11 +754,11 @@
 
                 function renderSignupForm() {
                     return `<form class="flex items-center w-full max-w-[540px]" action="https://chat.us2.list-manage.com/subscribe/post?u=ddd892b258ae36e5438e6d4e1&amp;id=ad6037a2fe" method="post" target="_blank" novalidate="" style="margin: 20px auto 0;">
-                        <input name="EMAIL" type="text" class="h-[44px] ltr:rounded-l-[34px] rtl:rounded-r-[34px] bg-transparent border border-primary-light focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5 placeholder:text-grey-black placeholder:dark:text-white placeholder:text-base placeholder:font-normal placeholder:tracking-[0.01em]" placeholder="Enter email address for updates">
+                        <input name="EMAIL" type="text" class="h-[44px] ltr:rounded-l-[34px] rtl:rounded-r-[34px] bg-transparent border border-primary-light dark:border-primary-dark focus:outline-none text-primary-light dark:text-primary-dark text-base w-full max-w-[400px] px-5 placeholder:text-grey-black placeholder:dark:text-white placeholder:text-base placeholder:font-normal placeholder:tracking-[0.01em]" placeholder="Enter email address for updates">
                         <span aria-hidden="true" class="hidden">
                             <input type="text" name="b_ddd892b258ae36e5438e6d4e1_ad6037a2fe" tabindex="-1" value="">
                         </span>
-                        <input type="submit" class="h-[44px] ltr:rounded-r-[34px] rtl:rounded-l-[34px] bg-primary-light text-white text-center px-8">
+                        <input type="submit" class="h-[44px] ltr:rounded-r-[34px] rtl:rounded-l-[34px] bg-primary-light dark:bg-primary-dark text-white dark:text-black text-center px-8">
                     </form>`;
                 }
 
