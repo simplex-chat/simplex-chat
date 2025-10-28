@@ -10,7 +10,7 @@ body.change-nav-color {
     --nav-color: #001796;
 }
 
-@media screen and (min-width: 950px) {
+@media screen and (min-width: 960px) {
     .logo {
         background: rgba(255, 255, 255, 0.05);
         backdrop-filter: blur(10px);
@@ -70,14 +70,15 @@ header#navbar {
 header#navbar>a.logo {
     position: absolute;
     left: 0px;
-    padding-left: 16px;
+    padding-left: 30px;
+    padding-top: 2px;
     height: 100%;
     /* display: flex; */
     align-items: center;
 }
 
 header#navbar>a.logo img {
-    height: 32px;
+    height: 40px;
     width: auto;
 }
 
@@ -102,12 +103,24 @@ header#navbar ul {
     flex-direction: row;
     align-items: center;
     justify-content: center;
-    gap: 49px;
+    gap: 60px;
     list-style: none;
 }
 
+@media screen and (max-width: 1279px) {
+    header#navbar ul {
+        gap: 48px;
+    }
+}
+
+@media screen and (max-width: 1024px) {
+    header#navbar ul {
+        gap: 40px;
+    }
+}
+
 header#navbar ul a {
-    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-family: "Manrope", sans-serif;
     color: white;
     text-decoration: none;
     font-size: 16px;
@@ -119,6 +132,59 @@ header#navbar ul a {
     justify-content: center;
     gap: 6px;
     white-space: nowrap;
+}
+
+@media screen and (min-width: 960px) {
+    header#navbar ul .nav-link a,
+    header#navbar ul .nav-link-text {
+        font-size: 18px;
+    }
+
+    header#navbar ul .nav-link .sub-menu a {
+        font-size: 16px;
+    }
+}
+
+.box-btn {
+    height: 36px;
+    padding: 0 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 21px !important;
+    font-family: 'Manrope', sans-serif !important;
+    font-weight: 700 !important;
+    letter-spacing: -0.25px !important;
+    border-radius: 6px !important;
+}
+
+.box-btn.btn-1 {
+    background-color: #639bd9;
+}
+
+.dark .box-btn.btn-1 {
+    background-color: #44547D;
+}
+
+.box-btn.token {
+    font-size: 18px !important;
+    font-weight: 500 !important;
+    background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
+    color: white;
+}
+
+.box-btn.gold-gradient,
+.dark .box-btn.token {
+    background: linear-gradient(90deg,
+            #ffb55d 0%,
+            #fff494 50%,
+            #fbffdd 100%);
+    color: black;
+}
+
+.change-nav-color .box-btn.token {
+    background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
+    color: white;
 }
 
 header#navbar ul a span {
@@ -143,7 +209,7 @@ header#navbar ul a span svg {
     fill: #fff;
 }
 
-@media screen and (min-width: 950px) {
+@media screen and (min-width: 960px) {
     header#navbar nav#menu>ul>li>a {
         color: var(--nav-color);
     }
@@ -245,7 +311,7 @@ header#navbar .nav-link:focus-within .sub-menu {
     fill: white;
 }
 
-@media screen and (min-width: 950px) {
+@media screen and (min-width: 960px) {
     .flag-container>a {
         color: var(--nav-color) !important;
     }
@@ -256,7 +322,8 @@ header#navbar .nav-link:focus-within .sub-menu {
 }
 
 .flag-container>a p {
-    font-size: 17px;
+    font-size: 14px;
+    font-family: "Manrope", sans-serif;
     font-weight: 500;
     user-select: none;
     -webkit-user-select: none;
@@ -287,7 +354,7 @@ header#navbar button.theme-switch-btn {
 }
 
 header#navbar button.theme-switch-btn svg {
-    width: 18px;
+    width: 20px;
     height: auto;
 }
 
@@ -300,7 +367,7 @@ header#navbar button.theme-switch-btn svg path {
     fill: white;
 }
 
-@media screen and (min-width: 950px) {
+@media screen and (min-width: 960px) {
     header#navbar button.theme-switch-btn svg path {
         fill: var(--nav-color) !important;
         transition: all 0.3s ease;
@@ -311,7 +378,7 @@ header#navbar button.theme-switch-btn svg path {
     position: absolute;
     top: 0;
     right: 0px;
-    padding-right: 16px;
+    padding-right: 20px;
     height: 54px;
     display: flex;
     align-items: center;
@@ -362,7 +429,7 @@ button#cross-btn {
     height: auto;
 }
 
-@media (max-width: 949px) {
+@media (max-width: 959px) {
     #mobile-header {
         position: fixed;
         top: 0;
