@@ -134,8 +134,8 @@
 
 
 <header id="navbar">
-    <a href="/id" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo" /></a>
-    <a href="/id" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo" /></a>
+    <a href="/id" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo"></a>
+    <a href="/id" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo"></a>
 
     <nav id="menu">
         <ul>
@@ -274,6 +274,9 @@
     </nav>
 
     <div class="right-links">
+        <a class="box-btn token md:hidden" href="/token">
+            Token
+        </a>
         <button href="#" class="theme-switch-btn">
             <svg class="sun" width="469" height="469" viewBox="0 0 469 469" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M225.768 1.44594C220.301 3.84594 214.701 10.6459 213.768 15.9793C213.234 18.3793 213.101 31.7126 213.368 45.7126L213.768 71.1793L217.634 76.1126C226.701 88.1126 242.968 87.5793 252.301 75.0459C254.968 71.5793 255.101 69.5793 255.101 42.2459C255.101 14.9126 254.968 12.9126 252.301 9.44594C250.834 7.44594 248.034 4.51261 246.168 3.17928C241.768 -0.154057 231.101 -1.08739 225.768 1.44594Z"/>
@@ -348,7 +351,6 @@
                             <li>
                                 
                                     <a href="/" class="flag-anchor">
-                                        <img src="/img/flags/en.svg" alt="" srcset="">
                                         <p>English</p>
                                     </a>
                                 
@@ -363,7 +365,6 @@
                             <li>
                                 
                                     <a href="/de/" class="flag-anchor">
-                                        <img src="/img/flags/de.svg" alt="" srcset="">
                                         <p>Deutsch</p>
                                     </a>
                                 
@@ -374,7 +375,6 @@
                             <li>
                                 
                                     <a href="/es/" class="flag-anchor">
-                                        <img src="/img/flags/es.svg" alt="" srcset="">
                                         <p>Español</p>
                                     </a>
                                 
@@ -391,7 +391,6 @@
                             <li>
                                 
                                     <a href="/hu/" class="flag-anchor">
-                                        <img src="/img/flags/hu.svg" alt="" srcset="">
                                         <p>Magyar</p>
                                     </a>
                                 
@@ -402,7 +401,6 @@
                             <li>
                                 
                                     <a href="/id/" class="flag-anchor">
-                                        <img src="/img/flags/id.svg" alt="" srcset="">
                                         <p>Indonesia</p>
                                     </a>
                                 
@@ -413,7 +411,6 @@
                             <li>
                                 
                                     <a href="/it/" class="flag-anchor">
-                                        <img src="/img/flags/it.svg" alt="" srcset="">
                                         <p>Italiano</p>
                                     </a>
                                 
@@ -438,7 +435,6 @@
                             <li>
                                 
                                     <a href="/ru/" class="flag-anchor">
-                                        <img src="/img/flags/ru.svg" alt="" srcset="">
                                         <p>Русский</p>
                                     </a>
                                 
@@ -534,11 +530,14 @@ window.addEventListener('click',(e)=>{
         }
     }
     else if(e.target.closest('.nav-toggle-btn')){
-        document.body.classList.toggle('lock-scroll');
         if(nav.classList.contains('open')){
             nav.classList.remove('open');
+            document.getElementById('mobile-header').classList.remove('nav-open');
+            document.documentElement.classList.remove('lock-scroll');
         }
         else{
+            document.documentElement.classList.add('lock-scroll');
+            document.getElementById('mobile-header').classList.add('nav-open');
             nav.classList.add('open');
         }
     }
@@ -565,7 +564,7 @@ window.addEventListener('click',(e)=>{
                                     <img class="no-border" src="/img/design_3/socials/apple.png" alt="">
                                     <img class="no-border" src="/img/design_3/socials/windows.png" alt="">
                                 </div>
-                                <p>Download Desktop App</p>
+                                <p>Download<br>Desktop App</p>
                             </div>
                         </a>
                         <a class="apple-store-btn hidden" href="https://apps.apple.com/us/app/simplex-chat/id1605771084" target="_blank"><img src="/img/new/apple_store.svg"></a>
@@ -581,7 +580,7 @@ window.addEventListener('click',(e)=>{
                         <a class="box-btn btn-1" title="Tinjauan Keamanan 2022" href="/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html">
                             2022
                         </a>
-                        <a class="box-btn btn-2" title="Tinjauan Keamanan 2024" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">
+                        <a class="box-btn gold-gradient" title="Tinjauan Keamanan 2024" href="/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html">
                             2024
                         </a>
                         <p class="security-audits">
@@ -593,13 +592,13 @@ window.addEventListener('click',(e)=>{
                             <img src="/img/design_3/publications/privacy-guides.png" alt="Privacy Guides">
                         </a>
                         <a title="Rekomendasi perpesanan Whonix" href="https://www.whonix.org/wiki/Chat#Recommendation" target="_blank">
-                            <img src="/img/design_3/publications/whonix.png" alt="Whonix">
+                            <img src="/img/design_3/publications/whonix.png" alt="Whonix" class="whonix">
                         </a>
                         <a title="publikasi" href="https://www.heise.de/suche/?q=simplex+chat&sort_by=date&rm=search" target="_blank">
                             <img src="/img/design_3/publications/heise.png" alt="Heise">
                         </a>
                         <a title="tinjauan" href="https://www.kuketz-blog.de/simplex-eindruecke-vom-messenger-ohne-identifier/" target="_blank">
-                            <img src="/img/design_3/publications/kuketz-blog.png" alt="Kuketz Blog">
+                            <img src="/img/design_3/publications/kuketz-blog.png" alt="Kuketz Blog" class="kuketz">
                         </a>
                         <a title="wawancara podcast" href="https://optoutpod.com/episodes/s3e02-simplexchat/" target="_blank">
                             <img src="/img/design_3/publications/optout.png" alt="Opt Out">
@@ -835,7 +834,7 @@ window.addEventListener('click',(e)=>{
                 </div>
             </article>
         </div>
-        <a href="#" class="text-grey-black dark:text-white text-[16px] text-center lg:ltr:text-left lg:rtl:text-right font-medium leading-[28px] tracking-[0.01em] block mt-[60px]">© 2020-2025 SimpleX | Open-Source Project</a>
+        <a href="#" class="text-grey-black dark:text-white text-[16px] text-center lg:ltr:text-left lg:rtl:text-right font-medium leading-[28px] tracking-[0.01em] block mt-[60px]">© 2020-2025 SimpleX Chat | Open-Source Project</a>
     </div>
 </section>
 
@@ -861,6 +860,105 @@ window.addEventListener('click',(e)=>{
             }
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
+    })();
+    </script>
+    <script>
+    (function sectionHeaderState(){
+        const mobileHeader = document.getElementById('mobile-header');
+        if (!mobileHeader) return;
+
+        const cover     = document.querySelector('.page-1.cover');
+        const messaging = document.getElementById('messaging');
+        const nextweb   = document.getElementById('nextweb');
+        const token     = document.getElementById('token');
+        const roadmap   = document.getElementById('roadmap');
+        const directory = document.getElementById('directory');
+        const footer    = document.querySelector('footer, .footer, #footer');
+
+        const observed = [
+            { key: 'cover',  el: cover },
+            { key: 'main',   el: messaging },
+            { key: 'main',   el: nextweb },
+            { key: 'main',   el: token },
+            { key: 'main',   el: roadmap },
+            { key: 'main',   el: directory },
+            { key: 'footer', el: footer }
+        ].filter(t => t.el);
+
+        if (!observed.length) return;
+
+        const MIN_COVER = 0.02;
+
+        function clear(){
+            mobileHeader.classList.remove('cover','main','footer');
+        }
+
+        function apply(key){
+            clear();
+            if (key) mobileHeader.classList.add(key);
+        }
+
+        function viewportCoverageY(el){
+            const r  = el.getBoundingClientRect();
+            const vh = window.innerHeight || document.documentElement.clientHeight;
+            const visibleY = Math.max(0, Math.min(vh, r.bottom) - Math.max(0, r.top));
+            return visibleY / Math.max(1, vh);
+        }
+
+        function computeKeyMax(){
+            const keyMax = { cover: 0, main: 0, footer: 0 };
+            for (const t of observed) {
+                const ratio = viewportCoverageY(t.el);
+                if (ratio > keyMax[t.key]) keyMax[t.key] = ratio;
+            }
+            return keyMax;
+        }
+
+        let lastKey = null;
+        let rafId = null;
+
+        function update(){
+            rafId = null; // Reset RAF flag
+
+            const keyMax = computeKeyMax();
+
+            let bestKey = null, best = MIN_COVER;
+            for (const [k, r] of Object.entries(keyMax)) {
+                if (r > best) { best = r; bestKey = k; }
+            }
+
+            // Only update DOM if state actually changed
+            if (bestKey !== lastKey) {
+                if (bestKey) {
+                    apply(bestKey);
+                } else {
+                    clear();
+                }
+                lastKey = bestKey;
+            }
+        }
+
+        function scheduleUpdate(){
+            if (rafId) return; // Already scheduled
+            rafId = requestAnimationFrame(update);
+        }
+
+        let observer = null;
+
+        if ('IntersectionObserver' in window) {
+            observer = new IntersectionObserver(scheduleUpdate, {
+                threshold: [0, 0.02, 0.1, 0.25, 0.5, 0.75, 1],
+                rootMargin: '0px 0px -35% 0px'
+            });
+            observed.forEach(t => observer.observe(t.el));
+            scheduleUpdate(); // Initial update
+        } else {
+            // Fallback for older browsers
+            ['scroll','resize','load'].forEach(ev =>
+                window.addEventListener(ev, scheduleUpdate, { passive: true })
+            );
+            scheduleUpdate();
+        }
     })();
     </script>
 </body>

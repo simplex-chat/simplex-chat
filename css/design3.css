@@ -171,7 +171,7 @@
             #fff6e0 90%);
 }
 
-@media screen and (max-width: 949px) {
+@media screen and (max-width: 959px) {
     :root {
         --bg-grad: linear-gradient(30deg,
                 #e8f3ff 0%,
@@ -218,15 +218,15 @@ html {
 
 html,
 body {
-    background: #ccf9fc;
+    background: #ffffff;
 }
 
 .dark html,
 .dark body {
-    background: #2d3f64;
+    background: #0a0f2b;
 }
 
-@media screen and (min-width: 950px) {
+@media screen and (min-width: 960px) {
     html {
         overscroll-behavior: none;
     }
@@ -301,11 +301,19 @@ p {
 }
 
 /* Make the viewport the scroll snap container (works in iOS Safari) */
-html,
-body {
+html {
     scroll-snap-type: y mandatory;
     scroll-behavior: smooth;
     -webkit-overflow-scrolling: touch;
+}
+
+html.lock-scroll {
+    scroll-snap-type: none !important;
+}
+
+.lock-scroll body {
+    overflow: hidden !important;
+    height: 100svh;
 }
 
 section.page {
@@ -421,7 +429,7 @@ section.cover div.content p {
 .publications-btns {
     position: absolute;
     bottom: 24px;
-    left: 16px;
+    left: 30px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -430,7 +438,15 @@ section.cover div.content p {
 }
 
 .publications-btns img {
-    height: 36px;
+    width: 32px;
+}
+
+.publications-btns img.kuketz {
+    width: 38px;
+}
+
+.publications-btns img.whonix {
+    width: 30px;
 }
 
 .security-btns {
@@ -449,30 +465,6 @@ section.cover div.content p {
     height: 36px;
 }
 
-.box-btn {
-    height: 36px;
-    padding: 0 16px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 16px !important;
-    font-family: 'Manrope', 'GT-Walsheim', sans-serif !important;
-    font-weight: 700 !important;
-    letter-spacing: -0.25px !important;
-    border-radius: 6px !important;
-}
-
-.box-btn.btn-1 {
-    background-color: #639bd9;
-}
-
-.box-btn.btn-2 {
-    background: linear-gradient(100deg,
-            #ffb55d 0%,
-            #fff494 50%,
-            #fbffdd 100%);
-}
-
 .security-audits {
     font-size: 14px !important;
     font-family: 'Manrope', 'GT-Walsheim', sans-serif !important;
@@ -482,7 +474,7 @@ section.cover div.content p {
     line-height: 1.2;
 }
 
-@media screen and (max-width: 1280px) {
+@media screen and (max-width: 1279px) {
     .publications-btns {
         display: none;
         visibility: hidden;
@@ -497,7 +489,7 @@ section.cover div.content p {
 .socials {
     position: absolute;
     bottom: 22px;
-    right: 16px;
+    right: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -521,27 +513,26 @@ section.cover div.content p {
     background-color: #000;
     border: #4f4f4f 1px solid;
     border-radius: 6px;
-    padding: 6px;
+    padding: 6px 10px;
 
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 10px;
 }
 
 .desktop-app-btn .btn-content p {
     margin: 0;
-    font-size: 10px !important;
+    font-size: 11px !important;
     font-family: 'Manrope', 'GT-Walsheim', sans-serif !important;
     font-weight: 300 !important;
     line-height: 1.2 !important;
     text-align: left;
     color: #fff;
-    width: 60px;
 }
 
 .desktop-app-btn .btn-content img {
-    height: 22px !important;
+    height: 24px !important;
     width: auto;
 }
 
@@ -549,10 +540,10 @@ section.cover div.content p {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 6px;
 }
 
-@media screen and (max-width: 949px) {
+@media screen and (max-width: 959px) {
 
     .publications-btns,
     .security-btns,
@@ -633,7 +624,7 @@ main .section-bg {
     background-image: url("/img/design_3/section-5-desktop.webp");
 }
 
-@media screen and (max-width: 949px) {
+@media screen and (max-width: 959px) {
     .page-2 {
         background-image: url("/img/design_3/section-2-mobile-light.webp");
         background-size: auto calc(var(--cover-bg-h) * 0.84);
@@ -845,7 +836,7 @@ main .section-bg {
     display: none;
 }
 
-@media (max-width: 949px) {
+@media (max-width: 959px) {
     section.cover div.content {
         gap: calc(var(--sec-vhu) * 2.5);
         transform: translateY(calc(var(--sec-vhu) * 5));
@@ -975,7 +966,7 @@ main .section-bg {
     border-radius: calc(var(--sec-vhu) * 1.8);
 }
 
-@media screen and (max-width: 949px) {
+@media screen and (max-width: 959px) {
     .page-6 .group-images {
         width: 100%;
         height: 10%;
@@ -998,14 +989,6 @@ main .section-bg {
     <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
     places the image starting at column 3, row 2, spanning 2 columns × 2 rows.
 */
-.page-6 .group-images>a.simplex-image {
-    --c: 4;
-    --r: 3;
-    --w: 2;
-    --h: 2;
-    margin: 1.15rem;
-}
-
 .page-6 .group-images>a.group-image:nth-child(1) {
     --c: 2;
     --r: 1;
@@ -1188,14 +1171,15 @@ main .section-bg {
     --h: 1
 }
 
-@media screen and (max-width: 949px) {
-    .page-6 .group-images>a.simplex-image {
-        --c: 4;
-        --r: 4;
-        --w: 2;
-        --h: 2
-    }
+.page-6 .group-images>a.simplex-image {
+    --c: 4;
+    --r: 3;
+    --w: 2;
+    --h: 2;
+    margin: calc(var(--sec-vhu) * 2);
+}
 
+@media screen and (max-width: 959px) {
     .page-6 .group-images>a.group-image:nth-child(1) {
         --c: 3;
         --r: 1;
@@ -1377,6 +1361,14 @@ main .section-bg {
         --w: 1;
         --h: 1
     }
+
+    .page-6 .group-images>a.simplex-image {
+        --c: 4;
+        --r: 4;
+        --w: 2;
+        --h: 2;
+        margin: calc(var(--sec-vhu) * 1);
+    }
 }
 
 .page-6 .group-images a {
@@ -1391,7 +1383,7 @@ section.page.footer {
     min-height: fit-content;
 }
 
-@media screen and (max-width: 950px) {
+@media screen and (max-width: 959px) {
     section.page.footer {
         height: 100lvh;
         min-height: 100lvh;
@@ -1426,7 +1418,7 @@ section.page.footer {
     }
 }
 
-@media (min-width: 950px) {
+@media (min-width: 960px) {
 
     .footer .container-md,
     .footer .container-sm,
