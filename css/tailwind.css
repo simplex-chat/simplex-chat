@@ -1429,14 +1429,19 @@ video {
   background-color: rgb(1 151 255 / var(--tw-bg-opacity));
 }
 
-.bg-\[\#17203D\] {
+.bg-\[\#071C46\] {
   --tw-bg-opacity: 1;
-  background-color: rgb(23 32 61 / var(--tw-bg-opacity));
+  background-color: rgb(7 28 70 / var(--tw-bg-opacity));
 }
 
 .bg-\[\#48F6C2\] {
   --tw-bg-opacity: 1;
   background-color: rgb(72 246 194 / var(--tw-bg-opacity));
+}
+
+.bg-\[\#C1E3FE\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(193 227 254 / var(--tw-bg-opacity));
 }
 
 .bg-\[\#D3E9FF\] {
@@ -1454,9 +1459,9 @@ video {
   background-color: rgb(219 238 255 / var(--tw-bg-opacity));
 }
 
-.bg-\[\#F3F6F7\] {
+.bg-\[\#F3FAFF\] {
   --tw-bg-opacity: 1;
-  background-color: rgb(243 246 247 / var(--tw-bg-opacity));
+  background-color: rgb(243 250 255 / var(--tw-bg-opacity));
 }
 
 .bg-\[\#fff\] {
@@ -1491,7 +1496,7 @@ video {
 
 .bg-secondary-bg-light {
   --tw-bg-opacity: 1;
-  background-color: rgb(243 246 247 / var(--tw-bg-opacity));
+  background-color: rgb(243 250 255 / var(--tw-bg-opacity));
 }
 
 .bg-transparent {
@@ -2049,7 +2054,7 @@ video {
 .before\:bg-secondary-bg-light::before {
   content: var(--tw-content);
   --tw-bg-opacity: 1;
-  background-color: rgb(243 246 247 / var(--tw-bg-opacity));
+  background-color: rgb(243 250 255 / var(--tw-bg-opacity));
 }
 
 .before\:opacity-90::before {
@@ -2140,29 +2145,34 @@ video {
   border-color: rgb(255 255 255 / var(--tw-border-opacity));
 }
 
+:is(.dark .dark\:bg-\[\#000832\]) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(0 8 50 / var(--tw-bg-opacity));
+}
+
+:is(.dark .dark\:bg-\[\#050920\]) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(5 9 32 / var(--tw-bg-opacity));
+}
+
+:is(.dark .dark\:bg-\[\#071C46\]) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(7 28 70 / var(--tw-bg-opacity));
+}
+
 :is(.dark .dark\:bg-\[\#080D25\]) {
   --tw-bg-opacity: 1;
   background-color: rgb(8 13 37 / var(--tw-bg-opacity));
 }
 
-:is(.dark .dark\:bg-\[\#0C0B13\]) {
+:is(.dark .dark\:bg-\[\#0B2A59\]) {
   --tw-bg-opacity: 1;
-  background-color: rgb(12 11 19 / var(--tw-bg-opacity));
-}
-
-:is(.dark .dark\:bg-\[\#11182F\]) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(17 24 47 / var(--tw-bg-opacity));
+  background-color: rgb(11 42 89 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:bg-\[\#171F3A\]) {
   --tw-bg-opacity: 1;
   background-color: rgb(23 31 58 / var(--tw-bg-opacity));
-}
-
-:is(.dark .dark\:bg-\[\#17203D\]) {
-  --tw-bg-opacity: 1;
-  background-color: rgb(23 32 61 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:bg-\[rgba\(112\2c 240\2c 249\2c 0\.2\)\]) {
@@ -2176,7 +2186,7 @@ video {
 
 :is(.dark .dark\:bg-card-bg-dark) {
   --tw-bg-opacity: 1;
-  background-color: rgb(23 32 61 / var(--tw-bg-opacity));
+  background-color: rgb(7 28 70 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:bg-card-desc-bg-dark) {
@@ -2191,7 +2201,7 @@ video {
 
 :is(.dark .dark\:bg-primary-bg-dark) {
   --tw-bg-opacity: 1;
-  background-color: rgb(12 11 19 / var(--tw-bg-opacity));
+  background-color: rgb(0 8 50 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:bg-primary-dark) {
@@ -2201,7 +2211,7 @@ video {
 
 :is(.dark .dark\:bg-secondary-bg-dark) {
   --tw-bg-opacity: 1;
-  background-color: rgb(17 24 47 / var(--tw-bg-opacity));
+  background-color: rgb(11 42 89 / var(--tw-bg-opacity));
 }
 
 :is(.dark .dark\:bg-opacity-\[0\.2\]) {
@@ -2209,7 +2219,7 @@ video {
 }
 
 :is(.dark .dark\:bg-gradient-radial-mobile) {
-  background-image: radial-gradient(77.4% 73.09% at -3.68% 100%, #17203D 0%, #0C0B13 100%);
+  background-image: radial-gradient(77.4% 73.09% at -3.68% 100%, #071C46 0%, #000832 100%);
 }
 
 :is(.dark .dark\:fill-primary-dark) {
@@ -2268,7 +2278,7 @@ video {
 :is(.dark .dark\:before\:bg-primary-bg-dark)::before {
   content: var(--tw-content);
   --tw-bg-opacity: 1;
-  background-color: rgb(12 11 19 / var(--tw-bg-opacity));
+  background-color: rgb(0 8 50 / var(--tw-bg-opacity));
 }
 
 @media (min-width: 640px) {
@@ -2669,7 +2679,7 @@ video {
   }
 
   :is(.dark .dark\:lg\:bg-gradient-radial) {
-    background-image: radial-gradient(88.77% 102.03% at 92.64% -13.22%, #17203D 0%, #0C0B13 100%);
+    background-image: radial-gradient(88.77% 102.03% at 92.64% -13.22%, #071C46 0%, #000832 100%);
   }
 }
 

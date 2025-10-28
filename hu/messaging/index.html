@@ -68,7 +68,7 @@
         <script src="/js/flag-anchor.js"></script>
         
     </head>
-    <body class="bg-white dark:bg-[#0C0B13]">
+    <body class="bg-[#F3FAFF] dark:bg-[#000832]">
         
 
 
@@ -202,7 +202,7 @@
                     
                         <li><a href="/docs/directory.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SimpleX csoportjegyzék</a></li>
                     
-                        <li><a href="/docs/sql.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Hozzáférés a csevegési adatbázishoz</a></li>
+                        <li><a href="/docs/android.html" class=" lg:px-[20px] inline-block whitespace-nowrap">Android fájlok elérése</a></li>
                     
                         <li><a href="/docs/server.html" class=" lg:px-[20px] inline-block whitespace-nowrap">SMP-kiszolgáló üzemeltetése</a></li>
                     
@@ -1448,7 +1448,7 @@ window.addEventListener('click',(e)=>{
     }
     .dark .tab-button{
         color: #fff;
-        background: linear-gradient(#0C0B13, #0C0B13) padding-box,
+        background: linear-gradient(#000832, #000832) padding-box,
             linear-gradient(to bottom, #01F1FF, transparent) border-box;
     }
     .tab-button.active {
@@ -1564,7 +1564,7 @@ window.addEventListener("load", function () {
                                 targetFrame = 0;
                                 animateToTarget();
                             }
-                        }else if(index === 1){ 
+                        }else if(index === 1){
                             if (currentFrame !== 35) {
                                 targetFrame = 35;
                                 animateToTarget();
@@ -1581,7 +1581,7 @@ window.addEventListener("load", function () {
                 });
             }
         });
-    }); 
+    });
 
     const targetNode = document.querySelector(".simplex-explained-swiper .swiper-pagination");
     observer.observe(targetNode, { attributes: true });

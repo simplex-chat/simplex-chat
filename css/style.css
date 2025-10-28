@@ -265,8 +265,8 @@ a{
 }
 
 .dark .gradient-text {
-  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
-  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: -webkit-linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+  background: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -275,7 +275,7 @@ a{
 
 .dark .border-gradient {
   background:
-    linear-gradient(#11182F, #11182F) padding-box,
+    linear-gradient(#0B2A59, #0B2A59) padding-box,
     linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
   border: 1px solid transparent;
 }
@@ -294,7 +294,7 @@ a{
 
 .dark .unique-swiper .border-gradient{
   background:
-    linear-gradient(#0C0B13, #0C0B13) padding-box,
+    linear-gradient(#000832, #000832) padding-box,
     linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
   border: 1px solid transparent;
 }
@@ -839,13 +839,13 @@ p a{
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color:#F3F6F7;
+  background-color:#F3FAFF;
   opacity: 0.9;
 }
 
 .dark .glossary-overlay::before {
   content: '';
-  background-color: #0C0B13;
+  background-color: #000832;
 }
 
 .glossary-overlay .overlay-card{
@@ -864,7 +864,7 @@ p a{
 }
 
 .dark .glossary-overlay .overlay-card{
-  background-color: #17203D;
+  background-color: #071C46;
 }
 
 @media (min-width: 640px) {
