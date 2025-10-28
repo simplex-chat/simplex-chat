@@ -1,0 +1,1461 @@
+/* =======================
+    GT-Walsheim (WOFF2)
+    Family: "GT-Walsheim"
+    Weights mapped: Thin(100), Ultra-Light(200), Light(300), Regular(400),
+    Medium(500), Bold(700), Ultra-Bold(800), Black(900)
+======================= */
+
+/* Light */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light.woff2") format("woff2");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light-Oblique.woff2") format("woff2");
+    font-weight: 300;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Regular */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular-Oblique.woff2") format("woff2");
+    font-weight: 400;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Medium */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium-Oblique.woff2") format("woff2");
+    font-weight: 500;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* Bold */
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "GT-Walsheim";
+    src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold-Oblique.woff2") format("woff2");
+    font-weight: 700;
+    font-style: oblique;
+    font-display: swap;
+}
+
+/* =======================
+    Manrope (TTF)
+    Family: "Manrope"
+    Weights mapped per name
+======================= */
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-ExtraLight.ttf") format("truetype");
+    font-weight: 200;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Light.ttf") format("truetype");
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Medium.ttf") format("truetype");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-SemiBold.ttf") format("truetype");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-Bold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Manrope";
+    src: url("/fonts/Manrope/Manrope-ExtraBold.ttf") format("truetype");
+    font-weight: 800;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --bg-grad: linear-gradient(10deg,
+            #e8f3ff 0%,
+            #c0e2ff 40%,
+            #e9ffff 80%,
+            #ffefd6 90%);
+
+    /* Compute cover drawn size and inner safe frame (60% of full image on each axis) */
+    /* --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
+    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
+    --cover-safe-w: calc(var(--cover-bg-w) * 0.6);
+    --cover-safe-h: calc(var(--cover-bg-h) * 0.6);
+    --cover-vw: calc(var(--cover-safe-w) / 100);
+    --cover-vh: calc(var(--cover-safe-h) / 100); */
+    /* 1920/3200 */
+    /* 1080/1800 */
+
+    --cover-bg-w: calc(min((3200 / 1920) * 100vw, (3200 / 1080) * 100vh));
+    --cover-bg-h: calc(min((1800 / 1920) * 100vw, (1800 / 1080) * 100vh));
+
+    /* Drawn background size derived from viewport — no cropping (contain-like) */
+    --sec-w: calc(min((1920 / 1920) * 100vw, (1920 / 1080) * 100vh));
+    --sec-h: calc(min((1080 / 1920) * 100vw, (1080 / 1080) * 100vh));
+    --sec-vwu: calc(var(--sec-w) / 100);
+    --sec-vhu: calc(var(--sec-h) / 100);
+}
+
+:root.dark {
+    --bg-grad: linear-gradient(9.2deg,
+            #000000 0%,
+            #131d49 52%,
+            #3f5598 65%,
+            #c3faff 85%,
+            #fff6e0 90%);
+}
+
+@media screen and (max-width: 959px) {
+    :root {
+        --bg-grad: linear-gradient(30deg,
+                #e8f3ff 0%,
+                #c0e2ff 40%,
+                #e9ffff 80%,
+                #ffefd6 90%);
+
+        /* Cover background for mobile */
+        --cover-bg-w: calc(min((3200 / 620) * 100vw, (3200 / 1080) * 100vh));
+        --cover-bg-h: calc(min((1800 / 620) * 100vw, (1800 / 1080) * 100vh));
+
+        /* Drawn background size for mobile */
+        --sec-w: calc(min((620 / 620) * 100vw, (620 / 1080) * 100vh));
+        --sec-h: calc(min((1080 / 620) * 100vw, (1080 / 1080) * 100vh));
+        --sec-vwu: calc(var(--sec-w) / 100);
+        --sec-vhu: calc(var(--sec-h) / 100);
+    }
+
+    :root.dark {
+        --bg-grad: linear-gradient(30deg,
+                #000000 0%,
+                #131d49 52%,
+                #3f5598 65%,
+                #c3faff 85%,
+                #fff6e0 90%);
+    }
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border-color: #000;
+}
+
+.dark * {
+    border-color: #fff;
+}
+
+html {
+    scroll-behavior: smooth;
+    font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;
+}
+
+html,
+body {
+    background: #ffffff;
+}
+
+.dark html,
+.dark body {
+    background: #0a0f2b;
+}
+
+@media screen and (min-width: 960px) {
+    html {
+        overscroll-behavior: none;
+    }
+}
+
+/* .hidden {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+}
+
+:is(.dark .dark\:hidden) {
+    display: none !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+} */
+
+.lock-scroll {
+    overflow: hidden !important;
+}
+
+img {
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+}
+
+a,
+p {
+    word-wrap: break-word;
+}
+
+.gradient-text {
+    background: linear-gradient(100deg,
+            #ffb55d 0%,
+            #fff494 50%,
+            #fbffdd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.page .text-container a.gradient-text {
+    background: linear-gradient(90deg,
+            #001aa7 0%,
+            #0095e7 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+.dark .gradient-text,
+.dark .page .text-container a.gradient-text {
+    background: linear-gradient(90deg,
+            #019bfe 0%,
+            #64fdff 58%,
+            #c8feff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    color: transparent;
+}
+
+/* Let the PAGE (body) scroll so Safari collapses the address bar.
+   Keep .screen as a regular wrapper (no own scrolling). */
+.screen {
+    height: auto;
+    overflow: visible;
+}
+
+/* Make the viewport the scroll snap container (works in iOS Safari) */
+html {
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+}
+
+html.lock-scroll {
+    scroll-snap-type: none !important;
+}
+
+.lock-scroll body {
+    overflow: hidden !important;
+    height: 100svh;
+}
+
+section.page {
+    min-height: 100svh;
+    /* fallback */
+    height: 100svh;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+    /* requires a full swipe/scroll to leave */
+    position: relative;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2;
+}
+
+.chrome-ios section.page,
+.safari-ios section.page {
+    min-height: 110lvh;
+    /* fallback */
+    height: 110lvh;
+    padding-bottom: calc(110lvh - 100svh);
+}
+
+.chrome-android section.page {
+    min-height: 100lvh;
+    /* fallback */
+    height: 100lvh;
+    padding-bottom: calc(100lvh - 100svh);
+    z-index: 10;
+}
+
+section.page .area {
+    width: var(--sec-w);
+    height: var(--sec-h);
+    z-index: 11;
+    /* border: 2px solid red; */
+}
+
+#directory .area {
+    position: relative;
+}
+
+/* --- COVER --- */
+section.cover {
+    background-image: url("/img/design_3/cover-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+    z-index: 12;
+}
+
+.dark section.cover {
+    background-image: url("/img/design_3/cover.webp");
+}
+
+.chrome-ios section.cover,
+.safari-ios section.cover {
+    background-position: center calc(50% - calc(110lvh - 100svh) / 2);
+}
+
+.chrome-android section.cover {
+    background-position: center calc(50% - calc(100lvh - 100svh) / 2);
+}
+
+section.cover div.content {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    gap: calc(var(--sec-vhu) * 3.5);
+    width: var(--sec-w);
+    height: var(--sec-h);
+}
+
+section.cover div.content h1 {
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 600;
+    font-size: calc(var(--sec-vwu) * 11.7);
+    line-height: 0.9;
+    letter-spacing: -0.025em;
+    color: #ffffff;
+    text-align: center;
+}
+
+section.cover div.content h1 .small {
+    font-size: calc(var(--sec-vwu) * 8);
+}
+
+section.cover div.content h1 .medium {
+    font-size: calc(var(--sec-vwu) * 10);
+}
+
+section.cover div.content h2 {
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 300;
+    font-size: calc(var(--sec-vwu) * 2.7);
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+}
+
+section.cover div.content p {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu) * 1.6);
+    align-items: center;
+    color: #ffffff;
+    max-width: calc(var(--sec-vwu) * 25);
+}
+
+.publications-btns {
+    position: absolute;
+    bottom: 24px;
+    left: 30px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.publications-btns img {
+    width: 32px;
+}
+
+.publications-btns img.kuketz {
+    width: 38px;
+}
+
+.publications-btns img.whonix {
+    width: 30px;
+}
+
+.security-btns {
+    position: absolute;
+    bottom: 24px;
+    left: 0;
+    transform: translateX(calc((100vw / 2) - 50%));
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+}
+
+.security-btns img {
+    height: 36px;
+}
+
+.security-audits {
+    font-size: 14px !important;
+    font-family: 'Manrope', 'GT-Walsheim', sans-serif !important;
+    font-weight: 300 !important;
+    text-align: left;
+    color: white;
+    line-height: 1.2;
+}
+
+@media screen and (max-width: 1279px) {
+    .publications-btns {
+        display: none;
+        visibility: hidden;
+    }
+
+    .security-btns {
+        transform: translateX(0);
+        left: 16px;
+    }
+}
+
+.socials {
+    position: absolute;
+    bottom: 22px;
+    right: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.socials a img {
+    width: auto;
+    height: 40px;
+    border: #4f4f4f 1px solid;
+    border-radius: 6px;
+}
+
+.socials a img.no-border {
+    border: none;
+}
+
+.desktop-app-btn .btn-content {
+    height: 40px;
+    background-color: #000;
+    border: #4f4f4f 1px solid;
+    border-radius: 6px;
+    padding: 6px 10px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.desktop-app-btn .btn-content p {
+    margin: 0;
+    font-size: 11px !important;
+    font-family: 'Manrope', 'GT-Walsheim', sans-serif !important;
+    font-weight: 300 !important;
+    line-height: 1.2 !important;
+    text-align: left;
+    color: #fff;
+}
+
+.desktop-app-btn .btn-content img {
+    height: 24px !important;
+    width: auto;
+}
+
+.desktop-app-btn .btn-content>div {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+@media screen and (max-width: 959px) {
+
+    .publications-btns,
+    .security-btns,
+    .socials {
+        position: static;
+    }
+}
+
+/* --- MAIN SECTIONS --- */
+main {
+    position: relative;
+    isolation: isolate;
+}
+
+main .section-bg {
+    position: sticky;
+    top: 0;
+    inset: 0;
+    height: 100lvh;
+    margin-bottom: -100lvh;
+    /* cancel own layout height */
+    width: 100%;
+    background-image: var(--bg-grad);
+    background-position: center;
+    background-size: 102% 102%;
+    background-repeat: no-repeat;
+    z-index: -1;
+    pointer-events: none;
+}
+
+.chrome-ios main .section-bg,
+.safari-ios main .section-bg {
+    height: 110lvh;
+    margin-bottom: -110lvh;
+}
+
+.page-2 {
+    background-image: url("/img/design_3/section-2-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .page-2 {
+    background-image: url("/img/design_3/section-2-desktop.webp");
+}
+
+.page-3 {
+    background-image: url("/img/design_3/section-3-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .page-3 {
+    background-image: url("/img/design_3/section-3-desktop.webp");
+}
+
+.page-4 {
+    background-image: url("/img/design_3/section-4-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .page-4 {
+    background-image: url("/img/design_3/section-4-desktop.webp");
+}
+
+.page-5 {
+    background-image: url("/img/design_3/section-5-desktop-light.webp");
+    background-size: var(--cover-bg-w) var(--cover-bg-h);
+    background-position: center;
+    background-repeat: no-repeat;
+}
+
+.dark .page-5 {
+    background-image: url("/img/design_3/section-5-desktop.webp");
+}
+
+@media screen and (max-width: 959px) {
+    .page-2 {
+        background-image: url("/img/design_3/section-2-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.84);
+        background-position: 51.5% calc(50% - calc(var(--sec-vhu) * 2)) !important;
+    }
+
+    .chrome-ios .page-2,
+    .safari-ios .page-2 {
+        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-2 {
+        background-position: 51.5% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-2 {
+        background-image: url("/img/design_3/section-2-mobile.webp");
+    }
+
+    .page-3 {
+        background-image: url("/img/design_3/section-3-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.8);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 4.5)) !important;
+    }
+
+    .chrome-ios .page-3,
+    .safari-ios .page-3 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 4.5) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-3 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 4.5) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-3 {
+        background-image: url("/img/design_3/section-3-mobile.webp");
+    }
+
+    .page-4 {
+        background-image: url("/img/design_3/section-4-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.84);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 2)) !important;
+    }
+
+    .chrome-ios .page-4,
+    .safari-ios .page-4 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-4 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 2) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-4 {
+        background-image: url("/img/design_3/section-4-mobile.webp");
+    }
+
+    .page-5 {
+        background-image: url("/img/design_3/section-5-mobile-light.webp");
+        background-size: auto calc(var(--cover-bg-h) * 0.84);
+        background-position: 50% calc(50% - calc(var(--sec-vhu) * 3)) !important;
+    }
+
+    .chrome-ios .page-5,
+    .safari-ios .page-5 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 3) + (calc(110lvh - 100svh) / 2))) !important;
+    }
+
+    .chrome-android .page-5 {
+        background-position: 50% calc(50% - (calc(var(--sec-vhu) * 3) + (calc(100lvh - 100svh) / 2))) !important;
+    }
+
+    .dark .page-5 {
+        background-image: url("/img/design_3/section-5-mobile.webp");
+    }
+}
+
+.page .text-container {
+    position: relative;
+    color: white;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: flex-start;
+    gap: calc(var(--sec-vhu) * 3.25);
+    margin-right: calc(var(--sec-vwu)*7.5);
+    margin-left: calc(var(--sec-vwu)*7.5);
+    width: fit-content;
+    z-index: 1;
+}
+
+.page .text-container h2 {
+    font-family: "GT-Walsheim", "Manrope", sans-serif;
+    font-weight: 300;
+    font-size: calc(var(--sec-vwu)*4.94);
+    letter-spacing: -0.025em;
+    line-height: 1.05;
+    max-width: calc(var(--sec-vwu)*26);
+    color: #023789;
+}
+
+.dark .page .text-container h2 {
+    color: #ffffff;
+}
+
+.page .text-container p {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu)*1.62);
+    max-width: calc(var(--sec-vwu)*23);
+    color: #000000;
+}
+
+.dark .page .text-container p {
+    color: #ffffff;
+}
+
+.page .text-container p span {
+    font-weight: 500;
+}
+
+.page .text-container a {
+    font-family: "Manrope", "GT-Walsheim", sans-serif;
+    font-weight: 200;
+    font-size: calc(var(--sec-vwu)*1.62);
+    text-decoration: underline;
+    text-decoration-line: underline;
+    text-decoration-thickness: 0.5px;
+    text-underline-offset: 4px;
+    max-width: calc(var(--sec-vwu)*14);
+}
+
+.page-2 .text-container h2 {
+    max-width: calc(var(--sec-vwu)*26) !important;
+}
+
+.page-2 .text-container p {
+    max-width: calc(var(--sec-vwu)*23) !important;
+}
+
+.page-3 .text-container h2 {
+    max-width: calc(var(--sec-vwu)*29) !important;
+}
+
+.page-3 .text-container p {
+    max-width: calc(var(--sec-vwu)*31) !important;
+}
+
+.page-3 .text-container,
+.page-4 .text-container {
+    margin-left: auto;
+}
+
+.page-4 .text-container h2 {
+    max-width: calc(var(--sec-vwu)*26) !important;
+}
+
+.page-4 .text-container p {
+    max-width: calc(var(--sec-vwu)*30) !important;
+}
+
+.page-4 .text-container a {
+    max-width: calc(var(--sec-vwu)*30) !important;
+}
+
+.page-5 .text-container h2 {
+    max-width: calc(var(--sec-vwu)*23) !important;
+}
+
+.page-5 .text-container p {
+    max-width: calc(var(--sec-vwu)*30) !important;
+}
+
+.page-6 .text-container p {
+    max-width: calc(var(--sec-vwu)*21) !important;
+}
+
+.page-6 .text-container a {
+    max-width: calc(var(--sec-vwu)*21) !important;
+}
+
+.roadmap p:first-of-type,
+.roadmap>p:first-of-type {
+    font-weight: 500;
+    color: #009df7;
+}
+
+.dark .roadmap p:first-of-type,
+.dark .roadmap>p:first-of-type {
+    color: #64fdff;
+}
+
+/* .dark .roadmap>p:first-child {} */
+
+.roadmap>p:nth-child(2) {
+    font-weight: 500;
+}
+
+.roadmap>p:nth-child(3) {
+    font-weight: 200;
+}
+
+.roadmap p {
+    max-width: 30vw;
+}
+
+.roadmap p.title span {
+    display: none;
+}
+
+@media (max-width: 959px) {
+    section.cover div.content {
+        gap: calc(var(--sec-vhu) * 2.5);
+        transform: translateY(calc(var(--sec-vhu) * 5));
+    }
+
+    .publications-btns,
+    .security-btns,
+    .socials {
+        margin-top: calc(var(--sec-vhu) * 2);
+    }
+
+    section.cover div.content h1 {
+        line-height: 0.85;
+        font-weight: 700;
+        font-size: calc(var(--sec-vwu) * 30);
+    }
+
+    section.cover div.content h1 .small {
+        font-size: calc(var(--sec-vwu) * 16);
+    }
+
+    section.cover div.content h1 .medium {
+        font-size: calc(var(--sec-vwu) * 24);
+    }
+
+    section.cover div.content h2 {
+        font-weight: 400;
+        font-size: calc(var(--sec-vwu) * 7);
+    }
+
+    section.cover div.content p {
+        font-weight: 400;
+        font-size: calc(var(--sec-vwu) * 4.3);
+        max-width: calc(var(--sec-vwu) * 65);
+    }
+
+
+    /* --- MAIN SECTIONS --- */
+    .page .text-container {
+        justify-content: flex-end;
+        align-items: flex-start;
+        gap: calc(var(--sec-vhu) * 2);
+        margin-right: calc(var(--sec-vwu) * 7) !important;
+        margin-left: calc(var(--sec-vwu) * 7) !important;
+        padding-bottom: calc(var(--sec-vwu) * 8);
+        max-width: fit-content !important;
+    }
+
+    .page .text-container h2 {
+        font-weight: 400;
+        font-size: calc(var(--sec-vwu) * 13.6);
+        max-width: calc(var(--sec-vwu) * 80) !important;
+        line-height: 1;
+    }
+
+    .page .text-container p {
+        font-weight: 300;
+        font-size: calc(var(--sec-vwu) * 4.2);
+        max-width: calc(var(--sec-vwu) * 80) !important;
+    }
+
+    .page .text-container p span {
+        font-weight: 700;
+    }
+
+    .page .text-container a {
+        font-weight: 300;
+        font-size: calc(var(--sec-vwu) * 4.2);
+        max-width: calc(var(--sec-vwu) * 80) !important;
+    }
+
+    .page-3 .text-container,
+    .page-4 .text-container {
+        margin-left: 0;
+    }
+
+    .page-2 .text-container h2 {
+        max-width: calc(var(--sec-vwu) * 72) !important;
+    }
+
+    .roadmap {
+        width: calc(var(--sec-vwu) * 85) !important;
+    }
+
+    .roadmap>p:first-child {
+        float: left;
+    }
+
+    .roadmap p.title span {
+        display: inline;
+    }
+
+    .roadmap p.title {
+        max-width: calc(var(--sec-vwu) * 85) !important;
+        color: #009df7;
+    }
+
+    .dark .roadmap p.title {
+        color: #64fdff;
+    }
+
+    .roadmap>p {
+        font-weight: 400;
+        max-width: calc(var(--sec-vwu) * 90) !important;
+    }
+}
+
+.page-6 .group-images {
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: calc(var(--sec-vwu) * 65);
+    padding: calc(var(--sec-vhu) * 10.5) calc(var(--sec-vwu) * 2.5);
+    z-index: 0;
+
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    grid-template-rows: repeat(6, 1fr);
+    gap: calc(var(--sec-vwu) * 2.1);
+    z-index: 2;
+}
+
+.page-6 .group-images img {
+    width: 100%;
+    height: auto;
+    border-radius: calc(var(--sec-vhu) * 1.8);
+}
+
+@media screen and (max-width: 959px) {
+    .page-6 .group-images {
+        width: 100%;
+        height: 10%;
+        padding: calc(var(--sec-vhu) * 4) calc(var(--sec-vwu) * 3);
+        top: 0;
+        right: 0;
+        grid-template-columns: repeat(8, 1fr);
+        grid-template-rows: repeat(7, 1fr);
+        gap: calc(var(--sec-vwu) * 2.8);
+    }
+
+    .page-6 .group-images img {
+        border-radius: calc(var(--sec-vhu) * 0.8);
+    }
+}
+
+/*
+    Utility: position an image on the grid using CSS vars
+    Usage example:
+    <img class="pos" style="--c:3; --r:2; --w:2; --h:2" src="..." />
+    places the image starting at column 3, row 2, spanning 2 columns × 2 rows.
+*/
+.page-6 .group-images>a.group-image:nth-child(1) {
+    --c: 2;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(2) {
+    --c: 4;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(3) {
+    --c: 5;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(4) {
+    --c: 7;
+    --r: 1;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(5) {
+    --c: 1;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(6) {
+    --c: 3;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(7) {
+    --c: 4;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(8) {
+    --c: 5;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(9) {
+    --c: 6;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(10) {
+    --c: 8;
+    --r: 2;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(11) {
+    --c: 2;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(12) {
+    --c: 3;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(14) {
+    --c: 6;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(15) {
+    --c: 7;
+    --r: 3;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(16) {
+    --c: 1;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(17) {
+    --c: 3;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(18) {
+    --c: 6;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(19) {
+    --c: 8;
+    --r: 4;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(20) {
+    --c: 2;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(21) {
+    --c: 4;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(22) {
+    --c: 5;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(23) {
+    --c: 6;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(24) {
+    --c: 7;
+    --r: 5;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(25) {
+    --c: 3;
+    --r: 6;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(26) {
+    --c: 4;
+    --r: 6;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.group-image:nth-child(27) {
+    --c: 6;
+    --r: 6;
+    --w: 1;
+    --h: 1
+}
+
+.page-6 .group-images>a.simplex-image {
+    --c: 4;
+    --r: 3;
+    --w: 2;
+    --h: 2;
+    margin: calc(var(--sec-vhu) * 2);
+}
+
+@media screen and (max-width: 959px) {
+    .page-6 .group-images>a.group-image:nth-child(1) {
+        --c: 3;
+        --r: 1;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(2) {
+        --c: 6;
+        --r: 1;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(3) {
+        --c: 2;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(4) {
+        --c: 4;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(5) {
+        --c: 5;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(6) {
+        --c: 7;
+        --r: 2;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(7) {
+        --c: 3;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(8) {
+        --c: 4;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(9) {
+        --c: 5;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(10) {
+        --c: 6;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(11) {
+        --c: 8;
+        --r: 3;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(12) {
+        --c: 2;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(14) {
+        --c: 3;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(15) {
+        --c: 6;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(16) {
+        --c: 7;
+        --r: 4;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(17) {
+        --c: 1;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(18) {
+        --c: 3;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(19) {
+        --c: 6;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(20) {
+        --c: 7;
+        --r: 5;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(21) {
+        --c: 2;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(22) {
+        --c: 4;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(23) {
+        --c: 5;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(24) {
+        --c: 6;
+        --r: 6;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(25) {
+        --c: 3;
+        --r: 7;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(26) {
+        --c: 4;
+        --r: 7;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.group-image:nth-child(27) {
+        --c: 6;
+        --r: 7;
+        --w: 1;
+        --h: 1
+    }
+
+    .page-6 .group-images>a.simplex-image {
+        --c: 4;
+        --r: 4;
+        --w: 2;
+        --h: 2;
+        margin: calc(var(--sec-vhu) * 1);
+    }
+}
+
+.page-6 .group-images a {
+    grid-column: var(--c) / span var(--w, 1);
+    grid-row: var(--r) / span var(--h, 1);
+}
+
+
+/* FOOTER STYLES */
+section.page.footer {
+    height: fit-content;
+    min-height: fit-content;
+}
+
+@media screen and (max-width: 959px) {
+    section.page.footer {
+        height: 100lvh;
+        min-height: 100lvh;
+    }
+
+    .chrome-ios section.page,
+    .safari-ios section.page {
+        min-height: 110lvh;
+        height: 110lvh;
+        padding-bottom: calc(110lvh - 100svh);
+    }
+}
+
+.footer .container,
+.footer .container-fluid,
+.footer .container-xxl,
+.footer .container-xl,
+.footer .container-lg,
+.footer .container-md,
+.footer .container-sm {
+    width: 100%;
+    /* padding: 0 20px; */
+    margin-right: auto;
+    margin-left: auto;
+}
+
+@media (min-width: 576px) {
+
+    .footer .container-sm,
+    .footer .container {
+        max-width: 540px;
+    }
+}
+
+@media (min-width: 960px) {
+
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 720px;
+    }
+}
+
+@media (min-width: 992px) {
+
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 960px;
+    }
+}
+
+@media (min-width: 1200px) {
+
+    .footer .container-xl,
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 1140px;
+    }
+}
+
+@media (min-width: 1400px) {
+
+    .footer .container-xxl,
+    .footer .container-xl,
+    .footer .container-lg,
+    .footer .container-md,
+    .footer .container-sm,
+    .footer .container {
+        max-width: 1320px;
+    }
+}
