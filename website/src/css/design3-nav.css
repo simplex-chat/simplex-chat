@@ -233,6 +233,7 @@ header#navbar ul.sub-menu {
     max-height: calc(100vh - 70px);
     position: absolute;
     background: #fff;
+    border: solid 1px #f2f2f7;
     top: calc(100% + 8px);
     padding: 16px 0;
     min-width: 180px;
@@ -245,6 +246,7 @@ header#navbar ul.sub-menu {
 
 .dark header#navbar ul.sub-menu {
     background: #181e43;
+    border: none;
 }
 
 header#navbar ul.sub-menu li a {

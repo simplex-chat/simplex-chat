@@ -171,7 +171,7 @@ function displayEntries(entries) {
     try {
       const { entryType, displayName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
       const entryDiv = document.createElement('div');
-      entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8';
+      entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8';
 
       const textContainer = document.createElement('div');
       textContainer.className = 'text-container';
