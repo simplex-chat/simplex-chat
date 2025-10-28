@@ -102,6 +102,7 @@ This file is generated automatically.
 - [GroupPreference](#grouppreference)
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
+- [GroupRelay](#grouprelay)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
@@ -140,6 +141,7 @@ This file is generated automatically.
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
+- [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -2134,6 +2136,7 @@ MemberSupport:
 **Record type**:
 - groupId: int64
 - useRelays: bool
+- relayOwnStatus: [RelayStatus](#relaystatus)?
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2219,6 +2222,7 @@ Known:
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - isChatRelay: bool
+- relayData: [GroupRelay](#grouprelay)?
 
 
 ---
@@ -2329,8 +2333,19 @@ Known:
 - shortDescr: string?
 - description: string?
 - image: string?
+- groupLink: string?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+
+
+---
+
+## GroupRelay
+
+**Record type**:
+- groupRelayId: int64
+- relayStatus: [RelayStatus](#relaystatus)
+- relayLink: string?
 
 
 ---
@@ -3039,6 +3054,17 @@ MemberProfileUpdated:
 
 NewMemberPendingReview:
 - type: "newMemberPendingReview"
+
+
+---
+
+## RelayStatus
+
+**Enum type**:
+- "new"
+- "invited"
+- "accepted"
+- "active"
 
 
 ---

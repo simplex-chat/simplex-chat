@@ -906,6 +906,7 @@ Create group.
 **Parameters**:
 - userId: int64
 - incognito: bool
+- useRelays: bool
 - groupProfile: [GroupProfile](./TYPES.md#groupprofile)
 
 **Syntax**:

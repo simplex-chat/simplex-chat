@@ -328,8 +328,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
-  XGrpRelayInv :: ConnLinkContact -> ChatMsgEvent 'Json
-  XGrpRelayAcpt :: ConnLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayInv :: ShortLinkContact -> ChatMsgEvent 'Json
+  XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json

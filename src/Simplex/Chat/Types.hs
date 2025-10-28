@@ -118,7 +118,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
--- TODO [chat relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
+-- TODO [relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -449,6 +449,7 @@ type GroupId = Int64
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
+    relayOwnStatus :: Maybe RelayStatus,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -467,10 +468,12 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
-    viaGroupLinkUri :: Maybe ConnReqContact,
-    relayOwnStatus :: Maybe GroupRelayStatus
+    viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
+
+useRelays' :: GroupInfo -> Bool
+useRelays' GroupInfo {useRelays} = isTrue useRelays
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -732,9 +735,9 @@ data GroupProfile = GroupProfile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
+    groupLink :: Maybe ConnLinkContact,
     groupPreferences :: Maybe GroupPreferences,
-    memberAdmission :: Maybe GroupMemberAdmission,
-    groupLink :: Maybe ConnLinkContact
+    memberAdmission :: Maybe GroupMemberAdmission
   }
   deriving (Eq, Show)
 
@@ -963,23 +966,36 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
--- TODO [chat relays] review; consider where to use it:
--- TODO   - GroupMember? (now)
--- TODO   - separate list of relays in GroupInfo?
--- TODO   - only on request?
 data GroupRelay = GroupRelay
   { groupRelayId :: Int64,
-    relayStatus :: GroupRelayStatus,
-    relayLink :: ConnLinkContact
+    relayStatus :: RelayStatus,
+    relayLink :: Maybe ShortLinkContact
   }
   deriving (Eq, Show)
 
-data GroupRelayStatus
-  = GRSNew -- only for owner
-  | GRSInvited
-  | GRSAccepted
-  | GRSActive
+data RelayStatus
+  = RSNew -- only for owner
+  | RSInvited
+  | RSAccepted
+  | RSActive
   deriving (Eq, Show)
+
+instance TextEncoding RelayStatus where
+  textEncode = \case
+    RSNew -> "new"
+    RSInvited -> "invited"
+    RSAccepted -> "accepted"
+    RSActive -> "active"
+  textDecode = \case
+    "new" -> Just RSNew
+    "invited" -> Just RSInvited
+    "accepted" -> Just RSAccepted
+    "active" -> Just RSActive
+    _ -> Nothing
+
+instance FromField RelayStatus where fromField = fromTextField_ textDecode
+
+instance ToField RelayStatus where toField = toField . textEncode
 
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
@@ -2016,7 +2032,7 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
-$(JQ.deriveJSON (enumJSON $ dropPrefix "GRS") ''GroupRelayStatus)
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
 
 $(JQ.deriveJSON defaultJSON ''GroupRelay)
 

@@ -220,7 +220,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         getRecipients
-                          | isTrue (useRelays g) = withStore' $ \db -> getGroupRelays db vr user g
+                          | useRelays' g = withStore' $ \db -> getGroupRelays db vr user g
                           | otherwise = withStore' $ \db -> getGroupMembers db vr user g
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -728,6 +728,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
+              XGrpRelayAcpt relayLink -> do
+                -- TODO [relays] owner: process relay acceptance
+                -- TODO   - * relay is invitee? other processing branch?
+                -- TODO   - * check processing client is owner, otherwise error
+                -- TODO   - update relay record with relay link, relay status: RSAccepted
+                -- TODO   - update group link (add relay link)
+                -- TODO     - agent async setConnShortLink api; agent api to allow setting ContactLinkData.relays
+                -- TODO   - on group link updated: relay status: RSActive (can share group link with members)
+                pure ()
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
             case chatMsgEvent of
@@ -800,6 +809,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
             unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
           GCInviteeMember -> do
+            -- TODO [relays] relay: don't introduce new member to other members
             (gInfo', mStatus) <-
               if not (memberPending m)
                 then do
@@ -1140,6 +1150,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
+          XGrpRelayInv groupLink -> relayContactRequest groupLink
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1308,6 +1319,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> do
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
+        relayContactRequest :: ShortLinkContact -> CM ()
+        relayContactRequest groupLink = do
+          -- TODO [relays] relay: process contact request to server group
+          -- TODO   - retrieve group link data, validate group profile, verify owner's signature
+          -- TODO   - create group record, relay status: RSInvited
+          -- TODO   - create relay link (async)
+          -- TODO     - new user contact link referencing this group
+          -- TODO     - link data: relay key for group, relay identity (profile, certificate, relay identity key)
+          -- TODO   - accept request - send XGrpRelayAcpt to owner (continuation on link created)
+          -- TODO     - create owner member connection, relay status: RSAccepted
+          -- TODO   - * duplicate requests can be deduplicated by group link
+          pure ()
 
     memberCanSend ::
       GroupMember ->
@@ -2813,8 +2836,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     -- TODO [channels fwd] base on differentiation between groups and channels
     isUserGrpFwdRelay :: GroupInfo -> Bool
-    isUserGrpFwdRelay GroupInfo {useRelays, membership = membership@GroupMember {memberRole}}
-      | isTrue useRelays = isMemberRelay membership
+    isUserGrpFwdRelay gInfo@GroupInfo {membership = membership@GroupMember {memberRole}}
+      | useRelays' gInfo = isMemberRelay membership
       | otherwise = memberRole >= GRAdmin
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
@@ -3095,7 +3118,7 @@ deleteGroupConnections user gInfo waitDelivery = do
   deleteMembersConnections' user members waitDelivery
   where
     getMembers vr
-      | isTrue (useRelays gInfo) = withStore' $ \db -> getGroupRelays db vr user gInfo
+      | useRelays' gInfo = withStore' $ \db -> getGroupRelays db vr user gInfo
       | otherwise = withStore' $ \db -> getGroupMembers db vr user gInfo
 
 startDeliveryTaskWorkers :: CM ()
@@ -3219,7 +3242,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
             MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, body, cursorGMId_ = startingCursor} = job
             sendBodyToMembers :: CM ()
             sendBodyToMembers
-              | isTrue (useRelays gInfo) = -- channel
+              | useRelays' gInfo = -- channel
                   case jobScope of
                     -- there's no member review in channels, so job spec includePending is ignored
                     DJSGroup {} -> do

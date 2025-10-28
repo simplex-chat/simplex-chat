@@ -1018,7 +1018,7 @@ acceptBusinessJoinRequestAsync
 
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
-  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupLink = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
@@ -1456,8 +1456,8 @@ getChatScopeInfo vr user = \case
     pure $ GCSIMemberSupport (Just supportMem)
 
 getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> VersionChat -> CM [GroupMember]
-getGroupRecipients vr user gInfo@GroupInfo {useRelays, membership} scopeInfo modsCompatVersion
-  | isTrue useRelays && not (isMemberRelay membership) = do
+getGroupRecipients vr user gInfo@GroupInfo {membership} scopeInfo modsCompatVersion
+  | useRelays' gInfo && not (isMemberRelay membership) = do
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
       withFastStore' $ \db -> getGroupRelays db vr user gInfo
   | otherwise = case scopeInfo of
@@ -1994,9 +1994,9 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember {memberRole, memberStatus}
+memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberRole, memberStatus}
   -- groups with relays require newer version - we don't need to check member version for batching and forwarding support
-  | isTrue useRelays =
+  | useRelays' gInfo =
       if
         -- if user is chat relay, send to all non chat relay members
         | isMemberRelay membership && not (isMemberRelay m) -> MSASendBatched . snd <$> readyMemberConn m
@@ -2109,7 +2109,7 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
   pure (am', conn', msg)
 
 saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> UTCTime -> CM (Maybe RcvMessage)
-saveGroupFwdRcvMsg user GroupInfo {groupId, useRelays} forwardingMember refAuthorMember@GroupMember {memberId = refMemberId} msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs = do
+saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMember@GroupMember {memberId = refMemberId} msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs = do
   let newMsg = NewRcvMessage {chatMsgEvent, msgBody, brokerTs}
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = Just $ groupMemberId' refAuthorMember
@@ -2117,7 +2117,7 @@ saveGroupFwdRcvMsg user GroupInfo {groupId, useRelays} forwardingMember refAutho
   withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
-      | isTrue useRelays -> pure Nothing -- with chat relays, duplicates are expected
+      | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
       | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of
           (Just authorGMId, Nothing) -> do
             vr <- chatVersionRange

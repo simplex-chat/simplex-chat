@@ -10,7 +10,7 @@ import Database.SQLite.Simple.QQ (sql)
 --     (TBC usage, e.g. agree to invitations to be relay)
 -- - group_relays - group owner's list of relays for a group
 -- - group_relays.relay_link - links for all relays of a group are included in GroupShortLinkData
--- - group_relays.relay_status - group owner's status for each relay (GroupRelayStatus)
+-- - group_relays.relay_status - group owner's status for each relay (RelayStatus)
 -- - group_relays.chat_relay_id - associates group_relays record with a chat_relays record,
 --     chat_relays.deleted is to keep associated record if user removes chat relay from configuration,
 --     but has group relays using it
@@ -19,8 +19,7 @@ import Database.SQLite.Simple.QQ (sql)
 --     receiving event to member connection, owner can match it to the relay;
 --     TBC inverse association - from group_relays to group_members?
 -- - TBC also inverse link from group_relays to group_members? (group_relays.group_member_id)
--- - groups.relay_status_self - indicates for a relay client that it is chat relay for the group (GroupRelayStatus)
--- - connections.group_member_id_messaging - secondary connection for a group member in relayed group
+-- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (RelayStatus)
 m20251018_chat_relays :: Query
 m20251018_chat_relays =
   [sql|
@@ -43,6 +42,12 @@ CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay INTEGER NOT NULL DEFAULT 0;
 
+ALTER TABLE groups ADD COLUMN use_relays INTEGER NOT NULL DEFAULT 0;
+
+ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
+
+ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
+
 CREATE TABLE group_relays(
   group_relay_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -57,11 +62,6 @@ ALTER TABLE group_members ADD COLUMN is_chat_relay INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE group_members ADD COLUMN group_relay_id INTEGER REFERENCES group_relays ON DELETE SET NULL;
 CREATE INDEX idx_group_members_group_relay_id ON group_members(group_relay_id);
-
-ALTER TABLE groups ADD COLUMN relay_status_self TEXT;
-
-ALTER TABLE connections ADD COLUMN group_member_id_messaging INTEGER REFERENCES group_members ON DELETE CASCADE;
-CREATE INDEX idx_connections_group_member_id_messaging ON connections(group_member_id_messaging);
 |]
 
 down_m20251018_chat_relays :: Query
@@ -72,6 +72,12 @@ DROP TABLE chat_relays;
 
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
+ALTER TABLE groups DROP COLUMN use_relays;
+
+ALTER TABLE groups DROP COLUMN relay_own_status;
+
+ALTER TABLE group_profiles DROP COLUMN group_link;
+
 DROP INDEX idx_group_relays_group_id;
 DROP INDEX idx_group_relays_chat_relay_id;
 DROP TABLE group_relays;
@@ -80,9 +86,4 @@ ALTER TABLE group_members DROP COLUMN is_chat_relay;
 
 DROP INDEX idx_group_members_group_relay_id;
 ALTER TABLE group_members DROP COLUMN group_relay_id;
-
-ALTER TABLE groups DROP COLUMN relay_status_self;
-
-DROP INDEX idx_connections_group_member_id_messaging;
-ALTER TABLE connections DROP COLUMN group_member_id_messaging;
 |]
