@@ -1,9 +1,0 @@
-{
-    "name": "SimpleX NFT: SMPX testnet access",
-    "description": "Your SimpleX NFT will provide access to SMPX token testnet after launch - planned for 2026.",
-    "image": "ipfs://bafybeigez4owmrjuma36xszxwmdpbrytar7rzhyjhwbiq4ruxgxyppl7om",
-    "attributes": [
-        {"trait_type":"Conditions", "value": "1 per wallet, transfers prohibited."},
-        {"trait_type":"License", "value":"You can share SimpleX NFT on social media. You cannot modify SimpleX NFT image, or use its artwork without written permission of SimpleX Chat Ltd. © 2025 SimpleX Chat."}
-    ]
-}
