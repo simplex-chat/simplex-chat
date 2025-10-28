@@ -5,7 +5,13 @@ const isMobile = {
 };
 
 (function() {
-document.addEventListener('DOMContentLoaded', () => {
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializePage);
+} else {
+    initializePage();
+}
+
+function initializePage() {
     const googlePlayBtn = document.querySelector('.google-play-btn');
     const appleStoreBtn = document.querySelector('.apple-store-btn');
     const fDroidBtn = document.querySelector('.f-droid-btn');
@@ -35,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     showPromotedGroups();
-});
+}
 
 async function showPromotedGroups() {
     welcome();

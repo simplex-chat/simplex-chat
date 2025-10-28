@@ -425,6 +425,8 @@ Please do NOT report security vulnerabilities via GitHub issues.
 
 This software is licensed under the GNU Affero General Public License version 3 (AGPLv3). See the [LICENSE](./LICENSE) file for details. The SimpleX and SimpleX Chat name, logo, and associated branding materials are not covered by this license and are subject to the terms outlined in the [TRADEMARK](./docs/TRADEMARK.md) file.
 
+Graphic designs, artworks and layouts are not licensed for re-use. If you want to use them in your publications, please ask for permission. Texts can be used as direct quotes, referencing the source.
+
 [<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
 [![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
