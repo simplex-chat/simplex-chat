@@ -70,6 +70,9 @@
             background-color: rgb(112, 240, 249);
             color: rgb(13, 14, 18);
         }
+        #nft-app-content #connect.btn-primary {
+            margin-bottom: 20px;
+        }
         #nft-app-content .btn-large {
             padding: 10px 25px;
             font-size: 1.5em;
@@ -107,6 +110,7 @@
             right: 4%;
             font-size: 1.5em;
             font-weight: bold;
+            font-family: "GT-Walsheim", "Manrope", sans-serif;
             text-align: right;
             color: #023787;
         }
@@ -129,11 +133,13 @@
             transform: translate(-50%, -50%);
             font-size: 1.5em;
             font-weight: bold;
+            font-family: "GT-Walsheim", "Manrope", sans-serif;
             color: white;
         }
         #nft-app-content .congrats {
             font-size: 1.5em;
             font-weight: bold;
+            font-family: "GT-Walsheim", "Manrope", sans-serif;
             margin-bottom: 10px;
         }
         #nft-app-content .owned-text,
@@ -566,6 +572,7 @@
                                 content.innerHTML += `<div style="text-align: center; margin-top: 20px;">
                                     <p class="mb-5"><img src="/img/design_3/simplex_nft_smpx.jpg" width="200" style="display: inline; border-radius: 10px;"></p>
                                     <button class="btn btn-primary" id="connect">Connect Wallet</button>
+                                    <p>Arbitrum One network</p>
                                 </div>`;
                                 setTimeout(() => document.getElementById('connect').onclick = connectWallet, 0);
                             } else {
@@ -577,7 +584,10 @@
                             break;
 
                         case STATES.LOADING:
-                            content.innerHTML += `<div class="spinner"></div>`;
+                            content.innerHTML += `<div style="display: flex; justify-content: center; align-items: center; margin: 0 auto;">
+                                <p>Connecting...</p>
+                                <div class="spinner" style="margin-left: 10px;"></div>
+                            </div>`;
                             break;
 
                         case STATES.MINTED:

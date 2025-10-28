@@ -167,7 +167,8 @@ header#navbar ul a {
 }
 
 .box-btn.token {
-    font-size: 18px !important;
+    height: 34px;
+    font-size: 17px !important;
     font-weight: 500 !important;
     background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
     color: white;
