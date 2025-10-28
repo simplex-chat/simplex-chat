@@ -18,12 +18,12 @@ These vouchers are blockchain utility tokens &mdash; to focus purely on server c
 
 SMPX token is v1 of Community Vouchers. We are aiming to launch it in 2026.
 
-<a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">Mint a free SimpleX NFT</a> on Arbitrum One for testnet access and feedback. The NFT is limited to 1 per wallet, non-transferable.
+<a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">Mint a free SimpleX NFT</a> on Ethereum network (mainnet) for SMPX testnet access and feedback. The NFT is limited to 1 per wallet, non-transferable.
 
 **Preliminary token overview**
 - full name: **SimpleX Community Voucher**.
 - symbol: SMPX.
-- network: Arbitrum One.
+- network: TBC. There are several viable L2 candidates: Arbitrum One, Optimism, Polygon, etc.
 - standard: ERC20, with contract-enforced supply and other limits (TBD based on modeling and testing).
 
 **Potential utilities**

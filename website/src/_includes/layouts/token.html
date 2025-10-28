@@ -240,19 +240,22 @@
                     }
                 }
 
-                const selectedNetwork = 'arbitrum'; // Options: 'ethereum', 'arbitrum', 'hoodi'
+                const selectedNetwork = 'ethereum'; // Options: 'ethereum', 'arbitrum', 'hoodi'
                 const networks = {
                     ethereum: {
+                        name: 'Ethereum (mainnet)',
                         chainId: '0x1',
-                        minterAddress: '',
+                        minterAddress: '0x048F9C5B0b74761d34e03cfa79D04f20445D7D22',
                         explorerHost: 'etherscan.io'
                     },
                     arbitrum: {
+                        name: 'Arbitrum One network',
                         chainId: '0xa4b1',
                         minterAddress: '0x386E2B9f5d5c17049a1ADaf62928b3f3C834Ff28',
                         explorerHost: 'arbiscan.io'
                     },
                     hoodi: {
+                        name: 'Ethereum Hoodi testnet',
                         chainId: '0x88bb0',
                         minterAddress: '0xdaF242166be93A7f9835C2792958F3b6c424F845',
                         explorerHost: 'hoodi.etherscan.io'
@@ -574,7 +577,7 @@
                                 content.innerHTML += `<div style="text-align: center; margin-top: 20px;">
                                     <p class="mb-5"><img src="/img/design_3/simplex_nft_smpx.jpg" width="200" style="display: inline; border-radius: 10px;"></p>
                                     <button class="btn btn-primary" id="connect">Connect Wallet</button>
-                                    <p>Arbitrum One network</p>
+                                    <p>${currentConfig.name}</p>
                                 </div>`;
                                 setTimeout(() => document.getElementById('connect').onclick = connectWallet, 0);
                             } else {
