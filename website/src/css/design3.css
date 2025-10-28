@@ -356,6 +356,10 @@ section.page .area {
 
 #directory .area {
     position: relative;
+    will-change: transform;
+    transform: translateZ(0);
+    -webkit-backface-visibility: hidden;
+
 }
 
 /* --- COVER --- */
