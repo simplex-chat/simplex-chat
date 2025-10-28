@@ -63,11 +63,13 @@
             cursor: pointer;
         }
         #nft-app-content .btn-primary {
-            background-color: rgb(0, 83, 208);
+            background: -webkit-linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
+            background: linear-gradient(to bottom, #53C1FF -50%, #0053D0 160%);
             color: white;
         }
         .dark #nft-app-content .btn-primary {
-            background-color: rgb(112, 240, 249);
+            background: -webkit-linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+            background: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
             color: rgb(13, 14, 18);
         }
         #nft-app-content #connect.btn-primary {
@@ -211,10 +213,10 @@
     </style>
   </head>
 
-  <body class="bg-[#F3F6F7] dark:bg-[#0C0B13]">
+  <body class="bg-[#F3FAFF] dark:bg-[#000832]">
     {% include "navbar.html" %}
 
-    <section id="article" class="container mb-[75px] bg-white dark:bg-[#17203D] px-5 mt-[66px]">
+    <section id="article" class="container mb-[75px] bg-white dark:bg-[#071C46] px-5 mt-[66px]">
       <div class="py-6 md:p-[60px]">{{ content | safe }}</div>
     </section>
 
