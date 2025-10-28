@@ -25,6 +25,8 @@ done
 
 npm install
 cp node_modules/lottie-web/build/player/lottie.min.js src/js
+cp node_modules/ethers/dist/ethers.umd.min.js src/js
+cp node_modules/ethers/dist/ethers.umd.js.map src/js
 node merge_translations.js
 node customize_docs_frontmatter.js
 
@@ -32,6 +34,7 @@ node customize_docs_frontmatter.js
 for lang in "${langs[@]}"; do
   mkdir -p src/$lang
   cp src/index.html src/$lang
+  cp src/messaging.html src/$lang
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang
   cp src/fdroid.html src/$lang
@@ -64,6 +67,6 @@ done
 #       val_json_obj=$(echo "$val_json_obj" | jq ". + {$lang: $val}")
 #     fi
 #   done
-#   main_json_obj=$(echo "$main_json_obj" | jq ". + {\"$key\": $val_json_obj}") 
+#   main_json_obj=$(echo "$main_json_obj" | jq ". + {\"$key\": $val_json_obj}")
 # done
 # echo "$main_json_obj" > translations.json
