@@ -379,6 +379,8 @@ data ChatCommand
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
   | APICreateGroupLink {groupId :: GroupId, memberRole :: GroupMemberRole}
+  | APICreateRelayedGroupLink {groupId :: GroupId, autoChooseRelays :: Bool} -- TODO [relays] owner: TBC memberRole
+  | APIAddRelays {groupId :: GroupId, relayIds :: NonEmpty Int64}
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
   | APIGetGroupLink {groupId :: GroupId}

@@ -2247,13 +2247,8 @@ processChatCommand vr nm = \case
     createInternalChatItem user cd CIChatBanner (Just epochStart)
     createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
     createGroupFeatureItems user cd CISndGroupFeature gInfo
-    -- TODO [relays] owner: create group using relays
-    -- TODO   - prepare group link
-    -- TODO   - add link, owner key to group profile, sign
-    -- TODO   - create group link on server, use signed profile as data
-    -- TODO   - choose chat relays: auto or user action (new api in case of latter)
-    -- TODO   - send contact requests to relays
-    -- TODO     - create relay member connections, relay records, relay status: RSInvited
+    -- TODO [relays] owner: user should be prompted to choose/auto-choose relays for new group
+    -- TODO   - can choose relays from APIGetUserServers -> CRUserServers, [UserOperatorServers]
     pure $ CRGroupCreated user gInfo
   NewGroup incognito useRelays gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewGroup userId incognito useRelays gProfile
@@ -2683,6 +2678,22 @@ processChatCommand vr nm = \case
     gVar <- asks random
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo gLink
+  APICreateRelayedGroupLink groupId autoChooseRelays -> withUser $ \user -> withGroupLock "createRelayedGroupLink" groupId $ do
+    -- TODO [relays] owner: create relayed group link
+    -- TODO   - prepare group link
+    -- TODO   - add link, owner key to group profile, sign
+    -- TODO   - create group link on server, use signed profile as data
+    -- TODO   - * in first iteration can do:
+    -- TODO       create group link on server, add to group profile, update link on server
+    -- TODO   - if autoChooseRelays:
+    -- TODO     - choose group relays from configured relays (chat_relays)
+    -- TODO     - addRelays
+    ok_
+  APIAddRelays groupId -> withUser $ \user -> withGroupLock "addRelays" groupId $ do
+    -- TODO [relays] owner: add user chosen relays
+    -- TODO   - get group link
+    -- TODO   - addRelays
+    ok_
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     gLnk@GroupLink {acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
@@ -3525,6 +3536,13 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
+    addRelays :: User -> GroupInfo -> ShortLinkContact -> [Int64] CM ()
+    addRelays _user _gInfo _groupLink _relayIds = do
+      -- TODO [relays] owner: send contact requests to relays
+      -- TODO   - create relay member connections, relay records (group_relays), relay status: RSInvited
+      -- TODO   - send requests to relays: INV message - XGrpRelayInv
+      -- TODO   - agent joinConnectionAsync for contact links (currently prohibited)
+      pure ()
     drgRandomBytes :: Int -> CM ByteString
     drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User
@@ -4603,6 +4621,8 @@ chatCommandP =
       "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
       "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayNameP),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
+      "/_create relayed link #" *> (APICreateRelayedGroupLink <$> A.decimal <*> (" auto_choose_relays=" *> onOffP)),
+      "/_add relays #" *> (APIAddRelays <$> <$> A.decimal <*> _strP),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
