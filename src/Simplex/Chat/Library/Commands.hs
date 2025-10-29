@@ -3539,8 +3539,8 @@ processChatCommand vr nm = \case
     addRelays :: User -> GroupInfo -> ShortLinkContact -> [Int64] CM ()
     addRelays _user _gInfo _groupLink _relayIds = do
       -- TODO [relays] owner: send contact requests to relays
-      -- TODO   - create relay member connections, relay records (group_relays), relay status: RSInvited
-      -- TODO   - send requests to relays: INV message - XGrpRelayInv
+      -- TODO   - create relay member connections, relay records (group_relays), relay status: RSNew
+      -- TODO   - send requests to relays: INV message - XGrpRelayInv, relay status: RSInvited
       -- TODO   - agent joinConnectionAsync for contact links (currently prohibited)
       pure ()
     drgRandomBytes :: Int -> CM ByteString
