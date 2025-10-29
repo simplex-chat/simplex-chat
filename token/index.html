@@ -573,17 +573,17 @@ window.addEventListener('click',(e)=>{
 <li>full name: <strong>SimpleX Community Voucher</strong>.</li>
 <li>symbol: SMPX.</li>
 <li>network: TBC. There are several viable L2 candidates: Arbitrum One, Optimism, Polygon, etc.</li>
-<li>standard: ERC20, with contract-enforced supply and other limits (TBD based on modeling and testing).</li>
+<li>standard: ERC20, with contract-enforced supply and other limits on transactions and holdings (TBD based on modeling and testing, these will not be the usual freely tradable ERC20 tokens).</li>
 </ul>
 <p><strong>Potential utilities</strong></p>
 <ul>
-<li>Server messaging and file capacity beyond free tier (see FAQ) for large channels and communities.</li>
+<li>Server messaging and file capacity for large channels and communities beyond free tier (see FAQ).</li>
 <li>Names in SimpleX Name System.</li>
 </ul>
 <p>We're working with blockchain and legal experts for feasibility and compliance, aiming to launch testnet in 2026. Details may change based on input. More in our upcoming whitepaper draft.</p>
-<p>To receive updates, sign up via email or connect to us via SimpleX Chat.</p>
+<p>To receive updates, sign up via email or connect to us <a href="https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw">via SimpleX Chat</a>.</p>
 <h2 id="community-vouchers-faq" tabindex="-1">Community Vouchers FAQ</h2>
-<p>These are early insights into how Community Vouchers can work.</p>
+<p>These are early insights into how Community Vouchers can work — some of these ideas are still vague; they will evolve based on your feedback and testing.</p>
 <h3 id="why-community-vouchers" tabindex="-1">Why Community Vouchers?</h3>
 <img src="/img/design_3/community_vouchers_light.jpg" width="38%" class="float-to-right dark:hidden">
 <img src="/img/design_3/community_vouchers_dark.jpg" width="38%" class="float-to-right hidden dark:block">
@@ -594,14 +594,29 @@ window.addEventListener('click',(e)=>{
 <li>they de-platform inconvenient users, often based on frivolous complaints.</li>
 <li>you don't own all rights to your content.</li>
 </ul>
-<p>Paying for server capacity is cheaper than &quot;free&quot; platforms. Our estimate based on the current costs is $5-10/month for 5,000 message receivers (could be up to 50,000 members) with 5-10 GB of files/media archive. These estimates are preliminary and may change.</p>
+<p>Paying for server capacity is cheaper than &quot;free&quot; platforms. Our estimates based on the current costs are $5-10/month for 5,000 active message receivers (could be up to 50,000 listed community members) with 5-10 GB of files/media archive. These estimates are preliminary and may change.</p>
+<h3 id="why-build-on-ethereum-blockchain" tabindex="-1">Why build on Ethereum blockchain?</h3>
+<p>Many people dislike Ethereum for its high energy usage and high transaction costs in the past. Also, blockchain transactions cannot provide privacy, can they? Why not use Monero (XMR) instead?</p>
+<p>This was our assessment as well in the past. But the last three years changed it, addressing energy usage and transaction costs, and we've seen the growth of several L2 Ethereum blockchains. What made us decide that EVM-based blockchain is the best choice for the current stage is the planned rollout of zkEVM in 2025 with native support for zero-knowledge proofs.</p>
+<p><a href="https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2024-04-26-commercial-model.md">Our early ideas about Community Vouchers</a> and <a href="https://github.com/simplex-chat/simplex-chat/blob/master/docs/rfcs/2025-10-23-vouchers.md">the most recent design</a> rely on zero-knowledge proofs, and as it will be natively supported, EVM blockchains provide a much better foundation to build Community Vouchers than building them from scratch — there is no need to re-invent solutions to problems that are already solved.</p>
 <h3 id="free-tier" tabindex="-1">Free Tier?</h3>
-<p>Considering up to 1,000 message receivers and 500 MB storage for free groups.</p>
+<p>It will be determined after testing. Preliminarily, we expect up to 1,000 active message receivers (can be up to 10,000 listed members) and 500 MB storage to be available for free groups.</p>
 <h3 id="why-not-existing-crypto" tabindex="-1">Why Not Existing Crypto?</h3>
-<p>For privacy without heavy compliance; limits emphasize utility over speculation.</p>
+<p>Existing cryptocurrencies do not allow the implementation of the required model for Community Vouchers. The price of cryptocurrencies is determined speculatively, and not based on costs. The fact that they can be freely traded and transferred exposes existing cryptocurrencies and tokens to financial regulations.</p>
 <h3 id="how-might-vouchers-work" tabindex="-1">How Might Vouchers Work?</h3>
-<p>Buy via app (like phone top-ups), with automatic management.</p>
+<p>Buy via app (like phone top-ups), with unused capacity shown in the app.</p>
 <p>V1 would use hashed IDs for privacy and on-chain payments. Zero-knowledge proofs and in-app payments to be added later.</p>
+<h3 id="who-will-sell-vouchers" tabindex="-1">Who will sell vouchers?</h3>
+<p>Community Vouchers will be sold via a smart contract in exchange for some other tradeable tokens, most likely stablecoins. We don't plan token emission, or any public or private pre-sales. And we won't have access to the funds from voucher sales — they will be locked in a smart contract, and only released once servers have provided capacity to the users, with the funds shared between server operators and SimpleX network, with operators receiving up to 60%, depending on trust evaluation. SimpleX network funds will be managed by smart contracts, and will be used for governance and development as defined by the contracts. Their price will be fixed based on server costs, with the exact economic model developed during testing phase.</p>
+<h3 id="who-will-control-and-upgrade-smart-contracts" tabindex="-1">Who will control and upgrade smart contracts?</h3>
+<p>Community Vouchers will require several smart contracts for their functioning. During testing and development, SimpleX Chat will maintain and update all contracts. Once the network is ready for production, some critical contracts (e.g., those that control the funds) will be immutable, requiring a lot of testing and a security audit, and some less critical contracts will still be upgradeable based on a consensus model (e.g., multisig or voting).</p>
+<p>It is always a journey from knowing that something is possible to knowing how exactly it will be done, and we are at the early stage of knowing it is possible. Specific designs would evolve, based on the input from legal and blockchain experts, and from the community — as everything else we develop for SimpleX network.</p>
+<h3 id="will-i-be-able-to-sell-or-transfer-community-vouchers-to-other-people" tabindex="-1">Will I be able to sell or transfer Community Vouchers to other people?</h3>
+<p>Possibly, but with limits on the number of transactions and the time of holding.</p>
+<p>Community Vouchers are designed with a single purpose — to facilitate payments for servers' capacity in a way that protects users' security. Smart contracts implementing them will restrict or completely prohibit trading. The specific parameters will be determined during design evolution and testing.</p>
+<h3 id="why-use-erc20-specification-isnt-it-designed-for-freely-tradable-tokens" tabindex="-1">Why use ERC20 specification — isn't it designed for freely tradable tokens?</h3>
+<p><a href="https://eips.ethereum.org/EIPS/eip-20">ERC20 specification</a> has wider scope. It is very simple, one of the earliest, and the most adopted standards on EVM blockchain. It defines tokens, but they don't have to be freely tradeable — the specification allows any extensions and restrictions implemented on top of it.</p>
+<p>Because of its wide adoption, this specification is the right choice to build on, at least initially, as it will be compatible with all wallets and existing tools out of the box, making testing, development, and early adoption much easier.</p>
 <h2 id="disclaimer" tabindex="-1">Disclaimer</h2>
 <p>This design is evolving — share your feedback!</p>
 <p>This is not an investment offer. All details are subject to legal review.</p>
