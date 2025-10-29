@@ -73,14 +73,18 @@ defaultChatConfig =
                     smp = simplexChatSMPServers,
                     useSMP = 4,
                     xftp = map (presetServer True) $ L.toList defaultXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    chatRelays = simplexChatRelays,
+                    useChatRelays = 2
                   },
                 PresetOperator
                   { operator = Just operatorFlux,
                     smp = fluxSMPServers,
                     useSMP = 3,
                     xftp = fluxXFTPServers,
-                    useXFTP = 3
+                    useXFTP = 3,
+                    chatRelays = [],
+                    useChatRelays = 0
                   }
               ],
             ntf = _defaultNtfServers,
@@ -239,7 +243,9 @@ newChatController
                 smp = map newUserServer smpSrvs,
                 useSMP = 0,
                 xftp = map newUserServer xftpSrvs,
-                useXFTP = 0
+                useXFTP = 0,
+                chatRelays = [],
+                useChatRelays = 0
               }
       randomServerCfgs :: UserProtocol p => String -> SProtocolType p -> [(Text, ServerOperator)] -> [PresetOperator] -> IO (NonEmpty (ServerCfg p))
       randomServerCfgs name p opDomains rndSrvs =
@@ -260,7 +266,8 @@ newChatController
           getServers ops opDomains user' = do
             smpSrvs <- getProtocolServers db SPSMP user'
             xftpSrvs <- getProtocolServers db SPXFTP user'
-            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs)
+            chatRelays <- getChatRelays db user'
+            uss <- groupByOperator' (ops, smpSrvs, xftpSrvs, chatRelays)
             ts <- getCurrentTime
             uss' <- mapM (setUserServers' db user' ts . updatedUserServers) uss
             let auId = aUserId user'
