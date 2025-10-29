@@ -2702,16 +2702,29 @@ processChatCommand vr nm = \case
     _sLnk' <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm connId SCMContact userData' (Just crClientData))
     -- ^^^
     gVar <- asks random
-    gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
-    -- TODO - if autoChooseRelays:
-    -- TODO   - choose group relays from configured relays (chat_relays)
-    -- TODO   - addRelays
-    ok_
-  APIAddRelays groupId _relayIds -> withUser $ \_user -> withGroupLock "addRelays" groupId $ do
-    -- TODO [relays] owner: add user chosen relays
-    -- TODO   - get group link
-    -- TODO   - addRelays
-    ok_
+    (gLink, gInfo') <- withFastStore $ \db -> do
+      gLink <- createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+      gInfo' <- updateGroupProfile db user gInfo groupProfile'
+      pure (gLink, gInfo')
+    if autoChooseRelays
+      then do
+        relayIds <- chooseRelays
+        relays <- addRelays user gInfo' relayIds
+        pure $ CRGroupRelaysAdded user gInfo' gLink relays
+      else
+        pure $ CRGroupLinkCreated user gInfo' gLink
+    where
+      chooseRelays = do
+        -- TODO - load configured relays (chat_relays)
+        -- TODO - select 3 random relays
+        pure []
+  APIAddRelays groupId relayIds -> withUser $ \user -> withGroupLock "addRelays" groupId $ do
+    (gInfo, gLink) <- withFastStore $ \db -> do
+      gInfo <- getGroupInfo db vr user groupId
+      gLink <- getGroupLink db user gInfo
+      pure (gInfo, gLink)
+    relays <- addRelays user gInfo $ L.toList relayIds
+    pure $ CRGroupRelaysAdded user gInfo gLink relays
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     gLnk@GroupLink {acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
@@ -3554,13 +3567,13 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
-    addRelays :: User -> GroupInfo -> ShortLinkContact -> [Int64] -> CM ()
-    addRelays _user _gInfo _groupLink _relayIds = do
+    addRelays :: User -> GroupInfo -> [Int64] -> CM [GroupRelay]
+    addRelays _user _gInfo _relayIds = do
       -- TODO [relays] owner: send contact requests to relays
       -- TODO   - create relay member connections, relay records (group_relays), relay status: RSNew
       -- TODO   - send requests to relays: INV message - XGrpRelayInv, relay status: RSInvited
       -- TODO   - agent joinConnectionAsync for contact links (currently prohibited)
-      pure ()
+      pure []
     drgRandomBytes :: Int -> CM ByteString
     drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User
