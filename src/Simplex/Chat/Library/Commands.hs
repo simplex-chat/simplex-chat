@@ -192,6 +192,7 @@ startChatController mainApp enableSndFiles = do
           startDeliveryWorkers
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
+          startRelayChecks users
         else when enableSndFiles $ startXFTP xftpStartSndWorkers
       pure a1
     startXFTP startWorkers = do
@@ -2679,17 +2680,34 @@ processChatCommand vr nm = \case
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo gLink
   APICreateRelayedGroupLink groupId autoChooseRelays -> withUser $ \user -> withGroupLock "createRelayedGroupLink" groupId $ do
-    -- TODO [relays] owner: create relayed group link
-    -- TODO   - prepare group link
+    gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db vr user groupId
+    assertUserGroupRole gInfo GROwner
+    groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+    subMode <- chatReadVar subscriptionMode
+    let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+        crClientData = encodeJSON $ CRDataGroup groupLinkId
+    -- TODO [relays] below to be replaced with:
+    -- TODO   - prepare group link (without creating on server)
     -- TODO   - add link, owner key to group profile, sign
     -- TODO   - create group link on server, use signed profile as data
-    -- TODO   - * in first iteration can do:
-    -- TODO       create group link on server, add to group profile, update link on server
-    -- TODO   - if autoChooseRelays:
-    -- TODO     - choose group relays from configured relays (chat_relays)
-    -- TODO     - addRelays
+    -- vvv
+    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
+    ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+    sLnk <- case toShortLinkContact ccLink' of
+      Just sl -> pure sl
+      Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
+    let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
+        userData' = encodeShortLinkData $ GroupShortLinkData groupProfile'
+    -- same link with updated profile
+    _sLnk' <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm connId SCMContact userData' (Just crClientData))
+    -- ^^^
+    gVar <- asks random
+    gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+    -- TODO - if autoChooseRelays:
+    -- TODO   - choose group relays from configured relays (chat_relays)
+    -- TODO   - addRelays
     ok_
-  APIAddRelays groupId -> withUser $ \user -> withGroupLock "addRelays" groupId $ do
+  APIAddRelays groupId _relayIds -> withUser $ \_user -> withGroupLock "addRelays" groupId $ do
     -- TODO [relays] owner: add user chosen relays
     -- TODO   - get group link
     -- TODO   - addRelays
@@ -3536,7 +3554,7 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
-    addRelays :: User -> GroupInfo -> ShortLinkContact -> [Int64] CM ()
+    addRelays :: User -> GroupInfo -> ShortLinkContact -> [Int64] -> CM ()
     addRelays _user _gInfo _groupLink _relayIds = do
       -- TODO [relays] owner: send contact requests to relays
       -- TODO   - create relay member connections, relay records (group_relays), relay status: RSNew
@@ -4305,7 +4323,7 @@ cleanupManager = do
       withStore' (`deleteOldProbes` cutoffTs)
 
 runRelayChecks :: User -> CM ()
-runRelayChecks user = do
+runRelayChecks _user = do
   -- TODO [relays] relay: periodically check served groups
   -- TODO   - get groups where user is chat relay
   -- TODO   - retrive group link data, check presence of relay link
@@ -4622,7 +4640,7 @@ chatCommandP =
       "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayNameP),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
       "/_create relayed link #" *> (APICreateRelayedGroupLink <$> A.decimal <*> (" auto_choose_relays=" *> onOffP)),
-      "/_add relays #" *> (APIAddRelays <$> <$> A.decimal <*> _strP),
+      "/_add relays #" *> (APIAddRelays <$> A.decimal <*> _strP),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),

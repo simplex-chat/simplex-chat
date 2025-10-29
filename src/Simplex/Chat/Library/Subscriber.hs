@@ -728,7 +728,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              XGrpRelayAcpt relayLink -> do
+              XGrpRelayAcpt _relayLink -> do
                 -- TODO [relays] owner: process relay acceptance
                 -- TODO   - * relay is invitee? other processing branch?
                 -- TODO   - * check processing client is owner, otherwise error
@@ -1320,7 +1320,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         relayContactRequest :: ShortLinkContact -> CM ()
-        relayContactRequest groupLink = do
+        relayContactRequest _groupLink = do
           -- TODO [relays] relay: process contact request to server group
           -- TODO   - retrieve group link data, validate group profile, verify owner's signature
           -- TODO   - create group record, relay status: RSInvited

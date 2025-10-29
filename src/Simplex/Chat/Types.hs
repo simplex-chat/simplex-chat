@@ -735,7 +735,7 @@ data GroupProfile = GroupProfile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
-    groupLink :: Maybe ConnLinkContact,
+    groupLink :: Maybe ShortLinkContact,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
