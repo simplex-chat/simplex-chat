@@ -58,6 +58,7 @@ module Simplex.Chat.Store.Profiles
     updateUserAddressSettings,
     getProtocolServers,
     getChatRelays,
+    getChatRelayById,
     insertProtocolServer,
     getUpdateServerOperators,
     getServerOperators,
@@ -624,10 +625,22 @@ getChatRelays db User {userId} =
         WHERE user_id = ?
       |]
       (Only userId)
-  where
-    toChatRelay :: (DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
-    toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
-      UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+
+toChatRelay :: (DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
+toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
+  UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+
+getChatRelayById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserChatRelay
+getChatRelayById db User {userId} relayId =
+  ExceptT . firstRow toChatRelay (SEUserChatRelayNotFound relayId) $
+    DB.query
+      db
+      [sql|
+        SELECT chat_relay_id, address, name, domains, preset, tested, enabled
+        FROM chat_relays
+        WHERE user_id = ? AND chat_relay_id = ?
+      |]
+      (userId, relayId)
 
 insertChatRelay :: DB.Connection -> User -> UTCTime -> NewUserChatRelay -> IO UserChatRelay
 insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains, preset, tested, enabled} = do
@@ -642,7 +655,7 @@ insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains,
           RETURNING chat_relay_id
         |]
         (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
-  pure relay {chatRelayId = DBEntityId crId}
+  pure (relay :: NewUserChatRelay) {chatRelayId = DBEntityId crId}
 
 updateChatRelay :: DB.Connection -> UTCTime -> UserChatRelay -> IO ()
 updateChatRelay db ts UserChatRelay {chatRelayId, address, name, domains, preset, tested, enabled} =

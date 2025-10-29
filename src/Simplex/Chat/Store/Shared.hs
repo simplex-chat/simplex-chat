@@ -147,6 +147,7 @@ data StoreError
   | SEProhibitedDeleteUser {userId :: UserId, contactId :: ContactId}
   | SEOperatorNotFound {serverOperatorId :: Int64}
   | SEUsageConditionsNotFound
+  | SEUserChatRelayNotFound {chatRelayId :: Int64}
   | SEInvalidQuote
   | SEInvalidMention
   | SEInvalidDeliveryTask {taskId :: Int64}

@@ -84,7 +84,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (liftIOEither, zipWith3')
+import Simplex.Chat.Util (liftIOEither, shuffle, zipWith3')
 import qualified Simplex.Chat.Util as U
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), maxFileSize, maxFileSizeHard)
 import Simplex.Messaging.Agent
@@ -2708,23 +2708,27 @@ processChatCommand vr nm = \case
       pure (gLink, gInfo')
     if autoChooseRelays
       then do
-        relayIds <- chooseRelays
-        relays <- addRelays user gInfo' relayIds
-        pure $ CRGroupRelaysAdded user gInfo' gLink relays
+        relays <- chooseRelays user
+        groupRelays <- addRelays user gInfo' relays
+        pure $ CRGroupRelaysAdded user gInfo' gLink groupRelays
       else
         pure $ CRGroupLinkCreated user gInfo' gLink
     where
-      chooseRelays = do
-        -- TODO - load configured relays (chat_relays)
-        -- TODO - select 3 random relays
-        pure []
+      chooseRelays user = do
+        -- TODO [relays] owner: more advanced relay selection strategy, e.g. pick from different operators
+        chatRelays <- withFastStore' (`getChatRelays` user)
+        let enabledRelays = filter (\UserChatRelay {enabled} -> enabled) chatRelays
+        selectedRelays <- take 3 <$> liftIO (shuffle enabledRelays)
+        when (null selectedRelays) $ throwChatError $ CEException "failed to select relays: no enabled relays configured"
+        pure selectedRelays
   APIAddRelays groupId relayIds -> withUser $ \user -> withGroupLock "addRelays" groupId $ do
     (gInfo, gLink) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
       pure (gInfo, gLink)
-    relays <- addRelays user gInfo $ L.toList relayIds
-    pure $ CRGroupRelaysAdded user gInfo gLink relays
+    relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+    groupRelays <- addRelays user gInfo relays
+    pure $ CRGroupRelaysAdded user gInfo gLink groupRelays
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     gLnk@GroupLink {acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
@@ -3567,8 +3571,8 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
-    addRelays :: User -> GroupInfo -> [Int64] -> CM [GroupRelay]
-    addRelays _user _gInfo _relayIds = do
+    addRelays :: User -> GroupInfo -> [UserChatRelay] -> CM [GroupRelay]
+    addRelays _user _gInfo _relays = do
       -- TODO [relays] owner: send contact requests to relays
       -- TODO   - create relay member connections, relay records (group_relays), relay status: RSNew
       -- TODO   - send requests to relays: INV message - XGrpRelayInv, relay status: RSInvited
