@@ -229,28 +229,6 @@ startChatController mainApp enableSndFiles = do
             ttlCount <- getChatTTLCount db user
             pure $ ttl > 0 || ttlCount > 0
 
--- startExpireCIThread :: User -> CM' ()
--- startExpireCIThread user@User {userId} = do
---   expireThreads <- asks expireCIThreads
---   atomically (TM.lookup userId expireThreads) >>= \case
---     Nothing -> do
---       a <- Just <$> async runExpireCIs
---       atomically $ TM.insert userId a expireThreads
---     _ -> pure ()
---   where
---     runExpireCIs = do
---       delay <- asks (initialCleanupManagerDelay . config)
---       liftIO $ threadDelay' delay
---       interval <- asks $ ciExpirationInterval . config
---       forever $ do
---         flip catchAllErrors' (eToView') $ do
---           expireFlags <- asks expireCIFlags
---           atomically $ TM.lookup userId expireFlags >>= \b -> unless (b == Just True) retry
---           lift waitChatStartedAndActivated
---           ttl <- withStore' (`getChatItemTTL` user)
---           expireChatItems user ttl False
---         liftIO $ threadDelay' interval
-
 getConnsToSub :: User -> CM [ConnId]
 getConnsToSub user =
   withFastStore' $ \db -> do
