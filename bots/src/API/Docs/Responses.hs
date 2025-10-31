@@ -160,6 +160,7 @@ undocumentedResponses =
     "CRGroupMemberSwitchAborted",
     "CRGroupMemberSwitchStarted",
     "CRGroupProfile",
+    "CRGroupRelaysAdded",
     "CRGroupUserChanged",
     "CRItemsReadForChat",
     "CRJoinedGroupMember",

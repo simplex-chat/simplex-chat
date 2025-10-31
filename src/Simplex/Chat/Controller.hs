@@ -250,6 +250,7 @@ data ChatController = ChatController
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
+    relayChecksAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
@@ -378,6 +379,8 @@ data ChatCommand
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
   | APICreateGroupLink {groupId :: GroupId, memberRole :: GroupMemberRole}
+  | APICreateRelayedGroupLink {groupId :: GroupId, autoChooseRelays :: Bool} -- TODO [relays] owner: TBC memberRole
+  | APIAddRelays {groupId :: GroupId, relayIds :: NonEmpty Int64}
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
   | APIGetGroupLink {groupId :: GroupId}
@@ -391,7 +394,7 @@ data ChatCommand
   | TestProtoServer AProtoServerWithAuth
   | GetUserChatRelays
   | SetUserChatRelays [CLINewRelay]
-  -- TODO [chat relays] commands to test chat relay
+  -- TODO [relays] commands to test chat relay
   -- | APITestChatRelay UserId ConnLinkContact
   -- | TestChatRelay ConnLinkContact
   | APIGetServerOperators
@@ -503,8 +506,8 @@ data ChatCommand
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
-  | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
-  | NewGroup IncognitoEnabled GroupProfile
+  | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, useRelays :: Bool, groupProfile :: GroupProfile}
+  | NewGroup IncognitoEnabled Bool GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
@@ -742,6 +745,7 @@ data ChatResponse
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
+  | CRGroupRelaysAdded {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}

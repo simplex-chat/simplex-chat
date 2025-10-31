@@ -2421,6 +2421,7 @@ export enum GroupFeatureEnabled {
 export interface GroupInfo {
   groupId: number // int64
   useRelays: boolean
+  relayOwnStatus?: RelayStatus
   localDisplayName: string
   groupProfile: GroupProfile
   localAlias: string
@@ -2511,6 +2512,7 @@ export interface GroupMember {
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
   isChatRelay: boolean
+  relayData?: GroupRelay
 }
 
 export interface GroupMemberAdmission {
@@ -2585,8 +2587,16 @@ export interface GroupProfile {
   shortDescr?: string
   description?: string
   image?: string
+  groupLink?: string
   groupPreferences?: GroupPreferences
   memberAdmission?: GroupMemberAdmission
+}
+
+export interface GroupRelay {
+  groupRelayId: number // int64
+  userChatRelayId: number // int64
+  relayStatus: RelayStatus
+  relayLink?: string
 }
 
 export interface GroupShortLinkData {
@@ -3443,6 +3453,13 @@ export namespace RcvGroupEvent {
   }
 }
 
+export enum RelayStatus {
+  New = "new",
+  Invited = "invited",
+  Accepted = "accepted",
+  Active = "active",
+}
+
 export enum ReportReason {
   Spam = "spam",
   Content = "content",
@@ -3796,6 +3813,8 @@ export type StoreError =
   | StoreError.ProhibitedDeleteUser
   | StoreError.OperatorNotFound
   | StoreError.UsageConditionsNotFound
+  | StoreError.UserChatRelayNotFound
+  | StoreError.GroupRelayNotFound
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
   | StoreError.InvalidDeliveryTask
@@ -3881,6 +3900,8 @@ export namespace StoreError {
     | "prohibitedDeleteUser"
     | "operatorNotFound"
     | "usageConditionsNotFound"
+    | "userChatRelayNotFound"
+    | "groupRelayNotFound"
     | "invalidQuote"
     | "invalidMention"
     | "invalidDeliveryTask"
@@ -4256,6 +4277,16 @@ export namespace StoreError {
 
   export interface UsageConditionsNotFound extends Interface {
     type: "usageConditionsNotFound"
+  }
+
+  export interface UserChatRelayNotFound extends Interface {
+    type: "userChatRelayNotFound"
+    chatRelayId: number // int64
+  }
+
+  export interface GroupRelayNotFound extends Interface {
+    type: "groupRelayNotFound"
+    groupRelayId: number // int64
   }
 
   export interface InvalidQuote extends Interface {

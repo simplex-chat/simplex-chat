@@ -280,6 +280,7 @@ chatTypesDocsData =
     (sti @GroupPreference, STRecord, "", [], "", ""),
     (sti @GroupPreferences, STRecord, "", [], "", ""),
     (sti @GroupProfile, STRecord, "", [], "", ""),
+    (sti @GroupRelay, STRecord, "", [], "", ""),
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
@@ -319,6 +320,7 @@ chatTypesDocsData =
     (sti @RcvFileStatus, STUnion, "RFS", [], "", ""),
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
+    (sti @RelayStatus, STEnum, "RS", [], "", ""),
     (sti @ReportReason, (STEnum' $ dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
@@ -466,6 +468,7 @@ deriving instance Generic GroupMemberStatus
 deriving instance Generic GroupPreference
 deriving instance Generic GroupPreferences
 deriving instance Generic GroupProfile
+deriving instance Generic GroupRelay
 deriving instance Generic GroupShortLinkData
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
@@ -511,6 +514,7 @@ deriving instance Generic RcvFileDescr
 deriving instance Generic RcvFileStatus
 deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent
+deriving instance Generic RelayStatus
 deriving instance Generic ReportReason
 deriving instance Generic SecurityCode
 deriving instance Generic SimplexLinkType

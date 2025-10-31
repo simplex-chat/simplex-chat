@@ -241,6 +241,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
   CRGroupLinkCreated u g gLink -> ttyUser u $ groupLink_ "Group link is created!" g gLink
+  -- TODO [relays] CRGroupRelaysAdded view
+  CRGroupRelaysAdded u g gLink _relays -> ttyUser u $ groupLink_ "Group link is created!" g gLink
   CRGroupLink u g gLink -> ttyUser u $ groupLink_ "Group link:" g gLink
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]
@@ -1145,8 +1147,9 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
+-- TODO [relays] operator: CLI specific apis based on name
 viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
-viewGroupCreated g testView =
+viewGroupCreated g@GroupInfo {groupId} testView =
   case incognitoMembershipProfile g of
     Just localProfile
       | testView -> incognitoProfile' profile : message
@@ -1155,12 +1158,22 @@ viewGroupCreated g testView =
         profile = fromLocalProfile localProfile
         message =
           [ "group " <> ttyFullGroup g <> " is created, your incognito profile for this group is " <> incognitoProfile' profile,
-            "to add members use " <> highlight ("/create link #" <> viewGroupName g)
+            instruction
           ]
+        instruction
+          | useRelays' g = relaysInstruction
+          | otherwise = "to add members use " <> highlight ("/create link #" <> viewGroupName g)
     Nothing ->
       [ "group " <> ttyFullGroup g <> " is created",
-        "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
+        instruction
       ]
+      where
+        instruction
+          | useRelays' g = relaysInstruction
+          | otherwise = "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
+  where
+    relaysInstruction =
+      "to add members use " <> highlight ("/_create relayed link #" <> show groupId <> " auto_choose_relays=on/off")
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =
