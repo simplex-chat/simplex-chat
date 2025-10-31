@@ -1150,7 +1150,7 @@ getGroupRelayById db relayId =
     DB.query
       db
       [sql|
-        SELECT group_relay_id, chat_relay_id, chat_relay_id, relay_status, relay_link
+        SELECT group_relay_id, chat_relay_id, relay_status, relay_link
         FROM group_relays
         WHERE group_relay_id = ?
       |]
