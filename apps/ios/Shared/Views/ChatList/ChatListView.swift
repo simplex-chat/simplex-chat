@@ -160,7 +160,11 @@ struct ChatListView: View {
     @AppStorage(DEFAULT_TOOLBAR_MATERIAL) private var toolbarMaterial = ToolbarMaterial.defaultMaterial
     
     var body: some View {
-        if #available(iOS 16.0, *) {
+        if #available(iOS 26, *) {
+            viewBody
+                .scrollDismissesKeyboard(.immediately)
+                .scrollEdgeEffectHidden()
+        } else if #available(iOS 16.0, *) {
             viewBody.scrollDismissesKeyboard(.immediately)
         } else {
             viewBody
