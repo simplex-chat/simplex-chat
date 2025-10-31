@@ -820,8 +820,9 @@ data GroupLinkRejection = GroupLinkRejection
 
 data GroupRelayInvitation = GroupRelayInvitation
   { fromMember :: MemberIdRole,
+    fromMemberProfile :: Profile,
     invitedMember :: MemberIdRole,
-    groupProfile :: GroupProfile
+    groupLink :: ShortLinkContact
   }
   deriving (Eq, Show)
 
@@ -968,6 +969,7 @@ data GroupMember = GroupMember
 
 data GroupRelay = GroupRelay
   { groupRelayId :: Int64,
+    userChatRelayId :: Int64, -- ID of configured UserChatRelay
     relayStatus :: RelayStatus,
     relayLink :: Maybe ShortLinkContact
   }
@@ -2075,6 +2077,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

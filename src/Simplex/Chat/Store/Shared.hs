@@ -148,6 +148,7 @@ data StoreError
   | SEOperatorNotFound {serverOperatorId :: Int64}
   | SEUsageConditionsNotFound
   | SEUserChatRelayNotFound {chatRelayId :: Int64}
+  | SEGroupRelayNotFound {groupRelayId :: Int64}
   | SEInvalidQuote
   | SEInvalidMention
   | SEInvalidDeliveryTask {taskId :: Int64}
@@ -657,7 +658,7 @@ type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe Member
 
 type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe ShortLinkContact) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupMemberRow
 
-type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime) :. (BoolInt, Maybe Int64, Maybe RelayStatus, Maybe ShortLinkContact)
+type GroupMemberRow = (Int64, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime) :. (BoolInt, Maybe Int64, Maybe Int64, Maybe RelayStatus, Maybe ShortLinkContact)
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences)
 
@@ -679,7 +680,7 @@ toPreparedGroup = \case
   _ -> Nothing
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs) :. (BI isCRelay, groupRelayId_, relayStatus_, relayLink)) =
+toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs) :. (BI isCRelay, groupRelayId_, chatRelayId_, relayStatus_, relayLink)) =
   let memberProfile = rowToLocalProfile profileRow
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
@@ -698,8 +699,8 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
               }
         _ -> Nothing
       isChatRelay = BoolDef isCRelay
-      relayData = case (groupRelayId_, relayStatus_) of
-        (Just groupRelayId, Just relayStatus) -> Just GroupRelay {groupRelayId, relayStatus, relayLink}
+      relayData = case (groupRelayId_, chatRelayId_, relayStatus_) of
+        (Just groupRelayId, Just userChatRelayId, Just relayStatus) -> Just GroupRelay {groupRelayId, userChatRelayId, relayStatus, relayLink}
         _ -> Nothing
    in GroupMember {..}
 
@@ -711,7 +712,7 @@ groupMemberQuery =
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-      m.is_chat_relay, r.group_relay_id, r.relay_status, r.relay_link,
+      m.is_chat_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -737,7 +738,7 @@ toBusinessChatInfo _ = Nothing
 groupInfoQuery :: Query
 groupInfoQuery = groupInfoQueryFields <> " " <> groupInfoQueryFrom
 
--- membership "member" never references group_relays, therefore `NULL, NULL, NULL` which avoids extra join
+-- membership "member" never references group_relays, therefore `NULL, NULL, NULL, NULL` which avoids extra join
 groupInfoQueryFields :: Query
 groupInfoQueryFields =
   [sql|
@@ -756,7 +757,7 @@ groupInfoQueryFields =
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts,
-      mu.is_chat_relay, NULL, NULL, NULL
+      mu.is_chat_relay, NULL, NULL, NULL, NULL
   |]
 
 groupInfoQueryFrom :: Query

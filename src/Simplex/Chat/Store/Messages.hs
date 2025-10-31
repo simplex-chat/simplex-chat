@@ -679,7 +679,7 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
               p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
               m.created_at, m.updated_at,
               m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-              m.is_chat_relay, r.group_relay_id, r.relay_status, r.relay_link
+              m.is_chat_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link
             FROM group_members m
             JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
             LEFT JOIN group_relays r ON r.group_relay_id = m.group_relay_id
@@ -3005,7 +3005,7 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
             m.created_at, m.updated_at,
             m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-            m.is_chat_relay, r.group_relay_id, r.relay_status, r.relay_link,
+            m.is_chat_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link,
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
@@ -3014,14 +3014,14 @@ getGroupChatItem db User {userId, userContactId} groupId itemId = ExceptT $ do
             rp.display_name, rp.full_name, rp.short_descr, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences,
             rm.created_at, rm.updated_at,
             rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts,
-            rm.is_chat_relay, rr.group_relay_id, rr.relay_status, rr.relay_link,
+            rm.is_chat_relay, rr.group_relay_id, rr.chat_relay_id, rr.relay_status, rr.relay_link,
             -- deleted by GroupMember
             dbm.group_member_id, dbm.group_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.short_descr, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences,
             dbm.created_at, dbm.updated_at,
             dbm.support_chat_ts, dbm.support_chat_items_unread, dbm.support_chat_items_member_attention, dbm.support_chat_items_mentions, dbm.support_chat_last_msg_from_member_ts,
-            dbm.is_chat_relay, dbr.group_relay_id, dbr.relay_status, dbr.relay_link
+            dbm.is_chat_relay, dbr.group_relay_id, dbr.chat_relay_id, dbr.relay_status, dbr.relay_link
           FROM chat_items i
           LEFT JOIN files f ON f.chat_item_id = i.chat_item_id
           LEFT JOIN group_members m ON m.group_member_id = i.group_member_id

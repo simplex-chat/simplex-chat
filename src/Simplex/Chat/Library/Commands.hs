@@ -2690,7 +2690,7 @@ processChatCommand vr nm = \case
     -- TODO   - prepare group link (without creating on server)
     -- TODO   - add link, owner key to group profile, sign
     -- TODO   - create group link on server, use signed profile as data
-    -- vvv
+    -- vvv FROM HERE vvv
     (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
     ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
     sLnk <- case toShortLinkContact ccLink' of
@@ -2700,7 +2700,7 @@ processChatCommand vr nm = \case
         userData' = encodeShortLinkData $ GroupShortLinkData groupProfile'
     -- same link with updated profile
     _sLnk' <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm connId SCMContact userData' (Just crClientData))
-    -- ^^^
+    -- ^^^ TO HERE ^^^
     gVar <- asks random
     (gLink, gInfo') <- withFastStore $ \db -> do
       gLink <- createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
@@ -2709,7 +2709,7 @@ processChatCommand vr nm = \case
     if autoChooseRelays
       then do
         relays <- chooseRelays user
-        groupRelays <- addRelays user gInfo' relays
+        groupRelays <- addRelays user gInfo' sLnk relays
         pure $ CRGroupRelaysAdded user gInfo' gLink groupRelays
       else
         pure $ CRGroupLinkCreated user gInfo' gLink
@@ -2722,12 +2722,15 @@ processChatCommand vr nm = \case
         when (null selectedRelays) $ throwChatError $ CEException "failed to select relays: no enabled relays configured"
         pure selectedRelays
   APIAddRelays groupId relayIds -> withUser $ \user -> withGroupLock "addRelays" groupId $ do
-    (gInfo, gLink) <- withFastStore $ \db -> do
+    (gInfo, gLink@GroupLink {connLinkContact}) <- withFastStore $ \db -> do
       gInfo <- getGroupInfo db vr user groupId
       gLink <- getGroupLink db user gInfo
       pure (gInfo, gLink)
+    sLnk <- case toShortLinkContact connLinkContact of
+      Just sl -> pure sl
+      Nothing -> throwChatError $ CEException "failed to add relays: no short link in group link"
     relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
-    groupRelays <- addRelays user gInfo relays
+    groupRelays <- addRelays user gInfo sLnk relays
     pure $ CRGroupRelaysAdded user gInfo gLink groupRelays
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
@@ -3571,13 +3574,45 @@ processChatCommand vr nm = \case
       toView $ CEvtNewChatItems user [AChatItem SCTDirect SMDSnd (DirectChat ct) ci]
       forM_ (timed_ >>= timedDeleteAt') $
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
-    addRelays :: User -> GroupInfo -> [UserChatRelay] -> CM [GroupRelay]
-    addRelays _user _gInfo _relays = do
-      -- TODO [relays] owner: send contact requests to relays
-      -- TODO   - create relay member connections, relay records (group_relays), relay status: RSNew
-      -- TODO   - send requests to relays: INV message - XGrpRelayInv, relay status: RSInvited
-      -- TODO   - agent joinConnectionAsync for contact links (currently prohibited)
-      pure []
+    addRelays :: User -> GroupInfo -> ShortLinkContact -> [UserChatRelay] -> CM [GroupRelay]
+    addRelays user gInfo@GroupInfo {membership} groupSLink relays =
+      forM relays $ \relay -> addRelay relay
+      where
+        addRelay :: UserChatRelay -> CM GroupRelay
+        addRelay relay@UserChatRelay {address} = do
+          -- TODO [relays] owner: can update relay profile from data retrieved via getConnShortLink
+          (cReq, _cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) address
+          lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
+            Nothing -> throwChatError CEInvalidConnReq
+            Just (agentV, _) -> do
+              let chatV = agentToChatVersion agentV
+              gVar <- asks random
+              subMode <- chatReadVar subscriptionMode
+              -- TODO [relays] owner: replace with async join (joinConnectionAsync currently prohibited for contact links)
+              -- TODO   - or make "add relays" api retriable, via prepared connection
+              connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
+              (relayMember, conn, groupRelay) <- withStore $ \db -> do
+                groupRelay <- createGroupRelayRecord db gInfo relay
+                relayMember <- createRelayMemberRecord db vr gVar user gInfo relay groupRelay
+                conn <- createRelayConnection db vr user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
+                pure (relayMember, conn, groupRelay)
+              let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
+                  allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
+                  membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
+                  GroupMember {memberRole = relayRole, memberId = relayMemberId} = relayMember
+                  relayInv = GroupRelayInvitation {
+                    fromMember = MemberIdRole userMemberId userRole,
+                    fromMemberProfile = membershipProfile,
+                    invitedMember = MemberIdRole relayMemberId relayRole,
+                    groupLink = groupSLink
+                  }
+              dm <- encodeConnInfo $ XGrpRelayInv relayInv
+              (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
+              let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
+              groupRelay' <- withFastStore' $ \db -> do
+                void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
+                updateRelayStatusFromTo db groupRelay RSNew RSInvited
+              pure groupRelay'
     drgRandomBytes :: Int -> CM ByteString
     drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User

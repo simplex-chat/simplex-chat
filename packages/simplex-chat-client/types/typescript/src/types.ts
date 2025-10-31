@@ -2594,6 +2594,7 @@ export interface GroupProfile {
 
 export interface GroupRelay {
   groupRelayId: number // int64
+  userChatRelayId: number // int64
   relayStatus: RelayStatus
   relayLink?: string
 }
@@ -3812,6 +3813,8 @@ export type StoreError =
   | StoreError.ProhibitedDeleteUser
   | StoreError.OperatorNotFound
   | StoreError.UsageConditionsNotFound
+  | StoreError.UserChatRelayNotFound
+  | StoreError.GroupRelayNotFound
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
   | StoreError.InvalidDeliveryTask
@@ -3897,6 +3900,8 @@ export namespace StoreError {
     | "prohibitedDeleteUser"
     | "operatorNotFound"
     | "usageConditionsNotFound"
+    | "userChatRelayNotFound"
+    | "groupRelayNotFound"
     | "invalidQuote"
     | "invalidMention"
     | "invalidDeliveryTask"
@@ -4272,6 +4277,16 @@ export namespace StoreError {
 
   export interface UsageConditionsNotFound extends Interface {
     type: "usageConditionsNotFound"
+  }
+
+  export interface UserChatRelayNotFound extends Interface {
+    type: "userChatRelayNotFound"
+    chatRelayId: number // int64
+  }
+
+  export interface GroupRelayNotFound extends Interface {
+    type: "groupRelayNotFound"
+    groupRelayId: number // int64
   }
 
   export interface InvalidQuote extends Interface {

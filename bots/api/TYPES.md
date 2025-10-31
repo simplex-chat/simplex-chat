@@ -2344,6 +2344,7 @@ Known:
 
 **Record type**:
 - groupRelayId: int64
+- userChatRelayId: int64
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
 
@@ -3587,6 +3588,14 @@ OperatorNotFound:
 
 UsageConditionsNotFound:
 - type: "usageConditionsNotFound"
+
+UserChatRelayNotFound:
+- type: "userChatRelayNotFound"
+- chatRelayId: int64
+
+GroupRelayNotFound:
+- type: "groupRelayNotFound"
+- groupRelayId: int64
 
 InvalidQuote:
 - type: "invalidQuote"

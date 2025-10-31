@@ -1150,7 +1150,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
-          XGrpRelayInv groupLink -> relayContactRequest groupLink
+          XGrpRelayInv groupRelayInv -> relayContactRequest groupRelayInv
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1319,8 +1319,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> do
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
-        relayContactRequest :: ShortLinkContact -> CM ()
-        relayContactRequest _groupLink = do
+        relayContactRequest :: GroupRelayInvitation -> CM ()
+        relayContactRequest _groupRelayInv = do
           -- TODO [relays] relay: process contact request to server group
           -- TODO   - retrieve group link data, validate group profile, verify owner's signature
           -- TODO   - create group record, relay status: RSInvited

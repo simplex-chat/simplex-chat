@@ -747,7 +747,9 @@ CREATE TABLE group_relays(
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   chat_relay_id INTEGER NOT NULL REFERENCES chat_relays ON DELETE CASCADE,
   relay_status TEXT NOT NULL,
-  relay_link BLOB
+  relay_link BLOB,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
