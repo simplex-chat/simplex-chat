@@ -3581,7 +3581,7 @@ processChatCommand vr nm = \case
         addRelay :: UserChatRelay -> CM GroupRelay
         addRelay relay@UserChatRelay {address} = do
           -- TODO [relays] owner: can update relay profile from data retrieved via getConnShortLink
-          (cReq, _cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) address
+          (cReq, _cData) <- getShortLinkConnReq user address
           lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just (agentV, _) -> do
