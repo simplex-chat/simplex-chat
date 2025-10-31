@@ -1555,12 +1555,12 @@
     <string name="opening_database">Obrint la base de dades…</string>
     <string name="error_parsing_uri_desc">Comproveu que l\'enllaç SimpleX sigui correcte.</string>
     <string name="sending_files_not_yet_supported">l\'enviament de fitxers encara no està suportat</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Intentant connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Intentant connectar-se al servidor utilitzat per rebre missatges d\'aquesta connexió.</string>
     <string name="error_connecting_to_server_to_receive_messages">S\'està provant de connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte (error: %1$s).</string>
     <string name="connect_use_current_profile">Usar perfil actual</string>
     <string name="connect_use_new_incognito_profile">Usar nou perfil incògnit</string>
     <string name="app_was_crashed">Error aplicació</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Esteu connectat al servidor utilitzat per rebre missatges d\'aquest contacte.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Esteu connectat al servidor utilitzat per rebre missatges d\'aquesta connexió.</string>
     <string name="profile_will_be_sent_to_contact_sending_link">El teu perfil s\'enviarà al contacte del qual has rebut aquest enllaç.</string>
     <string name="non_content_uri_alert_text">Heu compartit una ruta de fitxer no vàlida. Informeu-ne als desenvolupadors de l\'aplicació.</string>
     <string name="you_will_join_group">Us connectareu amb tots els membres del grup.</string>
@@ -2501,4 +2501,6 @@
     <string name="proxy_destination_error_unknown_ca">L\'empremta digital a l\'adreça del servidor de destinació no coincideix amb el certificat: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">L\'empremta digital a l\'adreça del servidor de reenviament no coincideix amb el certificat: %1$s.</string>
     <string name="network_error_unknown_ca">L\'empremta digital a l\'adreça del servidor no coincideix amb el certificat: %1$s.</string>
+    <string name="server_no_sub">cap subscripció</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">No esteu connectat(da) al servidor que s\'utilitza per rebre missatges d\'aquesta connexió (sense subscripció).</string>
 </resources>
