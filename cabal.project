@@ -48,7 +48,7 @@ source-repository-package
 source-repository-package
     type: git
     location: https://github.com/simplex-chat/zip.git
-    tag: 809022d8f573cf41ce34b411b84101c279cc9f78
+    tag: 2eff156c3aac389e35d38bf10a52733d7061640a
 
 -- waiting for published warp-tls-3.4.7
 source-repository-package
