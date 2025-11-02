@@ -165,8 +165,7 @@ It is possible to donate via:
 - BTC: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
 - XMR: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
 - BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
-- ETH: 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
-- USDT (Ethereum): 0xD9ee7Db0AD0dc1Dfa7eD53290199ED06beA04692
+- ETH/USDT (Ethereum, Arbitrum One): 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a
 - ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
 - ZEC shielded: u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq
 - DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
