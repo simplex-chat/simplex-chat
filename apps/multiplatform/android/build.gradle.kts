@@ -15,8 +15,7 @@ android {
         applicationId = "chat.simplex.app"
         namespace = "chat.simplex.app"
         minSdk = 26
-        //noinspection OldTargetApi
-        targetSdk = 34
+        targetSdk = 35
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
