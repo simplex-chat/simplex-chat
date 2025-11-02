@@ -1,3 +1,4 @@
+h1,
 #article h1 {
   font-size: 38px;
   font-weight: 700;
@@ -19,9 +20,10 @@
   }
 }
 
+.dark h1,
 .dark #article h1 {
-  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
-  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: -webkit-linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+  background: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -190,12 +192,12 @@ h3::before {
   outline: none;
 }
 
-h1,
-h2,
-h3,
-h4,
-h5,
-h6 {
+#article h1,
+#article h2,
+#article h3,
+#article h4,
+#article h5,
+#article h6 {
   clear: both;
 }
 
@@ -220,7 +222,7 @@ h6 {
 }
 
 @media (max-width:768px) {
-  img {
+  #article img {
     width: 100%;
   }
 }

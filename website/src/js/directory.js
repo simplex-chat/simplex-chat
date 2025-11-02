@@ -1,7 +1,5 @@
 (function() {
-const directoryDataURL = 'https://directory.simplex.chat/data/';
-
-// const directoryDataURL = 'http://localhost:8080/directory-data/';
+if (!document.location.pathname.startsWith('/directory')) return;
 
 let allEntries = [];
 
@@ -14,7 +12,7 @@ let currentSearch = '';
 let currentPage = 1;
 
 async function initDirectory() {
-  const listing = await fetchJSON(directoryDataURL + 'listing.json')
+  const listing = await fetchJSON(simplexDirectoryDataURL + 'listing.json')
   const liveBtn = document.querySelector('#top-pagination .live');
   const newBtn = document.querySelector('#top-pagination .new');
   const topBtn = document.querySelector('#top-pagination .top');
@@ -122,8 +120,6 @@ function roundedTs(s) {
   }
 }
 
-const simplexUsersGroup = 'SimpleX users group';
-
 function entrySortPriority(entry) {
   return entry.displayName === simplexUsersGroup
     ? Number.MAX_VALUE
@@ -175,7 +171,7 @@ function displayEntries(entries) {
     try {
       const { entryType, displayName, groupLink, shortDescr, welcomeMessage, imageFile } = entry;
       const entryDiv = document.createElement('div');
-      entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#11182F] mb-8';
+      entryDiv.className = 'entry w-full flex flex-col items-start md:flex-row rounded-[4px] overflow-hidden shadow-[0px_20px_30px_rgba(0,0,0,0.12)] dark:shadow-none bg-white dark:bg-[#0B2A59] mb-8';
 
       const textContainer = document.createElement('div');
       textContainer.className = 'text-container';
@@ -262,7 +258,7 @@ function displayEntries(entries) {
       imgLinkElement.title = `Join ${displayName}`;
 
       const imgElement = document.createElement('img');
-      imgElement.src = imageFile ? directoryDataURL + imageFile : '/img/group.svg';
+      imgElement.src = imageFile ? simplexDirectoryDataURL + imageFile : '/img/group.svg';
       imgElement.alt = displayName;
       imgElement.addEventListener('error', () => imgElement.src = '/img/group.svg');
       imgLinkElement.appendChild(imgElement);
@@ -412,34 +408,6 @@ function targetBlank(uri) {
   return isCurrentSite(uri) ? '' : ' target="_blank"'
 }
 
-const simplexAddressRegexp = /^simplex:\/([a-z]+)#(.+)/i;
-
-const simplexShortLinkTypes = ["a", "c", "g", "i", "r"];
-
-function platformSimplexUri(uri) {
-  if (isMobile.any()) return uri;
-  const res = uri.match(simplexAddressRegexp);
-  if (!res || !Array.isArray(res) || res.length < 3) return uri;
-  const linkType = res[1];
-  const fragment = res[2];
-  if (simplexShortLinkTypes.includes(linkType)) {
-    const queryIndex = fragment.indexOf('?');
-    if (queryIndex === -1) return uri;
-    const hashPart = fragment.substring(0, queryIndex);
-    const queryStr = fragment.substring(queryIndex + 1);
-    const params = new URLSearchParams(queryStr);
-    const host = params.get('h');
-    if (!host) return uri;
-    params.delete('h');
-    let newFragment = hashPart;
-    const remainingParams = params.toString();
-    if (remainingParams) newFragment += '?' + remainingParams;
-    return `https://${host}:/${linkType}#${newFragment}`;
-  } else {
-    return `https://simplex.chat/${linkType}#${fragment}`;
-  }
-}
-
 function renderMarkdown(fts) {
   let html = '';
   for (const ft of fts) {
@@ -509,3 +477,37 @@ function renderMarkdown(fts) {
   return html;
 }
 })();
+
+const simplexDirectoryDataURL = 'https://directory.simplex.chat/data/';
+
+// const simplexDirectoryDataURL = 'http://localhost:8080/directory-data/';
+
+const simplexUsersGroup = 'SimpleX users group';
+
+const simplexAddressRegexp = /^simplex:\/([a-z]+)#(.+)/i;
+
+const simplexShortLinkTypes = ["a", "c", "g", "i", "r"];
+
+function platformSimplexUri(uri) {
+  if (isMobile.any()) return uri;
+  const res = uri.match(simplexAddressRegexp);
+  if (!res || !Array.isArray(res) || res.length < 3) return uri;
+  const linkType = res[1];
+  const fragment = res[2];
+  if (simplexShortLinkTypes.includes(linkType)) {
+    const queryIndex = fragment.indexOf('?');
+    if (queryIndex === -1) return uri;
+    const hashPart = fragment.substring(0, queryIndex);
+    const queryStr = fragment.substring(queryIndex + 1);
+    const params = new URLSearchParams(queryStr);
+    const host = params.get('h');
+    if (!host) return uri;
+    params.delete('h');
+    let newFragment = hashPart;
+    const remainingParams = params.toString();
+    if (remainingParams) newFragment += '?' + remainingParams;
+    return `https://${host}:/${linkType}#${newFragment}`;
+  } else {
+    return `https://simplex.chat/${linkType}#${fragment}`;
+  }
+}

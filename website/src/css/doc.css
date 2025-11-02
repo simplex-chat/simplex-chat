@@ -87,8 +87,8 @@ header {
 }
 
 .dark #doc h1 {
-  background: -webkit-linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
-  background: linear-gradient(to bottom, #70F0F9 100%, #70F0F9 100%);
+  background: -webkit-linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+  background: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -235,7 +235,7 @@ header {
 }
 
 .dark #doc main aside {
-  background-color: #17203D;
+  background-color: #000832;
 }
 
 #doc main aside ul {
@@ -305,13 +305,13 @@ header {
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #F3F6F7;
+    background-color: #F3FAFF;
     opacity: 0.9;
     z-index: 99;
   }
 
   .dark #doc main.overlay::after {
-    background-color: #0C0B13;
+    background-color: #000832;
   }
 
   #doc main article {

@@ -2125,4 +2125,7 @@
     <string name="v5_3_simpler_incognito_mode">簡化的匿名模式</string>
     <string name="contact_tap_to_connect">點擊以連接</string>
     <string name="settings_section_title_use_from_desktop">從桌面使用</string>
+    <string name="connect_plan_open_new_chat">開啓新聊天</string>
+    <string name="accept_contact_request">接受聯絡請求</string>
+    <string name="chat_banner_accept_contact_request">接受聯絡請求</string>
 </resources>

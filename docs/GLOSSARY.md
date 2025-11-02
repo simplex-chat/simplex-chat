@@ -4,6 +4,10 @@ Choosing a private messenger requires the understanding of many technical terms,
 
 While this glossary aims to be factual and objective, it is not completely unbiased. We designed SimpleX to be the most private, secure and resilient communication network, and some definitions reflect this view.
 
+## 2-factor key exchange
+
+The ability of communication service to ensure the security of the [key agreement protocol](#key-agreement-protocol) against [man-in-the-middle](#man-in-the-middle-attack).
+
 ## Address portability
 
 Similarly to [phone number portability](https://en.wikipedia.org/wiki/Local_number_portability) (the ability of the customer to transfer the service to another provider without changing the number), the address portability means the ability of a communication service customer to change the service provider without changing the service address. Many [federated networks](#federated-network) support SRV records to provide address portability, but allowing service users to set up their own domains for the addresses is not as commonly supported by the available server and client software as for email.
@@ -89,7 +93,7 @@ Also known as perfect forward secrecy, it is a feature of a [key agreement proto
 
 ## Key agreement protocol
 
-Also known as key exchange, it is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for [end-to-end encryption](#end-to-end-encryption) to work.
+Also known as key exchange, it is a process of agreeing cryptographic keys between the sender and the recipient(s) of the message. It is required for [end-to-end encryption](#end-to-end-encryption) to work. Unless it is possible to secure the key exchange via [some second factor](#2-factor-key-exchange), e.g. security code verification, it can be vulnerable to [man-in-the-middle attack](#man-in-the-middle-attack).
 
 [Wikipedia](https://en.wikipedia.org/wiki/Key-agreement_protocol)
 
@@ -169,11 +173,11 @@ The advantage is that the participants do not depend on any servers. There are [
 
 ## Post-compromise security
 
-Also known as break-in recovery, it is the quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. [Double-ratchet algorithm](#double-ratchet-algorithm) has this quality.
+The quality of the end-to-end encryption scheme allowing to recover security against a passive attacker who observes encrypted messages after compromising one (or both) of the parties. Also known as recovery from compromise or break-in recovery. [Double-ratchet algorithm](#double-ratchet-algorithm) has this quality.
 
 ## Post-quantum cryptography
 
-Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2023 there is no system or algorithm that is proven to be secure against such attacks, or even to be secure against attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum cryptographic systems in combination with the traditional cryptographic systems.
+Any of the proposed cryptographic systems or algorithms that are thought to be secure against an attack by a quantum computer. It appears that as of 2025 there is no system or algorithm that is *proven* to be secure against such attacks, or even to be secure against attacks by massively parallel conventional computers, so a general recommendation is to use post-quantum hybrid cryptography - combining post-quantum and traditional algorigthms.
 
 [Wikipedia](https://en.wikipedia.org/wiki/Post-quantum_cryptography)
 

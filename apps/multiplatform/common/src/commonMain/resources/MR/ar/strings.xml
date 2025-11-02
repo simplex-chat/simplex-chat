@@ -1128,7 +1128,7 @@
     <string name="alert_text_msg_bad_id">معرف الرسالة التالية غير صحيح (أقل أو يساوي السابق).
 \nيمكن أن يحدث ذلك بسبب بعض العلل أو عندما يُخترق الاتصال.</string>
     <string name="unfavorite_chat">أزل من المفضلة</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من هذا الاتصال.</string>
     <string name="choose_file_title">اختيار ملف</string>
     <string name="icon_descr_sent_msg_status_unauthorized_send">إرسال غير مصرح به</string>
     <string name="error_connecting_to_server_to_receive_messages">محاولة الاتصال بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه (خطأ: %1$s).</string>
@@ -1137,7 +1137,7 @@
     <string name="alert_title_cant_invite_contacts_descr">أنت تستخدم ملف تعريف متخفي لهذه المجموعة - لمنع مشاركة ملفك التعريفي الرئيسي الذي يدعو جهات الاتصال غير مسموح به</string>
     <string name="snd_group_event_changed_member_role">غيّرتَ دور %s إلى %s</string>
     <string name="chat_preferences_yes">نعم</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">أنت متصل بالخادم المستخدم لاستلام الرسائل من جهة الاتصال هذه.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">أنت متصل بالخادم المستخدم لاستلام الرسائل من هذا الاتصال.</string>
     <string name="sender_you_pronoun">أنت</string>
     <string name="description_you_shared_one_time_link">لقد شاركت رابط لمرة واحدة</string>
     <string name="profile_will_be_sent_to_contact_sending_link">سيتم إرسال ملف التعريفك إلى جهة الاتصال التي استلمت منها هذا الرابط.</string>
@@ -2520,4 +2520,6 @@
     <string name="proxy_destination_error_unknown_ca">البصمة في عنوان الخادم الوجهة لا تتطابق مع الشهادة: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">البصمة في عنوان خادم التحويل لا تتطابق مع الشهادة: %1$s.</string>
     <string name="network_error_unknown_ca">البصمة في عنوان الخادم لا تتطابق مع الشهادة: %1$s.</string>
+    <string name="server_no_sub">لا اشتراك</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">أنت غير متصل بالخادم المستخدم لاستقبال الرسائل من هذا الاتصال (لا يوجد اشتراك).</string>
 </resources>
