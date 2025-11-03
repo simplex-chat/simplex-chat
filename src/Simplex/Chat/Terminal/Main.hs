@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
@@ -9,12 +10,10 @@ import Control.Concurrent.STM
 import Control.Monad
 import Data.Maybe (fromMaybe)
 import Network.Socket
-import Simplex.Chat.Controller (ArchiveConfig (..), ChatConfig (..), ChatController (..), ChatError, ChatEvent (..), ChatResponse (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
+import Simplex.Chat.Controller (ArchiveConfig (..), ChatCommand (..), ChatConfig (..), ChatController (..), ChatError, ChatEvent (..), ChatResponse (..), PresetServers (..), SimpleNetCfg (..), currentRemoteHost, versionNumber, versionString)
 import Simplex.Chat.Core
-import Simplex.Chat.Library.Commands (sendChatCmd)
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Protocol (ChatCommand (..))
 import Simplex.Chat.Terminal
 import Simplex.Chat.View (ChatResponseEvent, smpProxyModeStr)
 import Simplex.Messaging.Client (NetworkConfig (..), SocksMode (..))
@@ -31,11 +30,18 @@ simplexChatCLI cfg server_ = do
 simplexChatCLI' :: ChatConfig -> ChatOpts -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
 simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort, exportArchive, importArchive} server_ = do
   -- Handle archive operations first (they exit after completion)
+#if !defined(dbPostgres)
   case (exportArchive, importArchive) of
     (Just archivePath, Nothing) -> runArchiveExport cfg opts archivePath
     (Nothing, Just archivePath) -> runArchiveImport cfg opts archivePath
     (Just _, Just _) -> putStrLn "Error: Cannot specify both --export-archive and --import-archive" >> exitFailure
     (Nothing, Nothing) ->
+#else
+  case (exportArchive, importArchive) of
+    (Just _, _) -> putStrLn "Error: Archive export is not supported with PostgreSQL backend" >> exitFailure
+    (_, Just _) -> putStrLn "Error: Archive import is not supported with PostgreSQL backend" >> exitFailure
+    (Nothing, Nothing) ->
+#endif
       if null chatCmd
         then case chatServerPort of
           Just chatPort -> case server_ of
@@ -62,6 +68,7 @@ simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServer
           rh <- readTVarIO $ currentRemoteHost cc
           printResponseEvent (rh, Just user) cfg r
 
+#if !defined(dbPostgres)
 runArchiveExport :: ChatConfig -> ChatOpts -> FilePath -> IO ()
 runArchiveExport cfg opts archivePath = do
   putStrLn $ "Exporting chat database to: " <> archivePath
@@ -99,6 +106,7 @@ runArchiveImport cfg opts archivePath = do
       Left err -> do
         putStrLn $ "Import failed: " <> show err
         exitFailure
+#endif
 
 welcome :: ChatConfig -> ChatOpts -> IO ()
 welcome ChatConfig {presetServers = PresetServers {netCfg}} ChatOpts {coreOptions = CoreChatOpts {dbOptions, simpleNetCfg = SimpleNetCfg {socksProxy, socksMode, smpProxyMode_, smpProxyFallback_}}} =
