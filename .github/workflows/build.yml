@@ -427,7 +427,8 @@ jobs:
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
           while [ "$i" -le "$attempts" ]; do
-            if cabal test --test-show-details=direct; then
+            # sudo needed with macos >15 due to Apple changes. See: https://github.com/actions/runner-images/issues/10924
+            if sudo cabal test --test-show-details=direct; then
               break
             else
               echo "Attempt $i failed, retrying..."
