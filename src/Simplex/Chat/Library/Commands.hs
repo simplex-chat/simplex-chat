@@ -129,7 +129,7 @@ import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgen
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
-import Simplex.Chat.Archive
+import qualified Simplex.Chat.Archive as A
 import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
@@ -473,13 +473,13 @@ processChatCommand vr nm = \case
   APISetEncryptLocalFiles on -> chatWriteVar encryptLocalFiles on >> ok_
   SetContactMergeEnabled onOff -> chatWriteVar contactMergeEnabled onOff >> ok_
 #if !defined(dbPostgres)
-  APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (exportArchive cfg)
+  APIExportArchive cfg -> checkChatStopped $ CRArchiveExported <$> lift (A.exportArchive cfg)
   ExportArchive -> do
     ts <- liftIO getCurrentTime
     let filePath = "simplex-chat." <> formatTime defaultTimeLocale "%FT%H%M%SZ" ts <> ".zip"
     processChatCommand vr nm $ APIExportArchive $ ArchiveConfig filePath Nothing Nothing
   APIImportArchive cfg -> checkChatStopped $ do
-    fileErrs <- lift $ importArchive cfg
+    fileErrs <- lift $ A.importArchive cfg
     setStoreChanged
     pure $ CRArchiveImported fileErrs
   APIDeleteStorage -> withStoreChanged deleteStorage
