@@ -19,6 +19,7 @@ archiveTests = do
     it "export fails with invalid path" testExportInvalidPath
     it "import fails with non-existent file" testImportNonExistent
     it "import fails with invalid archive" testImportInvalidArchive
+    it "export and import with multiple profile types" testMultipleProfileTypes
 
 testExportArchive :: TestParams -> IO ()
 testExportArchive tmp@TestParams {tmpPath} =
@@ -126,3 +127,65 @@ testImportInvalidArchive tmp@TestParams {tmpPath} =
 
     -- Cleanup
     removeFile invalidArchive
+
+testMultipleProfileTypes :: TestParams -> IO ()
+testMultipleProfileTypes tmp@TestParams {tmpPath} =
+  withNewTestChatContactConnected tmp aliceProfile bobProfile $ \alice bob -> do
+    let aliceArchive = tmpPath </> "alice-profile.zip"
+    let bobArchive = tmpPath </> "bob-profile.zip"
+    let cathArchive = tmpPath </> "cath-profile.zip"
+
+    -- Alice creates data: local notes + conversation with Bob
+    alice >* "alice's note"
+    alice #> "@bob hi from alice"
+    bob <# "alice> hi from alice"
+    bob #> "@alice hi back from bob"
+    alice <# "bob> hi back from bob"
+
+    -- Bob creates data: local notes + conversation with Alice
+    bob >* "bob's note"
+
+    -- Export both profiles
+    alice ##> ("/_db export " <> show (ArchiveConfig aliceArchive Nothing Nothing))
+    alice <## "ok"
+    bob ##> ("/_db export " <> show (ArchiveConfig bobArchive Nothing Nothing))
+    bob <## "ok"
+
+    -- Verify both archives exist
+    doesFileExist aliceArchive `shouldReturn` True
+    doesFileExist bobArchive `shouldReturn` True
+
+    -- Create a third user (Cath) with business profile
+    withNewTestChat tmp "cath" businessProfile $ \cath -> do
+      cath >* "business note"
+
+      -- Export Cath's profile
+      cath ##> ("/_db export " <> show (ArchiveConfig cathArchive Nothing Nothing))
+      cath <## "ok"
+
+    -- Import each profile type into new instances and verify
+    -- Test 1: Regular user profile (Alice)
+    withNewTestChat tmp "alice_imported" aliceProfile $ \alice2 -> do
+      alice2 ##> ("/_db import " <> show (ArchiveConfig aliceArchive Nothing Nothing))
+      alice2 <## "ok"
+      alice2 ##> "/tail *"
+      alice2 <# "* alice's note"
+      alice2 ##> "/tail @bob"
+      alice2 <# "alice> hi from alice"
+      alice2 <# "bob> hi back from bob"
+
+    -- Test 2: Another regular user profile (Bob)
+    withNewTestChat tmp "bob_imported" bobProfile $ \bob2 -> do
+      bob2 ##> ("/_db import " <> show (ArchiveConfig bobArchive Nothing Nothing))
+      bob2 <## "ok"
+      bob2 ##> "/tail *"
+      bob2 <# "* bob's note"
+      bob2 ##> "/tail @alice"
+      bob2 <# "alice> hi from alice"
+
+    -- Test 3: Business profile (Cath)
+    withNewTestChat tmp "cath_imported" businessProfile $ \cath2 -> do
+      cath2 ##> ("/_db import " <> show (ArchiveConfig cathArchive Nothing Nothing))
+      cath2 <## "ok"
+      cath2 ##> "/tail *"
+      cath2 <# "* business note"
