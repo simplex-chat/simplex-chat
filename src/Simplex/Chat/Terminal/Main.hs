@@ -83,6 +83,9 @@ runArchiveExport cfg opts archivePath = do
         putStrLn $ "Archive exported with " <> show (length errs) <> " file errors:"
         mapM_ (putStrLn . ("  - " <>) . show) errs
         exitSuccess
+      Right r -> do
+        putStrLn $ "Unexpected response: " <> show r
+        exitFailure
       Left err -> do
         putStrLn $ "Export failed: " <> show err
         exitFailure
@@ -103,6 +106,9 @@ runArchiveImport cfg opts archivePath = do
         putStrLn $ "Archive imported with " <> show (length errs) <> " file errors:"
         mapM_ (putStrLn . ("  - " <>) . show) errs
         exitSuccess
+      Right r -> do
+        putStrLn $ "Unexpected response: " <> show r
+        exitFailure
       Left err -> do
         putStrLn $ "Import failed: " <> show err
         exitFailure
