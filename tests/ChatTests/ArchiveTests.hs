@@ -6,6 +6,7 @@ module ChatTests.ArchiveTests where
 import ChatClient
 import ChatTests.Utils
 import Simplex.Chat.Controller (ArchiveConfig (..))
+import Simplex.Chat.Types (Profile)
 import System.Directory (doesFileExist, removeFile)
 import System.FilePath ((</>))
 import Test.Hspec hiding (it)
@@ -20,6 +21,7 @@ archiveTests = do
     it "import fails with non-existent file" testImportNonExistent
     it "import fails with invalid archive" testImportInvalidArchive
     it "export and import with multiple profile types" testMultipleProfileTypes
+    it "pre-built profiles with group join via QR code" testPreBuiltProfilesWithQR
 
 testExportArchive :: TestParams -> IO ()
 testExportArchive tmp@TestParams {tmpPath} =
@@ -189,3 +191,77 @@ testMultipleProfileTypes tmp@TestParams {tmpPath} =
       cath2 <## "ok"
       cath2 ##> "/tail *"
       cath2 <# "* business note"
+
+testPreBuiltProfilesWithQR :: TestParams -> IO ()
+testPreBuiltProfilesWithQR tmp@TestParams {tmpPath} =
+  withNewTestChatContactConnected tmp aliceProfile bobProfile $ \alice bob -> do
+    let marissaArchive = tmpPath </> "marissa-profile.zip"
+    let trevorArchive = tmpPath </> "trevor-profile.zip"
+
+    -- Admin creates a group
+    alice ##> "/g proto-users-group"
+    alice <## "group #proto-users-group is created"
+    alice <## "to add members use /a proto-users-group <name>"
+
+    -- Admin adds Bob to the group
+    alice ##> "/a proto-users-group bob"
+    alice <## "invitation to join the group #proto-users-group sent to bob"
+    bob <## "#proto-users-group: alice invites you to join the group as admin"
+    bob <## "use /j proto-users-group to accept"
+    bob ##> "/j proto-users-group"
+    bob <## "you joined group #proto-users-group"
+    alice <## "#proto-users-group: bob joined the group"
+
+    -- Get group link for QR code
+    alice ##> "/show link #proto-users-group"
+    groupLink <- getTermLine alice
+    -- groupLink format: "group link: https://..."
+
+    -- Pre-build Marissa's profile
+    withNewTestChat tmp "marissa" (mkProfile "marissa" "Marissa" Nothing) $ \marissa -> do
+      -- Profile is created, now export it
+      marissa ##> ("/_db export " <> show (ArchiveConfig marissaArchive Nothing Nothing))
+      marissa <## "ok"
+
+    -- Pre-build Trevor's profile
+    withNewTestChat tmp "trevor" (mkProfile "trevor" "Trevor" Nothing) $ \trevor -> do
+      -- Profile is created, now export it
+      trevor ##> ("/_db export " <> show (ArchiveConfig trevorArchive Nothing Nothing))
+      trevor <## "ok"
+
+    -- Verify archives were created
+    doesFileExist marissaArchive `shouldReturn` True
+    doesFileExist trevorArchive `shouldReturn` True
+
+    -- Marissa imports her pre-built profile and joins via QR (simulated)
+    withNewTestChat tmp "marissa_device" (mkProfile "marissa" "Marissa" Nothing) $ \marissa -> do
+      marissa ##> ("/_db import " <> show (ArchiveConfig marissaArchive Nothing Nothing))
+      marissa <## "ok"
+
+      -- Simulate QR code scan (joining group)
+      marissa ##> ("/c " <> groupLink)
+      marissa <## "connection request sent!"
+      alice <## "#proto-users-group: marissa wants to join the group"
+      alice ##> "/j proto-users-group marissa"
+      alice <## "#proto-users-group: you approved marissa to join the group"
+      marissa <## "#proto-users-group: you joined the group"
+      alice <## "#proto-users-group: marissa joined the group"
+
+    -- Trevor imports his pre-built profile and joins via QR (simulated)
+    withNewTestChat tmp "trevor_device" (mkProfile "trevor" "Trevor" Nothing) $ \trevor -> do
+      trevor ##> ("/_db import " <> show (ArchiveConfig trevorArchive Nothing Nothing))
+      trevor <## "ok"
+
+      -- Simulate QR code scan (joining group)
+      trevor ##> ("/c " <> groupLink)
+      trevor <## "connection request sent!"
+      alice <## "#proto-users-group: trevor wants to join the group"
+      alice ##> "/j proto-users-group trevor"
+      alice <## "#proto-users-group: you approved trevor to join the group"
+      trevor <## "#proto-users-group: you joined the group"
+      alice <## "#proto-users-group: trevor joined the group"
+
+      -- Verify group communication works
+      alice #> "#proto-users-group Welcome Marissa and Trevor!"
+      bob <# "#proto-users-group alice> Welcome Marissa and Trevor!"
+      -- Note: marissa and trevor would receive this in their actual test instances
