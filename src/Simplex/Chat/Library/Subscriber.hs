@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl')
+import Data.List (find)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -1150,7 +1150,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
-          XGrpRelayInv groupRelayInv -> relayContactRequest groupRelayInv
+          XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1319,18 +1319,43 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> do
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
-        relayContactRequest :: GroupRelayInvitation -> CM ()
-        relayContactRequest _groupRelayInv = do
-          -- TODO [relays] relay: process contact request to server group
-          -- TODO   - retrieve group link data, validate group profile, verify owner's signature
-          -- TODO   - create group record, relay status: RSInvited
-          -- TODO   - create relay link (async)
-          -- TODO     - new user contact link referencing this group
-          -- TODO     - link data: relay key for group, relay identity (profile, certificate, relay identity key)
-          -- TODO   - accept request - send XGrpRelayAcpt to owner (continuation on link created)
-          -- TODO     - create owner member connection, relay status: RSAccepted
+        relayContactRequest :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
+        relayContactRequest invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
+          -- TODO [relays] relay: retrieve group link data asynchronously/add recovery
           -- TODO   - * duplicate requests can be deduplicated by group link
-          pure ()
+          (_cReq, cData) <- getShortLinkConnReq NRMBackground user groupLink
+          (liftIO $ decodeShortLinkData cData) >>= \case
+            Nothing -> messageError "relayContactRequest: no group link data"
+            Just (GroupShortLinkData gp) -> do
+              validateGroupProfile gp
+              (gInfo, ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user gp groupRelayInv
+              relayLink <- createRelayLink gInfo
+              (gInfo', ownerMember') <- acceptRelayJoinRequestAsync user uclId gInfo ownerMember invId chatVRange relayLink
+              -- TODO [relays] relay: event, chat item (?)
+              pure ()
+              where
+                validateGroupProfile :: GroupProfile -> CM ()
+                validateGroupProfile _groupProfile = do
+                  -- TODO [relays] relay: validate group profile, verify owner's signature
+                  -- TODO   - throw error if invalid
+                  pure ()
+                createRelayLink :: GroupInfo -> CM ShortLinkContact
+                createRelayLink gInfo@GroupInfo {groupProfile} = do
+                  -- TODO [relays] relay: create relay link asynchronously/add recovery; set relay link data
+                  -- TODO   - link data: relay key for group, relay identity (profile, certificate, relay identity key)
+                  -- TODO   - TBC link's member role - owner to communicate in invitation?
+                  groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+                  subMode <- chatReadVar subscriptionMode
+                  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+                      crClientData = encodeJSON $ CRDataGroup groupLinkId
+                  (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userData) (Just crClientData) CR.IKPQOff subMode
+                  ccLink' <- createdRelayLink <$> shortenCreatedLink ccLink
+                  sLnk <- case toShortLinkContact ccLink' of
+                    Just sl -> pure sl
+                    Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
+                  gVar <- asks random
+                  void $ withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+                  pure sLnk
 
     memberCanSend ::
       GroupMember ->

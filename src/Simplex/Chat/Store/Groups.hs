@@ -79,6 +79,8 @@ module Simplex.Chat.Store.Groups
     createRelayMemberRecord,
     createRelayConnection,
     updateRelayStatusFromTo,
+    createGroupRelayInvitation,
+    updateRelayOwnStatusFromTo,
     createNewContactMemberAsync,
     createJoiningMember,
     getMemberJoinRequest,
@@ -540,7 +542,7 @@ createPreparedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile
 createPreparedGroup db vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
-  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing currentTs
+  (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing Nothing currentTs
   hostMemberId <- insertHost_ currentTs groupId groupLDN
   let userMember = MemberIdRole (MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id") GRMember
   membership <- createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing currentTs vr
@@ -737,7 +739,7 @@ createGroupViaLink'
   business
   membershipStatus = do
     currentTs <- liftIO getCurrentTime
-    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business currentTs
+    (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing business Nothing currentTs
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
@@ -762,8 +764,8 @@ createGroupViaLink'
             )
           insertedRowId db
 
-createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
-createGroup_ db userId groupProfile prepared business currentTs = ExceptT $ do
+createGroup_ :: DB.Connection -> UserId -> GroupProfile -> Maybe (CreatedLinkContact, Maybe SharedMsgId) -> Maybe BusinessChatInfo -> Maybe RelayStatus -> UTCTime -> ExceptT StoreError IO (GroupId, Text)
+createGroup_ db userId groupProfile prepared business relayOwnStatus currentTs = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission} = groupProfile
   withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
     liftIO $ do
@@ -778,10 +780,10 @@ createGroup_ db userId groupProfile prepared business currentTs = ExceptT $ do
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business)
+        ((profileId, localDisplayName, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. toPreparedGroupRow prepared :. businessChatInfoRow business :. (BI $ isJust relayOwnStatus, relayOwnStatus))
       groupId <- insertedRowId db
       pure (groupId, localDisplayName)
 
@@ -1217,6 +1219,44 @@ updateRelayStatus_ :: DB.Connection -> Int64 -> RelayStatus -> IO ()
 updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
+
+createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> GroupRelayInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createGroupRelayInvitation db vr user@User {userId} groupProfile GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember} = do
+  currentTs <- liftIO getCurrentTime
+  (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing Nothing (Just RSInvited) currentTs
+  ownerMemberId <- insertOwner_ currentTs groupId
+  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user invitedMember GCUserMember GSMemAccepted IBUnknown Nothing currentTs vr
+  ownerMember <- getGroupMember db vr user groupId ownerMemberId
+  g <- getGroupInfo db vr user groupId
+  pure (g, ownerMember)
+  where
+    insertOwner_ currentTs groupId = do
+      let MemberIdRole {memberId, memberRole} = fromMember
+      (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
+      liftIO $ do
+        DB.execute
+          db
+          [sql|
+            INSERT INTO group_members
+              ( group_id, member_id, member_role, member_category, member_status,
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?)
+          |]
+          ( (groupId, memberId, memberRole, GCHostMember, GSMemAccepted)
+              :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+          )
+        insertedRowId db
+
+updateRelayOwnStatusFromTo :: DB.Connection -> GroupInfo -> RelayStatus -> RelayStatus -> IO GroupInfo
+updateRelayOwnStatusFromTo db gInfo@GroupInfo {groupId} fromStatus toStatus = do
+  maybeFirstRow fromOnly (DB.query db "SELECT relay_own_status FROM groups WHERE group_id = ?" (Only groupId)) >>= \case
+    Just status | status == fromStatus -> updateRelayOwnStatus_ db gInfo toStatus $> gInfo {relayOwnStatus = Just toStatus}
+    _ -> pure gInfo
+
+updateRelayOwnStatus_ :: DB.Connection -> GroupInfo -> RelayStatus -> IO ()
+updateRelayOwnStatus_ db GroupInfo {groupId} relayStatus = do
+  currentTs <- getCurrentTime
+  DB.execute db "UPDATE groups SET relay_own_status = ?, updated_at = ? WHERE group_id = ?" (relayStatus, currentTs, groupId)
 
 createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> ExceptT StoreError IO ()
 createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) chatV peerChatVRange subMode =

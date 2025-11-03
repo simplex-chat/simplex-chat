@@ -89,6 +89,7 @@ import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
 import Simplex.Messaging.Compression (compressionLevel)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -1016,6 +1017,26 @@ acceptBusinessJoinRequestAsync
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
 
+acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> CM (GroupInfo, GroupMember)
+acceptRelayJoinRequestAsync
+  user
+  uclId
+  gInfo
+  _ownerMember@GroupMember {groupMemberId}
+  cReqInvId
+  cReqChatVRange
+  relayLink = do
+    let msg = XGrpRelayAcpt relayLink
+    subMode <- chatReadVar subscriptionMode
+    vr <- chatVersionRange
+    let chatV = vr `peerConnChatVersion` cReqChatVRange
+    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
+    withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+      gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
+      ownerMember' <- getGroupMemberById db vr user groupMemberId
+      pure (gInfo', ownerMember')
+
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
   GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupLink = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
@@ -1235,6 +1256,18 @@ setGroupLinkData nm user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLi
       crClientData = encodeJSON $ CRDataGroup groupLinkId
   sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+
+restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
+restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
+getShortLinkConnReq nm user l = do
+  l' <- restoreShortLink' l
+  (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  case cData of
+    ContactLinkData {direct} | not direct -> throwChatError CEUnsupportedConnReq
+    _ -> pure ()
+  pure (cReq, cData)
 
 encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
 encodeShortLinkData d =
@@ -2603,3 +2636,6 @@ timeItToView s action = do
 
 epochStart :: UTCTime
 epochStart = UTCTime (fromGregorian 1970 1 1) (secondsToDiffTime 0)
+
+drgRandomBytes :: Int -> CM ByteString
+drgRandomBytes n = asks random >>= atomically . C.randomBytes n

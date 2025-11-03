@@ -2018,7 +2018,7 @@ processChatCommand vr nm = \case
     ccLink <- case contactLink of
       Just (CLFull cReq) -> pure $ CCLink cReq Nothing
       Just (CLShort sLnk) -> do
-        (cReq, _cData) <- getShortLinkConnReq user sLnk
+        (cReq, _cData) <- getShortLinkConnReq nm user sLnk
         pure $ CCLink cReq $ Just sLnk
       Nothing -> throwCmdError "no address in contact profile"
     connectContactViaAddress user incognito ct ccLink `catchAllErrors` \e -> do
@@ -3581,7 +3581,7 @@ processChatCommand vr nm = \case
         addRelay :: UserChatRelay -> CM GroupRelay
         addRelay relay@UserChatRelay {address} = do
           -- TODO [relays] owner: can update relay profile from data retrieved via getConnShortLink
-          (cReq, _cData) <- getShortLinkConnReq user address
+          (cReq, _cData) <- getShortLinkConnReq nm user address
           lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
             Just (agentV, _) -> do
@@ -3613,8 +3613,6 @@ processChatCommand vr nm = \case
                 void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
                 updateRelayStatusFromTo db groupRelay RSNew RSInvited
               pure groupRelay'
-    drgRandomBytes :: Int -> CM ByteString
-    drgRandomBytes n = asks random >>= atomically . C.randomBytes n
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryAllErrors (withStore (`getUser` userId)) >>= \case
@@ -3686,7 +3684,7 @@ processChatCommand vr nm = \case
         knownLinkPlans l' >>= \case
           Just r -> pure r
           Nothing -> do
-            (cReq, cData) <- getShortLinkConnReq user l'
+            (cReq, cData) <- getShortLinkConnReq nm user l'
             contactSLinkData_ <- liftIO $ decodeShortLinkData cData
             invitationReqAndPlan cReq (Just l') contactSLinkData_
       where
@@ -3712,7 +3710,7 @@ processChatCommand vr nm = \case
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
-                (cReq, cData) <- getShortLinkConnReq user l'
+                (cReq, cData) <- getShortLinkConnReq nm user l'
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
                   _ -> do
@@ -3744,7 +3742,7 @@ processChatCommand vr nm = \case
                 -- TODO   retreiving relays at point of conenctions seems better, as arbitrary time
                 -- TODO   can pass between creating prepared group from plan and connecting to it,
                 -- TODO   during which relays can change.
-                (cReq, cData) <- getShortLinkConnReq user l'
+                (cReq, cData) <- getShortLinkConnReq nm user l'
                 groupSLinkData_ <- liftIO $ decodeShortLinkData cData
                 plan <- groupJoinRequestPlan user cReq groupSLinkData_
                 pure (con cReq, plan)
@@ -3846,21 +3844,12 @@ processChatCommand vr nm = \case
       )
     contactCReqHash :: ConnReqContact -> ConnReqUriHash
     contactCReqHash = ConnReqUriHash . C.sha256Hash . strEncode
-    getShortLinkConnReq :: User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
-    getShortLinkConnReq user l = do
-      l' <- restoreShortLink' l
-      (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
-      case cData of
-        ContactLinkData {direct} | not direct -> throwChatError CEUnsupportedConnReq
-        _ -> pure ()
-      pure (cReq, cData)
     -- This function is needed, as UI uses simplex:/ schema in message view, so that the links can be handled without browser,
     -- and short links are stored with server hostname schema, so they wouldn't match without it.
     serverShortLink :: ConnShortLink m -> ConnShortLink m
     serverShortLink = \case
       CSLInvitation _ srv lnkId linkKey -> CSLInvitation SLSServer srv lnkId linkKey
       CSLContact _ ct srv linkKey -> CSLContact SLSServer ct srv linkKey
-    restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
     contactShortLinkData :: Profile -> Maybe AddressSettings -> UserLinkData
     contactShortLinkData p settings =
       let msg = autoReply =<< settings
