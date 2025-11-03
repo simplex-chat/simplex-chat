@@ -28,16 +28,16 @@ simplexChatCLI cfg server_ = do
   simplexChatCLI' cfg opts server_
 
 simplexChatCLI' :: ChatConfig -> ChatOpts -> Maybe (ServiceName -> ChatConfig -> ChatOpts -> IO ()) -> IO ()
-simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort, exportArchive, importArchive} server_ = do
+simplexChatCLI' cfg opts@ChatOpts {chatCmd, chatCmdLog, chatCmdDelay, chatServerPort, optExportArchive, optImportArchive} server_ = do
   -- Handle archive operations first (they exit after completion)
 #if !defined(dbPostgres)
-  case (exportArchive, importArchive) of
+  case (optExportArchive, optImportArchive) of
     (Just archivePath, Nothing) -> runArchiveExport cfg opts archivePath
     (Nothing, Just archivePath) -> runArchiveImport cfg opts archivePath
     (Just _, Just _) -> putStrLn "Error: Cannot specify both --export-archive and --import-archive" >> exitFailure
     (Nothing, Nothing) ->
 #else
-  case (exportArchive, importArchive) of
+  case (optExportArchive, optImportArchive) of
     (Just _, _) -> putStrLn "Error: Archive export is not supported with PostgreSQL backend" >> exitFailure
     (_, Just _) -> putStrLn "Error: Archive import is not supported with PostgreSQL backend" >> exitFailure
     (Nothing, Nothing) ->

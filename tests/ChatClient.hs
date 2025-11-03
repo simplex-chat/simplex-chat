@@ -119,8 +119,8 @@ testOpts =
       markRead = True,
       createBot = Nothing,
       maintenance = False,
-      exportArchive = Nothing,
-      importArchive = Nothing
+      optExportArchive = Nothing,
+      optImportArchive = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
