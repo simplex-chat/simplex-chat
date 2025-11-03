@@ -264,8 +264,9 @@ module.exports = function (ty) {
       else if (obj.lang === "en")
         return `${obj.url}`
       return `/${obj.lang}${obj.url}`
-    }
-    else if (supportedLangs.includes(urlParts[1])) {
+    } else if (urlParts[1] === "old") {
+      return `/${obj.lang}${obj.url}`
+    } else if (supportedLangs.includes(urlParts[1])) {
       if (urlParts[2] == "blog")
         return `/blog`
       else if (obj.lang === "en")
