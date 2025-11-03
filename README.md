@@ -24,15 +24,15 @@
 
 ## Install the app
 
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
-[![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+[![Android app](https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
 
 - 🖲 Protects your messages and metadata - who you talk to and when.
 - 🔐 Double ratchet end-to-end encryption, with additional encryption layer.
@@ -84,7 +84,7 @@ You need to share a link with your friend or scan a QR code from their phone, in
 
 The channel through which you share the link does not have to be secure - it is enough that you can confirm who sent you the message and that your SimpleX connection is established.
 
-<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/arrow.png" height="360"> <img src="https://github.com/simplex-chat/.github/blob/master/profile/images/app3.png" alt="Video call" height="360">
+<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/app1.png" alt="Make a private connection" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/arrow.png" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/app2.png" alt="Conversation" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/arrow.png" height="360"> <img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/app3.png" alt="Video call" height="360">
 
 After you connect, you can [verify connection security code](./blog/20230103-simplex-chat-v4.4-disappearing-messages.md#connection-security-verification).
 
@@ -427,12 +427,12 @@ This software is licensed under the GNU Affero General Public License version 3 
 
 Graphic designs, artworks and layouts are not licensed for re-use. If you want to use them in your publications, please ask for permission. Texts can be used as direct quotes, referencing the source.
 
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apple_store.svg" alt="iOS app" height="42">](https://apps.apple.com/us/app/simplex-chat/id1605771084)
 &nbsp;
-[![Android app](https://github.com/simplex-chat/.github/blob/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
+[![Android app](https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/google_play.svg)](https://play.google.com/store/apps/details?id=chat.simplex.app)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/f_droid.svg" alt="F-Droid" height="41">](https://app.simplex.chat)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://github.com/simplex-chat/.github/blob/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
