@@ -51,7 +51,9 @@ data ChatOpts = ChatOpts
     muteNotifications :: Bool,
     markRead :: Bool,
     createBot :: Maybe CreateBotOpts,
-    maintenance :: Bool
+    maintenance :: Bool,
+    exportArchive :: Maybe FilePath,
+    importArchive :: Maybe FilePath
   }
 
 data CoreChatOpts = CoreChatOpts
@@ -382,6 +384,20 @@ chatOptsP appDir defaultDbName = do
           <> short 'm'
           <> help "Run in maintenance mode (/_start to start chat)"
       )
+  exportArchive <-
+    optional $
+      strOption
+        ( long "export-archive"
+            <> metavar "FILE"
+            <> help "Export chat database to archive file and exit"
+        )
+  importArchive <-
+    optional $
+      strOption
+        ( long "import-archive"
+            <> metavar "FILE"
+            <> help "Import chat database from archive file and exit"
+        )
   pure
     ChatOpts
       { coreOptions,
@@ -401,7 +417,9 @@ chatOptsP appDir defaultDbName = do
           Nothing
             | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
             | otherwise -> Nothing,
-        maintenance
+        maintenance,
+        exportArchive,
+        importArchive
       }
 
 parseProtocolServers :: ProtocolTypeI p => ReadM [ProtoServerWithAuth p]

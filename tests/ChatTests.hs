@@ -1,5 +1,6 @@
 module ChatTests where
 
+import ChatTests.ArchiveTests
 import ChatTests.ChatList
 import ChatTests.DBUtils
 import ChatTests.Direct
@@ -19,3 +20,4 @@ chatTests = do
   describe "file tests" chatFileTests
   describe "profile tests" chatProfileTests
   describe "chat list pagination tests" chatListTests
+  describe "archive tests" archiveTests
