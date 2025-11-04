@@ -72,7 +72,7 @@
     "simplex-explained-tab-1-p-1": "Anda dapat membuat kontak dan grup, dan melakukan percakapan dua arah, seperti pada aplikasi perpesanan lainnya.",
     "simplex-explained-tab-1-p-2": "Bagaimana cara kerjanya dengan antrean searah dan tanpa ID profil pengguna?",
     "simplex-explained-tab-2-p-1": "Untuk setiap koneksi, Anda menggunakan dua antrean pesan terpisah untuk mengirim dan menerima pesan melalui server yang berbeda.",
-    "simplex-explained-tab-2-p-2": "Server hanya menyampaikan pesan satu arah, tanpa memiliki gambaran lengkap mengenai percakapan atau koneksi pengguna.",
+    "simplex-explained-tab-2-p-2": "Server hanya menyampaikan pesan satu arah, tanpa memiliki gambaran lengkap tentang percakapan atau koneksi pengguna.",
     "simplex-explained-tab-3-p-1": "Server memiliki kredensial anonim terpisah untuk setiap antrean, dan tidak mengetahui pengguna mana yang menjadi milik mereka.",
     "simplex-explained-tab-3-p-2": "Pengguna dapat tingkatkan privasi metadata dengan memakai Tor untuk akses server, mencegah korelasi berdasarkan alamat IP.",
     "chat-bot-example": "Contoh chat bot",
@@ -144,7 +144,7 @@
     "simplex-private-card-1-point-2": "Kotak kripto NaCL di setiap antrean untuk mencegah korelasi lalu lintas antara antrean pesan jika TLS disusupi.",
     "simplex-private-card-2-point-1": "Lapisan enkripsi server tambahan untuk pengiriman ke penerima, untuk mencegah korelasi antara lalu lintas server yang diterima dan dikirim jika TLS disusupi.",
     "hero-overlay-card-1-p-5": "Hanya perangkat klien yang menyimpan profil pengguna, kontak, dan grup; pesan dikirim dengan enkripsi end-to-end 2 lapis.",
-    "hero-overlay-card-1-p-6": "Selengkapnya di <a href='https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md' target='_blank'>Whitepaper SimpleX</a>.",
+    "hero-overlay-card-1-p-6": "Selengkapnya di <a href=\"https://github.com/simplex-chat/simplexmq/blob/stable/protocol/overview-tjr.md\" target=\"_blank\">whitepaper SimpleX</a>.",
     "hero-overlay-card-2-p-1": "Bila pengguna memiliki identitas persisten, meskipun ini hanya angka acak, seperti ID Sesi, ada risiko bahwa penyedia atau penyerang dapat mengamati bagaimana pengguna terhubung dan berapa banyak pesan yang mereka kirim.",
     "hero-overlay-card-2-p-2": "Mereka kemudian dapat menghubungkan informasi ini dengan jaringan sosial publik yang ada, dan menentukan beberapa identitas sebenarnya.",
     "hero-overlay-card-2-p-3": "Bahkan dengan aplikasi paling pribadi yang menggunakan layanan Tor v3, jika Anda berbicara dengan dua kontak berbeda melalui profil yang sama, mereka dapat membuktikan bahwa mereka terhubung dengan orang yang sama.",
@@ -311,5 +311,6 @@
     "messengers-comparison-section-list-point-3": "Tampaknya penggunaan signature kriptografi membahayakan penolakan (penyangkalan), tetapi hal ini perlu diperjelas.",
     "messengers-comparison-section-list-point-4": "Implementasi multi-perangkat membahayakan keamanan post-compromise Double Ratchet",
     "messengers-comparison-section-list-point-5": "Pertukaran kunci 2 faktor bersifat opsional via verifikasi kode keamanan.",
-    "messengers-comparison-section-list-point-6": "Kesepakatan kunci Post-quantum \"jarang\" &mdash; hanya melindungi beberapa langkah ratchet."
+    "messengers-comparison-section-list-point-6": "Kesepakatan kunci Post-quantum \"jarang\" &mdash; hanya melindungi beberapa langkah ratchet.",
+    "navbar-token": "Token"
 }
