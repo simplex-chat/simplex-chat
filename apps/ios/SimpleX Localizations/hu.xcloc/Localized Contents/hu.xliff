@@ -1262,14 +1262,14 @@ swipe action</note>
         <target>Továbbfejlesztett felhasználói élmény</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio" xml:space="preserve">
+      <trans-unit id="Bio" xml:space="preserve" approved="no">
         <source>Bio</source>
-        <target>Névjegy</target>
+        <target state="translated">Életrajz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Bio too large" xml:space="preserve">
+      <trans-unit id="Bio too large" xml:space="preserve" approved="no">
         <source>Bio too large</source>
-        <target>A névjegy túl hosszú</target>
+        <target state="translated">Az életrajz túl hosszú</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Black" xml:space="preserve">
@@ -7453,9 +7453,9 @@ chat item action</note>
         <target>Jelmondat beállítása az exportáláshoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Set profile bio and welcome message." xml:space="preserve">
+      <trans-unit id="Set profile bio and welcome message." xml:space="preserve" approved="no">
         <source>Set profile bio and welcome message.</source>
-        <target>Névjegy és üdvözlőüzenet beállítása a profilokhoz.</target>
+        <target state="translated">Életrajz és üdvözlőüzenet beállítása a profilokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Set the message shown to new members!" xml:space="preserve">
