@@ -729,6 +729,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt _relayLink -> do
+                liftIO $ print $ "XGrpRelayAcpt relayLink = " <> show _relayLink
                 -- TODO [relays] owner: process relay acceptance
                 -- TODO   - * relay is invitee? other processing branch?
                 -- TODO   - * check processing client is owner, otherwise error

@@ -330,7 +330,6 @@ export namespace APIListMembers {
 export interface APINewGroup {
   userId: number // int64
   incognito: boolean
-  useRelays: boolean
   groupProfile: T.GroupProfile
 }
 

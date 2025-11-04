@@ -379,8 +379,6 @@ data ChatCommand
   | APIListMembers {groupId :: GroupId}
   | APIUpdateGroupProfile {groupId :: GroupId, groupProfile :: GroupProfile}
   | APICreateGroupLink {groupId :: GroupId, memberRole :: GroupMemberRole}
-  | APICreateRelayedGroupLink {groupId :: GroupId, autoChooseRelays :: Bool} -- TODO [relays] owner: TBC memberRole
-  | APIAddRelays {groupId :: GroupId, relayIds :: NonEmpty Int64}
   | APIGroupLinkMemberRole {groupId :: GroupId, memberRole :: GroupMemberRole}
   | APIDeleteGroupLink {groupId :: GroupId}
   | APIGetGroupLink {groupId :: GroupId}
@@ -506,8 +504,11 @@ data ChatCommand
   | EditMessage {chatName :: ChatName, editedMsg :: Text, message :: Text}
   | UpdateLiveMessage {chatName :: ChatName, chatItemId :: ChatItemId, liveMessage :: Bool, message :: Text}
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
-  | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, useRelays :: Bool, groupProfile :: GroupProfile}
-  | NewGroup IncognitoEnabled Bool GroupProfile
+  | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
+  | NewGroup IncognitoEnabled GroupProfile
+  -- TODO [relays] owner: TBC group link's default member role for APINewChannel
+  | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
+  | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
@@ -681,6 +682,7 @@ data ChatResponse
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
+  | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
@@ -745,7 +747,6 @@ data ChatResponse
   | CRGroupProfile {user :: User, groupInfo :: GroupInfo}
   | CRGroupDescription {user :: User, groupInfo :: GroupInfo} -- only used in CLI
   | CRGroupLinkCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
-  | CRGroupRelaysAdded {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRGroupLink {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink}
   | CRGroupLinkDeleted {user :: User, groupInfo :: GroupInfo}
   | CRNewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}

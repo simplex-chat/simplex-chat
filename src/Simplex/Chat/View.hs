@@ -177,6 +177,8 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRUserContactLinkUpdated u UserContactLink {addressSettings} -> ttyUser u $ viewAddressSettings addressSettings
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
+  -- TODO [relays] CRPublicGroupCreated view - print group link, relays
+  CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
   -- CRGroupConversationsArchived u _g _conversations -> ttyUser u []
@@ -241,8 +243,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRGroupProfile u g -> ttyUser u $ viewGroupProfile g
   CRGroupDescription u g -> ttyUser u $ viewGroupDescription g
   CRGroupLinkCreated u g gLink -> ttyUser u $ groupLink_ "Group link is created!" g gLink
-  -- TODO [relays] CRGroupRelaysAdded view
-  CRGroupRelaysAdded u g gLink _relays -> ttyUser u $ groupLink_ "Group link is created!" g gLink
   CRGroupLink u g gLink -> ttyUser u $ groupLink_ "Group link:" g gLink
   CRGroupLinkDeleted u g -> ttyUser u $ viewGroupLinkDeleted g
   CRNewMemberContact u _ g m -> ttyUser u ["contact for member " <> ttyGroup' g <> " " <> ttyMember m <> " is created"]

@@ -2238,21 +2238,58 @@ processChatCommand vr nm = \case
     chatRef <- getChatRef user chatName
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand vr nm $ APIChatItemReaction chatRef chatItemId add reaction
-  APINewGroup userId incognito useRelays gProfile@GroupProfile {displayName} -> withUserId userId $ \user -> do
-    checkValidName displayName
-    gVar <- asks random
-    -- [incognito] generate incognito profile for group membership
-    incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-    gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile useRelays
-    let cd = CDGroupSnd gInfo Nothing
-    createInternalChatItem user cd CIChatBanner (Just epochStart)
-    createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-    createGroupFeatureItems user cd CISndGroupFeature gInfo
-    -- TODO [relays] owner: user should be prompted to choose/auto-choose relays for new group
-    -- TODO   - can choose relays from APIGetUserServers -> CRUserServers, [UserOperatorServers]
+  APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
+    gInfo <- newGroup user incognito gProfile False
     pure $ CRGroupCreated user gInfo
-  NewGroup incognito useRelays gProfile -> withUser $ \User {userId} ->
-    processChatCommand vr nm $ APINewGroup userId incognito useRelays gProfile
+  NewGroup incognito gProfile -> withUser $ \User {userId} ->
+    processChatCommand vr nm $ APINewGroup userId incognito gProfile
+  APINewPublicGroup userId incognito relayIds gProfile -> withUserId userId $ \user -> do
+    -- TODO [relays] owner: catch errors and clean up in case any step fails - delete group
+    -- TODO   - create group record with "in_progress" field to hide from list in case app crashes,
+    -- TODO     then pick up in cleanup manager
+    gInfo <- newGroup user incognito gProfile True
+    (gInfo', gLink, sLnk) <- newGroupLink user gInfo
+    relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+    groupRelays <- addRelays user gInfo' sLnk relays
+    pure $ CRPublicGroupCreated user gInfo' gLink groupRelays
+    where
+      newGroupLink :: User -> GroupInfo -> CM (GroupInfo, GroupLink, ShortLinkContact)
+      newGroupLink user gInfo@GroupInfo {groupProfile} = do
+        groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+        subMode <- chatReadVar subscriptionMode
+        let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+            crClientData = encodeJSON $ CRDataGroup groupLinkId
+        -- TODO [relays] owner: prepare group link without initially creating on server
+        -- TODO   - add link and owner key to group profile, sign profile
+        -- TODO   - create group link on server with signed profile as data
+        -- vvv replace from here vvv
+        (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
+        ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+        sLnk <- case toShortLinkContact ccLink' of
+          Just sl -> pure sl
+          Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
+        let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
+            userData' = encodeShortLinkData $ GroupShortLinkData groupProfile'
+        -- same link with updated profile
+        _sLnk' <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm connId SCMContact userData' (Just crClientData))
+        -- ^^^ to here ^^^
+        gVar <- asks random
+        (gInfo', gLink) <- withFastStore $ \db -> do
+          gLink <- createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+          gInfo' <- updateGroupProfile db user gInfo groupProfile'
+          pure (gInfo', gLink)
+        pure (gInfo', gLink, sLnk)
+      -- auto-selection of enabled relays, currently unused
+      -- chooseRelays :: User -> CM [UserChatRelay]
+      -- chooseRelays user = do
+      --   -- TODO [relays] owner: more advanced relay selection strategy, e.g. pick from different operators
+      --   chatRelays <- withFastStore' (`getChatRelays` user)
+      --   let enabledRelays = filter (\UserChatRelay {enabled} -> enabled) chatRelays
+      --   selectedRelays <- take 3 <$> liftIO (shuffle enabledRelays)
+      --   when (null selectedRelays) $ throwChatError $ CEException "failed to select relays: no enabled relays configured"
+      --   pure selectedRelays
+  NewPublicGroup incognito relayIds gProfile -> withUser $ \User {userId} ->
+    processChatCommand vr nm $ APINewPublicGroup userId incognito relayIds gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
     -- TODO for large groups: no need to load all members to determine if contact is a member
     (group, contact) <- withFastStore $ \db -> (,) <$> getGroup db vr user groupId <*> getContact db vr user contactId
@@ -2679,59 +2716,6 @@ processChatCommand vr nm = \case
     gVar <- asks random
     gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId mRole subMode
     pure $ CRGroupLinkCreated user gInfo gLink
-  APICreateRelayedGroupLink groupId autoChooseRelays -> withUser $ \user -> withGroupLock "createRelayedGroupLink" groupId $ do
-    gInfo@GroupInfo {groupProfile} <- withFastStore $ \db -> getGroupInfo db vr user groupId
-    assertUserGroupRole gInfo GROwner
-    groupLinkId <- GroupLinkId <$> drgRandomBytes 16
-    subMode <- chatReadVar subscriptionMode
-    let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-        crClientData = encodeJSON $ CRDataGroup groupLinkId
-    -- TODO [relays] below to be replaced with:
-    -- TODO   - prepare group link (without creating on server)
-    -- TODO   - add link, owner key to group profile, sign
-    -- TODO   - create group link on server, use signed profile as data
-    -- vvv FROM HERE vvv
-    (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userData) (Just crClientData) IKPQOff subMode
-    ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-    sLnk <- case toShortLinkContact ccLink' of
-      Just sl -> pure sl
-      Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
-    let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
-        userData' = encodeShortLinkData $ GroupShortLinkData groupProfile'
-    -- same link with updated profile
-    _sLnk' <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm connId SCMContact userData' (Just crClientData))
-    -- ^^^ TO HERE ^^^
-    gVar <- asks random
-    (gLink, gInfo') <- withFastStore $ \db -> do
-      gLink <- createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
-      gInfo' <- updateGroupProfile db user gInfo groupProfile'
-      pure (gLink, gInfo')
-    if autoChooseRelays
-      then do
-        relays <- chooseRelays user
-        groupRelays <- addRelays user gInfo' sLnk relays
-        pure $ CRGroupRelaysAdded user gInfo' gLink groupRelays
-      else
-        pure $ CRGroupLinkCreated user gInfo' gLink
-    where
-      chooseRelays user = do
-        -- TODO [relays] owner: more advanced relay selection strategy, e.g. pick from different operators
-        chatRelays <- withFastStore' (`getChatRelays` user)
-        let enabledRelays = filter (\UserChatRelay {enabled} -> enabled) chatRelays
-        selectedRelays <- take 3 <$> liftIO (shuffle enabledRelays)
-        when (null selectedRelays) $ throwChatError $ CEException "failed to select relays: no enabled relays configured"
-        pure selectedRelays
-  APIAddRelays groupId relayIds -> withUser $ \user -> withGroupLock "addRelays" groupId $ do
-    (gInfo, gLink@GroupLink {connLinkContact}) <- withFastStore $ \db -> do
-      gInfo <- getGroupInfo db vr user groupId
-      gLink <- getGroupLink db user gInfo
-      pure (gInfo, gLink)
-    sLnk <- case toShortLinkContact connLinkContact of
-      Just sl -> pure sl
-      Nothing -> throwChatError $ CEException "failed to add relays: no short link in group link"
-    relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
-    groupRelays <- addRelays user gInfo sLnk relays
-    pure $ CRGroupRelaysAdded user gInfo gLink groupRelays
   APIGroupLinkMemberRole groupId mRole' -> withUser $ \user -> withGroupLock "groupLinkMemberRole" groupId $ do
     gInfo <- withFastStore $ \db -> getGroupInfo db vr user groupId
     gLnk@GroupLink {acceptMemberRole} <- withFastStore $ \db -> getGroupLink db user gInfo
@@ -3553,6 +3537,18 @@ processChatCommand vr nm = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
+    newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> CM GroupInfo
+    newGroup user incognito gProfile@GroupProfile {displayName} useRelays = do
+      checkValidName displayName
+      gVar <- asks random
+      -- [incognito] generate incognito profile for group membership
+      incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+      gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile useRelays
+      let cd = CDGroupSnd gInfo Nothing
+      createInternalChatItem user cd CIChatBanner (Just epochStart)
+      createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+      createGroupFeatureItems user cd CISndGroupFeature gInfo
+      pure gInfo
     sendGrpInvitation :: User -> Contact -> GroupInfo -> GroupMember -> ConnReqInvitation -> CM ()
     sendGrpInvitation user ct@Contact {contactId, localDisplayName} gInfo@GroupInfo {groupId, groupProfile, membership, businessChat} GroupMember {groupMemberId, memberId, memberRole = memRole} cReq = do
       currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
@@ -4653,8 +4649,10 @@ chatCommandP =
       ("/help settings" <|> "/hs") $> ChatHelp HSSettings,
       ("/help db" <|> "/hd") $> ChatHelp HSDatabase,
       ("/help" <|> "/h") $> ChatHelp HSMain,
-      ("/group" <|> "/g") *> (NewGroup <$> incognitoP <*> (" use_relays=" *> onOffP <|> pure False) <* A.space <* char_ '#' <*> groupProfile),
-      "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <*> (" use_relays=" *> onOffP <|> pure False) <* A.space <*> jsonP),
+      ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
+      "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
+      ("/public group") *> (NewPublicGroup <$> incognitoP <*> _strP <* A.space <* char_ '#' <*> groupProfile),
+      "/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),
       "/accept member " *> char_ '#' *> (AcceptMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
@@ -4680,8 +4678,6 @@ chatCommandP =
       "/delete welcome " *> char_ '#' *> (UpdateGroupDescription <$> displayNameP <*> pure Nothing),
       "/show welcome " *> char_ '#' *> (ShowGroupDescription <$> displayNameP),
       "/_create link #" *> (APICreateGroupLink <$> A.decimal <*> (memberRole <|> pure GRMember)),
-      "/_create relayed link #" *> (APICreateRelayedGroupLink <$> A.decimal <*> (" auto_choose_relays=" *> onOffP)),
-      "/_add relays #" *> (APIAddRelays <$> A.decimal <*> _strP),
       "/_set link role #" *> (APIGroupLinkMemberRole <$> A.decimal <*> memberRole),
       "/_delete link #" *> (APIDeleteGroupLink <$> A.decimal),
       "/_get link #" *> (APIGetGroupLink <$> A.decimal),
