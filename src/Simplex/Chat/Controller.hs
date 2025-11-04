@@ -361,6 +361,7 @@ data ChatCommand
   | APISetUserUIThemes UserId (Maybe UIThemeEntityOverrides)
   | APISetChatUIThemes ChatRef (Maybe UIThemeEntityOverrides)
   | APIGetNtfToken
+  | APIGetNtfVAPIDkey
   | APIRegisterToken DeviceToken NotificationsMode
   | APIVerifyToken DeviceToken C.CbNonce ByteString
   | APIVerifySavedToken ByteString
@@ -747,6 +748,7 @@ data ChatResponse
   | CRCallInvitations {callInvitations :: [RcvCallInvitation]}
   | CRNtfTokenStatus {status :: NtfTknStatus}
   | CRNtfToken {token :: DeviceToken, status :: NtfTknStatus, ntfMode :: NotificationsMode, ntfServer :: NtfServer}
+  | CRVapid {fp :: Text}
   | CRNtfConns {ntfConns :: [NtfConn]}
   | CRConnNtfMessages {receivedMsgs :: NonEmpty RcvNtfMsgInfo}
   | CRContactConnectionDeleted {user :: User, connection :: PendingContactConnection}

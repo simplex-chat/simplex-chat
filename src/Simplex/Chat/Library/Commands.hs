@@ -139,9 +139,15 @@ import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 _defaultNtfServers :: [NtfServer]
 _defaultNtfServers =
   [ -- "ntf://FB-Uop7RTaZZEG0ZLD2CIaTjsPh-Fw0zFAnb7QyA8Ks=@ntf2.simplex.im,5ex3mupcazy3zlky64ab27phjhijpemsiby33qzq3pliejipbtx5xgad.onion"
-    "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
-    "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
+    -- "ntf://KmpZNNXiVZJx_G2T7jRUmDFxWXM3OAnunz3uLT0tqAA=@ntf3.simplex.im,pxculznuryunjdvtvh6s6szmanyadumpbmvevgdpe4wk5c65unyt4yid.onion",
+    -- "ntf://CJ5o7X6fCxj2FFYRU2KuCo70y4jSqz7td2HYhLnXWbU=@ntf4.simplex.im,wtvuhdj26jwprmomnyfu5wfuq2hjkzfcc72u44vi6gdhrwxldt6xauad.onion"
+    "ntf://KVlowDw-cYiRQ-bsCxqNndZkASJ3BvfqkvSQcA0Lz-Q=@10.10.1.1:444"
   ]
+
+
+-- Should probably be replaced by an API to query the ntf server
+_defaultNtfVapidKey :: Text
+_defaultNtfVapidKey = "BBq9DyRPSRO6ATlnlYXmeMxD5SM9x6Yg2cRc-bAe6gbMdYUEXplbWRu2npP33XL9d-iwv-_Grd3cPE1yZi_7ErM"
 
 maxImageSize :: Integer
 maxImageSize = 261120 * 2 -- auto-receive on mobiles
@@ -1386,6 +1392,7 @@ processChatCommand vr nm = \case
       ok user
     _ -> throwCmdError "not supported"
   APIGetNtfToken -> withUser' $ \_ -> crNtfToken <$> withAgent getNtfToken
+  APIGetNtfVAPIDkey -> pure $ CRVapid _defaultNtfVapidKey
   APIRegisterToken token mode -> withUser $ \_ ->
     CRNtfTokenStatus <$> withAgent (\a -> registerNtfToken a nm token mode)
   APIVerifyToken token nonce code -> withUser $ \_ -> withAgent (\a -> verifyNtfToken a nm token nonce code) >> ok_
@@ -4551,6 +4558,7 @@ chatCommandP =
       "/_set prefs @" *> (APISetContactPrefs <$> A.decimal <* A.space <*> jsonP),
       "/_set theme user " *> (APISetUserUIThemes <$> A.decimal <*> optional (A.space *> jsonP)),
       "/_set theme " *> (APISetChatUIThemes <$> chatRefP <*> optional (A.space *> jsonP)),
+      "/_ntf vapid" $> APIGetNtfVAPIDkey,
       "/_ntf get" $> APIGetNtfToken,
       "/_ntf register " *> (APIRegisterToken <$> strP_ <*> strP),
       "/_ntf verify " *> (APIVerifyToken <$> strP <* A.space <*> strP <* A.space <*> strP),

@@ -8,16 +8,16 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
-import androidx.compose.runtime.*
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.getUserServers
+import chat.simplex.common.model.API
+import chat.simplex.common.model.CC
+import chat.simplex.common.model.CR
 import chat.simplex.common.platform.Log
+import chat.simplex.common.platform.chatModel
 import chat.simplex.common.views.helpers.*
-import chat.simplex.common.views.usersettings.networkAndServers.showAddServerDialog
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -38,8 +38,11 @@ object PushManager {
    * Else alert about missing service
    */
   suspend fun initUnifiedPush(context: Context, scope: CoroutineScope, onSuccess: () -> Unit) {
-    // TODO: abort is VAPID is null?
-    val vapid = await getVapidKey()
+    val vapid = getVapidKey(scope)
+      ?: run {
+        Log.w(TAG, "Tried to init UnifiedPush but couldn't find VAPID key")
+        return
+      }
     val distributors = UnifiedPush.getDistributors(context)
     when (distributors.size) {
       0 -> {
@@ -68,10 +71,20 @@ object PushManager {
   /**
    * Get VAPID key of the ntf server
    */
-   suspend fun getVapidKey(): String? {
-     //TODO: get VAPID key
-     return null
-        ?.takeIf { VAPID_REGEX.matches(it) }
+   suspend fun getVapidKey(scope: CoroutineScope): String? {
+    var r: API? = null
+    scope.launch {
+       r = chatModel.controller.sendCmd(
+         null,
+         CC.APIGetNtfVapidKey(),
+         log = true
+       )
+    }.join()
+    val res = r
+    if (res is API.Result && res.res is CR.VAPID)
+      return (res.res as CR.VAPID).fp
+        .takeIf { VAPID_REGEX.matches(it) }
+    return null
    }
 
   /**
@@ -80,11 +93,11 @@ object PushManager {
    * To run when the app starts; call [chat.simplex.app.PushService.onUnregistered]
    * if the distributor is uninstalled
    */
-  suspend fun initStart(context: Context) {
+  suspend fun initStart(context: Context, scope: CoroutineScope) {
     Log.d(TAG, "Init UnifiedPush during app startup")
     //TODO: limit to once a day to reduce registrations to ntf server ?
     UnifiedPush.getAckDistributor(context)?.let {
-      val vapid = getVapidKey()
+      val vapid = getVapidKey(scope)
         // Unregister if the user deleted the ntf server or change it with one without vapid
         //TODO: change ? Maybe there is just a network error - ntf servers are hardcoded now
         ?: return UnifiedPush.unregister(context)

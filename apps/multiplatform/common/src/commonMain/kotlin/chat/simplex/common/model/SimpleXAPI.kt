@@ -3718,6 +3718,7 @@ sealed class CC {
   class GetAgentSubsTotal(val userId: Long): CC()
   class GetAgentServersSummary(val userId: Long): CC()
   class APIRegisterWebPush(val endpoint: String, val auth: String, val p256dh: String): CC()
+  class APIGetNtfVapidKey: CC()
   class APIVerifySavedNtf(val code: String): CC()
   class APIDeleteSavedNtf(): CC()
 
@@ -3925,6 +3926,7 @@ sealed class CC {
     is APIRegisterWebPush -> "/_ntf register webpush $endpoint $auth $p256dh INSTANT"
     is APIDeleteSavedNtf -> "/_ntf delete saved"
     is APIVerifySavedNtf -> "/_ntf verify $code"
+    is APIGetNtfVapidKey -> "/_ntf vapid"
   }
 
   val cmdType: String get() = when (this) {
@@ -4096,6 +4098,7 @@ sealed class CC {
     is APIRegisterWebPush -> "apiRegisterWebPush"
     is APIDeleteSavedNtf -> "apiDeleteSavedNtf"
     is APIVerifySavedNtf -> "apiVerifySavedNtf"
+    is APIGetNtfVapidKey -> "apiGetNtfVapidKey"
   }
 
   data class ItemRange(val from: Long, val to: Long)
@@ -6322,6 +6325,8 @@ sealed class CR {
   @Serializable @SerialName("appSettings") class AppSettingsR(val appSettings: AppSettings): CR()
   @Serializable @SerialName("agentSubsTotal") class AgentSubsTotal(val user: UserRef, val subsTotal: SMPServerSubs, val hasSession: Boolean): CR()
   @Serializable @SerialName("agentServersSummary") class AgentServersSummary(val user: UserRef, val serversSummary: PresentedServersSummary): CR()
+  // Push notifs
+  @Serializable @SerialName("vapid") class VAPID(val fp: String): CR()
   // general
   @Serializable class Response(val type: String, val json: String): CR()
   @Serializable class Invalid(val str: String): CR()
@@ -6496,6 +6501,7 @@ sealed class CR {
     is VersionInfo -> "versionInfo"
     is AgentSubsTotal -> "agentSubsTotal"
     is AgentServersSummary -> "agentServersSummary"
+    is VAPID -> "vapid"
     is CmdOk -> "cmdOk"
     is ArchiveExported -> "archiveExported"
     is ArchiveImported -> "archiveImported"
@@ -6692,6 +6698,7 @@ sealed class CR {
         "chat migrations: ${json.encodeToString(chatMigrations.map { it.upName })}\n\n" +
         "agent migrations: ${json.encodeToString(agentMigrations.map { it.upName })}"
     is CmdOk -> withUser(user, noDetails())
+    is VAPID -> json.encodeToString(fp)
     is ArchiveExported -> "${archiveErrors.map { it.string } }"
     is ArchiveImported -> "${archiveErrors.map { it.string } }"
     is AppSettingsR -> json.encodeToString(appSettings)

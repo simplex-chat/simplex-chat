@@ -248,6 +248,7 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRContactConnectionDeleted u PendingContactConnection {pccConnId} -> ttyUser u ["connection :" <> sShow pccConnId <> " deleted"]
   CRNtfTokenStatus status -> ["device token status: " <> plain (smpEncode status)]
   CRNtfToken _ status mode srv -> ["device token status: " <> plain (smpEncode status) <> ", notifications mode: " <> plain (strEncode mode) <> ", server: " <> sShow srv]
+  CRVapid fp -> [sShow fp]
   CRNtfConns {ntfConns} -> map (\NtfConn {agentConnId, expectedMsg_} -> plain $ show agentConnId <> " " <> show expectedMsg_) ntfConns
   CRConnNtfMessages ntfMsgs -> [sShow ntfMsgs]
   CRCurrentRemoteHost rhi_ ->

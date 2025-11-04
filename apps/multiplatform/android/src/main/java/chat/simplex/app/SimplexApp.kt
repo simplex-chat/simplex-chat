@@ -276,7 +276,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
               platform.androidServiceStart()
             }
             NotificationsMode.INSTANT -> withBGApi {
-              PushManager.initStart(context)
+              PushManager.initStart(context, CoroutineScope(Dispatchers.Default))
             }
             else -> {}
           }
