@@ -1,6 +1,7 @@
 package chat.simplex.app.platform
 
 import SectionItemView
+import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
@@ -36,13 +37,28 @@ object PushManager {
    * If a single distrib is available, use it
    * If many, ask distributor to use with a dialog
    * Else alert about missing service
+   *
+   * @param activity if not null: try to use default distrib
    */
-  suspend fun initUnifiedPush(context: Context, scope: CoroutineScope, onSuccess: () -> Unit) {
+  suspend fun initUnifiedPush(context: Context, activity: Activity?, scope: CoroutineScope, onSuccess: () -> Unit) {
     val vapid = getVapidKey(scope)
       ?: run {
         Log.w(TAG, "Tried to init UnifiedPush but couldn't find VAPID key")
         return
       }
+    activity?.let {
+      UnifiedPush.tryUseDefaultDistributor(activity) { success ->
+        if (success) {
+          register(context, vapid)
+          onSuccess()
+        } else {
+          initUnifiedPushWithDialogs(context, vapid, onSuccess)
+        }
+      }
+    } ?: initUnifiedPushWithDialogs(context, vapid, onSuccess)
+  }
+
+  private fun initUnifiedPushWithDialogs(context: Context, vapid: String, onSuccess: () -> Unit) {
     val distributors = UnifiedPush.getDistributors(context)
     when (distributors.size) {
       0 -> {

@@ -428,8 +428,11 @@ class SimplexService: Service() {
 
     private fun getPreferences(context: Context): SharedPreferences = context.getSharedPreferences(SHARED_PREFS_ID, Context.MODE_PRIVATE)
 
-    suspend fun initUnifiedPush(scope: CoroutineScope, onSuccess: () -> Unit) {
-      PushManager.initUnifiedPush(androidAppContext, scope, onSuccess)
+    /**
+     * @param activity if not null, try default distrib
+     */
+    suspend fun initUnifiedPush(activity: Activity?, scope: CoroutineScope, onSuccess: () -> Unit) {
+      PushManager.initUnifiedPush(androidAppContext, activity, scope, onSuccess)
     }
 
     fun showBackgroundServiceNoticeIfNeeded(showOffAlert: Boolean = true) {

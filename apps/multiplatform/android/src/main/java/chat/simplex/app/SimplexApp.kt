@@ -240,7 +240,14 @@ class SimplexApp: Application(), LifecycleEventObserver {
         }
         if (mode == NotificationsMode.INSTANT) {
           CoroutineScope(Dispatchers.Default).launch {
-            SimplexService.initUnifiedPush(this) {
+            /**
+             * If the user re-selects INSTANT, then we don't use default distributor - so it's possible to use
+             * a non-default distrib
+             */
+            val activity = if (chatModel.controller.appPrefs.notificationsMode.get() != NotificationsMode.INSTANT) {
+              mainActivity.get()
+            } else null
+            SimplexService.initUnifiedPush(activity, this) {
               // Change notifications mode only if everything is correctly setup
               chatModel.controller.appPrefs.notificationsMode.set(mode)
             }
