@@ -418,6 +418,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CEvtBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CEvtGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CEvtRelayAddedToLink u g relayMem groupLink relays -> ttyUser u $ viewRelayAddedToLink g relayMem groupLink relays
   CEvtBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CEvtUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
@@ -1146,6 +1147,22 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
     "to accept: " <> highlight ("/ac " <> viewName c),
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
+
+viewRelayAddedToLink :: GroupInfo -> GroupMember -> GroupLink -> [GroupRelay] -> [StyledString]
+viewRelayAddedToLink g relayMem groupLink relays =
+  [ ttyFullGroup g <> ": relay " <> ttyMember relayMem <> " added to group link",
+    "current relays:"
+  ]
+    <> map showRelay relays
+    <>
+      [ "group link:",
+        plain $ maybe cReqStr strEncode shortLink
+      ]
+  where
+    showRelay GroupRelay {groupRelayId, relayStatus} =
+      "  - relay id " <> sShow groupRelayId <> ": " <> sShow (relayStatusText relayStatus)
+    GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
+    cReqStr = strEncode $ simplexChatContact cReq
 
 -- TODO [relays] operator: CLI specific apis based on name
 viewGroupCreated :: GroupInfo -> Bool -> [StyledString]

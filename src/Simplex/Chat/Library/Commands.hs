@@ -1186,8 +1186,7 @@ processChatCommand vr nm = \case
       pure $ CRContactConnectionDeleted user conn
     CTGroup | isNothing scope -> do
       gInfo@GroupInfo {membership} <- withFastStore $ \db -> getGroupInfo db vr user chatId
-      let GroupMember {memberRole = membershipMemRole} = membership
-      let isOwner = membershipMemRole == GROwner
+      let isOwner = memberRole' membership == GROwner
           canDelete = isOwner || not (memberCurrent membership)
       unless canDelete $ throwChatError $ CEGroupUserRole gInfo GROwner
       filesInfo <- withFastStore' $ \db -> getGroupFileInfo db user gInfo
@@ -1207,7 +1206,7 @@ processChatCommand vr nm = \case
         where
           getRecipients gInfo
             | useRelays' gInfo = do
-                relays <- withFastStore' $ \db -> getGroupRelays db vr user gInfo
+                relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
                 pure (relays, relays)
             | otherwise = do
                 ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
@@ -1641,7 +1640,7 @@ processChatCommand vr nm = \case
       ok user
       where
         getMembers db gInfo
-          | useRelays' gInfo = getGroupRelays db vr user gInfo
+          | useRelays' gInfo = getGroupRelayMembers db vr user gInfo
           | otherwise = getGroupMembers db vr user gInfo
     _ -> throwCmdError "not supported"
   APISetMemberSettings gId gMemberId settings -> withUser $ \user -> do
@@ -2644,7 +2643,7 @@ processChatCommand vr nm = \case
     where
       getRecipients user gInfo
         | useRelays' gInfo = do
-            relays <- withFastStore' $ \db -> getGroupRelays db vr user gInfo
+            relays <- withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
             pure (relays, relays)
         | otherwise = do
             ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo
@@ -3421,12 +3420,12 @@ processChatCommand vr nm = \case
               recipients = filter memberCurrentOrPending newMs
           sendGroupMessage user gInfo' Nothing recipients $ XGrpPrefs ps'
         Nothing -> do
-          setGroupLinkData' nm user gInfo'
+          void $ setGroupLinkData' nm user gInfo'
           recipients <- getRecipients
           sendGroupMessage user gInfo' Nothing recipients (XGrpInfo p')
           where
             getRecipients
-              | useRelays' gInfo' = withFastStore' $ \db -> getGroupRelays db vr user gInfo'
+              | useRelays' gInfo' = withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo'
               | otherwise = do
                   ms <- withFastStore' $ \db -> getGroupMembers db vr user gInfo'
                   pure $ filter memberCurrentOrPending ms
@@ -3443,8 +3442,7 @@ processChatCommand vr nm = \case
       when (displayName /= validName) $ throwChatError CEInvalidDisplayName {displayName, validName}
     assertUserGroupRole :: GroupInfo -> GroupMemberRole -> CM ()
     assertUserGroupRole g@GroupInfo {membership} requiredRole = do
-      let GroupMember {memberRole = membershipMemRole} = membership
-      when (membershipMemRole < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
+      when (memberRole' membership < requiredRole) $ throwChatError $ CEGroupUserRole g requiredRole
       when (memberStatus membership == GSMemInvited) $ throwChatError (CEGroupNotJoined g)
       when (memberRemoved membership) $ throwChatError CEGroupMemberUserRemoved
       unless (memberActive membership) $ throwChatError CEGroupMemberNotActive
@@ -3458,13 +3456,13 @@ processChatCommand vr nm = \case
       delGroupChatItems user gInfo chatScopeInfo items True
       where
         assertDeletable :: GroupInfo -> [CChatItem 'CTGroup] -> CM ()
-        assertDeletable GroupInfo {membership = GroupMember {memberRole = membershipMemRole}} items' =
+        assertDeletable GroupInfo {membership} items' =
           unless (all itemDeletable items') $ throwChatError CEInvalidChatItemDelete
           where
             itemDeletable :: CChatItem 'CTGroup -> Bool
             itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
               case chatDir of
-                CIGroupRcv GroupMember {memberRole} -> membershipMemRole >= memberRole && isJust itemSharedMsgId
+                CIGroupRcv GroupMember {memberRole} -> memberRole' membership >= memberRole && isJust itemSharedMsgId
                 CIGroupSnd -> isJust itemSharedMsgId
         itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
         itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds

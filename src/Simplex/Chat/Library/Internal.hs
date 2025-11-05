@@ -1241,19 +1241,23 @@ splitFileDescr partSize rfdText = splitParts 1 rfdText
             then fileDescr :| []
             else fileDescr <| splitParts (partNo + 1) rest
 
-setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> CM ()
+setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> CM (Maybe GroupLink)
 setGroupLinkData' nm user gInfo =
   withFastStore' (\db -> runExceptT $ getGroupLink db user gInfo) >>= \case
     Right gLink@GroupLink {shortLinkDataSet}
-      | shortLinkDataSet -> void $ setGroupLinkData nm user gInfo gLink
-    _ -> pure ()
+      | shortLinkDataSet -> Just <$> setGroupLinkData nm user gInfo gLink
+    _ -> pure Nothing
 
+-- TODO [relays] owner: set owners on updating link data
 setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM GroupLink
 setGroupLinkData nm user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
   vr <- chatVersionRange
-  conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
-  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+  (conn, groupRelays) <- withFastStore $ \db ->
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+  let direct = not $ useRelays' gInfo
+      relays = mapMaybe relayLink groupRelays
+      userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+      userLinkData = UserContactLinkData UserContactData {direct, owners = [], relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
   sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
@@ -1262,11 +1266,14 @@ restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
 getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
-getShortLinkConnReq nm user l = do
+getShortLinkConnReq nm user@User {userChatRelay} l = do
   l' <- restoreShortLink' l
   (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
   case cData of
-    ContactLinkData _ UserContactData {direct} | not direct -> throwChatError CEUnsupportedConnReq
+    ContactLinkData _ UserContactData {direct, relays}
+      | not supported -> throwChatError CEUnsupportedConnReq
+      where
+        supported = direct || not (null relays) || isTrue userChatRelay
     _ -> pure ()
   pure (cReq, cData)
 
@@ -1496,7 +1503,7 @@ getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatSc
 getGroupRecipients vr user gInfo@GroupInfo {membership} scopeInfo modsCompatVersion
   | useRelays' gInfo && not (isMemberRelay membership) = do
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
-      withFastStore' $ \db -> getGroupRelays db vr user gInfo
+      withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
   | otherwise = case scopeInfo of
       Nothing -> do
         unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"

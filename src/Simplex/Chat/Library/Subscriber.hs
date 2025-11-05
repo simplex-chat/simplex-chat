@@ -220,7 +220,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         getRecipients
-                          | useRelays' g = withStore' $ \db -> getGroupRelays db vr user g
+                          | useRelays' g = withStore' $ \db -> getGroupRelayMembers db vr user g
                           | otherwise = withStore' $ \db -> getGroupMembers db vr user g
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -728,16 +728,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              XGrpRelayAcpt _relayLink -> do
-                liftIO $ print $ "XGrpRelayAcpt relayLink = " <> show _relayLink
-                -- TODO [relays] owner: process relay acceptance
-                -- TODO   - * relay is invitee? other processing branch?
-                -- TODO   - * check processing client is owner, otherwise error
-                -- TODO   - update relay record with relay link, relay status: RSAccepted
-                -- TODO   - update group link (add relay link)
-                -- TODO     - agent async setConnShortLink api; agent api to allow setting ContactLinkData.relays
-                -- TODO   - on group link updated: relay status: RSActive (can share group link with members)
-                pure ()
+              -- TODO [relays] owner: XGrpRelayAcpt processing branch
+              -- TODO   - TBC relay category
+              -- TODO   - set relay status RSActive on CON?
+              XGrpRelayAcpt relayLink
+                | memberRole' membership == GROwner ->
+                    case relayData m of
+                      Just relay -> do
+                        -- TODO [relays] owner: check current relay status?
+                        relay' <- withStore' $ \db -> do
+                          updateGroupMemberStatus db userId m GSMemAccepted
+                          setRelayLinkAccepted db relay relayLink
+                        let m' = m {relayData = Just relay', memberStatus = GSMemAccepted}
+                        allowAgentConnectionAsync user conn' confId XOk
+                        -- TODO [relays] owner: agent async setConnShortLink api
+                        setGroupLinkData' NRMBackground user gInfo >>= \case
+                          Just gLink -> do
+                            (relay'', relays) <- withStore' $ \db ->
+                              (,) <$> updateRelayStatusFromTo db relay' RSAccepted RSActive <*> getGroupRelays db gInfo
+                            let m'' = m' {relayData = Just relay''}
+                            toView $ CEvtRelayAddedToLink user gInfo m'' gLink relays
+                          Nothing -> messageError "x.grp.relay.acpt: group link not updated"
+                      Nothing -> messageError "x.grp.relay.acpt: member is not saved as relay"
+                | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
             case chatMsgEvent of
@@ -1331,7 +1344,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               validateGroupProfile gp
               (gInfo, ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user gp groupRelayInv
               relayLink <- createRelayLink gInfo
-              (gInfo', ownerMember') <- acceptRelayJoinRequestAsync user uclId gInfo ownerMember invId chatVRange relayLink
+              (_gInfo', _ownerMember') <- acceptRelayJoinRequestAsync user uclId gInfo ownerMember invId chatVRange relayLink
               -- TODO [relays] relay: event, chat item (?)
               pure ()
               where
@@ -1351,7 +1364,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
                       crClientData = encodeJSON $ CRDataGroup groupLinkId
                   (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
-                  ccLink' <- createdRelayLink <$> shortenCreatedLink ccLink
+                  ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
                   sLnk <- case toShortLinkContact ccLink' of
                     Just sl -> pure sl
                     Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
@@ -2907,7 +2920,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
                 groupMsgToView cInfo ci
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
-              void $ forkIO $ setGroupLinkData' NRMBackground user g''
+              void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
@@ -3145,7 +3158,7 @@ deleteGroupConnections user gInfo waitDelivery = do
   deleteMembersConnections' user members waitDelivery
   where
     getMembers vr
-      | useRelays' gInfo = withStore' $ \db -> getGroupRelays db vr user gInfo
+      | useRelays' gInfo = withStore' $ \db -> getGroupRelayMembers db vr user gInfo
       | otherwise = withStore' $ \db -> getGroupMembers db vr user gInfo
 
 startDeliveryTaskWorkers :: CM ()

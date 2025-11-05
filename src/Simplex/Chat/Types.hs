@@ -967,6 +967,9 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
+
 data GroupRelay = GroupRelay
   { groupRelayId :: Int64,
     userChatRelayId :: Int64, -- ID of configured UserChatRelay
@@ -981,6 +984,13 @@ data RelayStatus
   | RSAccepted
   | RSActive
   deriving (Eq, Show)
+
+relayStatusText :: RelayStatus -> Text
+relayStatusText = \case
+  RSNew -> "new"
+  RSInvited -> "invited"
+  RSAccepted -> "accepted"
+  RSActive -> "active"
 
 instance TextEncoding RelayStatus where
   textEncode = \case

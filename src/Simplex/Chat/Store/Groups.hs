@@ -63,7 +63,7 @@ module Simplex.Chat.Store.Groups
     getScopeMemberIdViaMemberId,
     getGroupMembers,
     getGroupModerators,
-    getGroupRelays,
+    getGroupRelayMembers,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
     deleteGroupChatItems,
@@ -76,9 +76,11 @@ module Simplex.Chat.Store.Groups
     createNewContactMember,
     createGroupRelayRecord,
     getGroupRelayById,
+    getGroupRelays,
     createRelayMemberRecord,
     createRelayConnection,
     updateRelayStatusFromTo,
+    setRelayLinkAccepted,
     createGroupRelayInvitation,
     updateRelayOwnStatusFromTo,
     createNewContactMemberAsync,
@@ -380,9 +382,9 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
       gInfo@GroupInfo {membership, groupProfile = p'} <- getGroupInfo db vr user gId
       hostId <- getHostMemberId_ db user gId
       let GroupMember {groupMemberId, memberId, memberRole} = membership
-          MemberIdRole {memberId = invMemberId, memberRole = memberRole'} = invitedMember
-      liftIO . when (memberId /= invMemberId || memberRole /= memberRole') $
-        DB.execute db "UPDATE group_members SET member_id = ?, member_role = ? WHERE group_member_id = ?" (invMemberId, memberRole', groupMemberId)
+          MemberIdRole {memberId = invMemberId, memberRole = invMemberRole} = invitedMember
+      liftIO . when (memberId /= invMemberId || memberRole /= invMemberRole) $
+        DB.execute db "UPDATE group_members SET member_id = ?, member_role = ? WHERE group_member_id = ?" (invMemberId, invMemberRole, groupMemberId)
       gInfo' <-
         if p' == groupProfile
           then pure gInfo
@@ -1022,8 +1024,8 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
       (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
 
 -- TODO [channels fwd] retrieve relays based on knowledge about member from protocol, not role (isMemberRelay)
-getGroupRelays :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
-getGroupRelays db vr user@User {userId, userContactId} GroupInfo {groupId} = do
+getGroupRelayMembers :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
+getGroupRelayMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
   map (toContactMember vr user)
     <$> DB.query
       db
@@ -1151,16 +1153,27 @@ getGroupRelayById db relayId =
   ExceptT . firstRow toGroupRelay (SEGroupRelayNotFound relayId) $
     DB.query
       db
-      [sql|
-        SELECT group_relay_id, chat_relay_id, relay_status, relay_link
-        FROM group_relays
-        WHERE group_relay_id = ?
-      |]
+      (groupRelayQuery <> " WHERE group_relay_id = ?")
       (Only relayId)
-  where
-    toGroupRelay :: (Int64, Int64, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
-    toGroupRelay (groupRelayId, userChatRelayId, relayStatus, relayLink) =
-      GroupRelay {groupRelayId, userChatRelayId, relayStatus, relayLink}
+
+getGroupRelays :: DB.Connection -> GroupInfo -> IO [GroupRelay]
+getGroupRelays db GroupInfo {groupId} =
+  map toGroupRelay
+    <$> DB.query
+      db
+      (groupRelayQuery <> " WHERE group_id = ?")
+      (Only groupId)
+
+groupRelayQuery :: Query
+groupRelayQuery =
+  [sql|
+    SELECT group_relay_id, chat_relay_id, relay_status, relay_link
+    FROM group_relays
+  |]
+
+toGroupRelay :: (Int64, Int64, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
+toGroupRelay (groupRelayId, userChatRelayId, relayStatus, relayLink) =
+  GroupRelay {groupRelayId, userChatRelayId, relayStatus, relayLink}
 
 -- TODO [relays] TBC role, category, relay profile
 -- TODO   - GCInviteeMember -> GCRelayMember?
@@ -1219,6 +1232,19 @@ updateRelayStatus_ :: DB.Connection -> Int64 -> RelayStatus -> IO ()
 updateRelayStatus_ db relayId relayStatus = do
   currentTs <- getCurrentTime
   DB.execute db "UPDATE group_relays SET relay_status = ?, updated_at = ? WHERE group_relay_id = ?" (relayStatus, currentTs, relayId)
+
+setRelayLinkAccepted :: DB.Connection -> GroupRelay -> ShortLinkContact -> IO GroupRelay
+setRelayLinkAccepted db relay@GroupRelay {groupRelayId} relayLink = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_relays
+      SET relay_link = ?, relay_status = ?, updated_at = ?
+      WHERE group_relay_id = ?
+    |]
+    (relayLink, RSAccepted, currentTs, groupRelayId)
+  pure relay {relayStatus = RSAccepted, relayLink = Just relayLink}
 
 createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> GroupRelayInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupRelayInvitation db vr user@User {userId} groupProfile GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember} = do
