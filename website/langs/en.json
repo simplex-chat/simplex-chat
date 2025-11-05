@@ -312,5 +312,6 @@
     "messengers-comparison-section-list-point-3": "It appears that the usage of cryptographic signatures compromises repudiation (deniability), but it needs to be clarified.",
     "messengers-comparison-section-list-point-4": "Multi-device implementation compromises post-compromise security of Double Ratchet",
     "messengers-comparison-section-list-point-5": "2-factor key exchange is optional via security code verification.",
-    "messengers-comparison-section-list-point-6": "Post-quantum key agreement is \"sparse\" &mdash; it protects only some of the ratchet steps."
+    "messengers-comparison-section-list-point-6": "Post-quantum key agreement is \"sparse\" &mdash; it protects only some of the ratchet steps.",
+    "navbar-old-site": "Old site"
 }
