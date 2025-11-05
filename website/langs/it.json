@@ -312,5 +312,6 @@
     "messengers-comparison-section-list-point-4": "L'implementazione multi-dispositivo compromette la sicurezza post-compromissione di Double Ratchet",
     "messengers-comparison-section-list-point-5": "Lo scambio di chiavi a 2 fattori è facoltativo tramite la verifica del codice di sicurezza.",
     "messengers-comparison-section-list-point-6": "L'accordo sulle chiavi post-quantistico è “scarno” &mdash; protegge solo alcuni dei passaggi del ratchet.",
-    "navbar-token": "Token"
+    "navbar-token": "Token",
+    "navbar-old-site": "Sito vecchio"
 }
