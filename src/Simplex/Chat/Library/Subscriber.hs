@@ -740,6 +740,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                           updateGroupMemberStatus db userId m GSMemAccepted
                           setRelayLinkAccepted db relay relayLink
                         let m' = m {relayData = Just relay', memberStatus = GSMemAccepted}
+                        -- TODO [relays] owner: set data on continuation / on CON?
                         allowAgentConnectionAsync user conn' confId XOk
                         -- TODO [relays] owner: agent async setConnShortLink api
                         setGroupLinkData' NRMBackground user gInfo >>= \case
