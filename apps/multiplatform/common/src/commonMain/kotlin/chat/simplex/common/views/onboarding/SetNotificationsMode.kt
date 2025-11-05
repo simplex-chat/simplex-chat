@@ -43,13 +43,18 @@ fun SetNotificationsMode(m: ChatModel) {
         }
         Spacer(Modifier.weight(1f))
         Column(Modifier.padding(horizontal = DEFAULT_ONBOARDING_HORIZONTAL_PADDING)) {
-          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.onboarding_notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short)) {
+          if (platform.hasPushServices) {
+            SelectableCard(currentMode, NotificationsMode.INSTANT, stringResource(MR.strings.notifications_mode_instant), annotatedStringResource(MR.strings.onboarding_notifications_mode_instant_desc_short)) {
+              currentMode.value = NotificationsMode.INSTANT
+            }
+          }
+          SelectableCard(currentMode, NotificationsMode.SERVICE, stringResource(MR.strings.notifications_mode_service), annotatedStringResource(MR.strings.onboarding_notifications_mode_service_desc_short)) {
             currentMode.value = NotificationsMode.SERVICE
           }
-          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.onboarding_notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short)) {
+          SelectableCard(currentMode, NotificationsMode.PERIODIC, stringResource(MR.strings.notifications_mode_periodic), annotatedStringResource(MR.strings.onboarding_notifications_mode_periodic_desc_short)) {
             currentMode.value = NotificationsMode.PERIODIC
           }
-          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.onboarding_notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short)) {
+          SelectableCard(currentMode, NotificationsMode.OFF, stringResource(MR.strings.notifications_mode_off), annotatedStringResource(MR.strings.onboarding_notifications_mode_off_desc_short)) {
             currentMode.value = NotificationsMode.OFF
           }
         }
@@ -108,13 +113,17 @@ fun <T> SelectableCard(currentValue: State<T>, newValue: T, title: String, descr
 private fun NotificationBatteryUsageInfo() {
   ColumnWithScrollBar(Modifier.padding(DEFAULT_PADDING)) {
     AppBarTitle(stringResource(MR.strings.onboarding_notifications_mode_battery), withPadding = false)
-    Text(stringResource(MR.strings.onboarding_notifications_mode_service), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+    if (platform.hasPushServices) {
+      Text(stringResource(MR.strings.notifications_mode_instant), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+      ReadableText(MR.strings.onboarding_notifications_mode_instant_desc)
+    }
+    Text(stringResource(MR.strings.notifications_mode_service), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
     ReadableText(MR.strings.onboarding_notifications_mode_service_desc)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-    Text(stringResource(MR.strings.onboarding_notifications_mode_periodic), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+    Text(stringResource(MR.strings.notifications_mode_periodic), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
     ReadableText(MR.strings.onboarding_notifications_mode_periodic_desc)
     Spacer(Modifier.height(DEFAULT_PADDING_HALF))
-    Text(stringResource(MR.strings.onboarding_notifications_mode_off), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
+    Text(stringResource(MR.strings.notifications_mode_off), style = MaterialTheme.typography.h3, color = MaterialTheme.colors.secondary)
     ReadableText(MR.strings.onboarding_notifications_mode_off_desc)
   }
 }

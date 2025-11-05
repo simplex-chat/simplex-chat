@@ -33,6 +33,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
+import org.unifiedpush.android.connector.UnifiedPush
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -395,6 +396,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
       override val supportsPushNotifications = true
+      override val hasPushServices: Boolean = UnifiedPush.getDistributors(context).any()
     }
   }
 
