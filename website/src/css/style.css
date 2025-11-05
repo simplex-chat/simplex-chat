@@ -1,3 +1,130 @@
+/* =======================
+  GT-Walsheim (WOFF2)
+  Family: "GT-Walsheim"
+  Weights mapped: Thin(100), Ultra-Light(200), Light(300), Regular(400),
+  Medium(500), Bold(700), Ultra-Bold(800), Black(900)
+======================= */
+
+/* Light */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light.woff2") format("woff2");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Light-Oblique.woff2") format("woff2");
+  font-weight: 300;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Regular */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Regular-Oblique.woff2") format("woff2");
+  font-weight: 400;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Medium */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Medium-Oblique.woff2") format("woff2");
+  font-weight: 500;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* Bold */
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "GT-Walsheim";
+  src: url("/fonts/GT-Walsheim/GT-Walsheim-LC-Bold-Oblique.woff2") format("woff2");
+  font-weight: 700;
+  font-style: oblique;
+  font-display: swap;
+}
+
+/* =======================
+  Manrope (TTF)
+  Family: "Manrope"
+  Weights mapped per name
+======================= */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-ExtraLight.ttf") format("truetype");
+  font-weight: 200;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Light.ttf") format("truetype");
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Regular.ttf") format("truetype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Medium.ttf") format("truetype");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-SemiBold.ttf") format("truetype");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Manrope";
+  src: url("/fonts/Manrope/Manrope-ExtraBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 @font-face {
   font-family: Gilroy;
   src: url("/fonts/GilroyRegular/font.woff2") format("woff2"), url("webFonts/GilroyRegular/font.woff") format("woff");
@@ -35,7 +162,7 @@
 
 html {
   scroll-behavior: smooth;
-  font-family: Gilroy, Helvetica, sans-serif;;
+  font-family: GT-Walsheim, Gilroy, Helvetica, sans-serif;;
   letter-spacing: 0.003em;
 }
 
@@ -137,9 +264,18 @@ a{
   text-fill-color: transparent;
 }
 
+.dark .gradient-text {
+  background: -webkit-linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+  background: linear-gradient(to bottom, #70F0F9 0%, #70F0F9 33%, #50D8F1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+}
+
 .dark .border-gradient {
   background:
-    linear-gradient(#11182F, #11182F) padding-box,
+    linear-gradient(#0B2A59, #0B2A59) padding-box,
     linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
   border: 1px solid transparent;
 }
@@ -158,7 +294,7 @@ a{
 
 .dark .unique-swiper .border-gradient{
   background:
-    linear-gradient(#0C0B13, #0C0B13) padding-box,
+    linear-gradient(#000832, #000832) padding-box,
     linear-gradient(to bottom, transparent, #01F1FF 58%) border-box;
   border: 1px solid transparent;
 }
@@ -175,154 +311,6 @@ a{
   height: 66px;
   visibility: hidden;
   pointer-events: none;
-}
-
-.menu-link{
-  font-size: 16px;
-  line-height: 33.42px;
-  color: #0D0E12;
-}
-.dark .menu-link{
-  color: #fff;
-}
-
-.nav-link ul li a.active{
-  color: #0053D0;
-
-}
-.dark .nav-link ul li a.active{
-  color: #66D9E2;
-}
-
-@media (min-width:1024px) {
-  .nav-link-text,
-  .menu-link {
-    display: inline-block;
-    position: relative;
-    color: #0D0E12;
-  }
-  
-  .nav-link-text::before,
-  .active .nav-link-text::before,
-  .menu-link::before {
-    content: "";
-    position: absolute;
-    width: 0;
-    height: 1px;
-    bottom: 0;
-    right: 0;
-    /* background-color: initial; */
-    transition: width 0.25s ease-out;
-  }
-  
-  .menu-link::before {
-    background-color: #0D0E12;
-  }
-  .dark .menu-link::before {
-    background-color: #fff;
-  }
-
-  .active .nav-link-text::before {
-    width: 100%;
-  }
-
-  .nav-link:hover .nav-link-text::before,
-  .menu-link:hover::before {
-    width: 100%;
-    left: 0;
-    right: auto;
-  }
-}
-
-
-.sub-menu {
-  visibility: hidden;
-  opacity: 0;
-  color: #505158;
-}
-
-.sub-menu .no-hover{
-  color: #505158 !important;
-}
-
-.dark .sub-menu,
-.dark .sub-menu .no-hover {
-  color: #fff !important;
-}
-
-.dark .sub-menu li:hover {
-  color: #66D9E2;
-}
-
-.sub-menu li:hover {
-  color: #0053D0;
-}
-
-.sub-menu {
-  transition: all .3s ease !important;
-}
-
-.nav-link span svg,
-header nav {
-  transition: all 0.5s ease;
-}
-
-.nav-link:hover span svg {
-  transform: rotate(180deg);
-}
-
-/* @media (max-width: 1400px) {
-    .landing-page-header-article-paragraph {
-        width: 21rem;
-    }
-
-    .socials {
-        flex-wrap: nowrap;
-    }
-} */
-
-@media (min-width:1024px) {
-
-  .nav-link:hover .sub-menu,
-  .nav-link:focus-within .sub-menu {
-    visibility: visible;
-    opacity: 1;
-    margin-top: 0;
-  }
-}
-
-@media (max-width: 1024px) {
-  .sub-menu {
-    max-height: 0;
-    transform: translateY(-10px);
-    transition: all .7s ease !important;
-    overflow: hidden;
-  }
-
-  .active .sub-menu {
-    max-height: 1000px;
-    transform: translateY(0px);
-    opacity: 1;
-    visibility: visible;
-    margin-top: 0;
-  }
-
-  header nav {
-    visibility: hidden;
-    opacity: 0;
-    transform: translateX(100%);
-    overflow-y: auto;
-  }
-
-  header nav.open {
-    visibility: visible;
-    opacity: 1;
-    transform: translateX(0);
-  }
-
-  .flag-container .sub-menu{
-    max-height: fit-content;
-  }
 }
 
 .lock-scroll {
@@ -496,33 +484,74 @@ header nav {
 
 
 /* comparison */
-#comparison table thead th{
+#comparison table thead th,
+#messengers-comparison table thead th{
   font-size: 16px;
   line-height: 36px;
   font-weight: 500;
   text-align: center;
 }
-#comparison table tbody td{
+#comparison table tbody td,
+#messengers-comparison table tbody td{
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
 }
-#comparison table tbody tr > td:first-child{
+#comparison table tbody tr > td:first-child,
+#messengers-comparison table tbody tr > td:first-child{
   font-size: 16px;
   line-height: 24px;
   font-weight: 500;
   text-align: left;
 }
 
-[dir="rtl"] #comparison table tbody tr > td:first-child{
+[dir="rtl"] #comparison table tbody tr > td:first-child,
+[dir="rtl"] #messengers-comparison table tbody tr > td:first-child{
   text-align: right;
 }
 
 @media (min-width: 1024px) {
-  #comparison table tbody tr > td:first-child{
+  #comparison table tbody tr > td:first-child,
+  #messengers-comparison table tbody tr > td:first-child{
     font-size: 18px;
     line-height: 36px;
-  }  
+  }
+}
+
+#messengers-comparison table td.criteria {
+  min-width: 100px;
+  height: 52px;
+  text-align: center;
+}
+
+#messengers-comparison table tbody span.criteria-mark {
+  font-size: 28px;
+}
+
+#messengers-comparison table tbody sup {
+  font-size: 14px;
+}
+
+@media (min-width: 1024px) {
+  #messengers-comparison table tbody span.criteria-mark {
+    font-size: 36px;
+  }
+
+  #messengers-comparison table tbody sup {
+    font-size: 18px;
+  }
+}
+
+#messengers-comparison table .green-check {
+  color: #1DB100;
+}
+
+#messengers-comparison table .yellow-check {
+  color: #FFD932;
+}
+
+#messengers-comparison table .red-ballot-x {
+  color: #EE220C;
 }
 
 /* hero */
@@ -740,7 +769,7 @@ p a{
   position: fixed;
   width: 320px;
   max-width: 100%;
-  z-index: 10001; 
+  z-index: 10001;
   transition: opacity .5s;
   padding-left: 5px;
   padding-right: 5px;
@@ -810,13 +839,13 @@ p a{
   position: absolute;
   width: 100%;
   height: 100%;
-  background-color:#F3F6F7;
+  background-color:#F3FAFF;
   opacity: 0.9;
 }
 
 .dark .glossary-overlay::before {
   content: '';
-  background-color: #0C0B13;
+  background-color: #000832;
 }
 
 .glossary-overlay .overlay-card{
@@ -835,7 +864,7 @@ p a{
 }
 
 .dark .glossary-overlay .overlay-card{
-  background-color: #17203D;
+  background-color: #071C46;
 }
 
 @media (min-width: 640px) {
