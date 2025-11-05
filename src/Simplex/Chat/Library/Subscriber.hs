@@ -1348,8 +1348,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   groupLinkId <- GroupLinkId <$> drgRandomBytes 16
                   subMode <- chatReadVar subscriptionMode
                   let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
                       crClientData = encodeJSON $ CRDataGroup groupLinkId
-                  (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userData) (Just crClientData) CR.IKPQOff subMode
+                  (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
                   ccLink' <- createdRelayLink <$> shortenCreatedLink ccLink
                   sLnk <- case toShortLinkContact ccLink' of
                     Just sl -> pure sl

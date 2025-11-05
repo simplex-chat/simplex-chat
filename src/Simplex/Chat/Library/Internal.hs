@@ -1253,8 +1253,9 @@ setGroupLinkData nm user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLi
   vr <- chatVersionRange
   conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
   let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
-  sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userData (Just crClientData))
+  sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
 
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
@@ -1265,7 +1266,7 @@ getShortLinkConnReq nm user l = do
   l' <- restoreShortLink' l
   (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
   case cData of
-    ContactLinkData {direct} | not direct -> throwChatError CEUnsupportedConnReq
+    ContactLinkData _ UserContactData {direct} | not direct -> throwChatError CEUnsupportedConnReq
     _ -> pure ()
   pure (cReq, cData)
 
