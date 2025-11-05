@@ -312,5 +312,6 @@
     "messengers-comparison-section-list-point-4": "Die Multi-Geräte-Implementierung beeinträchtigt die Sicherheit nach Kompromittierung des Double Ratchet-Algorithmus",
     "messengers-comparison-section-list-point-5": "Ein 2-Faktor-Schlüsselaustausch ist optional und kann über die Überprüfung eines Sicherheitscodes erfolgen.",
     "messengers-comparison-section-list-point-6": "Die Schlüsselvereinbarung per Post-Quanten-Security ist nicht durchgängig &mdash; Sie schützt lediglich ausgewählte Schritte innerhalb des Ratchet-Prozesses.",
-    "navbar-token": "Token"
+    "navbar-token": "Token",
+    "navbar-old-site": "Alte Webseite"
 }
