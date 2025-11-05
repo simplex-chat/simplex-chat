@@ -312,5 +312,6 @@
     "messengers-comparison-section-list-point-4": "A többeszközös megvalósítás rontja a dupla racsni kompromittálás utáni biztonságát",
     "messengers-comparison-section-list-point-5": "A kétlépcsős kulcscsere nem követelmény a biztonsági kód ellenőrzéséhez.",
     "messengers-comparison-section-list-point-6": "A kvantumbiztos kulcscsere „ritka” &mdash; csak a racsnis lépések egy részét védi.",
-    "navbar-token": "Token"
+    "navbar-token": "Token",
+    "navbar-old-site": "Régi oldal"
 }
