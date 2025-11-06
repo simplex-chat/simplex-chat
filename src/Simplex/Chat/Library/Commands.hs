@@ -1873,7 +1873,7 @@ processChatCommand vr nm = \case
             let Profile {preferences} = profile
                 groupPreferences = maybe defaultBusinessGroupPrefs businessGroupPrefs preferences
                 groupProfile = businessGroupProfile profile groupPreferences
-            (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user groupProfile True ccLink welcomeSharedMsgId
+            (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user groupProfile True ccLink welcomeSharedMsgId False
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
             let cd = CDGroupRcv gInfo Nothing hostMember
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
@@ -1900,11 +1900,11 @@ processChatCommand vr nm = \case
   APIPrepareGroup userId ccLink direct groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
-    -- TODO [relays] member: create group as with useRelays = not direct
-    -- TODO   - repeat retrieving link data in APIConnectPreparedGroup, connect to relays
-    -- TODO   - hostMember to later be associated with owner profile
-    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId
+    let useRelays = not direct
+    (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId useRelays
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
+    -- TODO [relays] member: TBC save items as message from channel
+    -- TODO   - hostMember to later be associated with owner profile when relays send it
     let cd = CDGroupRcv gInfo Nothing hostMember
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
@@ -1978,30 +1978,39 @@ processChatCommand vr nm = \case
     (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
     case preparedGroup gInfo of
       Nothing -> throwCmdError "group doesn't have link to connect"
-      Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId} -> do
-        msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
-          Just smId -> pure (smId, mc)
-          Nothing -> do
-            smId <- getSharedMsgId
-            withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
-            pure (smId, mc)
-        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
-          -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
-          -- user or incognito profile for group or business chat, in case server received request while client got network error
-          gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
-          toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
-          throwError e
-        case r of
-          CVRSentInvitation _conn customUserProfile -> do
-            -- get updated group info (connLinkStartedConnection and incognito membership)
-            gInfo' <- withFastStore $ \db -> do
-              liftIO $ setPreparedGroupStartedConnection db groupId
-              getGroupInfo db vr user groupId
-            forM_ msg_ $ \(sharedMsgId, mc) -> do
-              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
-              toView $ CEvtNewChatItems user [ci]
-            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
-          CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
+      Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}
+        | useRelays' gInfo -> do
+            sLnk <- case toShortLinkContact connLinkToConnect of
+              Just sl -> pure sl
+              Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
+            (_cReq, _cData@(ContactLinkData _ UserContactData {relays})) <- getShortLinkConnReq nm user sLnk
+            liftIO $ print $ "retrieved relays: " <> show relays
+            -- TODO [relays] member: connect to all relays
+            ok_
+        | otherwise -> do
+            msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
+              Just smId -> pure (smId, mc)
+              Nothing -> do
+                smId <- getSharedMsgId
+                withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
+                pure (smId, mc)
+            r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
+              -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
+              -- user or incognito profile for group or business chat, in case server received request while client got network error
+              gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+              toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+              throwError e
+            case r of
+              CVRSentInvitation _conn customUserProfile -> do
+                -- get updated group info (connLinkStartedConnection and incognito membership)
+                gInfo' <- withFastStore $ \db -> do
+                  liftIO $ setPreparedGroupStartedConnection db groupId
+                  getGroupInfo db vr user groupId
+                forM_ msg_ $ \(sharedMsgId, mc) -> do
+                  ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+                  toView $ CEvtNewChatItems user [ci]
+                pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
+              CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of
     ACCL SCMInvitation ccLink -> do
       (conn, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
@@ -4647,7 +4656,7 @@ chatCommandP =
       ("/help" <|> "/h") $> ChatHelp HSMain,
       ("/group" <|> "/g") *> (NewGroup <$> incognitoP <* A.space <* char_ '#' <*> groupProfile),
       "/_group " *> (APINewGroup <$> A.decimal <*> incognitoOnOffP <* A.space <*> jsonP),
-      ("/public group") *> (NewPublicGroup <$> incognitoP <*> _strP <* A.space <* char_ '#' <*> groupProfile),
+      ("/public group" <|> "/pg") *> (NewPublicGroup <$> incognitoP <* " relays=" <*> strP <* A.space <* char_ '#' <*> groupProfile),
       "/_public group " *> (APINewPublicGroup <$> A.decimal <*> incognitoOnOffP <*> _strP <* A.space <*> jsonP),
       ("/add " <|> "/a ") *> char_ '#' *> (AddMember <$> displayNameP <* A.space <* char_ '@' <*> displayNameP <*> (memberRole <|> pure GRMember)),
       ("/join " <|> "/j ") *> char_ '#' *> (JoinGroup <$> displayNameP <*> (" mute" $> MFNone <|> pure MFAll)),

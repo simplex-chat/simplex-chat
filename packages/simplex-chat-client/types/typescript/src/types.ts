@@ -2468,6 +2468,7 @@ export namespace GroupLinkPlan {
 
   export interface Ok extends Interface {
     type: "ok"
+    direct: boolean
     groupSLinkData_?: GroupShortLinkData
   }
 

@@ -983,8 +983,8 @@ Query:
           INSERT INTO group_members
             ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
               user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-              peer_chat_min_version, peer_chat_max_version)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              peer_chat_min_version, peer_chat_max_version, is_relay)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -1017,8 +1017,8 @@ Query:
           INSERT INTO groups
             (group_profile_id, local_display_name, user_id, enable_ntfs,
               created_at, updated_at, chat_ts, user_member_profile_sent_at, conn_full_link_to_connect, conn_short_link_to_connect, welcome_shared_msg_id,
-              business_chat, business_member_id, customer_member_id)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              business_chat, business_member_id, customer_member_id, use_relays, relay_own_status)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 
@@ -5330,6 +5330,13 @@ Query:
 Plan:
 SEARCH i USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
+
+Query: 
+    SELECT group_relay_id, chat_relay_id, relay_status, relay_link
+    FROM group_relays
+   WHERE group_id = ?
+Plan:
+SEARCH group_relays USING INDEX idx_group_relays_group_id (group_id=?)
 
 Query: 
     SELECT m.group_member_id, m.member_id, m.member_role, p.display_name, p.local_alias

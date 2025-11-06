@@ -2179,6 +2179,7 @@ MemberSupport:
 
 Ok:
 - type: "ok"
+- direct: bool
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 OwnLink:
