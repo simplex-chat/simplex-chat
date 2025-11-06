@@ -1501,7 +1501,7 @@ getChatScopeInfo vr user = \case
 
 getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> VersionChat -> CM [GroupMember]
 getGroupRecipients vr user gInfo@GroupInfo {membership} scopeInfo modsCompatVersion
-  | useRelays' gInfo && not (isMemberRelay membership) = do
+  | useRelays' gInfo && not (isRelay' membership) = do
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
       withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
   | otherwise = case scopeInfo of
@@ -2043,9 +2043,9 @@ memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memb
   | useRelays' gInfo =
       if
         -- if user is chat relay, send to all non chat relay members
-        | isMemberRelay membership && not (isMemberRelay m) -> MSASendBatched . snd <$> readyMemberConn m
+        | isRelay' membership && not (isRelay' m) -> MSASendBatched . snd <$> readyMemberConn m
         -- if user is not chat relay, send only to chat relays
-        | not (isMemberRelay membership) && isMemberRelay m -> MSASendBatched . snd <$> readyMemberConn m
+        | not (isRelay' membership) && isRelay' m -> MSASendBatched . snd <$> readyMemberConn m
         | otherwise -> Nothing -- TODO [channels fwd] MSAForwarded to create GSSForwarded snd statuses?
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded

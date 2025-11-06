@@ -418,7 +418,6 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CEvtBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
   CEvtGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
-  CEvtRelayAddedToLink u g relayMem groupLink relays -> ttyUser u $ viewRelayAddedToLink g relayMem groupLink relays
   CEvtBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CEvtUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
@@ -461,6 +460,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
+  CEvtRelayJoined u g relayMem groupLink relays -> ttyUser u $ viewRelayJoined g relayMem groupLink relays
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CEvtHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CEvtHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
@@ -1148,9 +1148,9 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
-viewRelayAddedToLink :: GroupInfo -> GroupMember -> GroupLink -> [GroupRelay] -> [StyledString]
-viewRelayAddedToLink g relayMem groupLink relays =
-  [ ttyFullGroup g <> ": relay " <> ttyMember relayMem <> " added to group link",
+viewRelayJoined :: GroupInfo -> GroupMember -> GroupLink -> [GroupRelay] -> [StyledString]
+viewRelayJoined g relayMem groupLink relays =
+  [ ttyFullGroup g <> ": relay " <> ttyMember relayMem <> " joined and added to group link",
     "current relays:"
   ]
     <> map showRelay relays
@@ -1160,13 +1160,13 @@ viewRelayAddedToLink g relayMem groupLink relays =
       ]
   where
     showRelay GroupRelay {groupRelayId, relayStatus} =
-      "  - relay id " <> sShow groupRelayId <> ": " <> sShow (relayStatusText relayStatus)
+      "  - relay id " <> sShow groupRelayId <> ": " <> plain (relayStatusText relayStatus)
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
     cReqStr = strEncode $ simplexChatContact cReq
 
 -- TODO [relays] operator: CLI specific apis based on name
 viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
-viewGroupCreated g@GroupInfo {groupId} testView =
+viewGroupCreated g testView =
   case incognitoMembershipProfile g of
     Just localProfile
       | testView -> incognitoProfile' profile : message
@@ -1189,8 +1189,7 @@ viewGroupCreated g@GroupInfo {groupId} testView =
           | useRelays' g = relaysInstruction
           | otherwise = "to add members use " <> highlight ("/a " <> viewGroupName g <> " <name>") <> " or " <> highlight ("/create link #" <> viewGroupName g)
   where
-    relaysInstruction =
-      "to add members use " <> highlight ("/_create relayed link #" <> show groupId <> " auto_choose_relays=on/off")
+    relaysInstruction = "wait for selected relay(s) to join, then you can invite members via group link"
 
 viewCannotResendInvitation :: GroupInfo -> ContactName -> [StyledString]
 viewCannotResendInvitation g c =

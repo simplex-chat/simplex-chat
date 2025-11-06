@@ -680,7 +680,7 @@ toPreparedGroup = \case
   _ -> Nothing
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs) :. (BI isCRelay, groupRelayId_, chatRelayId_, relayStatus_, relayLink)) =
+toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs) :. (BI isRel, groupRelayId_, chatRelayId_, relayStatus_, relayLink)) =
   let memberProfile = rowToLocalProfile profileRow
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
@@ -698,7 +698,7 @@ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, 
                 lastMsgFromMemberTs = supportChatLastMsgFromMemberTs
               }
         _ -> Nothing
-      isChatRelay = BoolDef isCRelay
+      isRelay = BoolDef isRel
       relayData = case (groupRelayId_, chatRelayId_, relayStatus_) of
         (Just groupRelayId, Just userChatRelayId, Just relayStatus) -> Just GroupRelay {groupRelayId, userChatRelayId, relayStatus, relayLink}
         _ -> Nothing
@@ -712,7 +712,7 @@ groupMemberQuery =
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-      m.is_chat_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link,
+      m.is_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link,
       c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
       c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
       c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
@@ -757,7 +757,7 @@ groupInfoQueryFields =
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts,
-      mu.is_chat_relay, NULL, NULL, NULL, NULL
+      mu.is_relay, NULL, NULL, NULL, NULL
   |]
 
 groupInfoQueryFrom :: Query

@@ -2221,7 +2221,7 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
-- isChatRelay: bool
+- isRelay: bool
 - relayData: [GroupRelay](#grouprelay)?
 
 

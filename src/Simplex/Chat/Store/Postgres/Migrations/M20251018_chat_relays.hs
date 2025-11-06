@@ -29,14 +29,14 @@ CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay SMALLINT NOT NULL DEFAULT 0;
 
-ALTER TABLE group_members ADD COLUMN is_chat_relay SMALLINT NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN is_relay SMALLINT NOT NULL DEFAULT 0;
 |]
 
 down_m20251018_chat_relays :: Text
 down_m20251018_chat_relays =
   T.pack
     [r|
-ALTER TABLE group_members DROP COLUMN is_chat_relay;
+ALTER TABLE group_members DROP COLUMN is_relay;
 
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 

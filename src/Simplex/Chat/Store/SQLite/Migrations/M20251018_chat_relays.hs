@@ -14,7 +14,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- - group_relays.chat_relay_id - associates group_relays record with a chat_relays record,
 --     chat_relays.deleted is to keep associated record if user removes chat relay from configuration,
 --     but has group relays using it
--- - group_members.is_chat_relay - indicates that the member is a chat relay (to all group members)
+-- - group_members.is_relay - indicates that the member is a chat relay (to all group members)
 -- - group_members.group_relay_id - associates group_members record with a group_relays record for a group owner;
 --     receiving event to member connection, owner can match it to the relay;
 --     TBC inverse association - from group_relays to group_members?
@@ -60,7 +60,7 @@ CREATE TABLE group_relays(
 CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
-ALTER TABLE group_members ADD COLUMN is_chat_relay INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN is_relay INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE group_members ADD COLUMN group_relay_id INTEGER REFERENCES group_relays ON DELETE SET NULL;
 CREATE INDEX idx_group_members_group_relay_id ON group_members(group_relay_id);
@@ -84,7 +84,7 @@ DROP INDEX idx_group_relays_group_id;
 DROP INDEX idx_group_relays_chat_relay_id;
 DROP TABLE group_relays;
 
-ALTER TABLE group_members DROP COLUMN is_chat_relay;
+ALTER TABLE group_members DROP COLUMN is_relay;
 
 DROP INDEX idx_group_members_group_relay_id;
 ALTER TABLE group_members DROP COLUMN group_relay_id;

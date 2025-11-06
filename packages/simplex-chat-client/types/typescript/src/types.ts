@@ -2511,7 +2511,7 @@ export interface GroupMember {
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
-  isChatRelay: boolean
+  isRelay: boolean
   relayData?: GroupRelay
 }
 

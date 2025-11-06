@@ -149,13 +149,13 @@ getConnectionEntity db vr user@User {userId, userContactId} agentConnId = do
                   pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
                   mu.created_at, mu.updated_at,
                   mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts,
-                  mu.is_chat_relay, NULL, NULL, NULL, NULL,
+                  mu.is_relay, NULL, NULL, NULL, NULL,
                   -- from GroupMember
                   m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
                   m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
                   m.created_at, m.updated_at,
                   m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-                  m.is_chat_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link
+                  m.is_relay, r.group_relay_id, r.chat_relay_id, r.relay_status, r.relay_link
                 FROM group_members m
                 JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
                 LEFT JOIN group_relays r ON r.group_relay_id = m.group_relay_id

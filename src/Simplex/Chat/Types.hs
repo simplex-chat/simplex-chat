@@ -962,7 +962,7 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    isChatRelay :: BoolDef, -- marker for all members that this member is a chat relay
+    isRelay :: BoolDef, -- marker for all members that this member is a chat relay
     relayData :: Maybe GroupRelay -- owner's additional data for a chat relay
   }
   deriving (Eq, Show)
@@ -1032,10 +1032,8 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
--- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
--- TODO   - in channels members should directly connect only to relays
-isMemberRelay :: GroupMember -> Bool
-isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
+isRelay' :: GroupMember -> Bool
+isRelay' GroupMember {isRelay} = isTrue isRelay
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1088,7 +1086,7 @@ data NewGroupMember = NewGroupMember
     localDisplayName :: ContactName,
     memProfileId :: Int64,
     memContactId :: Maybe Int64,
-    isChatRelay :: Bool
+    isRelay :: Bool
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
