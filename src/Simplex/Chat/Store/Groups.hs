@@ -77,7 +77,8 @@ module Simplex.Chat.Store.Groups
     createGroupRelayRecord,
     getGroupRelayById,
     getGroupRelays,
-    createRelayMemberRecord,
+    createRelayForOwner,
+    createRelayForMember,
     createRelayConnection,
     updateRelayStatus,
     updateRelayStatusFromTo,
@@ -1179,8 +1180,9 @@ toGroupRelay (groupRelayId, userChatRelayId, relayStatus, relayLink) =
 -- TODO   - GCInviteeMember -> GCRelayMember?
 -- TODO   - GRMember -> GRRelay?
 -- TODO   - create 1 profile per relay, link to chat_relays?
-createRelayMemberRecord :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> GroupRelay -> ExceptT StoreError IO GroupMember
-createRelayMemberRecord db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {name} GroupRelay {groupRelayId} = do
+-- TODO   - retrieve profile from relay address
+createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> GroupRelay -> ExceptT StoreError IO GroupMember
+createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {name} GroupRelay {groupRelayId} = do
   currentTs <- liftIO getCurrentTime
   let relayProfile = profileFromName name
   (localDisplayName, memProfileId) <- createNewMemberProfile_ db user relayProfile currentTs
@@ -1201,6 +1203,34 @@ createRelayMemberRecord db vr gVar user@User {userId, userContactId} GroupInfo {
       )
     insertedRowId db
   getGroupMemberById db vr user groupMemberId
+
+-- TODO [relays] TBC role, category, relay profile
+-- TODO   - TBC retrieve profile from somewhere before connection
+-- TODO   - or update upon connection, as in regular prepared groups
+-- TODO     (current logic mimics insertHost_ from createPreparedGroup)
+createRelayForMember :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> ExceptT StoreError IO GroupMember
+createRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {groupId, localDisplayName = groupLDN} = do
+  currentTs <- liftIO getCurrentTime
+  randRelayId <- liftIO $ encodedRandomBytes gVar 12
+  let memberId = MemberId $ encodeUtf8 groupLDN <> "_relay_" <> randRelayId <> "_unknown_id"
+      relayProfile = profileFromName $ nameFromMemberId memberId
+  (localDisplayName, profileId) <- createNewMemberProfile_ db user relayProfile currentTs
+  groupMemberId <- liftIO $ do
+    DB.execute
+      db
+      [sql|
+        INSERT INTO group_members
+          ( group_id, member_id, member_role, member_category, member_status, invited_by,
+            user_id, local_display_name, contact_profile_id, created_at, updated_at,
+            is_relay
+            )
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+      |]
+      ( (groupId, memberId, GRMember, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+          :. (userId, localDisplayName, profileId, currentTs, currentTs, BI True)
+      )
+    insertedRowId db
+  getGroupMember db vr user groupId groupMemberId
 
 createRelayConnection :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ConnId -> ConnStatus -> VersionChat -> SubscriptionMode -> ExceptT StoreError IO Connection
 createRelayConnection db vr user@User {userId} groupMemberId agentConnId connStatus chatV subMode = do

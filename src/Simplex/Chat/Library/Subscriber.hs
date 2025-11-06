@@ -828,7 +828,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- TODO [relays] owner: relay added chat item?
                     toView $ CEvtRelayJoined user gInfo m'' gLink relays
                   Nothing -> messageError "x.grp.relay.acpt: group link not updated"
-              Nothing -> do -- TODO [relays] relay: don't introduce new member to other members
+              Nothing -> do
                 (gInfo', mStatus) <-
                   if not (memberPending m)
                     then do
@@ -847,15 +847,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let Connection {viaUserContactLink} = conn
                 when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
                 when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
-                case mStatus of
-                  GSMemPendingApproval -> pure ()
-                  GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
-                  _ -> do
-                    introduceToAll vr user gInfo'' m'
-                    let memberIsCustomer = case businessChat gInfo'' of
-                          Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
-                          _ -> False
-                    when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
+                unless (isRelay' membership) $
+                  case mStatus of
+                    GSMemPendingApproval -> pure ()
+                    GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
+                    _ -> do
+                      introduceToAll vr user gInfo'' m'
+                      let memberIsCustomer = case businessChat gInfo'' of
+                            Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
+                            _ -> False
+                      when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
                 where
                   sendXGrpLinkMem gInfo'' = do
                     let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''

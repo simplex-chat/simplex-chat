@@ -1984,8 +1984,25 @@ processChatCommand vr nm = \case
               Just sl -> pure sl
               Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
             (_cReq, _cData@(ContactLinkData _ UserContactData {relays})) <- getShortLinkConnReq nm user sLnk
-            liftIO $ print $ "retrieved relays: " <> show relays
-            -- TODO [relays] member: connect to all relays
+            gVar <- asks random
+            -- TODO [relays] member: TBC concurrently/catch on each
+            forM_ relays $ \relayLink -> do
+              -- TODO [relays] member: check relay record already exists -> then decide based on connection
+              relayMember <- withFastStore $ \db -> createRelayForMember db vr gVar user gInfo
+              -- TODO [relays] member: pass same incognito profile to all relays
+              -- TODO   - TBC welcomeSharedMsgId
+              (cReq, _cData) <- getShortLinkConnReq nm user relayLink -- this is network operation - consider recovery
+              let relayLinkToConnect = CCLink cReq (Just relayLink)
+              r <- connectViaContact user (Just $ PCEGroup gInfo relayMember) incognito relayLinkToConnect Nothing Nothing `catchAllErrors` \e -> do
+                -- TODO [relays] member: lock ability to change profile (see below)
+                throwError e
+              case r of
+                CVRSentInvitation _conn _customUserProfile -> do
+                  _gInfo' <- withFastStore $ \db -> do
+                    liftIO $ setPreparedGroupStartedConnection db groupId
+                    getGroupInfo db vr user groupId
+                  pure relayMember -- what should be in returned event?
+                CVRConnectedContact _ct -> pure relayMember -- error?
             ok_
         | otherwise -> do
             msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
@@ -3605,9 +3622,9 @@ processChatCommand vr nm = \case
               -- TODO [relays] owner: replace with async join (joinConnectionAsync currently prohibited for contact links)
               -- TODO   - or make "add relays" api retriable, via prepared connection
               connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
-              (relayMember, conn, groupRelay) <- withStore $ \db -> do
+              (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
                 groupRelay <- createGroupRelayRecord db gInfo relay
-                relayMember <- createRelayMemberRecord db vr gVar user gInfo relay groupRelay
+                relayMember <- createRelayForOwner db vr gVar user gInfo relay groupRelay
                 conn <- createRelayConnection db vr user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
                 pure (relayMember, conn, groupRelay)
               let GroupMember {memberRole = userRole, memberId = userMemberId} = membership

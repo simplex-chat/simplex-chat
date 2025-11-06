@@ -5,6 +5,13 @@ module Simplex.Chat.Store.SQLite.Migrations.M20251018_chat_relays where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
+-- TODO [relays] owner: consider flipping group_members.group_relay_id fkey to group_relays.group_member_id
+-- TODO    - pros: less joins in all member queries,
+-- TODO    - can discern relay by is_relay,
+-- TODO    - little places need additional relay data
+-- TODO    - cons: in some places will need extra query:
+-- TODO    - SELECT ... FROM group_relays WHERE group_member_id = ?
+
 -- - chat_relays - user's list of chat relays to choose from (similar to protocol_servers)
 -- - users.is_user_chat_relay - indicates that the user can serve as a chat relay
 --     (TBC usage, e.g. agree to invitations to be relay)
