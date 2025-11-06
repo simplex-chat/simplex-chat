@@ -1897,9 +1897,12 @@ processChatCommand vr nm = \case
               Just (AChatItem SCTDirect dir _ ci) -> Chat cInfo [CChatItem dir ci] emptyChatStats {unreadCount = 1, minUnreadItemId = chatItemId' ci}
               _ -> Chat cInfo [] emptyChatStats
         pure $ CRNewPreparedChat user $ AChat SCTDirect chat
-  APIPrepareGroup userId ccLink groupSLinkData -> withUserId userId $ \user -> do
+  APIPrepareGroup userId ccLink direct groupSLinkData -> withUserId userId $ \user -> do
     let GroupShortLinkData {groupProfile = gp@GroupProfile {description}} = groupSLinkData
     welcomeSharedMsgId <- forM description $ \_ -> getSharedMsgId
+    -- TODO [relays] member: create group as with useRelays = not direct
+    -- TODO   - repeat retrieving link data in APIConnectPreparedGroup, connect to relays
+    -- TODO   - hostMember to later be associated with owner profile
     (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db vr user gp False ccLink welcomeSharedMsgId
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     let cd = CDGroupRcv gInfo Nothing hostMember
@@ -3729,8 +3732,6 @@ processChatCommand vr nm = \case
             knownLinkPlans >>= \case
               Just r -> pure r
               Nothing -> do
-                -- TODO [relays] member: connect to relays
-                -- TODO   - mark group as `useRelays`, repeat retrieving link data in APIConnectPreparedGroup
                 (cReq, cData@(ContactLinkData _ UserContactData {direct})) <- getShortLinkConnReq nm user l'
                 groupSLinkData_ <- liftIO $ decodeLinkUserData cData
                 plan <- groupJoinRequestPlan user cReq direct groupSLinkData_
@@ -4690,7 +4691,7 @@ chatCommandP =
       "/contacts" $> ListContacts,
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing)),
       "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
-      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <* A.space <*> jsonP),
+      "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP),
       "/_set contact user @" *> (APIChangePreparedContactUser <$> A.decimal <* A.space <*> A.decimal),
       "/_set group user #" *> (APIChangePreparedGroupUser <$> A.decimal <* A.space <*> A.decimal),
       "/_connect contact @" *> (APIConnectPreparedContact <$> A.decimal <*> incognitoOnOffP <*> optional (A.space *> msgContentP)),
