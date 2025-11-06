@@ -847,7 +847,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let Connection {viaUserContactLink} = conn
                 when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
                 when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
-                unless (isRelay' membership) $
+                unless (useRelays' gInfo'') $
                   case mStatus of
                     GSMemPendingApproval -> pure ()
                     GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
@@ -2881,9 +2881,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           sendGroupMemberMessage gInfo member event Nothing (pure ())
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
-    isUserGrpFwdRelay gInfo@GroupInfo {membership = membership@GroupMember {memberRole}}
+    isUserGrpFwdRelay gInfo@GroupInfo {membership}
       | useRelays' gInfo = isRelay' membership
-      | otherwise = memberRole >= GRAdmin
+      | otherwise = memberRole' membership >= GRAdmin
+
+    isMemberGrpFwdRelay :: GroupInfo -> GroupMember -> Bool
+    isMemberGrpFwdRelay gInfo m
+      | useRelays' gInfo = isRelay' m
+      | otherwise = memberRole' m >= GRAdmin
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpLeave gInfo m msg brokerTs = do
@@ -3033,8 +3038,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
-    xGrpMsgForward gInfo m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
-      when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
+    xGrpMsgForward gInfo m@GroupMember {localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
+      unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author
         Left (SEGroupMemberNotFoundByMemberId _) -> do
