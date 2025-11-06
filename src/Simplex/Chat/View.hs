@@ -177,7 +177,6 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
   CRUserContactLinkUpdated u UserContactLink {addressSettings} -> ttyUser u $ viewAddressSettings addressSettings
   CRContactRequestRejected u UserContactRequest {localDisplayName = c} _ct_ -> ttyUser u [ttyContact c <> ": contact request rejected"]
   CRGroupCreated u g -> ttyUser u $ viewGroupCreated g testView
-  -- TODO [relays] CRPublicGroupCreated view - print group link, relays
   CRPublicGroupCreated u g _groupLink _relays -> ttyUser u $ viewGroupCreated g testView
   CRGroupMembers u g -> ttyUser u $ viewGroupMembers g
   CRMemberSupportChats u g ms -> ttyUser u $ viewMemberSupportChats g ms
@@ -1164,7 +1163,6 @@ viewRelayJoined g relayMem groupLink relays =
     GroupLink {connLinkContact = CCLink cReq shortLink} = groupLink
     cReqStr = strEncode $ simplexChatContact cReq
 
--- TODO [relays] operator: CLI specific apis based on name
 viewGroupCreated :: GroupInfo -> Bool -> [StyledString]
 viewGroupCreated g testView =
   case incognitoMembershipProfile g of
