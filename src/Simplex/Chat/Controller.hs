@@ -990,7 +990,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
+  = GLPOk {direct :: Bool, groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1010,7 +1010,7 @@ connectionPlanProceed = \case
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk _ -> True
+    GLPOk _direct _ -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False

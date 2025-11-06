@@ -1343,7 +1343,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           -- TODO [relays] relay: retrieve group link data asynchronously/add recovery
           -- TODO   - * duplicate requests can be deduplicated by group link
           (_cReq, cData) <- getShortLinkConnReq NRMBackground user groupLink
-          (liftIO $ decodeShortLinkData cData) >>= \case
+          (liftIO $ decodeLinkUserData cData) >>= \case
             Nothing -> messageError "relayContactRequest: no group link data"
             Just (GroupShortLinkData gp) -> do
               validateGroupProfile gp

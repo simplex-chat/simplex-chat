@@ -3685,7 +3685,7 @@ processChatCommand vr nm = \case
           Just r -> pure r
           Nothing -> do
             (cReq, cData) <- getShortLinkConnReq nm user l'
-            contactSLinkData_ <- liftIO $ decodeShortLinkData cData
+            contactSLinkData_ <- liftIO $ decodeLinkUserData cData
             invitationReqAndPlan cReq (Just l') contactSLinkData_
       where
         knownLinkPlans l' = withFastStore $ \db -> do
@@ -3714,7 +3714,7 @@ processChatCommand vr nm = \case
                 withFastStore' (\db -> getContactWithoutConnViaShortAddress db vr user l') >>= \case
                   Just ct' | not (contactDeleted ct') -> pure (con cReq, CPContactAddress (CAPContactViaAddress ct'))
                   _ -> do
-                    contactSLinkData_ <- liftIO $ decodeShortLinkData cData
+                    contactSLinkData_ <- liftIO $ decodeLinkUserData cData
                     plan <- contactRequestPlan user cReq contactSLinkData_
                     pure (con cReq, plan)
             where
@@ -3730,21 +3730,10 @@ processChatCommand vr nm = \case
               Just r -> pure r
               Nothing -> do
                 -- TODO [relays] member: connect to relays
-                -- TODO   - get ContactLinkData.relays data
-                -- TODO     - see decodeShortLinkData -> linkUserData', retrieve relays in addition to userData
-                -- TODO   - if relay list is non-empty, connect to relays
-                -- TODO   - or, base on group profile? add useRelays/group type to group link data? (e.g. "channel")
-                -- TODO note:
-                -- TODO   this is Connection Plan api - we're not connecting here yet;
-                -- TODO   options:
-                -- TODO     - save relay links on prepared group record, connect to them in APIConnectPreparedGroup
-                -- TODO     - only mark group as `useRelays`, repeat retrieving link data in APIConnectPreparedGroup
-                -- TODO   retreiving relays at point of conenctions seems better, as arbitrary time
-                -- TODO   can pass between creating prepared group from plan and connecting to it,
-                -- TODO   during which relays can change.
-                (cReq, cData) <- getShortLinkConnReq nm user l'
-                groupSLinkData_ <- liftIO $ decodeShortLinkData cData
-                plan <- groupJoinRequestPlan user cReq groupSLinkData_
+                -- TODO   - mark group as `useRelays`, repeat retrieving link data in APIConnectPreparedGroup
+                (cReq, cData@(ContactLinkData _ UserContactData {direct})) <- getShortLinkConnReq nm user l'
+                groupSLinkData_ <- liftIO $ decodeLinkUserData cData
+                plan <- groupJoinRequestPlan user cReq direct groupSLinkData_
                 pure (con cReq, plan)
             where
               knownLinkPlans = withFastStore $ \db ->
@@ -3789,7 +3778,7 @@ processChatCommand vr nm = \case
           groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
       case groupLinkId of
         Nothing -> contactRequestPlan user cReq Nothing
-        Just _ -> groupJoinRequestPlan user cReq Nothing
+        Just _ -> groupJoinRequestPlan user cReq True Nothing
     contactRequestPlan :: User -> ConnReqContact -> Maybe ContactShortLinkData -> CM ConnectionPlan
     contactRequestPlan user (CRContactUri crData) contactSLinkData_ = do
       let cReqSchemas = contactCReqSchemas crData
@@ -3810,10 +3799,10 @@ processChatCommand vr nm = \case
               | contactDeleted ct -> pure $ CPContactAddress (CAPOk contactSLinkData_)
               | otherwise -> pure $ CPContactAddress (CAPKnown ct)
             -- TODO [short links] RcvGroupMsgConnection branch is deprecated? (old group link protocol?)
-            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo Nothing
+            Just (RcvGroupMsgConnection _ gInfo _) -> groupPlan gInfo True Nothing
             Just _ -> throwCmdError "found connection entity is not RcvDirectMsgConnection or RcvGroupMsgConnection"
-    groupJoinRequestPlan :: User -> ConnReqContact -> Maybe GroupShortLinkData -> CM ConnectionPlan
-    groupJoinRequestPlan user (CRContactUri crData) groupSLinkData_ = do
+    groupJoinRequestPlan :: User -> ConnReqContact -> Bool -> Maybe GroupShortLinkData -> CM ConnectionPlan
+    groupJoinRequestPlan user (CRContactUri crData) direct groupSLinkData_ = do
       let cReqSchemas = contactCReqSchemas crData
           cReqHashes = bimap contactCReqHash contactCReqHash cReqSchemas
       withFastStore' (\db -> getGroupInfoByUserContactLinkConnReq db vr user cReqSchemas) >>= \case
@@ -3822,21 +3811,21 @@ processChatCommand vr nm = \case
           connEnt_ <- withFastStore' $ \db -> getContactConnEntityByConnReqHash db vr user cReqHashes
           gInfo_ <- withFastStore' $ \db -> getGroupInfoByGroupLinkHash db vr user cReqHashes
           case (gInfo_, connEnt_) of
-            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk groupSLinkData_)
+            (Nothing, Nothing) -> pure $ CPGroupLink (GLPOk direct groupSLinkData_)
             -- TODO [short links] RcvDirectMsgConnection branches are deprecated? (old group link protocol?)
             (Nothing, Just (RcvDirectMsgConnection _conn Nothing)) -> pure $ CPGroupLink GLPConnectingConfirmReconnect
             (Nothing, Just (RcvDirectMsgConnection _ (Just ct)))
               | not (contactReady ct) && contactActive ct -> pure $ CPGroupLink (GLPConnectingProhibit gInfo_)
-              | otherwise -> pure $ CPGroupLink (GLPOk groupSLinkData_)
+              | otherwise -> pure $ CPGroupLink (GLPOk direct groupSLinkData_)
             (Nothing, Just _) -> throwCmdError "found connection entity is not RcvDirectMsgConnection"
-            (Just gInfo, _) -> groupPlan gInfo groupSLinkData_
-    groupPlan :: GroupInfo -> Maybe GroupShortLinkData -> CM ConnectionPlan
-    groupPlan gInfo@GroupInfo {membership} groupSLinkData_
+            (Just gInfo, _) -> groupPlan gInfo direct groupSLinkData_
+    groupPlan :: GroupInfo -> Bool -> Maybe GroupShortLinkData -> CM ConnectionPlan
+    groupPlan gInfo@GroupInfo {membership} direct groupSLinkData_
       | memberStatus membership == GSMemRejected = pure $ CPGroupLink (GLPKnown gInfo)
       | not (memberActive membership) && not (memberRemoved membership) =
           pure $ CPGroupLink (GLPConnectingProhibit $ Just gInfo)
       | memberActive membership = pure $ CPGroupLink (GLPKnown gInfo)
-      | otherwise = pure $ CPGroupLink (GLPOk groupSLinkData_)
+      | otherwise = pure $ CPGroupLink (GLPOk direct groupSLinkData_)
     contactCReqSchemas :: ConnReqUriData -> (ConnReqContact, ConnReqContact)
     contactCReqSchemas crData =
       ( CRContactUri crData {crScheme = SSSimplex},

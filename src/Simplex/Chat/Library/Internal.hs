@@ -1287,8 +1287,8 @@ encodeShortLinkData d =
         | otherwise = s
     in UserLinkData s'
 
-decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
-decodeShortLinkData cData
+decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
+decodeLinkUserData cData
   | B.null s = pure Nothing
   | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
       Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
