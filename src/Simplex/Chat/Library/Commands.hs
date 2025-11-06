@@ -2022,6 +2022,8 @@ processChatCommand vr nm = \case
         CVRSentInvitation conn incognitoProfile -> pure $ CRSentInvitation user (mkPendingContactConnection conn Nothing) incognitoProfile
   APIConnect _ _ Nothing -> throwChatError CEInvalidConnReq
   Connect incognito (Just cLink@(ACL m cLink')) -> withUser $ \user -> do
+    -- TODO [relays] member: /c api to support groups with relays
+    -- TODO   - possibly by going through APIPrepareGroup -> APIConnectPreparedGroup
     (ccLink, plan) <- connectPlan user cLink `catchAllErrors` \e -> case cLink' of CLFull cReq -> pure (ACCL m (CCLink cReq Nothing), CPInvitationLink (ILPOk Nothing)); _ -> throwError e
     connectWithPlan user incognito ccLink plan
   Connect _ Nothing -> throwChatError CEInvalidConnReq
