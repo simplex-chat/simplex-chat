@@ -1082,16 +1082,11 @@ introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Ju
       shuffledIntros <- liftIO $ shuffleIntros intros
       if m `supportsVersion` batchSendVersion
         then do
-          let events = map (memberIntro . reMember) shuffledIntros
+          let events = map (memberIntroEvt gInfo . reMember) shuffledIntros
           forM_ (L.nonEmpty events) $ \events' ->
             sendGroupMemberMessages user conn events' groupId
         else forM_ shuffledIntros $ \intro ->
           processIntro intro `catchAllErrors` eToView
-    memberIntro :: GroupMember -> ChatMsgEvent 'Json
-    memberIntro reMember =
-      let mInfo = memberInfo gInfo reMember
-          mRestrictions = memberRestrictions reMember
-       in XGrpMemIntro mInfo mRestrictions
     shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
     shuffleIntros intros = do
       let (admins, others) = partition isAdmin intros
@@ -1102,8 +1097,28 @@ introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Ju
         isAdmin GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole >= GRAdmin
         hasPicture GroupMemberIntro {reMember = GroupMember {memberProfile = LocalProfile {image}}} = isJust image
     processIntro intro@GroupMemberIntro {introId} = do
-      void $ sendDirectMemberMessage conn (memberIntro $ reMember intro) groupId
+      void $ sendDirectMemberMessage conn (memberIntroEvt gInfo $ reMember intro) groupId
       withStore' $ \db -> updateIntroStatus db introId GMIntroSent
+
+memberIntroEvt :: GroupInfo -> GroupMember -> ChatMsgEvent 'Json
+memberIntroEvt gInfo reMember =
+  let mInfo = memberInfo gInfo reMember
+      mRestrictions = memberRestrictions reMember
+   in XGrpMemIntro mInfo mRestrictions
+
+-- Used in groups with relays to introduce moderators and above to a new member.
+-- Member is not introduced to anybody:
+--   - in channels member will be prohibited to send, so it doesn't matter;
+--   - if member does send, recipients will create unknown member record;
+--   - later - to do member profile request protocol.
+-- This doesn't create introduction records in db, compared to above methods.
+introduceModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceModerators _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
+introduceModerators vr user gInfo@GroupInfo {groupId} GroupMember {activeConn = Just conn} = do
+  modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+  let events = map (memberIntroEvt gInfo) modMs
+  forM_ (L.nonEmpty events) $ \events' ->
+    sendGroupMemberMessages user conn events' groupId
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

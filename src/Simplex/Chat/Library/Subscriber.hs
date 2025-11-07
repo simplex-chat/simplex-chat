@@ -847,16 +847,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let Connection {viaUserContactLink} = conn
                 when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
                 when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
-                unless (useRelays' gInfo'') $
-                  case mStatus of
-                    GSMemPendingApproval -> pure ()
-                    GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
-                    _ -> do
-                      introduceToAll vr user gInfo'' m'
-                      let memberIsCustomer = case businessChat gInfo'' of
-                            Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
-                            _ -> False
-                      when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
+                if useRelays' gInfo''
+                  then do
+                    introduceModerators vr user gInfo'' m'
+                    when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
+                  else
+                    case mStatus of
+                      GSMemPendingApproval -> pure ()
+                      GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
+                      _ -> do
+                        introduceToAll vr user gInfo'' m'
+                        let memberIsCustomer = case businessChat gInfo'' of
+                              Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
+                              _ -> False
+                        when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
                 where
                   sendXGrpLinkMem gInfo'' = do
                     let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
@@ -2653,19 +2657,26 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Right _ -> messageError "x.grp.mem.intro ignored: member already exists"
-            Left _ -> do
-              when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
-              case memChatVRange of
-                Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
-                Just (ChatVersionRange mcvr)
-                  | maxVersion mcvr >= groupDirectInvVersion -> do
-                      subMode <- chatReadVar subscriptionMode
-                      -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-                      groupConnIds <- createConn subMode
-                      let chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
-                      void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds subMode
-                  | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
+            Right _ ->
+              unless (useRelays' gInfo) $
+                messageError "x.grp.mem.intro ignored: member already exists"
+            Left _
+              | useRelays' gInfo ->
+                  void $ withStore $ \db -> createIntroReMember db user gInfo memInfo memRestrictions
+              | otherwise -> do
+                  when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
+                  case memChatVRange of
+                    Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
+                    Just (ChatVersionRange mcvr)
+                      | maxVersion mcvr >= groupDirectInvVersion -> do
+                          subMode <- chatReadVar subscriptionMode
+                          -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
+                          groupConnIds <- createConn subMode
+                          let chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
+                          void $ withStore $ \db -> do
+                            reMember <- createIntroReMember db user gInfo memInfo memRestrictions
+                            createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
+                      | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
         createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation subMode

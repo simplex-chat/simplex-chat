@@ -1905,6 +1905,8 @@ processChatCommand vr nm = \case
     void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
     -- TODO [relays] member: TBC save items as message from channel
     -- TODO   - hostMember to later be associated with owner profile when relays send it
+    -- TODO   - pick any owner at random from initial introductions, find unknown member in group?
+    -- TODO   - alternatively support not having a member in CDGroupRcv direction?
     let cd = CDGroupRcv gInfo Nothing hostMember
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo

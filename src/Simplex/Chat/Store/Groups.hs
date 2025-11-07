@@ -117,6 +117,7 @@ module Simplex.Chat.Store.Groups
     getForwardInvitedModerators,
     getForwardScopeMember,
     createIntroReMember,
+    createIntroReMemberConn,
     createIntroToMemberContact,
     getMatchingContacts,
     getMatchingMembers,
@@ -1893,28 +1894,35 @@ getForwardScopeMember db vr user GroupMember {groupMemberId = sendingGMId} scope
         (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
   pure introExists_ $>> (eitherToMaybe <$> runExceptT (getGroupMemberById db vr user scopeGMId))
 
-createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
+createIntroReMember :: DB.Connection -> User -> GroupInfo -> MemberInfo -> Maybe MemberRestrictions -> ExceptT StoreError IO GroupMember
 createIntroReMember
   db
-  user@User {userId}
+  user
   gInfo
+  memInfo@(MemberInfo _ _ _ memberProfile)
+  memRestrictions_ = do
+    currentTs <- liftIO getCurrentTime
+    (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
+    let memRestriction = restriction <$> memRestrictions_
+        newMember = NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId, isRelay = False}
+    liftIO $ createNewMember_ db user gInfo newMember currentTs
+
+createIntroReMemberConn :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> MemberInfo -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
+createIntroReMemberConn
+  db
+  user@User {userId}
   _host@GroupMember {memberContactId, activeConn}
+  reMember@GroupMember {groupMemberId}
   chatV
-  memInfo@(MemberInfo _ _ memChatVRange memberProfile)
-  memRestrictions_
+  (MemberInfo _ _ memChatVRange _)
   (groupCmdId, groupAgentConnId)
   subMode = do
     let mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
         cLevel = 1 + maybe 0 (\Connection {connLevel} -> connLevel) activeConn
-        memRestriction = restriction <$> memRestrictions_
     currentTs <- liftIO getCurrentTime
-    (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
-    let newMember = NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId, isRelay = False}
-    liftIO $ do
-      member <- createNewMember_ db user gInfo newMember currentTs
-      conn@Connection {connId = groupConnId} <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId chatV mcvr memberContactId cLevel currentTs subMode
-      liftIO $ setCommandConnId db user groupCmdId groupConnId
-      pure (member :: GroupMember) {activeConn = Just conn}
+    conn@Connection {connId = groupConnId} <- liftIO $ createMemberConnection_ db userId groupMemberId groupAgentConnId chatV mcvr memberContactId cLevel currentTs subMode
+    liftIO $ setCommandConnId db user groupCmdId groupConnId
+    pure (reMember :: GroupMember) {activeConn = Just conn}
 
 createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> VersionRangeChat -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
 createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} chatV mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
