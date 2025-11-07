@@ -803,6 +803,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     pure gInfo {membership = membership {memberStatus = GSMemConnected}}
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
+            -- TODO [relays] member: only show "joined group" event/output once
+            -- TODO   - or different output "connected to relay"
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
