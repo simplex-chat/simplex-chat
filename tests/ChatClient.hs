@@ -436,8 +436,11 @@ testChatN cfg opts ps test params =
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
 getTermLine :: HasCallStack => TestCC -> IO String
-getTermLine cc@TestCC {printOutput} =
-  5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
+getTermLine cc = getTermLine' 5000000 cc
+
+getTermLine' :: HasCallStack => Int -> TestCC -> IO String
+getTermLine' timeout' cc@TestCC {printOutput} =
+  timeout' `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
       -- when True $ do
@@ -445,7 +448,7 @@ getTermLine cc@TestCC {printOutput} =
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
-    _ -> error "no output for 5 seconds"
+    _ -> error $ "no output for " <> show timeout' <> " microseconds"
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _ _) =
