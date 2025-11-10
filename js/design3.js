@@ -115,8 +115,6 @@ async function showPromotedGroups() {
 \\__ \\| || |\\/| |  _/ |__| _| / . \\| (__| __ |/ _ \\| |
 |___/___|_|  |_|_| |____|___/_/ \\_\\\\___|_||_/_/ \\_\\_|
 
-Mint SimpleX NFT for SMPX testnet access in 2026: https://simplex.chat/token
-
 SimpleX directory: https://simplex.chat/directory
 Ask SimpleX team: https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw
 GitHub: https://github.com/simplex-chat/simplex-chat
