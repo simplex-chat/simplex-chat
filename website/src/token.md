@@ -1,42 +1,32 @@
 ---
 layout: layouts/token.html
-title: "Community Vouchers: Your Freedom and Security"
-permalink: "/token/index.html"
+title: "SimpleX Community Vouchers"
+permalink: "/vouchers/index.html"
 ---
 
 # SimpleX Community Vouchers
 
-We're developing Community Vouchers as a way to enable secure payments to server operators, to make communities sustainable.
+Since we started developing the SimpleX network, the app has been downloaded over 1.5 million times.
 
-Group or channel owners can select network operators for better reliability and censorship resistance than with traditional online publishing methods.
+We are not just building a messenger. Unlike today's web dominated by big tech platforms, SimpleX is a network where you fully control your online identity, contacts, groups, and content – without ads tracking you or companies mining your data.
 
-These vouchers are blockchain utility tokens &mdash; to focus purely on server capacity usage, like prepaid telephone cards.
+The SimpleX network is designed to be private, secure, decentralized (meaning no single company owns it), and truly owned by its users. That's why we develop it as fully open-source code (anyone can review it or build their own apps and servers).
 
-**What these tokens are not**: Community Vouchers are not freely tradable tokens. They are also not a way to raise funds.
+To make this vision sustainable, we're introducing Community Vouchers in 2026. Think of them as simple prepaid cards for phone calls, but for funding the servers that power your channels and groups.
 
-**What they are**: A mechanism to pay for servers, privately. Our goal is to make it possible to buy Community Vouchers via usual credit card and in-app payments, so that everybody can use them, not only people who use cryptocurrencies.
-
-## SMPX: Community Voucher Token planned for 2026
+**How it will work in simple terms**:
+- Community Vouchers can be purchased using the usual in-app payments (like via Apple or Google Play) or using cryptocurrency, such as Bitcoin or Monero.
+- Community Vouchers are secure and private: their usage can't be linked to their purchase, however you paid for them, thanks to advanced cryptography (zero-knowledge proofs).
 
 <a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn"><img src="/img/design_3/simplex_nft_smpx.jpg" width="200" class="float-to-right" style="border-radius: 10px;"></a>
 
-SMPX token is v1 of Community Vouchers. We are aiming to launch it in 2026.
+Under the hood, Community Vouchers are utility tokens on a blockchain (a secure, shared ledger that no single company controls). But you won't have to use blockchain if you don't want to: we are making vouchers as easy to use as gift cards.
 
-<a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">Mint a free SimpleX NFT</a> on Ethereum network (mainnet) for SMPX testnet access and feedback. The NFT is limited to 1 per wallet, non-transferable.
+Community Vouchers are not tradable, and there will be no "pre-mine" or public sale.
 
-**Preliminary token overview**
-- full name: **SimpleX Community Voucher**.
-- symbol: SMPX.
-- network: TBC. There are several viable L2 candidates: Arbitrum One, Optimism, Polygon, etc., and we are considering other networks as well.
-- standard: ERC20, with contract-enforced supply and other limits on transactions and holdings (TBD based on modeling and testing, these will not be freely tradable ERC20 tokens).
+If you have a cryptowallet, and want to test Community Vouchers early, before full release, you can <a href="javascript:void(0);" data-show-overlay="mint-simplex-nft" class="open-overlay-btn">get a free access pass</a> to the test version &mdash; a free non-transferrable NFT on Ethereum mainnet, you only need to pay for gas.
 
-**Potential utilities**
-- Server messaging and file capacity for large channels and communities beyond free tier (see FAQ).
-- Names in SimpleX Name System.
-
-We're working with blockchain and legal experts for feasibility and compliance, aiming to launch testnet in 2026. Details may change based on input. More in our upcoming whitepaper draft.
-
-To receive updates, sign up via email or connect to us [via SimpleX Chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw).
+To receive updates, connect to us [via SimpleX Chat](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw).
 
 ## Community Vouchers FAQ &mdash; send your feedback
 
@@ -56,7 +46,7 @@ These are early insights into how Community Vouchers can work &mdash; some of th
 - [Why Not Existing Crypto?](#why-not-existing-crypto)
 - [Why build on Ethereum blockchain?](#why-build-on-ethereum-blockchain)
 - [Have you considered other blockchains?](#have-you-considered-other-blockchains)
-- [Why use ERC20 specification? Isn't it designed for freely tradable tokens?](#why-use-erc20-specification-isnt-it-designed-for-freely-tradable-tokens)
+- [Which token specification do you plan to use?](#which-token-specification-do-you-plan-to-use)
 - [If you build on another blockchain, how the NFT will be used to provide access?](#if-you-build-on-another-blockchain-how-the-nft-will-be-used-to-provide-access)
 
 ### Why Community Vouchers?
@@ -173,11 +163,11 @@ This was our assessment as well in the past. But the last three years changed it
 
 We are actively considering which blockchain to build on. Ethereum ecosystem is the most widely adopted, and has very mature systems and tools, and it appears sufficient, but it has its downsides, as does everything. So we are not yet committed to Ethereum.
 
-### Why use ERC20 specification? Isn't it designed for freely tradable tokens?
+### Which token specification do you plan to use?
 
-[ERC20 token specification](https://eips.ethereum.org/EIPS/eip-20) has wider scope. It is very simple, one of the earliest, and the most adopted standard on EVM blockchain. It defines tokens, but they don't have to be freely tradeable &mdash; the specification allows any extensions and restrictions implemented on top of it.
+Even though these are not freely tradable tokens, we will likely make them compatible with [ERC20 token specification](https://eips.ethereum.org/EIPS/eip-20). It is very simple, one of the earliest, and the most adopted standard on EVM blockchain. It defines tokens, but they don't have to be freely tradeable &mdash; the specification allows any extensions and restrictions implemented on top of it.
 
-Because of its wide adoption, this specification is the right choice to build on, at least initially, as it will be compatible with all wallets and existing tools out of the box, making testing, development, and early adoption much easier.
+Using this specification would make Community Vouchers partially compatible with wallets and chain explorers, making testing, development, and early adoption easier.
 
 ### If you build on another blockchain, how the NFT will be used to provide access?
 
