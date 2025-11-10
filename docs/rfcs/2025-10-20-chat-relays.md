@@ -1,5 +1,16 @@
 # Chat relays
 
+## Security objectives
+
+Group relay protocol should achieve following objectives:
+1. Stable message delivery between group members.
+2. No possibility for relay to substitute group.
+3. No possibility for relay to impersonate owner(s).
+4. Prevent relay from altering member roster (member removal, role change, etc.).
+5. Prevent relay from terminally destabilizing group by stopping to serve it. At the same time, allow owner to remove (last) relay with possibility to restore group functionality.
+6. Allow owner(s) to send messages as "message from channel", hiding specific sender out of multiple owners from members.
+7. Prevent relays from altering/dropping messages.
+
 ## Protocol for adding chat relays to group
 
 Activations (execution bars) with looped arrows indicate internal calls/steps.
@@ -15,7 +26,7 @@ note over O, RSMP: Owner creates new group, adds chat relays
 
 activate O
 O ->> O: 1. Create new group<br>(user action)
-O ->> O: 2. Prepare group link,<br>owner key (agent)
+O ->> O: 2. Prepare group link,<br>owner key,<br>group ID (agent)
 O ->> O: 3. Add link, owner key<br>to group profile, sign
 O ->> OSMP: 4. Create group link,<br>signed profile as data
 deactivate O
@@ -37,7 +48,7 @@ par With each relay
     opt Bad profile or signature
       R -x R: Abort (reject)
     end
-    R ->> RSMP: 9. Create relay link
+    R ->> RSMP: 9. Create relay link,<br>set group ID<br>in immutable data
     deactivate R
     RSMP -->> R: Relay link created
     activate R
@@ -48,7 +59,7 @@ par With each relay
     note left of O: Relay status: Accepted
     note over O, R: RPC connection<br>with relay is ready
     opt Protocol extension - 2 connections
-        O ->> R: 11*. Connect via relay link<br>(share same owner key)
+        O ->> R: * Connect via relay link<br>(share same owner key)
         deactivate O
         R -->> O: Accept messaging connection
         activate O
@@ -59,7 +70,15 @@ par With each relay
     create participant M as Member
     R --> M:
     note over R, M: At this point relay can accept<br>connection requests from members
-    O ->> OSMP: 12. Update group link<br>(add relay link)
+    O ->> RSMP: 11. Retrieve relay link data
+    deactivate O
+    RSMP -->> O: Relay link data
+    activate O
+    O ->> O: 12. Validate group ID<br>in relay link data
+    opt Bad group ID
+      O -x O: Abort for relay (don't add)
+    end
+    O ->> OSMP: 13. Update group link<br>(add relay link)
     deactivate O
     OSMP -->> O: Group link updated
     note left of O: Relay status: Active
@@ -78,26 +97,32 @@ end
 
 note over O, M: New member connects
 
-O -->> M: 13. Share group link<br>(social, out-of-band)
-M ->> OSMP: 14. Retrieve short link data
+O -->> M: 14. Share group link<br>(social, out-of-band)
+M ->> OSMP: 15. Retrieve short link data
 par RPC connection
-    M ->> R: 15a. Connect via relay link
+    M ->> R: 16a. Connect via relay link
 and
     opt Protocol extension - Messaging connection
-        M ->> R: 15b*. Connect via relay link<br>(share same member key/<br>identifier to correlate)
+        M ->> R: 16b*. Connect via relay link<br>(share same member key/<br>identifier to correlate)
     end
 end
 
 note over O, M: Message forwarding
 
-O ->> R: 16. Send message
-R ->> M: 17. Forward message
+O ->> R: 17. Send message
+R ->> M: 18. Forward message
 activate M
-M ->> M: 18. Deduplicate message
+M ->> M: 19. Deduplicate message
 deactivate M
 ```
 
 Notes:
+
+- Group ID - unique group identifier (not globally unique) baked in immutable part of group link data, and repeated by chat relays in immutable parts of respective relay links.
+
+  Owner can validate they're adding relay link to the group link specifically for their group.
+
+  Members can validate they join relay links corresponding to group link they connected to.
 
 - Protocol extension: Create connections pairs between relay and members with different priority for passing regular messages and for relay responding to member requests.
 
@@ -128,8 +153,6 @@ Notes:
 - Lock owner group link from accepting connection on SMP server, possibly has some implementation gaps.
 
   Reject in owner code for foolproofing.
-
-- Possible optimization for chat relays: maintaining a pool of readily available links, relay could immediately provide one. The advantage to this approach is decrease in wait time for the owner. However, as group setup is a one-time activity it seems an unnecessary complication at this stage.
 
 - What should be in relay link user data:
 
@@ -214,6 +237,44 @@ Notes:
   - We can prohibit to remove last relay without adding new one.
   - Relays can synchronize history.
   - Can be considered after MVP.
+
+## Correlation of design objectives with design elements
+
+1. Redundant delivery by multiple relays. High availability of relay clients.
+2. Same group ID baked in immutable data of group link and relay links.
+3. Owner public key in group link.
+4. Actions altering member roster can be signed by owner key, verified by members.
+5. Protocol for restoring connection to group by checking group link for new relays.
+6. XMsgNew protocol extension - "message from channel" flag - see [channels forwarding rfc](./2025-08-11-channels-forwarding.md).
+7. Redundant delivery by multiple relays, highlighting deduplicated messages differences - see [channels forwarding rfc](./2025-08-11-channels-forwarding.md).
+
+## Threat model
+
+**Single compromised chat relay / Colluding chat relays**
+
+can:
+- effectively substitute group bar group ID and signed profile, by sending unsigned content from other group (or any arbitrary content), that doesn't require signature verification, such as regular messages.
+  - one way this could be further mitigated is requiring owner to sign all messages.
+- selectively drop any content or service messages from owner, including actions altering member roster.
+- selectively drop messages for some of members.
+
+cannot:
+- technically, redirect newly joining member to a different group.
+- substitute group profile.
+- impersonate owner, send arbitrary messages that require signing by owner (actions altering member roster).
+
+**Compromised chat relay (in situation where not all relays are compromised/colluding)**
+
+can:
+- in case number of compromised relays is same as number of uncompromised ones, compromised relay(s) can drop messages or send arbitrary unsigned messages, misleading members from identifying which relays are compromised.
+- ignore "message from channel" directive from owner, revealing which owner sent message.
+  - this can be revealed to owner by members out-of-band.
+
+**Member**
+
+can:
+- infer which owner sent message as "message from channel", if group has a single owner.
+  - owner client should prohibit this option if group has a single owner.
 
 ## TODO list
 
