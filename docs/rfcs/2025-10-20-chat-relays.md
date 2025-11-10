@@ -255,13 +255,14 @@ Notes:
 can:
 - effectively substitute group bar group ID and signed profile, by sending unsigned content from other group (or any arbitrary content), that doesn't require signature verification, such as regular messages.
   - one way this could be further mitigated is requiring owner to sign all messages.
+  - owner could periodically sign message history as merkle dag.
 - selectively drop any content or service messages from owner, including actions altering member roster.
 - selectively drop messages for some of members.
 
 cannot:
 - technically, redirect newly joining member to a different group.
 - substitute group profile.
-- impersonate owner, send arbitrary messages that require signing by owner (actions altering member roster).
+- impersonate owner, send any member message that requires signature.
 
 **Compromised chat relay (in situation where not all relays are compromised/colluding)**
 
@@ -269,12 +270,19 @@ can:
 - in case number of compromised relays is same as number of uncompromised ones, compromised relay(s) can drop messages or send arbitrary unsigned messages, misleading members from identifying which relays are compromised.
 - ignore "message from channel" directive from owner, revealing which owner sent message.
   - this can be revealed to owner by members out-of-band.
+- fabricate new members, possibly inflating counts/costs for owner (depends on implementation).
+  - it can be identified that these imaginary members don't connect to other relays.
 
 **Member**
 
 can:
 - infer which owner sent message as "message from channel", if group has a single owner.
   - owner client should prohibit this option if group has a single owner.
+
+**Any client**
+
+can:
+- connect to group unlimited number of times, inflating real counts/costs.
 
 ## TODO list
 
