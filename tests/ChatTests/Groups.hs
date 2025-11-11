@@ -15,15 +15,14 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.Async (concurrently_, forConcurrently_)
-import Control.Monad (forM, forM_, void, when)
+import Control.Concurrent.Async (concurrently_)
+import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
-import Data.Time.Clock (diffUTCTime, getCurrentTime)
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
 import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
@@ -37,7 +36,6 @@ import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
-import Simplex.Messaging.Util
 import Simplex.Messaging.Version
 import Test.Hspec hiding (it)
 #if defined(dbPostgres)
@@ -238,7 +236,7 @@ chatGroupTests = do
         it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
       it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
       describe "stress test" $ do
-        fit "deliver to 1000 members" (testChannelsRelayDeliverStress 1000)
+        it "deliver to 10,000 members" (testChannelsRelayDeliverStress 10_000)
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8339,35 +8337,29 @@ testChannelsSenderDeduplicateOwn ps = do
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
 
--- 100 members: 965 ms
--- 1000 members: 16395 ms
 testChannelsRelayDeliverStress :: HasCallStack => Int -> TestParams -> IO ()
 testChannelsRelayDeliverStress numMembers ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
     withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      (shortLink, fullLink) <- createChannel1Relay "team" alice bob
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel5 "team" alice bob cath dan eve
 
-      memberCCs <- forM [1..numMembers] $ \i -> do
-        let name = "member" <> show i
-            descr = "Member" <> show i
-            memberProfile = mkProfile (T.pack name) (T.pack descr) Nothing
-        member <- createTestChat ps testCfg testOpts name memberProfile
-        memberJoinChannel "team" bob shortLink fullLink member
-        print $ name <> " joined"
-        pure member
+            alice #> "#team hi"
+            bob <# "#team alice> hi"
+            [cath, dan, eve] *<# "#team alice> hi [>>]"
 
-      t1 <- getCurrentTime
-      print $ "starting sending to " <> show numMembers <> " members..."
-
-      alice #> "#team hi"
-      bob <# "#team alice> hi"
-      forConcurrently_ memberCCs $ \member ->
-        (dropTime <$> getTermLine' (-1) member) `shouldReturn` "#team alice> hi [>>]" -- (-1) - no timeout
-
-      t2 <- getCurrentTime
-      let diff = diffToMilliseconds $ diffUTCTime t2 t1
-      print $ "sent to " <> show numMembers <> " members in: " <> show diff <> " ms"
-
-      forConcurrently_ memberCCs $ \member -> do
-        member <// 100000
-        stopTestChat ps member
+            cath ##> "+1 #team hi"
+            cath <## "added 👍"
+            bob <# "#team cath> > alice hi"
+            bob <## "    + 👍"
+            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            alice <# "#team cath> > alice hi"
+            alice <## "    + 👍"
+            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <# "#team cath> > alice hi"
+            dan <## "    + 👍"
+            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <# "#team cath> > alice hi"
+            eve <## "    + 👍"
