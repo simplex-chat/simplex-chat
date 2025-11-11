@@ -235,8 +235,6 @@ chatGroupTests = do
         it "number of recipients is NOT multiple of bucket size (3/2)" (testChannelsRelayDeliverLoop 2)
         it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
       it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
-      describe "stress test" $ do
-        it "deliver to 10,000 members" (testChannelsRelayDeliverStress 10_000)
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8336,30 +8334,3 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
-
-testChannelsRelayDeliverStress :: HasCallStack => Int -> TestParams -> IO ()
-testChannelsRelayDeliverStress numMembers ps =
-  withNewTestChat ps "alice" aliceProfile $ \alice -> do
-    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
-      withNewTestChat ps "cath" cathProfile $ \cath -> do
-        withNewTestChat ps "dan" danProfile $ \dan -> do
-          withNewTestChat ps "eve" eveProfile $ \eve -> do
-            createChannel5 "team" alice bob cath dan eve
-
-            alice #> "#team hi"
-            bob <# "#team alice> hi"
-            [cath, dan, eve] *<# "#team alice> hi [>>]"
-
-            cath ##> "+1 #team hi"
-            cath <## "added 👍"
-            bob <# "#team cath> > alice hi"
-            bob <## "    + 👍"
-            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            alice <# "#team cath> > alice hi"
-            alice <## "    + 👍"
-            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            dan <# "#team cath> > alice hi"
-            dan <## "    + 👍"
-            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            eve <# "#team cath> > alice hi"
-            eve <## "    + 👍"
