@@ -3292,7 +3292,12 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending -> do
+              liftIO $ print $ "processDeliveryJob, starting sendBodyToMembers"
+              t1 <- liftIO getCurrentTime
               sendBodyToMembers
+              t2 <- liftIO getCurrentTime
+              let diff = diffToMilliseconds $ diffUTCTime t2 t1
+              liftIO $ print $ "processDeliveryJob, sendBodyToMembers in: " <> show diff <> " ms"
               withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
             DJRelayRemoved
               | workerScope /= DWSGroup ->

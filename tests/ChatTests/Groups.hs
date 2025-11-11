@@ -238,7 +238,7 @@ chatGroupTests = do
         it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
       it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
       describe "stress test" $ do
-        fit "deliver to 1000 members" (testChannelsRelayDeliverStress 1000)
+        fit "deliver to 5,000 members" (testChannelsRelayDeliverStress2 5_000)
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8195,7 +8195,7 @@ createChannel5 :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO
 createChannel5 gName owner relay cath dan eve = do
   (shortLink, fullLink) <- createChannel1Relay gName owner relay
   forM_ [cath, dan, eve] $ \member ->
-    memberJoinChannel gName relay shortLink fullLink member
+    memberJoinChannel gName relay shortLink fullLink 1 member
 
 createChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
 createChannel1Relay gName owner relay = do
@@ -8225,19 +8225,20 @@ createChannel1Relay gName owner relay = do
   owner ##> ("/show link #" <> gName)
   getGroupLinks owner gName GRMember False
 
-memberJoinChannel :: String -> TestCC -> String -> String -> TestCC -> IO ()
-memberJoinChannel gName relay shortLink fullLink member = do
+memberJoinChannel :: String -> TestCC -> String -> String -> Int -> TestCC -> IO ()
+memberJoinChannel gName relay shortLink fullLink userId member = do
   mName <- userName member
   mFullName <- showName member
 
-  member ##> ("/_connect plan 1 " <> shortLink)
+  member ##> ("/_connect plan " <> show userId <> " " <> shortLink)
   member <## "group link: ok to connect via relays"
   groupSLinkData <- getTermLine member
 
-  member ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+  member ##> ("/_prepare group " <> show userId <> " " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
   member <## ("#" <> gName <> ": group is prepared")
 
-  member ##> "/_connect group #1"
+  -- group id is same as user id
+  member ##> ("/_connect group #" <> show userId)
   member <## "ok"
   concurrentlyN_
     [ do
@@ -8339,8 +8340,12 @@ testChannelsSenderDeduplicateOwn ps = do
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
 
--- 100 members: 965 ms
--- 1000 members: 16395 ms
+-- 100 members
+--   - w/ reception: 965 ms
+--   - sendMessages: 51 ms
+-- 1000 members
+--   - w/ reception: 16395 ms
+--   - sendMessages: 1197 ms
 testChannelsRelayDeliverStress :: HasCallStack => Int -> TestParams -> IO ()
 testChannelsRelayDeliverStress numMembers ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -8352,12 +8357,12 @@ testChannelsRelayDeliverStress numMembers ps =
             descr = "Member" <> show i
             memberProfile = mkProfile (T.pack name) (T.pack descr) Nothing
         member <- createTestChat ps testCfg testOpts name memberProfile
-        memberJoinChannel "team" bob shortLink fullLink member
+        memberJoinChannel "team" bob shortLink fullLink 1 member
         print $ name <> " joined"
         pure member
 
-      t1 <- getCurrentTime
       print $ "starting sending to " <> show numMembers <> " members..."
+      t1 <- getCurrentTime
 
       alice #> "#team hi"
       bob <# "#team alice> hi"
@@ -8371,3 +8376,39 @@ testChannelsRelayDeliverStress numMembers ps =
       forConcurrently_ memberCCs $ \member -> do
         member <// 100000
         stopTestChat ps member
+
+-- 100 members
+--   - w/ reception: 1081 ms
+--   - sendMessages: 47 ms
+-- 1000 members
+--   - w/ reception: 13843 ms
+--   - sendMessages: 689 ms
+-- 5000 members
+--   - w/ reception:
+--   - sendMessages:
+testChannelsRelayDeliverStress2 :: HasCallStack => Int -> TestParams -> IO ()
+testChannelsRelayDeliverStress2 numMembers ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        (shortLink, fullLink) <- createChannel1Relay "team" alice bob
+
+        memberJoinChannel "team" bob shortLink fullLink 1 cath
+        forM_ [2..numMembers] $ \i -> do
+          let uName = "cath" <> show i
+          cath ##> ("/create user " <> uName)
+          showActiveUser cath uName
+          memberJoinChannel "team" bob shortLink fullLink i cath
+          print $ uName <> " joined"
+
+        print $ "starting sending to " <> show numMembers <> " members..."
+        t1 <- getCurrentTime
+
+        alice #> "#team hi"
+        bob <# "#team alice> hi"
+        forM_ [1..numMembers] $ \_i -> do
+          cath .<## "#team alice> hi [>>]"
+
+        t2 <- getCurrentTime
+        let diff = diffToMilliseconds $ diffUTCTime t2 t1
+        print $ "sent to " <> show numMembers <> " members in: " <> show diff <> " ms"
