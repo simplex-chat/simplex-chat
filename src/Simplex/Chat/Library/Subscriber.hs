@@ -3292,7 +3292,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending -> do
-              sendBodyToMembers
+              timeItToView "sendBodyToMembers" sendBodyToMembers
               withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
             DJRelayRemoved
               | workerScope /= DWSGroup ->
