@@ -2513,7 +2513,6 @@ export interface GroupMember {
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
   isRelay: boolean
-  relayData?: GroupRelay
 }
 
 export interface GroupMemberAdmission {
@@ -2595,6 +2594,7 @@ export interface GroupProfile {
 
 export interface GroupRelay {
   groupRelayId: number // int64
+  groupMemberId: number // int64
   userChatRelayId: number // int64
   relayStatus: RelayStatus
   relayLink?: string
@@ -3816,6 +3816,7 @@ export type StoreError =
   | StoreError.UsageConditionsNotFound
   | StoreError.UserChatRelayNotFound
   | StoreError.GroupRelayNotFound
+  | StoreError.GroupRelayNotFoundByMemberId
   | StoreError.InvalidQuote
   | StoreError.InvalidMention
   | StoreError.InvalidDeliveryTask
@@ -3903,6 +3904,7 @@ export namespace StoreError {
     | "usageConditionsNotFound"
     | "userChatRelayNotFound"
     | "groupRelayNotFound"
+    | "groupRelayNotFoundByMemberId"
     | "invalidQuote"
     | "invalidMention"
     | "invalidDeliveryTask"
@@ -4288,6 +4290,11 @@ export namespace StoreError {
   export interface GroupRelayNotFound extends Interface {
     type: "groupRelayNotFound"
     groupRelayId: number // int64
+  }
+
+  export interface GroupRelayNotFoundByMemberId extends Interface {
+    type: "groupRelayNotFoundByMemberId"
+    groupMemberId: number // int64
   }
 
   export interface InvalidQuote extends Interface {

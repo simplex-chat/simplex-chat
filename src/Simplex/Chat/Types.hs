@@ -962,8 +962,7 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    isRelay :: BoolDef, -- marker for all members that this member is a chat relay
-    relayData :: Maybe GroupRelay -- owner's additional data for a chat relay
+    isRelay :: BoolDef
   }
   deriving (Eq, Show)
 
@@ -972,6 +971,7 @@ memberRole' GroupMember {memberRole} = memberRole
 
 data GroupRelay = GroupRelay
   { groupRelayId :: Int64,
+    groupMemberId :: GroupMemberId,
     userChatRelayId :: Int64, -- ID of configured UserChatRelay
     relayStatus :: RelayStatus,
     relayLink :: Maybe ShortLinkContact

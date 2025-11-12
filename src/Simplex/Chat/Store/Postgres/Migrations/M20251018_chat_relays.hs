@@ -12,22 +12,42 @@ m20251018_chat_relays =
     [r|
 CREATE TABLE chat_relays(
   chat_relay_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
-  address TEXT NOT NULL,
+  address BYTEA NOT NULL,
   name TEXT NOT NULL,
   domains TEXT NOT NULL,
   preset SMALLINT NOT NULL DEFAULT 0,
   tested SMALLINT,
   enabled SMALLINT NOT NULL DEFAULT 1,
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
+  deleted SMALLINT NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (now()),
-  updated_at TEXT NOT NULL DEFAULT (now()),
-  UNIQUE(user_id, address),
-  UNIQUE(user_id, name)
+  updated_at TEXT NOT NULL DEFAULT (now())
 );
-
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(user_id, address);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay SMALLINT NOT NULL DEFAULT 0;
+
+ALTER TABLE groups ADD COLUMN use_relays SMALLINT NOT NULL DEFAULT 0;
+
+ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
+
+ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
+
+CREATE TABLE group_relays(
+  group_relay_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  group_id BIGINT NOT NULL REFERENCES groups ON DELETE CASCADE,
+  group_member_id BIGINT NOT NULL REFERENCES group_members ON DELETE CASCADE,
+  chat_relay_id BIGINT NOT NULL REFERENCES chat_relays ON DELETE CASCADE,
+  relay_status TEXT NOT NULL,
+  relay_link BYTEA,
+  created_at TEXT NOT NULL DEFAULT (now()),
+  updated_at TEXT NOT NULL DEFAULT (now())
+);
+CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
+CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_member_id);
+CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
 ALTER TABLE group_members ADD COLUMN is_relay SMALLINT NOT NULL DEFAULT 0;
 |]
@@ -36,11 +56,23 @@ down_m20251018_chat_relays :: Text
 down_m20251018_chat_relays =
   T.pack
     [r|
-ALTER TABLE group_members DROP COLUMN is_relay;
+DROP INDEX idx_chat_relays_user_id;
+DROP INDEX idx_chat_relays_user_id_address;
+DROP INDEX idx_chat_relays_user_id_name;
+DROP TABLE chat_relays;
 
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
-DROP INDEX idx_chat_relays_user_id;
+ALTER TABLE groups DROP COLUMN use_relays;
 
-DROP TABLE chat_relays;
+ALTER TABLE groups DROP COLUMN relay_own_status;
+
+ALTER TABLE group_profiles DROP COLUMN group_link;
+
+DROP INDEX idx_group_relays_group_id;
+DROP INDEX idx_group_relays_group_member_id;
+DROP INDEX idx_group_relays_chat_relay_id;
+DROP TABLE group_relays;
+
+ALTER TABLE group_members DROP COLUMN is_relay;
 |]

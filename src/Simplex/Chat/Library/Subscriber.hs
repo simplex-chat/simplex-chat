@@ -728,18 +728,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
-              -- TODO [relays] owner: XGrpRelayAcpt processing branch
-              -- TODO   - TBC relay category
               XGrpRelayAcpt relayLink
-                | memberRole' membership == GROwner ->
-                    case relayData m of
-                      Just relay -> do
-                        -- TODO [relays] owner: check current relay status?
-                        withStore' $ \db -> do
-                          updateGroupMemberStatus db userId m GSMemAccepted
-                          void $ setRelayLinkAccepted db relay relayLink
-                        allowAgentConnectionAsync user conn' confId XOk
-                      Nothing -> messageError "x.grp.relay.acpt: member is not saved as relay"
+                | memberRole' membership == GROwner && isRelay' m -> do
+                    withStore $ \db -> do
+                      relay <- getGroupRelayByGMId db (groupMemberId' m)
+                      liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                      void $ liftIO $ setRelayLinkAccepted db relay relayLink
+                    allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
@@ -803,8 +798,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     pure gInfo {membership = membership {memberStatus = GSMemConnected}}
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
-            -- TODO [relays] member: only show "joined group" event/output once
-            -- TODO   - or different output "connected to relay"
+            -- TODO [relays] member: don't duplicate e2ee and descr chat items for each relay
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
@@ -814,23 +808,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             memberConnectedChatItem gInfo'' scopeInfo m''
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
             unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
-          GCInviteeMember ->
-            case relayData m of
-              -- TODO [relays] owner: relay CON processing branch
-              -- TODO   - TBC relay category
-              Just relay -> do
-                -- TODO [relays] owner: agent async setConnShortLink api
+          GCInviteeMember
+            | isRelay' m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
                 let m' = m {memberStatus = GSMemConnected}
+                -- TODO [relays] owner: agent async setConnShortLink api
                 setGroupLinkData' NRMBackground user gInfo >>= \case
                   Just gLink -> do
-                    (relay', relays) <- withStore' $ \db ->
-                      (,) <$> updateRelayStatus db relay RSActive <*> getGroupRelays db gInfo
-                    let m'' = m' {relayData = Just relay'}
+                    relays <- withStore $ \db -> do
+                      relay <- getGroupRelayByGMId db (groupMemberId' m)
+                      void $ liftIO $ updateRelayStatus db relay RSActive
+                      liftIO $ getGroupRelays db gInfo
                     -- TODO [relays] owner: relay added chat item?
-                    toView $ CEvtRelayJoined user gInfo m'' gLink relays
+                    toView $ CEvtRelayJoined user gInfo m' gLink relays
                   Nothing -> messageError "x.grp.relay.acpt: group link not updated"
-              Nothing -> do
+            | otherwise -> do
                 (gInfo', mStatus) <-
                   if not (memberPending m)
                     then do

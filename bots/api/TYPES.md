@@ -2223,7 +2223,6 @@ Known:
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
 - isRelay: bool
-- relayData: [GroupRelay](#grouprelay)?
 
 
 ---
@@ -2345,6 +2344,7 @@ Known:
 
 **Record type**:
 - groupRelayId: int64
+- groupMemberId: int64
 - userChatRelayId: int64
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
@@ -3597,6 +3597,10 @@ UserChatRelayNotFound:
 GroupRelayNotFound:
 - type: "groupRelayNotFound"
 - groupRelayId: int64
+
+GroupRelayNotFoundByMemberId:
+- type: "groupRelayNotFoundByMemberId"
+- groupMemberId: int64
 
 InvalidQuote:
 - type: "invalidQuote"
