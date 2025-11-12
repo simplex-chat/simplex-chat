@@ -21,7 +21,7 @@ m20251018_chat_relays =
   [sql|
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
-  address TEXT NOT NULL,
+  address BLOB NOT NULL,
   name TEXT NOT NULL,
   domains TEXT NOT NULL,
   preset INTEGER NOT NULL DEFAULT 0,
@@ -30,11 +30,11 @@ CREATE TABLE chat_relays(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  UNIQUE(user_id, address),
-  UNIQUE(user_id, name)
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(user_id, address);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay INTEGER NOT NULL DEFAULT 0;
 
@@ -65,6 +65,8 @@ down_m20251018_chat_relays :: Query
 down_m20251018_chat_relays =
   [sql|
 DROP INDEX idx_chat_relays_user_id;
+DROP INDEX idx_chat_relays_user_id_address;
+DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
