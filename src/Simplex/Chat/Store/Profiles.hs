@@ -914,6 +914,7 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
       DBEntityId srvId
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
+    -- TODO [relays] when deleting check group_relays - if relay record is referenced, keep it and mark as deleted
     upsertOrDeleteCRelay :: AUserChatRelay -> IO (Maybe UserChatRelay)
     upsertOrDeleteCRelay (AUCR _ relay@UserChatRelay {chatRelayId, deleted}) = case chatRelayId of
       DBNewEntity

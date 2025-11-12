@@ -506,7 +506,7 @@ data ChatCommand
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
   | NewGroup IncognitoEnabled GroupProfile
-  -- TODO [relays] owner: TBC group link's default member role for APINewChannel
+  -- TODO [relays] owner: TBC group link's default member role for APINewPublicGroup
   | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
   | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
