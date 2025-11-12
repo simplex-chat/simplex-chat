@@ -76,6 +76,7 @@ module Simplex.Chat.Store.Groups
     createNewContactMember,
     createGroupRelayRecord,
     getGroupRelayById,
+    getGroupRelayByGMId,
     getGroupRelays,
     createRelayForOwner,
     createRelayForMember,
@@ -204,11 +205,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime) :. (Maybe BoolInt, Maybe Int64, Maybe Int64, Maybe RelayStatus, Maybe ShortLinkContact)
+type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe BoolInt)
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs) :. (Just isRelay, groupRelayId, chatRelayId, relayStatus, relayLink)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs) :. (isRelay, groupRelayId, chatRelayId, relayStatus, relayLink))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, Just isRelay)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, isRelay))
 toMaybeGroupMember _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -497,8 +498,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         createdAt,
         updatedAt = createdAt,
         supportChat = Nothing,
-        isRelay = BoolDef isRelay,
-        relayData = Nothing
+        isRelay = BoolDef isRelay
       }
   where
     memberChatVRange@(VersionRange minV maxV) = vr
@@ -1116,8 +1116,7 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             createdAt,
             updatedAt = createdAt,
             supportChat = Nothing,
-            isRelay = BoolDef False,
-            relayData = Nothing
+            isRelay = BoolDef False
           }
       where
         insertMember_ =
@@ -1135,18 +1134,18 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
                 :. (minV, maxV)
             )
 
-createGroupRelayRecord :: DB.Connection -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupRelay
-createGroupRelayRecord db GroupInfo {groupId} UserChatRelay {chatRelayId} = do
+createGroupRelayRecord :: DB.Connection -> GroupInfo -> GroupMember -> UserChatRelay -> ExceptT StoreError IO GroupRelay
+createGroupRelayRecord db GroupInfo {groupId} GroupMember {groupMemberId} UserChatRelay {chatRelayId} = do
   currentTs <- liftIO getCurrentTime
   liftIO $
     DB.execute
       db
       [sql|
         INSERT INTO group_relays
-          (group_id, chat_relay_id, relay_status, created_at, updated_at)
-        VALUES (?,?,?,?,?)
+          (group_id, group_member_id, chat_relay_id, relay_status, created_at, updated_at)
+        VALUES (?,?,?,?,?,?)
       |]
-      (groupId, chatRelayId, RSNew, currentTs, currentTs)
+      (groupId, groupMemberId, chatRelayId, RSNew, currentTs, currentTs)
   relayId <- liftIO $ insertedRowId db
   getGroupRelayById db relayId
 
@@ -1157,6 +1156,14 @@ getGroupRelayById db relayId =
       db
       (groupRelayQuery <> " WHERE group_relay_id = ?")
       (Only relayId)
+
+getGroupRelayByGMId :: DB.Connection -> GroupMemberId -> ExceptT StoreError IO GroupRelay
+getGroupRelayByGMId db groupMemberId =
+  ExceptT . firstRow toGroupRelay (SEGroupRelayNotFoundByMemberId groupMemberId) $
+    DB.query
+      db
+      (groupRelayQuery <> " WHERE group_member_id = ?")
+      (Only groupMemberId)
 
 getGroupRelays :: DB.Connection -> GroupInfo -> IO [GroupRelay]
 getGroupRelays db GroupInfo {groupId} =
@@ -1169,21 +1176,21 @@ getGroupRelays db GroupInfo {groupId} =
 groupRelayQuery :: Query
 groupRelayQuery =
   [sql|
-    SELECT group_relay_id, chat_relay_id, relay_status, relay_link
+    SELECT group_relay_id, group_member_id, chat_relay_id, relay_status, relay_link
     FROM group_relays
   |]
 
-toGroupRelay :: (Int64, Int64, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
-toGroupRelay (groupRelayId, userChatRelayId, relayStatus, relayLink) =
-  GroupRelay {groupRelayId, userChatRelayId, relayStatus, relayLink}
+toGroupRelay :: (Int64, GroupMemberId, Int64, RelayStatus, Maybe ShortLinkContact) -> GroupRelay
+toGroupRelay (groupRelayId, groupMemberId, userChatRelayId, relayStatus, relayLink) =
+  GroupRelay {groupRelayId, groupMemberId, userChatRelayId, relayStatus, relayLink}
 
 -- TODO [relays] TBC role, category, relay profile
 -- TODO   - GCInviteeMember -> GCRelayMember?
 -- TODO   - GRMember -> GRRelay?
 -- TODO   - create 1 profile per relay, link to chat_relays?
 -- TODO   - retrieve profile from relay address
-createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> GroupRelay -> ExceptT StoreError IO GroupMember
-createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {name} GroupRelay {groupRelayId} = do
+createRelayForOwner :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupInfo -> UserChatRelay -> ExceptT StoreError IO GroupMember
+createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {groupId, membership} UserChatRelay {name} = do
   currentTs <- liftIO getCurrentTime
   let relayProfile = profileFromName name
   (localDisplayName, memProfileId) <- createNewMemberProfile_ db user relayProfile currentTs
@@ -1193,14 +1200,11 @@ createRelayForOwner db vr gVar user@User {userId, userContactId} GroupInfo {grou
       [sql|
         INSERT INTO group_members
           ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-            user_id, local_display_name, contact_profile_id, created_at, updated_at,
-            is_relay, group_relay_id
-            )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            user_id, local_display_name, contact_profile_id, created_at, updated_at, is_relay)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
       ( (groupId, MemberId memId, GRMember, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-          :. (userId, localDisplayName, memProfileId, currentTs, currentTs)
-          :. (BI True, groupRelayId)
+          :. (userId, localDisplayName, memProfileId, currentTs, currentTs, BI True)
       )
     insertedRowId db
   getGroupMemberById db vr user groupMemberId
@@ -1689,8 +1693,7 @@ createNewMember_
           createdAt,
           updatedAt = createdAt,
           supportChat = Nothing,
-          isRelay = BoolDef isRelay,
-          relayData = Nothing
+          isRelay = BoolDef isRelay
         }
 
 checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)

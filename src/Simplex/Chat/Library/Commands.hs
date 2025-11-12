@@ -3625,8 +3625,8 @@ processChatCommand vr nm = \case
               -- TODO   - or make "add relays" api retriable, via prepared connection
               connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
               (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
-                groupRelay <- createGroupRelayRecord db gInfo relay
-                relayMember <- createRelayForOwner db vr gVar user gInfo relay groupRelay
+                relayMember <- createRelayForOwner db vr gVar user gInfo relay
+                groupRelay <- createGroupRelayRecord db gInfo relayMember relay
                 conn <- createRelayConnection db vr user (groupMemberId' relayMember) connId ConnPrepared chatV subMode
                 pure (relayMember, conn, groupRelay)
               let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
