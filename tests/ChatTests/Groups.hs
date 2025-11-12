@@ -8215,7 +8215,7 @@ createChannel1Relay gName owner relay = do
         owner <## "group link:"
         _ <- getTermLine owner
         pure (),
-      relay <## ("#" <> gName <> ": you joined the group")
+      relay <## ("#" <> gName <> ": you joined the group as relay")
     ]
 
   owner ##> ("/show link #" <> gName)
@@ -8237,8 +8237,8 @@ memberJoinChannel gName relay shortLink fullLink member = do
   member <## "ok"
   concurrentlyN_
     [ do
-        member <## ("#" <> gName <> ": joining the group...")
-        member <## ("#" <> gName <> ": you joined the group"),
+        member <## ("#" <> gName <> ": joining the group (connecting to relay)...")
+        member <## ("#" <> gName <> ": you joined the group (connected to relay)"),
       do
         relay <## (mFullName <> ": accepting request to join group #team...")
         relay <## ("#" <> gName <> ": " <> mName <> " joined the group")

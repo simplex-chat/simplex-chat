@@ -416,7 +416,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtAcceptingBusinessRequest u g -> ttyUser u $ viewAcceptingBusinessRequest g
   CEvtContactRequestAlreadyAccepted u c -> ttyUser u [ttyFullContact c <> ": sent you a duplicate contact request, but you are already connected, no action needed"]
   CEvtBusinessRequestAlreadyAccepted u g -> ttyUser u [ttyFullGroup g <> ": sent you a duplicate connection request, but you are already connected, no action needed"]
-  CEvtGroupLinkConnecting u g _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
+  CEvtGroupLinkConnecting u g m -> ttyUser u $ viewUserJoiningGroup g m
   CEvtBusinessLinkConnecting u g _ _ -> ttyUser u [ttyGroup' g <> ": joining the group..."]
   CEvtUnknownMemberCreated u g fwdM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember fwdM <> " forwarded a message from an unknown member, creating unknown member record " <> ttyMember um]
   CEvtUnknownMemberBlocked u g byM um -> ttyUser u [ttyGroup' g <> ": " <> ttyMember byM <> " blocked an unknown member, creating unknown member record " <> ttyMember um]
@@ -458,7 +458,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
      in ttyUser u [sShow connId <> ": END"]
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
-  CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
+  CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
   CEvtRelayJoined u g relayMem groupLink relays -> ttyUser u $ viewRelayJoined g relayMem groupLink relays
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CEvtHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
@@ -1199,12 +1199,22 @@ viewDirectMessagesProhibited :: MsgDirection -> Contact -> [StyledString]
 viewDirectMessagesProhibited MDSnd c = ["direct messages to indirect contact " <> ttyContact' c <> " are prohibited"]
 viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from indirect contact " <> ttyContact' c <> " (discarded)"]
 
-viewUserJoinedGroup :: GroupInfo -> [StyledString]
-viewUserJoinedGroup g@GroupInfo {membership} =
-  case incognitoMembershipProfile g of
-    Just mp -> [ttyGroup' g <> ": you joined the group incognito as " <> incognitoProfile' (fromLocalProfile mp) <> pendingApproval_]
-    Nothing -> [ttyGroup' g <> ": you joined the group" <> pendingApproval_]
+viewUserJoiningGroup :: GroupInfo -> GroupMember -> [StyledString]
+viewUserJoiningGroup g m
+  | isRelay' m = [ttyGroup' g <> ": joining the group (connecting to relay)..."]
+  | otherwise = [ttyGroup' g <> ": joining the group..."]
+
+viewUserJoinedGroup :: GroupInfo -> GroupMember -> [StyledString]
+viewUserJoinedGroup g@GroupInfo {membership} m
+  | isRelay' membership = [ttyGroup' g <> ": you joined the group as relay"]
+  | otherwise =
+      case incognitoMembershipProfile g of
+        Just mp -> [ttyGroup' g <> ": you joined the group" <> connectedToRelay_ <> " incognito as " <> incognitoProfile' (fromLocalProfile mp) <> pendingApproval_]
+        Nothing -> [ttyGroup' g <> ": you joined the group" <> connectedToRelay_ <> pendingApproval_]
   where
+    connectedToRelay_
+      | isRelay' m = " (connected to relay)"
+      | otherwise = ""
     pendingApproval_ = case memberStatus membership of
       GSMemPendingApproval -> ", pending approval"
       GSMemPendingReview -> ", connecting to group moderators for admission to group"
