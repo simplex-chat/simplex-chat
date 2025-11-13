@@ -70,6 +70,7 @@ module Simplex.Chat.Store.Groups
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
     deleteGroup,
+    getInProgressGroups,
     getBaseGroupDetails,
     getContactGroupPreferences,
     getGroupInvitation,
@@ -84,6 +85,7 @@ module Simplex.Chat.Store.Groups
     updateRelayStatus,
     updateRelayStatusFromTo,
     setRelayLinkAccepted,
+    setGroupInProgressDone,
     createGroupRelayInvitation,
     updateRelayOwnStatusFromTo,
     createNewContactMemberAsync,
@@ -341,11 +343,11 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRe
         db
         [sql|
           INSERT INTO groups
-            (use_relays, local_display_name, user_id, group_profile_id, enable_ntfs,
+            (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
              created_at, updated_at, chat_ts, user_member_profile_sent_at)
-          VALUES (?,?,?,?,?,?,?,?,?)
+          VALUES (?,?,?,?,?,?,?,?,?,?)
         |]
-        (BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
+        (BI useRelays, BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
       insertedRowId db
     memberId <- liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser customUserProfileId False currentTs vr
@@ -896,6 +898,15 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
+getInProgressGroups :: DB.Connection -> VersionRangeChat -> User -> UTCTime -> IO [GroupInfo]
+getInProgressGroups db vr user@User {userId} createdAtCutoff = do
+  groupIds <- map fromOnly <$>
+    DB.query
+      db
+      "SELECT group_id FROM groups WHERE user_id = ? AND creating_in_progress = 1 AND created_at <= ?"
+      (userId, createdAtCutoff)
+  rights <$> mapM (runExceptT . getGroupInfo db vr user) groupIds
+
 getBaseGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
 getBaseGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
   map (toGroupInfo vr userContactId [])
@@ -1284,6 +1295,14 @@ setRelayLinkAccepted db relay@GroupRelay {groupRelayId} relayLink = do
     |]
     (relayLink, RSAccepted, currentTs, groupRelayId)
   pure relay {relayStatus = RSAccepted, relayLink = Just relayLink}
+
+setGroupInProgressDone :: DB.Connection -> GroupInfo -> IO ()
+setGroupInProgressDone db GroupInfo {groupId} = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
+    (currentTs, groupId)
 
 createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> GroupRelayInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
 createGroupRelayInvitation db vr user@User {userId} groupProfile GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember} = do

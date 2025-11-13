@@ -889,7 +889,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
     baseParams = (userId, userId, CISRcvNew, userId, MCReport_, BI False)
     getPreviews = case clq of
       CLQFilters {favorite = False, unread = False} -> do
-        let q = baseQuery <> " WHERE g.user_id = ?"
+        let q = baseQuery <> " WHERE g.user_id = ? AND g.creating_in_progress = 0"
             p = baseParams :. Only userId
         queryWithPagination q p
       CLQFilters {favorite = True, unread = False} -> do
@@ -897,7 +897,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> " "
                 <> [sql|
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.creating_in_progress = 0
                         AND g.favorite = 1
                    |]
             p = baseParams :. Only userId
@@ -907,7 +907,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> " "
                 <> [sql|
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.creating_in_progress = 0
                         AND (g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                    |]
             p = baseParams :. Only userId
@@ -917,7 +917,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
               baseQuery
                 <> " "
                 <> [sql|
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.creating_in_progress = 0
                         AND (g.favorite = 1
                           OR g.unread_chat = 1 OR ChatStats.UnreadCount > 0)
                    |]
@@ -929,7 +929,7 @@ findGroupChatPreviews_ db User {userId} pagination clq =
                 <> " "
                 <> [sql|
                       JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id
-                      WHERE g.user_id = ?
+                      WHERE g.user_id = ? AND g.creating_in_progress = 0
                         AND (
                           LOWER(g.local_display_name) LIKE '%' || ? || '%'
                           OR LOWER(gp.display_name) LIKE '%' || ? || '%'

@@ -2278,15 +2278,18 @@ processChatCommand vr nm = \case
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewGroup userId incognito gProfile
   APINewPublicGroup userId incognito relayIds gProfile -> withUserId userId $ \user -> do
-    -- TODO [relays] owner: catch errors and clean up in case any step fails - delete group
-    -- TODO   - create group record with "in_progress" field to hide from list in case app crashes,
-    -- TODO     then pick up in cleanup manager
     gInfo <- newGroup user incognito gProfile True
-    (gInfo', gLink, sLnk) <- newGroupLink user gInfo
-    relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
-    groupRelays <- addRelays user gInfo' sLnk relays
+    (gInfo', gLink, groupRelays) <- setupLink user gInfo `catchAllErrors` \e -> do
+      deleteInProgressGroup user gInfo
+      throwError e
     pure $ CRPublicGroupCreated user gInfo' gLink groupRelays
     where
+      setupLink :: User -> GroupInfo -> CM (GroupInfo, GroupLink, [GroupRelay])
+      setupLink user gInfo = do
+        (gInfo', gLink, sLnk) <- newGroupLink user gInfo
+        relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+        groupRelays <- addRelays user gInfo' sLnk relays
+        pure (gInfo', gLink, groupRelays)
       newGroupLink :: User -> GroupInfo -> CM (GroupInfo, GroupLink, ShortLinkContact)
       newGroupLink user gInfo@GroupInfo {groupProfile} = do
         groupLinkId <- GroupLinkId <$> drgRandomBytes 16
@@ -2294,7 +2297,7 @@ processChatCommand vr nm = \case
         -- TODO [relays] owner: prepare group link without initially creating on server
         -- TODO   - add link and owner key to group profile, sign profile
         -- TODO   - create group link on server with signed profile as data
-        -- vvv change from here vvv
+        -- / link creation
         let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
             userLinkData = UserContactLinkData UserContactData {direct = False, owners = [], relays = [], userData}
             crClientData = encodeJSON $ CRDataGroup groupLinkId
@@ -2306,24 +2309,14 @@ processChatCommand vr nm = \case
         let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
             userData' = encodeShortLinkData $ GroupShortLinkData groupProfile'
             userLinkData' = UserContactLinkData UserContactData {direct = False, owners = [], relays = [], userData = userData'}
-        -- same link with updated profile
-        _sLnk' <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm connId SCMContact userLinkData' (Just crClientData))
-        -- ^^^ to here ^^^
+        void $ withAgent (\a -> setConnShortLink a nm connId SCMContact userLinkData' (Just crClientData))
+        -- link creation /
         gVar <- asks random
         (gInfo', gLink) <- withFastStore $ \db -> do
           gLink <- createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
           gInfo' <- updateGroupProfile db user gInfo groupProfile'
           pure (gInfo', gLink)
         pure (gInfo', gLink, sLnk)
-      -- auto-selection of enabled relays, currently unused
-      -- chooseRelays :: User -> CM [UserChatRelay]
-      -- chooseRelays user = do
-      --   -- TODO [relays] owner: more advanced relay selection strategy, e.g. pick from different operators
-      --   chatRelays <- withFastStore' (`getChatRelays` user)
-      --   let enabledRelays = filter (\UserChatRelay {enabled} -> enabled) chatRelays
-      --   selectedRelays <- take 3 <$> liftIO (shuffle enabledRelays)
-      --   when (null selectedRelays) $ throwChatError $ CEException "failed to select relays: no enabled relays configured"
-      --   pure selectedRelays
   NewPublicGroup incognito relayIds gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewPublicGroup userId incognito relayIds gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
@@ -4357,6 +4350,8 @@ cleanupManager = do
       -- TODO remove in future versions: legacy step - contacts are no longer marked as deleted
       cleanupDeletedContacts user `catchAllErrors` eToView
       liftIO $ threadDelay' stepDelay
+      cleanupInProgressGroups user `catchAllErrors` eToView
+      liftIO $ threadDelay' stepDelay
     cleanupTimedItems cleanupInterval user = do
       ts <- liftIO getCurrentTime
       let startTimedThreadCutoff = addUTCTime cleanupInterval ts
@@ -4368,6 +4363,14 @@ cleanupManager = do
       forM_ contacts $ \ct ->
         withStore (\db -> deleteContactWithoutGroups db user ct)
           `catchAllErrors` eToView
+    cleanupInProgressGroups user = do
+      vr <- chatVersionRange
+      ts <- liftIO getCurrentTime
+      -- older than 30 minutes to avoid deleting a newly created group
+      let cutoffTs = addUTCTime (- 1800) ts
+      inProgressGroups <- withStore' $ \db -> getInProgressGroups db vr user cutoffTs
+      forM_ inProgressGroups $ \gInfo ->
+        deleteInProgressGroup user gInfo `catchAllErrors` eToView
     cleanupMessages = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(30 * nominalDay)) ts
@@ -4384,6 +4387,12 @@ cleanupManager = do
       ts <- liftIO getCurrentTime
       let cutoffTs = addUTCTime (-(14 * nominalDay)) ts
       withStore' (`deleteOldProbes` cutoffTs)
+
+deleteInProgressGroup :: User -> GroupInfo -> CM ()
+deleteInProgressGroup user gInfo = do
+  deleteGroupLinkIfExists user gInfo
+  deleteGroupConnections user gInfo False
+  withFastStore' $ \db -> deleteGroup db user gInfo
 
 runRelayChecks :: User -> CM ()
 runRelayChecks _user = do

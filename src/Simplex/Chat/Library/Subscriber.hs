@@ -818,6 +818,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     relays <- withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
                       void $ liftIO $ updateRelayStatus db relay RSActive
+                      liftIO $ setGroupInProgressDone db gInfo
                       liftIO $ getGroupRelays db gInfo
                     -- TODO [relays] owner: relay added chat item?
                     toView $ CEvtRelayJoined user gInfo m' gLink relays

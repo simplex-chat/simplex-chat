@@ -40,6 +40,8 @@ ALTER TABLE users ADD COLUMN is_user_chat_relay INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE groups ADD COLUMN use_relays INTEGER NOT NULL DEFAULT 0;
 
+ALTER TABLE groups ADD COLUMN creating_in_progress INTEGER NOT NULL DEFAULT 0;
+
 ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
