@@ -3614,8 +3614,6 @@ processChatCommand vr nm = \case
               let chatV = agentToChatVersion agentV
               gVar <- asks random
               subMode <- chatReadVar subscriptionMode
-              -- TODO [relays] owner: replace with async join (joinConnectionAsync currently prohibited for contact links)
-              -- TODO   - or make "add relays" api retriable, via prepared connection
               connId <- withAgent $ \a -> prepareConnectionToJoin a (aUserId user) True cReq PQSupportOff
               (relayMember, conn, groupRelay) <- withFastStore $ \db -> do
                 relayMember <- createRelayForOwner db vr gVar user gInfo relay

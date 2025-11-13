@@ -1341,7 +1341,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         relayContactRequest :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         relayContactRequest invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
           -- TODO [relays] relay: retrieve group link data asynchronously/add recovery
-          -- TODO   - * duplicate requests can be deduplicated by group link
           (_cReq, cData) <- getShortLinkConnReq NRMBackground user groupLink
           (liftIO $ decodeLinkUserData cData) >>= \case
             Nothing -> messageError "relayContactRequest: no group link data"
@@ -1350,13 +1349,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               (gInfo, ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user gp groupRelayInv
               relayLink <- createRelayLink gInfo
               (_gInfo', _ownerMember') <- acceptRelayJoinRequestAsync user uclId gInfo ownerMember invId chatVRange relayLink
-              -- TODO [relays] relay: event, chat item (?)
+              -- TODO [relays] relay: group invite accepted event, chat item (?)
               pure ()
               where
                 validateGroupProfile :: GroupProfile -> CM ()
                 validateGroupProfile _groupProfile = do
                   -- TODO [relays] relay: validate group profile, verify owner's signature
-                  -- TODO   - throw error if invalid
                   pure ()
                 createRelayLink :: GroupInfo -> CM ShortLinkContact
                 createRelayLink gInfo@GroupInfo {groupProfile} = do
