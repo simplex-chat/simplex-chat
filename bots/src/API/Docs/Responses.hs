@@ -174,6 +174,7 @@ undocumentedResponses =
     "CRNtfConns",
     "CRNtfToken",
     "CRNtfTokenStatus",
+    "CRPublicGroupCreated",
     "CRQueueInfo",
     "CRRcvStandaloneFileCreated",
     "CRReactionMembers",

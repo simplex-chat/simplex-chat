@@ -250,6 +250,7 @@ data ChatController = ChatController
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
+    relayChecksAsync :: TVar (Maybe (Async ())),
     chatActivated :: TVar Bool,
     timedItemThreads :: TMap (ChatRef, ChatItemId) (TVar (Maybe (Weak ThreadId))),
     showLiveItems :: TVar Bool,
@@ -391,7 +392,7 @@ data ChatCommand
   | TestProtoServer AProtoServerWithAuth
   | GetUserChatRelays
   | SetUserChatRelays [CLINewRelay]
-  -- TODO [chat relays] commands to test chat relay
+  -- TODO [relays] commands to test chat relay
   -- | APITestChatRelay UserId ConnLinkContact
   -- | TestChatRelay ConnLinkContact
   | APIGetServerOperators
@@ -463,7 +464,7 @@ data ChatCommand
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
   | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink} -- Maybe is used to report link parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
-  | APIPrepareGroup UserId CreatedLinkContact GroupShortLinkData
+  | APIPrepareGroup UserId CreatedLinkContact Bool GroupShortLinkData
   | APIChangePreparedContactUser ContactId UserId
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
@@ -505,6 +506,9 @@ data ChatCommand
   | ReactToMessage {add :: Bool, reaction :: MsgReaction, chatName :: ChatName, reactToMessage :: Text}
   | APINewGroup {userId :: UserId, incognito :: IncognitoEnabled, groupProfile :: GroupProfile}
   | NewGroup IncognitoEnabled GroupProfile
+  -- TODO [relays] owner: TBC group link's default member role for APINewPublicGroup
+  | APINewPublicGroup {userId :: UserId, incognito :: IncognitoEnabled, relayIds :: NonEmpty Int64, groupProfile :: GroupProfile}
+  | NewPublicGroup IncognitoEnabled (NonEmpty Int64) GroupProfile
   | AddMember GroupName ContactName GroupMemberRole
   | JoinGroup {groupName :: GroupName, enableNtfs :: MsgFilter}
   | AcceptMember GroupName ContactName GroupMemberRole
@@ -678,6 +682,7 @@ data ChatResponse
   | CRChatHelp {helpSection :: HelpSection}
   | CRWelcome {user :: User}
   | CRGroupCreated {user :: User, groupInfo :: GroupInfo}
+  | CRPublicGroupCreated {user :: User, groupInfo :: GroupInfo, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CRGroupMembers {user :: User, group :: Group}
   | CRMemberSupportChats {user :: User, groupInfo :: GroupInfo, members :: [GroupMember]}
   -- | CRGroupConversationsArchived {user :: User, groupInfo :: GroupInfo, archivedGroupConversations :: [GroupConversation]}
@@ -836,6 +841,7 @@ data ChatEvent
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
   | CEvtUserJoinedGroup {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember}
+  | CEvtRelayJoined {user :: User, groupInfo :: GroupInfo, relayMember :: GroupMember, groupLink :: GroupLink, groupRelays :: [GroupRelay]}
   | CEvtJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember} -- there is the same command response
   | CEvtJoinedGroupMemberConnecting {user :: User, groupInfo :: GroupInfo, hostMember :: GroupMember, member :: GroupMember}
   | CEvtMemberAcceptedByOther {user :: User, groupInfo :: GroupInfo, acceptingMember :: GroupMember, member :: GroupMember}
@@ -984,7 +990,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {groupSLinkData_ :: Maybe GroupShortLinkData}
+  = GLPOk {direct :: Bool, groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -1004,7 +1010,7 @@ connectionPlanProceed = \case
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk _ -> True
+    GLPOk _direct _ -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
