@@ -2307,7 +2307,7 @@ data class GroupMember (
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
+    return memberRole < GroupMemberRole.Moderator
         && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
         && !memberPending
   }

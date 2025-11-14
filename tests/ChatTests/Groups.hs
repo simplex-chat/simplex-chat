@@ -198,6 +198,7 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "repeat block, unblock" testBlockForAllRepeat
     it "block multiple members" testBlockForAllMultipleMembers
+    it "block left/removed members" testBlockForAllLeftRemoved
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -6972,6 +6973,39 @@ testBlockForAllMultipleMembers =
 
       cath #> "#team 6"
       [alice, bob, dan] *<# "#team cath> 6"
+
+testBlockForAllLeftRemoved :: HasCallStack => TestParams -> IO ()
+testBlockForAllLeftRemoved =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+
+      cath ##> "/leave #team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group",
+          bob <## "#team: cath left the group",
+          dan <## "#team: cath left the group"
+        ]
+
+      alice ##> "/rm team dan"
+      concurrentlyN_
+        [ alice <## "#team: you removed dan from the group",
+          do
+            dan <## "#team: alice removed you from the group"
+            dan <## "use /d #team to delete the group",
+          bob <## "#team: alice removed dan from the group"
+        ]
+
+      alice ##> "/block for all #team cath"
+      alice <## "#team: you blocked cath"
+      bob <## "#team: alice blocked cath"
+
+      alice ##> "/block for all #team dan"
+      alice <## "#team: you blocked dan"
+      bob <## "#team: alice blocked dan"
 
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do
