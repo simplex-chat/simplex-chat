@@ -3071,33 +3071,33 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var mergeCategory: CIMergeCategory? {
-        switch content {
-        case .rcvChatFeature: .chatFeature
-        case .sndChatFeature: .chatFeature
-        case .rcvGroupFeature: .chatFeature
-        case .sndGroupFeature: .chatFeature
-        case let.rcvGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userDeleted: nil
-            case .groupDeleted: nil
-            case .memberCreatedContact: nil
-            case .newMemberPendingReview: nil
-            default: .rcvGroupEvent
-            }
-        case let .sndGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userLeft: nil
-            case .memberAccepted: nil
-            case .userPendingReview: nil
-            default: .sndGroupEvent
-            }
-        default:
-            if meta.itemDeleted == nil {
+        if meta.itemDeleted != nil {
+            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+        } else {
+            switch content {
+            case .rcvChatFeature: .chatFeature
+            case .sndChatFeature: .chatFeature
+            case .rcvGroupFeature: .chatFeature
+            case .sndGroupFeature: .chatFeature
+            case let.rcvGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userDeleted: nil
+                case .groupDeleted: nil
+                case .memberCreatedContact: nil
+                case .newMemberPendingReview: nil
+                default: .rcvGroupEvent
+                }
+            case let .sndGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userLeft: nil
+                case .memberAccepted: nil
+                case .userPendingReview: nil
+                default: .sndGroupEvent
+                }
+            default:
                 nil
-            } else {
-                chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
             }
         }
     }
