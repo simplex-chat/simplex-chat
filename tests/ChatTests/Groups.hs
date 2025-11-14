@@ -87,6 +87,7 @@ chatGroupTests = do
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
+    it "delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1910,6 +1911,61 @@ testDeleteMemberMarkMessagesDeleted =
       alice #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by you]"), (1, "removed bob")])
       bob #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted by alice]"), (0, "removed you")])
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "removed bob")])
+
+testDeleteMemberMessagesLeftRemoved :: HasCallStack => TestParams -> IO ()
+testDeleteMemberMessagesLeftRemoved =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+
+      threadDelay 1000000
+      cath #> "#team 1"
+      [alice, bob, dan] *<# "#team cath> 1"
+
+      threadDelay 1000000
+      dan #> "#team 2"
+      [alice, bob, cath] *<# "#team dan> 2"
+
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "1"), (0, "2")])
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "1"), (0, "2")])
+      cath #$> ("/_get chat #1 count=2", chat, [(1, "1"), (0, "2")])
+      dan #$> ("/_get chat #1 count=2", chat, [(0, "1"), (1, "2")])
+
+      threadDelay 1000000
+      cath ##> "/leave #team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group",
+          bob <## "#team: cath left the group",
+          dan <## "#team: cath left the group"
+        ]
+
+      threadDelay 1000000
+      alice ##> "/rm team dan"
+      concurrentlyN_
+        [ alice <## "#team: you removed dan from the group",
+          do
+            dan <## "#team: alice removed you from the group"
+            dan <## "use /d #team to delete the group",
+          bob <## "#team: alice removed dan from the group"
+        ]
+
+      threadDelay 1000000
+      alice ##> "/rm #team cath messages=on"
+      alice <## "#team: you removed cath from the group with all messages"
+      bob <## "#team: alice removed cath from the group with all messages"
+
+      threadDelay 1000000
+      alice ##> "/rm #team dan messages=on"
+      alice <## "#team: you removed dan from the group with all messages"
+      bob <## "#team: alice removed dan from the group with all messages"
+
+      alice #$> ("/_get chat #1 count=6", chat, [(0, "1 [marked deleted by you]"), (0, "2 [marked deleted by you]"), (0, "left [marked deleted by you]"), (1, "removed dan"), (1, "removed cath"), (1, "removed dan")])
+      bob #$> ("/_get chat #1 count=6", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left [marked deleted by alice]"), (0, "removed dan"), (0, "removed cath"), (0, "removed dan")])
+      cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left")])
+      dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left"), (0, "removed you")])
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
