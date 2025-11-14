@@ -34,6 +34,7 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
+import chat.simplex.common.views.chat.item.safeOpenUri
 import chat.simplex.common.views.chatlist.openDirectChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
@@ -136,6 +137,7 @@ fun GroupMemberInfoView(
       blockForAll = { blockForAllAlert(rhId, groupInfo, member) },
       unblockForAll = { unblockForAllAlert(rhId, groupInfo, member) },
       removeMember = { removeMemberDialog(rhId, groupInfo, member, chatModel, close) },
+      deleteMemberMessages = { deleteMemberMessagesDialog(rhId, groupInfo, member, chatModel, close) },
       onRoleSelected = {
         if (it == newRole.value) return@GroupMemberInfoLayout
         val prevValue = newRole.value
@@ -243,26 +245,56 @@ fun removeMemberDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, c
     MR.strings.member_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.member_will_be_removed_from_chat_cannot_be_undone
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    generalGetString(MR.strings.button_remove_member_question),
+    generalGetString(messageId),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMember(rhId, groupInfo, member, withMessages = false, chatModel, close)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    })
+}
+
+fun deleteMemberMessagesDialog(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
   AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.button_remove_member),
-    text = generalGetString(messageId),
-    confirmText = generalGetString(MR.strings.remove_member_confirmation),
+    title = generalGetString(MR.strings.button_delete_member_messages_question),
+    text = generalGetString(MR.strings.member_messages_will_be_deleted_cannot_be_undone),
+    confirmText = generalGetString(MR.strings.delete_member_messages_confirmation),
     onConfirm = {
-      removeMember(rhId, member, chatModel, close)
+      removeMember(rhId, groupInfo, member, withMessages = true, chatModel, close)
     },
     destructive = true,
   )
 }
 
-fun removeMember(rhId: Long?, member: GroupMember, chatModel: ChatModel, close: (() -> Unit)? = null) {
+fun removeMember(rhId: Long?, groupInfo: GroupInfo, member: GroupMember, withMessages: Boolean, chatModel: ChatModel, close: (() -> Unit)? = null) {
   withBGApi {
-    val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId))
+    val r = chatModel.controller.apiRemoveMembers(rhId, member.groupId, listOf(member.groupMemberId), withMessages = withMessages)
     if (r != null) {
       val (updatedGroupInfo, removedMembers) = r
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
         removedMembers.forEach { removedMember ->
           chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, removedMember)
+          if (withMessages) {
+            chat.simplex.common.platform.chatModel.chatsContext.removeMemberItems(rhId, removedMember, byMember = groupInfo.membership, groupInfo)
+          }
         }
       }
     }
@@ -289,6 +321,7 @@ fun GroupMemberInfoLayout(
   blockForAll: () -> Unit,
   unblockForAll: () -> Unit,
   removeMember: () -> Unit,
+  deleteMemberMessages: () -> Unit,
   onRoleSelected: (GroupMemberRole) -> Unit,
   switchMemberAddress: () -> Unit,
   abortSwitchMemberAddress: () -> Unit,
@@ -345,7 +378,11 @@ fun GroupMemberInfoLayout(
           }
         }
         if (canRemove) {
-          RemoveMemberButton(removeMember)
+          if (member.memberStatus == GroupMemberStatus.MemRemoved || member.memberStatus == GroupMemberStatus.MemLeft) {
+            DeleteMemberMessagesButton(deleteMemberMessages)
+          } else {
+            RemoveMemberButton(removeMember)
+          }
         }
       }
     }
@@ -670,6 +707,17 @@ fun RemoveMemberButton(onClick: () -> Unit) {
 }
 
 @Composable
+fun DeleteMemberMessagesButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_delete),
+    stringResource(MR.strings.button_delete_member_messages),
+    click = onClick,
+    textColor = Color.Red,
+    iconColor = Color.Red,
+  )
+}
+
+@Composable
 fun OpenChatButton(
   modifier: Modifier,
   disabledLook: Boolean = false,
@@ -937,6 +985,7 @@ fun PreviewGroupMemberInfoLayout() {
       blockForAll = {},
       unblockForAll = {},
       removeMember = {},
+      deleteMemberMessages = {},
       onRoleSelected = {},
       switchMemberAddress = {},
       abortSwitchMemberAddress = {},
