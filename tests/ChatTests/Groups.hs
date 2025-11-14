@@ -1962,8 +1962,8 @@ testDeleteMemberMessagesLeftRemoved =
       alice <## "#team: you removed dan from the group with all messages"
       bob <## "#team: alice removed dan from the group with all messages"
 
-      alice #$> ("/_get chat #1 count=6", chat, [(0, "1 [marked deleted by you]"), (0, "2 [marked deleted by you]"), (0, "left [marked deleted by you]"), (1, "removed dan"), (1, "removed cath"), (1, "removed dan")])
-      bob #$> ("/_get chat #1 count=6", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left [marked deleted by alice]"), (0, "removed dan"), (0, "removed cath"), (0, "removed dan")])
+      alice #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by you]"), (0, "2 [marked deleted by you]"), (0, "left [marked deleted by you]"), (1, "removed dan")])
+      bob #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left [marked deleted by alice]"), (0, "removed dan")])
       cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left")])
       dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left"), (0, "removed you")])
 

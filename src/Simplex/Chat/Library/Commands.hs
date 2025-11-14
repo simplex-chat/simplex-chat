@@ -2522,19 +2522,25 @@ processChatCommand vr nm = \case
           let chatScope = toChatScope <$> chatScopeInfo
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
-          let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
+          let itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
+              skipUnwantedItem = \case
+                Right Nothing -> Nothing
+                Right (Just a) -> Just $ Right a
+                Left e -> Just $ Left e
+              itemsData = mapMaybe skipUnwantedItem itemsData_
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData Nothing False
-          when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
           pure (errs, deleted, acis)
           where
-            sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
-            sndItemData GroupMember {groupMemberId, memberProfile} msg =
-              let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                  ts = ciContentTexts content
-               in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
+            sndItemData :: GroupMember -> SndMessage -> Maybe (NewSndChatItemData c)
+            sndItemData GroupMember {groupMemberId, memberProfile, memberStatus} msg
+              | memberStatus == GSMemRemoved || memberStatus == GSMemLeft = Nothing
+              | otherwise =
+                  let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                      ts = ciContentTexts content
+                   in Just $ NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
             delMember db m = do
               -- We're in a function used in batch member deletion, and since we're passing same gInfo for each member,
               -- voided result (updated group info) may have incorrect state of membersRequireAttention.
