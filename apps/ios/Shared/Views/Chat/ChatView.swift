@@ -2090,6 +2090,11 @@ struct ChatView: View {
             } else if ci.mergeCategory != nil && ((range?.count ?? 0) > 1 || revealed) {
                 if revealed { shrinkButton() } else { expandButton() }
                 deleteButton(ci)
+            } else if ci.meta.itemSharedMsgId != nil,
+                      ci.chatDir != .groupSnd,
+                      let (groupInfo, _) = ci.memberToModerate(chat.chatInfo) {
+                moderateButton(ci, groupInfo)
+                deleteButton(ci)
             } else if ci.showLocalDelete {
                 deleteButton(ci)
             } else {

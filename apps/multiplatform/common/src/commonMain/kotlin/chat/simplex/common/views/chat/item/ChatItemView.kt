@@ -535,6 +535,12 @@ fun ChatItemView(
                 }
                 else -> {
                   DefaultDropdownMenu(showMenu) {
+                    if (cItem.meta.itemSharedMsgId != null && cItem.chatDir !is CIDirection.GroupSnd) {
+                      val groupInfo = cItem.memberToModerate(cInfo)?.first
+                      if (groupInfo != null) {
+                        ModerateItemAction(cItem, questionText = moderateMessageQuestionText(cInfo.featureEnabled(ChatFeature.FullDelete), 1), showMenu, deleteMessage)
+                      }
+                    }
                     DeleteItemAction(chatsCtx, cItem, revealed, showMenu, questionText = deleteMessageQuestionText(), deleteMessage, deleteMessages)
                     if (selectedChatItems.value == null) {
                       Divider()

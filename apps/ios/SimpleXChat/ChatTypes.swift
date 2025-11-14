@@ -3465,6 +3465,7 @@ public struct CIMeta: Decodable, Hashable {
     var itemText: String
     public var itemStatus: CIStatus
     public var sentViaProxy: Bool?
+    public var itemSharedMsgId: String?
     public var createdAt: Date
     public var updatedAt: Date
     public var itemForwarded: CIForwardedFrom?
