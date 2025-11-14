@@ -462,6 +462,7 @@ data ChatCommand
   | AddContact IncognitoEnabled
   | APISetConnectionIncognito Int64 IncognitoEnabled
   | APIChangeConnectionUser Int64 UserId -- new user id to switch connection to
+  | StressTest Int CreatedLinkContact GroupShortLinkData
   | APIConnectPlan {userId :: UserId, connectionLink :: Maybe AConnectionLink} -- Maybe is used to report link parsing failure as special error
   | APIPrepareContact UserId ACreatedConnLink ContactShortLinkData
   | APIPrepareGroup UserId CreatedLinkContact Bool GroupShortLinkData
