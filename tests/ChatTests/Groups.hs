@@ -87,7 +87,7 @@ chatGroupTests = do
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
-    it "delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
+    it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -1952,12 +1952,10 @@ testDeleteMemberMessagesLeftRemoved =
           bob <## "#team: alice removed dan from the group"
         ]
 
-      threadDelay 1000000
       alice ##> "/rm #team cath messages=on"
       alice <## "#team: you removed cath from the group with all messages"
       bob <## "#team: alice removed cath from the group with all messages"
 
-      threadDelay 1000000
       alice ##> "/rm #team dan messages=on"
       alice <## "#team: you removed dan from the group with all messages"
       bob <## "#team: alice removed dan from the group with all messages"
