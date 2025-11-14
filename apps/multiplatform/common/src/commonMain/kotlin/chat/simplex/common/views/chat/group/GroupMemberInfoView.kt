@@ -34,7 +34,6 @@ import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.model.GroupInfo
 import chat.simplex.common.platform.*
-import chat.simplex.common.views.chat.item.safeOpenUri
 import chat.simplex.common.views.chatlist.openDirectChat
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
