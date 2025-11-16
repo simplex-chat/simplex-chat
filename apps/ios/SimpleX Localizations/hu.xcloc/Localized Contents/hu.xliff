@@ -1719,34 +1719,34 @@ set passcode view</note>
         <target>Feltöltött töredékek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear" xml:space="preserve">
+      <trans-unit id="Clear" xml:space="preserve" approved="no">
         <source>Clear</source>
-        <target>Kiürítés</target>
+        <target state="translated">Ürítés</target>
         <note>swipe action</note>
       </trans-unit>
-      <trans-unit id="Clear conversation" xml:space="preserve">
+      <trans-unit id="Clear conversation" xml:space="preserve" approved="no">
         <source>Clear conversation</source>
-        <target>Üzenetek kiürítése</target>
+        <target state="translated">Üzenetek ürítése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear conversation?" xml:space="preserve">
+      <trans-unit id="Clear conversation?" xml:space="preserve" approved="no">
         <source>Clear conversation?</source>
-        <target>Kiüríti az üzeneteket?</target>
+        <target state="translated">Üríti az üzeneteket?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear group?" xml:space="preserve">
+      <trans-unit id="Clear group?" xml:space="preserve" approved="no">
         <source>Clear group?</source>
-        <target>Kiüríti a csoportot?</target>
+        <target state="translated">Üríti a csoportot?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear or delete group?" xml:space="preserve">
+      <trans-unit id="Clear or delete group?" xml:space="preserve" approved="no">
         <source>Clear or delete group?</source>
-        <target>Csoport kiürítése vagy törlése?</target>
+        <target state="translated">Csoport ürítése vagy törlése?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear private notes?" xml:space="preserve">
+      <trans-unit id="Clear private notes?" xml:space="preserve" approved="no">
         <source>Clear private notes?</source>
-        <target>Kiüríti a privát jegyzeteket?</target>
+        <target state="translated">Üríti a privát jegyzeteket?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Clear verification" xml:space="preserve">
@@ -4270,9 +4270,9 @@ Hiba: %2$@</target>
         <target>Hogyan működik</target>
         <note>alert button</note>
       </trans-unit>
-      <trans-unit id="How to" xml:space="preserve">
+      <trans-unit id="How to" xml:space="preserve" approved="no">
         <source>How to</source>
-        <target>Hogyan</target>
+        <target state="translated">Útmutató</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="How to use it" xml:space="preserve">
@@ -5042,9 +5042,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Üzenetkézbesítési figyelmeztetés</target>
         <note>item status text</note>
       </trans-unit>
-      <trans-unit id="Message draft" xml:space="preserve">
+      <trans-unit id="Message draft" xml:space="preserve" approved="no">
         <source>Message draft</source>
-        <target>Üzenetvázlat</target>
+        <target state="translated">Piszkozatok</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Message forwarded" xml:space="preserve">
