@@ -274,7 +274,7 @@
     <string name="snd_conn_event_switch_queue_phase_changing_for_member">cím módosítása %s számára…</string>
     <string name="chat_database_imported">Csevegési adatbázis importálva</string>
     <string name="delete_messages">Üzenetek törlése</string>
-    <string name="clear_chat_menu_action">Kiürítés</string>
+    <string name="clear_chat_menu_action">Ürítés</string>
     <string name="icon_descr_close_button">Bezárás gomb</string>
     <string name="chat_is_stopped">A csevegés megállt</string>
     <string name="item_info_current">(jelenlegi)</string>
@@ -333,7 +333,7 @@
     <string name="create_secret_group_title">Titkos csoport létrehozása</string>
     <string name="clear_contacts_selection_button">Elvetés</string>
     <string name="delete_contact_question">Törli a partnert?</string>
-    <string name="clear_verb">Kiürítés</string>
+    <string name="clear_verb">Ürítés</string>
     <string name="create_address_and_let_people_connect">Cím létrehozása, hogy az emberek kapcsolatba léphessenek Önnel.</string>
     <string name="v4_4_verify_connection_security_desc">Biztonsági kódok összehasonlítása a partnerekével.</string>
     <string name="smp_server_test_compare_file">Fájl-összehasonlítás</string>
@@ -341,9 +341,9 @@
     <string name="delete_message__question">Törli az üzenetet?</string>
     <string name="delete_pending_connection__question">Törli a függőben lévő kapcsolatot?</string>
     <string name="database_encrypted">Adatbázis titkosítva!</string>
-    <string name="clear_chat_question">Kiüríti a csevegést?</string>
+    <string name="clear_chat_question">Üríti a csevegést?</string>
     <string name="database_downgrade">Adatbázis visszafejlesztése</string>
-    <string name="clear_chat_button">Üzenetek kiürítése</string>
+    <string name="clear_chat_button">Üzenetek ürítése</string>
     <string name="database_passphrase_will_be_updated">Az adatbázis titkosítási jelmondata frissítve lesz.</string>
     <string name="multicast_connect_automatically">Kapcsolódás automatikusan</string>
     <string name="database_error">Adatbázishiba</string>
@@ -631,7 +631,7 @@
     <string name="incorrect_passcode">Téves jelkód</string>
     <string name="onboarding_notifications_mode_service">Azonnali</string>
     <string name="v5_4_incognito_groups">Inkognitócsoportok</string>
-    <string name="how_to">Hogyan</string>
+    <string name="how_to">Útmutató</string>
     <string name="hide_verb">Összecsukás</string>
     <string name="gallery_image_button">Kép</string>
     <string name="v4_3_improved_privacy_and_security">Továbbfejlesztett adatvédelem és biztonság</string>
@@ -753,7 +753,7 @@
     <string name="message_deletion_prohibited_in_chat">Az üzenetek végleges törlése le van tiltva.</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[A(z) <b>%s</b> nevű hordozható eszköz le lett választva]]></string>
     <string name="custom_time_unit_months">hónap</string>
-    <string name="privacy_message_draft">Üzenetvázlat</string>
+    <string name="privacy_message_draft">Piszkozatok</string>
     <string name="v5_2_disappear_one_message">Egy üzenet eltüntetése</string>
     <string name="v4_3_irreversible_message_deletion">Végleges üzenettörlés</string>
     <string name="videos_limit_desc">Egyszerre csak 10 videó küldhető el</string>
@@ -777,7 +777,7 @@
     <string name="only_owners_can_enable_files_and_media">Csak a csoport tulajdonosai engedélyezhetik a fájlok és a médiatartalmak küldését.</string>
     <string name="loading_remote_file_title">Fájl betöltése…</string>
     <string name="no_contacts_to_add">Nincs hozzáadandó partner</string>
-    <string name="v4_5_message_draft">Üzenetvázlat</string>
+    <string name="v4_5_message_draft">Piszkozatok</string>
     <string name="display_name_invited_to_connect">függőben lévő kapcsolat</string>
     <string name="add_contact">Egyszer használható meghívó</string>
     <string name="notifications">Értesítések</string>
@@ -1555,7 +1555,7 @@
     <string name="note_folder_local_display_name">Privát jegyzetek</string>
     <string name="error_deleting_note_folder">Hiba történt a privát jegyzetek törlésekor</string>
     <string name="error_creating_message">Hiba történt az üzenet létrehozásakor</string>
-    <string name="clear_note_folder_question">Kiüríti a privát jegyzeteket?</string>
+    <string name="clear_note_folder_question">Üríti a privát jegyzeteket?</string>
     <string name="info_row_created_at">Létrehozva</string>
     <string name="saved_message_title">Mentett üzenet</string>
     <string name="share_text_created_at">Létrehozva: %s</string>
