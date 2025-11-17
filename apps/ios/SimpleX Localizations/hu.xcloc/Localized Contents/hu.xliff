@@ -90,14 +90,14 @@
         <target>%@ kapcsolódott!</target>
         <note>notification title</note>
       </trans-unit>
-      <trans-unit id="%@ is not verified" xml:space="preserve">
+      <trans-unit id="%@ is not verified" xml:space="preserve" approved="no">
         <source>%@ is not verified</source>
-        <target>%@ nincs hitelesítve</target>
+        <target state="translated">%@ nincs ellenőrizve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="%@ is verified" xml:space="preserve">
+      <trans-unit id="%@ is verified" xml:space="preserve" approved="no">
         <source>%@ is verified</source>
-        <target>%@ hitelesítve</target>
+        <target state="translated">%@ ellenőrizve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%@ server" xml:space="preserve">
@@ -1749,9 +1749,9 @@ set passcode view</note>
         <target state="translated">Üríti a privát jegyzeteket?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Clear verification" xml:space="preserve">
+      <trans-unit id="Clear verification" xml:space="preserve" approved="no">
         <source>Clear verification</source>
-        <target>Hitelesítés törlése</target>
+        <target state="translated">Ellenőrzés törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Color chats with the new themes." xml:space="preserve">
@@ -2454,9 +2454,9 @@ swipe action</note>
         <target>Törlés ennyi idő után</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Delete all files" xml:space="preserve">
+      <trans-unit id="Delete all files" xml:space="preserve" approved="no">
         <source>Delete all files</source>
-        <target>Az összes fájl törlése</target>
+        <target state="translated">Összes fájl törlése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Delete and notify contact" xml:space="preserve">
@@ -3630,9 +3630,9 @@ chat item action</note>
         <target>Hiba történt az archívum feltöltésekor</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Error verifying passphrase:" xml:space="preserve">
+      <trans-unit id="Error verifying passphrase:" xml:space="preserve" approved="no">
         <source>Error verifying passphrase:</source>
-        <target>Hiba történt a jelmondat hitelesítésekor:</target>
+        <target state="translated">Hiba történt a jelmondat ellenőrzésekor:</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Error: " xml:space="preserve">
@@ -4892,9 +4892,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Megjelölés olvasottként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Mark verified" xml:space="preserve">
+      <trans-unit id="Mark verified" xml:space="preserve" approved="no">
         <source>Mark verified</source>
-        <target>Hitelesítés</target>
+        <target state="translated">Megjelölés ellenőrzöttként</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Markdown in messages" xml:space="preserve">
@@ -6737,9 +6737,9 @@ swipe action</note>
         <target>Tippek visszaállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Reset all statistics" xml:space="preserve">
+      <trans-unit id="Reset all statistics" xml:space="preserve" approved="no">
         <source>Reset all statistics</source>
-        <target>Az összes statisztika visszaállítása</target>
+        <target state="translated">Összes statisztika visszaállítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reset all statistics?" xml:space="preserve">
@@ -8436,9 +8436,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>A(z) **%@** kiszolgálóinak használatához fogadja el a használati feltételeket.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve">
+      <trans-unit id="To verify end-to-end encryption with your contact compare (or scan) the code on your devices." xml:space="preserve" approved="no">
         <source>To verify end-to-end encryption with your contact compare (or scan) the code on your devices.</source>
-        <target>A végpontok közötti titkosítás hitelesítéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) a partnere eszközén lévő kóddal.</target>
+        <target state="translated">A végpontok közötti titkosítás ellenőrzéséhez hasonlítsa össze (vagy olvassa be a QR-kódot) a partnere eszközén lévő kóddal.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Toggle chat list:" xml:space="preserve">
@@ -8638,9 +8638,9 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>Frissítés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Update database passphrase" xml:space="preserve">
+      <trans-unit id="Update database passphrase" xml:space="preserve" approved="no">
         <source>Update database passphrase</source>
-        <target>Az adatbázis jelmondatának módosítása</target>
+        <target state="translated">Adatbázis jelmondatának módosítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Update network settings?" xml:space="preserve">
@@ -8858,39 +8858,39 @@ A kapcsolódáshoz kérje meg a partnerét, hogy hozzon létre egy másik kapcso
         <target>SimpleX Chat kiszolgálók használatban.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify code with desktop" xml:space="preserve">
+      <trans-unit id="Verify code with desktop" xml:space="preserve" approved="no">
         <source>Verify code with desktop</source>
-        <target>Kód hitelesítése a számítógépen</target>
+        <target state="translated">Kód ellenőrzése a számítógépen</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify connection" xml:space="preserve">
+      <trans-unit id="Verify connection" xml:space="preserve" approved="no">
         <source>Verify connection</source>
-        <target>Kapcsolat hitelesítése</target>
+        <target state="translated">Kapcsolat ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify connection security" xml:space="preserve">
+      <trans-unit id="Verify connection security" xml:space="preserve" approved="no">
         <source>Verify connection security</source>
-        <target>Biztonságos kapcsolat hitelesítése</target>
+        <target state="translated">Biztonságos kapcsolat ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify connections" xml:space="preserve">
+      <trans-unit id="Verify connections" xml:space="preserve" approved="no">
         <source>Verify connections</source>
-        <target>Kapcsolatok hitelesítése</target>
+        <target state="translated">Kapcsolatok ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify database passphrase" xml:space="preserve">
+      <trans-unit id="Verify database passphrase" xml:space="preserve" approved="no">
         <source>Verify database passphrase</source>
-        <target>Az adatbázis jelmondatának hitelesítése</target>
+        <target state="translated">Adatbázis jelmondatának ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify passphrase" xml:space="preserve">
+      <trans-unit id="Verify passphrase" xml:space="preserve" approved="no">
         <source>Verify passphrase</source>
-        <target>Jelmondat hitelesítése</target>
+        <target state="translated">Jelmondat ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Verify security code" xml:space="preserve">
+      <trans-unit id="Verify security code" xml:space="preserve" approved="no">
         <source>Verify security code</source>
-        <target>Biztonsági kód hitelesítése</target>
+        <target state="translated">Biztonsági kód ellenőrzése</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Via browser" xml:space="preserve">
@@ -9320,9 +9320,9 @@ Megismétli a csatlakozási kérést?</target>
         <target>Ön nem tud üzeneteket küldeni!</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="You could not be verified; please try again." xml:space="preserve">
+      <trans-unit id="You could not be verified; please try again." xml:space="preserve" approved="no">
         <source>You could not be verified; please try again.</source>
-        <target>Nem sikerült hitelesíteni; próbálja meg újra.</target>
+        <target state="translated">Nem sikerült ellenőrizni; próbálja meg újra.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You decide who can connect." xml:space="preserve">
