@@ -2503,4 +2503,9 @@
     <string name="network_error_unknown_ca">L\'empremta digital a l\'adreça del servidor no coincideix amb el certificat: %1$s.</string>
     <string name="server_no_sub">cap subscripció</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">No esteu connectat(da) al servidor que s\'utilitza per rebre missatges d\'aquesta connexió (sense subscripció).</string>
+    <string name="button_delete_member_messages">Suprimir missatges de membre</string>
+    <string name="button_delete_member_messages_question">Suprimir missatges de membre?</string>
+    <string name="delete_member_messages_confirmation">Suprimir missatges</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Els missatges de membre s\'eliminaran; això no es pot desfer!</string>
+    <string name="remove_member_delete_messages_confirmation">Eliminar membre i els seus missatges</string>
 </resources>
