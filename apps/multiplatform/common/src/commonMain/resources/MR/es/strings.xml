@@ -2537,4 +2537,9 @@
     <string name="smp_proxy_error_unknown_ca">La huella en la dirección del servidor de reenvío no coincide con el certificado: %1$s.</string>
     <string name="server_no_sub">Sin suscripciones</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</string>
+    <string name="button_delete_member_messages">Eliminar mensajes del miembro</string>
+    <string name="button_delete_member_messages_question">¿Eliminar mensajes del miembro?</string>
+    <string name="delete_member_messages_confirmation">Eliminar mensajes</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Los mensajes del miembro serán eliminados. ¡No puede deshacerse!</string>
+    <string name="remove_member_delete_messages_confirmation">Eliminar miembro y sus mensajes</string>
 </resources>
