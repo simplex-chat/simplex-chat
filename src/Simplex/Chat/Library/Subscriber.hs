@@ -2774,7 +2774,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left _ -> do
               messageError "x.grp.mem.del with unknown member ID"
               pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
-            Right deletedMember@GroupMember {groupMemberId, memberProfile} ->
+            Right deletedMember@GroupMember {groupMemberId, memberProfile, memberStatus} ->
               checkRole deletedMember $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
                 if isUserGrpFwdRelay gInfo && not forwarded
@@ -2786,9 +2786,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   else deleteMemberConnection deletedMember
                 -- undeleted "member connected" chat item will prevent deletion of member record
                 gInfo' <- deleteOrUpdateMemberRecord user gInfo deletedMember
-                let deletedMember' = deletedMember {memberStatus = GSMemRemoved}
+                let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
+                    deletedMember' = deletedMember {memberStatus = GSMemRemoved}
                 when withMessages $ deleteMessages gInfo' deletedMember' SMDRcv
-                deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                unless wasDeleted $ deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo' m deletedMember' withMessages
                 pure $ memberEventDeliveryScope deletedMember
       where

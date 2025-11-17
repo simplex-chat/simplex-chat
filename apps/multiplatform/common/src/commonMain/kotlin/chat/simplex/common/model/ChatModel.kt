@@ -683,11 +683,6 @@ object ChatModel {
         return updatedItem
       }
 
-      // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-      if (byMember.groupMemberId == groupInfo.membership.groupMemberId) {
-        Log.d(TAG, "exiting removeMemberItems")
-        return
-      }
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
         for (i in 0 until chatItems.value.size) {
@@ -2295,12 +2290,11 @@ data class GroupMember (
 
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+    return userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
-    if (!canBeRemoved(groupInfo) || memberPending) null
+    if (!canBeRemoved(groupInfo) || memberStatus == GroupMemberStatus.MemRemoved || memberStatus == GroupMemberStatus.MemLeft || memberPending) null
     else groupInfo.membership.memberRole.let { userRole ->
       GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
@@ -2796,30 +2790,29 @@ data class ChatItem (
     }
 
   val mergeCategory: CIMergeCategory?
-    get() = when (content) {
-      is CIContent.RcvChatFeature,
-      is CIContent.SndChatFeature,
-      is CIContent.RcvGroupFeature,
-      is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
-      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
-        is RcvGroupEvent.UserRole,
-        is RcvGroupEvent.UserDeleted,
-        is RcvGroupEvent.GroupDeleted,
-        is RcvGroupEvent.MemberCreatedContact,
-        is RcvGroupEvent.NewMemberPendingReview ->
-          null
-        else -> CIMergeCategory.RcvGroupEvent
-      }
-      is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
-        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
-        else -> CIMergeCategory.SndGroupEvent
-      }
-      else -> {
-        if (meta.itemDeleted == null) {
-          null
-        } else {
-          if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+    get() = if (meta.itemDeleted != null) {
+      if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+    } else {
+      when (content) {
+        is CIContent.RcvChatFeature,
+        is CIContent.SndChatFeature,
+        is CIContent.RcvGroupFeature,
+        is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
+        is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+          is RcvGroupEvent.UserRole,
+          is RcvGroupEvent.UserDeleted,
+          is RcvGroupEvent.GroupDeleted,
+          is RcvGroupEvent.MemberCreatedContact,
+          is RcvGroupEvent.NewMemberPendingReview ->
+            null
+          else -> CIMergeCategory.RcvGroupEvent
         }
+        is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
+          is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
+          else -> CIMergeCategory.SndGroupEvent
+        }
+        else ->
+          null
       }
     }
 
