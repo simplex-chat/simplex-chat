@@ -44,9 +44,12 @@ import Database.SQLite.Simple.QQ (sql)
 --     this idea was tested in PR 6327
 -- - another use of group_member_intros - createIntroductions, checkInverseIntro logic
 --   - TBC how to avoid making redundant introductions between concurrently joining members
---   - possibly by tracking introduction_ts (add new field) - save introduction_ts on member's CON in same transaction as
---     retrieving list of members to introduce to; if member has introduction_ts set, skip introduction to them
---   - for group knocking introduction_ts should be set at point of introducing to remaining members
+--   - second vector - for member introductions, or track in same vector
+--   - when introducing to moderators only, do nothing - new moderators are introduced only to current members,
+--     no pending in progress members, so race can't happen there
+--   - when introducing to all, filter out members who already were introduced to this member
+--   - can also solve previous issue of introducing remaining members in same way - don't introduce
+--     to members this member already was introduced to
 m20251117_member_status_vector :: Query
 m20251117_member_status_vector =
   [sql|
