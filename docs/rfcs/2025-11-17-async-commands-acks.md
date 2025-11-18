@@ -13,7 +13,7 @@ An idea is to persist events in agent until chat acknowledges their processing, 
 Save response on command before notifying chat (event received by chat via subQ).
 
 ```sql
-ALTER TABLE commands ADD COLUMN response BLOB;
+ALTER TABLE commands ADD COLUMN event BLOB;
 ```
 
 Type is `AEvent`, requires encoding for To and FromField instances.
