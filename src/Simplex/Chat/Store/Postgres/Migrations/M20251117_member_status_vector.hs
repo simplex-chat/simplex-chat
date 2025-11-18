@@ -16,19 +16,27 @@ ALTER TABLE groups ADD COLUMN last_member_sequential_id BIGINT NOT NULL DEFAULT 
 
 ALTER TABLE group_members ADD COLUMN member_status_vector BYTEA;
 
-WITH members_numbered AS (
-  SELECT
-    group_member_id,
-    ROW_NUMBER() OVER (
-      PARTITION BY group_id
-      ORDER BY group_member_id ASC
-    ) AS rn
-  FROM group_members
-)
-UPDATE group_members gm
+CREATE INDEX tmp_idx_group_members_group_id_group_member_id ON group_members(group_id, group_member_id);
+
+CREATE TABLE tmp_members_numbered AS
+SELECT
+  group_member_id,
+  ROW_NUMBER() OVER (
+    PARTITION BY group_id
+    ORDER BY group_member_id ASC
+  ) AS rn
+FROM group_members;
+
+CREATE INDEX tmp_idx_members_numbered ON tmp_members_numbered(group_member_id);
+
+UPDATE group_members AS gm
 SET sequential_id = n.rn
-FROM members_numbered n
-WHERE gm.group_member_id = n.group_member_id;
+FROM tmp_members_numbered n
+WHERE n.group_member_id = gm.group_member_id;
+
+DROP INDEX tmp_idx_group_members_group_id_group_member_id;
+DROP INDEX tmp_idx_members_numbered;
+DROP TABLE tmp_members_numbered;
 
 CREATE UNIQUE INDEX idx_group_members_group_id_sequential_id ON group_members(group_id, sequential_id);
 
