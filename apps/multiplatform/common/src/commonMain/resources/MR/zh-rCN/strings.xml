@@ -2525,4 +2525,9 @@
     <string name="network_error_unknown_ca">服务器地址证书和证书不匹配：%1$s。</string>
     <string name="server_no_sub">无订阅</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">未连接到用于从该连接接收消息的服务器（无订阅）。</string>
+    <string name="button_delete_member_messages">删除成员消息</string>
+    <string name="button_delete_member_messages_question">删除成员消息吗？</string>
+    <string name="delete_member_messages_confirmation">删除消息</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">成员消息将被删除 - 这无法撤销！</string>
+    <string name="remove_member_delete_messages_confirmation">移除并删除消息</string>
 </resources>
