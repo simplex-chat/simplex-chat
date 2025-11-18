@@ -8,6 +8,8 @@ import Database.SQLite.Simple.QQ (sql)
 -- to do list:
 -- - directory migration
 --   - background process to set forward_bitvector based on group_member_intros
+--   - also set forward_bitvector on forward (recipient list for sender is known there)
+--   - take member locks when updating forward_bitvector
 --   - for duration of migration forwarding operates in 2 modes simultaneously:
 --     - if forward_bitvector is set, use it
 --     - otherwise, use existing logic based on group_member_intros
