@@ -1,20 +1,20 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20251117_group_forward_bitvector where
+module Simplex.Chat.Store.Postgres.Migrations.M20251117_member_status_vector where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
-m20251117_group_forward_bitvector :: Text
-m20251117_group_forward_bitvector =
+m20251117_member_status_vector :: Text
+m20251117_member_status_vector =
   T.pack
     [r|
 ALTER TABLE group_members ADD COLUMN sequential_id BIGINT NOT NULL DEFAULT 0;
 
 ALTER TABLE groups ADD COLUMN last_member_sequential_id BIGINT NOT NULL DEFAULT 0;
 
-ALTER TABLE group_members ADD COLUMN forward_bitvector BYTEA;
+ALTER TABLE group_members ADD COLUMN member_status_vector BYTEA;
 
 WITH members_numbered AS (
   SELECT
@@ -40,8 +40,8 @@ SET last_member_sequential_id = COALESCE((
 ), 0);
 |]
 
-down_m20251117_group_forward_bitvector :: Text
-down_m20251117_group_forward_bitvector =
+down_m20251117_member_status_vector :: Text
+down_m20251117_member_status_vector =
   T.pack
     [r|
 DROP INDEX idx_group_members_group_id_sequential_id;
@@ -50,5 +50,5 @@ ALTER TABLE group_members DROP COLUMN sequential_id;
 
 ALTER TABLE groups DROP COLUMN last_member_sequential_id;
 
-ALTER TABLE group_members DROP COLUMN forward_bitvector;
+ALTER TABLE group_members DROP COLUMN member_status_vector;
 |]

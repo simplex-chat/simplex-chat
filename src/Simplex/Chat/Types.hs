@@ -946,7 +946,7 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    forwardBitvector :: Maybe ByteString
+    memberStatusVector :: Maybe ByteString
   }
   deriving (Eq, Show)
 
