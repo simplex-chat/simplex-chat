@@ -44,8 +44,10 @@ RUN apt-get update && \
 # depends on libjpeg.so.8 and liblcms2.so.2 which are NOT copied into final
 # /usr/lib/runtime/lib directory and I do not have time to figure out gradle.kotlin
 # to fix this :(
-RUN export JAVA_MAJOR=$(printf "${JAVA}" | awk -F. '{print $1}') JAVA_DEB=$(printf "${JAVA}" | sed 's/\.1$/-1/') &&\
-    curl --proto '=https' --tlsv1.2 -sSf "https://corretto.aws/downloads/resources/${JAVA}/java-${JAVA_MAJOR}-amazon-corretto-jdk_${JAVA_DEB}_amd64.deb" -o java-corretto.deb &&\
+RUN export JAVA_MAJOR=$(printf "${JAVA}" | awk -F. '{print $1}') \
+           JAVA_DEB=$(printf "${JAVA}" | sed 's/\.1$/-1/') \
+           JAVA_ARCH=$(case "$(uname -m)" in x86_64) printf 'amd64' ;; aarch64) printf 'arm64' ;; *) printf 'unknown' ;; esac) &&\
+    curl --proto '=https' --tlsv1.2 -sSf "https://corretto.aws/downloads/resources/${JAVA}/java-${JAVA_MAJOR}-amazon-corretto-jdk_${JAVA_DEB}_${JAVA_ARCH}.deb" -o java-corretto.deb &&\
     apt install -y ./java-corretto.deb
 
 # Specify bootstrap Haskell versions
