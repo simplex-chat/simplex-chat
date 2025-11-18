@@ -2042,4 +2042,7 @@
     <string name="no_message_servers_configured_for_private_routing">プライベートメッセージルーティング用のサーバーがありません。</string>
     <string name="no_media_servers_configured">メディアおよびファイルサーバーは存在しません。</string>
     <string name="no_media_servers_configured_for_sending">ファイルを送信するサーバーがありません。</string>
+    <string name="for_social_media">ソーシャルメディア向け</string>
+    <string name="operator_use_operator_toggle_description">サーバを利用する</string>
+    <string name="your_servers">あなたのサーバ</string>
 </resources>
