@@ -2614,7 +2614,7 @@
     <string name="not_connected_to_server_to_receive_messages_no_sub">Sie sind nicht mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird (kein Abonnement).</string>
     <string name="button_delete_member_messages">Mitgliedsnachrichten löschen</string>
     <string name="button_delete_member_messages_question">Mitgliedsnachrichten löschen?</string>
-    <string name="delete_member_messages_confirmation">Nachrichten löschen</string>
+    <string name="delete_member_messages_confirmation">Mitgliedsnachrichten löschen</string>
     <string name="member_messages_will_be_deleted_cannot_be_undone">Mitgliedsnachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
-    <string name="remove_member_delete_messages_confirmation">Nachrichten entfernen und endgültig löschen</string>
+    <string name="remove_member_delete_messages_confirmation">Mitglied entfernen und Nachrichten löschen</string>
 </resources>
