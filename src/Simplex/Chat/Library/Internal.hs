@@ -1034,14 +1034,14 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m = do
-  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  members <- withStore' $ \db -> getGroupMembersForIntroduction db vr user gInfo m
   let recipients = filter memberCurrent members
   introduceMember vr user gInfo m recipients Nothing
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m = do
   (members, introducedGMIds) <-
-    withStore' $ \db -> (,) <$> getGroupMembers db vr user gInfo <*> getIntroducedGroupMemberIds db m
+    withStore' $ \db -> (,) <$> getGroupMembersForIntroduction db vr user gInfo m <*> getIntroducedGroupMemberIds db m
   let recipients = filter (introduceMemP introducedGMIds) members
   introduceMember vr user gInfo m recipients Nothing
   where

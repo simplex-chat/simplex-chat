@@ -121,6 +121,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_unused_connections
           Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
+          Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -266,6 +267,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections
           Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
+          Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
