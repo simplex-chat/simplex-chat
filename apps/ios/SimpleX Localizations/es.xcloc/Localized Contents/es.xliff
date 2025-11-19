@@ -5047,9 +5047,9 @@ This is your link for group %@!</source>
         <target>Borrador de mensaje</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Message forwarded" xml:space="preserve">
+      <trans-unit id="Message forwarded" xml:space="preserve" approved="no">
         <source>Message forwarded</source>
-        <target>Mensaje reenviado</target>
+        <target state="translated">Mensaje reenviado</target>
         <note>item status text</note>
       </trans-unit>
       <trans-unit id="Message instantly once you tap Connect." xml:space="preserve">
@@ -5482,9 +5482,9 @@ This is your link for group %@!</source>
         <target>¡Sin dispositivo token!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve">
+      <trans-unit id="No direct connection yet, message is forwarded by admin." xml:space="preserve" approved="no">
         <source>No direct connection yet, message is forwarded by admin.</source>
-        <target>Aún no hay conexión directa con este miembro, el mensaje es reenviado por el administrador.</target>
+        <target state="translated">Aún no hay conexión directa, los mensajes son reenviados por el administrador.</target>
         <note>item status description</note>
       </trans-unit>
       <trans-unit id="No filtered chats" xml:space="preserve">
