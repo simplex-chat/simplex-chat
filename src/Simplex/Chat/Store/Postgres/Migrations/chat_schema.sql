@@ -49,12 +49,12 @@ $$;
 
 
 
-CREATE FUNCTION test_chat_schema.on_group_members_insert_update_group_last_member_sequential_id() RETURNS trigger
+CREATE FUNCTION test_chat_schema.on_group_members_insert_update_group_member_index() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
 BEGIN
   UPDATE groups
-  SET last_member_sequential_id = NEW.sequential_id
+  SET member_index = NEW.index_in_group
   WHERE group_id = NEW.group_id;
   RETURN NEW;
 END;
@@ -720,8 +720,8 @@ CREATE TABLE test_chat_schema.group_members (
     support_chat_last_msg_from_member_ts timestamp with time zone,
     member_xcontact_id bytea,
     member_welcome_shared_msg_id bytea,
-    sequential_id bigint DEFAULT 0 NOT NULL,
-    member_status_vector bytea
+    index_in_group bigint DEFAULT 0 NOT NULL,
+    member_relations_vector bytea
 );
 
 
@@ -821,7 +821,7 @@ CREATE TABLE test_chat_schema.groups (
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
     via_group_link_uri bytea,
     summary_current_members_count bigint DEFAULT 0 NOT NULL,
-    last_member_sequential_id bigint DEFAULT 0 NOT NULL
+    member_index bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -2097,7 +2097,7 @@ CREATE INDEX idx_group_members_group_id ON test_chat_schema.group_members USING 
 
 
 
-CREATE UNIQUE INDEX idx_group_members_group_id_sequential_id ON test_chat_schema.group_members USING btree (group_id, sequential_id);
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON test_chat_schema.group_members USING btree (group_id, index_in_group);
 
 
 
@@ -2353,7 +2353,7 @@ CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_
 
 
 
-CREATE TRIGGER tr_update_group_last_member_sequential_id AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_group_last_member_sequential_id();
+CREATE TRIGGER tr_update_group_member_index AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_group_member_index();
 
 
 

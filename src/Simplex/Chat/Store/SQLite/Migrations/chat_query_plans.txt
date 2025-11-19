@@ -24,7 +24,7 @@ SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
                   INSERT INTO group_members
-                    ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                    ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
                       user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                       peer_chat_min_version, peer_chat_max_version)
                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -76,7 +76,7 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
                 INSERT INTO group_members
-                  ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                  ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
                     user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at,
                     peer_chat_min_version, peer_chat_max_version)
                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -147,14 +147,14 @@ Query:
                   g.business_chat, g.business_member_id, g.customer_member_id,
                   g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
                   -- GroupInfo {membership}
-                  mu.group_member_id, mu.group_id, mu.sequential_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+                  mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
                   mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
                   -- GroupInfo {membership = GroupMember {memberProfile}}
                   pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
                   mu.created_at, mu.updated_at,
                   mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts,
                   -- from GroupMember
-                  m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+                  m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
                   m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
                   m.created_at, m.updated_at,
                   m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts
@@ -260,7 +260,7 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               INSERT INTO group_members
-                ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
                   user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
             
@@ -293,7 +293,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
               INSERT INTO group_members
-                ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
                   user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -327,7 +327,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
               INSERT INTO group_members
-                ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
                   user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -492,7 +492,7 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
             INSERT INTO group_members
-              ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
           
@@ -525,7 +525,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
             INSERT INTO group_members
-              ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -871,7 +871,7 @@ SEARCH s USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id_group_mem
 Query: 
             SELECT i.chat_item_id,
               -- GroupMember
-              m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
+              m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
               m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
               p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
               m.created_at, m.updated_at,
@@ -998,7 +998,7 @@ Plan:
 
 Query: 
           INSERT INTO group_members
-            (group_id, sequential_id, member_id, member_role, member_category, member_status, member_restriction, invited_by, invited_by_group_member_id,
+            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_restriction, invited_by, invited_by_group_member_id,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -1098,7 +1098,7 @@ Query:
             -- CIMeta forwardedByMember, showGroupAsSender
             i.forwarded_by_group_member_id, i.show_group_as_sender,
             -- GroupMember
-            m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
+            m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
             m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
             p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
             m.created_at, m.updated_at,
@@ -1106,13 +1106,13 @@ Query:
             -- quoted ChatItem
             ri.chat_item_id, i.quoted_shared_msg_id, i.quoted_sent_at, i.quoted_content, i.quoted_sent,
             -- quoted GroupMember
-            rm.group_member_id, rm.group_id, rm.sequential_id, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
+            rm.group_member_id, rm.group_id, rm.index_in_group, rm.member_id, rm.peer_chat_min_version, rm.peer_chat_max_version, rm.member_role, rm.member_category,
             rm.member_status, rm.show_messages, rm.member_restriction, rm.invited_by, rm.invited_by_group_member_id, rm.local_display_name, rm.contact_id, rm.contact_profile_id, rp.contact_profile_id,
             rp.display_name, rp.full_name, rp.short_descr, rp.image, rp.contact_link, rp.chat_peer_type, rp.local_alias, rp.preferences,
             rm.created_at, rm.updated_at,
             rm.support_chat_ts, rm.support_chat_items_unread, rm.support_chat_items_member_attention, rm.support_chat_items_mentions, rm.support_chat_last_msg_from_member_ts,
             -- deleted by GroupMember
-            dbm.group_member_id, dbm.group_id, dbm.sequential_id, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
+            dbm.group_member_id, dbm.group_id, dbm.index_in_group, dbm.member_id, dbm.peer_chat_min_version, dbm.peer_chat_max_version, dbm.member_role, dbm.member_category,
             dbm.member_status, dbm.show_messages, dbm.member_restriction, dbm.invited_by, dbm.invited_by_group_member_id, dbm.local_display_name, dbm.contact_id, dbm.contact_profile_id, dbp.contact_profile_id,
             dbp.display_name, dbp.full_name, dbp.short_descr, dbp.image, dbp.contact_link, dbp.chat_peer_type, dbp.local_alias, dbp.preferences,
             dbm.created_at, dbm.updated_at,
@@ -1645,7 +1645,7 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
         INSERT INTO group_members
-          ( group_id, sequential_id, member_id, member_role, member_category, member_status, invited_by,
+          ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
         VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
@@ -4460,7 +4460,7 @@ Query:
       SELECT contact_profile_id, member_profile_id, local_display_name FROM group_members WHERE group_id = ?
     
 Plan:
-SEARCH group_members USING INDEX idx_group_members_group_id_sequential_id (group_id=?)
+SEARCH group_members USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 
 Query: 
       SELECT DISTINCT group_id, worker_scope
@@ -4970,7 +4970,7 @@ Query:
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.sequential_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
@@ -5004,7 +5004,7 @@ Query:
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.sequential_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
@@ -5031,7 +5031,7 @@ Query:
       g.business_chat, g.business_member_id, g.customer_member_id,
       g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
-      mu.group_member_id, mu.group_id, mu.sequential_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
+      mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
       mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
@@ -5080,7 +5080,7 @@ SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5107,7 +5107,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5126,7 +5126,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5139,13 +5139,13 @@ Query:
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
    WHERE m.group_id = ? AND m.member_category = ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id_sequential_id (group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5164,7 +5164,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5183,7 +5183,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5202,7 +5202,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5221,7 +5221,7 @@ SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JO
 
 Query: 
     SELECT
-      m.group_member_id, m.group_id, m.sequential_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -5232,9 +5232,9 @@ Query:
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND sequential_id < ?
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND index_in_group < ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id_sequential_id (group_id=? AND sequential_id<?)
+SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=? AND index_in_group<?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -5842,7 +5842,7 @@ SEARCH messages USING COVERING INDEX idx_messages_group_id (group_id=?)
 SEARCH contact_requests USING COVERING INDEX idx_contact_requests_business_group_id (business_group_id=?)
 SEARCH user_contact_links USING COVERING INDEX idx_user_contact_links_group_id (group_id=?)
 SEARCH files USING COVERING INDEX idx_files_group_id (group_id=?)
-SEARCH group_members USING COVERING INDEX idx_group_members_group_id_sequential_id (group_id=?)
+SEARCH group_members USING COVERING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 SEARCH contacts USING COVERING INDEX idx_contacts_grp_direct_inv_from_group_id (grp_direct_inv_from_group_id=?)
 
 Query: DELETE FROM messages WHERE connection_id = ?
@@ -6268,7 +6268,7 @@ Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
 
-Query: SELECT last_member_sequential_id FROM groups WHERE group_id = ?
+Query: SELECT member_index FROM groups WHERE group_id = ?
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
