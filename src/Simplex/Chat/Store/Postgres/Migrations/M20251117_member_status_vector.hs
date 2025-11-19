@@ -47,14 +47,20 @@ SET last_member_sequential_id = COALESCE((
   WHERE group_members.group_id = g.group_id
 ), 0);
 
-CREATE TRIGGER tr_update_group_last_member_sequential_id
-AFTER INSERT ON group_members
-FOR EACH ROW
+CREATE FUNCTION on_group_members_insert_update_group_last_member_sequential_id()
+RETURNS TRIGGER AS $$
 BEGIN
   UPDATE groups
   SET last_member_sequential_id = NEW.sequential_id
   WHERE group_id = NEW.group_id;
+  RETURN NEW;
 END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER tr_update_group_last_member_sequential_id
+AFTER INSERT ON group_members
+FOR EACH ROW
+EXECUTE FUNCTION on_group_members_insert_update_group_last_member_sequential_id();
 |]
 
 down_m20251117_member_status_vector :: Text
@@ -62,6 +68,8 @@ down_m20251117_member_status_vector =
   T.pack
     [r|
 DROP TRIGGER tr_update_group_last_member_sequential_id;
+
+DROP FUNCTION on_group_members_insert_update_group_last_member_sequential_id;
 
 DROP INDEX idx_group_members_group_id_sequential_id;
 

@@ -49,6 +49,19 @@ $$;
 
 
 
+CREATE FUNCTION test_chat_schema.on_group_members_insert_update_group_last_member_sequential_id() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+  UPDATE groups
+  SET last_member_sequential_id = NEW.sequential_id
+  WHERE group_id = NEW.group_id;
+  RETURN NEW;
+END;
+$$;
+
+
+
 CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
@@ -706,7 +719,9 @@ CREATE TABLE test_chat_schema.group_members (
     support_chat_items_mentions bigint DEFAULT 0 NOT NULL,
     support_chat_last_msg_from_member_ts timestamp with time zone,
     member_xcontact_id bytea,
-    member_welcome_shared_msg_id bytea
+    member_welcome_shared_msg_id bytea,
+    sequential_id bigint DEFAULT 0 NOT NULL,
+    member_status_vector bytea
 );
 
 
@@ -805,7 +820,8 @@ CREATE TABLE test_chat_schema.groups (
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
     via_group_link_uri bytea,
-    summary_current_members_count bigint DEFAULT 0 NOT NULL
+    summary_current_members_count bigint DEFAULT 0 NOT NULL,
+    last_member_sequential_id bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -2081,6 +2097,10 @@ CREATE INDEX idx_group_members_group_id ON test_chat_schema.group_members USING 
 
 
 
+CREATE UNIQUE INDEX idx_group_members_group_id_sequential_id ON test_chat_schema.group_members USING btree (group_id, sequential_id);
+
+
+
 CREATE INDEX idx_group_members_invited_by ON test_chat_schema.group_members USING btree (invited_by);
 
 
@@ -2330,6 +2350,10 @@ CREATE TRIGGER tr_group_members_insert_update_summary AFTER INSERT ON test_chat_
 
 
 CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_update_update_summary();
+
+
+
+CREATE TRIGGER tr_update_group_last_member_sequential_id AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_group_last_member_sequential_id();
 
 
 
