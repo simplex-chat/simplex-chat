@@ -3792,6 +3792,15 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         UPDATE groups
+        SET member_index = member_index + 1
+        WHERE group_id = ?
+        RETURNING member_index
+      
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        UPDATE groups
         SET via_group_link_uri = ?, via_group_link_uri_hash = ?
         WHERE group_id = ?
       
@@ -5213,9 +5222,9 @@ Query:
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND index_in_group < ?
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
+SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=? AND index_in_group<?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -5232,9 +5241,9 @@ Query:
     FROM group_members m
     JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
     LEFT JOIN connections c ON c.group_member_id = m.group_member_id
-   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND index_in_group < ?
+   WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
 Plan:
-SEARCH m USING INDEX idx_group_members_group_id_index_in_group (group_id=? AND index_in_group<?)
+SEARCH m USING INDEX idx_group_members_group_id (user_id=? AND group_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH c USING INDEX idx_connections_group_member_id (group_member_id=?) LEFT-JOIN
 
@@ -6267,10 +6276,6 @@ SEARCH contact_profiles USING INDEX contact_profiles_index (display_name=?)
 Query: SELECT last_insert_rowid()
 Plan:
 SCAN CONSTANT ROW
-
-Query: SELECT member_index FROM groups WHERE group_id = ?
-Plan:
-SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: SELECT max(active_order) FROM users
 Plan:
