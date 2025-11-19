@@ -49,19 +49,6 @@ $$;
 
 
 
-CREATE FUNCTION test_chat_schema.on_group_members_insert_update_group_member_index() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$
-BEGIN
-  UPDATE groups
-  SET member_index = NEW.index_in_group
-  WHERE group_id = NEW.group_id;
-  RETURN NEW;
-END;
-$$;
-
-
-
 CREATE FUNCTION test_chat_schema.on_group_members_insert_update_summary() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
@@ -2350,10 +2337,6 @@ CREATE TRIGGER tr_group_members_insert_update_summary AFTER INSERT ON test_chat_
 
 
 CREATE TRIGGER tr_group_members_update_update_summary AFTER UPDATE ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_update_update_summary();
-
-
-
-CREATE TRIGGER tr_update_group_member_index AFTER INSERT ON test_chat_schema.group_members FOR EACH ROW EXECUTE FUNCTION test_chat_schema.on_group_members_insert_update_group_member_index();
 
 
 
