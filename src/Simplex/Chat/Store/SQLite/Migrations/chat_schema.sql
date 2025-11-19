@@ -155,7 +155,8 @@ CREATE TABLE groups(
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
-  summary_current_members_count INTEGER NOT NULL DEFAULT 0, -- received
+  summary_current_members_count INTEGER NOT NULL DEFAULT 0,
+  last_member_sequential_id INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -195,6 +196,8 @@ CREATE TABLE group_members(
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
   member_welcome_shared_msg_id BLOB,
+  sequential_id INTEGER NOT NULL DEFAULT 0,
+  member_status_vector BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -1184,6 +1187,10 @@ CREATE INDEX idx_connections_to_subscribe ON connections(
   user_id,
   to_subscribe
 );
+CREATE UNIQUE INDEX idx_group_members_group_id_sequential_id ON group_members(
+  group_id,
+  sequential_id
+);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
@@ -1215,4 +1222,12 @@ BEGIN
           THEN 1 ELSE -1 END
         )
     WHERE group_id = NEW.group_id;
+END;
+CREATE TRIGGER tr_update_group_last_member_sequential_id
+AFTER INSERT ON group_members
+FOR EACH ROW
+BEGIN
+  UPDATE groups
+  SET last_member_sequential_id = NEW.sequential_id
+  WHERE group_id = NEW.group_id;
 END;
