@@ -1732,7 +1732,7 @@
     <string name="download_file">Descargar</string>
     <string name="forward_chat_item">Reenviar</string>
     <string name="forwarded_chat_item_info_tab">Reenviado</string>
-    <string name="forward_message">Mensaje reenviado…</string>
+    <string name="forward_message">Reenviando mensaje…</string>
     <string name="recipients_can_not_see_who_message_from">Los destinatarios no ven de quién procede este mensaje.</string>
     <string name="audio_device_bluetooth">Bluetooth</string>
     <string name="network_option_rcv_concurrency">Concurrencia en la recepción</string>
@@ -1906,7 +1906,7 @@
     <string name="servers_info_reset_stats_alert_message">Las estadísticas de los servidores serán restablecidas. ¡No puede deshacerse!</string>
     <string name="servers_info_downloaded">Descargado</string>
     <string name="smp_server">Servidor SMP</string>
-    <string name="message_forwarded_desc">Aún no hay conexión directa, el mensaje es reenviado por el administrador.</string>
+    <string name="message_forwarded_desc">Aún no hay conexión directa, los mensajes son reenviados por el administrador.</string>
     <string name="smp_servers_other">Otros servidores SMP</string>
     <string name="xftp_servers_other">Otros servidores XFTP</string>
     <string name="scan_paste_link">Escanear / Pegar enlace</string>
