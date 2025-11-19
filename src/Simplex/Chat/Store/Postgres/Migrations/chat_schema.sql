@@ -706,7 +706,9 @@ CREATE TABLE test_chat_schema.group_members (
     support_chat_items_mentions bigint DEFAULT 0 NOT NULL,
     support_chat_last_msg_from_member_ts timestamp with time zone,
     member_xcontact_id bytea,
-    member_welcome_shared_msg_id bytea
+    member_welcome_shared_msg_id bytea,
+    index_in_group bigint DEFAULT 0 NOT NULL,
+    member_relations_vector bytea
 );
 
 
@@ -805,7 +807,8 @@ CREATE TABLE test_chat_schema.groups (
     request_shared_msg_id bytea,
     conn_link_prepared_connection smallint DEFAULT 0 NOT NULL,
     via_group_link_uri bytea,
-    summary_current_members_count bigint DEFAULT 0 NOT NULL
+    summary_current_members_count bigint DEFAULT 0 NOT NULL,
+    member_index bigint DEFAULT 0 NOT NULL
 );
 
 
@@ -2078,6 +2081,10 @@ CREATE INDEX idx_group_members_contact_profile_id ON test_chat_schema.group_memb
 
 
 CREATE INDEX idx_group_members_group_id ON test_chat_schema.group_members USING btree (user_id, group_id);
+
+
+
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON test_chat_schema.group_members USING btree (group_id, index_in_group);
 
 
 
