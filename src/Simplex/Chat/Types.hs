@@ -921,7 +921,7 @@ type GroupMemberId = Int64
 data GroupMember = GroupMember
   { groupMemberId :: GroupMemberId,
     groupId :: GroupId,
-    sequentialId :: Int64,
+    indexInGroup :: Int64,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,

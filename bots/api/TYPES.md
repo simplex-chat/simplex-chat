@@ -2198,7 +2198,7 @@ Known:
 **Record type**:
 - groupMemberId: int64
 - groupId: int64
-- sequentialId: int64
+- indexInGroup: int64
 - memberId: string
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
