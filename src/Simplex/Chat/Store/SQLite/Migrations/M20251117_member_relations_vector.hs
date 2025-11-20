@@ -38,18 +38,6 @@ import Database.SQLite.Simple.QQ (sql)
 --   - don't maintain group_member_intros (don't create, update status)
 --   - on forwarding, get recipients based on sender's member_relations_vector
 --     - for all 0s in bitvector, get members by index_in_group in corresponding positions
--- - second use of group_member_intros is targeted introductions of knocking member to "remaining" members
---   - has to be reworked to not rely on group_member_intros
---   - one approach could be to introduce accepted member to all (so, repeatedly introduce to moderators),
---     this idea was tested in PR 6327
--- - another use of group_member_intros - createIntroductions, checkInverseIntro logic
---   - TBC how to avoid making redundant introductions between concurrently joining members
---   - second vector - for member introductions, or track in same vector
---   - when introducing to moderators only, do nothing - new moderators are introduced only to current members,
---     no pending in progress members, so race can't happen there
---   - when introducing to all, filter out members who already were introduced to this member
---   - can also solve previous issue of introducing remaining members in same way - don't introduce
---     to members this member already was introduced to
 m20251117_member_relations_vector :: Query
 m20251117_member_relations_vector =
   [sql|
@@ -91,6 +79,22 @@ SET member_index = COALESCE((
   FROM group_members
   WHERE group_members.group_id = g.group_id
 ), 0);
+
+-- PRAGMA writable_schema=1;
+
+-- UPDATE sqlite_master
+-- SET sql = replace(
+--             replace(
+--               sql,
+--               'UNIQUE (re_group_member_id, to_group_member_id)',
+--               ''
+--             ),
+--             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3,',
+--             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3'
+--           )
+-- WHERE name = 'group_member_intros' AND type = 'table';
+
+-- PRAGMA writable_schema=0;
 |]
 
 down_m20251117_member_relations_vector :: Query
@@ -103,4 +107,16 @@ ALTER TABLE group_members DROP COLUMN index_in_group;
 ALTER TABLE groups DROP COLUMN member_index;
 
 ALTER TABLE group_members DROP COLUMN member_relations_vector;
+
+-- PRAGMA writable_schema=1;
+
+-- UPDATE sqlite_master
+-- SET sql = replace(
+--             sql,
+--             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3',
+--             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, UNIQUE (re_group_member_id, to_group_member_id)'
+--           )
+-- WHERE name = 'group_member_intros' AND type = 'table';
+
+-- PRAGMA writable_schema=0;
 |]

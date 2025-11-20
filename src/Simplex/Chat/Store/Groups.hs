@@ -100,7 +100,6 @@ module Simplex.Chat.Store.Groups
     createIntroductions,
     updateIntroStatus,
     getIntroduction,
-    getIntroducedGroupMemberIds,
     getForwardIntroducedMembers,
     getForwardIntroducedModerators,
     getForwardInvitedMembers,
@@ -150,6 +149,7 @@ module Simplex.Chat.Store.Groups
   )
 where
 
+import qualified Control.Exception as E
 import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
@@ -371,9 +371,9 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
       gInfo@GroupInfo {membership, groupProfile = p'} <- getGroupInfo db vr user gId
       hostId <- getHostMemberId_ db user gId
       let GroupMember {groupMemberId, memberId, memberRole} = membership
-          MemberIdRole {memberId = invMemberId, memberRole = memberRole'} = invitedMember
-      liftIO . when (memberId /= invMemberId || memberRole /= memberRole') $
-        DB.execute db "UPDATE group_members SET member_id = ?, member_role = ? WHERE group_member_id = ?" (invMemberId, memberRole', groupMemberId)
+          MemberIdRole {memberId = invMemberId, memberRole = invMemberRole} = invitedMember
+      liftIO . when (memberId /= invMemberId || memberRole /= invMemberRole) $
+        DB.execute db "UPDATE group_members SET member_id = ?, member_role = ? WHERE group_member_id = ?" (invMemberId, invMemberRole, groupMemberId)
       gInfo' <-
         if p' == groupProfile
           then pure gInfo
@@ -1561,17 +1561,14 @@ updateGroupMemberRole :: DB.Connection -> User -> GroupMember -> GroupMemberRole
 updateGroupMemberRole db User {userId} GroupMember {groupMemberId} memRole =
   DB.execute db "UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?" (memRole, userId, groupMemberId)
 
-createIntroductions :: DB.Connection -> VersionChat -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
-createIntroductions db chatV members toMember = do
-  let reMembers = filter (\m -> memberCurrent m && groupMemberId' m /= groupMemberId' toMember) members
-  if null reMembers
-    then pure []
-    else do
-      currentTs <- getCurrentTime
-      mapM (insertIntro_ currentTs) reMembers
+createIntroductions :: DB.Connection -> VersionChat -> [GroupMember] -> GroupMember -> IO ()
+createIntroductions db chatV reMembers toMember = do
+  currentTs <- getCurrentTime
+  forM_ reMembers $ \reMember ->
+    insertIntro_ currentTs reMember `E.catch` \(_ :: E.SomeException) -> pure () -- ignore duplicate introduction attempt
   where
-    insertIntro_ :: UTCTime -> GroupMember -> IO GroupMemberIntro
-    insertIntro_ ts reMember = do
+    insertIntro_ :: UTCTime -> GroupMember -> IO ()
+    insertIntro_ ts reMember =
       DB.execute
         db
         [sql|
@@ -1580,8 +1577,6 @@ createIntroductions db chatV members toMember = do
           VALUES (?,?,?,?,?,?)
         |]
         (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
-      introId <- insertedRowId db
-      pure GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending}
 
 updateIntroStatus :: DB.Connection -> Int64 -> GroupMemberIntroStatus -> IO ()
 updateIntroStatus db introId introStatus = do
@@ -1610,14 +1605,6 @@ getIntroduction db reMember toMember = ExceptT $
     toIntro :: (Int64, GroupMemberIntroStatus) -> GroupMemberIntro
     toIntro (introId, introStatus) =
       GroupMemberIntro {introId, reMember, toMember, introStatus}
-
-getIntroducedGroupMemberIds :: DB.Connection -> GroupMember -> IO [GroupMemberId]
-getIntroducedGroupMemberIds db invitee =
-  map fromOnly <$>
-    DB.query
-      db
-      "SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?"
-      (Only $ groupMemberId' invitee)
 
 getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
 getForwardIntroducedMembers db vr user invitee highlyAvailable = do

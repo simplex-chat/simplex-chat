@@ -950,6 +950,9 @@ data GroupMember = GroupMember
   }
   deriving (Eq, Show)
 
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
+
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
     unread :: Int64,

@@ -2206,7 +2206,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 referencedMember' <- updateGroupMemberAccepted db user referencedMember (newMemberStatus referencedMember) role
                 gInfo' <- updateGroupMembersRequireAttention db user gInfo referencedMember referencedMember'
                 pure (referencedMember', gInfo')
-              when (memberCategory referencedMember == GCInviteeMember) $ introduceToRemainingMembers referencedMember'
+              when (memberCategory referencedMember' == GCInviteeMember) $ do
+                introduceToAll vr user gInfo' referencedMember'
+                when (groupFeatureAllowed SGFHistory gInfo') $ sendHistory user gInfo' referencedMember'
               -- create item in both scopes
               memberConnectedChatItem gInfo' Nothing referencedMember'
               let scopeInfo = Just $ GCSIMemberSupport {groupMember_ = Just referencedMember'}
@@ -2242,9 +2244,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             toView $ CEvtMemberAcceptedByOther user gInfo' m membership'
           GAPendingApproval ->
             messageWarning "x.grp.link.acpt: unexpected group acceptance - pending approval"
-        introduceToRemainingMembers acceptedMember = do
-          introduceToRemaining vr user gInfo acceptedMember
-          when (groupFeatureAllowed SGFHistory gInfo) $ sendHistory user gInfo acceptedMember
 
     maybeCreateGroupDescrLocal :: GroupInfo -> GroupMember -> CM ()
     maybeCreateGroupDescrLocal gInfo@GroupInfo {groupProfile = GroupProfile {description}} m =
@@ -2529,9 +2528,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         _ -> pure (conn', Nothing)
 
     xGrpMemNew :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MsgScope -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    xGrpMemNew gInfo m memInfo@(MemberInfo memId memRole _ _) msgScope_ msg brokerTs = do
+    xGrpMemNew gInfo@GroupInfo {membership, groupProfile = GroupProfile {memberAdmission}} m memInfo@(MemberInfo memId memRole _ _) msgScope_ msg brokerTs = do
       checkHostRole m memRole
-      if sameMemberId memId (membership gInfo)
+      if sameMemberId memId membership
         then pure Nothing
         else do
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
@@ -2545,7 +2544,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               toView $ CEvtUnknownMemberAnnounced user gInfo' m unknownMember updatedMember
               memberAnnouncedToView updatedMember gInfo'
               pure $ deliveryJobScope updatedMember
-            Right _ -> messageError "x.grp.mem.new error: member already exists" $> Nothing
+            Right _
+              -- repeated introduction is made when pending member is accepted
+              | (memberAdmission >>= review) == Just MCAll && memberRole' membership >= GRModerator -> pure Nothing
+              | otherwise -> messageError "x.grp.mem.new error: member already exists" $> Nothing
             Left _ -> do
               (newMember, gInfo') <- withStore $ \db -> do
                 newMember <- createNewGroupMember db user gInfo m memInfo GCPostMember initialStatus
@@ -2580,11 +2582,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             pure (announcedMember', Just scopeInfo)
 
     xGrpMemIntro :: GroupInfo -> GroupMember -> MemberInfo -> Maybe MemberRestrictions -> CM ()
-    xGrpMemIntro gInfo@GroupInfo {chatSettings} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
+    xGrpMemIntro gInfo@GroupInfo {chatSettings, groupProfile = GroupProfile {memberAdmission}} m@GroupMember {memberRole, localDisplayName = c} memInfo@(MemberInfo memId _ memChatVRange _) memRestrictions = do
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Right _ -> messageError "x.grp.mem.intro ignored: member already exists"
+            Right _
+              -- repeated introduction is made when pending member is accepted
+              | (memberAdmission >>= review) == Just MCAll -> pure ()
+              | otherwise -> messageError "x.grp.mem.intro ignored: member already exists"
             Left _ -> do
               when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
               case memChatVRange of
