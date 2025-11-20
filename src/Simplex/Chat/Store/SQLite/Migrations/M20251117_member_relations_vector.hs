@@ -79,22 +79,6 @@ SET member_index = COALESCE((
   FROM group_members
   WHERE group_members.group_id = g.group_id
 ), 0);
-
--- PRAGMA writable_schema=1;
-
--- UPDATE sqlite_master
--- SET sql = replace(
---             replace(
---               sql,
---               'UNIQUE (re_group_member_id, to_group_member_id)',
---               ''
---             ),
---             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3,',
---             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3'
---           )
--- WHERE name = 'group_member_intros' AND type = 'table';
-
--- PRAGMA writable_schema=0;
 |]
 
 down_m20251117_member_relations_vector :: Query
@@ -107,16 +91,4 @@ ALTER TABLE group_members DROP COLUMN index_in_group;
 ALTER TABLE groups DROP COLUMN member_index;
 
 ALTER TABLE group_members DROP COLUMN member_relations_vector;
-
--- PRAGMA writable_schema=1;
-
--- UPDATE sqlite_master
--- SET sql = replace(
---             sql,
---             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3',
---             'intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, UNIQUE (re_group_member_id, to_group_member_id)'
---           )
--- WHERE name = 'group_member_intros' AND type = 'table';
-
--- PRAGMA writable_schema=0;
 |]
