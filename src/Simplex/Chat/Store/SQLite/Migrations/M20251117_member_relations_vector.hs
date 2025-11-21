@@ -40,16 +40,8 @@ import Database.SQLite.Simple.QQ (sql)
 --     - for all 0s in bitvector, get members by index_in_group in corresponding positions
 -- - second use of group_member_intros is targeted introductions of knocking member to "remaining" members
 --   - has to be reworked to not rely on group_member_intros
---   - one approach could be to introduce accepted member to all (so, repeatedly introduce to moderators),
---     this idea was tested in PR 6327
--- - another use of group_member_intros - createIntroductions, checkInverseIntro logic
---   - TBC how to avoid making redundant introductions between concurrently joining members
---   - second vector - for member introductions, or track in same vector
---   - when introducing to moderators only, do nothing - new moderators are introduced only to current members,
---     no pending in progress members, so race can't happen there
---   - when introducing to all, filter out members who already were introduced to this member
---   - can also solve previous issue of introducing remaining members in same way - don't introduce
---     to members this member already was introduced to
+--   - set MRIntroduced status in member relations vector on first introduction,
+--     exclude previously introduced members on second introduction
 m20251117_member_relations_vector :: Query
 m20251117_member_relations_vector =
   [sql|
@@ -61,33 +53,33 @@ ALTER TABLE group_members ADD COLUMN member_relations_vector BLOB;
 
 CREATE INDEX tmp_idx_group_members_group_id_group_member_id ON group_members(group_id, group_member_id);
 
-CREATE TEMPORARY TABLE tmp_members_numbered AS
+CREATE TEMPORARY TABLE tmp_members_indexed AS
 SELECT
   group_member_id,
   ROW_NUMBER() OVER (
     PARTITION BY group_id
     ORDER BY group_member_id ASC
-  ) AS rn
+  ) - 1 AS index
 FROM group_members;
 
-CREATE INDEX tmp_idx_members_numbered ON tmp_members_numbered(group_member_id);
+CREATE INDEX tmp_idx_members_indexed ON tmp_members_indexed(group_member_id);
 
 UPDATE group_members AS gm
 SET index_in_group = (
-  SELECT rn
-  FROM tmp_members_numbered
-  WHERE tmp_members_numbered.group_member_id = gm.group_member_id
+  SELECT index
+  FROM tmp_members_indexed
+  WHERE tmp_members_indexed.group_member_id = gm.group_member_id
 );
 
 DROP INDEX tmp_idx_group_members_group_id_group_member_id;
-DROP INDEX tmp_idx_members_numbered;
-DROP TABLE tmp_members_numbered;
+DROP INDEX tmp_idx_members_indexed;
+DROP TABLE tmp_members_indexed;
 
 CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(group_id, index_in_group);
 
 UPDATE groups AS g
 SET member_index = COALESCE((
-  SELECT MAX(index_in_group)
+  SELECT MAX(index_in_group) + 1
   FROM group_members
   WHERE group_members.group_id = g.group_id
 ), 0);
