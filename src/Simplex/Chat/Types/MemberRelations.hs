@@ -1,3 +1,5 @@
+{-# LANGUAGE LambdaCase #-}
+
 module Simplex.Chat.Types.MemberRelations
   ( MemberRelation (..),
     getRelation,
@@ -6,31 +8,31 @@ module Simplex.Chat.Types.MemberRelations
   )
 where
 
-import Data.Bits ((.&.), (.|.), shiftL, shiftR)
+import Data.Bits ((.&.), (.|.), complement, shiftL, shiftR)
 import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Int (Int64)
-import Data.List (foldl', groupBy, sortOn)
+import Data.List (foldl', sortOn)
 import Data.Word (Word8)
 
 data MemberRelation
-  = New
-  | Introduced
-  | Connected
+  = MRNew
+  | MRIntroduced
+  | MRConnected
   deriving (Eq, Show)
 
 toRelationInt :: MemberRelation -> Int
 toRelationInt = \case
-  New -> 0
-  Introduced -> 1
-  Connected -> 2
+  MRNew -> 0
+  MRIntroduced -> 1
+  MRConnected -> 2
 
 fromRelationInt :: Int -> MemberRelation
 fromRelationInt = \case
-  0 -> New
-  1 -> Introduced
-  2 -> Connected
-  _ -> New
+  0 -> MRNew
+  1 -> MRIntroduced
+  2 -> MRConnected
+  _ -> MRNew
 
 -- | Calculate byte index and bit offset within that byte for a given index in group.
 -- Each byte stores 4 relations (2 bits each), so bit offset is 0, 2, 4, or 6.
@@ -47,12 +49,12 @@ updateByte byte bitOffset relation =
    in (byte .&. mask) .|. relationBits
 
 -- | Get the relation status of a member at a given index from the relations vector.
--- Returns 'New' if the vector is not long enough (lazy initialization).
+-- Returns 'MRNew' if the vector is not long enough (lazy initialization).
 getRelation :: Int64 -> ByteString -> MemberRelation
 getRelation indexInGroup vector
-  | indexInGroup < 0 = New
+  | indexInGroup < 0 = MRNew
   | otherwise = case B.indexMaybe vector byteIndex of
-      Nothing -> New
+      Nothing -> MRNew
       Just byte ->
         let relationBits = fromIntegral $ (byte `shiftR` bitOffset) .&. 0x03
          in fromRelationInt relationBits
@@ -60,7 +62,7 @@ getRelation indexInGroup vector
     (byteIndex, bitOffset) = indexPosition indexInGroup
 
 -- | Set the relation status of a member at a given index in the relations vector.
--- Expands the vector lazily if needed (padding with zeros for 'New' relation).
+-- Expands the vector lazily if needed (padding with zeros for 'MRNew' relation).
 setRelation :: Int64 -> MemberRelation -> ByteString -> ByteString
 setRelation indexInGroup relation vector
   | indexInGroup < 0 = vector
@@ -87,17 +89,17 @@ setRelations relations vector =
     updateBytes :: Int -> [Word8] -> [(Int64, MemberRelation)] -> [Word8]
     updateBytes _ [] _ = []
     updateBytes _ bytes [] = bytes
-    updateBytes byteIdx (byte : bytes) changes@((idx, relation) : restChanges) =
-      let (bIdx, bitOffset) = indexPosition idx
+    updateBytes byteIdx (byte : bytes) changes@((idx, _) : _) =
+      let (bIdx, _) = indexPosition idx
        in if bIdx == byteIdx
             then
               -- Collect all changes for this byte
-              let (thisBytes, remaining) = span (\(i, _) -> fst (indexPosition i) == byteIdx) changes
-                  newByte = foldl' (\b (i, r) -> updateByte b (snd $ indexPosition i) r) byte thisBytes
+              let (byteChanges, remaining) = span (\(i, _) -> fst (indexPosition i) == byteIdx) changes
+                  newByte = foldl' (\b (i, r) -> updateByte b (snd $ indexPosition i) r) byte byteChanges
                in newByte : updateBytes (byteIdx + 1) bytes remaining
             else byte : updateBytes (byteIdx + 1) bytes changes
 
--- | Expand vector to required length, padding with zero bytes (representing 'New' relation).
+-- | Expand vector to required length, padding with zero bytes (representing 'MRNew' relation).
 expandVector :: ByteString -> Int -> ByteString
 expandVector vector requiredLength
   | currentLength >= requiredLength = vector

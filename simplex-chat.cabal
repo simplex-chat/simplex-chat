@@ -545,6 +545,7 @@ test-suite simplex-chat-test
       JSONFixtures
       JSONTests
       MarkdownTests
+      MemberRelationsTests
       MessageBatching
       OperatorTests
       ProtocolTests
