@@ -45,7 +45,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20251117_member_relations_vector :: Query
 m20251117_member_relations_vector =
   [sql|
-ALTER TABLE group_members ADD COLUMN index_in_group INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN index_in_group INTEGER NOT NULL;
 
 ALTER TABLE groups ADD COLUMN member_index INTEGER NOT NULL DEFAULT 0;
 
