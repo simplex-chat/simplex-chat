@@ -59,14 +59,14 @@ SELECT
   ROW_NUMBER() OVER (
     PARTITION BY group_id
     ORDER BY group_member_id ASC
-  ) - 1 AS index
+  ) - 1 AS idx_in_group
 FROM group_members;
 
 CREATE INDEX tmp_idx_members_indexed ON tmp_members_indexed(group_member_id);
 
 UPDATE group_members AS gm
 SET index_in_group = (
-  SELECT index
+  SELECT idx_in_group
   FROM tmp_members_indexed
   WHERE tmp_members_indexed.group_member_id = gm.group_member_id
 );
