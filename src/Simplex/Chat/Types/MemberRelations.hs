@@ -51,13 +51,12 @@ updateByte byte bitOffset relation =
 -- | Get the relation status of a member at a given index from the relations vector.
 -- Returns 'MRNew' if the vector is not long enough (lazy initialization).
 getRelation :: Int64 -> ByteString -> MemberRelation
-getRelation indexInGroup vector
-  | indexInGroup < 0 = MRNew
-  | otherwise = case B.indexMaybe vector byteIndex of
-      Nothing -> MRNew
-      Just byte ->
-        let relationBits = fromIntegral $ (byte `shiftR` bitOffset) .&. 0x03
-         in fromRelationInt relationBits
+getRelation indexInGroup vector =
+  case B.indexMaybe vector byteIndex of
+    Nothing -> MRNew
+    Just byte ->
+      let relationBits = fromIntegral $ (byte `shiftR` bitOffset) .&. 0x03
+       in fromRelationInt relationBits
   where
     (byteIndex, bitOffset) = indexPosition indexInGroup
 
