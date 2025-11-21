@@ -84,6 +84,7 @@ library
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Types
+      Simplex.Chat.Types.MemberRelations
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
@@ -544,6 +545,7 @@ test-suite simplex-chat-test
       JSONFixtures
       JSONTests
       MarkdownTests
+      MemberRelationsTests
       MessageBatching
       OperatorTests
       ProtocolTests
