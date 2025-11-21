@@ -30,9 +30,9 @@ FROM group_members;
 CREATE INDEX tmp_idx_members_indexed ON tmp_members_indexed(group_member_id);
 
 UPDATE group_members AS gm
-SET index_in_group = n.index
-FROM tmp_members_indexed n
-WHERE n.group_member_id = gm.group_member_id;
+SET index_in_group = tmi.index
+FROM tmp_members_indexed tmi
+WHERE tmi.group_member_id = gm.group_member_id;
 
 DROP INDEX tmp_idx_group_members_group_id_group_member_id;
 DROP INDEX tmp_idx_members_indexed;
