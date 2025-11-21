@@ -78,7 +78,7 @@ setRelation indexInGroup relation vector
 setRelations :: [(Int64, MemberRelation)] -> ByteString -> ByteString
 setRelations [] vector = vector
 setRelations relations vector =
-  let sorted = sortOn fst relations  -- Sort once by index
+  let sorted = sortOn fst relations -- Sort once by index
       maxIndex = fst (last sorted)
       (maxByteIndex, _) = indexPosition maxIndex
       requiredLength = maxByteIndex + 1
