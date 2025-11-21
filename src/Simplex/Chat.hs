@@ -250,7 +250,8 @@ newChatController
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains, presetServers = L.toList allPresetServers}
+        -- TODO [certs rcv] load user profile service settings from database
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, useServices = M.empty, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of
