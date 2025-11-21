@@ -1179,7 +1179,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Умови вже прийняті для наступних операторів: **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Умови використання";
 
 /* No comment provided by engineer. */
@@ -2248,10 +2248,10 @@ chat item action */
 "Error decrypting file" = "Помилка розшифрування файлу";
 
 /* alert title */
-"Error deleting chat database" = "Помилка видалення бази даних чату";
+"Error deleting chat" = "Помилка при видаленні чату з учасником";
 
 /* alert title */
-"Error deleting chat with member" = "Помилка при видаленні чату з учасником";
+"Error deleting chat database" = "Помилка видалення бази даних чату";
 
 /* alert title */
 "Error deleting chat!" = "Помилка видалення чату!";
@@ -2548,6 +2548,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Швидше знаходьте чати";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Відбиток в адресі сервера не співпадає з сертифікатом.";
 
 /* No comment provided by engineer. */
 "Fix" = "Виправити";
@@ -3506,7 +3509,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Налаштування мережі";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Стан мережі";
 
 /* delete after time */
@@ -3919,9 +3922,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Показати пароль";
 
-/* past/unknown group member */
-"Past member %@" = "Колишній учасник %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Вставте адресу робочого столу";
 
@@ -4032,9 +4032,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Порт";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Можливо, в адресі сервера неправильно вказано відбиток сертифіката";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Зберегти чернетку останнього повідомлення з вкладеннями.";
@@ -4224,9 +4221,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "отримали підтвердження…";
-
-/* notification */
-"Received file event" = "Подія отримання файлу";
 
 /* message info title */
 "Received message" = "Отримано повідомлення";
@@ -4780,9 +4774,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Відправлено напряму";
 
-/* notification */
-"Sent file event" = "Подія надісланого файлу";
-
 /* message info title */
 "Sent message" = "Надіслано повідомлення";
 
@@ -4829,10 +4820,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "інформація про чергу на сервері: %1$@\n\nостаннє отримане повідомлення: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Сервер вимагає авторизації для створення черг, перевірте пароль";
+"Server requires authorization to create queues, check password." = "Сервер вимагає авторизації для створення черг, перевірте пароль.";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Сервер вимагає авторизації для завантаження, перевірте пароль";
+"Server requires authorization to upload, check password." = "Сервер вимагає авторизації для завантаження, перевірте пароль.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Тест сервера завершився невдало!";
@@ -5515,12 +5506,6 @@ report reason */
 "Transport sessions" = "Транспортні сесії";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Спроба з'єднатися з сервером, який використовується для отримання повідомлень від цього контакту (помилка: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Спроба з'єднатися з сервером, який використовується для отримання повідомлень від цього контакту.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Турецький інтерфейс";
 
 /* No comment provided by engineer. */
@@ -6011,9 +5996,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Ви вже приєдналися до групи!\nПовторити запит на приєднання?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Ви підключені до сервера, який використовується для отримання повідомлень від цього контакту.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Запрошуємо вас до групи";

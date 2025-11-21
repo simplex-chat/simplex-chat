@@ -13,9 +13,9 @@
     <string name="server_connected">Verbunden</string>
     <string name="server_error">Fehler</string>
     <string name="server_connecting">Verbinde</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Beim Versuch, die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %1$s).</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Versuche die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Sie sind mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</string>
+    <string name="error_connecting_to_server_to_receive_messages">Beim Versuch, die Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten mit diesem Kontakt genutzt wird, ist ein Fehler aufgetreten (Fehler: %1$s).</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Versuche eine Verbindung mit dem Server aufzunehmen, der für den Empfang von Nachrichten dieser Verbindung genutzt wird.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">Gelöscht</string>
     <string name="marked_deleted_description">als gelöscht markiert</string>
@@ -77,8 +77,8 @@
     <string name="error_deleting_pending_contact_connection">Fehler beim Löschen der ausstehenden Kontaktaufnahme</string>
     <string name="error_changing_address">Fehler beim Wechseln der Empfängeradresse</string>
     <string name="error_smp_test_failed_at_step">Der Test ist beim Schritt %s fehlgeschlagen.</string>
-    <string name="error_smp_test_server_auth">Um Warteschlangen zu erzeugen, benötigt der Server eine Authentifizierung. Bitte überprüfen Sie das Passwort.</string>
-    <string name="error_smp_test_certificate">Der Fingerabdruck des Zertifikats in der Serveradresse ist wahrscheinlich ungültig.</string>
+    <string name="error_smp_test_server_auth">Der Server erfordert zum Erstellen von Warteschlangen eine Autorisierung. Bitte überprüfen Sie das Passwort.</string>
+    <string name="error_smp_test_certificate">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein.</string>
     <string name="smp_server_test_connect">Verbinde</string>
     <string name="smp_server_test_create_queue">Erzeuge Warteschlange</string>
     <string name="smp_server_test_secure_queue">Sichere Warteschlange</string>
@@ -1097,7 +1097,7 @@
     <string name="host_verb">Host</string>
     <string name="error_saving_xftp_servers">Fehler beim Speichern der XFTP-Server</string>
     <string name="error_loading_smp_servers">Fehler beim Laden der SMP-Server</string>
-    <string name="error_xftp_test_server_auth">Bitte das Passwort überprüfen – für den Upload benötigt der Server eine Berechtigung</string>
+    <string name="error_xftp_test_server_auth">Der Server erfordert zum Hochladen eine Autorisierung. Bitte überprüfen Sie das Passwort.</string>
     <string name="smp_server_test_download_file">Datei herunterladen</string>
     <string name="smp_server_test_compare_file">Datei vergleichen</string>
     <string name="smp_server_test_delete_file">Datei löschen</string>
@@ -1641,7 +1641,7 @@
     <string name="agent_internal_error_title">Interner Fehler</string>
     <string name="remote_host_error_bad_version"><![CDATA[Auf dem Mobiltelefon <b>%s</b> wird eine nicht unterstützte Version verwendet. Bitte stellen Sie sicher, dass beide Geräte die selbe Version nutzen]]></string>
     <string name="remote_host_error_busy"><![CDATA[Mobiltelefon <b>%s</b> ist besetzt]]></string>
-    <string name="past_member_vName">Ehemaliges Mitglied %1$s</string>
+    <string name="past_member_vName">Mitglied %1$s</string>
     <string name="possible_slow_function_desc">Die Ausführung dieser Funktion dauert zu lange: %1$d Sekunden: %2$s</string>
     <string name="possible_slow_function_title">Langsame Funktion</string>
     <string name="show_slow_api_calls">Langsame API-Aufrufe anzeigen</string>
@@ -1652,8 +1652,8 @@
     <string name="v5_5_private_notes">Private Notizen</string>
     <string name="clear_note_folder_warning">Es werden alle Nachrichten gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="clear_note_folder_question">Private Notizen entfernen?</string>
-    <string name="rcv_group_event_member_blocked">es wurde %s blockiert</string>
-    <string name="rcv_group_event_member_unblocked">Es wurden %s freigegeben</string>
+    <string name="rcv_group_event_member_blocked">hat %s blockiert</string>
+    <string name="rcv_group_event_member_unblocked">hat %s freigegeben</string>
     <string name="snd_group_event_member_blocked">Sie haben %s blockiert</string>
     <string name="snd_group_event_member_unblocked">Sie haben %s freigegeben</string>
     <string name="block_for_all_question">Mitglied für Alle blockieren?</string>
@@ -1665,7 +1665,7 @@
     <string name="unblock_for_all">Für Alle freigeben</string>
     <string name="unblock_for_all_question">Mitglied für Alle freigeben?</string>
     <string name="member_info_member_blocked">wurde blockiert</string>
-    <string name="blocked_by_admin_item_description">ist vom Administrator blockiert worden</string>
+    <string name="blocked_by_admin_item_description">wurde vom Administrator blockiert</string>
     <string name="member_blocked_by_admin">wurde vom Administrator blockiert</string>
     <string name="block_for_all">Für Alle blockiert</string>
     <string name="info_row_created_at">Erstellt um</string>
@@ -2500,7 +2500,7 @@
     <string name="cant_send_message_you_left">Sie haben die Gruppe verlassen</string>
     <string name="cant_send_message_contact_disabled">Kontakt deaktiviert</string>
     <string name="cant_send_message_contact_not_synchronized">Nicht synchronisiert</string>
-    <string name="error_deleting_member_support_chat">Fehler beim Löschen des Chats mit dem Mitglied</string>
+    <string name="error_deleting_member_support_chat">Fehler beim Löschen des Chats</string>
     <string name="cant_send_message_contact_not_ready">Kontakt nicht bereit</string>
     <string name="cant_send_message_alert_title">Sie können keine Nachrichten senden!</string>
     <string name="delete_member_support_chat_button">Chat löschen</string>
@@ -2606,4 +2606,10 @@
     <string name="chat_banner_connect_to_use_bot">Verbinden tippen, um den Bot zu nutzen.</string>
     <string name="cant_send_commands_alert_text">Um Befehle senden zu können, müssen Sie verbunden sein.</string>
     <string name="simplex_link_relay">SimpleX Relais-Link</string>
+    <string name="error_marking_member_support_chat_read">Fehler beim Markieren als gelesen</string>
+    <string name="proxy_destination_error_unknown_ca">Fingerabdruck in der Zielserveradresse stimmt nicht mit dem Zertifikat überein: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">Fingerabdruck in der Weiterleitungsserveradresse stimmt nicht mit dem Zertifikat überein: %1$s.</string>
+    <string name="network_error_unknown_ca">Fingerabdruck in der Serveradresse stimmt nicht mit dem Zertifikat überein: %1$s.</string>
+    <string name="server_no_sub">Kein Abonnement</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Sie sind nicht mit dem Server verbunden, der für den Empfang von Nachrichten dieser Verbindung genutzt wird (kein Abonnement).</string>
 </resources>

@@ -270,6 +270,12 @@ private fun DropDownMenuForSupportChat(rhId: Long?, member: GroupMember, groupIn
         showMenu.value = false
       })
     } else {
+      if (member.supportChatNotRead) {
+        ItemAction(stringResource(MR.strings.mark_read), painterResource(MR.images.ic_check), color = MaterialTheme.colors.primary, onClick = {
+          markSupportChatRead(rhId, groupInfo, member)
+          showMenu.value = false
+        })
+      }
       ItemAction(stringResource(MR.strings.delete_member_support_chat_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
         deleteMemberSupportChatDialog(rhId, groupInfo, member)
         showMenu.value = false
@@ -296,6 +302,25 @@ private fun deleteMemberSupportChat(rhId: Long?, groupInfo: GroupInfo, member: G
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
         chatModel.chatsContext.updateGroup(rhId, r.first)
+      }
+    }
+  }
+}
+
+private fun markSupportChatRead(rhId: Long?, groupInfo: GroupInfo, member: GroupMember) {
+  withBGApi {
+    if (member.supportChatNotRead) {
+      val r = chatModel.controller.apiSupportChatRead(
+        rh = rhId,
+        type = ChatType.Group,
+        id = groupInfo.apiId,
+        scope = GroupChatScope.MemberSupport(member.groupMemberId)
+      )
+      if (r != null) {
+        withContext(Dispatchers.Main) {
+          chatModel.chatsContext.upsertGroupMember(rhId, r.first, r.second)
+          chatModel.chatsContext.updateGroup(rhId, r.first)
+        }
       }
     }
   }

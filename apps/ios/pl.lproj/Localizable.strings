@@ -1098,7 +1098,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Warunki zostały już zaakceptowane przez tego(-ych) operatora(-ów): **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Warunki użytkowania";
 
 /* No comment provided by engineer. */
@@ -2273,6 +2273,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Szybciej znajduj czaty";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy";
+
 /* No comment provided by engineer. */
 "Fix" = "Napraw";
 
@@ -3080,7 +3083,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Ustawienia sieci";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Status sieci";
 
 /* delete after time */
@@ -3373,9 +3376,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Hasło do wyświetlenia";
 
-/* past/unknown group member */
-"Past member %@" = "Były członek %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Wklej adres komputera";
 
@@ -3465,9 +3465,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Port";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Możliwe, że odcisk palca certyfikatu w adresie serwera jest nieprawidłowy";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Zachowaj ostatnią wersję roboczą wiadomości wraz z załącznikami.";
@@ -3633,9 +3630,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "otrzymano potwierdzenie…";
-
-/* notification */
-"Received file event" = "Otrzymano zdarzenie pliku";
 
 /* message info title */
 "Received message" = "Otrzymano wiadomość";
@@ -4081,9 +4075,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Wysłano bezpośrednio";
 
-/* notification */
-"Sent file event" = "Wyślij zdarzenie pliku";
-
 /* message info title */
 "Sent message" = "Wyślij wiadomość";
 
@@ -4118,10 +4109,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "Informacje kolejki serwera: %1$@\n\nostatnia otrzymana wiadomość: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Serwer wymaga autoryzacji do tworzenia kolejek, sprawdź hasło";
+"Server requires authorization to create queues, check password." = "Serwer wymaga autoryzacji do tworzenia kolejek, sprawdź hasło";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Serwer wymaga autoryzacji do przesłania, sprawdź hasło";
+"Server requires authorization to upload, check password." = "Serwer wymaga autoryzacji do przesłania, sprawdź hasło";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Test serwera nie powiódł się!";
@@ -4659,12 +4650,6 @@ chat item action */
 "Transport sessions" = "Sesje transportowe";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu (błąd: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Turecki interfejs";
 
 /* No comment provided by engineer. */
@@ -5086,9 +5071,6 @@ chat item action */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Już dołączasz do grupy!\nPowtórzyć prośbę dołączenia?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Jesteś połączony z serwerem używanym do odbierania wiadomości od tego kontaktu.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Jesteś zaproszony do grupy";

@@ -42,12 +42,14 @@ class AppTheme: ObservableObject, Equatable {
     }
 
     func updateFromCurrentColors() {
-        objectWillChange.send()
-        name = CurrentColors.name
-        base = CurrentColors.base
-        colors.updateColorsFrom(CurrentColors.colors)
-        appColors.updateColorsFrom(CurrentColors.appColors)
-        wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
+        DispatchQueue.main.async {
+            self.objectWillChange.send()
+            self.name = CurrentColors.name
+            self.base = CurrentColors.base
+            self.colors.updateColorsFrom(CurrentColors.colors)
+            self.appColors.updateColorsFrom(CurrentColors.appColors)
+            self.wallpaper.updateWallpaperFrom(CurrentColors.wallpaper)
+        }
     }
 }
 

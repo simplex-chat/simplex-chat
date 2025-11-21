@@ -42,6 +42,7 @@ This file is generated automatically.
 - [APIAddContact](#apiaddcontact)
 - [APIConnectPlan](#apiconnectplan)
 - [APIConnect](#apiconnect)
+- [Connect](#connect)
 - [APIAcceptContact](#apiacceptcontact)
 - [APIRejectContact](#apirejectcontact)
 
@@ -90,12 +91,16 @@ Create bot address.
 '/_address ' + str(userId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserContactLinkCreated: User contact address created.
 - type: "userContactLinkCreated"
 - user: [User](./TYPES.md#user)
 - connLinkContact: [CreatedConnLink](./TYPES.md#createdconnlink)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -123,11 +128,15 @@ Delete bot address.
 '/_delete_address ' + str(userId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserContactLinkDeleted: User contact address deleted.
 - type: "userContactLinkDeleted"
 - user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -155,12 +164,16 @@ Get bot address and settings.
 '/_show_address ' + str(userId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserContactLink: User contact address.
 - type: "userContactLink"
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -189,7 +202,7 @@ Add address to bot profile.
 '/_profile_address ' + str(userId) + ' ' + ('on' if enable else 'off') # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserProfileUpdated: User profile updated.
 - type: "userProfileUpdated"
@@ -197,6 +210,10 @@ UserProfileUpdated: User profile updated.
 - fromProfile: [Profile](./TYPES.md#profile)
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -225,12 +242,16 @@ Set bot address settings.
 '/_address_settings ' + str(userId) + ' ' + json.dumps(settings) # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserContactLinkUpdated: User contact address updated.
 - type: "userContactLinkUpdated"
 - user: [User](./TYPES.md#user)
 - contactLink: [UserContactLink](./TYPES.md#usercontactlink)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -266,12 +287,16 @@ Send messages.
 '/_send ' + str(sendRef) + (' live=on' if liveMessage else '') + ((' ttl=' + str(ttl)) if ttl is not None else '') + ' json ' + json.dumps(composedMessages) # Python
 ```
 
-**Response**:
+**Responses**:
 
 NewChatItems: New messages.
 - type: "newChatItems"
 - user: [User](./TYPES.md#user)
 - chatItems: [[AChatItem](./TYPES.md#achatitem)]
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -349,7 +374,7 @@ Delete message.
 '/_delete item ' + str(chatRef) + ' ' + ','.join(map(str, chatItemIds)) + ' ' + str(deleteMode) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ChatItemsDeleted: Messages deleted.
 - type: "chatItemsDeleted"
@@ -357,6 +382,10 @@ ChatItemsDeleted: Messages deleted.
 - chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
 - byUser: bool
 - timed: bool
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -385,7 +414,7 @@ Moderate message. Requires Moderator role (and higher than message author's).
 '/_delete member item #' + str(groupId) + ' ' + ','.join(map(str, chatItemIds)) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ChatItemsDeleted: Messages deleted.
 - type: "chatItemsDeleted"
@@ -393,6 +422,10 @@ ChatItemsDeleted: Messages deleted.
 - chatItemDeletions: [[ChatItemDeletion](./TYPES.md#chatitemdeletion)]
 - byUser: bool
 - timed: bool
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -423,13 +456,17 @@ Add/remove message reaction.
 '/_reaction ' + str(chatRef) + ' ' + str(chatItemId) + ' ' + ('on' if add else 'off') + ' ' + json.dumps(reaction) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ChatItemReaction: Message reaction.
 - type: "chatItemReaction"
 - user: [User](./TYPES.md#user)
 - added: bool
 - reaction: [ACIReaction](./TYPES.md#acireaction)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -477,6 +514,10 @@ RcvFileAcceptedSndCancelled: File accepted, but no longer sent.
 - type: "rcvFileAcceptedSndCancelled"
 - user: [User](./TYPES.md#user)
 - rcvFileTransfer: [RcvFileTransfer](./TYPES.md#rcvfiletransfer)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -559,7 +600,7 @@ Add contact to group. Requires bot to have Admin role.
 '/_add #' + str(groupId) + ' ' + str(contactId) + ' ' + str(memberRole) # Python
 ```
 
-**Response**:
+**Responses**:
 
 SentGroupInvitation: Group invitation sent.
 - type: "sentGroupInvitation"
@@ -567,6 +608,10 @@ SentGroupInvitation: Group invitation sent.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - contact: [Contact](./TYPES.md#contact)
 - member: [GroupMember](./TYPES.md#groupmember)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -594,13 +639,17 @@ Join group.
 '/_join #' + str(groupId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserAcceptedGroupSent: User accepted group invitation.
 - type: "userAcceptedGroupSent"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - hostContact: [Contact](./TYPES.md#contact)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -673,7 +722,7 @@ Set members role. Requires Admin role.
 '/_member role #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' ' + str(memberRole) # Python
 ```
 
-**Response**:
+**Responses**:
 
 MembersRoleUser: Members role changed by user.
 - type: "membersRoleUser"
@@ -681,6 +730,10 @@ MembersRoleUser: Members role changed by user.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - toRole: [GroupMemberRole](./TYPES.md#groupmemberrole)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -710,7 +763,7 @@ Block members. Requires Moderator role.
 '/_block #' + str(groupId) + ' ' + ','.join(map(str, groupMemberIds)) + ' blocked=' + ('on' if blocked else 'off') # Python
 ```
 
-**Response**:
+**Responses**:
 
 MembersBlockedForAllUser: Members blocked for all by admin.
 - type: "membersBlockedForAllUser"
@@ -718,6 +771,10 @@ MembersBlockedForAllUser: Members blocked for all by admin.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - members: [[GroupMember](./TYPES.md#groupmember)]
 - blocked: bool
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -789,12 +846,16 @@ Leave group.
 '/_leave #' + str(groupId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 LeftMemberUser: User left group.
 - type: "leftMemberUser"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -822,12 +883,16 @@ Get group members.
 '/_members #' + str(groupId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupMembers: Group members.
 - type: "groupMembers"
 - user: [User](./TYPES.md#user)
 - group: [Group](./TYPES.md#group)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -857,12 +922,16 @@ Create group.
 '/_group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + json.dumps(groupProfile) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupCreated: Group created.
 - type: "groupCreated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -891,7 +960,7 @@ Update group profile.
 '/_group_profile #' + str(groupId) + ' ' + json.dumps(groupProfile) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupUpdated: Group updated.
 - type: "groupUpdated"
@@ -899,6 +968,10 @@ GroupUpdated: Group updated.
 - fromGroup: [GroupInfo](./TYPES.md#groupinfo)
 - toGroup: [GroupInfo](./TYPES.md#groupinfo)
 - member_: [GroupMember](./TYPES.md#groupmember)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -932,13 +1005,17 @@ Create group link.
 '/_create link #' + str(groupId) + ' ' + str(memberRole) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupLinkCreated: Group link created.
 - type: "groupLinkCreated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -967,13 +1044,17 @@ Set member role for group link.
 '/_set link role #' + str(groupId) + ' ' + str(memberRole) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupLink: Group link.
 - type: "groupLink"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1001,12 +1082,16 @@ Delete group link.
 '/_delete link #' + str(groupId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupLinkDeleted: Group link deleted.
 - type: "groupLinkDeleted"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1034,13 +1119,17 @@ Get group link.
 '/_get link #' + str(groupId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupLink: Group link.
 - type: "groupLink"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - groupLink: [GroupLink](./TYPES.md#grouplink)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1074,13 +1163,17 @@ Create 1-time invitation link.
 '/_connect ' + str(userId) + (' incognito=on' if incognito else '') # Python
 ```
 
-**Response**:
+**Responses**:
 
 Invitation: One-time invitation.
 - type: "invitation"
 - user: [User](./TYPES.md#user)
 - connLinkInvitation: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1109,7 +1202,7 @@ Determine SimpleX link type and if the bot is already connected via this link.
 '/_connect plan ' + str(userId) + ' ' + connectionLink # Python
 ```
 
-**Response**:
+**Responses**:
 
 ConnectionPlan: Connection link information.
 - type: "connectionPlan"
@@ -1117,32 +1210,36 @@ ConnectionPlan: Connection link information.
 - connLink: [CreatedConnLink](./TYPES.md#createdconnlink)
 - connectionPlan: [ConnectionPlan](./TYPES.md#connectionplan)
 
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
 ---
 
 
 ### APIConnect
 
-Connect via SimpleX link. The link can be 1-time invitation link, contact address or group link
+Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
 
 *Network usage*: interactive.
 
 **Parameters**:
 - userId: int64
 - incognito: bool
-- connLink_: [CreatedConnLink](./TYPES.md#createdconnlink)?
+- preparedLink_: [CreatedConnLink](./TYPES.md#createdconnlink)?
 
 **Syntax**:
 
 ```
-/_connect <userId> <str(connLink_)>
+/_connect <userId>[ <str(preparedLink_)>]
 ```
 
 ```javascript
-'/_connect ' + userId + ' ' + connLink_.toString() // JavaScript
+'/_connect ' + userId + (preparedLink_ ? ' ' + preparedLink_.toString() : '') // JavaScript
 ```
 
 ```python
-'/_connect ' + str(userId) + ' ' + str(connLink_) # Python
+'/_connect ' + str(userId) + ((' ' + str(preparedLink_)) if preparedLink_ is not None else '') # Python
 ```
 
 **Responses**:
@@ -1163,6 +1260,60 @@ SentInvitation: Invitation sent to contact address.
 - user: [User](./TYPES.md#user)
 - connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
 - customUserProfile: [Profile](./TYPES.md#profile)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### Connect
+
+Connect via SimpleX link as string in the active user profile.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- incognito: bool
+- connLink_: string?
+
+**Syntax**:
+
+```
+/connect[ <connLink_>]
+```
+
+```javascript
+'/connect' + (connLink_ ? ' ' + connLink_ : '') // JavaScript
+```
+
+```python
+'/connect' + ((' ' + connLink_) if connLink_ is not None else '') # Python
+```
+
+**Responses**:
+
+SentConfirmation: Confirmation sent to one-time invitation.
+- type: "sentConfirmation"
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+ContactAlreadyExists: Contact already exists.
+- type: "contactAlreadyExists"
+- user: [User](./TYPES.md#user)
+- contact: [Contact](./TYPES.md#contact)
+
+SentInvitation: Invitation sent to contact address.
+- type: "sentInvitation"
+- user: [User](./TYPES.md#user)
+- connection: [PendingContactConnection](./TYPES.md#pendingcontactconnection)
+- customUserProfile: [Profile](./TYPES.md#profile)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1190,12 +1341,16 @@ Accept contact request.
 '/_accept ' + str(contactReqId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 AcceptingContactRequest: Contact request accepted.
 - type: "acceptingContactRequest"
 - user: [User](./TYPES.md#user)
 - contact: [Contact](./TYPES.md#contact)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1223,13 +1378,17 @@ Reject contact request. The user who sent the request is **not notified**.
 '/_reject ' + str(contactReqId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ContactRequestRejected: Contact request rejected.
 - type: "contactRequestRejected"
 - user: [User](./TYPES.md#user)
 - contactRequest: [UserContactRequest](./TYPES.md#usercontactrequest)
 - contact_: [Contact](./TYPES.md#contact)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1262,12 +1421,16 @@ Get contacts.
 '/_contacts ' + str(userId) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ContactsList: Contacts.
 - type: "contactsList"
 - user: [User](./TYPES.md#user)
 - contacts: [[Contact](./TYPES.md#contact)]
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1297,12 +1460,16 @@ Get groups.
 '/_groups ' + str(userId) + ((' @' + str(contactId_)) if contactId_ is not None else '') + ((' ' + search) if search is not None else '') # Python
 ```
 
-**Response**:
+**Responses**:
 
 GroupsList: Groups.
 - type: "groupsList"
 - user: [User](./TYPES.md#user)
-- groups: [[GroupInfoSummary](./TYPES.md#groupinfosummary)]
+- groups: [[GroupInfo](./TYPES.md#groupinfo)]
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1348,6 +1515,10 @@ GroupDeletedUser: User deleted group.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
 ---
 
 
@@ -1368,11 +1539,15 @@ Get active user profile
 /user
 ```
 
-**Response**:
+**Responses**:
 
 ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1400,11 +1575,15 @@ Create new user profile
 '/_create user ' + json.dumps(newUser) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 **Errors**:
 - UserExists: User or contact with this name already exists.
@@ -1425,11 +1604,15 @@ Get all user profiles
 /users
 ```
 
-**Response**:
+**Responses**:
 
 UsersList: Users.
 - type: "usersList"
 - users: [[UserInfo](./TYPES.md#userinfo)]
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1458,11 +1641,15 @@ Set active user profile
 '/_user ' + str(userId) + ((' ' + json.dumps(viewPwd)) if viewPwd is not None else '') # Python
 ```
 
-**Response**:
+**Responses**:
 
 ActiveUser: Active user profile.
 - type: "activeUser"
 - user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 **Errors**:
 - ChatNotStarted: Chat not started.
@@ -1495,11 +1682,15 @@ Delete user profile.
 '/_delete user ' + str(userId) + ' del_smp=' + ('on' if delSMPQueues else 'off') + ((' ' + json.dumps(viewPwd)) if viewPwd is not None else '') # Python
 ```
 
-**Response**:
+**Responses**:
 
 CmdOk: Ok.
 - type: "cmdOk"
 - user_: [User](./TYPES.md#user)?
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1528,7 +1719,7 @@ Update user profile.
 '/_profile ' + str(userId) + ' ' + json.dumps(profile) # Python
 ```
 
-**Response**:
+**Responses**:
 
 UserProfileUpdated: User profile updated.
 - type: "userProfileUpdated"
@@ -1536,6 +1727,14 @@ UserProfileUpdated: User profile updated.
 - fromProfile: [Profile](./TYPES.md#profile)
 - toProfile: [Profile](./TYPES.md#profile)
 - updateSummary: [UserProfileUpdateSummary](./TYPES.md#userprofileupdatesummary)
+
+UserProfileNoChange: User profile was not changed.
+- type: "userProfileNoChange"
+- user: [User](./TYPES.md#user)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---
 
@@ -1564,12 +1763,16 @@ Configure chat preference overrides for the contact.
 '/_set prefs @' + str(contactId) + ' ' + json.dumps(preferences) # Python
 ```
 
-**Response**:
+**Responses**:
 
 ContactPrefsUpdated: Contact preferences updated.
 - type: "contactPrefsUpdated"
 - user: [User](./TYPES.md#user)
 - fromContact: [Contact](./TYPES.md#contact)
 - toContact: [Contact](./TYPES.md#contact)
+
+ChatCmdError: Command error.
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
 
 ---

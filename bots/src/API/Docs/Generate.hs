@@ -43,7 +43,7 @@ commandsDocText =
         <> foldMap commandDocText commands
       where
         commandDocText CCDoc {commandType = ATUnionMember tag params, commandDescr, network, syntax, responses, errors} =
-          ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n\n*Network usage*: " <> networkUsage <> ".\n")
+          ("\n\n### " <> T.pack (fstToUpper tag) <> "\n\n" <> commandDescr <> "\n\n*Network usage*: " <> networkUsage network <> ".\n")
             <> (if null params then "" else paramsText)
             <> (if syntax == "" then "" else syntaxText (tag, params) syntax)
             <> (if length responses > 1 then "\n**Responses**:\n" else "\n**Response**:\n")
@@ -52,10 +52,6 @@ commandsDocText =
             <> foldMap errorText errors
             <> "\n---\n"
           where
-            networkUsage = case network of
-              Nothing -> "no"
-              Just UNInteractive -> "interactive"
-              Just UNBackground -> "background"
             paramsText = "\n**Parameters**:\n" <> fieldsText "./TYPES.md" params
         responseText CRDoc {responseType = ATUnionMember tag fields, responseDescr} =
           (T.pack $ "\n" <> fstToUpper tag <> ": " <> respDescr <> ".\n")
@@ -67,11 +63,17 @@ commandsDocText =
           let descr' = if null descr then camelToSpace err else descr
            in T.pack $ "- " <> fstToUpper err <> ": " <> descr' <> ".\n"
 
+networkUsage :: Maybe UsesNetwork -> Text
+networkUsage = \case
+  Nothing -> "no"
+  Just UNInteractive -> "interactive"
+  Just UNBackground -> "background"
+
 syntaxText :: TypeAndFields -> Expr -> Text
 syntaxText r syntax =
   "\n**Syntax**:\n"
     <> "\n```\n" <> docSyntaxText r syntax <> "\n```\n"
-    <> (if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText r syntax <> " // JavaScript\n```\n")
+    <> (if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText False r syntax <> " // JavaScript\n```\n")
     <> (if isConst syntax then "" else "\n```python\n" <> pySyntaxText r syntax <> " # Python\n```\n")
 
 camelToSpace :: String -> String
@@ -127,14 +129,14 @@ typesDocText =
       where
         self = APIRecordField "self" (ATDef td)
         typeFields = case typeDef of
-          ATDRecord fs -> L.toList fs
+          ATDRecord fs -> fs
           ATDUnion ms -> APIRecordField "type" tagType : concatMap (\(ATUnionMember _ fs) -> fs) ms
             where
               tagType = ATDef $ APITypeDef (name <> ".type") $ ATDEnum tags
               tags = L.map (\(ATUnionMember tag _) -> tag) ms
           ATDEnum _ -> []
     typeDefText = \case
-      ATDRecord fields -> "\n**Record type**:\n" <> fieldsText "" (L.toList fields)
+      ATDRecord fields -> "\n**Record type**:\n" <> fieldsText "" fields
       ATDEnum cs -> "\n**Enum type**:\n" <> foldMap (\m -> "- \"" <> T.pack m <> "\"\n") cs
       ATDUnion cs -> "\n**Discriminated union type**:\n" <> foldMap constrText cs
         where

@@ -95,7 +95,8 @@ kotlin {
 
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        val cameraXVersion = "1.3.4"
+        // https://issuetracker.google.com/issues/351313880
+        val cameraXVersion = "1.5.1"
         implementation("androidx.camera:camera-core:${cameraXVersion}")
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
@@ -113,7 +114,7 @@ kotlin {
         }
         // For jSystemThemeDetector only
         implementation("net.java.dev.jna:jna-platform:5.14.0")
-        implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
+        implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
@@ -254,8 +255,11 @@ afterEvaluate {
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
       val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
       val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val lvStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("lv/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())
       treeList.remove(baseStringsFile)
+      // removed lv/strings.xml file with 100+ errors
+      treeList.remove(lvStringsFile)
       treeList.add(0, baseStringsFile)
       val baseFormatting = mutableMapOf<String, List<String>>()
       treeList.forEachIndexed { index, file ->

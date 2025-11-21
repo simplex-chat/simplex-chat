@@ -1584,6 +1584,8 @@ public enum ChatInfo: Identifiable, Decodable, NamedChat, Hashable {
                         return nil
                     case .some(.memberSupport(groupMember_: .none)):
                         return nil
+                    case .some(.reports):
+                        return ("can't send messages", nil)
                     }
                 } else if groupInfo.nextConnectPrepared {
                     return nil
@@ -1895,26 +1897,35 @@ public struct ChatStats: Decodable, Hashable {
 
 public enum GroupChatScope: Decodable {
     case memberSupport(groupMemberId_: Int64?)
+    case reports // surrogate scope used for matching new items to opened Reports "chat scope" in UI, this type is not present in backend
 }
 
 public func sameChatScope(_ scope1: GroupChatScope, _ scope2: GroupChatScope) -> Bool {
-    switch (scope1, scope2) {
+    return switch (scope1, scope2) {
     case let (.memberSupport(groupMemberId1_), .memberSupport(groupMemberId2_)):
-        return groupMemberId1_ == groupMemberId2_
+        groupMemberId1_ == groupMemberId2_
+    case (.reports, .reports):
+        true
+    case (.reports, .memberSupport):
+        false
+    case (.memberSupport(groupMemberId_: let groupMemberId_), .reports):
+        false
     }
 }
 
 public enum GroupChatScopeInfo: Decodable, Hashable {
     case memberSupport(groupMember_: GroupMember?)
+    case reports // surrogate scope used for matching new items to opened Reports "chat scope" in UI, this type is not present in backend
 
     public func toChatScope() -> GroupChatScope {
-        switch self {
+        return switch self {
         case let .memberSupport(groupMember_):
             if let groupMember = groupMember_ {
-                return .memberSupport(groupMemberId_: groupMember.groupMemberId)
+                .memberSupport(groupMemberId_: groupMember.groupMemberId)
             } else {
-                return .memberSupport(groupMemberId_: nil)
+                .memberSupport(groupMemberId_: nil)
             }
+        case .reports: .reports
         }
     }
 }
@@ -2073,11 +2084,6 @@ public struct ContactRef: Decodable, Equatable, Hashable {
     var localDisplayName: ContactName
 
     public var id: ChatId { get { "@\(contactId)" } }
-}
-
-public struct ContactSubStatus: Decodable, Hashable {
-    public var contact: Contact
-    public var contactError: ChatError?
 }
 
 public struct Connection: Decodable, Hashable {
@@ -2629,24 +2635,33 @@ public struct GroupMember: Identifiable, Decodable, Hashable {
 
     public func canBeRemoved(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft
-            && userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
+        return userRole >= .admin && userRole >= memberRole && groupInfo.membership.memberActive
     }
 
     public func canChangeRoleTo(groupInfo: GroupInfo) -> [GroupMemberRole]? {
-        if !canBeRemoved(groupInfo: groupInfo) { return nil }
+        if !canBeRemoved(groupInfo: groupInfo) || memberStatus == .memRemoved || memberStatus == .memLeft || memberPending { return nil }
         let userRole = groupInfo.membership.memberRole
         return GroupMemberRole.supportedRoles.filter { $0 <= userRole }
     }
 
     public func canBlockForAll(groupInfo: GroupInfo) -> Bool {
         let userRole = groupInfo.membership.memberRole
-        return memberStatus != .memRemoved && memberStatus != .memLeft && memberRole < .moderator
+        return memberRole < .moderator
             && userRole >= .moderator && userRole >= memberRole && groupInfo.membership.memberActive
+            && !memberPending
     }
 
     public var canReceiveReports: Bool {
         memberRole >= .moderator && versionRange.maxVersion >= REPORTS_VERSION
+    }
+
+    public var supportChatNotRead: Bool {
+        if let supportChat = supportChat,
+           supportChat.memberAttention > 0 || supportChat.mentions > 0 || supportChat.unread > 0 {
+            true
+        } else {
+            false
+        }
     }
 
     public var versionRange: VersionRange {
@@ -2845,16 +2860,9 @@ public enum InvitedBy: Decodable, Hashable {
     case unknown
 }
 
-public struct MemberSubError: Decodable, Hashable {
-    var member: GroupMemberIds
-    var memberError: ChatError
-}
-
 public enum ConnectionEntity: Decodable, Hashable {
     case rcvDirectMsgConnection(entityConnection: Connection, contact: Contact?)
     case rcvGroupMsgConnection(entityConnection: Connection, groupInfo: GroupInfo, groupMember: GroupMember)
-    case sndFileConnection(entityConnection: Connection, sndFileTransfer: SndFileTransfer)
-    case rcvFileConnection(entityConnection: Connection, rcvFileTransfer: RcvFileTransfer)
     case userContactConnection(entityConnection: Connection, userContact: UserContact)
 
     public var id: String? {
@@ -2865,8 +2873,6 @@ public enum ConnectionEntity: Decodable, Hashable {
             groupMember.id
         case let .userContactConnection(_, userContact):
             userContact.id
-        default:
-            nil
         }
     }
 
@@ -2887,8 +2893,6 @@ public enum ConnectionEntity: Decodable, Hashable {
         switch self {
         case let .rcvDirectMsgConnection(entityConnection, _): entityConnection
         case let .rcvGroupMsgConnection(entityConnection, _, _): entityConnection
-        case let .sndFileConnection(entityConnection, _): entityConnection
-        case let .rcvFileConnection(entityConnection, _): entityConnection
         case let .userContactConnection(entityConnection, _): entityConnection
         }
     }
@@ -3066,33 +3070,33 @@ public struct ChatItem: Identifiable, Decodable, Hashable {
     }
 
     public var mergeCategory: CIMergeCategory? {
-        switch content {
-        case .rcvChatFeature: .chatFeature
-        case .sndChatFeature: .chatFeature
-        case .rcvGroupFeature: .chatFeature
-        case .sndGroupFeature: .chatFeature
-        case let.rcvGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userDeleted: nil
-            case .groupDeleted: nil
-            case .memberCreatedContact: nil
-            case .newMemberPendingReview: nil
-            default: .rcvGroupEvent
-            }
-        case let .sndGroupEvent(event):
-            switch event {
-            case .userRole: nil
-            case .userLeft: nil
-            case .memberAccepted: nil
-            case .userPendingReview: nil
-            default: .sndGroupEvent
-            }
-        default:
-            if meta.itemDeleted == nil {
+        if meta.itemDeleted != nil {
+            chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
+        } else {
+            switch content {
+            case .rcvChatFeature: .chatFeature
+            case .sndChatFeature: .chatFeature
+            case .rcvGroupFeature: .chatFeature
+            case .sndGroupFeature: .chatFeature
+            case let.rcvGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userDeleted: nil
+                case .groupDeleted: nil
+                case .memberCreatedContact: nil
+                case .newMemberPendingReview: nil
+                default: .rcvGroupEvent
+                }
+            case let .sndGroupEvent(event):
+                switch event {
+                case .userRole: nil
+                case .userLeft: nil
+                case .memberAccepted: nil
+                case .userPendingReview: nil
+                default: .sndGroupEvent
+                }
+            default:
                 nil
-            } else {
-                chatDir.sent ? .sndItemDeleted : .rcvItemDeleted
             }
         }
     }

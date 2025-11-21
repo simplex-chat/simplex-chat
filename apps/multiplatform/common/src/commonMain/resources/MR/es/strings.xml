@@ -23,7 +23,7 @@
     <string name="settings_section_title_icon">ICONO DE LA APLICACIÓN</string>
     <string name="turning_off_service_and_periodic">La optimización de la batería está activa, desactivando el servicio en segundo plano y las solicitudes periódicas de nuevos mensajes. Puedes volver a activarlos en Configuración.</string>
     <string name="notifications_mode_service_desc">El servicio está siempre en funcionamiento en segundo plano. Las notificaciones se muestran en cuanto haya mensajes nuevos.</string>
-    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Se puede desactivar en Configuración</b> – las notificaciones se seguirán mostrando mientras la app esté en funcionamiento.]]></string>
+    <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Se puede desactivar en la configuración</b>. En ese caso las notificaciones se seguirán mostrando mientras la aplicación esté en funcionamiento.]]></string>
     <string name="notifications_mode_service">Siempre activo</string>
     <string name="allow_verb">Permitir</string>
     <string name="above_then_preposition_continuation">y después:</string>
@@ -329,7 +329,7 @@
     <string name="file_with_path">Archivo: %s</string>
     <string name="failed_to_active_user_title">¡Error al cambiar perfil!</string>
     <string name="smp_servers_enter_manually">Añadir manualmente</string>
-    <string name="how_to_use_your_servers">Cómo usar los servidores</string>
+    <string name="how_to_use_your_servers">Cómo usar tus servidores</string>
     <string name="error_stopping_chat">Error al parar SimpleX</string>
     <string name="enter_correct_passphrase">Introduce la contraseña correcta.</string>
     <string name="enter_passphrase">Introduce la contraseña…</string>
@@ -438,7 +438,7 @@
     <string name="to_verify_compare">Para verificar el cifrado de extremo a extremo con tu contacto, compara (o escanea) el código en ambos dispositivos.</string>
     <string name="database_is_not_encrypted">La base de datos no está cifrada. Escribe una contraseña para protegerla.</string>
     <string name="ensure_smp_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor SMP tienen el formato correcto, están separadas por líneas y no están duplicadas.</string>
-    <string name="icon_descr_instant_notifications">Notificación instantánea</string>
+    <string name="icon_descr_instant_notifications">Notificaciones instantáneas</string>
     <string name="network_settings_title">Configuración avanzada</string>
     <string name="only_client_devices_store_contacts_groups_e2e_encrypted_messages">Sólo los dispositivos cliente almacenan perfiles de usuario, contactos, grupos y mensajes.</string>
     <string name="onboarding_notifications_mode_subtitle">Cómo afecta a la batería</string>
@@ -463,7 +463,7 @@
     <string name="alert_title_group_invitation_expired">¡Invitación caducada!</string>
     <string name="group_member_status_left">ha salido</string>
     <string name="v4_4_live_messages">Mensajes en vivo</string>
-    <string name="service_notifications">Notificación instantánea</string>
+    <string name="service_notifications">Notificaciones instantáneas</string>
     <string name="settings_notifications_mode_title">Servicio</string>
     <string name="delete_message_mark_deleted_warning">El mensaje se marcará para eliminar. El destinatario o destinatarios podrán revelar este mensaje.</string>
     <string name="live_message">¡Mensaje en vivo!</string>
@@ -571,7 +571,7 @@
     <string name="make_private_connection">Establecer una conexión privada</string>
     <string name="network_error_desc">Comprueba tu conexión de red con %1$s e inténtalo de nuevo.</string>
     <string name="sender_may_have_deleted_the_connection_request">El remitente puede haber eliminado la solicitud de conexión.</string>
-    <string name="error_smp_test_certificate">Posiblemente la huella del certificado en la dirección del servidor es incorrecta</string>
+    <string name="error_smp_test_certificate">La huella en la dirección del servidor no coincide con el certificado.</string>
     <string name="reply_verb">Responder</string>
     <string name="save_passphrase_in_keychain">Guardar contraseña en Keystore</string>
     <string name="database_restore_error">Error al restaurar base de datos</string>
@@ -738,7 +738,7 @@
     <string name="enable_automatic_deletion_message">Esta acción es irreversible. Los mensajes enviados y recibidos anteriores a la selección serán eliminados. Podría tardar varios minutos.</string>
     <string name="messages_section_description">Esta configuración se aplica a los mensajes del perfil actual</string>
     <string name="this_string_is_not_a_connection_link">¡Esta cadena no es un enlace de conexión!</string>
-    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Para mejorar la privacidad <b>SimpleX se ejecuta en segundo plano</b> en lugar de usar notificaciones push.]]></string>
+    <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Para mejorar la privacidad, en lugar de usar notificaciones push, <b>SimpleX se ejecuta en segundo plano</b>.]]></string>
     <string name="icon_descr_settings">Configuración</string>
     <string name="icon_descr_speaker_off">Altavoz desactivado</string>
     <string name="add_contact_or_create_group">Inciar chat nuevo</string>
@@ -748,11 +748,11 @@
     <string name="la_notice_to_protect_your_information_turn_on_simplex_lock_you_will_be_prompted_to_complete_authentication_before_this_feature_is_enabled">Para proteger tu información, activa el Bloqueo SimpleX.
 \nSe te pedirá que completes la autenticación antes de activar esta función.</string>
     <string name="updating_settings_will_reconnect_client_to_all_servers">Para actualizar la configuración el cliente se reconectará a todos los servidores.</string>
-    <string name="use_simplex_chat_servers__question">¿Usar servidores SimpleX Chat\?</string>
+    <string name="use_simplex_chat_servers__question">¿Usar servidores de SimpleX Chat?</string>
     <string name="simplex_link_group">Enlace de grupo SimpleX</string>
     <string name="simplex_link_invitation">Invitación SimpleX de un uso</string>
     <string name="simplex_link_mode">Enlaces SimpleX</string>
-    <string name="error_smp_test_server_auth">El servidor requiere autorización para crear colas, comprueba la contraseña</string>
+    <string name="error_smp_test_server_auth">El servidor requiere autorización para crear colas, comprueba la contraseña.</string>
     <string name="enter_passphrase_notification_desc">Para recibir notificaciones, introduce la contraseña de la base de datos</string>
     <string name="ntf_channel_calls">Llamadas de chat SimpleX</string>
     <string name="notifications_mode_periodic">Cíclico</string>
@@ -804,9 +804,9 @@
     <string name="member_role_will_be_changed_with_invitation">El rol cambiará a %s y el miembro recibirá una invitación nueva.</string>
     <string name="update_network_settings_confirmation">Actualizar</string>
     <string name="update_network_settings_question">¿Actualizar la configuración de red\?</string>
-    <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor para recibir mensajes de este contacto.</string>
+    <string name="trying_to_connect_to_server_to_receive_messages">Intentando conectar con el servidor usado para recibir mensajes de esta conexión.</string>
     <string name="unknown_message_format">formato de mensaje desconocido</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Intentando conectar con el servidor para recibir mensajes de este contacto (error: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Error al conectar con el servidor usado para recibir mensajes de esta conexión: (error: %1$s).</string>
     <string name="error_smp_test_failed_at_step">Prueba no superada en el paso %s.</string>
     <string name="tap_to_start_new_chat">Pulsa para iniciar chat nuevo</string>
     <string name="share_message">Compartir mensaje…</string>
@@ -916,7 +916,7 @@
     <string name="profile_will_be_sent_to_contact_sending_link">Tu perfil se enviará al contacto del que has recibido este enlace.</string>
     <string name="you_will_join_group">Conectarás con todos los miembros del grupo.</string>
     <string name="sender_you_pronoun">tu</string>
-    <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de este contacto.</string>
+    <string name="connected_to_server_to_receive_messages_from_contact">Estás conectado al servidor usado para recibir mensajes de esta conexión.</string>
     <string name="description_via_contact_address_link">mediante dirección de contacto</string>
     <string name="description_via_group_link">mediante enlace de grupo</string>
     <string name="description_you_shared_one_time_link">enlace de un solo uso</string>
@@ -937,7 +937,7 @@
     <string name="smp_servers_your_server">Tu servidor</string>
     <string name="smp_servers_your_server_address">Dirección de tu servidor</string>
     <string name="your_current_profile">Tu perfil actual</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Tu perfil se almacena en tu dispositivo y se comparte sólo con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</string>
     <string name="language_system">Sistema</string>
     <string name="button_add_welcome_message">Añadir mensaje de bienvenida</string>
     <string name="v4_6_audio_video_calls">Llamadas y videollamadas</string>
@@ -1016,7 +1016,7 @@
     <string name="error_loading_xftp_servers">Error al cargar servidores XFTP</string>
     <string name="error_loading_smp_servers">Error al cargar servidores SMP</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Asegúrate de que las direcciones del servidor XFTP tienen el formato correcto, están separadas por líneas y no están duplicadas.</string>
-    <string name="error_xftp_test_server_auth">El servidor requiere autorización para subir, comprueba la contraseña</string>
+    <string name="error_xftp_test_server_auth">El servidor requiere autorización para subir, comprueba la contraseña.</string>
     <string name="smp_server_test_compare_file">Comparar archivo</string>
     <string name="smp_server_test_create_file">Crear archivo</string>
     <string name="smp_server_test_delete_file">Eliminar archivo</string>
@@ -1229,10 +1229,10 @@
     <string name="v5_1_japanese_portuguese_interface">Interfaz en japonés y portugués</string>
     <string name="item_info_no_text">sin texto</string>
     <string name="non_fatal_errors_occured_during_import">Han ocurrido algunos errores no críticos durante la importación:</string>
-    <string name="shutdown_alert_question">¿Cerrar\?</string>
+    <string name="shutdown_alert_question">¿Salir de SimpleX?</string>
     <string name="settings_section_title_app">APLICACIÓN</string>
     <string name="settings_restart_app">Reiniciar</string>
-    <string name="settings_shutdown">Cerrar</string>
+    <string name="settings_shutdown">Salir</string>
     <string name="shutdown_alert_desc">Las notificaciones dejarán de funcionar hasta que vuelvas a iniciar la aplicación</string>
     <string name="la_mode_off">Desactivado</string>
     <string name="error_aborting_address_change">Error al cancelar cambio de dirección</string>
@@ -1609,7 +1609,7 @@
     <string name="agent_internal_error_desc">Por favor, informa a los desarrolladores:
 \n%s</string>
     <string name="restart_chat_button">Reiniciar chat</string>
-    <string name="past_member_vName">Miembro pasado %1$s</string>
+    <string name="past_member_vName">Miembro %1$s</string>
     <string name="profile_update_event_member_name_changed">el miembro %1$s ha cambiado a %2$s</string>
     <string name="profile_update_event_removed_address">dirección de contacto eliminada</string>
     <string name="profile_update_event_removed_picture">ha eliminado la imagen del perfil</string>
@@ -2132,7 +2132,7 @@
     <string name="operator">Operador</string>
     <string name="network_preset_servers_title">Servidores predefinidos</string>
     <string name="operator_review_conditions">Revisar condiciones</string>
-    <string name="operator_servers_title">%s servidores</string>
+    <string name="operator_servers_title">Servidores %s</string>
     <string name="operator_conditions_will_be_accepted_on">Las condiciones serán aceptadas el: %s.</string>
     <string name="operator_conditions_of_use">Condiciones de uso</string>
     <string name="operator_use_for_messages_private_routing">Para enrutamiento privado</string>
@@ -2166,7 +2166,7 @@
     <string name="no_message_servers_configured_for_receiving">Sin servidores para recibir mensajes.</string>
     <string name="operator_server_alert_title">Servidor del operador</string>
     <string name="or_to_share_privately">O para compartir en privado</string>
-    <string name="onboarding_select_network_operators_to_use">Selecciona los operadores de red a utilizar</string>
+    <string name="onboarding_select_network_operators_to_use">Selecciona operadores a usar.</string>
     <string name="share_address_publicly">Compartir dirección públicamente</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Compartir enlaces de un solo uso y direcciones SimpleX es seguro a través de cualquier medio.</string>
     <string name="onboarding_network_operators_update">Actualizar</string>
@@ -2402,7 +2402,7 @@
     <string name="member_admission">Admisión de miembros</string>
     <string name="cant_send_message_member_has_old_version">el miembro usa una versión antigua</string>
     <string name="no_support_chats">Sin chats</string>
-    <string name="error_deleting_member_support_chat">Error al eliminar el chat con el miembro</string>
+    <string name="error_deleting_member_support_chat">Error al eliminar el chat</string>
     <string name="group_new_support_chats">%d chats con miembros</string>
     <string name="group_new_support_messages">%d mensajes</string>
     <string name="group_new_support_chat_one">un chat con miembro</string>
@@ -2425,7 +2425,7 @@
     <string name="member_support">Chat con miembros</string>
     <string name="support_chat">Chat con administradores</string>
     <string name="delete_member_support_chat_button">Eliminar chat</string>
-    <string name="delete_member_support_chat_alert_title">¿Eliminar chat con el miembro?</string>
+    <string name="delete_member_support_chat_alert_title">¿Eliminar chat con miembro?</string>
     <string name="reject_pending_member_button">Rechazar</string>
     <string name="reject_pending_member_alert_title">¿Rechazar al miembro?</string>
     <string name="admission_stage_review">Revisar miembros</string>
@@ -2531,4 +2531,10 @@
     <string name="sanitize_links_toggle">Limpiar enlaces de seguimiento</string>
     <string name="privacy_chat_list_open_full_web_link">Abrir enlace completo</string>
     <string name="simplex_link_relay">Enlace de servidor SimpleX</string>
+    <string name="error_marking_member_support_chat_read">Error al marcar como leído</string>
+    <string name="network_error_unknown_ca">La huella en la dirección del servidor no coincide con el certificado: %1$s.</string>
+    <string name="proxy_destination_error_unknown_ca">La huella en la dirección del servidor de destino no coincide con el certificado: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">La huella en la dirección del servidor de reenvío no coincide con el certificado: %1$s.</string>
+    <string name="server_no_sub">Sin suscripciones</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</string>
 </resources>

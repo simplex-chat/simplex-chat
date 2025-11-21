@@ -1428,6 +1428,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "Löydä keskustelut nopeammin";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
+
 /* No comment provided by engineer. */
 "Fix" = "Korjaa";
 
@@ -1980,7 +1983,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Verkkoasetukset";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Verkon tila";
 
 /* delete after time */
@@ -2240,9 +2243,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Polish interface" = "Puolalainen käyttöliittymä";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Palvelimen osoitteen varmenteen sormenjälki on mahdollisesti virheellinen";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Säilytä viimeinen viestiluonnos liitteineen.";
 
@@ -2347,9 +2347,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "vahvistus saatu…";
-
-/* notification */
-"Received file event" = "Tiedoston vastaanottotapahtuma";
 
 /* message info title */
 "Received message" = "Vastaanotettu viesti";
@@ -2642,9 +2639,6 @@ chat item action */
 /* copied message info */
 "Sent at: %@" = "Lähetetty klo: %@";
 
-/* notification */
-"Sent file event" = "Lähetetty tiedosto tapahtuma";
-
 /* message info title */
 "Sent message" = "Lähetetty viesti";
 
@@ -2652,10 +2646,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "Lähetetyt viestit poistetaan asetetun ajan kuluttua.";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
+"Server requires authorization to create queues, check password." = "Palvelin vaatii valtuutuksen jonojen luomiseen, tarkista salasana";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
+"Server requires authorization to upload, check password." = "Palvelin vaatii valtuutuksen tiedoston lataamiseksi, tarkista salasana";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Palvelintesti epäonnistui!";
@@ -2980,12 +2974,6 @@ chat item action */
 "Transport isolation" = "Kuljetuksen eristäminen";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Yritetään muodostaa yhteyttä palvelimeen, jota käytetään tämän kontaktin viestien vastaanottamiseen (virhe: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Yritetään muodostaa yhteys palvelimeen, jota käytetään viestien vastaanottamiseen tältä kontaktilta.";
-
-/* No comment provided by engineer. */
 "Turn off" = "Sammuta";
 
 /* No comment provided by engineer. */
@@ -3212,9 +3200,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "Olet jo muodostanut yhteyden %@:n kanssa.";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Olet yhteydessä palvelimeen, jota käytetään vastaanottamaan viestejä tältä kontaktilta.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Sinut on kutsuttu ryhmään";

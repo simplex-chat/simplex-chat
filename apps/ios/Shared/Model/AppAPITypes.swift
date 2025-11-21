@@ -158,7 +158,6 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetCallInvitations
     case apiCallStatus(contact: Contact, callStatus: WebRTCCallStatus)
     // WebRTC calls /
-    case apiGetNetworkStatuses
     case apiChatRead(type: ChatType, id: Int64, scope: GroupChatScope?)
     case apiChatItemsRead(type: ChatType, id: Int64, scope: GroupChatScope?, itemIds: [Int64])
     case apiChatUnread(type: ChatType, id: Int64, unreadChat: Bool)
@@ -359,7 +358,6 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiEndCall(contact): return "/_call end @\(contact.apiId)"
             case .apiGetCallInvitations: return "/_call get"
             case let .apiCallStatus(contact, callStatus): return "/_call status @\(contact.apiId) \(callStatus.rawValue)"
-            case .apiGetNetworkStatuses: return "/_network_statuses"
             case let .apiChatRead(type, id, scope): return "/_read chat \(ref(type, id, scope: scope))"
             case let .apiChatItemsRead(type, id, scope, itemIds): return "/_read chat items \(ref(type, id, scope: scope)) \(joinedIds(itemIds))"
             case let .apiChatUnread(type, id, unreadChat): return "/_unread chat \(ref(type, id, scope: nil)) \(onOff(unreadChat))"
@@ -534,7 +532,6 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiEndCall: return "apiEndCall"
             case .apiGetCallInvitations: return "apiGetCallInvitations"
             case .apiCallStatus: return "apiCallStatus"
-            case .apiGetNetworkStatuses: return "apiGetNetworkStatuses"
             case .apiChatRead: return "apiChatRead"
             case .apiChatItemsRead: return "apiChatItemsRead"
             case .apiChatUnread: return "apiChatUnread"
@@ -574,6 +571,8 @@ enum ChatCommand: ChatCmdProtocol {
             } else {
                 "(_support)"
             }
+        case .reports:
+            "(reports, prohibited)" // can't use surrogate Reports scope
         }
     }
 
@@ -791,7 +790,6 @@ enum ChatResponse1: Decodable, ChatAPIResult {
     case userContactLinkDeleted(user: User)
     case acceptingContactRequest(user: UserRef, contact: Contact)
     case contactRequestRejected(user: UserRef, contactRequest: UserContactRequest, contact_: Contact?)
-    case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case groupChatItemsDeleted(user: UserRef, groupInfo: GroupInfo, chatItemIDs: Set<Int64>, byUser: Bool, member_: GroupMember?)
     case forwardPlan(user: UserRef, chatItemIds: [Int64], forwardConfirmation: ForwardConfirmation?)
@@ -835,7 +833,6 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .userContactLinkDeleted: "userContactLinkDeleted"
         case .acceptingContactRequest: "acceptingContactRequest"
         case .contactRequestRejected: "contactRequestRejected"
-        case .networkStatuses: "networkStatuses"
         case .newChatItems: "newChatItems"
         case .groupChatItemsDeleted: "groupChatItemsDeleted"
         case .forwardPlan: "forwardPlan"
@@ -868,7 +865,6 @@ enum ChatResponse1: Decodable, ChatAPIResult {
         case .userContactLinkDeleted: return noDetails
         case let .acceptingContactRequest(u, contact): return withUser(u, String(describing: contact))
         case let .contactRequestRejected(u, contactRequest, contact_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\ncontact_: \(String(describing: contact_))")
-        case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
             return withUser(u, itemsString)
@@ -910,6 +906,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
     case leftMemberUser(user: UserRef, groupInfo: GroupInfo)
     case groupMembers(user: UserRef, group: SimpleXChat.Group)
     case memberAccepted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
+    case memberSupportChatRead(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case memberSupportChatDeleted(user: UserRef, groupInfo: GroupInfo, member: GroupMember)
     case membersRoleUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], toRole: GroupMemberRole)
     case membersBlockedForAllUser(user: UserRef, groupInfo: GroupInfo, members: [GroupMember], blocked: Bool)
@@ -959,6 +956,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case .leftMemberUser: "leftMemberUser"
         case .groupMembers: "groupMembers"
         case .memberAccepted: "memberAccepted"
+        case .memberSupportChatRead: "memberSupportChatRead"
         case .memberSupportChatDeleted: "memberSupportChatDeleted"
         case .membersRoleUser: "membersRoleUser"
         case .membersBlockedForAllUser: "membersBlockedForAllUser"
@@ -1004,6 +1002,7 @@ enum ChatResponse2: Decodable, ChatAPIResult {
         case let .leftMemberUser(u, groupInfo): return withUser(u, String(describing: groupInfo))
         case let .groupMembers(u, group): return withUser(u, String(describing: group))
         case let .memberAccepted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
+        case let .memberSupportChatRead(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .memberSupportChatDeleted(u, groupInfo, member): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(member)")
         case let .membersRoleUser(u, groupInfo, members, toRole): return withUser(u, "groupInfo: \(groupInfo)\nmembers: \(members)\ntoRole: \(toRole)")
         case let .membersBlockedForAllUser(u, groupInfo, members, blocked): return withUser(u, "groupInfo: \(groupInfo)\nmember: \(members)\nblocked: \(blocked)")
@@ -1054,9 +1053,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
     case receivedContactRequest(user: UserRef, contactRequest: UserContactRequest, chat_: ChatData?)
     case contactUpdated(user: UserRef, toContact: Contact)
     case groupMemberUpdated(user: UserRef, groupInfo: GroupInfo, fromMember: GroupMember, toMember: GroupMember)
-    case contactsMerged(user: UserRef, intoContact: Contact, mergedContact: Contact)
-    case networkStatus(networkStatus: NetworkStatus, connections: [String])
-    case networkStatuses(user_: UserRef?, networkStatuses: [ConnNetworkStatus])
+    case subscriptionStatus(subscriptionStatus: SubscriptionStatus, connections: [String])
     case chatInfoUpdated(user: UserRef, chatInfo: ChatInfo)
     case newChatItems(user: UserRef, chatItems: [AChatItem])
     case chatItemsStatusesUpdated(user: UserRef, chatItems: [AChatItem])
@@ -1133,9 +1130,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case .receivedContactRequest: "receivedContactRequest"
         case .contactUpdated: "contactUpdated"
         case .groupMemberUpdated: "groupMemberUpdated"
-        case .contactsMerged: "contactsMerged"
-        case .networkStatus: "networkStatus"
-        case .networkStatuses: "networkStatuses"
+        case .subscriptionStatus: "subscriptionStatus"
         case .chatInfoUpdated: "chatInfoUpdated"
         case .newChatItems: "newChatItems"
         case .chatItemsStatusesUpdated: "chatItemsStatusesUpdated"
@@ -1207,9 +1202,7 @@ enum ChatEvent: Decodable, ChatAPIResult {
         case let .receivedContactRequest(u, contactRequest, chat_): return withUser(u, "contactRequest: \(String(describing: contactRequest))\nchat_: \(String(describing: chat_))")
         case let .contactUpdated(u, toContact): return withUser(u, String(describing: toContact))
         case let .groupMemberUpdated(u, groupInfo, fromMember, toMember): return withUser(u, "groupInfo: \(groupInfo)\nfromMember: \(fromMember)\ntoMember: \(toMember)")
-        case let .contactsMerged(u, intoContact, mergedContact): return withUser(u, "intoContact: \(intoContact)\nmergedContact: \(mergedContact)")
-        case let .networkStatus(status, conns): return "networkStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
-        case let .networkStatuses(u, statuses): return withUser(u, String(describing: statuses))
+        case let .subscriptionStatus(status, conns): return "subscriptionStatus: \(String(describing: status))\nconnections: \(String(describing: conns))"
         case let .chatInfoUpdated(u, chatInfo): return withUser(u, String(describing: chatInfo))
         case let .newChatItems(u, chatItems):
             let itemsString = chatItems.map { chatItem in String(describing: chatItem) }.joined(separator: "\n")
@@ -1369,48 +1362,11 @@ enum ChatDeleteMode: Codable {
     }
 }
 
-enum NetworkStatus: Decodable, Equatable {
-    case unknown
-    case connected
-    case disconnected
-    case error(connectionError: String)
-
-    var statusString: LocalizedStringKey {
-        switch self {
-        case .connected: "connected"
-        case .error: "error"
-        default: "connecting"
-        }
-    }
-
-    var statusExplanation: LocalizedStringKey {
-        switch self {
-        case .connected: "You are connected to the server used to receive messages from this contact."
-        case let .error(err): "Trying to connect to the server used to receive messages from this contact (error: \(err))."
-        default: "Trying to connect to the server used to receive messages from this contact."
-        }
-    }
-
-    var imageName: String {
-        switch self {
-        case .unknown: "circle.dotted"
-        case .connected: "circle.fill"
-        case .disconnected: "ellipsis.circle.fill"
-        case .error: "exclamationmark.circle.fill"
-        }
-    }
-}
-
 enum ForwardConfirmation: Decodable, Hashable {
     case filesNotAccepted(fileIds: [Int64])
     case filesInProgress(filesCount: Int)
     case filesMissing(filesCount: Int)
     case filesFailed(filesCount: Int)
-}
-
-struct ConnNetworkStatus: Decodable {
-    var agentConnId: String
-    var networkStatus: NetworkStatus
 }
 
 struct UserMsgReceiptSettings: Codable {
@@ -1985,13 +1941,13 @@ struct ProtocolTestFailure: Decodable, Error, Equatable {
         let err = String.localizedStringWithFormat(NSLocalizedString("Test failed at step %@.", comment: "server test failure"), testStep.text)
         switch testError {
         case .SMP(_, .AUTH):
-            return err + " " + NSLocalizedString("Server requires authorization to create queues, check password", comment: "server test error")
+            return err + " " + NSLocalizedString("Server requires authorization to create queues, check password.", comment: "server test error")
         case .XFTP(.AUTH):
-            return err + " " + NSLocalizedString("Server requires authorization to upload, check password", comment: "server test error")
-        case .BROKER(_, .NETWORK):
-            return err + " " + NSLocalizedString("Possibly, certificate fingerprint in server address is incorrect", comment: "server test error")
+            return err + " " + NSLocalizedString("Server requires authorization to upload, check password.", comment: "server test error")
+        case .BROKER(_, .NETWORK(.unknownCAError)):
+            return err + " " + NSLocalizedString("Fingerprint in server address does not match certificate.", comment: "server test error")
         default:
-            return err
+            return err + " " + String.localizedStringWithFormat(NSLocalizedString("Error: %@.", comment: "server test error"), String(describing: testError))
         }
     }
 }

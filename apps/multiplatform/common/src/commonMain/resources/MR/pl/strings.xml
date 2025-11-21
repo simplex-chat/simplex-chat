@@ -26,7 +26,7 @@
     <string name="sending_files_not_yet_supported">wysyłanie plików nie jest jeszcze obsługiwane</string>
     <string name="receiving_files_not_yet_supported">odbieranie plików nie jest jeszcze obsługiwane</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu (błąd: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Próbowanie połączenia z serwerem używanym do odbierania wiadomości od tego kontaktu (błąd: %1$s).</string>
     <string name="unknown_message_format">nieznany format wiadomości</string>
     <string name="app_name">SimpleX</string>
     <string name="sender_you_pronoun">Ty</string>

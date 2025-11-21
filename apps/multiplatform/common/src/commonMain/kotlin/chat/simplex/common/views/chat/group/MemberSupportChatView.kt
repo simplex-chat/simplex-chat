@@ -51,7 +51,10 @@ private fun MemberSupportChatView(
 @Composable
 fun MemberSupportChatAppBar(
   chatsCtx: ChatModel.ChatsContext,
+  rhId: Long?,
+  chat: Chat,
   scopeMember_: GroupMember?,
+  scrollToItemId: MutableState<Long?>,
   close: () -> Unit,
   onSearchValueChanged: (String) -> Unit
 ) {
@@ -67,11 +70,31 @@ fun MemberSupportChatAppBar(
     }
   }
   BackHandler(onBack = onBackClicked)
-  if (scopeMember_ != null) {
+  if (chat.chatInfo is ChatInfo.Group && scopeMember_ != null) {
+    val groupInfo = chat.chatInfo.groupInfo
     DefaultAppBar(
       navigationButton = { NavigationButtonBack(onBackClicked) },
       title = { MemberSupportChatToolbarTitle(scopeMember_) },
-      onTitleClick = null,
+      onTitleClick = {
+        withBGApi {
+          val r = chatModel.controller.apiGroupMemberInfo(rhId, groupInfo.groupId, scopeMember_.groupMemberId)
+          val stats = r?.second
+          val code = if (scopeMember_.memberActive) {
+            val memCode = chatModel.controller.apiGetGroupMemberCode(rhId, groupInfo.apiId, scopeMember_.groupMemberId)
+            memCode?.second
+          } else {
+            null
+          }
+          ModalManager.end.showModalCloseable(true) { closeCurrent ->
+            remember { derivedStateOf { chatModel.getGroupMember(scopeMember_.groupMemberId) } }.value?.let { mem ->
+              GroupMemberInfoView(rhId, groupInfo, mem, scrollToItemId, stats, code, chatModel, openedFromSupportChat = true, close = closeCurrent) {
+                closeCurrent()
+                close()
+              }
+            }
+          }
+        }
+      },
       onTop = !oneHandUI.value || !chatBottomBar.value,
       showSearch = showSearch.value,
       onSearchValueChanged = onSearchValueChanged,

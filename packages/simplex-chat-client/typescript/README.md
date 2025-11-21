@@ -38,6 +38,8 @@ See the example of a simple chat bot in [squaring-bot.js](./examples/squaring-bo
 
 Please refer to the available client API in [client.ts](./src/client.ts).
 
+This library uses [@simplex-chat/types](https://www.npmjs.com/package/@simplex-chat/types) package with auto-generated [bot API types](https://github.com/simplex-chat/simplex-chat/tree/stable/bots)
+
 ## License
 
 [AGPL v3](./LICENSE)

@@ -1158,7 +1158,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Voorwaarden zijn reeds geaccepteerd voor de volgende operator(s): **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Gebruiksvoorwaarden";
 
 /* No comment provided by engineer. */
@@ -2203,10 +2203,10 @@ chat item action */
 "Error decrypting file" = "Fout bij het ontsleutelen van bestand";
 
 /* alert title */
-"Error deleting chat database" = "Fout bij het verwijderen van de chat database";
+"Error deleting chat" = "Fout bij het verwijderen van chat met lid";
 
 /* alert title */
-"Error deleting chat with member" = "Fout bij het verwijderen van chat met lid";
+"Error deleting chat database" = "Fout bij het verwijderen van de chat database";
 
 /* alert title */
 "Error deleting chat!" = "Fout bij verwijderen gesprek!";
@@ -2497,6 +2497,9 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Vind chats sneller";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
 
 /* No comment provided by engineer. */
 "Fix" = "Herstel";
@@ -3434,7 +3437,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Netwerk instellingen";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Netwerk status";
 
 /* delete after time */
@@ -3826,9 +3829,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Wachtwoord om weer te geven";
 
-/* past/unknown group member */
-"Past member %@" = "Voormalig lid %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Desktopadres plakken";
 
@@ -3939,9 +3939,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Poort";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Mogelijk is de certificaat vingerafdruk in het server adres onjuist";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Bewaar het laatste berichtconcept, met bijlagen.";
@@ -4125,9 +4122,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "bevestiging ontvangen…";
-
-/* notification */
-"Received file event" = "Ontvangen bestandsgebeurtenis";
 
 /* message info title */
 "Received message" = "Ontvangen bericht";
@@ -4654,9 +4648,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Direct verzonden";
 
-/* notification */
-"Sent file event" = "Verzonden bestandsgebeurtenis";
-
 /* message info title */
 "Sent message" = "Verzonden bericht";
 
@@ -4703,10 +4694,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "informatie over serverwachtrij: %1$@\n\nlaatst ontvangen bericht: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
+"Server requires authorization to create queues, check password." = "Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Server vereist autorisatie om te uploaden, wachtwoord controleren";
+"Server requires authorization to upload, check password." = "Server vereist autorisatie om te uploaden, wachtwoord controleren";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Servertest mislukt!";
@@ -5347,12 +5338,6 @@ report reason */
 "Transport sessions" = "Transportsessies";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "Turkse interface";
 
 /* No comment provided by engineer. */
@@ -5819,9 +5804,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Je sluit je al aan bij de groep!\nDeelnameverzoek herhalen?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Je bent uitgenodigd voor de groep";

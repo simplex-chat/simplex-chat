@@ -8,6 +8,7 @@ module APIDocs where
 import API.Docs.Commands
 import API.Docs.Events
 import API.Docs.Generate
+import qualified API.Docs.Generate.TypeScript as TS
 import API.Docs.Responses
 import API.Docs.Types
 import API.TypeInfo
@@ -15,6 +16,7 @@ import Control.Monad
 import Data.Containers.ListUtils (nubOrd)
 import Data.List (foldl', intercalate, sort, (\\))
 import qualified Data.Set as S
+import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Simplex.Messaging.Util (ifM)
 import System.Directory (doesFileExist)
@@ -26,15 +28,20 @@ apiDocsTest = do
     it "should be documented" testCommandsHaveDocs
     it "should have field names" testCommandsHaveNamedFields
     it "should have defined responses" testCommandsHaveResponses
-    it "generate markdown" testGenerateCommandsMD
+    it "generate markdown" $ testGenerate commandsDocFile commandsDocText
   describe "API responses" $ do
     it "should be documented" testResponsesHaveDocs
   describe "API events" $ do
     it "should be documented" testEventsHaveDocs
-    it "generate markdown" testGenerateEventsMD
+    it "generate markdown" $ testGenerate eventsDocFile eventsDocText
   describe "API types" $ do
     it "should be documented" testTypesHaveDocs
-    it "generate markdown" testGenerateTypesMD
+    it "generate markdown" $ testGenerate typesDocFile typesDocText
+  describe "TypeScript" $ do
+    it "generate typescript commands code" $ testGenerate TS.commandsCodeFile TS.commandsCodeText
+    it "generate typescript responses code" $ testGenerate TS.responsesCodeFile TS.responsesCodeText
+    it "generate typescript events code" $ testGenerate TS.eventsCodeFile TS.eventsCodeText
+    it "generate typescript types code" $ testGenerate TS.typesCodeFile TS.typesCodeText
 
 documentedCmds :: [String]
 documentedCmds = concatMap (map consName' . commands) chatCommandsDocs
@@ -137,20 +144,8 @@ testCommandsHaveResponses = do
   unless (null undocResps) $ expectationFailure $ "Undocumented command responses: " <> intercalate ", " undocResps
   unless (null extraResps) $ expectationFailure $ "Unused documented command responses: " <> intercalate ", " extraResps
 
-testGenerateCommandsMD :: IO ()
-testGenerateCommandsMD = do
-  cmdsDoc <- ifM (doesFileExist commandsDocFile) (T.readFile commandsDocFile) (pure "")
-  T.writeFile commandsDocFile commandsDocText
-  commandsDocText `shouldBe` cmdsDoc
-
-testGenerateEventsMD :: IO ()
-testGenerateEventsMD = do
-  evtsDoc <- ifM (doesFileExist eventsDocFile) (T.readFile eventsDocFile) (pure "")
-  T.writeFile eventsDocFile eventsDocText
-  eventsDocText `shouldBe` evtsDoc
-
-testGenerateTypesMD :: IO ()
-testGenerateTypesMD = do
-  typesDoc <- ifM (doesFileExist typesDocFile) (T.readFile typesDocFile) (pure "")
-  T.writeFile typesDocFile typesDocText
-  typesDocText `shouldBe` typesDoc
+testGenerate :: FilePath -> T.Text -> IO ()
+testGenerate file text = do
+  current <- ifM (doesFileExist file) (T.readFile file) (pure "")
+  T.writeFile file text
+  text `shouldBe` current

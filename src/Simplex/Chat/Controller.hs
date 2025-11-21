@@ -19,7 +19,7 @@ module Simplex.Chat.Controller where
 
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
-import Control.Exception (Exception, SomeException)
+import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad.Except
 import Control.Monad.IO.Unlift
@@ -54,6 +54,7 @@ import Numeric.Natural
 import qualified Paths_simplex_chat as SC
 import Simplex.Chat.AppSettings
 import Simplex.Chat.Call
+import Simplex.Chat.Delivery
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Operators
@@ -61,16 +62,16 @@ import Simplex.Chat.Protocol
 import Simplex.Chat.Remote.AppVersion
 import Simplex.Chat.Remote.Types
 import Simplex.Chat.Stats (PresentedServersSummary)
-import Simplex.Chat.Store (AddressSettings, ChatLockEntity, GroupLink, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
+import Simplex.Chat.Store (AddressSettings, ChatLockEntity, GroupLinkInfo, StoreError (..), UserContactLink, UserMsgReceiptSettings)
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
 import Simplex.Chat.Util (liftIOEither)
 import Simplex.FileTransfer.Description (FileDescriptionURI)
-import Simplex.Messaging.Agent (AgentClient, SubscriptionsInfo)
+import Simplex.Messaging.Agent (AgentClient, DatabaseDiff, SubscriptionsInfo)
 import Simplex.Messaging.Agent.Client (AgentLocks, AgentQueuesInfo (..), AgentWorkersDetails (..), AgentWorkersSummary (..), ProtocolTestFailure, SMPServerSubs, ServerQueueInfo, UserNetworkInfo)
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig, NetworkConfig, ServerCfg, Worker)
 import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
@@ -88,7 +89,7 @@ import Simplex.Messaging.Protocol (AProtoServerWithAuth, AProtocolType (..), Msg
 import Simplex.Messaging.TMap (TMap)
 import Simplex.Messaging.Transport (TLS, TransportPeer (..), simplexMQVersion)
 import Simplex.Messaging.Transport.Client (SocksProxyWithAuth, TransportHost)
-import Simplex.Messaging.Util (allFinally, catchAllErrors, catchAllErrors', tryAllErrors, tryAllErrors', (<$$>))
+import Simplex.Messaging.Util (AnyError (..), catchAllErrors, (<$$>))
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Invitation (RCSignedInvitation, RCVerifiedInvitation)
 import Simplex.RemoteControl.Types
@@ -154,7 +155,8 @@ data ChatConfig = ChatConfig
     cleanupManagerInterval :: NominalDiffTime,
     cleanupManagerStepDelay :: Int64,
     ciExpirationInterval :: Int64, -- microseconds
-    coreApi :: Bool,
+    deliveryWorkerDelay :: Int64, -- microseconds
+    deliveryBucketSize :: Int,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
     chatHooks :: ChatHooks
@@ -168,7 +170,13 @@ data RandomAgentServers = RandomAgentServers
 
 -- The hooks can be used to extend or customize chat core in mobile or CLI clients.
 data ChatHooks = ChatHooks
-  { -- preCmdHook can be used to process or modify the commands before they are processed.
+  { -- preStartHook can be used to verify some data,
+    -- It is called before chat controller is started, unless the core is started in maintenance mode.
+    preStartHook :: Maybe (ChatController -> IO ()),
+    -- postStartHook can be used to update some data after start (e.g. commands in bot or group profiles),
+    -- It is called after chat controller is started.
+    postStartHook :: Maybe (ChatController -> IO ()),
+    -- preCmdHook can be used to process or modify the commands before they are processed.
     -- This hook should be used to process CustomChatCommand.
     -- if this hook returns ChatResponse, the command processing will be skipped.
     preCmdHook :: Maybe (ChatController -> ChatCommand -> IO (Either (Either ChatError ChatResponse) ChatCommand)),
@@ -180,7 +188,7 @@ data ChatHooks = ChatHooks
   }
 
 defaultChatHooks :: ChatHooks
-defaultChatHooks = ChatHooks Nothing Nothing Nothing
+defaultChatHooks = ChatHooks Nothing Nothing Nothing Nothing Nothing
 
 data PresetServers = PresetServers
   { operators :: NonEmpty PresetOperator,
@@ -223,7 +231,6 @@ data ChatController = ChatController
     eventSeq :: TVar Int,
     inputQ :: TBQueue String,
     outputQ :: TBQueue (Maybe RemoteHostId, Either ChatError ChatEvent),
-    connNetworkStatuses :: TMap AgentConnId NetworkStatus,
     subscriptionMode :: TVar SubscriptionMode,
     chatLock :: Lock,
     entityLocks :: TMap ChatLockEntity Lock,
@@ -238,6 +245,8 @@ data ChatController = ChatController
     remoteCtrlSession :: TVar (Maybe (SessionSeq, RemoteCtrlSession)), -- Supervisor process for hosted controllers
     config :: ChatConfig,
     filesFolder :: TVar (Maybe FilePath), -- path to files folder for mobile apps,
+    deliveryTaskWorkers :: TMap DeliveryWorkerKey Worker,
+    deliveryJobWorkers :: TMap DeliveryWorkerKey Worker,
     expireCIThreads :: TMap UserId (Maybe (Async ())),
     expireCIFlags :: TMap UserId Bool,
     cleanupManagerAsync :: TVar (Maybe (Async ())),
@@ -282,6 +291,7 @@ data ChatCommand
   | APIStopChat
   | APIActivateChat {restoreChat :: Bool}
   | APISuspendChat {suspendTimeout :: Int}
+  | ShowConnectionsDiff Bool
   | ResubscribeAllConnections
   | SetTempFolder FilePath
   | SetFilesFolder FilePath
@@ -304,8 +314,8 @@ data ChatCommand
   | APIGetAppSettings (Maybe AppSettings)
   | APIGetChatTags UserId
   | APIGetChats {userId :: UserId, pendingConnections :: Bool, pagination :: PaginationByTime, query :: ChatListQuery}
-  | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe String}
-  | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe String}
+  | APIGetChat {chatRef :: ChatRef, contentTag :: Maybe MsgContentTag, chatPagination :: ChatPagination, search :: Maybe Text}
+  | APIGetChatItems {chatPagination :: ChatPagination, search :: Maybe Text}
   | APIGetChatItemInfo {chatRef :: ChatRef, chatItemId :: ChatItemId}
   | APISendMessages {sendRef :: SendRef, liveMessage :: Bool, ttl :: Maybe Int, composedMessages :: NonEmpty ComposedMessage}
   | APICreateChatTag ChatTagData
@@ -343,7 +353,6 @@ data ChatCommand
   | APIEndCall ContactId
   | APIGetCallInvitations
   | APICallStatus ContactId WebRTCCallStatus
-  | APIGetNetworkStatuses
   | APIUpdateProfile {userId :: UserId, profile :: Profile}
   | APISetContactPrefs {contactId :: ContactId, preferences :: Preferences}
   | APISetContactAlias {contactId :: ContactId, localAlias :: LocalAlias}
@@ -454,8 +463,8 @@ data ChatCommand
   | APIChangePreparedGroupUser GroupId UserId
   | APIConnectPreparedContact {contactId :: ContactId, incognito :: IncognitoEnabled, msgContent_ :: Maybe MsgContent}
   | APIConnectPreparedGroup GroupId IncognitoEnabled (Maybe MsgContent)
-  | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, connLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
-  | Connect IncognitoEnabled (Maybe AConnectionLink)
+  | APIConnect {userId :: UserId, incognito :: IncognitoEnabled, preparedLink_ :: Maybe ACreatedConnLink} -- Maybe is used to report link parsing failure as special error
+  | Connect {incognito :: IncognitoEnabled, connLink_ :: Maybe AConnectionLink}
   | APIConnectContactViaAddress UserId IncognitoEnabled ContactId
   | ConnectSimplex IncognitoEnabled -- UserId (not used in UI)
   | DeleteContact ContactName ChatDeleteMode
@@ -502,8 +511,8 @@ data ChatCommand
   | ClearGroup GroupName
   | ListMembers GroupName
   | ListMemberSupportChats GroupName
-  | APIListGroups {userId :: UserId, contactId_ :: Maybe ContactId, search :: Maybe String}
-  | ListGroups (Maybe ContactName) (Maybe String)
+  | APIListGroups {userId :: UserId, contactId_ :: Maybe ContactId, search :: Maybe Text}
+  | ListGroups (Maybe ContactName) (Maybe Text)
   | UpdateGroupNames GroupName GroupProfile
   | ShowGroupProfile GroupName
   | UpdateGroupDescription GroupName (Maybe Text)
@@ -515,7 +524,7 @@ data ChatCommand
   | SendGroupMessageQuote {groupName :: GroupName, contactName_ :: Maybe ContactName, quotedMsg :: Text, message :: Text}
   | ClearNoteFolder
   | LastChats (Maybe Int) -- UserId (not used in UI)
-  | LastMessages (Maybe ChatName) Int (Maybe String) -- UserId (not used in UI)
+  | LastMessages (Maybe ChatName) Int (Maybe Text) -- UserId (not used in UI)
   | LastChatItemId (Maybe ChatName) Int -- UserId (not used in UI)
   | ShowChatItem (Maybe ChatItemId) -- UserId (not used in UI)
   | ShowChatItemInfo ChatName Text
@@ -623,6 +632,7 @@ data ChatResponse
   | CRChatStarted
   | CRChatRunning
   | CRChatStopped
+  | CRConnectionsDiff {showIds :: Bool, userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CRApiChats {user :: User, chats :: [AChat]}
   | CRChats {chats :: [AChat]}
   | CRApiChat {user :: User, chat :: AChat, navInfo :: Maybe NavigationInfo}
@@ -638,7 +648,7 @@ data ChatResponse
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
   | CRContactInfo {user :: User, contact :: Contact, connectionStats_ :: Maybe ConnectionStats, customUserProfile :: Maybe Profile}
-  | CRGroupInfo {user :: User, groupInfo :: GroupInfo, groupSummary :: GroupSummary}
+  | CRGroupInfo {user :: User, groupInfo :: GroupInfo}
   | CRGroupMemberInfo {user :: User, groupInfo :: GroupInfo, member :: GroupMember, connectionStats_ :: Maybe ConnectionStats}
   | CRQueueInfo {user :: User, rcvMsgInfo :: Maybe RcvMsgInfo, queueInfo :: ServerQueueInfo}
   | CRContactSwitchStarted {user :: User, contact :: Contact, connectionStats :: ConnectionStats}
@@ -673,7 +683,7 @@ data ChatResponse
   | CRContactRequestRejected {user :: User, contactRequest :: UserContactRequest, contact_ :: Maybe Contact}
   | CRUserAcceptedGroupSent {user :: User, groupInfo :: GroupInfo, hostContact :: Maybe Contact}
   | CRUserDeletedMembers {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], withMessages :: Bool}
-  | CRGroupsList {user :: User, groups :: [GroupInfoSummary]}
+  | CRGroupsList {user :: User, groups :: [GroupInfo]}
   | CRSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember}
   | CRFileTransferStatus User (FileTransfer, [Integer]) -- TODO refactor this type to FileTransferStatus
   | CRFileTransferStatusXFTP User AChatItem
@@ -717,9 +727,9 @@ data ChatResponse
   | CRGroupAliasUpdated {user :: User, toGroup :: GroupInfo}
   | CRConnectionAliasUpdated {user :: User, toConnection :: PendingContactConnection}
   | CRContactPrefsUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
-  | CRNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]}
   | CRJoinedGroupMember {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberAccepted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
+  | CRMemberSupportChatRead {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMemberSupportChatDeleted {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
   | CRMembersRoleUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], toRole :: GroupMemberRole}
   | CRMembersBlockedForAllUser {user :: User, groupInfo :: GroupInfo, members :: [GroupMember], blocked :: Bool}
@@ -784,7 +794,6 @@ data ChatEvent
   | CEvtSentGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, member :: GroupMember} -- there is the same command response
   | CEvtContactUpdated {user :: User, fromContact :: Contact, toContact :: Contact}
   | CEvtGroupMemberUpdated {user :: User, groupInfo :: GroupInfo, fromMember :: GroupMember, toMember :: GroupMember}
-  | CEvtContactsMerged {user :: User, intoContact :: Contact, mergedContact :: Contact, updatedContact :: Contact}
   | CEvtContactDeletedByContact {user :: User, contact :: Contact}
   | CEvtReceivedContactRequest {user :: User, contactRequest :: UserContactRequest, chat_ :: Maybe AChat}
   | CEvtAcceptingContactRequest {user :: User, contact :: Contact} -- there is the same command response
@@ -815,14 +824,9 @@ data ChatEvent
   | CEvtContactConnected {user :: User, contact :: Contact, userCustomProfile :: Maybe Profile}
   | CEvtContactSndReady {user :: User, contact :: Contact}
   | CEvtContactAnotherClient {user :: User, contact :: Contact}
+  | CEvtConnectionsDiff {userIds :: DatabaseDiff AgentUserId, connIds :: DatabaseDiff AgentConnId}
   | CEvtSubscriptionEnd {user :: User, connectionEntity :: ConnectionEntity}
-  | CEvtContactsDisconnected {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtContactsSubscribed {server :: SMPServer, contactRefs :: [ContactRef]}
-  | CEvtContactSubError {user :: User, contact :: Contact, chatError :: ChatError}
-  | CEvtContactSubSummary {user :: User, contactSubscriptions :: [ContactSubStatus]}
-  | CEvtUserContactSubSummary {user :: User, userContactSubscriptions :: [UserContactSubStatus]}
-  | CEvtNetworkStatus {networkStatus :: NetworkStatus, connections :: [AgentConnId]}
-  | CEvtNetworkStatuses {user_ :: Maybe User, networkStatuses :: [ConnNetworkStatus]} -- there is the same command response
+  | CEvtSubscriptionStatus {server :: SMPServer, subscriptionStatus :: SubscriptionStatus, connections :: [AgentConnId]}
   | CEvtHostConnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtHostDisconnected {protocol :: AProtocolType, transportHost :: TransportHost}
   | CEvtReceivedGroupInvitation {user :: User, groupInfo :: GroupInfo, contact :: Contact, fromMemberRole :: GroupMemberRole, memberRole :: GroupMemberRole}
@@ -878,14 +882,6 @@ data TerminalEvent
   | TENewMemberContact {user :: User, contact :: Contact, groupInfo :: GroupInfo, member :: GroupMember}
   | TEContactVerificationReset {user :: User, contact :: Contact}
   | TEGroupMemberVerificationReset {user :: User, groupInfo :: GroupInfo, member :: GroupMember}
-  | TEGroupEmpty {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | TEGroupSubscribed {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | TEGroupInvitation {user :: User, shortGroupInfo :: ShortGroupInfo}
-  | TEMemberSubError {user :: User, shortGroupInfo :: ShortGroupInfo, memberToSubscribe :: ShortGroupMember, chatError :: ChatError}
-  | TEMemberSubSummary {user :: User, memberSubscriptions :: [MemberSubStatus]}
-  | TEPendingSubSummary {user :: User, pendingSubscriptions :: [PendingSubStatus]}
-  | TESndFileSubError {user :: User, sndFileTransfer :: SndFileTransfer, chatError :: ChatError}
-  | TERcvFileSubError {user :: User, rcvFileTransfer :: RcvFileTransfer, chatError :: ChatError}
   deriving (Show)
 
 data DeletedRcvQueue = DeletedRcvQueue
@@ -910,9 +906,7 @@ allowRemoteEvent = \case
 
 logEventToFile :: ChatEvent -> Bool
 logEventToFile = \case
-  CEvtContactsDisconnected {} -> True
-  CEvtContactsSubscribed {} -> True
-  CEvtContactSubError {} -> True
+  CEvtSubscriptionStatus {} -> True
   CEvtHostConnected {} -> True
   CEvtHostDisconnected {} -> True
   CEvtConnectionDisabled {} -> True
@@ -921,11 +915,6 @@ logEventToFile = \case
   CEvtAgentUserDeleted {} -> True
   -- CRChatCmdError {} -> True -- TODO this should be separately logged to file as command error
   CEvtMessageError {} -> True
-  CEvtTerminalEvent te -> case te of
-    TEMemberSubError {} -> True
-    TESndFileSubError {} -> True
-    TERcvFileSubError {} -> True
-    _ -> False
   _ -> False
 
 data SendRef
@@ -1101,27 +1090,9 @@ defaultSimpleNetCfg =
       logTLSErrors = False
     }
 
-data ContactSubStatus = ContactSubStatus
-  { contact :: Contact,
-    contactError :: Maybe ChatError
-  }
-  deriving (Show)
-
-data MemberSubStatus = MemberSubStatus
-  { member :: ShortGroupMember,
-    memberError :: Maybe ChatError
-  }
-  deriving (Show)
-
-data UserContactSubStatus = UserContactSubStatus
-  { userContact :: UserContact,
-    userContactError :: Maybe ChatError
-  }
-  deriving (Show)
-
-data PendingSubStatus = PendingSubStatus
-  { connection :: PendingContactConnection,
-    connError :: Maybe ChatError
+data ConnSubResult = ConnSubResult
+  { agentConnId :: AgentConnId,
+    connSubError :: Maybe ChatError
   }
   deriving (Show)
 
@@ -1264,7 +1235,7 @@ data SlowSQLQuery = SlowSQLQuery
 
 data ChatError
   = ChatError {errorType :: ChatErrorType}
-  | ChatErrorAgent {agentError :: AgentErrorType, connectionEntity_ :: Maybe ConnectionEntity}
+  | ChatErrorAgent {agentError :: AgentErrorType, agentConnId :: AgentConnId, connectionEntity_ :: Maybe ConnectionEntity}
   | ChatErrorStore {storeError :: StoreError}
   | ChatErrorDatabase {databaseError :: DatabaseError}
   | ChatErrorRemoteCtrl {remoteCtrlError :: RemoteCtrlError}
@@ -1320,7 +1291,6 @@ data ChatErrorType
   | CEFileCancelled {message :: String}
   | CEFileCancel {fileId :: FileTransferId, message :: String}
   | CEFileAlreadyExists {filePath :: FilePath}
-  | CEFileRead {filePath :: FilePath, message :: String}
   | CEFileWrite {filePath :: FilePath, message :: String}
   | CEFileSend {fileId :: FileTransferId, agentError :: AgentErrorType}
   | CEFileRcvChunk {message :: String}
@@ -1413,6 +1383,10 @@ data ArchiveError
   | AEFileError {file :: String, fileError :: String}
   deriving (Show, Exception)
 
+instance AnyError ChatError where
+  fromSomeException = ChatError . CEException . show
+  {-# INLINE fromSomeException #-}
+
 -- | Host (mobile) side of transport to process remote commands and forward notifications
 data RemoteCtrlSession
   = RCSessionStarting
@@ -1495,49 +1469,9 @@ chatModifyVar' :: (ChatController -> TVar a) -> (a -> a) -> CM' ()
 chatModifyVar' f newValue = asks f >>= atomically . (`modifyTVar'` newValue)
 {-# INLINE chatModifyVar' #-}
 
-setContactNetworkStatus :: Contact -> NetworkStatus -> CM' ()
-setContactNetworkStatus Contact {activeConn = Nothing} _ = pure ()
-setContactNetworkStatus Contact {activeConn = Just Connection {agentConnId}} status = chatModifyVar' connNetworkStatuses $ M.insert agentConnId status
-
-tryChatError :: CM a -> CM (Either ChatError a)
-tryChatError = tryAllErrors mkChatError
-{-# INLINE tryChatError #-}
-
-tryChatError' :: CM a -> CM' (Either ChatError a)
-tryChatError' = tryAllErrors' mkChatError
-{-# INLINE tryChatError' #-}
-
-catchChatError :: CM a -> (ChatError -> CM a) -> CM a
-catchChatError = catchAllErrors mkChatError
-{-# INLINE catchChatError #-}
-
-catchChatError' :: CM a -> (ChatError -> CM' a) -> CM' a
-catchChatError' = catchAllErrors' mkChatError
-{-# INLINE catchChatError' #-}
-
-chatFinally :: CM a -> CM b -> CM a
-chatFinally = allFinally mkChatError
-{-# INLINE chatFinally #-}
-
 onChatError :: CM a -> CM b -> CM a
-a `onChatError` onErr = a `catchChatError` \e -> onErr >> throwError e
+a `onChatError` onErr = a `catchAllErrors` \e -> onErr >> throwError e
 {-# INLINE onChatError #-}
-
-mkChatError :: SomeException -> ChatError
-mkChatError = ChatError . CEException . show
-{-# INLINE mkChatError #-}
-
-catchStoreError :: ExceptT StoreError IO a -> (StoreError -> ExceptT StoreError IO a) -> ExceptT StoreError IO a
-catchStoreError = catchAllErrors mkStoreError
-{-# INLINE catchStoreError #-}
-
-tryStoreError' :: ExceptT StoreError IO a -> IO (Either StoreError a)
-tryStoreError' = tryAllErrors' mkStoreError
-{-# INLINE tryStoreError' #-}
-
-mkStoreError :: SomeException -> StoreError
-mkStoreError = SEInternalError . show
-{-# INLINE mkStoreError #-}
 
 throwCmdError :: String -> CM a
 throwCmdError = throwError . ChatError . CECommandError
@@ -1631,7 +1565,7 @@ withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
     >>= liftIO . runExceptT . action
-    >>= liftEither . first (`ChatErrorAgent` Nothing)
+    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "") Nothing)
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action
@@ -1664,13 +1598,7 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CP") ''ConnectionPlan)
 
 $(JQ.deriveJSON defaultJSON ''AppFilePathsConfig)
 
-$(JQ.deriveJSON defaultJSON ''ContactSubStatus)
-
-$(JQ.deriveJSON defaultJSON ''MemberSubStatus)
-
-$(JQ.deriveJSON defaultJSON ''UserContactSubStatus)
-
-$(JQ.deriveJSON defaultJSON ''PendingSubStatus)
+$(JQ.deriveJSON defaultJSON ''ConnSubResult)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "AE") ''ArchiveError)
 

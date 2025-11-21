@@ -30,7 +30,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences (FeatureAllowed (..), FilesPreference (..), Preferences (..), emptyChatPrefs)
 import Simplex.Chat.View (ChatResponseEvent, serializeChatError, serializeChatResponse)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
@@ -38,15 +38,15 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}, createBot, maintenance} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath}, createBot, maintenance} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbOptions confirm' >>= either exit run
-    confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
+    initRun = createChatDatabase dbOptions migrationConfig >>= either exit run
+    migrationConfig = MigrationConfig (if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations) migrationBackupPath
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure
@@ -56,13 +56,15 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {core
       cc <- newChatController db u_ cfg opts backgroundMode
       u <- maybe (createActiveUser cc createBot) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
+      unless maintenance $ forM_ (preStartHook chatHooks) ($ cc)
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatOpts {maintenance} u cc chat
+runSimplexChat ChatOpts {maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
+      forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
 

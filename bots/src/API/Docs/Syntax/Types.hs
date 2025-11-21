@@ -26,6 +26,18 @@ isConst = \case
   Const _ -> True
   _ -> False
 
+hasParams :: Expr -> Bool
+hasParams = \case
+  Concat es -> any (hasParams) es
+  Const _ -> False
+  Param _ -> True
+  Optional {} -> True
+  Choice {} -> True
+  Join {} -> True
+  Json _ -> True
+  OnOff _ -> True
+  OnOffParam {} -> True
+
 instance IsString Expr where fromString = Const
 
 instance Semigroup Expr where

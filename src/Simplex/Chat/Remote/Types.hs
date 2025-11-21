@@ -28,6 +28,7 @@ import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON
 import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..), TransportPeer (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Util (AnyError (..), tshow)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 
@@ -154,6 +155,9 @@ data RemoteProtocolError
   | RPEHTTP2 {http2Error :: Text}
   | RPEException {someException :: Text}
   deriving (Show, Exception)
+
+instance AnyError RemoteProtocolError where
+  fromSomeException = RPEException . tshow
 
 type RemoteHostId = Int64
 

@@ -99,8 +99,8 @@ withOptBoolParam r param p f =
     (ATOptional (ATPrim (PT TBool))) -> f True
     _ -> paramError r param p "is not [optional] boolean"
 
-jsSyntaxText :: TypeAndFields -> Expr -> Text
-jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
+jsSyntaxText :: Bool -> TypeAndFields -> Expr -> Text
+jsSyntaxText useSelf r = T.replace "' + '" "" . T.pack . go Nothing True
   where
     go param top = \case
       Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
@@ -109,14 +109,14 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
         withParamType r param p $ \case
           ATDef td -> toStringSyntax td
           ATOptional (ATDef td) -> toStringSyntax td
-          _ -> paramName param p
+          _ -> paramName' useSelf param p
         where
           toStringSyntax (APITypeDef typeName _)
-            | typeHasSyntax typeName = paramName param p <> ".toString()"
-            | otherwise = paramName param p
+            | typeHasSyntax typeName = paramName' useSelf param p <> ".toString()"
+            | otherwise = paramName' useSelf param p
       Optional exN exJ p -> open <> n <> " ? " <> go (Just p) False exJ <> " : " <> nothing <> close
         where
-          n = paramName param p
+          n = paramName' useSelf param p
           nothing = if exN == "" then "''" else go param False exN
       Choice p opts else' ->
         withParamType r param p $ \case
@@ -125,15 +125,15 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
           _ -> paramError r param p "is not union type"
         where
           choiceSyntax = \case
-            APITypeDef _ (ATDUnion _) -> choices "type"
+            APITypeDef _ (ATDUnion _) -> choices $ (if useSelf then "self." else "") <> "type"
             APITypeDef _ (ATDEnum _) -> choices "self"
             _ -> paramError r param p "is not union type"
           choices var = open <> optsSyntax <> " : " <> go param top else' <> close
             where
               optsSyntax = intercalate " : " $ map (\(tag, ex) -> var <> " == '" <> tag <> "' ? " <> go param top ex) $ L.toList opts
-      Join c p -> paramName param p <> ".join('" <> [c] <> "')"
-      Json p -> "JSON.stringify(" <> paramName param p <> ")"
-      OnOff p -> open <> paramName param p <> " ? 'on' : 'off'" <> close
+      Join c p -> paramName' useSelf param p <> ".join('" <> [c] <> "')"
+      Json p -> "JSON.stringify(" <> paramName' useSelf param p <> ")"
+      OnOff p -> open <> paramName' useSelf param p <> " ? 'on' : 'off'" <> close
       OnOffParam name p def_ -> case def_ of
         Nothing ->
           withOptBoolParam r param p $ \optional ->
@@ -141,13 +141,13 @@ jsSyntaxText r = T.replace "' + '" "" . T.pack . go Nothing True
               then "(typeof " <> n <> " == 'boolean' ? " <> res <> " : '')"
               else res
           where
-            n = paramName param p
+            n = paramName' useSelf param p
             res = "' " <> name <> "=' + (" <> n <> " ? 'on' : 'off')"
         Just def
           | def -> open <> "!" <> n <> " ? ' " <> name <> "=off' : ''" <> close
           | otherwise -> open <> n <> " ? ' " <> name <> "=on' : ''" <> close
           where
-            n = paramName param p
+            n = paramName' useSelf param p
       where
         open = if top then "" else "("
         close = if top then "" else ")"
@@ -215,6 +215,13 @@ pySyntaxText r = T.pack . go Nothing True
         close = if top then "" else ")"
 
 paramName :: Maybe ExprParam -> ExprParam -> String
-paramName param_ p = case param_ of
-  Just param | p == "$0" -> param
-  _ -> p
+paramName = paramName' False
+
+paramName' :: Bool -> Maybe ExprParam -> ExprParam -> String
+paramName' useSelf param_ p
+  | useSelf && p' /= "self" = "self." <> p'
+  | otherwise = p'
+  where
+    p' = case param_ of
+      Just param | p == "$0" -> param
+      _ -> p

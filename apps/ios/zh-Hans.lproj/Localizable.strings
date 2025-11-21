@@ -1122,7 +1122,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "已经接受下列运营方的条款：**%@**。";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "使用条款";
 
 /* No comment provided by engineer. */
@@ -2441,6 +2441,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "更快地查找聊天记录";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "服务器地址中的证书指纹可能不正确";
+
 /* No comment provided by engineer. */
 "Fix" = "修复";
 
@@ -3362,7 +3365,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "网络设置";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "网络状态";
 
 /* delete after time */
@@ -3739,9 +3742,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "显示密码";
 
-/* past/unknown group member */
-"Past member %@" = "前任成员 %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "粘贴桌面地址";
 
@@ -3828,9 +3828,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Polish interface" = "波兰语界面";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "服务器地址中的证书指纹可能不正确";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "保留最后的消息草稿及其附件。";
@@ -3999,9 +3996,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "已受到确认……";
-
-/* notification */
-"Received file event" = "收到文件项目";
 
 /* message info title */
 "Received message" = "收到的信息";
@@ -4447,9 +4441,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "直接发送";
 
-/* notification */
-"Sent file event" = "已发送文件项目";
-
 /* message info title */
 "Sent message" = "已发信息";
 
@@ -4481,10 +4472,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "服务器队列信息： %1$@\n\n上次收到的消息： %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "服务器需要授权才能创建队列，检查密码";
+"Server requires authorization to create queues, check password." = "服务器需要授权才能创建队列，检查密码";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "服务器需要授权来上传，检查密码";
+"Server requires authorization to upload, check password." = "服务器需要授权来上传，检查密码";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "服务器测试失败！";
@@ -5016,12 +5007,6 @@ chat item action */
 "Transport sessions" = "传输会话";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "正在尝试连接到用于从该联系人接收消息的服务器（错误：%@）。";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "正在尝试连接到用于从该联系人接收消息的服务器。";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "土耳其语界面";
 
 /* No comment provided by engineer. */
@@ -5437,9 +5422,6 @@ chat item action */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "您已经加入了这个群组！\n重复加入请求？";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "您已连接到用于接收该联系人消息的服务器。";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "您被邀请加入群组";

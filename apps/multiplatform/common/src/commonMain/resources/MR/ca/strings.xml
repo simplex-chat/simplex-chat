@@ -1556,7 +1556,7 @@
     <string name="error_parsing_uri_desc">Comproveu que l\'enllaç SimpleX sigui correcte.</string>
     <string name="sending_files_not_yet_supported">l\'enviament de fitxers encara no està suportat</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Intentant connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">S\'està provant de connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte (error: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">S\'està provant de connectar-se al servidor utilitzat per rebre missatges d\'aquest contacte (error: %1$s).</string>
     <string name="connect_use_current_profile">Usar perfil actual</string>
     <string name="connect_use_new_incognito_profile">Usar nou perfil incògnit</string>
     <string name="app_was_crashed">Error aplicació</string>
@@ -1613,9 +1613,9 @@
     <string name="connection_error_quota_desc">La connexió ha arribat al límit de missatges no lliurats, és possible que el vostre contacte estigui fora de línia.</string>
     <string name="connection_error_quota">Missatges no lliurats</string>
     <string name="connection_error_auth_desc">A menys que el vostre contacte hagi suprimit la connexió o aquest enllaç ja s\'ha utilitzat, pot ser que sigui un error; si us plau, informeu-ho.\nPer connectar-vos, demaneu al vostre contacte que creï un altre enllaç de connexió i comproveu que teniu una connexió de xarxa estable.</string>
-    <string name="error_smp_test_certificate">Possiblement, l\'empremta digital del certificat a l\'adreça del servidor és incorrecta</string>
-    <string name="error_smp_test_server_auth">El servidor requereix autorització per crear cues, comproveu la contrasenya</string>
-    <string name="error_xftp_test_server_auth">El servidor requereix autorització per carregar, comproveu la contrasenya</string>
+    <string name="error_smp_test_certificate">L\'empremta digital a l\'adreça del servidor no coincideix amb el certificat.</string>
+    <string name="error_smp_test_server_auth">El servidor requereix autorització per crear cues, comproveu la contrasenya.</string>
+    <string name="error_xftp_test_server_auth">El servidor requereix autorització per carregar, comproveu la contrasenya.</string>
     <string name="error_smp_test_failed_at_step">La prova ha fallat al pas %s.</string>
     <string name="smp_server_test_secure_queue">Cua segura</string>
     <string name="smp_server_test_upload_file">Carrega fitxer</string>
@@ -1999,7 +1999,7 @@
     <string name="invite_to_chat_button">Convidar a xatejar</string>
     <string name="new_member_role">Nou rol de membre</string>
     <string name="no_contacts_to_add">No hi ha contactes per afegir</string>
-    <string name="past_member_vName">Membre anterior %1$s</string>
+    <string name="past_member_vName">Membre %1$s</string>
     <string name="skip_inviting_button">Ometre convidar membres</string>
     <string name="group_member_status_unknown_short">desconegut</string>
     <string name="button_add_members">Convidar membres</string>
@@ -2381,7 +2381,7 @@
     <string name="no_support_chats">No hi ha xats amb membres</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Acceptar com a observador</string>
     <string name="save_admission_question">Desar la configuració d\'admissió?</string>
-    <string name="error_deleting_member_support_chat">Error en suprimir el xat amb membre</string>
+    <string name="error_deleting_member_support_chat">Error en suprimir el xat</string>
     <string name="group_new_support_chats_short">%d xat(s)</string>
     <string name="cant_send_message_member_has_old_version">el(la) membre té una versió antiga</string>
     <string name="rcv_group_event_new_member_pending_review">Un(a) nou(va) membre vol unir-se al grup.</string>
@@ -2496,4 +2496,9 @@
     <string name="privacy_chat_list_open_full_web_link">Obrir enllaç complet</string>
     <string name="sanitize_links_toggle">Eliminar el seguiment de l\'enllaç</string>
     <string name="deprecated_options_section">Opcions obsoletes</string>
+    <string name="simplex_link_relay">Enllaç de servidor SimpleX</string>
+    <string name="error_marking_member_support_chat_read">Error marcant com a llegit</string>
+    <string name="proxy_destination_error_unknown_ca">L\'empremta digital a l\'adreça del servidor de destinació no coincideix amb el certificat: %1$s.</string>
+    <string name="smp_proxy_error_unknown_ca">L\'empremta digital a l\'adreça del servidor de reenviament no coincideix amb el certificat: %1$s.</string>
+    <string name="network_error_unknown_ca">L\'empremta digital a l\'adreça del servidor no coincideix amb el certificat: %1$s.</string>
 </resources>

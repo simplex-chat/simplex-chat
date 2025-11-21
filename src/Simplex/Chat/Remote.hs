@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 4, 3, 0]
+minRemoteCtrlVersion = AppVersion [6, 4, 6, 0]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 4, 3, 0]
+minRemoteHostVersion = AppVersion [6, 4, 6, 0]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -175,13 +175,13 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
       pure hostInfo
     handleConnectError :: RHKey -> SessionSeq -> CM a -> CM a
     handleConnectError rhKey sessSeq action =
-      action `catchChatError` \err -> do
+      action `catchAllErrors` \err -> do
         logError $ "startRemoteHost.rcConnectHost crashed: " <> tshow err
         cancelRemoteHostSession (Just (sessSeq, RHSRConnectionFailed err)) rhKey
         throwError err
     handleHostError :: SessionSeq -> TVar RHKey -> CM () -> CM ()
     handleHostError sessSeq rhKeyVar action =
-      action `catchChatError` \err -> do
+      action `catchAllErrors` \err -> do
         logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
         readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSRCrashed err))
     waitForHostSession :: Maybe RemoteHostInfo -> RHKey -> SessionSeq -> Maybe RCCtrlAddress -> TVar RHKey -> RCStepTMVar (ByteString, TLS 'TServer, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> CM ()
@@ -411,7 +411,7 @@ findKnownRemoteCtrl = do
     atomically $ takeTMVar cmdOk
     (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
       timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
-    ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchChatError` const (pure Nothing)
+    ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchAllErrors` const (pure Nothing)
     rc <-
       withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
         Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
@@ -500,11 +500,11 @@ parseCtrlAppInfo ctrlAppInfo = do
 handleRemoteCommand :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> RemoteCrypto -> TBQueue (Either ChatError ChatEvent) -> HTTP2Request -> CM' ()
 handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
-  liftIO (tryRemoteError' parseRequest) >>= \case
+  liftIO (tryAllErrors' parseRequest) >>= \case
     Right (rfKN, getNext, rc) -> do
       chatReadVar' currentUser >>= \case
         Nothing -> replyError $ ChatError CENoActiveUser
-        Just user -> processCommand user rfKN getNext rc `catchChatError'` replyError
+        Just user -> processCommand user rfKN getNext rc `catchAllErrors'` replyError
     Left e -> reply $ RRProtocolError e
   where
     parseRequest :: ExceptT RemoteProtocolError IO (C.SbKeyNonce, GetChunk, RemoteCommand)
@@ -523,7 +523,7 @@ handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBo
     replyWith :: Respond
     replyWith rr attach = do
       (corrId, cmdKN, sfKN) <- atomically $ getRemoteSndKeys encryption
-      liftIO (tryRemoteError' . encryptEncodeHTTP2Body corrId cmdKN encryption $ J.encode rr) >>= \case
+      liftIO (tryAllErrors' . encryptEncodeHTTP2Body corrId cmdKN encryption $ J.encode rr) >>= \case
         Right resp -> liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
           send resp
           attach sfKN send
@@ -531,7 +531,7 @@ handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBo
         Left e -> eToView' $ ChatErrorRemoteCtrl $ RCEProtocolError e
 
 takeRCStep :: RCStepTMVar a -> CM a
-takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
+takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, agentConnId = AgentConnId "", connectionEntity_ = Nothing}) . atomically . takeTMVar
 
 type GetChunk = Int -> IO ByteString
 
@@ -541,14 +541,6 @@ type Respond = RemoteResponse -> (C.SbKeyNonce -> SendChunk -> IO ()) -> CM' ()
 
 liftRC :: ExceptT RemoteProtocolError IO a -> CM a
 liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
-
-tryRemoteError :: ExceptT RemoteProtocolError IO a -> ExceptT RemoteProtocolError IO (Either RemoteProtocolError a)
-tryRemoteError = tryAllErrors (RPEException . tshow)
-{-# INLINE tryRemoteError #-}
-
-tryRemoteError' :: ExceptT RemoteProtocolError IO a -> IO (Either RemoteProtocolError a)
-tryRemoteError' = tryAllErrors' (RPEException . tshow)
-{-# INLINE tryRemoteError' #-}
 
 handleSend :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> Int -> CM' RemoteResponse
 handleSend execCC command retryNum = do
@@ -573,7 +565,7 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       Just ff -> takeFileName <$$> storeFileTo ff
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
-    storeFileTo dir = liftIO . tryRemoteError' $ do
+    storeFileTo dir = liftIO . tryAllErrors' $ do
       filePath <- liftIO $ dir `uniqueCombine` fileName
       receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath
@@ -586,7 +578,7 @@ handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fi
   withStore $ \db -> do
     cf <- getLocalCryptoFile db commandUserId fileId sent
     unless (cf == cf') $ throwError $ SEFileNotFound fileId
-  liftRC (tryRemoteError $ getFileInfo path) >>= \case
+  liftRC (tryAllErrors $ getFileInfo path) >>= \case
     Left e -> lift $ reply (RRProtocolError e) $ \_ _ -> pure ()
     Right (fileSize, fileDigest) ->
       lift . withFile path ReadMode $ \h -> do
@@ -658,7 +650,7 @@ stopRemoteCtrl = cancelActiveRemoteCtrl Nothing
 
 handleCtrlError :: SessionSeq -> (ChatError -> RemoteCtrlStopReason) -> Text -> CM a -> CM a
 handleCtrlError sseq mkReason name action =
-  action `catchChatError` \e -> do
+  action `catchAllErrors` \e -> do
     logError $ name <> " remote ctrl error: " <> tshow e
     cancelActiveRemoteCtrl $ Just (sseq, mkReason e)
     throwError e

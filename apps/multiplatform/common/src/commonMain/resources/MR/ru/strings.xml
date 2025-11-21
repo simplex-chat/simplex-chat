@@ -14,7 +14,7 @@
     <string name="server_error">ошибка</string>
     <string name="server_connecting">соединяется</string>
     <string name="connected_to_server_to_receive_messages_from_contact">Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %1$s).</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.</string>
     <!-- Item Content - ChatModel.kt -->
     <string name="deleted_description">удалено</string>
@@ -42,7 +42,7 @@
     <string name="simplex_link_invitation">SimpleX одноразовая ссылка</string>
     <string name="simplex_link_group">SimpleX ссылка группы</string>
     <string name="simplex_link_connection">через %1$s</string>
-    <string name="simplex_link_mode">SimpleX ссылки</string>
+    <string name="simplex_link_mode">Ссылки SimpleX</string>
     <string name="simplex_link_mode_description">Описание</string>
     <string name="simplex_link_mode_full">Полная ссылка</string>
     <string name="simplex_link_mode_browser">В браузере</string>
@@ -76,8 +76,8 @@
     <string name="error_deleting_pending_contact_connection">Ошибка удаления ожидаемого соединения</string>
     <string name="error_changing_address">Ошибка при изменении адреса</string>
     <string name="error_smp_test_failed_at_step">Ошибка теста на шаге %s.</string>
-    <string name="error_smp_test_server_auth">Сервер требует авторизации для создания очередей, проверьте пароль</string>
-    <string name="error_smp_test_certificate">Возможно, хэш сертификата в адресе сервера неверный</string>
+    <string name="error_smp_test_server_auth">Сервер требует авторизации для создания очередей, проверьте пароль.</string>
+    <string name="error_smp_test_certificate">Хэш в адресе сервера не соответствует сертификату.</string>
     <string name="smp_server_test_connect">Соединение</string>
     <string name="smp_server_test_create_queue">Создание очереди</string>
     <string name="smp_server_test_secure_queue">Защита очереди</string>
@@ -207,7 +207,7 @@
     <string name="maximum_supported_file_size">В настоящее время максимальный поддерживаемый размер файла составляет %1$s.</string>
     <string name="waiting_for_file">Ожидается приём файла</string>
     <string name="file_will_be_received_when_contact_is_online">Файл будет принят, когда Ваш контакт будет в сети, подождите или проверьте позже!</string>
-    <string name="file_saved">Файл сохранен</string>
+    <string name="file_saved">Файл сохранён</string>
     <string name="file_not_found">Файл не найден</string>
     <string name="error_saving_file">Ошибка сохранения файла</string>
     <!-- Voice messages -->
@@ -267,7 +267,7 @@
     <string name="chat_help_tap_button">Нажмите кнопку</string>
     <string name="above_then_preposition_continuation">сверху, затем:</string>
     <string name="to_connect_via_link_title">Чтобы соединиться через ссылку</string>
-    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть ее в браузере:</string>
+    <string name="if_you_received_simplex_invitation_link_you_can_open_in_browser">Если Вы получили ссылку с приглашением из SimpleX Chat, Вы можете открыть её в браузере:</string>
     <string name="desktop_scan_QR_code_from_app_via_scan_QR_code"><![CDATA[💻 на компьютере: сосканируйте показанный QR-код из приложения через <b>Сканировать QR-код</b>.]]></string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 на мобильном: нажмите кнопку <b>Open in mobile app</b> на веб странице, затем нажмите <b>Соединиться</b> в приложении.]]></string>
     <!-- Contact Request Alert Dialogue - CharListNavLinkView.kt -->
@@ -379,12 +379,12 @@
     <string name="using_simplex_chat_servers">Используются серверы предоставленные SimpleX Chat.</string>
     <string name="how_to">Инфо</string>
     <string name="how_to_use_your_servers">Как использовать серверы</string>
-    <string name="saved_ICE_servers_will_be_removed">Сохраненные WebRTC ICE серверы будут удалены.</string>
-    <string name="your_ICE_servers">Ваши ICE серверы</string>
-    <string name="configure_ICE_servers">Настройка ICE серверов</string>
-    <string name="enter_one_ICE_server_per_line">ICE серверы (один на строке)</string>
-    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE серверов</string>
-    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
+    <string name="saved_ICE_servers_will_be_removed">Сохранённые WebRTC ICE-серверы будут удалены.</string>
+    <string name="your_ICE_servers">Ваши ICE-серверы</string>
+    <string name="configure_ICE_servers">Настройка ICE-серверов</string>
+    <string name="enter_one_ICE_server_per_line">ICE-серверы (один на строке)</string>
+    <string name="error_saving_ICE_servers">Ошибка при сохранении ICE-серверов</string>
+    <string name="ensure_ICE_server_address_are_correct_format_and_unique">Пожалуйста, проверьте, что адреса WebRTC ICE-серверов имеют правильный формат, каждый адрес на отдельной строке и не повторяется.</string>
     <string name="save_servers_button">Сохранить</string>
     <string name="network_and_servers">Сеть и серверы</string>
     <string name="network_settings">Настройки сети</string>
@@ -412,7 +412,7 @@
     <string name="display_name__field">Имя профиля:</string>
     <string name="full_name__field">Полное имя:</string>
     <string name="your_current_profile">Ваш активный профиль</string>
-    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. SimpleX серверы не могут получить доступ к Вашему профилю.</string>
+    <string name="your_profile_is_stored_on_device_and_shared_only_with_contacts_simplex_cannot_see_it">Ваш профиль хранится на Вашем устройстве и отправляется только Вашим контактам. Серверы SimpleX не могут получить доступ к Вашему профилю.</string>
     <string name="edit_image">Поменять аватар</string>
     <string name="delete_image">Удалить аватар</string>
     <string name="save_preferences_question">Сохранить предпочтения?</string>
@@ -503,8 +503,8 @@
     <string name="accept_call_on_lock_screen">Принимать</string>
     <string name="show_call_on_lock_screen">Показывать</string>
     <string name="no_call_on_lock_screen">Выключить</string>
-    <string name="your_ice_servers">Ваши ICE серверы</string>
-    <string name="webrtc_ice_servers">WebRTC ICE серверы</string>
+    <string name="your_ice_servers">Ваши ICE-серверы</string>
+    <string name="webrtc_ice_servers">WebRTC ICE-серверы</string>
     <string name="relay_server_protects_ip">Relay-сервер защищает Ваш IP-адрес, но может отслеживать продолжительность звонка.</string>
     <string name="relay_server_if_necessary">Relay-сервер используется только при необходимости. Другая сторона может видеть Ваш IP-адрес.</string>
     <!-- Call Lock Screen -->
@@ -633,22 +633,22 @@
     <string name="keychain_is_storing_securely">Android Keystore используется для безопасного хранения пароля - это позволяет стабильно получать уведомления в фоновом режиме.</string>
     <string name="encrypted_with_random_passphrase">База данных зашифрована случайным паролем, Вы можете его поменять.</string>
     <string name="impossible_to_recover_passphrase"><![CDATA[<b>Внимание</b>: Вы не сможете восстановить или поменять пароль, если потеряете его.]]></string>
-    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранен в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
-    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранен на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
+    <string name="keychain_allows_to_receive_ntfs">Пароль базы данных будет безопасно сохранён в Android Keystore после запуска чата или изменения пароля - это позволит стабильно получать уведомления.</string>
+    <string name="you_have_to_enter_passphrase_every_time">Пароль не сохранён на устройстве — Вы будете должны ввести его при каждом запуске чата.</string>
     <string name="encrypt_database_question">Зашифровать базу данных?</string>
     <string name="change_database_passphrase_question">Поменять пароль базы данных?</string>
     <string name="database_will_be_encrypted">База данных будет зашифрована.</string>
-    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранен в Keystore.</string>
-    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменен и сохранен в Keystore.</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored">База данных будет зашифрована и пароль сохранён в Keystore.</string>
+    <string name="database_encryption_will_be_updated">Пароль базы данных будет изменён и сохранён в Keystore.</string>
     <string name="database_passphrase_will_be_updated">Пароль базы данных будет изменен.</string>
-    <string name="store_passphrase_securely">Пожалуйста, надежно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
-    <string name="store_passphrase_securely_without_recover">Пожалуйста, надежно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
+    <string name="store_passphrase_securely">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете его поменять, если потеряете.</string>
+    <string name="store_passphrase_securely_without_recover">Пожалуйста, надёжно сохраните пароль, Вы НЕ сможете открыть чат, если потеряете его.</string>
     <!-- DatabaseErrorView.kt -->
     <string name="wrong_passphrase">Неправильный пароль базы данных</string>
     <string name="encrypted_database">База данных зашифрована</string>
     <string name="database_error">Ошибка базы данных</string>
     <string name="keychain_error">Ошибка Keystore</string>
-    <string name="passphrase_is_different">Пароль базы данных отличается от сохраненного в Keystore.</string>
+    <string name="passphrase_is_different">Пароль базы данных отличается от сохранённого в Keystore.</string>
     <string name="file_with_path">Файл: %s</string>
     <string name="database_passphrase_is_required">Введите пароль базы данных, чтобы открыть чат.</string>
     <string name="error_with_info">Ошибка: %s</string>
@@ -682,7 +682,7 @@
     <string name="leave_group_button">Выйти</string>
     <string name="leave_group_question">Выйти из группы</string>
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Вы перестанете получать сообщения от этой группы. История чата будет сохранена.</string>
-    <string name="icon_descr_add_members"> Пригласить членов группы</string>
+    <string name="icon_descr_add_members">Пригласить в группу</string>
     <string name="icon_descr_group_inactive">Группа неактивна</string>
     <string name="alert_title_group_invitation_expired">Приглашение истекло!</string>
     <string name="alert_message_group_invitation_expired">Приглашение в группу больше не действительно, оно было удалено отправителем.</string>
@@ -752,7 +752,7 @@
     <string name="invite_prohibited">Нельзя пригласить контакт!</string>
     <string name="invite_prohibited_description">Вы пытаетесь пригласить контакт, который знает Ваш профиль инкогнито, в группу, где Вы используете основной профиль.</string>
     <!-- GroupChatInfoView.kt -->
-    <string name="button_add_members">Пригласить членов группы</string>
+    <string name="button_add_members">Пригласить в группу</string>
     <string name="group_info_section_title_num_members">%1$s ЧЛЕНОВ ГРУППЫ</string>
     <string name="group_info_member_you">Вы: %1$s</string>
     <string name="button_delete_group">Удалить группу</string>
@@ -1433,8 +1433,8 @@
     <string name="connect_use_current_profile">Использовать активный профиль</string>
     <string name="connect_use_new_incognito_profile">Использовать новый профиль инкогнито</string>
     <string name="system_restricted_background_in_call_warn"><![CDATA[Чтобы совершать звонки в фоне, выберите <b>Расход батареи приложением</b> / <b>Без ограничений</b> в настройках приложения.]]></string>
-    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранен в настройках.</string>
-    <string name="v5_3_encrypt_local_files">Шифруйте сохраненные файлы и медиа</string>
+    <string name="database_will_be_encrypted_and_passphrase_stored_in_settings">База данных будет зашифрована, и пароль сохранён в настройках.</string>
+    <string name="v5_3_encrypt_local_files">Шифруйте сохранённые файлы и медиа</string>
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Обратите внимание</b>: соединение с серверами файлов и сообщений устанавливаются через SOCKS-прокси. Звонки и картинки ссылок используют прямое соединение.]]></string>
     <string name="encrypt_local_files">Шифровать локальные файлы</string>
     <string name="v5_3_new_desktop_app">Приложение для компьютера!</string>
@@ -1496,7 +1496,7 @@
     <string name="connect_plan_already_joining_the_group">Вступление в группу уже начато!</string>
     <string name="moderated_items_description">%1$d сообщений отмодерировано членом %2$s</string>
     <string name="remote_host_was_disconnected_toast"><![CDATA[Мобильный <b>%s</b> был отключен]]></string>
-    <string name="v5_4_better_groups_descr">Быстрое вступление и надежная доставка сообщений.</string>
+    <string name="v5_4_better_groups_descr">Быстрое вступление и надёжная доставка сообщений.</string>
     <string name="connect_plan_connect_to_yourself">Соединиться с самим собой?</string>
     <string name="linked_mobiles">Связанные мобильные</string>
     <string name="desktop_device">Компьютер</string>
@@ -1608,7 +1608,7 @@
     <string name="camera_not_available">Камера недоступна</string>
     <string name="la_app_passcode">Код доступа в приложение</string>
     <string name="add_contact_button_to_create_link_or_connect_via_link"><![CDATA[<b>Добавить контакт</b>: создать новую ссылку-приглашение или подключиться через полученную ссылку.]]></string>
-    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите ее обратно до запуска чата.</string>
+    <string name="chat_is_stopped_you_should_transfer_database">Чат остановлен. Если вы уже использовали эту базу данных на другом устройстве, перенесите её обратно до запуска чата.</string>
     <string name="remote_host_was_disconnected_title">Соединение остановлено</string>
     <string name="info_row_created_at">Создано</string>
     <string name="keep_invitation_link">Оставить</string>
@@ -1678,7 +1678,7 @@
     <string name="or_scan_qr_code">Или отсканируйте QR-код</string>
     <string name="you_can_view_invitation_link_again">Вы можете увидеть ссылку-приглашение снова открыв соединение.</string>
     <string name="show_slow_api_calls">Показывать медленные вызовы API</string>
-    <string name="past_member_vName">Бывший член %1$s</string>
+    <string name="past_member_vName">Член группы %1$s</string>
     <string name="saved_message_title">Сохранённое сообщение</string>
     <string name="group_member_status_unknown_short">неизвестно</string>
     <string name="group_member_status_unknown">неизвестный статус</string>
@@ -1739,7 +1739,7 @@
     <string name="migrate_from_device_stopping_chat">Остановка чата</string>
     <string name="migrate_from_device_archive_and_upload">Архивировать и загрузить</string>
     <string name="migrate_from_device_confirm_upload">Подтвердить загрузку</string>
-    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надежно зашифрованы и загружены на выбранные XFTP-серверы.</string>
+    <string name="migrate_from_device_all_data_will_be_uploaded">Все ваши контакты, разговоры и файлы будут надёжно зашифрованы и загружены на выбранные XFTP-серверы.</string>
     <string name="migrate_from_device_upload_failed">Ошибка загрузки</string>
     <string name="migrate_from_device_repeat_upload">Повторить загрузку</string>
     <string name="migrate_from_device_try_again">Вы можете попробовать ещё раз.</string>
@@ -1753,7 +1753,7 @@
     <string name="migrate_from_device_starting_chat_on_multiple_devices_unsupported">Внимание: запуск чата на нескольких устройствах не поддерживается и приведет к сбоям доставки сообщений.</string>
     <string name="migrate_from_device_you_must_not_start_database_on_two_device"><![CDATA[Вы <b>не должны</b> использовать одну и ту же базу данных на двух устройствах.]]></string>
     <string name="migrate_from_device_check_connection_and_try_again">Проверьте подключение к Интернету и повторите попытку</string>
-    <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для ее миграции.</string>
+    <string name="migrate_from_device_confirm_you_remember_passphrase">Подтвердите, что Вы помните пароль базы данных для её миграции.</string>
     <string name="migrate_from_device_verify_database_passphrase">Проверка пароля базы данных</string>
     <string name="migrate_from_device_verify_passphrase">Проверить пароль</string>
     <string name="migrate_from_device_error_verifying_passphrase">Ошибка подтверждения пароля:</string>
@@ -1801,7 +1801,7 @@
     <string name="audio_device_wired_headphones">Наушники</string>
     <string name="audio_device_speaker">Громкоговоритель</string>
     <string name="v5_7_call_sounds">Звуки во время звонков</string>
-    <string name="v5_7_network_descr">Более надежное соединение с сетью.</string>
+    <string name="v5_7_network_descr">Более надёжное соединение с сетью.</string>
     <string name="v5_7_network">Статус сети</string>
     <string name="saved_description">сохранено</string>
     <string name="saved_from_description">сохранено из %s</string>
@@ -1815,7 +1815,7 @@
     <string name="simplex_links">Ссылки SimpleX</string>
     <string name="allow_to_send_simplex_links">Разрешить отправлять ссылки SimpleX.</string>
     <string name="prohibit_sending_simplex_links">Запретить отправку ссылок SimpleX</string>
-    <string name="group_members_can_send_simplex_links">Члены могут отправлять ссылки SimpleX</string>
+    <string name="group_members_can_send_simplex_links">Члены могут отправлять SimpleX ссылки.</string>
     <string name="feature_roles_admins">админы</string>
     <string name="feature_roles_all_members">все члены</string>
     <string name="feature_roles_owners">владельцы</string>
@@ -2000,7 +2000,7 @@
     <string name="chunks_deleted">Блоков удалено</string>
     <string name="chunks_downloaded">Блоков принято</string>
     <string name="subscription_results_ignored">Подписок игнорировано</string>
-    <string name="copy_error">Ошибка копирования</string>
+    <string name="copy_error">Скопировать ошибку</string>
     <string name="info_view_video_button">видеозвонок</string>
     <string name="delete_contact_cannot_undo_warning">Контакт будет удален — это нельзя отменить!</string>
     <string name="keep_conversation">Оставить разговор</string>
@@ -2138,7 +2138,7 @@
     <string name="compose_save_messages_n">Сохранение %1$s сообщений</string>
     <string name="network_proxy_incorrect_config_desc">Убедитесь, что конфигурация прокси правильная.</string>
     <string name="network_proxy_auth">Аутентификация прокси</string>
-    <string name="network_proxy_random_credentials">Использовать случайные учетные данные</string>
+    <string name="network_proxy_random_credentials">Использовать случайные учётные данные</string>
     <string name="system_mode_toast">Режим системы</string>
     <string name="error_forwarding_messages">Ошибка пересылки сообщений</string>
     <string name="n_file_errors">%1$d ошибок файлов:\n%2$s</string>
@@ -2184,13 +2184,13 @@
     <string name="v6_1_switch_chat_profile_descr">Переключайте профиль чата для одноразовых приглашений.</string>
     <string name="v6_1_better_security_descr">Аудит SimpleX протоколов от Trail of Bits.</string>
     <string name="call_desktop_permission_denied_title">Чтобы совершать звонки, разрешите использовать микрофон. Завершите вызов и попробуйте позвонить снова.</string>
-    <string name="network_proxy_auth_mode_no_auth">Не использовать учетные данные с прокси.</string>
+    <string name="network_proxy_auth_mode_no_auth">Не использовать учётные данные с прокси.</string>
     <string name="network_proxy_incorrect_config_title">Ошибка сохранения прокси</string>
     <string name="network_proxy_password">Пароль</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Использовать разные учетные данные прокси для каждого соединения.</string>
-    <string name="network_proxy_auth_mode_isolate_by_auth_user">Использовать разные учетные данные прокси для каждого профиля.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_entity">Использовать разные учётные данные прокси для каждого соединения.</string>
+    <string name="network_proxy_auth_mode_isolate_by_auth_user">Использовать разные учётные данные прокси для каждого профиля.</string>
     <string name="network_proxy_username">Имя пользователя</string>
-    <string name="network_proxy_auth_mode_username_password">Ваши учетные данные могут быть отправлены в незашифрованном виде.</string>
+    <string name="network_proxy_auth_mode_username_password">Ваши учётные данные могут быть отправлены в незашифрованном виде.</string>
     <string name="migrate_from_device_remove_archive_question">Удалить архив?</string>
     <string name="migrate_from_device_uploaded_archive_will_be_removed">Загруженный архив базы данных будет навсегда удален с серверов.</string>
     <string name="operator_conditions_accepted">Принятые условия</string>
@@ -2348,7 +2348,7 @@
     <string name="delete_chat_list_warning">Все чаты будут удалены из списка %s, а сам список удален</string>
     <string name="chat_list_add_list">Добавить список</string>
     <string name="chat_list_notes">Примечания</string>
-    <string name="open_with_app">Открыто с %s</string>
+    <string name="open_with_app">Открыть в %s</string>
     <string name="create_list">Создать список</string>
     <string name="add_to_list">Добавить в список</string>
     <string name="change_list">Изменить список</string>
@@ -2464,7 +2464,7 @@
     <string name="onboarding_conditions_private_chats_not_accessible">Частные разговоры, группы и Ваши контакты недоступны для операторов серверов.</string>
     <string name="onboarding_conditions_configure_server_operators">Настроить операторов серверов</string>
     <string name="onboarding_conditions_privacy_policy_and_conditions_of_use">Политика конфиденциальности и условия использования.</string>
-    <string name="member_criteria_all">все</string>
+    <string name="member_criteria_all">всех</string>
     <string name="accept_pending_member_button">Принять</string>
     <string name="accept_pending_member_alert_question">Член группы хочет присоединиться. Принять?</string>
     <string name="cant_send_message_group_deleted">группа удалена</string>
@@ -2479,7 +2479,7 @@
     <string name="group_member_status_pending_review">ожидает одобрения</string>
     <string name="reject_pending_member_button">Отклонить</string>
     <string name="reject_pending_member_alert_title">Отклонить члена группы?</string>
-    <string name="error_deleting_member_support_chat">Ошибка при удалении чата с членом группы</string>
+    <string name="error_deleting_member_support_chat">Ошибка при удалении чата</string>
     <string name="full_link_button_text">Полная ссылка</string>
     <string name="error_accepting_member">Ошибка при вступлении члена группы</string>
     <string name="unsupported_connection_link">Ссылка не поддерживается</string>
@@ -2492,7 +2492,7 @@
     <string name="admission_stage_review">Одобрять членов группы</string>
     <string name="member_support">Чаты с членами группы</string>
     <string name="member_admission">Приём членов в группу</string>
-    <string name="admission_stage_review_descr">Одобрять членов для вступления в группу.</string>
+    <string name="admission_stage_review_descr">Вручную одобрять членов для вступления в группу.</string>
     <string name="no_support_chats">Нет чатов с членами группы</string>
     <string name="accept_pending_member_alert_confirmation_as_observer">Принять как читателя</string>
     <string name="accept_pending_member_alert_confirmation_as_member">Принять в группу</string>
@@ -2512,7 +2512,7 @@
     <string name="set_member_admission">Установить вступление в группу</string>
     <string name="delete_member_support_chat_alert_title">Удалить чат с членом группы?</string>
     <string name="delete_member_support_chat_button">Удалить разговор</string>
-    <string name="rcv_group_event_member_accepted">принят %1$s</string>
+    <string name="rcv_group_event_member_accepted">принял %1$s</string>
     <string name="support_chat">Чат с админами</string>
     <string name="rcv_group_event_user_accepted">Вы приняты</string>
     <string name="group_new_support_chat_one">1 чат с членом группы</string>
@@ -2610,4 +2610,9 @@
     <string name="privacy_chat_list_open_clean_web_link">Открыть очищенную ссылку</string>
     <string name="privacy_chat_list_open_full_web_link">Открыть полную ссылку</string>
     <string name="sanitize_links_toggle">Удалять параметры отслеживания</string>
+    <string name="error_marking_member_support_chat_read">Ошибка прочтения чата</string>
+    <string name="smp_proxy_error_unknown_ca">Хэш в адресе пересылающего сервера не соответствует сертификату: %1$s.</string>
+    <string name="network_error_unknown_ca">Хэш в адресе сервера не соответствует сертификату: %1$s.</string>
+    <string name="simplex_link_relay">Ссылка SimpleX relay</string>
+    <string name="proxy_destination_error_unknown_ca">Хэш в адресе сервера назначения не соответствует сертификату: %1$s.</string>
 </resources>
