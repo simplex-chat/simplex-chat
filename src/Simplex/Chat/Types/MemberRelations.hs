@@ -73,8 +73,8 @@ setRelation indexInGroup relation vector
           newByte = updateByte byte bitOffset relation
        in B.concat [B.take byteIndex expanded, B.singleton newByte, B.drop (byteIndex + 1) expanded]
 
--- | Set multiple relations at once. More efficient than calling setRelation multiple times.
--- Sorts by index first for O(k log k + n) complexity instead of O(k*n).
+-- | Set multiple relations at once.
+-- Expands the vector lazily if needed (padding with zeros for 'MRNew' relation).
 setRelations :: [(Int64, MemberRelation)] -> ByteString -> ByteString
 setRelations [] vector = vector
 setRelations relations vector =
