@@ -2391,7 +2391,7 @@
     <string name="error_accepting_member">Error al aceptar el miembro</string>
     <string name="save_admission_question">¿Guardar configuración?</string>
     <string name="snd_group_event_user_pending_review">Por favor, espera a que tu solicitud sea revisada por los moderadores del grupo.</string>
-    <string name="snd_group_event_member_accepted">has aceptado al miembro</string>
+    <string name="snd_group_event_member_accepted">has admitido al miembro</string>
     <string name="group_member_status_pending_review">pendiente de revisión</string>
     <string name="group_member_status_pending_review_short">por revisar</string>
     <string name="button_support_chat">Chat con administradores</string>
@@ -2419,7 +2419,7 @@
     <string name="cant_send_message_alert_title">¡No puedes enviar mensajes!</string>
     <string name="report_sent_alert_msg_view_in_support_chat">Puedes ver tus informes en Chat con administradores</string>
     <string name="cant_send_message_you_left">has salido</string>
-    <string name="rcv_group_event_user_accepted">te ha aceptado</string>
+    <string name="rcv_group_event_user_accepted">te ha admitido</string>
     <string name="rcv_group_event_new_member_pending_review">Un miembro nuevo desea unirse al grupo.</string>
     <string name="member_criteria_all">todos</string>
     <string name="member_support">Chat con miembros</string>
