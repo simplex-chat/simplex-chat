@@ -25,7 +25,6 @@ memberRelationsTests = do
         getRelation 10 vec `shouldBe` MRNew
 
       it "reads single relation from byte" $ do
-        -- Byte: [00][00][00][01] - index 0 = MRIntroduced (01)
         let vec = B.pack [0x01]
         getRelation 0 vec `shouldBe` MRIntroduced
 
@@ -42,6 +41,10 @@ memberRelationsTests = do
         getRelation 1 vec `shouldBe` MRIntroduced
         getRelation 4 vec `shouldBe` MRConnected
         getRelation 5 vec `shouldBe` MRConnected
+
+      it "ignore reserved bits" $ do
+        let vec = B.pack [0xF9] -- 11111001
+        getRelation 0 vec `shouldBe` MRIntroduced
 
     describe "setRelation" $ do
       it "sets relation in empty vector (lazy expansion)" $ do
@@ -87,6 +90,13 @@ memberRelationsTests = do
         let vec2 = setRelation 0 MRIntroduced vec1
         vec2 `shouldBe` vec1
         getRelation 0 vec2 `shouldBe` MRIntroduced
+
+      it "preserves reserved bits" $ do
+        let v = B.pack [0xF8] -- 11111000
+        getRelation 0 v `shouldBe` MRNew
+        let v' = setRelation 0 MRIntroduced v
+        getRelation 0 v' `shouldBe` MRIntroduced
+        B.unpack v' `shouldBe` [0xF9] -- 11111001
 
     describe "setRelations" $ do
       it "returns same vector for empty list" $ do
