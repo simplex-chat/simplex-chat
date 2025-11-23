@@ -2,13 +2,14 @@
 
 module MemberRelationsTests where
 
+import Control.Monad
 import qualified Data.ByteString as B
 import Simplex.Chat.Types.MemberRelations
 import Test.Hspec
 
 memberRelationsTests :: Spec
 memberRelationsTests = do
-  describe "MemberRelation bit-packed vector operations" $ do
+  describe "MemberRelation vector operations" $ do
     describe "getRelation" $ do
       it "returns MRNew for empty vector" $ do
         getRelation 0 B.empty `shouldBe` MRNew
@@ -28,21 +29,19 @@ memberRelationsTests = do
         let vec = B.pack [0x01]
         getRelation 0 vec `shouldBe` MRIntroduced
 
-      it "reads multiple relations from same byte" $ do
-        -- Byte: [10][01][00][00] - bits 6-7=10, 4-5=01, 2-3=00, 0-1=00
-        let vec = B.pack [0x90] -- 0b10010000
-        getRelation 0 vec `shouldBe` MRNew        -- bits 0-1
-        getRelation 1 vec `shouldBe` MRNew        -- bits 2-3
-        getRelation 2 vec `shouldBe` MRIntroduced -- bits 4-5
-        getRelation 3 vec `shouldBe` MRConnected  -- bits 6-7
+      it "reads multiple relations" $ do
+        let vec = B.pack [0, 0, 1, 2]
+        getRelation 0 vec `shouldBe` MRNew
+        getRelation 1 vec `shouldBe` MRNew
+        getRelation 2 vec `shouldBe` MRIntroduced
+        getRelation 3 vec `shouldBe` MRConnected
 
-      it "reads relations from multiple bytes" $ do
-        -- [0x05, 0x0A] = [00000101, 00001010]
-        let vec = B.pack [0x05, 0x0A]
-        getRelation 0 vec `shouldBe` MRIntroduced -- byte 0, bits 0-1: 01
-        getRelation 1 vec `shouldBe` MRIntroduced -- byte 0, bits 2-3: 01
-        getRelation 4 vec `shouldBe` MRConnected  -- byte 1, bits 0-1: 10
-        getRelation 5 vec `shouldBe` MRConnected  -- byte 1, bits 2-3: 10
+      it "reads multiple relations 2" $ do
+        let vec = B.pack [1, 1, 0, 0, 2, 2, 0, 0]
+        getRelation 0 vec `shouldBe` MRIntroduced
+        getRelation 1 vec `shouldBe` MRIntroduced
+        getRelation 4 vec `shouldBe` MRConnected
+        getRelation 5 vec `shouldBe` MRConnected
 
     describe "setRelation" $ do
       it "sets relation in empty vector (lazy expansion)" $ do
@@ -55,11 +54,12 @@ memberRelationsTests = do
 
       it "expands vector to required length" $ do
         let vec = setRelation 5 MRConnected B.empty
-        B.length vec `shouldBe` 2 -- 5 / 4 + 1 = 2 bytes
+        B.length vec `shouldBe` 6
         getRelation 5 vec `shouldBe` MRConnected
         -- Other positions should be MRNew (0)
         getRelation 0 vec `shouldBe` MRNew
-        getRelation 4 vec `shouldBe` MRNew
+        getRelation 10 vec `shouldBe` MRNew
+        B.length vec `shouldBe` 6
 
       it "updates existing relation without affecting others" $ do
         -- Start: [01][01][00][00]
@@ -73,9 +73,10 @@ memberRelationsTests = do
       it "updates relation in specific byte of multi-byte vector" $ do
         let vec1 = setRelation 0 MRIntroduced B.empty
         let vec2 = setRelation 10 MRConnected vec1
-        B.length vec2 `shouldBe` 3 -- 10 / 4 + 1 = 3 bytes
+        B.length vec2 `shouldBe` 11
         getRelation 0 vec2 `shouldBe` MRIntroduced
         getRelation 10 vec2 `shouldBe` MRConnected
+        forM_ [1..9] $ \i -> getRelation i vec2 `shouldBe` MRNew
 
       it "handles setting relation at last position in byte" $ do
         let vec = setRelation 3 MRConnected B.empty
@@ -100,19 +101,19 @@ memberRelationsTests = do
         getRelation 2 vec `shouldBe` MRIntroduced
         getRelation 3 vec `shouldBe` MRNew -- Unset position
 
-      it "packs all 4 index positions into single byte" $ do
+      it "sets multiple relations 1" $ do
         let updates = [(0, MRIntroduced), (1, MRConnected), (2, MRConnected), (3, MRIntroduced)]
         let vec = setRelations updates B.empty
-        B.length vec `shouldBe` 1
+        B.length vec `shouldBe` 4
         getRelation 0 vec `shouldBe` MRIntroduced
         getRelation 1 vec `shouldBe` MRConnected
         getRelation 2 vec `shouldBe` MRConnected
         getRelation 3 vec `shouldBe` MRIntroduced
 
-      it "sets relations across multiple bytes" $ do
+      it "sets multiple relations 2" $ do
         let updates = [(0, MRIntroduced), (5, MRConnected), (10, MRIntroduced)]
         let vec = setRelations updates B.empty
-        B.length vec `shouldBe` 3 -- (10 / 4) + 1
+        B.length vec `shouldBe` 11
         getRelation 0 vec `shouldBe` MRIntroduced
         getRelation 5 vec `shouldBe` MRConnected
         getRelation 10 vec `shouldBe` MRIntroduced
@@ -180,7 +181,7 @@ memberRelationsTests = do
       it "handles large group size (10000 members)" $ do
         let updates = [(0, MRIntroduced), (5000, MRConnected), (9999, MRIntroduced)]
         let vec = setRelations updates B.empty
-        B.length vec `shouldBe` 2500 -- 10000 / 4
+        B.length vec `shouldBe` 10000
         getRelation 0 vec `shouldBe` MRIntroduced
         getRelation 5000 vec `shouldBe` MRConnected
         getRelation 9999 vec `shouldBe` MRIntroduced
@@ -195,4 +196,4 @@ memberRelationsTests = do
 
       it "vector length is minimal (lazy expansion)" $ do
         let vec = setRelation 3 MRConnected B.empty
-        B.length vec `shouldBe` 1 -- Just one byte for indices 0-3
+        B.length vec `shouldBe` 4
