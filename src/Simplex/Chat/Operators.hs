@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DuplicateRecordFields #-}
@@ -45,8 +46,9 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
-import Simplex.Chat.Types (User)
+import Simplex.Chat.Types (ShortLinkContact, User)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Protocol (sameShortLinkContact)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
@@ -180,14 +182,16 @@ conditionsAccepted ServerOperator {conditionsAcceptance} = case conditionsAccept
 data UserOperatorServers = UserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [UserServer 'PSMP],
-    xftpServers :: [UserServer 'PXFTP]
+    xftpServers :: [UserServer 'PXFTP],
+    chatRelays :: [UserChatRelay]
   }
   deriving (Show)
 
 data UpdatedUserOperatorServers = UpdatedUserOperatorServers
   { operator :: Maybe ServerOperator,
     smpServers :: [AUserServer 'PSMP],
-    xftpServers :: [AUserServer 'PXFTP]
+    xftpServers :: [AUserServer 'PXFTP],
+    chatRelays :: [AUserChatRelay]
   }
   deriving (Show)
 
@@ -196,25 +200,34 @@ data ValidatedProtoServer p = ValidatedProtoServer {unVPS :: Either Text (ProtoS
 
 class UserServersClass u where
   type AServer u = (s :: ProtocolType -> Type) | s -> u
+  type AChatRelay u = (s :: Type) | s -> u
   operator' :: u -> Maybe ServerOperator
   aUserServer' :: AServer u p -> AUserServer p
   servers' :: UserProtocol p => SProtocolType p -> u -> [AServer u p]
+  chatRelays' :: u -> [AChatRelay u]
+  aUserChatRelay' :: AChatRelay u -> AUserChatRelay
 
 instance UserServersClass UserOperatorServers where
   type AServer UserOperatorServers = UserServer' 'DBStored
+  type AChatRelay UserOperatorServers = UserChatRelay' 'DBStored
   operator' UserOperatorServers {operator} = operator
   aUserServer' = AUS SDBStored
   servers' p UserOperatorServers {smpServers, xftpServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
+  chatRelays' UserOperatorServers {chatRelays} = chatRelays
+  aUserChatRelay' = AUCR SDBStored
 
 instance UserServersClass UpdatedUserOperatorServers where
   type AServer UpdatedUserOperatorServers = AUserServer
+  type AChatRelay UpdatedUserOperatorServers = AUserChatRelay
   operator' UpdatedUserOperatorServers {operator} = operator
   aUserServer' = id
   servers' p UpdatedUserOperatorServers {smpServers, xftpServers} = case p of
     SPSMP -> smpServers
     SPXFTP -> xftpServers
+  chatRelays' UpdatedUserOperatorServers {chatRelays} = chatRelays
+  aUserChatRelay' = id
 
 type UserServer p = UserServer' 'DBStored p
 
@@ -238,12 +251,41 @@ presetServerAddress :: UserServer' s p -> ProtocolServer p
 presetServerAddress UserServer {server = ProtoServerWithAuth srv _} = srv
 {-# INLINE presetServerAddress #-}
 
+type UserChatRelay = UserChatRelay' 'DBStored
+
+type NewUserChatRelay = UserChatRelay' 'DBNew
+
+data AUserChatRelay = forall s. AUCR (SDBStored s) (UserChatRelay' s)
+
+deriving instance Show AUserChatRelay
+
+data UserChatRelay' s = UserChatRelay
+  { chatRelayId :: DBEntityId' s,
+    address :: ShortLinkContact,
+    name :: Text,
+    domains :: [Text],
+    preset :: Bool,
+    tested :: Maybe Bool,
+    enabled :: Bool,
+    deleted :: Bool
+  }
+  deriving (Show)
+
+-- for setting chat relays via CLI API
+data CLINewRelay = CLINewRelay
+  { address :: ShortLinkContact,
+    name :: Text
+  }
+  deriving (Show)
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
     useSMP :: Int,
     xftp :: [NewUserServer 'PXFTP],
-    useXFTP :: Int
+    useXFTP :: Int,
+    chatRelays :: [NewUserChatRelay],
+    useChatRelays :: Int
   }
   deriving (Show)
 
@@ -262,16 +304,31 @@ operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
 
 presetServer' :: Bool -> ProtocolServer p -> NewUserServer p
 presetServer' enabled = presetServer enabled . (`ProtoServerWithAuth` Nothing)
+{-# INLINE presetServer' #-}
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer = newUserServer_ True
+{-# INLINE presetServer #-}
 
 newUserServer :: ProtoServerWithAuth p -> NewUserServer p
 newUserServer = newUserServer_ False True
+{-# INLINE newUserServer #-}
 
 newUserServer_ :: Bool -> Bool -> ProtoServerWithAuth p -> NewUserServer p
 newUserServer_ preset enabled server =
   UserServer {serverId = DBNewEntity, server, preset, tested = Nothing, enabled, deleted = False}
+
+presetChatRelay :: Bool -> Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
+presetChatRelay = newChatRelay_ True
+{-# INLINE presetChatRelay #-}
+
+newChatRelay :: Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
+newChatRelay = newChatRelay_ False True
+{-# INLINE newChatRelay #-}
+
+newChatRelay_ :: Bool -> Bool -> Text -> [Text] -> ShortLinkContact -> NewUserChatRelay
+newChatRelay_ preset enabled name domains !address =
+  UserChatRelay {chatRelayId = DBNewEntity, address, name, domains, preset, tested = Nothing, enabled, deleted = False}
 
 -- This function should be used inside DB transaction to update conditions in the database
 -- it evaluates to (current conditions, and conditions to add)
@@ -300,8 +357,8 @@ usageConditionsToAdd' prevCommit sourceCommit newUser createdAt = \case
 presetUserServers :: [(Maybe PresetOperator, Maybe ServerOperator)] -> [UpdatedUserOperatorServers]
 presetUserServers = mapMaybe $ \(presetOp_, op) -> mkUS op <$> presetOp_
   where
-    mkUS op PresetOperator {smp, xftp} =
-      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp)
+    mkUS op PresetOperator {smp, xftp, chatRelays} =
+      UpdatedUserOperatorServers op (map (AUS SDBNew) smp) (map (AUS SDBNew) xftp) (map (AUCR SDBNew) chatRelays)
 
 -- This function should be used inside DB transaction to update operators.
 -- It allows to add/remove/update preset operators in the database preserving enabled and roles settings,
@@ -322,7 +379,7 @@ updatedServerOperators presetOps storedOps =
 -- This function should be used inside DB transaction to update servers.
 updatedUserServers :: (Maybe PresetOperator, UserOperatorServers) -> UpdatedUserOperatorServers
 updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpServers}) =
-  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp'}
+  UpdatedUserOperatorServers {operator, smpServers = smp', xftpServers = xftp', chatRelays = []}
   where
     stored = map (AUS SDBStored)
     (smp', xftp') = case presetOp_ of
@@ -335,7 +392,7 @@ updatedUserServers (presetOp_, UserOperatorServers {operator, smpServers, xftpSe
               storedSrvs :: Map (ProtoServerWithAuth p) (UserServer p)
               storedSrvs = foldl' (\ss srv@UserServer {server} -> M.insert server srv ss) M.empty srvs
               customServer :: UserServer p -> Bool
-              customServer srv = not (preset srv) && all (`S.notMember` presetHosts) (srvHost srv)
+              customServer srv@UserServer {preset} = not preset && all (`S.notMember` presetHosts) (srvHost srv)
               presetSrvs :: [NewUserServer p]
               presetSrvs = pServers p presetOp
               presetHosts :: Set TransportHost
@@ -378,46 +435,58 @@ instance Box ((,) (Maybe a)) where
   box = (Nothing,)
   unbox = snd
 
-groupByOperator :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [UserOperatorServers]
-groupByOperator (ops, smpSrvs, xftpSrvs) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs)
+groupByOperator :: ([Maybe ServerOperator], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> IO [UserOperatorServers]
+groupByOperator (ops, smpSrvs, xftpSrvs, chatRelays) = map runIdentity <$> groupByOperator_ (map Identity ops, smpSrvs, xftpSrvs, chatRelays)
 
 -- For the initial app start this function relies on tuple being Functor/Box
 -- to preserve the information about operator being DBNew or DBStored
-groupByOperator' :: ([(Maybe PresetOperator, Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
+groupByOperator' :: ([(Maybe PresetOperator, Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> IO [(Maybe PresetOperator, UserOperatorServers)]
 groupByOperator' = groupByOperator_
 {-# INLINE groupByOperator' #-}
 
-groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP]) -> IO [f UserOperatorServers]
-groupByOperator_ (ops, smpSrvs, xftpSrvs) = do
+groupByOperator_ :: forall f. (Box f, Traversable f) => ([f (Maybe ServerOperator)], [UserServer 'PSMP], [UserServer 'PXFTP], [UserChatRelay]) -> IO [f UserOperatorServers]
+groupByOperator_ (ops, smpSrvs, xftpSrvs, cRelays) = do
   let ops' = mapMaybe sequence ops
       customOp_ = find (isNothing . unbox) ops
   ss <- mapM ((\op -> (serverDomains (unbox op),) <$> newIORef (mkUS . Just <$> op))) ops'
   custom <- newIORef $ maybe (box $ mkUS Nothing) (mkUS <$>) customOp_
   mapM_ (addServer ss custom addSMP) (reverse smpSrvs)
   mapM_ (addServer ss custom addXFTP) (reverse xftpSrvs)
+  mapM_ (addChatRelay ss custom) cRelays
   opSrvs <- mapM (readIORef . snd) ss
   customSrvs <- readIORef custom
   pure $ opSrvs <> [customSrvs]
   where
-    mkUS op = UserOperatorServers op [] []
+    mkUS op = UserOperatorServers op [] [] []
     addServer :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> (UserServer p -> UserOperatorServers -> UserOperatorServers) -> UserServer p -> IO ()
     addServer ss custom add srv =
       let v = maybe custom snd $ find (\(ds, _) -> any (\d -> any (matchingHost d) (srvHost srv)) ds) ss
        in atomicModifyIORef'_ v (add srv <$>)
     addSMP srv s@UserOperatorServers {smpServers} = (s :: UserOperatorServers) {smpServers = srv : smpServers}
     addXFTP srv s@UserOperatorServers {xftpServers} = (s :: UserOperatorServers) {xftpServers = srv : xftpServers}
+    addChatRelay :: [([Text], IORef (f UserOperatorServers))] -> IORef (f UserOperatorServers) -> UserChatRelay -> IO ()
+    addChatRelay ss custom chatRelay =
+      let v = maybe custom snd $ find (\(ds, _) -> any (`elem` domains chatRelay) ds) ss
+       in atomicModifyIORef'_ v (addCRelay <$>)
+      where
+        addCRelay s@UserOperatorServers {chatRelays} = (s :: UserOperatorServers) {chatRelays = chatRelay : chatRelays}
 
 data UserServersError
   = USENoServers {protocol :: AProtocolType, user :: Maybe User}
   | USEStorageMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEProxyMissing {protocol :: AProtocolType, user :: Maybe User}
   | USEDuplicateServer {protocol :: AProtocolType, duplicateServer :: Text, duplicateHost :: TransportHost}
+  | USEDuplicateChatRelayName {duplicateChatRelay :: Text}
+  | USEDuplicateChatRelayAddress {duplicateChatRelay :: Text, duplicateAddress :: ShortLinkContact}
   deriving (Show)
 
-validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> [UserServersError]
-validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
+data UserServersWarning = USWNoChatRelays {user :: Maybe User}
+  deriving (Show)
+
+validateUserServers :: UserServersClass u' => [u'] -> [(User, [UserOperatorServers])] -> ([UserServersError], [UserServersWarning])
+validateUserServers curr others = (currUserErrs <> concatMap otherUserErrs others, currUserWarns <> concatMap otherUserWarns others)
   where
-    currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr
+    currUserErrs = noServersErrs SPSMP Nothing curr <> noServersErrs SPXFTP Nothing curr <> serverErrs SPSMP curr <> serverErrs SPXFTP curr <> chatRelayErrs curr
     otherUserErrs (user, uss) = noServersErrs SPSMP (Just user) uss <> noServersErrs SPXFTP (Just user) uss
     noServersErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> Maybe User -> [u] -> [UserServersError]
     noServersErrs p user uss
@@ -426,7 +495,6 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
       where
         p' = AProtocolType p
         noServers cond = not $ any srvEnabled $ userServers p $ filter cond uss
-        opEnabled = maybe True (\ServerOperator {enabled} -> enabled) . operator'
         hasRole roleSel = maybe True (\op@ServerOperator {enabled} -> enabled && roleSel (operatorRoles p op)) . operator'
         srvEnabled (AUS _ UserServer {deleted, enabled}) = enabled && not deleted
     serverErrs :: (UserServersClass u, ProtocolTypeI p, UserProtocol p) => SProtocolType p -> [u] -> [UserServersError]
@@ -437,13 +505,42 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
         duplicateErr_ (AUS _ srv@UserServer {server}) =
           USEDuplicateServer p' (safeDecodeUtf8 $ strEncode server)
             <$> find (`S.member` duplicateHosts) (srvHost srv)
-        duplicateHosts = snd $ foldl' addHost (S.empty, S.empty) allHosts
+        duplicateHosts = snd $ foldl' addDuplicate (S.empty, S.empty) allHosts
         allHosts = concatMap (\(AUS _ srv) -> L.toList $ srvHost srv) srvs
-        addHost (hs, dups) h
-          | h `S.member` hs = (hs, S.insert h dups)
-          | otherwise = (S.insert h hs, dups)
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
+    chatRelayErrs :: UserServersClass u => [u] -> [UserServersError]
+    chatRelayErrs uss = concatMap duplicateErrs_ cRelays
+      where
+        cRelays = filter (\(AUCR _ UserChatRelay {deleted}) -> not deleted) $ userChatRelays uss
+        duplicateErrs_ (AUCR _ UserChatRelay {name, address}) =
+          [USEDuplicateChatRelayName name | name `elem` duplicateNames]
+            <> [USEDuplicateChatRelayAddress name address | address `elem` duplicateAddresses]
+        duplicateNames = snd $ foldl' addDuplicate (S.empty, S.empty) allNames
+        allNames = map (\(AUCR _ UserChatRelay {name}) -> name) cRelays
+        duplicateAddresses = snd $ foldl' addAddress ([], []) allAddresses
+        allAddresses = map (\(AUCR _ UserChatRelay {address}) -> address) cRelays
+        addAddress :: ([ShortLinkContact], [ShortLinkContact]) -> ShortLinkContact -> ([ShortLinkContact], [ShortLinkContact])
+        addAddress (xs, dups) x
+          | any (sameShortLinkContact x) xs = (xs, x : dups)
+          | otherwise = (x : xs, dups)
+    currUserWarns = noChatRelaysWarns Nothing curr
+    otherUserWarns (user, uss) = noChatRelaysWarns (Just user) uss
+    noChatRelaysWarns :: UserServersClass u => Maybe User -> [u] -> [UserServersWarning]
+    noChatRelaysWarns user uss
+      | noChatRelays opEnabled = [USWNoChatRelays user]
+      | otherwise = []
+      where
+        noChatRelays cond = not $ any relayEnabled $ userChatRelays $ filter cond uss
+        relayEnabled (AUCR _ UserChatRelay {deleted, enabled}) = enabled && not deleted
+    userChatRelays :: UserServersClass u => [u] -> [AUserChatRelay]
+    userChatRelays = map aUserChatRelay' . concatMap chatRelays'
+    opEnabled :: UserServersClass u => u -> Bool
+    opEnabled = maybe True (\ServerOperator {enabled} -> enabled) . operator'
+    addDuplicate :: Ord a => (Set a, Set a) -> a -> (Set a, Set a)
+    addDuplicate (xs, dups) x
+      | x `S.member` xs = (xs, S.insert x dups)
+      | otherwise = (S.insert x xs, dups)
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 
@@ -470,9 +567,21 @@ instance (DBStoredI s, ProtocolTypeI p) => FromJSON (UserServer' s p) where
 instance ProtocolTypeI p => FromJSON (AUserServer p) where
   parseJSON v = (AUS SDBStored <$> parseJSON v) <|> (AUS SDBNew <$> parseJSON v)
 
+instance ToJSON (UserChatRelay' s) where
+  toEncoding = $(JQ.mkToEncoding defaultJSON ''UserChatRelay')
+  toJSON = $(JQ.mkToJSON defaultJSON ''UserChatRelay')
+
+instance DBStoredI s => FromJSON (UserChatRelay' s) where
+  parseJSON = $(JQ.mkParseJSON defaultJSON ''UserChatRelay')
+
+instance FromJSON AUserChatRelay where
+  parseJSON v = (AUCR SDBStored <$> parseJSON v) <|> (AUCR SDBNew <$> parseJSON v)
+
 $(JQ.deriveJSON defaultJSON ''UserOperatorServers)
 
 instance FromJSON UpdatedUserOperatorServers where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''UpdatedUserOperatorServers)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USE") ''UserServersError)
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "USW") ''UserServersWarning)
