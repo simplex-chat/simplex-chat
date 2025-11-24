@@ -10,7 +10,7 @@ m20251117_member_relations_vector :: Text
 m20251117_member_relations_vector =
   T.pack
     [r|
-ALTER TABLE group_members ADD COLUMN index_in_group BIGINT NOT NULL;
+ALTER TABLE group_members ADD COLUMN index_in_group BIGINT NOT NULL DEFAULT 0;
 
 ALTER TABLE groups ADD COLUMN member_index BIGINT NOT NULL DEFAULT 0;
 
