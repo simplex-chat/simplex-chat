@@ -2452,7 +2452,7 @@
     <string name="compose_view_join_group">Entra nel gruppo</string>
     <string name="connect_plan_open_chat">Apri la chat</string>
     <string name="connect_plan_open_new_chat">Apri una chat nuova</string>
-    <string name="connect_plan_open_new_group">Apri un gruppo nuovo</string>
+    <string name="connect_plan_open_new_group">Apri il nuovo gruppo</string>
     <string name="open_to_accept">Apri per accettare</string>
     <string name="open_to_connect">Apri per connettere</string>
     <string name="group_preview_open_to_join">Apri per entrare</string>
