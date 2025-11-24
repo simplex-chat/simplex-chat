@@ -3794,7 +3794,7 @@ Query:
         UPDATE groups
         SET member_index = member_index + 1
         WHERE group_id = ?
-        RETURNING member_index
+        RETURNING member_index - 1
       
 Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)

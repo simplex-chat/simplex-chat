@@ -18,31 +18,31 @@ ALTER TABLE group_members ADD COLUMN member_relations_vector BYTEA;
 
 CREATE INDEX tmp_idx_group_members_group_id_group_member_id ON group_members(group_id, group_member_id);
 
-CREATE TEMPORARY TABLE tmp_members_numbered AS
+CREATE TEMPORARY TABLE tmp_members_indexed AS
 SELECT
   group_member_id,
   ROW_NUMBER() OVER (
     PARTITION BY group_id
     ORDER BY group_member_id ASC
-  ) AS rn
+  ) - 1 AS idx_in_group
 FROM group_members;
 
-CREATE INDEX tmp_idx_members_numbered ON tmp_members_numbered(group_member_id);
+CREATE INDEX tmp_idx_members_indexed ON tmp_members_indexed(group_member_id);
 
 UPDATE group_members AS gm
-SET index_in_group = n.rn
-FROM tmp_members_numbered n
-WHERE n.group_member_id = gm.group_member_id;
+SET index_in_group = tmi.idx_in_group
+FROM tmp_members_indexed tmi
+WHERE tmi.group_member_id = gm.group_member_id;
 
 DROP INDEX tmp_idx_group_members_group_id_group_member_id;
-DROP INDEX tmp_idx_members_numbered;
-DROP TABLE tmp_members_numbered;
+DROP INDEX tmp_idx_members_indexed;
+DROP TABLE tmp_members_indexed;
 
 CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(group_id, index_in_group);
 
 UPDATE groups g
 SET member_index = COALESCE((
-  SELECT MAX(index_in_group)
+  SELECT MAX(index_in_group) + 1
   FROM group_members
   WHERE group_members.group_id = g.group_id
 ), 0);

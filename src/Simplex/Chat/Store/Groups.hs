@@ -462,7 +462,7 @@ getUpdateNextIndexInGroup_ db groupId =
         UPDATE groups
         SET member_index = member_index + 1
         WHERE group_id = ?
-        RETURNING member_index
+        RETURNING member_index - 1
       |]
       (Only groupId)
 
