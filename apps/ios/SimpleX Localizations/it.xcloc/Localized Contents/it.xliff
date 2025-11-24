@@ -5852,9 +5852,9 @@ Richiede l'attivazione della VPN.</target>
         <target>Apri una chat nuova</target>
         <note>new chat action</note>
       </trans-unit>
-      <trans-unit id="Open new group" xml:space="preserve">
+      <trans-unit id="Open new group" xml:space="preserve" approved="no">
         <source>Open new group</source>
-        <target>Apri un gruppo nuovo</target>
+        <target state="translated">Apri il nuovo gruppo</target>
         <note>new chat action</note>
       </trans-unit>
       <trans-unit id="Open to accept" xml:space="preserve">
