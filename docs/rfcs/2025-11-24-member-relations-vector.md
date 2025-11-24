@@ -102,7 +102,7 @@ TBC SQL to set relations vectors based on remaining introductions records.
 
 ### Other considerations
 
-1.
+#### 1. Introductions race - missed introductions
 
 We may have identified race where some pairs of members may never become introduced to each other. It can occur if 2 hosts concurrently invite (announce) and introduce their respective invitees based to their respective local member lists.
 
@@ -126,7 +126,7 @@ This is status quo, this work will not improve it.
 
 We will revert change of admins making decision of introductions lists based purely on member index, which may have made such race more likely. Instead they will determine introductions lists as following: all current members minus already introduced members (see "Avoid duplicate introductions" section).
 
-2.
+#### 2. Double x.grp.mem.con notifications
 
 As alternative to N updates for introduced members, we considered redundant forwarding in multi-admin scenario and modifying user clients (2-stage release) to send x.grp.mem.con notifications to both own host and host of connected member.
 
