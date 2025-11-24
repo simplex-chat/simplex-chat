@@ -96,9 +96,6 @@ xit'' = ifCI xit Hspec.it
 xitMacCI :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
 
-xitMacCI'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
-xitMacCI'' = ifCI (if os == "darwin" then xit else Hspec.it) Hspec.it
-
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
 xdescribe'' = ifCI xdescribe describe
 
