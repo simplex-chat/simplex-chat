@@ -5,43 +5,6 @@ module Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector wh
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- to do list:
--- - directory migration
---   - background process to set member_relations_vector based on group_member_intros
---   - also set member_relations_vector on forward (recipient list for sender is known there)
---   - take member locks when updating member_relations_vector
---   - for duration of migration forwarding operates in 2 modes simultaneously:
---     - if member_relations_vector is set, use it
---     - otherwise, use existing logic based on group_member_intros
---     - new invitees start with member_relations_vector = 0 for all existing (pre) members ->
---       member_relations_vector immediately can be used when new invitee sends
---     - pre members are not updated right away for new invitee, if their member_relations_vector is not set yet,
---       as it will be costly to update them all at once; instead it will be set once background process processes them;
---       also this means group_member_intros have to be maintained for them until then
---     - GroupMember.memberStatusVector is Maybe to make this differentiation
--- - user clients migration
---   - once directory service migrates to new state, member_relations_vector can be updated in db migration
---     as user clients wouldn't have as large group_member_intros
---   - TBC migration SQL
--- - alternative approach for member_relations_vector migration (both directory and user clients):
---   - set to 0 for all existing members right away in sql migration
---     (possibly limit to groups where user is admin or above, otherwise NULL)
---   - means that initially after migration new messages will be forwarded to all members,
---     however they will quickly report connected state via XGrpMemCon -> member_relations_vector will self-adjust
---   - allows for simple migration path, with immediate switch from group_member_intros,
---     avoids complexity of dual-mode forwarding during migration for directory / complex sql migration for user clients
--- - rework forwarding logic to use member_relations_vector:
---   - create new members with correct index_in_group = group's member_index + 1,
---     maintain groups.member_index
---   - when new invitee joins, set member_relations_vector to all 0 for them, update for pre members (set 0 for invitee's seq id)
---   - on XGrpMemCon update bitvectors for sender and referenced member (set 1 for corresponding seq ids)
---   - don't maintain group_member_intros (don't create, update status)
---   - on forwarding, get recipients based on sender's member_relations_vector
---     - for all 0s in bitvector, get members by index_in_group in corresponding positions
--- - second use of group_member_intros is targeted introductions of knocking member to "remaining" members
---   - has to be reworked to not rely on group_member_intros
---   - set MRIntroduced status in member relations vector on first introduction,
---     exclude previously introduced members on second introduction
 m20251117_member_relations_vector :: Query
 m20251117_member_relations_vector =
   [sql|
