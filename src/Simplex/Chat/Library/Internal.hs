@@ -73,6 +73,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (encryptFile, shuffle)
@@ -1024,65 +1025,135 @@ introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember ->
 introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
   forM_ (memberConn m) $ \mConn -> do
     let msg =
-          if (maxVersion (memberChatVRange m) >= groupKnockingVersion)
+          if maxVersion (memberChatVRange m) >= groupKnockingVersion
             then XGrpLinkAcpt GAPendingReview memberRole memberId
             else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
     void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  let rcpModMs = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
+  let rcpModMs = filter introduceMemP modMs
   introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
+  where
+    introduceMemP :: GroupMember -> Bool
+    introduceMemP mem =
+      memberCurrent mem
+        && groupMemberId' mem /= groupMemberId' m
+        && maxVersion (memberChatVRange mem) >= groupKnockingVersion
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToAll vr user gInfo m = do
-  members <- withStore' $ \db -> getGroupMembersForIntroduction db vr user gInfo m
-  let recipients = filter memberCurrent members
-  introduceMember vr user gInfo m recipients Nothing
-
-introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToRemaining vr user gInfo m = do
-  (members, introducedGMIds) <-
-    withStore' $ \db -> (,) <$> getGroupMembersForIntroduction db vr user gInfo m <*> getIntroducedGroupMemberIds db m
-  let recipients = filter (introduceMemP introducedGMIds) members
+introduceToAll vr user gInfo m@GroupMember {relationsVector} = do
+  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  let recipients = filter introduceMemP members
   introduceMember vr user gInfo m recipients Nothing
   where
-    introduceMemP introducedGMIds mem =
-      memberCurrent mem
-        && groupMemberId' mem `notElem` introducedGMIds
-        && groupMemberId' mem /= groupMemberId' m
+    introduceMemP :: GroupMember -> Bool
+    introduceMemP mem = case relationsVector of
+      Nothing ->
+        memberCurrent mem && groupMemberId' mem /= groupMemberId' m
+      Just vec ->
+        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+         in memberCurrent mem
+              && groupMemberId' mem /= groupMemberId' m
+              && indexInGroup mem `notElem` introducedMemsIdxs
+
+introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceToRemaining vr user gInfo m@GroupMember {relationsVector} = do
+  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
+  recipients <- filterRecipients members
+  introduceMember vr user gInfo m recipients Nothing
+  where
+    filterRecipients :: [GroupMember] -> CM [GroupMember]
+    filterRecipients members = case relationsVector of
+      Nothing -> do
+        introducedGMIds <- withStore' $ \db -> getIntroducedGroupMemberIds db m
+        pure $
+          filter
+            ( \mem ->
+                memberCurrent mem
+                  && groupMemberId' mem /= groupMemberId' m
+                  && groupMemberId' mem `notElem` introducedGMIds
+            )
+            members
+      Just vec ->
+        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+         in pure $
+              filter
+                ( \mem ->
+                    memberCurrent mem
+                      && groupMemberId' mem /= groupMemberId' m
+                      && indexInGroup mem `notElem` introducedMemsIdxs
+                )
+                members
 
 introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
-introduceMember vr user gInfo@GroupInfo {groupId} m@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
-  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo gInfo m) msgScope
+introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
+  void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo gInfo toMember) msgScope
   sendIntroductions introduceToMembers
   where
-    sendIntroductions members = do
-      intros <- withStore' $ \db -> createIntroductions db (maxVersion vr) members m
-      shuffledIntros <- liftIO $ shuffleIntros intros
-      if m `supportsVersion` batchSendVersion
+    sendIntroductions reMembers = do
+      -- TODO [relations vector] take member locks/group lock?
+      updateToMemberVector reMembers
+      let (memsWithoutVec, memsWithVec) = partitionReMembers reMembers
+      memsWithousVec' <- withStore' $ \db -> createIntroductions db (maxVersion vr) memsWithoutVec toMember
+      updateReMembersVectors memsWithVec
+      let reMembers' = memsWithousVec' <> map fst memsWithVec
+      shuffledReMembers <- liftIO $ shuffleMembers reMembers'
+      if toMember `supportsVersion` batchSendVersion
         then do
-          let events = map (memberIntro . reMember) shuffledIntros
+          let events = map memberIntro shuffledReMembers
           forM_ (L.nonEmpty events) $ \events' ->
             sendGroupMemberMessages user conn events' groupId
-        else forM_ shuffledIntros $ \intro ->
-          processIntro intro `catchAllErrors` eToView
+        else forM_ shuffledReMembers $ \reMember ->
+          void $ sendDirectMemberMessage conn (memberIntro reMember) groupId
+    updateToMemberVector :: [GroupMember] -> CM ()
+    updateToMemberVector reMembers = do
+      let GroupMember {relationsVector} = toMember
+          vec = fromMaybe (MemberRelationsVector B.empty) relationsVector
+          relations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) reMembers
+          vec' = setMemberRelations relations vec
+      withStore' $ \db -> updateMemberRelationsVector db toMember vec'
+    partitionReMembers :: [GroupMember] -> ([GroupMember], [(GroupMember, MemberRelationsVector)])
+    partitionReMembers =
+      foldr'
+        ( \reMember (withoutVec, withVec) ->
+            case relationsVector reMember of
+              Nothing -> (reMember : withoutVec, withVec)
+              Just vec -> (withoutVec, (reMember, vec) : withVec)
+        )
+        ([], [])
+    -- TODO [relations vector] optimize updates of reMembers vectors
+    updateReMembersVectors :: [(GroupMember, MemberRelationsVector)] -> CM ()
+    updateReMembersVectors memsWithVec = do
+      let GroupMember {indexInGroup} = toMember
+      forM_ memsWithVec $ \(reMember, vec) -> do
+        let vec' = setMemberRelation indexInGroup MRIntroducedTo vec
+        withStore' $ \db -> updateMemberRelationsVector db reMember vec'
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
       let mInfo = memberInfo gInfo reMember
           mRestrictions = memberRestrictions reMember
        in XGrpMemIntro mInfo mRestrictions
-    shuffleIntros :: [GroupMemberIntro] -> IO [GroupMemberIntro]
-    shuffleIntros intros = do
-      let (admins, others) = partition isAdmin intros
+    shuffleMembers :: [GroupMember] -> IO [GroupMember]
+    shuffleMembers reMembers = do
+      let (admins, others) = partition isAdmin reMembers
           (admPics, admNoPics) = partition hasPicture admins
           (othPics, othNoPics) = partition hasPicture others
       mconcat <$> mapM shuffle [admPics, admNoPics, othPics, othNoPics]
       where
-        isAdmin GroupMemberIntro {reMember = GroupMember {memberRole}} = memberRole >= GRAdmin
-        hasPicture GroupMemberIntro {reMember = GroupMember {memberProfile = LocalProfile {image}}} = isJust image
-    processIntro intro@GroupMemberIntro {introId} = do
-      void $ sendDirectMemberMessage conn (memberIntro $ reMember intro) groupId
-      withStore' $ \db -> updateIntroStatus db introId GMIntroSent
+        isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
+        hasPicture GroupMember {memberProfile = LocalProfile {image}} = isJust image
+
+getMemberRelationsIndexes :: (MemberRelation -> Bool) -> MemberRelationsVector -> [Int64]
+getMemberRelationsIndexes p (MemberRelationsVector v) = getRelationsIndexes p v
+{-# INLINE getMemberRelationsIndexes #-}
+
+setMemberRelation :: Int64 -> MemberRelation -> MemberRelationsVector -> MemberRelationsVector
+setMemberRelation i r (MemberRelationsVector v) = MemberRelationsVector $ setRelation i r v
+{-# INLINE setMemberRelation #-}
+
+setMemberRelations :: [(Int64, MemberRelation)] -> MemberRelationsVector -> MemberRelationsVector
+setMemberRelations relations (MemberRelationsVector v) = MemberRelationsVector $ setRelations relations v
+{-# INLINE setMemberRelations #-}
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

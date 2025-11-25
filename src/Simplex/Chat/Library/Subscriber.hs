@@ -62,6 +62,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Description (ValidFileDescription)
@@ -2715,32 +2716,44 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           blocked = mrsBlocked restriction
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> CM ()
-    xGrpMemCon gInfo sendingMember memId = do
-      refMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
-      case (memberCategory sendingMember, memberCategory refMember) of
-        (GCInviteeMember, GCInviteeMember) ->
-          withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
-            Right intro -> inviteeXGrpMemCon intro
-            Left _ ->
+    xGrpMemCon gInfo sendingMem@GroupMember {relationsVector = sendingMemVec} memId = do
+      refMem@GroupMember {relationsVector = refMemVec} <-
+        withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
+      -- TODO [relations vector] take member locks
+      forM_ sendingMemVec $ \vec -> do
+        let vec' = setMemberRelation (indexInGroup refMem) MRConnected vec
+        withStore' $ \db -> updateMemberRelationsVector db sendingMem vec'
+      forM_ refMemVec $ \vec -> do
+        let vec' = setMemberRelation (indexInGroup sendingMem) MRConnected vec
+        withStore' $ \db -> updateMemberRelationsVector db refMem vec'
+      when (isNothing sendingMemVec || isNothing refMemVec) $
+        updateIntroductionRecord sendingMem refMem
+      where
+        updateIntroductionRecord :: GroupMember -> GroupMember -> CM ()
+        updateIntroductionRecord sendingMember refMember =
+          case (memberCategory sendingMember, memberCategory refMember) of
+            (GCInviteeMember, GCInviteeMember) ->
+              withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
+                Right intro -> inviteeXGrpMemCon intro
+                Left _ ->
+                  withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
+                    Right intro -> forwardMemberXGrpMemCon intro
+                    Left _ -> messageWarning "x.grp.mem.con: no introduction"
+            (GCInviteeMember, _) ->
+              withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
+                Right intro -> inviteeXGrpMemCon intro
+                Left _ -> messageWarning "x.grp.mem.con: no introduction"
+            (_, GCInviteeMember) ->
               withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
                 Right intro -> forwardMemberXGrpMemCon intro
-                Left _ -> messageWarning "x.grp.mem.con: no introduction"
-        (GCInviteeMember, _) ->
-          withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
-            Right intro -> inviteeXGrpMemCon intro
-            Left _ -> messageWarning "x.grp.mem.con: no introduction"
-        (_, GCInviteeMember) ->
-          withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
-            Right intro -> forwardMemberXGrpMemCon intro
-            Left _ -> messageWarning "x.grp.mem.con: no introductiosupportn"
-        -- Note: we can allow XGrpMemCon to all member categories if we decide to support broader group forwarding,
-        -- deduplication (see saveGroupRcvMsg, saveGroupFwdRcvMsg) already supports sending XGrpMemCon
-        -- to any forwarding member, not only host/inviting member;
-        -- database would track all members connections then
-        -- (currently it's done via group_member_intros for introduced connections only)
-        _ ->
-          messageWarning "x.grp.mem.con: neither member is invitee"
-      where
+                Left _ -> messageWarning "x.grp.mem.con: no introductiosupportn"
+            -- Note: we can allow XGrpMemCon to all member categories if we decide to support broader group forwarding,
+            -- deduplication (see saveGroupRcvMsg, saveGroupFwdRcvMsg) already supports sending XGrpMemCon
+            -- to any forwarding member, not only host/inviting member;
+            -- database would track all members connections then
+            -- (currently it's done via group_member_intros for introduced connections only)
+            _ ->
+              messageWarning "x.grp.mem.con: neither member is invitee"
         inviteeXGrpMemCon :: GroupMemberIntro -> CM ()
         inviteeXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
           GMIntroReConnected -> updateStatus introId GMIntroConnected
@@ -3265,6 +3278,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                             | otherwise ->
                                 filter memberCurrent <$> getAllIntroducedAndInvited
                           DJSMemberSupport scopeGMId -> do
+                            -- TODO [relations vector] retrieve based on vector
                             -- moderators introduced to this invited member
                             introducedModMs <-
                               if memberCategory sender == GCInviteeMember
@@ -3281,16 +3295,22 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                   Just scopeMem -> pure $ scopeMem : modMs'
                                   _ -> pure modMs'
                           where
-                            getAllIntroducedAndInvited = do
-                              ChatConfig {highlyAvailable} <- asks config
-                              -- members introduced to this invited member
-                              introducedMembers <-
-                                if memberCategory sender == GCInviteeMember
-                                  then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
-                                  else pure []
-                              -- invited members to which this member was introduced
-                              invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
-                              pure $ introducedMembers <> invitedMembers
+                            getAllIntroducedAndInvited =
+                              case relationsVector sender of
+                                Nothing -> do
+                                  ChatConfig {highlyAvailable} <- asks config
+                                  -- members introduced to this invited member
+                                  introducedMembers <-
+                                    if memberCategory sender == GCInviteeMember
+                                      then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
+                                      else pure []
+                                  -- invited members to which this member was introduced
+                                  invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
+                                  -- TODO [relations vector] read connected members; set vector (hot path optimization)
+                                  pure $ introducedMembers <> invitedMembers
+                                Just vec -> do
+                                  let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+                                  withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver msgBody mems =

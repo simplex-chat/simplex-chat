@@ -3,6 +3,7 @@
 module Simplex.Chat.Types.MemberRelations
   ( MemberRelation (..),
     getRelation,
+    getRelationsIndexes,
     setRelation,
     setRelations,
   )
@@ -23,6 +24,7 @@ import Foreign.Storable (peekByteOff, pokeByteOff)
 data MemberRelation
   = MRNew
   | MRIntroduced
+  | MRIntroducedTo
   | MRConnected
   deriving (Eq, Show)
 
@@ -30,13 +32,15 @@ toRelationInt :: MemberRelation -> Word8
 toRelationInt = \case
   MRNew -> 0
   MRIntroduced -> 1
-  MRConnected -> 2
+  MRIntroducedTo -> 2
+  MRConnected -> 3
 
 fromRelationInt :: Word8 -> MemberRelation
 fromRelationInt = \case
   0 -> MRNew
   1 -> MRIntroduced
-  2 -> MRConnected
+  2 -> MRIntroducedTo
+  3 -> MRConnected
   _ -> MRNew
 
 -- | Get the relation status of a member at a given index from the relations vector.
@@ -46,6 +50,9 @@ getRelation i v
   | i < 0 || fromIntegral i >= B.length v = MRNew
   | otherwise = fromRelationInt $ (v `B.index` fromIntegral i) .&. relationMask
 
+-- | Get the indexes of members that satisfy the given relation predicate.
+getRelationsIndexes :: (MemberRelation -> Bool) -> ByteString -> [Int64]
+getRelationsIndexes p v = [i | i <- [0 .. fromIntegral (B.length v) - 1], p (getRelation i v)]
 
 -- | Set the relation status of a member at a given index in the relations vector.
 -- Expands the vector lazily if needed (padding with zeros for 'MRNew' relation).
