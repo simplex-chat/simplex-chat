@@ -2466,7 +2466,7 @@
     <string name="time_to_disappear_is_set_only_for_new_contacts">Az üzeneteltűnési idő csak az új partnerekre vonatkozik.</string>
     <string name="connect_use_incognito_profile">Inkognitóprofil használata</string>
     <string name="v6_4_1_short_address_create">Saját cím létrehozása</string>
-    <string name="v6_4_1_keep_chats_clean_descr">Eltűnő üzenetek engedélyezése alapértelmezetten.</string>
+    <string name="v6_4_1_keep_chats_clean_descr">Eltűnő üzenetek engedélyezése alapértelmezettként.</string>
     <string name="v6_4_1_keep_chats_clean">Tartsa tisztán a csevegéseit</string>
     <string name="v6_4_1_welcome_contacts_descr">Életrajz és üdvözlőüzenet beállítása a profilokhoz.</string>
     <string name="v6_4_1_short_address_share">Saját cím megosztása</string>
