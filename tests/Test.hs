@@ -13,6 +13,7 @@ import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
 import MarkdownTests
+import MemberRelationsTests
 import MessageBatching
 import ProtocolTests
 import OperatorTests
@@ -59,6 +60,7 @@ main = do
 #endif
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
+      describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests

@@ -2487,6 +2487,7 @@ export namespace GroupLinkPlan {
 export interface GroupMember {
   groupMemberId: number // int64
   groupId: number // int64
+  indexInGroup: number // int64
   memberId: string
   memberRole: GroupMemberRole
   memberCategory: GroupMemberCategory
