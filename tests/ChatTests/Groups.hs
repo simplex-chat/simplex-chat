@@ -156,7 +156,7 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
-  fdescribe "group message forwarding" $ do
+  describe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
@@ -5020,7 +5020,7 @@ testGroupMsgForwardReport =
 
 setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding host invitee1 invitee2 = do
-  threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+  threadDelay 1000000 -- delay so member relations don't get overwritten to connected
 
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
@@ -5052,7 +5052,13 @@ setupGroupForwarding host invitee1 invitee2 = do
       |]
       (invitee1Name, invitee2Name)
 
-  -- Update relation vectors to mark members as introduced
+  setupGroupForwardingVectors host invitee1 invitee2
+
+setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwardingVectors host invitee1 invitee2 = do
+  invitee1Name <- userName invitee1
+  invitee2Name <- userName invitee2
+
   void $ withCCTransaction host $ \db -> do
     [(invitee1Index, invitee1Vec)] <- DB.query db
       [sql|
@@ -5095,9 +5101,10 @@ testGroupMsgForwardDeduplicate =
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+      threadDelay 1000000 -- delay so member relations don't get overwritten to connected
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+      setupGroupForwardingVectors alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
