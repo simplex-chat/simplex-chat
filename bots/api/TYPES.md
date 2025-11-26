@@ -2203,6 +2203,7 @@ Known:
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
 - memberStatus: [GroupMemberStatus](#groupmemberstatus)
+- relationsVector: string?
 - memberSettings: [GroupMemberSettings](#groupmembersettings)
 - blockedByAdmin: bool
 - invitedBy: [InvitedBy](#invitedby)
@@ -3348,6 +3349,10 @@ GroupMemberNameNotFound:
 GroupMemberNotFound:
 - type: "groupMemberNotFound"
 - groupMemberId: int64
+
+GroupMemberNotFoundByIndex:
+- type: "groupMemberNotFoundByIndex"
+- groupMemberIndex: int64
 
 GroupHostMemberNotFound:
 - type: "groupHostMemberNotFound"
