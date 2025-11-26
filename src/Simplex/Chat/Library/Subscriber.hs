@@ -2616,13 +2616,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
-              introId <- withStore $ \db -> do
-                GroupMemberIntro {introId} <- getIntroduction db reMember m
-                liftIO $ updateIntroStatus db introId GMIntroInvReceived
-                pure introId
-              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) (Just introId) $
-                withStore' $
-                  \db -> updateIntroStatus db introId GMIntroInvForwarded
+              intro_ <- eitherToMaybe <$> withStore' (\db -> runExceptT $ getIntroduction db reMember m)
+              let introId_ = introId <$> intro_
+              forM_ introId_ $ \introId ->
+                withStore' $ \db -> updateIntroStatus db introId GMIntroInvReceived
+              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) introId_ $
+                forM_ introId_ $ \introId ->
+                  withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
