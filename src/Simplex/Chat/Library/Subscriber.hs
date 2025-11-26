@@ -3277,23 +3277,36 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 filter memberCurrentOrPending <$> getAllIntroducedAndInvited
                             | otherwise ->
                                 filter memberCurrent <$> getAllIntroducedAndInvited
-                          DJSMemberSupport scopeGMId -> do
-                            -- TODO [relations vector] retrieve based on vector
-                            -- moderators introduced to this invited member
-                            introducedModMs <-
-                              if memberCategory sender == GCInviteeMember
-                                then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
-                                else pure []
-                            -- invited moderators to which this member was introduced
-                            invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
-                            let modMs = introducedModMs <> invitedModMs
-                                modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
-                            if scopeGMId == groupMemberId' sender
-                              then pure modMs'
-                              else
-                                withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
-                                  Just scopeMem -> pure $ scopeMem : modMs'
-                                  _ -> pure modMs'
+                          DJSMemberSupport scopeGMId ->
+                            case relationsVector sender of
+                              Nothing -> do
+                                -- moderators introduced to this invited member
+                                introducedModMs <-
+                                  if memberCategory sender == GCInviteeMember
+                                    then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
+                                    else pure []
+                                -- invited moderators to which this member was introduced
+                                invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
+                                let modMs = introducedModMs <> invitedModMs
+                                    modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
+                                if scopeGMId == groupMemberId' sender
+                                  then pure modMs'
+                                  else
+                                    withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
+                                      Just scopeMem -> pure $ scopeMem : modMs'
+                                      _ -> pure modMs'
+                              Just vec -> do
+                                let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+                                mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
+                                let forwardMemP mem@GroupMember {memberRole} =
+                                      memberRole >= GRModerator
+                                        && memberCurrent mem
+                                        && maxVersion (memberChatVRange mem) >= groupKnockingVersion
+                                    forwardMemP' mem =
+                                      if scopeGMId == groupMemberId' sender
+                                        then forwardMemP mem
+                                        else forwardMemP mem || groupMemberId' mem == scopeGMId
+                                pure $ filter forwardMemP' mems
                           where
                             getAllIntroducedAndInvited =
                               case relationsVector sender of
