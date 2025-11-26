@@ -1050,7 +1050,7 @@ introduceToAll vr user gInfo m@GroupMember {relationsVector} = do
       Nothing ->
         memberCurrent mem && groupMemberId' mem /= groupMemberId' m
       Just vec ->
-        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo || r == MRConnected) vec
          in memberCurrent mem
               && groupMemberId' mem /= groupMemberId' m
               && indexInGroup mem `notElem` introducedMemsIdxs
@@ -1074,7 +1074,7 @@ introduceToRemaining vr user gInfo m@GroupMember {relationsVector} = do
             )
             members
       Just vec ->
-        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo || r == MRConnected) vec
          in pure $
               filter
                 ( \mem ->

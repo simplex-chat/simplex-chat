@@ -1771,6 +1771,7 @@ testGroupDelayedModeration ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -1817,6 +1818,7 @@ testGroupDelayedModerationFullDelete ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -5058,7 +5060,10 @@ setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwardingVectors host invitee1 invitee2 = do
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
+  updateGroupForwardingVectors host invitee1Name invitee2Name MRIntroduced
 
+updateGroupForwardingVectors :: TestCC -> String -> String -> MemberRelation -> IO ()
+updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
   void $ withCCTransaction host $ \db -> do
     [(invitee1Index, invitee1Vec)] <- DB.query db
       [sql|
@@ -5075,8 +5080,7 @@ setupGroupForwardingVectors host invitee1 invitee2 = do
       |]
       (Only invitee2Name)
 
-    -- Update invitee1's vector to mark invitee2 as introduced
-    let invitee1Vec' = setMemberRelation invitee2Index MRIntroduced (fromMaybe (MemberRelationsVector B.empty) invitee1Vec)
+    let invitee1Vec' = setMemberRelation invitee2Index relation (fromMaybe (MemberRelationsVector B.empty) invitee1Vec)
     DB.execute db
       [sql|
         UPDATE group_members
@@ -5085,8 +5089,7 @@ setupGroupForwardingVectors host invitee1 invitee2 = do
       |]
       (invitee1Vec', invitee1Name)
 
-    -- Update invitee2's vector to mark invitee1 as introduced
-    let invitee2Vec' = setMemberRelation invitee1Index MRIntroduced (fromMaybe (MemberRelationsVector B.empty) invitee2Vec)
+    let invitee2Vec' = setMemberRelation invitee1Index relation (fromMaybe (MemberRelationsVector B.empty) invitee2Vec)
     DB.execute db
       [sql|
         UPDATE group_members
