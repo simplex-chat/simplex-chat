@@ -2993,6 +2993,7 @@ processChatCommand vr nm = \case
         CLConnection connId -> "Connection " <> tshow connId
         CLContact ctId -> "Contact " <> tshow ctId
         CLGroup gId -> "Group " <> tshow gId
+        CLGroupMember gmId -> "GroupMember " <> tshow gmId
         CLUserContact ucId -> "UserContact " <> tshow ucId
         CLContactRequest crId -> "ContactRequest " <> tshow crId
         CLFile fId -> "File " <> tshow fId
@@ -4191,14 +4192,17 @@ runRelationsVectorMigration = do
         liftIO $ threadDelay' stepDelay
       unless (null gmIds) migrateMembers
       where
-        -- TODO [relations vector] take member lock; check member still has no vector when updating
-        processMember gmId = do
-          introducedRelations <- withStore' $ \db -> getIntroducedRelations db gmId
-          introducedToRelations <- withStore' $ \db -> getIntroducedToRelations db gmId
-          connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db gmId
-          let relations = introducedRelations <> introducedToRelations <> connectedRelations
-              vec = MemberRelationsVector $ setRelations relations B.empty
-          withStore' $ \db -> updateMemberRelationsVector' db gmId vec
+        processMember gmId =
+          withGroupMemberLock "runRelationsVectorMigration" gmId $
+            withStore' (\db -> getMemberRelationsVector_' db gmId) >>= \case
+              Just _ -> pure () -- already has vector
+              Nothing -> do
+                introducedRelations <- withStore' $ \db -> getIntroducedRelations db gmId
+                introducedToRelations <- withStore' $ \db -> getIntroducedToRelations db gmId
+                connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db gmId
+                let relations = introducedRelations <> introducedToRelations <> connectedRelations
+                    vec = MemberRelationsVector $ setRelations relations B.empty
+                withStore' $ \db -> updateMemberRelationsVector' db gmId vec
 
 cleanupManager :: CM ()
 cleanupManager = do

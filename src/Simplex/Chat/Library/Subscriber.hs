@@ -2719,13 +2719,16 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemCon gInfo sendingMem@GroupMember {relationsVector = sendingMemVec} memId = do
       refMem@GroupMember {relationsVector = refMemVec} <-
         withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
-      -- TODO [relations vector] take member locks
-      forM_ sendingMemVec $ \vec -> do
-        let vec' = setMemberRelation (indexInGroup refMem) MRConnected vec
-        withStore' $ \db -> updateMemberRelationsVector db sendingMem vec'
-      forM_ refMemVec $ \vec -> do
-        let vec' = setMemberRelation (indexInGroup sendingMem) MRConnected vec
-        withStore' $ \db -> updateMemberRelationsVector db refMem vec'
+      when (isJust sendingMemVec) $
+        withGroupMemberLock "xGrpMemCon, sending member" (groupMemberId' sendingMem) $ do
+          vec <- withStore $ \db -> getMemberRelationsVector db sendingMem
+          let vec' = setMemberRelation (indexInGroup refMem) MRConnected vec
+          withStore' $ \db -> updateMemberRelationsVector db sendingMem vec'
+      when (isJust refMemVec) $
+        withGroupMemberLock "xGrpMemCon, referenced member" (groupMemberId' refMem) $ do
+          vec <- withStore $ \db -> getMemberRelationsVector db refMem
+          let vec' = setMemberRelation (indexInGroup sendingMem) MRConnected vec
+          withStore' $ \db -> updateMemberRelationsVector db refMem vec'
       when (isNothing sendingMemVec || isNothing refMemVec) $
         updateIntroductionRecord sendingMem refMem
       where
@@ -3310,24 +3313,27 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                           where
                             getAllIntroducedAndInvited =
                               case relationsVector sender of
-                                Nothing -> do
-                                  ChatConfig {highlyAvailable} <- asks config
-                                  -- members introduced to this invited member
-                                  introducedMembers <-
-                                    if memberCategory sender == GCInviteeMember
-                                      then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
-                                      else pure []
-                                  -- invited members to which this member was introduced
-                                  invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
-                                  -- connected member relations (to set vector - hot path optimization)
-                                  connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db (groupMemberId' sender)
-                                  let introducedRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) introducedMembers
-                                      introducedToRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroducedTo)) invitedMembers
-                                      relations = introducedRelations <> introducedToRelations <> connectedRelations
-                                      vec = MemberRelationsVector $ setRelations relations B.empty
-                                  -- TODO [relations vector] take member lock
-                                  withStore' $ \db -> updateMemberRelationsVector db sender vec
-                                  pure $ introducedMembers <> invitedMembers
+                                Nothing ->
+                                  withGroupMemberLock "runDeliveryJobWorker" (groupMemberId' sender) $ do
+                                    ChatConfig {highlyAvailable} <- asks config
+                                    -- members introduced to this invited member
+                                    introducedMembers <-
+                                      if memberCategory sender == GCInviteeMember
+                                        then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
+                                        else pure []
+                                    -- invited members to which this member was introduced
+                                    invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
+                                    withStore' (\db -> getMemberRelationsVector_ db sender) >>= \case
+                                      Just _ -> pure () -- already has vector
+                                      Nothing -> do
+                                        -- connected member relations (relations vector migration hot path optimization)
+                                        connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db (groupMemberId' sender)
+                                        let introducedRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) introducedMembers
+                                            introducedToRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroducedTo)) invitedMembers
+                                            relations = introducedRelations <> introducedToRelations <> connectedRelations
+                                            vec = MemberRelationsVector $ setRelations relations B.empty
+                                        withStore' $ \db -> updateMemberRelationsVector db sender vec
+                                    pure $ introducedMembers <> invitedMembers
                                 Just vec -> do
                                   let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
                                   withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs

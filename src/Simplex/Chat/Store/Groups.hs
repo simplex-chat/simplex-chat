@@ -101,6 +101,9 @@ module Simplex.Chat.Store.Groups
     createIntroductions,
     updateMemberRelationsVector,
     updateMemberRelationsVector',
+    getMemberRelationsVector,
+    getMemberRelationsVector_,
+    getMemberRelationsVector_',
     updateIntroStatus,
     getIntroduction,
     getIntroducedGroupMemberIds,
@@ -1634,6 +1637,32 @@ updateMemberRelationsVector' db groupMemberId relationsVector = do
       WHERE group_member_id = ?
     |]
     (relationsVector, currentTs, groupMemberId)
+
+getMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO MemberRelationsVector
+getMemberRelationsVector db GroupMember {groupMemberId} =
+  ExceptT $
+    firstRow fromOnly (SEMemberRelationsVectorNotFound groupMemberId) $
+      DB.query
+        db
+        [sql|
+          SELECT member_relations_vector
+          FROM group_members
+          WHERE group_member_id = ?
+            AND member_relations_vector IS NOT NULL
+        |]
+        (Only groupMemberId)
+
+getMemberRelationsVector_ :: DB.Connection -> GroupMember -> IO (Maybe MemberRelationsVector)
+getMemberRelationsVector_ db GroupMember {groupMemberId} =
+  getMemberRelationsVector_' db groupMemberId
+
+getMemberRelationsVector_' :: DB.Connection -> GroupMemberId -> IO (Maybe MemberRelationsVector)
+getMemberRelationsVector_' db groupMemberId =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+      (Only groupMemberId)
 
 updateIntroStatus :: DB.Connection -> Int64 -> GroupMemberIntroStatus -> IO ()
 updateIntroStatus db introId introStatus = do

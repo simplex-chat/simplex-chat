@@ -142,6 +142,10 @@ withGroupLock :: Text -> GroupId -> CM a -> CM a
 withGroupLock name = withEntityLock name . CLGroup
 {-# INLINE withGroupLock #-}
 
+withGroupMemberLock :: Text -> GroupMemberId -> CM a -> CM a
+withGroupMemberLock name = withEntityLock name . CLGroupMember
+{-# INLINE withGroupMemberLock #-}
+
 withUserContactLock :: Text -> Int64 -> CM a -> CM a
 withUserContactLock name = withEntityLock name . CLUserContact
 {-# INLINE withUserContactLock #-}
@@ -1091,7 +1095,6 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
   sendIntroductions introduceToMembers
   where
     sendIntroductions reMembers = do
-      -- TODO [relations vector] take member locks/group lock?
       updateToMemberVector reMembers
       let (memsWithoutVec, memsWithVec) = partitionReMembers reMembers
       memsWithousVec' <- withStore' $ \db -> createIntroductions db (maxVersion vr) memsWithoutVec toMember
@@ -1106,12 +1109,12 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
         else forM_ shuffledReMembers $ \reMember ->
           void $ sendDirectMemberMessage conn (memberIntro reMember) groupId
     updateToMemberVector :: [GroupMember] -> CM ()
-    updateToMemberVector reMembers = do
-      let GroupMember {relationsVector} = toMember
-          vec = fromMaybe emptyVector relationsVector
-          relations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) reMembers
-          vec' = setMemberRelations relations vec
-      withStore' $ \db -> updateMemberRelationsVector db toMember vec'
+    updateToMemberVector reMembers =
+      withGroupMemberLock "introduceMember, updateToMemberVector" (groupMemberId' toMember) $ do
+        vec <- fromMaybe emptyVector <$> withStore' (\db -> getMemberRelationsVector_ db toMember)
+        let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) reMembers
+            vec' = setMemberRelations relations vec
+        withStore' $ \db -> updateMemberRelationsVector db toMember vec'
     partitionReMembers :: [GroupMember] -> ([GroupMember], [(GroupMember, MemberRelationsVector)])
     partitionReMembers =
       foldr'
@@ -1121,7 +1124,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
               Just vec -> (withoutVec, (reMember, vec) : withVec)
         )
         ([], [])
-    -- TODO [relations vector] optimize updates of reMembers vectors
+    -- TODO [relations vector] optimize updates of reMembers vectors; take member locks/group lock?
     updateReMembersVectors :: [(GroupMember, MemberRelationsVector)] -> CM ()
     updateReMembersVectors memsWithVec = do
       let GroupMember {indexInGroup} = toMember
