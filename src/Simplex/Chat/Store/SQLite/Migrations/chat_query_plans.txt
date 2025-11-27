@@ -24,10 +24,10 @@ SEARCH contact_requests USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
                   INSERT INTO group_members
-                    ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                    ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                       user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                       peer_chat_min_version, peer_chat_max_version)
-                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -76,10 +76,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
                 INSERT INTO group_members
-                  ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                  ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                     user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at,
                     peer_chat_min_version, peer_chat_max_version)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
               
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -259,17 +259,10 @@ SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_1
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-              INSERT INTO group_member_intros
-                (re_group_member_id, to_group_member_id, intro_status, intro_chat_protocol_version, created_at, updated_at)
-              VALUES (?,?,?,?,?,?)
-            
-Plan:
-
-Query: 
               INSERT INTO group_members
-                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                   user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -300,10 +293,10 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
               INSERT INTO group_members
-                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                   user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -334,10 +327,10 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
               INSERT INTO group_members
-                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                   user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -499,9 +492,9 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -532,10 +525,10 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 
 Query: 
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -998,10 +991,10 @@ Plan:
 
 Query: 
           INSERT INTO group_members
-            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_restriction, invited_by, invited_by_group_member_id,
+            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, member_restriction, invited_by, invited_by_group_member_id,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -1190,24 +1183,6 @@ INDEX 2
 SEARCH c USING INDEX idx_connections_via_contact_uri_hash (user_id=? AND via_contact_uri_hash=?)
 SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cp USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          SELECT 1
-          FROM group_member_intros
-          WHERE
-            (
-              (re_group_member_id = ? AND to_group_member_id = ?) OR
-              (re_group_member_id = ? AND to_group_member_id = ?)
-            )
-            AND intro_status NOT IN (?,?,?)
-          LIMIT 1
-        
-Plan:
-MULTI-INDEX OR
-INDEX 1
-SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
-INDEX 2
-SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
 
 Query: 
           SELECT 1 FROM users
@@ -1456,26 +1431,13 @@ SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH i USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-          SELECT i.re_group_member_id
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.re_group_member_id
-          WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
+          SELECT member_relations_vector
+          FROM group_members
+          WHERE group_member_id = ?
+            AND member_relations_vector IS NOT NULL
         
 Plan:
-SEARCH i USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-          SELECT i.to_group_member_id
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.to_group_member_id
-          WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
-        
-Plan:
-SEARCH i USING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
           SELECT member_status
@@ -1645,10 +1607,10 @@ SEARCH users USING COVERING INDEX sqlite_autoindex_users_1 (contact_id=?)
 
 Query: 
         INSERT INTO group_members
-          ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+          ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       
 Plan:
 SEARCH delivery_jobs USING COVERING INDEX idx_delivery_jobs_single_sender_group_member_id (single_sender_group_member_id=?)
@@ -3459,6 +3421,29 @@ Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+        SELECT g.group_id
+        FROM groups g
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE mu.member_category = ?
+          AND (
+            mu.member_role NOT IN (?,?)
+            OR mu.member_status IN (?,?,?)
+          )
+      
+Plan:
+SCAN mu
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+        SELECT group_member_id
+        FROM group_members
+        WHERE member_relations_vector IS NULL
+        LIMIT 1000
+      
+Plan:
+SCAN group_members
+
+Query: 
         SELECT group_member_id, group_snd_item_status, via_proxy
         FROM group_snd_item_statuses
         WHERE chat_item_id = ?
@@ -3654,14 +3639,6 @@ Query:
       
 Plan:
 SEARCH protocol_servers USING INDEX idx_smp_servers_user_id (user_id=?)
-
-Query: 
-        SELECT to_group_member_id
-        FROM group_member_intros
-        WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)
-       AND intro_chat_protocol_version >= ?
-Plan:
-SEARCH group_member_intros USING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
 
 Query: 
         SELECT usage_conditions_id, conditions_commit, notified_at, created_at
@@ -4745,14 +4722,6 @@ Query:
     
 Plan:
 SEARCH contacts USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-      UPDATE group_member_intros
-      SET intro_status = ?, updated_at = ?
-      WHERE group_member_intro_id = ?
-    
-Plan:
-SEARCH group_member_intros USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE group_members
@@ -6099,10 +6068,6 @@ Plan:
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
 Plan:
 
-Query: SELECT 1 FROM group_member_intros WHERE re_group_member_id = ? AND to_group_member_id = ? LIMIT 1
-Plan:
-SEARCH group_member_intros USING COVERING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
-
 Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
@@ -6301,6 +6266,10 @@ Query: SELECT max(active_order) FROM users
 Plan:
 SEARCH users
 
+Query: SELECT member_relations_vector FROM group_members WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: SELECT member_xcontact_id, member_welcome_shared_msg_id FROM group_members WHERE user_id = ? AND group_id = ? AND group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -6316,10 +6285,6 @@ SEARCH note_folders USING COVERING INDEX note_folders_user_id (user_id=?)
 Query: SELECT quota_err_counter FROM connections WHERE user_id = ? AND connection_id = ?
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?
-Plan:
-SEARCH group_member_intros USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
 
 Query: SELECT sent_inv_queue_info FROM group_members WHERE group_member_id = ? AND user_id = ?
 Plan:
@@ -6540,6 +6505,10 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: UPDATE group_members SET member_relations_vector = ?, updated_at = ? WHERE group_id = ?
+Plan:
+SEARCH group_members USING COVERING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
 Plan:

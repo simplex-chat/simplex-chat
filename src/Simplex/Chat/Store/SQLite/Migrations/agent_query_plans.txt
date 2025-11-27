@@ -1055,10 +1055,6 @@ Plan:
 Query: INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash) VALUES (?,?,?)
 Plan:
 
-Query: SELECT 1 FROM connections WHERE conn_id = ? AND deleted_at_wait_delivery < ? LIMIT 1
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
 Query: SELECT 1 FROM encrypted_rcv_message_hashes WHERE conn_id = ? AND hash = ? LIMIT 1
 Plan:
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=? AND hash=?)
