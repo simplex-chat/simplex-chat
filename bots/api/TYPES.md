@@ -3354,6 +3354,10 @@ GroupMemberNotFoundByIndex:
 - type: "groupMemberNotFoundByIndex"
 - groupMemberIndex: int64
 
+MemberRelationsVectorNotFound:
+- type: "memberRelationsVectorNotFound"
+- groupMemberId: int64
+
 GroupHostMemberNotFound:
 - type: "groupHostMemberNotFound"
 - groupId: int64
