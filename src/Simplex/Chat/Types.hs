@@ -36,6 +36,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -1070,6 +1071,9 @@ instance FromJSON MemberRelationsVector where
 instance ToJSON MemberRelationsVector where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+emptyVector :: MemberRelationsVector
+emptyVector = MemberRelationsVector B.empty
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)

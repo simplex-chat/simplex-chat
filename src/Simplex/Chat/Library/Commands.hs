@@ -82,6 +82,7 @@ import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither, zipWith3')
@@ -167,6 +168,9 @@ startChatController mainApp enableSndFiles = do
   runExceptT (syncConnections' users) >>= \case
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
+  runExceptT migrateMemberRelations >>= \case
+    Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
+    Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -178,6 +182,9 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
+    migrateMemberRelations =
+      when mainApp $
+        void $ forkIO runRelationsVectorMigration
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -4162,6 +4169,36 @@ agentSubscriber = do
         run action = action `catchAllErrors'` (eToView')
 
 type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
+
+runRelationsVectorMigration :: CM ()
+runRelationsVectorMigration = do
+  liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
+  migrateUserNotAdminGroups
+  migrateMembers
+  where
+    stepDelay = 100000 -- 0.1 second
+    migrateUserNotAdminGroups = flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      gIds <- withStore' getUserNotAdminGroupIds
+      forM_ gIds $ \gId -> do
+        withStore' (\db -> setEmptyVectorForGroupId db gId) `catchAllErrors` eToView
+        liftIO $ threadDelay' stepDelay
+    migrateMembers = flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      gmIds <- withStore' getGMsWithoutVectorIds
+      forM_ gmIds $ \gmId -> do
+        processMember gmId `catchAllErrors` eToView
+        liftIO $ threadDelay' stepDelay
+      unless (null gmIds) migrateMembers
+      where
+        -- TODO [relations vector] take member lock; check member still has no vector when updating
+        processMember gmId = do
+          introducedRelations <- withStore' $ \db -> getIntroducedRelations db gmId
+          introducedToRelations <- withStore' $ \db -> getIntroducedToRelations db gmId
+          connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db gmId
+          let relations = introducedRelations <> introducedToRelations <> connectedRelations
+              vec = MemberRelationsVector $ setRelations relations B.empty
+          withStore' $ \db -> updateMemberRelationsVector' db gmId vec
 
 cleanupManager :: CM ()
 cleanupManager = do

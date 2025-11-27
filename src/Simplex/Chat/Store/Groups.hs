@@ -100,6 +100,7 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberRole,
     createIntroductions,
     updateMemberRelationsVector,
+    updateMemberRelationsVector',
     updateIntroStatus,
     getIntroduction,
     getIntroducedGroupMemberIds,
@@ -108,6 +109,9 @@ module Simplex.Chat.Store.Groups
     getForwardInvitedMembers,
     getForwardInvitedModerators,
     getForwardScopeMember,
+    getIntroducedRelations,
+    getIntroducedToRelations,
+    getIntroConnectedRelations,
     createIntroReMember,
     createIntroToMemberContact,
     getMatchingContacts,
@@ -148,6 +152,9 @@ module Simplex.Chat.Store.Groups
     setGroupChatTTL,
     getGroupChatTTL,
     getUserGroupsToExpire,
+    getUserNotAdminGroupIds,
+    setEmptyVectorForGroupId,
+    getGMsWithoutVectorIds,
     updateGroupAlias,
   )
 where
@@ -172,6 +179,7 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -514,12 +522,12 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
+          ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, emptyVector, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
               :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
               :. (minV, maxV)
           )
@@ -533,12 +541,12 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
             db
             [sql|
               INSERT INTO group_members
-                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                   user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
+            ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, emptyVector, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
                 :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, createdAt, createdAt)
                 :. (minV, maxV)
             )
@@ -573,11 +581,11 @@ createPreparedGroup db vr user@User {userId, userContactId} groupProfile busines
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, GRAdmin, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+          ( (groupId, indexInGroup, memberId, GRAdmin, GCHostMember, GSMemAccepted, emptyVector, fromInvitedBy userContactId IBUnknown)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           )
         insertedRowId db
@@ -769,11 +777,11 @@ createGroupViaLink'
             db
             [sql|
               INSERT INTO group_members
-                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                   user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+            ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted, emptyVector, fromInvitedBy userContactId IBUnknown)
                 :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
             )
           insertedRowId db
@@ -1158,12 +1166,12 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
               db
               [sql|
                 INSERT INTO group_members
-                  ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                  ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                     user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at,
                     peer_chat_min_version, peer_chat_max_version)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
               |]
-              ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, invitedByGroupMemberId)
+              ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, emptyVector, fromInvitedBy userContactId IBUser, invitedByGroupMemberId)
                   :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
                   :. (minV, maxV)
               )
@@ -1186,12 +1194,12 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo 
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+          ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, emptyVector, fromInvitedBy userContactId IBUser, groupMemberId' membership)
               :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
               :. (minV, maxV)
           )
@@ -1229,12 +1237,12 @@ createJoiningMember
             db
             [sql|
               INSERT INTO group_members
-                ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                   user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, memberStatus, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+            ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, memberStatus, emptyVector, fromInvitedBy userContactId IBUser, groupMemberId' membership)
                 :. (userId, ldn, Nothing :: (Maybe Int64), profileId, cReqXContactId_, welcomeMsgId_, currentTs, currentTs)
                 :. (minV, maxV)
             )
@@ -1308,12 +1316,12 @@ createBusinessRequestGroup
                 db
                 [sql|
                   INSERT INTO group_members
-                    ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
+                    ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
                       user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                       peer_chat_min_version, peer_chat_max_version)
-                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 |]
-                ( (groupId, indexInGroup, MemberId memId, GRMember, GCInviteeMember, GSMemAccepted, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+                ( (groupId, indexInGroup, MemberId memId, GRMember, GCInviteeMember, GSMemAccepted, emptyVector, fromInvitedBy userContactId IBUser, groupMemberId' membership)
                     :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
                     :. (minV, maxV)
                 )
@@ -1514,12 +1522,12 @@ createNewMember_
         db
         [sql|
           INSERT INTO group_members
-            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_restriction, invited_by, invited_by_group_member_id,
+            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, member_restriction, invited_by, invited_by_group_member_id,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, memRestriction, invitedById, memInvitedByGroupMemberId)
+        ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, emptyVector, memRestriction, invitedById, memInvitedByGroupMemberId)
             :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
             :. (minV, maxV)
         )
@@ -1612,7 +1620,11 @@ createIntroductions db chatV reMembers toMember
               (groupMemberId' toMember, groupMemberId' reMember)
 
 updateMemberRelationsVector :: DB.Connection -> GroupMember -> MemberRelationsVector -> IO ()
-updateMemberRelationsVector db GroupMember {groupMemberId} relationsVector = do
+updateMemberRelationsVector db GroupMember {groupMemberId} relationsVector =
+  updateMemberRelationsVector' db groupMemberId relationsVector
+
+updateMemberRelationsVector' :: DB.Connection -> GroupMemberId -> MemberRelationsVector -> IO ()
+updateMemberRelationsVector' db groupMemberId relationsVector = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1758,6 +1770,58 @@ getForwardScopeMember db vr user GroupMember {groupMemberId = sendingGMId} scope
         |]
         (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
   pure introExists_ $>> (eitherToMaybe <$> runExceptT (getGroupMemberById db vr user scopeGMId))
+
+getIntroducedRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
+getIntroducedRelations db gmId =
+  map ((,MRIntroduced) . fromOnly) <$>
+    DB.query
+      db
+      [sql|
+        SELECT m.index_in_group
+        FROM group_member_intros i
+        JOIN group_members m ON m.group_member_id = i.re_group_member_id
+        WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
+      |]
+      (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+
+getIntroducedToRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
+getIntroducedToRelations db gmId =
+  map ((,MRIntroducedTo) . fromOnly) <$>
+    DB.query
+      db
+      [sql|
+        SELECT m.index_in_group
+        FROM group_member_intros i
+        JOIN group_members m ON m.group_member_id = i.to_group_member_id
+        WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
+      |]
+      (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+
+getIntroConnectedRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
+getIntroConnectedRelations db gmId = do
+  introducedIdxs <-
+    map ((,MRConnected) . fromOnly) <$>
+      DB.query
+        db
+        [sql|
+          SELECT m.index_in_group
+          FROM group_member_intros i
+          JOIN group_members m ON m.group_member_id = i.re_group_member_id
+          WHERE i.to_group_member_id = ? AND i.intro_status IN (?,?,?)
+        |]
+        (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+  invitedIdxs <-
+    map ((,MRConnected) . fromOnly) <$>
+      DB.query
+        db
+        [sql|
+          SELECT m.index_in_group
+          FROM group_member_intros i
+          JOIN group_members m ON m.group_member_id = i.to_group_member_id
+          WHERE i.re_group_member_id = ? AND i.intro_status IN (?,?,?)
+        |]
+        (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
+  pure $ introducedIdxs <> invitedIdxs
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember
@@ -2545,12 +2609,12 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
       db
       [sql|
         INSERT INTO group_members
-          ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
+          ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (groupId, indexInGroup, memberId, GRAuthor, GCPreMember, GSMemUnknown, fromInvitedBy userContactId IBUnknown)
+      ( (groupId, indexInGroup, memberId, GRAuthor, GCPreMember, GSMemUnknown, emptyVector, fromInvitedBy userContactId IBUnknown)
           :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           :. (minV, maxV)
       )
@@ -2647,6 +2711,42 @@ getUserGroupsToExpire db User {userId} globalTTL =
   map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
   where
     cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
+
+getUserNotAdminGroupIds :: DB.Connection -> IO [GroupId]
+getUserNotAdminGroupIds db =
+  map fromOnly <$>
+    DB.query db
+      [sql|
+        SELECT g.group_id
+        FROM groups g
+        JOIN group_members mu ON mu.group_id = g.group_id
+        WHERE mu.member_category = ?
+          AND (
+            mu.member_role NOT IN (?,?)
+            OR mu.member_status IN (?,?,?)
+          )
+      |]
+      (GCUserMember, GRAdmin, GROwner, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
+
+setEmptyVectorForGroupId :: DB.Connection -> GroupId -> IO ()
+setEmptyVectorForGroupId db gId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE group_members SET member_relations_vector = ?, updated_at = ? WHERE group_id = ?"
+    (emptyVector, currentTs, gId)
+
+getGMsWithoutVectorIds :: DB.Connection -> IO [GroupMemberId]
+getGMsWithoutVectorIds db =
+  map fromOnly <$>
+    DB.query_
+      db
+      [sql|
+        SELECT group_member_id
+        FROM group_members
+        WHERE member_relations_vector IS NULL
+        LIMIT 1000
+      |]
 
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
 updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do

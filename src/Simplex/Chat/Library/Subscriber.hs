@@ -3319,7 +3319,14 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                       else pure []
                                   -- invited members to which this member was introduced
                                   invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
-                                  -- TODO [relations vector] read connected members; set vector (hot path optimization)
+                                  -- connected member relations (to set vector - hot path optimization)
+                                  connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db (groupMemberId' sender)
+                                  let introducedRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) introducedMembers
+                                      introducedToRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroducedTo)) invitedMembers
+                                      relations = introducedRelations <> introducedToRelations <> connectedRelations
+                                      vec = MemberRelationsVector $ setRelations relations B.empty
+                                  -- TODO [relations vector] take member lock
+                                  withStore' $ \db -> updateMemberRelationsVector db sender vec
                                   pure $ introducedMembers <> invitedMembers
                                 Just vec -> do
                                   let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec

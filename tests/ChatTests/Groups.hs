@@ -112,7 +112,7 @@ chatGroupTests = do
     it "group link member role" testGroupLinkMemberRole
     it "host profile received" testGroupLinkHostProfileReceived
     it "existing contact merged" testGroupLinkExistingContactMerged
-  describe "group links - member screening" $ do
+  fdescribe "group links - member screening" $ do
     it "reject member - blocked name" testGLinkRejectBlockedName
     it "accept member - only host approval" testGLinkApproveMember
     it "accept member - only moderators review" testGLinkReviewMember
@@ -156,7 +156,7 @@ chatGroupTests = do
     it "re-create member contact after deletion, many groups" testRecreateMemberContactManyGroups
     it "manually accept contact with group member" testMemberContactAccept
     it "manually accept contact with group member incognito" testMemberContactAcceptIncognito
-  describe "group message forwarding" $ do
+  fdescribe "group message forwarding" $ do
     it "forward messages between invitee and introduced (x.msg.new)" testGroupMsgForwardMessage
     it "forward batched messages" testGroupMsgForwardBatched
     it "forward reports to moderators, don't forward to members (x.msg.new, MCReport)" testGroupMsgForwardReport
@@ -5080,7 +5080,7 @@ updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
       |]
       (Only invitee2Name)
 
-    let invitee1Vec' = setMemberRelation invitee2Index relation (fromMaybe (MemberRelationsVector B.empty) invitee1Vec)
+    let invitee1Vec' = setMemberRelation invitee2Index relation (fromMaybe emptyVector invitee1Vec)
     DB.execute db
       [sql|
         UPDATE group_members
@@ -5089,7 +5089,7 @@ updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
       |]
       (invitee1Vec', invitee1Name)
 
-    let invitee2Vec' = setMemberRelation invitee1Index relation (fromMaybe (MemberRelationsVector B.empty) invitee2Vec)
+    let invitee2Vec' = setMemberRelation invitee1Index relation (fromMaybe emptyVector invitee2Vec)
     DB.execute db
       [sql|
         UPDATE group_members

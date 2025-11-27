@@ -1108,7 +1108,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateToMemberVector :: [GroupMember] -> CM ()
     updateToMemberVector reMembers = do
       let GroupMember {relationsVector} = toMember
-          vec = fromMaybe (MemberRelationsVector B.empty) relationsVector
+          vec = fromMaybe emptyVector relationsVector
           relations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) reMembers
           vec' = setMemberRelations relations vec
       withStore' $ \db -> updateMemberRelationsVector db toMember vec'
