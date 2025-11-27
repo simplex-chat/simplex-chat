@@ -19,7 +19,7 @@ Please donate via:
 - BTC: [bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u](bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u)
 - XMR: [8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt](monero:8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt)
 - BCH: [qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg](bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg)
-- ETH/USDT (Ethereum, Arbitrum One): [0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a)
+- ETH/USDT (Ethereum, Arbitrum One): [0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a) ([donate.simplexchat.eth](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a))
 - ZEC: [t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg](zcash:t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg)
 - ZEC shielded: [u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq](zcash:u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq)
 - DOGE: [D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf](dogecoin:D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf)
@@ -30,3 +30,7 @@ Thank you,
 Evgeny
 
 SimpleX Chat founder
+
+## SimpleX Community Vouchers
+
+Please comment on our plan to make SimpleX network sustainable and get a free access pass (an NFT) for early testing: https://simplex.chat/vouchers
