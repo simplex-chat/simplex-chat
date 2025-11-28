@@ -2726,7 +2726,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       when (isNothing sendingMemVec || isNothing refMemVec) $
         updateIntroductionRecord sendingMem refMem
       where
-        updateMemberVector :: String -> GroupMember -> GroupMember -> CM ()
+        updateMemberVector :: Text -> GroupMember -> GroupMember -> CM ()
         updateMemberVector lockName member conMember =
           withGroupMemberLock lockName (groupMemberId' member) $ do
             vec <- withStore $ \db -> getMemberRelationsVector db member
