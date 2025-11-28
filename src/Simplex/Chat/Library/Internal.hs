@@ -1034,11 +1034,11 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
             else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
     void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  let rcpModMs = filter shouldIntrocude modMs
+  let rcpModMs = filter shouldIntroduce modMs
   introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
   where
-    shouldIntrocude :: GroupMember -> Bool
-    shouldIntrocude mem =
+    shouldIntroduce :: GroupMember -> Bool
+    shouldIntroduce mem =
       memberCurrent mem
         && groupMemberId' mem /= groupMemberId' m
         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
@@ -1046,18 +1046,17 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m@GroupMember {relationsVector} = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  let recipients = filter shouldIntrocude members
+  let recipients = filter shouldIntroduce members
   introduceMember vr user gInfo m recipients Nothing
   where
-    shouldIntrocude :: GroupMember -> Bool
-    shouldIntrocude mem = case relationsVector of
+    shouldIntroduce :: GroupMember -> Bool
+    shouldIntroduce mem = case relationsVector of
       Nothing ->
         memberCurrent mem && groupMemberId' mem /= groupMemberId' m
       Just vec ->
-        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo || r == MRConnected) vec
-         in memberCurrent mem
-              && groupMemberId' mem /= groupMemberId' m
-              && indexInGroup mem `notElem` introducedMemsIdxs
+        memberCurrent mem
+          && groupMemberId' mem /= groupMemberId' m
+          && not (wasIntroduced $ getMemberRelation (indexInGroup mem) vec)
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m@GroupMember {relationsVector} = do
@@ -1078,15 +1077,14 @@ introduceToRemaining vr user gInfo m@GroupMember {relationsVector} = do
             )
             members
       Just vec ->
-        let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo || r == MRConnected) vec
-         in pure $
-              filter
-                ( \mem ->
-                    memberCurrent mem
-                      && groupMemberId' mem /= groupMemberId' m
-                      && indexInGroup mem `notElem` introducedMemsIdxs
-                )
-                members
+         pure $
+          filter
+            ( \mem ->
+                memberCurrent mem
+                  && groupMemberId' mem /= groupMemberId' m
+                  && not (wasIntroduced $ getMemberRelation (indexInGroup mem) vec)
+            )
+            members
 
 introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
 introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
@@ -1145,6 +1143,17 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
         hasPicture GroupMember {memberProfile = LocalProfile {image}} = isJust image
+
+wasIntroduced :: MemberRelation -> Bool
+wasIntroduced = \case
+  MRNew -> False
+  MRIntroduced -> True
+  MRIntroducedTo -> True
+  MRConnected -> True
+
+getMemberRelation :: Int64 -> MemberRelationsVector -> MemberRelation
+getMemberRelation i (MemberRelationsVector v) = getRelation i v
+{-# INLINE getMemberRelation #-}
 
 getMemberRelationsIndexes :: (MemberRelation -> Bool) -> MemberRelationsVector -> [Int64]
 getMemberRelationsIndexes p (MemberRelationsVector v) = getRelationsIndexes p v
