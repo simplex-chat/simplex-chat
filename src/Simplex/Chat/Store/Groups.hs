@@ -1053,7 +1053,7 @@ getGroupMembersByIndexes db vr user gInfo indexesInGroup = do
   map (toContactMember vr user) <$>
     DB.query
       db
-      (groupMemberQuery <> " WHERE m.group_id = ? m.index_in_group IN ?")
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ?")
       (groupId, In indexesInGroup)
 #else
   rights <$> mapM (runExceptT . getGroupMemberByIndex db vr user gInfo) indexesInGroup
