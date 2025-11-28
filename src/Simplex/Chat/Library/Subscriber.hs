@@ -3301,15 +3301,15 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Just vec -> do
                                 let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
                                 mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
-                                let forwardMemP mem@GroupMember {memberRole} =
+                                let shouldForward mem@GroupMember {memberRole} =
                                       memberRole >= GRModerator
                                         && memberCurrent mem
                                         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                                    forwardMemP' mem =
+                                    shouldForward' mem =
                                       if scopeGMId == groupMemberId' sender
-                                        then forwardMemP mem
-                                        else forwardMemP mem || groupMemberId' mem == scopeGMId
-                                pure $ filter forwardMemP' mems
+                                        then shouldForward mem
+                                        else shouldForward mem || groupMemberId' mem == scopeGMId
+                                pure $ filter shouldForward' mems
                           where
                             getAllIntroducedAndInvited =
                               case relationsVector sender of
