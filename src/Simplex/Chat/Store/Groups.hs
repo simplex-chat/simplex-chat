@@ -197,7 +197,7 @@ import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>), 
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
@@ -1054,7 +1054,7 @@ getGroupMembersByIndexes db vr user gInfo indexesInGroup = do
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? m.index_in_group IN ?")
-      (groupId, In gmIds)
+      (groupId, In indexesInGroup)
 #else
   rights <$> mapM (runExceptT . getGroupMemberByIndex db vr user gInfo) indexesInGroup
 #endif
