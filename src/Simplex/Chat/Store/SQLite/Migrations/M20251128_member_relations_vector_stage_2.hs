@@ -14,7 +14,6 @@ import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelations)
 -- Register it on DB open before running this migration:
 --
 -- > import Database.SQLite3 (createAggregate)
--- > import Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
 -- >
 -- > createAggregate db "build_relations_vector" (Just 2) [] buildRelationsVectorStep buildRelationsVectorFinal
 -- >   >>= either (throwIO . userError . show) pure
@@ -80,7 +79,7 @@ SET member_relations_vector = COALESCE(
         AND i.intro_status IN ('re-con', 'to-con', 'con')
     )
   ),
-  X''
+  x''
 )
 WHERE member_relations_vector IS NULL;
 |]
