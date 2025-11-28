@@ -184,7 +184,8 @@ startChatController mainApp enableSndFiles = do
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
     migrateMemberRelations =
       when mainApp $
-        void $ forkIO runRelationsVectorMigration
+        whenM (withStore' hasMembersWithoutVector) $
+          void $ forkIO runRelationsVectorMigration
     start s users = do
       a1 <- async agentSubscriber
       a2 <-

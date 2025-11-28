@@ -155,6 +155,7 @@ module Simplex.Chat.Store.Groups
     setGroupChatTTL,
     getGroupChatTTL,
     getUserGroupsToExpire,
+    hasMembersWithoutVector,
     getUserNotAdminGroupIds,
     setEmptyVectorForGroupId,
     getGMsWithoutVectorIds,
@@ -2740,6 +2741,13 @@ getUserGroupsToExpire db User {userId} globalTTL =
   map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
   where
     cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
+
+hasMembersWithoutVector :: DB.Connection -> IO Bool
+hasMembersWithoutVector db =
+  fromOnly . head
+    <$> DB.query_
+      db
+      "SELECT EXISTS (SELECT 1 FROM group_members WHERE member_relations_vector IS NULL LIMIT 1)"
 
 getUserNotAdminGroupIds :: DB.Connection -> IO [GroupId]
 getUserNotAdminGroupIds db =
