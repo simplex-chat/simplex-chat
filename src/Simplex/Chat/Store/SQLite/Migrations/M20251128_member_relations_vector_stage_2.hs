@@ -2,14 +2,13 @@
 
 module Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2 where
 
+import qualified Data.ByteString as B
 import Data.Int (Int64)
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 import Database.SQLite3 (FuncArgs, FuncContext, funcArgInt64, funcResultBlob)
 import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelations)
 
--- TODO [relations vector] drop group_member_intros in the end of migration
---
 -- This migration uses custom aggregate function build_relations_vector(idx, relation).
 -- Register it on DB open before running this migration:
 --
@@ -17,10 +16,8 @@ import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelations)
 -- >
 -- > createAggregate db "build_relations_vector" (Just 2) [] buildRelationsVectorStep buildRelationsVectorFinal
 -- >   >>= either (throwIO . userError . show) pure
---
--- Build member_relations_vector for all members that don't have it yet
--- Vector encoding: byte at index i = relation value for member with index_in_group = i
--- Values: 0 = MRNew, 1 = MRIntroduced, 2 = MRIntroducedTo, 3 = MRConnected
+
+-- Functions below also to be moved near function registration code.
 
 -- | Step function for build_relations_vector aggregate.
 -- Accumulates (idx, relation) pairs.
@@ -31,9 +28,9 @@ buildRelationsVectorStep _ args acc = do
   pure $ (idx, relation) : acc
 
 -- | Final function for build_relations_vector aggregate.
--- Builds the vector from accumulated pairs using optimized setRelations.
+-- Builds the vector from accumulated pairs using setRelations.
 buildRelationsVectorFinal :: FuncContext -> [(Int64, MemberRelation)] -> IO ()
-buildRelationsVectorFinal ctx acc = funcResultBlob ctx $ setRelations acc mempty
+buildRelationsVectorFinal ctx acc = funcResultBlob ctx $ setRelations acc B.empty
 
 toMemberRelation :: Int64 -> MemberRelation
 toMemberRelation = \case
@@ -42,6 +39,11 @@ toMemberRelation = \case
   3 -> MRConnected
   _ -> MRNew
 
+-- TODO [relations vector] drop group_member_intros in the end of migration
+
+-- Build member_relations_vector for all members that don't have it yet
+-- Vector encoding: byte at index i = relation value for member with index_in_group = i
+-- Values: 0 = MRNew, 1 = MRIntroduced, 2 = MRIntroducedTo, 3 = MRConnected
 m20251128_member_relations_vector_stage_2 :: Query
 m20251128_member_relations_vector_stage_2 =
   [sql|
