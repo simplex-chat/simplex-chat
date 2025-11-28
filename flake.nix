@@ -452,6 +452,12 @@
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
                   packages.simplex-chat.flags.client_library = true;
+                  # Determenistic builds
+                  packages.simplex-chat.components.library.ghcOptions = [
+                    "-j1"
+                    "-dinitial-unique=0"
+                    "-dunique-increment=1"
+                  ];
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
@@ -542,6 +548,10 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
+
+                  # Set all files to init timestamp for determenistic zip archive
+                  find $out/_pkg -type f -exec touch -d "1970-01-01 00:00:00 UTC" {} +
+
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
