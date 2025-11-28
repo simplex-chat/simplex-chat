@@ -269,6 +269,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
           Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
+          Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
