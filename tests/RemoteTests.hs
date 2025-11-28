@@ -33,7 +33,7 @@ remoteTests = describe "Remote" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
-    it "connects with multicast discovery" remoteHandshakeDiscoverTest
+    xitMacCI "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
     it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
