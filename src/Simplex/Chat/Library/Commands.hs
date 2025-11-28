@@ -4175,16 +4175,9 @@ type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
 runRelationsVectorMigration :: CM ()
 runRelationsVectorMigration = do
   liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
-  migrateUserNotAdminGroups
   migrateMembers
   where
     stepDelay = 100000 -- 0.1 second
-    migrateUserNotAdminGroups = flip catchAllErrors eToView $ do
-      lift waitChatStartedAndActivated
-      gIds <- withStore' getUserNotAdminGroupIds
-      forM_ gIds $ \gId -> do
-        withStore' (\db -> setEmptyVectorForGroupId db gId) `catchAllErrors` eToView
-        liftIO $ threadDelay' stepDelay
     migrateMembers = flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated
       gmIds <- withStore' getGMsWithoutVectorIds

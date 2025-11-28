@@ -46,6 +46,18 @@ SET member_index = COALESCE((
   FROM group_members
   WHERE group_members.group_id = g.group_id
 ), 0);
+
+UPDATE group_members
+SET member_relations_vector = x''
+WHERE group_id IN (
+  SELECT mu.group_id
+  FROM group_members mu
+  WHERE mu.member_category = 'user'
+    AND (
+      mu.member_role NOT IN (CAST('admin' AS BLOB), CAST('owner' AS BLOB))
+      OR mu.member_status IN ('removed', 'left', 'deleted')
+    )
+);
 |]
 
 down_m20251117_member_relations_vector :: Query

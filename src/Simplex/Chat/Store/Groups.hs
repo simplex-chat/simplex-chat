@@ -156,8 +156,6 @@ module Simplex.Chat.Store.Groups
     getGroupChatTTL,
     getUserGroupsToExpire,
     hasMembersWithoutVector,
-    getUserNotAdminGroupIds,
-    setEmptyVectorForGroupId,
     getGMsWithoutVectorIds,
     updateGroupAlias,
   )
@@ -2748,30 +2746,6 @@ hasMembersWithoutVector db =
     <$> DB.query_
       db
       "SELECT EXISTS (SELECT 1 FROM group_members WHERE member_relations_vector IS NULL LIMIT 1)"
-
-getUserNotAdminGroupIds :: DB.Connection -> IO [GroupId]
-getUserNotAdminGroupIds db =
-  map fromOnly <$>
-    DB.query db
-      [sql|
-        SELECT g.group_id
-        FROM groups g
-        JOIN group_members mu ON mu.group_id = g.group_id
-        WHERE mu.member_category = ?
-          AND (
-            mu.member_role NOT IN (?,?)
-            OR mu.member_status IN (?,?,?)
-          )
-      |]
-      (GCUserMember, GRAdmin, GROwner, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-
-setEmptyVectorForGroupId :: DB.Connection -> GroupId -> IO ()
-setEmptyVectorForGroupId db gId = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    "UPDATE group_members SET member_relations_vector = ?, updated_at = ? WHERE group_id = ?"
-    (emptyVector, currentTs, gId)
 
 getGMsWithoutVectorIds :: DB.Connection -> IO [GroupMemberId]
 getGMsWithoutVectorIds db =
