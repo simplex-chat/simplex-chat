@@ -2720,18 +2720,18 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       refMem@GroupMember {relationsVector = refMemVec} <-
         withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
       when (isJust sendingMemVec) $
-        withGroupMemberLock "xGrpMemCon, sending member" (groupMemberId' sendingMem) $ do
-          vec <- withStore $ \db -> getMemberRelationsVector db sendingMem
-          let vec' = setMemberRelation (indexInGroup refMem) MRConnected vec
-          withStore' $ \db -> updateMemberRelationsVector db sendingMem vec'
+        updateMemberVector "xGrpMemCon, sending member" sendingMem refMem
       when (isJust refMemVec) $
-        withGroupMemberLock "xGrpMemCon, referenced member" (groupMemberId' refMem) $ do
-          vec <- withStore $ \db -> getMemberRelationsVector db refMem
-          let vec' = setMemberRelation (indexInGroup sendingMem) MRConnected vec
-          withStore' $ \db -> updateMemberRelationsVector db refMem vec'
+        updateMemberVector "xGrpMemCon, referenced member" refMem sendingMem
       when (isNothing sendingMemVec || isNothing refMemVec) $
         updateIntroductionRecord sendingMem refMem
       where
+        updateMemberVector :: String -> GroupMember -> GroupMember -> CM ()
+        updateMemberVector lockName member conMember =
+          withGroupMemberLock lockName (groupMemberId' member) $ do
+            vec <- withStore $ \db -> getMemberRelationsVector db member
+            let vec' = setMemberRelation (indexInGroup conMember) MRConnected vec
+            withStore' $ \db -> updateMemberRelationsVector db member vec'
         updateIntroductionRecord :: GroupMember -> GroupMember -> CM ()
         updateIntroductionRecord sendingMember refMember =
           case (memberCategory sendingMember, memberCategory refMember) of
