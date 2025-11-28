@@ -433,12 +433,19 @@ section.cover div.content p {
 .publications-btns {
     position: absolute;
     bottom: 24px;
-    left: 30px;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 12px;
+}
+
+[dir="ltr"] .publications-btns {
+    left: 30px;
+}
+
+[dir="rtl"] .publications-btns {
+    right: 30px;
 }
 
 .publications-btns img {
@@ -456,13 +463,21 @@ section.cover div.content p {
 .security-btns {
     position: absolute;
     bottom: 24px;
-    left: 0;
-    transform: translateX(calc((100vw / 2) - 50%));
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 12px;
+}
+
+[dir="ltr"] .security-btns {
+    left: 0;
+    transform: translateX(calc((100vw / 2) - 50%));
+}
+
+[dir="rtl"] .security-btns {
+    right: 0;
+    transform: translateX(calc(-1 * ((100vw / 2) - 50%)));
 }
 
 .security-btns img {
@@ -473,9 +488,16 @@ section.cover div.content p {
     font-size: 14px !important;
     font-family: 'Manrope', 'GT-Walsheim', sans-serif !important;
     font-weight: 300 !important;
-    text-align: left;
     color: white;
     line-height: 1.2;
+}
+
+[dir="ltr"] .security-audits {
+    text-align: left;
+}
+
+[dir="rtl"] .security-audits {
+    text-align: right;
 }
 
 @media screen and (max-width: 1279px) {
@@ -484,21 +506,33 @@ section.cover div.content p {
         visibility: hidden;
     }
 
-    .security-btns {
+    [dir="ltr"] .security-btns {
         transform: translateX(0);
         left: 16px;
+    }
+
+    [dir="rtl"] .security-btns {
+        transform: translateX(0);
+        right: 16px;
     }
 }
 
 .socials {
     position: absolute;
     bottom: 22px;
-    right: 30px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
     flex-wrap: wrap;
+}
+
+[dir="ltr"] .socials {
+    right: 30px;
+}
+
+[dir="rtl"] .socials {
+    left: 30px;
 }
 
 .socials a img {
@@ -783,6 +817,12 @@ main .section-bg {
     margin-left: auto;
 }
 
+[dir="rtl"] .page-2 .text-container,
+[dir="rtl"] .page-5 .text-container,
+[dir="rtl"] .page-6 .text-container {
+    margin-right: auto;
+}
+
 .page-4 .text-container h2 {
     max-width: calc(var(--sec-vwu)*26) !important;
 }
@@ -927,6 +967,10 @@ main .section-bg {
 
     .roadmap>p:first-child {
         float: left;
+    }
+
+    [dir="rtl"] .roadmap>p:first-child {
+        float: right;
     }
 
     .roadmap p.title span {
