@@ -1034,11 +1034,11 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
             else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
     void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  let rcpModMs = filter introduceMemP modMs
+  let rcpModMs = filter shouldIntrocude modMs
   introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
   where
-    introduceMemP :: GroupMember -> Bool
-    introduceMemP mem =
+    shouldIntrocude :: GroupMember -> Bool
+    shouldIntrocude mem =
       memberCurrent mem
         && groupMemberId' mem /= groupMemberId' m
         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
@@ -1046,11 +1046,11 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m@GroupMember {relationsVector} = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  let recipients = filter introduceMemP members
+  let recipients = filter shouldIntrocude members
   introduceMember vr user gInfo m recipients Nothing
   where
-    introduceMemP :: GroupMember -> Bool
-    introduceMemP mem = case relationsVector of
+    shouldIntrocude :: GroupMember -> Bool
+    shouldIntrocude mem = case relationsVector of
       Nothing ->
         memberCurrent mem && groupMemberId' mem /= groupMemberId' m
       Just vec ->
