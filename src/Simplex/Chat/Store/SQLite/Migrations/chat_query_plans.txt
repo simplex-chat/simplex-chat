@@ -3421,29 +3421,6 @@ Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT g.group_id
-        FROM groups g
-        JOIN group_members mu ON mu.group_id = g.group_id
-        WHERE mu.member_category = ?
-          AND (
-            mu.member_role NOT IN (?,?)
-            OR mu.member_status IN (?,?,?)
-          )
-      
-Plan:
-SCAN mu
-SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT group_member_id
-        FROM group_members
-        WHERE member_relations_vector IS NULL
-        LIMIT 1000
-      
-Plan:
-SCAN group_members
-
-Query: 
         SELECT group_member_id, group_snd_item_status, via_proxy
         FROM group_snd_item_statuses
         WHERE chat_item_id = ?
@@ -6098,6 +6075,12 @@ SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
+Query: SELECT EXISTS (SELECT 1 FROM group_members WHERE member_relations_vector IS NULL LIMIT 1)
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SCAN group_members
+
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_conditions_commit (conditions_commit=? AND server_operator_id=?)
@@ -6505,10 +6488,6 @@ SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE group_members SET member_relations_vector = ?, updated_at = ? WHERE group_id = ?
-Plan:
-SEARCH group_members USING COVERING INDEX idx_group_members_group_id_index_in_group (group_id=?)
 
 Query: UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?
 Plan:
