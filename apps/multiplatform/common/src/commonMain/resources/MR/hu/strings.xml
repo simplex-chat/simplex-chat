@@ -905,7 +905,7 @@
     <string name="custom_time_picker_select">Kijelölés</string>
     <string name="only_you_can_make_calls">Csak Ön tud hívásokat indítani.</string>
     <string name="smp_server_test_secure_queue">Biztonságos várólista</string>
-    <string name="rate_the_app">Értékelje az alkalmazást</string>
+    <string name="rate_the_app">Alkalmazás értékelése</string>
     <string name="share_invitation_link">Egyszer használható meghívó megosztása</string>
     <string name="database_restore_error">Hiba történt az adatbázis visszaállításakor</string>
     <string name="group_members_2">%s és %s</string>
@@ -952,7 +952,7 @@
     <string name="search_verb">Keresés</string>
     <string name="sync_connection_force_question">Újraegyezteti a titkosítást?</string>
     <string name="self_destruct_passcode_enabled">Az önmegsemmisítő jelkód engedélyezve!</string>
-    <string name="v4_2_security_assessment">Biztonsági kiértékelés</string>
+    <string name="v4_2_security_assessment">Biztonsági felmérés</string>
     <string name="color_title">Cím</string>
     <string name="icon_descr_send_message">Üzenet elküldése</string>
     <string name="restore_database">Adatbázismentés visszaállítása</string>
