@@ -496,7 +496,7 @@
     <string name="icon_descr_video_call">видеозвонок</string>
     <string name="icon_descr_audio_call">аудиозвонок</string>
     <!-- Call settings -->
-    <string name="settings_audio_video_calls">Аудио- и видеозвонки</string>
+    <string name="settings_audio_video_calls">Аудио и видеозвонки</string>
     <string name="your_calls">Ваши звонки</string>
     <string name="always_use_relay">Всегда соединяться через relay</string>
     <string name="call_on_lock_screen">Звонки на экране блокировки:</string>
@@ -2217,7 +2217,7 @@
     <string name="operator_conditions_accepted_for_some"><![CDATA[Условия уже приняты для следующих операторов: <b>%s</b>.]]></string>
     <string name="operator_conditions_will_be_applied"><![CDATA[Эти условия также будут применены к: <b>%s</b>.]]></string>
     <string name="operator_in_order_to_use_accept_conditions"><![CDATA[Чтобы использовать серверы оператора <b>%s</b>, примите условия использования.]]></string>
-    <string name="operator_use_for_sending">Для оправки</string>
+    <string name="operator_use_for_sending">Для отправки</string>
     <string name="operator_added_message_servers">Дополнительные серверы сообщений</string>
     <string name="operator_use_for_files">Использовать для файлов</string>
     <string name="operator_open_conditions">Открыть условия</string>
