@@ -1132,9 +1132,9 @@ swipe action</note>
         <target>Прикрепить</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Audio &amp; video calls" xml:space="preserve">
+      <trans-unit id="Audio &amp; video calls" xml:space="preserve" approved="no">
         <source>Audio &amp; video calls</source>
-        <target>Аудио- и видеозвонки</target>
+        <target state="translated">Аудио и видеозвонки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Audio and video calls" xml:space="preserve">
@@ -8409,9 +8409,9 @@ You will be prompted to complete authentication before this feature is enabled.<
         <target>Чтобы показать Ваш скрытый профиль, введите его пароль в поле поиска на странице **Ваши профили чата**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="To send" xml:space="preserve">
+      <trans-unit id="To send" xml:space="preserve" approved="no">
         <source>To send</source>
-        <target>Для оправки</target>
+        <target state="translated">Для отправки</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To send commands you must be connected." xml:space="preserve">
