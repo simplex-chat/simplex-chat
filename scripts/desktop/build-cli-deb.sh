@@ -7,7 +7,7 @@ CLI_VERSION="$1"
 CLI_PATH_TO_BIN="${2:-/out/simplex-chat}"
 BUILD_FOLDER="${3:-/out/deb-build}"
 
-size=$(du -sk "$CLI_PATH_TO_BIN" | awk '{print $1}')
+size=$(stat -c '%s' "$CLI_PATH_TO_BIN" | awk '{printf "%.0f\n", ($1+1023)/1024}')
 arch=$(case "$(uname -m)" in x86_64) printf "amd64" ;; aarch64) printf "arm64" ;; *) printf "unknown" ;; esac)
 package='simplex-chat'
 
