@@ -255,6 +255,12 @@ export class ChatClient {
     throw new ChatCommandError("error creating group", r)
   }
 
+  async apiCreateGroupLink(groupId: number, memberRole: T.GroupMemberRole): Promise<T.GroupLink> {
+    const r = await this.sendChatCmd(CC.APICreateGroupLink.cmdString({groupId, memberRole}))
+    if (r.type === "groupLinkCreated") return r.groupLink
+    throw new ChatCommandError("error creating group link", r)
+  }
+
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
@@ -265,6 +271,12 @@ export class ChatClient {
     const r = await this.sendChatCmd(CC.APIJoinGroup.cmdString({groupId}))
     if (r.type === "userAcceptedGroupSent") return r.groupInfo
     throw new ChatCommandError("error joining group", r)
+  }
+
+  async apiMembersRole(groupId: number, groupMemberIds: number[], memberRole: T.GroupMemberRole): Promise<T.GroupMember[]> {
+    const r = await this.sendChatCmd(CC.APIMembersRole.cmdString({groupId, groupMemberIds, memberRole}))
+    if (r.type === "membersRoleUser") return r.members
+    throw new ChatCommandError("failed to change member role", r)
   }
 
   async apiRemoveMembers(groupId: number, memberIds: number[], withMessages = false): Promise<T.GroupMember[]> {
