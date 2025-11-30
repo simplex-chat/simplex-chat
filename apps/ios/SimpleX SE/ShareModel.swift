@@ -19,11 +19,11 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
-    @Published var chats: [ChatData] = []
+    @Published var chats: [SEChatData] = []
     @Published var profileImages: [ChatInfo.ID: UIImage] = [:]
     @Published var search = ""
     @Published var comment = ""
-    @Published var selected: ChatData?
+    @Published var selected: SEChatData?
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
@@ -60,13 +60,13 @@ class ShareModel: ObservableObject {
         }
     }
 
-    func isProhibited(_ chat: ChatData?) -> Bool {
+    func isProhibited(_ chat: SEChatData?) -> Bool {
         if let chat, let sharedContent {
             sharedContent.prohibited(in: chat, hasSimplexLink: hasSimplexLink)
         } else { false }
     }
 
-    var filteredChats: [ChatData] {
+    var filteredChats: [SEChatData] {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
         : filterChatsToForwardTo(chats: chats)
@@ -253,7 +253,7 @@ class ShareModel: ObservableObject {
         }
     }
     
-    private func fetchChats() -> Result<Array<ChatData>, ErrorAlert> {
+    private func fetchChats() -> Result<Array<SEChatData>, ErrorAlert> {
         do {
             guard let user = try apiGetActiveUser() else {
                 return .failure(
@@ -396,7 +396,7 @@ enum SharedContent {
         }
     }
 
-    func prohibited(in chatData: ChatData, hasSimplexLink: Bool) -> Bool {
+    func prohibited(in chatData: SEChatData, hasSimplexLink: Bool) -> Bool {
         chatData.prohibitedByPref(
             hasSimplexLink: hasSimplexLink,
             isMediaOrFileAttachment: cryptoFile != nil,
