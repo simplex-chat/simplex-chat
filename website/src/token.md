@@ -4,15 +4,19 @@ title: "SimpleX Community Vouchers"
 permalink: "/vouchers/index.html"
 ---
 
-# SimpleX Community Vouchers
+# SimpleX Community Vouchers: Strategy & Vision
 
-Since we started developing the SimpleX network, the app has been downloaded over 1.5 million times.
+Community Vouchers is a new way to support SimpleX communities — to fund decentralized infrastructure your group uses.
 
-We are not just building a messenger. Unlike today's web dominated by big tech platforms, SimpleX is a network where you fully control your online identity, contacts, groups, and content – without ads tracking you or companies mining your data.
+## Why Community Vouchers?
 
-The SimpleX network is designed to be private, secure, decentralized (meaning no single company owns it), and truly owned by its users. That's why we develop it as fully open-source code (anyone can review it or build their own apps and servers).
+Billions of people use online communities — to learn, organize, and share information. But today, nearly all communities depend on large platforms whose business models require surveillance, advertising, lock-in, or data profiling, and cannot provide true ownership or independence.
 
-To make this vision sustainable, we're introducing Community Vouchers in 2026. Think of them as simple prepaid cards for phone calls, but for funding the servers that power your channels and groups.
+We created SimpleX network to change that, so you own your identity, your contacts, and your communities.
+
+SimpleX network is created to be private, secure, decentralized, and not owned by any company. That is why it relies on open protocols and open-source code, allowing anybody to review it or to build their own apps and servers.
+
+Community Vouchers will enable reliable decentralized infrastructure, sustainability, and strategic independence.
 
 **How it will work in simple terms**:
 - Community Vouchers can be purchased using the usual in-app payments (like via Apple or Google Play) or using cryptocurrency, such as Bitcoin or Monero.
