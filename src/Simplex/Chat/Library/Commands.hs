@@ -168,9 +168,9 @@ startChatController mainApp enableSndFiles = do
   runExceptT (syncConnections' users) >>= \case
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
-  runExceptT migrateMemberRelations >>= \case
-    Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
-    Right _ -> pure ()
+  -- runExceptT migrateMemberRelations >>= \case
+  --   Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
+  --   Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)

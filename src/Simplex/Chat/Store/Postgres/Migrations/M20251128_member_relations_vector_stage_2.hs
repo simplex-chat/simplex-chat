@@ -22,7 +22,7 @@ BEGIN
   END IF;
   new_len := GREATEST(length(state), idx + 1);
   IF new_len > length(state) THEN
-    result := state || repeat(E'\\x00', new_len - length(state))::BYTEA;
+    result := state || repeat(E'\x00', new_len - length(state))::BYTEA;
   ELSE
     result := state;
   END IF;
@@ -67,7 +67,7 @@ SET member_relations_vector = COALESCE(
         AND i.intro_status IN ('re-con', 'to-con', 'con')
     ) AS relations
   ),
-  ''::bytea
+  ''::BYTEA
 )
 WHERE member_relations_vector IS NULL;
 |]
