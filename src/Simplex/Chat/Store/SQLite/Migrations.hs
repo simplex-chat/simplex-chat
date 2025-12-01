@@ -290,8 +290,8 @@ schemaMigrations =
     ("20250922_remove_unused_connections", m20250922_remove_unused_connections, Just down_m20250922_remove_unused_connections),
     ("20251007_connections_sync", m20251007_connections_sync, Just down_m20251007_connections_sync),
     ("20251017_chat_tags_cascade", m20251017_chat_tags_cascade, Just down_m20251017_chat_tags_cascade),
-    ("20251117_member_relations_vector", m20251117_member_relations_vector, Just down_m20251117_member_relations_vector)
-    -- ("20251128_member_relations_vector_stage_2", m20251128_member_relations_vector_stage_2, Just down_m20251128_member_relations_vector_stage_2)
+    ("20251117_member_relations_vector", m20251117_member_relations_vector, Just down_m20251117_member_relations_vector),
+    ("20251128_member_relations_vector_stage_2", m20251128_member_relations_vector_stage_2, Just down_m20251128_member_relations_vector_stage_2)
   ]
 
 -- | The list of migrations in ascending order by date
