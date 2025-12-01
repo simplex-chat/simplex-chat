@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 set -eu
 
-export SOURCE_DATE_EPOCH=0
+export SOURCE_DATE_EPOCH=1764547200
 
 CLI_VERSION="$1"
 CLI_PATH_TO_BIN="${2:-/out/simplex-chat}"
