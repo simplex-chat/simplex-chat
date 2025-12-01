@@ -10,7 +10,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- Vector encoding: byte at index i = relation value for member with index_in_group = i.
 -- Values: 0 = MRNew, 1 = MRIntroduced, 2 = MRIntroducedTo, 3 = MRConnected.
 --
--- Relations as mapped in union of introductions:
+-- Relations as mapped in UNION of introductions:
 -- - Introduced: current member is to_group_member_id, status not connected;
 -- - IntroducedTo: current member is re_group_member_id, status not connected;
 -- - Connected: current member is to_group_member_id/re_group_member_id, status connected.
