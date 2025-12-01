@@ -123,6 +123,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
           Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
+          Simplex.Chat.Store.Postgres.Migrations.M20251128_member_relations_vector_stage_2
   else
       exposed-modules:
           Simplex.Chat.Archive
