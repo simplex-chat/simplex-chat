@@ -45,7 +45,7 @@ memberRelationsTests = do
         getRelation 5 vec `shouldBe` MRReConnected
 
       it "ignore reserved bits" $ do
-        let vec = B.pack [0xF9] -- 11111001
+        let vec = B.pack [0xF1] -- reserved=1111, direction=0, status=001
         getRelation 0 vec `shouldBe` MRIntroduced
 
     describe "setRelation" $ do
@@ -93,12 +93,24 @@ memberRelationsTests = do
         vec2 `shouldBe` vec1
         getRelation 0 vec2 `shouldBe` MRIntroduced
 
-      it "preserves reserved bits" $ do
-        let v = B.pack [0xF8] -- 11111000
+      it "preserves reserved bits and direction" $ do
+        let v = B.pack [0xF8] -- reserved=1111, direction=1, status=000
         getRelation 0 v `shouldBe` MRNew
-        let v' = setRelation 0 MRIntroduced v
-        getRelation 0 v' `shouldBe` MRIntroduced
-        B.unpack v' `shouldBe` [0xF9] -- 11111001
+        let v' = setRelation 0 MRConnected v
+        getRelation 0 v' `shouldBe` MRConnected
+        B.unpack v' `shouldBe` [0xFC] -- reserved=1111, direction=1, status=100
+
+    describe "setNewRelation" $ do
+      it "sets new relation with direction" $ do
+        let vec = setNewRelation 0 IDIntroducedTo MRReConnected B.empty
+        getRelation' 0 vec `shouldBe` (IDIntroducedTo, MRReConnected)
+        B.unpack vec `shouldBe` [0x0A] -- direction=1, status=010
+
+      it "preserves reserved bits" $ do
+        let v = B.pack [0xF0] -- reserved=1111, direction=0, status=000
+        let v' = setNewRelation 0 IDIntroducedTo MRConnected v
+        getRelation 0 v' `shouldBe` MRConnected
+        B.unpack v' `shouldBe` [0xFC] -- reserved=1111, direction=1, status=100
 
     describe "setRelations" $ do
       it "returns same vector for empty list" $ do
@@ -169,6 +181,14 @@ memberRelationsTests = do
         getRelation 5 vec3 `shouldBe` MRIntroduced
         getRelation 10 vec3 `shouldBe` MRReConnected
 
+    describe "setNewRelations" $ do
+      it "sets multiple new relations with direction" $ do
+        let updates = [(0, IDIntroduced, MRIntroduced), (1, IDIntroducedTo, MRReConnected)]
+        let vec = setNewRelations updates B.empty
+        getRelation 0 vec `shouldBe` MRIntroduced
+        getRelation 1 vec `shouldBe` MRReConnected
+        B.unpack vec `shouldBe` [0x01, 0x0A] -- [dir=0,status=001], [dir=1,status=010]
+
     describe "edge cases and invariants" $ do
       it "round-trip: set then get returns same value" $ do
         let vec1 = setRelation 42 MRReConnected B.empty
@@ -216,3 +236,55 @@ memberRelationsTests = do
       it "vector length is minimal (lazy expansion)" $ do
         let vec = setRelation 3 MRReConnected B.empty
         B.length vec `shouldBe` 4
+
+      it "setRelation preserves existing direction" $ do
+        let vec1 = setNewRelation 0 IDIntroducedTo MRIntroduced B.empty
+        let vec2 = setRelation 0 MRConnected vec1
+        getRelation 0 vec2 `shouldBe` MRConnected
+        B.unpack vec2 `shouldBe` [0x0C] -- direction=1 preserved, status=100
+
+    describe "setRelationConnected" $ do
+      it "sender: IDIntroduced (invitee); member vector: MRIntroduced -> MRToConnected" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRIntroduced B.empty
+        let vec2 = setRelationConnected IDIntroduced 0 vec1
+        getRelation 0 vec2 `shouldBe` MRToConnected
+
+      it "sender: IDIntroduced (invitee); member vector: MRReConnected -> MRConnected" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRReConnected B.empty
+        let vec2 = setRelationConnected IDIntroduced 0 vec1
+        getRelation 0 vec2 `shouldBe` MRConnected
+
+      it "sender: IDIntroduced (invitee); member vector: MRToConnected -> no change" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRToConnected B.empty
+        let vec2 = setRelationConnected IDIntroduced 0 vec1
+        vec2 `shouldBe` vec1
+
+      it "sender: IDIntroduced (invitee); member vector: MRConnected -> no change" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRConnected B.empty
+        let vec2 = setRelationConnected IDIntroduced 0 vec1
+        vec2 `shouldBe` vec1
+
+      it "sender: IDIntroducedTo (reMember); member vector: MRIntroduced -> MRReConnected" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRIntroduced B.empty
+        let vec2 = setRelationConnected IDIntroducedTo 0 vec1
+        getRelation 0 vec2 `shouldBe` MRReConnected
+
+      it "sender: IDIntroducedTo (reMember); member vector: MRToConnected -> MRConnected" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRToConnected B.empty
+        let vec2 = setRelationConnected IDIntroducedTo 0 vec1
+        getRelation 0 vec2 `shouldBe` MRConnected
+
+      it "sender: IDIntroducedTo (reMember); member vector: MRReConnected -> no change" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRReConnected B.empty
+        let vec2 = setRelationConnected IDIntroducedTo 0 vec1
+        vec2 `shouldBe` vec1
+
+      it "sender: IDIntroducedTo (reMember); member vector: MRConnected -> no change" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRConnected B.empty
+        let vec2 = setRelationConnected IDIntroducedTo 0 vec1
+        vec2 `shouldBe` vec1
+
+      it "setRelationConnected preserves direction when updating" $ do
+        let vec1 = setNewRelation 0 IDIntroduced MRIntroduced B.empty
+        let vec2 = setRelationConnected IDIntroducedTo 0 vec1
+        getRelation' 0 vec2 `shouldBe` (IDIntroduced, MRReConnected)

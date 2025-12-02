@@ -2719,18 +2719,33 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemCon gInfo sendingMem@GroupMember {relationsVector = sendingMemVec} memId = do
       refMem@GroupMember {relationsVector = refMemVec} <-
         withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
+      senderIntroDir <- getSenderIntroDir sendingMem refMem
       when (isJust sendingMemVec) $
-        updateMemberVector "xGrpMemCon, sending member" sendingMem refMem
+        updateMemberVector "xGrpMemCon, sending member" senderIntroDir sendingMem refMem
       when (isJust refMemVec) $
-        updateMemberVector "xGrpMemCon, referenced member" refMem sendingMem
+        updateMemberVector "xGrpMemCon, referenced member" senderIntroDir refMem sendingMem
       when (isNothing sendingMemVec || isNothing refMemVec) $
         updateIntroductionRecord sendingMem refMem
       where
-        updateMemberVector :: Text -> GroupMember -> GroupMember -> CM ()
-        updateMemberVector lockName member conMember =
+        getSenderIntroDir :: GroupMember -> GroupMember -> CM IntroductionDirection
+        getSenderIntroDir sendingMember refMember = case relationsVector sendingMember of
+          Just vec -> pure $ fst $ getMemberRelation' (indexInGroup refMember) vec
+          Nothing -> case (memberCategory sendingMember, memberCategory refMember) of
+            (GCInviteeMember, GCInviteeMember) ->
+              withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
+                Right _ -> pure IDIntroduced
+                Left _ ->
+                  withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
+                    Right _ -> pure IDIntroducedTo
+                    Left _ -> pure IDIntroduced
+            (GCInviteeMember, _) -> pure IDIntroduced
+            (_, GCInviteeMember) -> pure IDIntroducedTo
+            _ -> pure IDIntroduced
+        updateMemberVector :: Text -> IntroductionDirection -> GroupMember -> GroupMember -> CM ()
+        updateMemberVector lockName senderIntroDir member conMember =
           withGroupMemberLock lockName (groupMemberId' member) $ do
             vec <- withStore $ \db -> getMemberRelationsVector db member
-            let vec' = setMemberRelation (indexInGroup conMember) MRConnected vec
+            let vec' = setMemberRelationConnected senderIntroDir (indexInGroup conMember) vec
             withStore' $ \db -> updateMemberRelationsVector db member vec'
         updateIntroductionRecord :: GroupMember -> GroupMember -> CM ()
         updateIntroductionRecord sendingMember refMember =
