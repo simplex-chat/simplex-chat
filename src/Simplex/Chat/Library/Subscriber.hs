@@ -2737,10 +2737,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 Left _ ->
                   withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
                     Right _ -> pure IDIntroducedTo
-                    Left _ -> pure IDIntroduced
+                    Left _ -> pure IDIntroduced -- default to IDIntroduced
             (GCInviteeMember, _) -> pure IDIntroduced
             (_, GCInviteeMember) -> pure IDIntroducedTo
-            _ -> pure IDIntroduced
+            _ -> pure IDIntroduced -- default to IDIntroduced
         updateMemberVector :: Text -> IntroductionDirection -> GroupMember -> GroupMember -> CM ()
         updateMemberVector lockName senderIntroDir member conMember =
           withGroupMemberLock lockName (groupMemberId' member) $ do
