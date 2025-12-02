@@ -23,7 +23,7 @@ You can link your mobile device with desktop to use the same profile remotely, b
 - Most Linux distros: AppImage ([x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-x86_64.AppImage), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-aarch64.AppImage)) or [Flatpak](https://flathub.org/apps/chat.simplex.simplex).
 - Ubuntu 22.04 and Debian-based distros ([x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-aarch64.deb)).
 - Ubuntu 24.04 ([x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-x86_64.deb), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-aarch64.deb)).
-- From Ubuntu Repository [x86_64, aarch64](./APT.md)
+- From Ubuntu Repository [x86_64, aarch64](./CLI.md#ubuntu-repository)
 
 **Mac**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-x86_64.dmg) (Intel), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-aarch64.dmg) (Apple Silicon).
 
