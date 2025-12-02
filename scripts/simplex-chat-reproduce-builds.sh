@@ -20,7 +20,7 @@ package direct-sqlcipher
 
 export DOCKER_BUILDKIT=1
 
-version=${TAG#refs/tags/v}
+version=${TAG#v}
 version=${version%-*}
 
 cleanup() {
