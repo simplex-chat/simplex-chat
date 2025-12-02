@@ -4193,6 +4193,7 @@ runRelationsVectorMigration = do
               Nothing -> do
                 introducedRelations <- withStore' $ \db -> getIntroducedRelations db gmId
                 introducedToRelations <- withStore' $ \db -> getIntroducedToRelations db gmId
+                -- TODO [relations vector] differentiate MRReConnected, MRToConnected, MRConnected
                 connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db gmId
                 let relations = introducedRelations <> introducedToRelations <> connectedRelations
                     vec = MemberRelationsVector $ setRelations relations B.empty

@@ -3299,7 +3299,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                       Just scopeMem -> pure $ scopeMem : modMs'
                                       _ -> pure modMs'
                               Just vec -> do
-                                let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+                                let introducedMemsIdxs = getMemberRelationsIndexes (== MRIntroduced) vec
                                 mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
                                 let shouldForward mem@GroupMember {memberRole} =
                                       memberRole >= GRModerator
@@ -3326,16 +3326,17 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                     withStore' (\db -> getMemberRelationsVector_ db sender) >>= \case
                                       Just _ -> pure () -- already has vector
                                       Nothing -> do
+                                        -- TODO [relations vector] differentiate MRReConnected, MRToConnected, MRConnected
                                         -- connected member relations (relations vector migration hot path optimization)
                                         connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db (groupMemberId' sender)
                                         let introducedRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) introducedMembers
-                                            introducedToRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroducedTo)) invitedMembers
+                                            introducedToRelations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) invitedMembers
                                             relations = introducedRelations <> introducedToRelations <> connectedRelations
                                             vec = MemberRelationsVector $ setRelations relations B.empty
                                         withStore' $ \db -> updateMemberRelationsVector db sender vec
                                     pure $ introducedMembers <> invitedMembers
                                 Just vec -> do
-                                  let introducedMemsIdxs = getMemberRelationsIndexes (\r -> r == MRIntroduced || r == MRIntroducedTo) vec
+                                  let introducedMemsIdxs = getMemberRelationsIndexes (== MRIntroduced) vec
                                   withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()

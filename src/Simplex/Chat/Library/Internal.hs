@@ -1127,7 +1127,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateReMembersVectors memsWithVec = do
       let GroupMember {indexInGroup} = toMember
       forM_ memsWithVec $ \(reMember, vec) -> do
-        let vec' = setMemberRelation indexInGroup MRIntroducedTo vec
+        let vec' = setMemberRelation indexInGroup MRIntroduced vec
         withStore' $ \db -> updateMemberRelationsVector db reMember vec'
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
@@ -1148,7 +1148,8 @@ wasIntroduced :: MemberRelation -> Bool
 wasIntroduced = \case
   MRNew -> False
   MRIntroduced -> True
-  MRIntroducedTo -> True
+  MRReConnected -> True
+  MRToConnected -> True
   MRConnected -> True
 
 getMemberRelation :: Int64 -> MemberRelationsVector -> MemberRelation

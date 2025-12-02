@@ -24,7 +24,8 @@ import Foreign.Storable (peekByteOff, pokeByteOff)
 data MemberRelation
   = MRNew
   | MRIntroduced
-  | MRIntroducedTo
+  | MRReConnected
+  | MRToConnected
   | MRConnected
   deriving (Eq, Show)
 
@@ -32,15 +33,17 @@ toRelationInt :: MemberRelation -> Word8
 toRelationInt = \case
   MRNew -> 0
   MRIntroduced -> 1
-  MRIntroducedTo -> 2
-  MRConnected -> 3
+  MRReConnected -> 2
+  MRToConnected -> 3
+  MRConnected -> 4
 
 fromRelationInt :: Word8 -> MemberRelation
 fromRelationInt = \case
   0 -> MRNew
   1 -> MRIntroduced
-  2 -> MRIntroducedTo
-  3 -> MRConnected
+  2 -> MRReConnected
+  3 -> MRToConnected
+  4 -> MRConnected
   _ -> MRNew
 
 -- | Get the relation status of a member at a given index from the relations vector.
