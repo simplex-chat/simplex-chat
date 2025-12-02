@@ -101,15 +101,6 @@ setRelations relations v = setRelations' [(i, Nothing, r) | (i, r) <- relations]
 
 -- | Set relation to connected state based on sender's direction and current status.
 -- senderIntroDir is the direction from the sending member's vector.
--- State transitions based on senderIntroDir:
--- - IDIntroduced (sender is invitee):
---   - MRReConnected -> MRConnected (reMember already connected)
---   - MRToConnected/MRConnected -> no change
---   - _ (MRNew/MRIntroduced) -> MRToConnected
--- - IDIntroducedTo (sender is reMember):
---   - MRToConnected -> MRConnected (invitee already connected)
---   - MRReConnected/MRConnected -> no change
---   - _ (MRNew/MRIntroduced) -> MRReConnected
 setRelationConnected :: IntroductionDirection -> Int64 -> ByteString -> ByteString
 setRelationConnected senderIntroDir i v =
   case status' of
@@ -118,13 +109,15 @@ setRelationConnected senderIntroDir i v =
   where
     status = getRelation i v
     status' = case senderIntroDir of
+      -- sender is invitee
       IDIntroduced -> case status of
-        MRReConnected -> Just MRConnected
+        MRReConnected -> Just MRConnected -- reMember already connected
         MRToConnected -> Nothing
         MRConnected -> Nothing
         _ -> Just MRToConnected
+      -- sender is reMember
       IDIntroducedTo -> case status of
-        MRToConnected -> Just MRConnected
+        MRToConnected -> Just MRConnected -- invitee already connected
         MRReConnected -> Nothing
         MRConnected -> Nothing
         _ -> Just MRReConnected
