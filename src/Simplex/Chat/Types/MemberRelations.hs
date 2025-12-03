@@ -27,43 +27,43 @@ import Foreign.Ptr (plusPtr)
 import Foreign.Storable (peekByteOff, pokeByteOff)
 
 data IntroductionDirection
-  = IDIntroduced
-  | IDIntroducedTo
+  = IDSubjectIntroduced -- Member described by vector (subject member, vector "owner") is introduced to member referenced in vector
+  | IDReferencedIntroduced -- Member referenced in vector is introduced to subject member
   deriving (Eq, Show)
 
 toIntroductionInt :: IntroductionDirection -> Word8
 toIntroductionInt = \case
-  IDIntroduced -> 0
-  IDIntroducedTo -> 1
+  IDSubjectIntroduced -> 0
+  IDReferencedIntroduced -> 1
 
 fromIntroductionInt :: Word8 -> IntroductionDirection
 fromIntroductionInt = \case
-  0 -> IDIntroduced
-  1 -> IDIntroducedTo
-  _ -> IDIntroduced
+  0 -> IDSubjectIntroduced
+  1 -> IDReferencedIntroduced
+  _ -> IDSubjectIntroduced
 
 data MemberRelation
   = MRNew
   | MRIntroduced
-  | MRReConnected
-  | MRToConnected
-  | MRConnected
-  deriving (Eq, Show)
+  | MRSubjectConnected -- Subject member notified about connection to referenced member
+  | MRReferencedConnected -- Referenced member notified about connection to subject member
+  | MRConnected -- Both members notified about connection
+  deriving (Eq, Ord, Show)
 
 toRelationInt :: MemberRelation -> Word8
 toRelationInt = \case
   MRNew -> 0
   MRIntroduced -> 1
-  MRReConnected -> 2
-  MRToConnected -> 3
+  MRSubjectConnected -> 2
+  MRReferencedConnected -> 3
   MRConnected -> 4
 
 fromRelationInt :: Word8 -> MemberRelation
 fromRelationInt = \case
   0 -> MRNew
   1 -> MRIntroduced
-  2 -> MRReConnected
-  3 -> MRToConnected
+  2 -> MRSubjectConnected
+  3 -> MRReferencedConnected
   4 -> MRConnected
   _ -> MRNew
 
@@ -75,10 +75,10 @@ getRelation :: Int64 -> ByteString -> MemberRelation
 getRelation i v = snd $ getRelation' i v
 
 -- | Get both direction and status of a member at a given index from the relations vector.
--- Returns (IDIntroduced, MRNew) if the vector is not long enough (lazy initialization).
+-- Returns (IDSubjectIntroduced, MRNew) if the vector is not long enough (lazy initialization).
 getRelation' :: Int64 -> ByteString -> (IntroductionDirection, MemberRelation)
 getRelation' i v
-  | i < 0 || fromIntegral i >= B.length v = (IDIntroduced, MRNew)
+  | i < 0 || fromIntegral i >= B.length v = (IDSubjectIntroduced, MRNew)
   | otherwise =
       let b = v `B.index` fromIntegral i
        in (fromIntroductionInt $ (b .&. directionMask) `shiftR` 3, fromRelationInt $ b .&. statusMask)
@@ -99,28 +99,27 @@ setRelation i r v
 setRelations :: [(Int64, MemberRelation)] -> ByteString -> ByteString
 setRelations relations v = setRelations' [(i, Nothing, r) | (i, r) <- relations] v
 
--- | Set relation to connected state based on sender's direction and current status.
--- senderIntroDir is the direction from the sending member's vector.
-setRelationConnected :: IntroductionDirection -> Int64 -> ByteString -> ByteString
-setRelationConnected senderIntroDir i v =
-  case status' of
-    Nothing -> v
-    Just s -> setRelation i s v
+-- | Set relation to connected state based on passed status and current status.
+-- newStatus should be MRSubjectConnected or MRReferencedConnected, otherwise returns vector unchanged.
+-- Logic:
+-- - if newStatus is complementary to oldStatus -> set MRConnected
+-- - if newStatus > oldStatus (by enum order) -> set newStatus
+-- - otherwise don't update
+setRelationConnected :: Int64 -> MemberRelation -> ByteString -> ByteString
+setRelationConnected i newStatus v
+  | newStatus /= MRSubjectConnected && newStatus /= MRReferencedConnected = v
+  | otherwise = case status' of
+      Nothing -> v
+      Just s -> setRelation i s v
   where
-    status = getRelation i v
-    status' = case senderIntroDir of
-      -- sender is invitee
-      IDIntroduced -> case status of
-        MRReConnected -> Just MRConnected -- reMember already connected
-        MRToConnected -> Nothing
-        MRConnected -> Nothing
-        _ -> Just MRToConnected
-      -- sender is reMember
-      IDIntroducedTo -> case status of
-        MRToConnected -> Just MRConnected -- invitee already connected
-        MRReConnected -> Nothing
-        MRConnected -> Nothing
-        _ -> Just MRReConnected
+    oldStatus = getRelation i v
+    status' = case (oldStatus, newStatus) of
+      -- complementary statuses -> MRConnected
+      (MRSubjectConnected, MRReferencedConnected) -> Just MRConnected
+      (MRReferencedConnected, MRSubjectConnected) -> Just MRConnected
+      -- newStatus > oldStatus -> set newStatus
+      _ | newStatus > oldStatus -> Just newStatus
+        | otherwise -> Nothing
 
 -- | Set a new relation with both direction and status at a given index.
 -- Expands the vector lazily if needed.

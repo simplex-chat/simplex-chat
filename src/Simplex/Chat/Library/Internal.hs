@@ -1110,7 +1110,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateToMemberVector reMembers =
       withGroupMemberLock "introduceMember, updateToMemberVector" (groupMemberId' toMember) $ do
         vec <- fromMaybe emptyVector <$> withStore' (\db -> getMemberRelationsVector_ db toMember)
-        let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, IDIntroduced, MRIntroduced)) reMembers
+        let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, IDReferencedIntroduced, MRIntroduced)) reMembers
             vec' = setNewMemberRelations relations vec
         withStore' $ \db -> updateMemberRelationsVector db toMember vec'
     partitionReMembers :: [GroupMember] -> ([GroupMember], [(GroupMember, MemberRelationsVector)])
@@ -1127,7 +1127,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateReMembersVectors memsWithVec = do
       let GroupMember {indexInGroup} = toMember
       forM_ memsWithVec $ \(reMember, vec) -> do
-        let vec' = setNewMemberRelation indexInGroup IDIntroducedTo MRIntroduced vec
+        let vec' = setNewMemberRelation indexInGroup IDSubjectIntroduced MRIntroduced vec
         withStore' $ \db -> updateMemberRelationsVector db reMember vec'
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
@@ -1148,17 +1148,13 @@ wasIntroduced :: MemberRelation -> Bool
 wasIntroduced = \case
   MRNew -> False
   MRIntroduced -> True
-  MRReConnected -> True
-  MRToConnected -> True
+  MRSubjectConnected -> True
+  MRReferencedConnected -> True
   MRConnected -> True
 
 getMemberRelation :: Int64 -> MemberRelationsVector -> MemberRelation
 getMemberRelation i (MemberRelationsVector v) = getRelation i v
 {-# INLINE getMemberRelation #-}
-
-getMemberRelation' :: Int64 -> MemberRelationsVector -> (IntroductionDirection, MemberRelation)
-getMemberRelation' i (MemberRelationsVector v) = getRelation' i v
-{-# INLINE getMemberRelation' #-}
 
 getMemberRelationsIndexes :: (MemberRelation -> Bool) -> MemberRelationsVector -> [Int64]
 getMemberRelationsIndexes p (MemberRelationsVector v) = getRelationsIndexes p v
@@ -1176,8 +1172,8 @@ setNewMemberRelations :: [(Int64, IntroductionDirection, MemberRelation)] -> Mem
 setNewMemberRelations relations (MemberRelationsVector v) = MemberRelationsVector $ setNewRelations relations v
 {-# INLINE setNewMemberRelations #-}
 
-setMemberRelationConnected :: IntroductionDirection -> Int64 -> MemberRelationsVector -> MemberRelationsVector
-setMemberRelationConnected senderIntroDir i (MemberRelationsVector v) = MemberRelationsVector $ setRelationConnected senderIntroDir i v
+setMemberRelationConnected :: Int64 -> MemberRelation -> MemberRelationsVector -> MemberRelationsVector
+setMemberRelationConnected i newStatus (MemberRelationsVector v) = MemberRelationsVector $ setRelationConnected i newStatus v
 {-# INLINE setMemberRelationConnected #-}
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
