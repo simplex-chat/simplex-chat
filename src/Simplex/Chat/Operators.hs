@@ -63,9 +63,8 @@ previousConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
 
 usageConditionsText :: Text
 usageConditionsText =
-  $( do
-       let bs = $(embedFile "PRIVACY.md")
-       [| stripFrontMatter (safeDecodeUtf8 bs) |]
+  $( let s = $(embedFile "PRIVACY.md")
+      in [|stripFrontMatter $(lift (safeDecodeUtf8 s))|]
    )
 
 data OperatorTag = OTSimplex | OTFlux
