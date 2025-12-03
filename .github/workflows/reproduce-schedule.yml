@@ -9,9 +9,6 @@ jobs:
   reproduce:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
-
       - name: Get latest release
         shell: bash
         run: |
@@ -22,6 +19,11 @@ jobs:
                2>/dev/null | \
           grep -i "tag_name" | \
           awk -F \" '{print "TAG="$4}' >> $GITHUB_ENV
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          ref: ${{ env.TAG }}
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
