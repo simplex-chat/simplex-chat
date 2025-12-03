@@ -26,22 +26,19 @@ m20251128_member_relations_vector_stage_2 :: Query
 m20251128_member_relations_vector_stage_2 =
   [sql|
 UPDATE group_members
-SET member_relations_vector = COALESCE(
-  (
-    SELECT migrate_relations_vector(idx, direction, intro_status)
-    FROM (
-      SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
-      FROM group_member_intros i
-      JOIN group_members m ON m.group_member_id = i.to_group_member_id
-      WHERE i.re_group_member_id = group_members.group_member_id
-      UNION ALL
-      SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
-      FROM group_member_intros i
-      JOIN group_members m ON m.group_member_id = i.re_group_member_id
-      WHERE i.to_group_member_id = group_members.group_member_id
-    )
-  ),
-  x''
+SET member_relations_vector = (
+  SELECT migrate_relations_vector(idx, direction, intro_status)
+  FROM (
+    SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
+    FROM group_member_intros i
+    JOIN group_members m ON m.group_member_id = i.to_group_member_id
+    WHERE i.re_group_member_id = group_members.group_member_id
+    UNION ALL
+    SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
+    FROM group_member_intros i
+    JOIN group_members m ON m.group_member_id = i.re_group_member_id
+    WHERE i.to_group_member_id = group_members.group_member_id
+  )
 )
 WHERE member_relations_vector IS NULL;
 |]
