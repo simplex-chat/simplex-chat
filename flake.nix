@@ -41,14 +41,29 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [
-        ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
-          # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
-          # on pretty much all unix platforms, but then blows up on windows m(
-          packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-        })
-        ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
-          packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-        })] ++ extra-modules;
+          ({ pkgs, lib, config, ... }:
+            {
+              # Override ghcOptions for ALL packages
+              ghcOptions = lib.mkDefault [
+                "-optl-Wl,--build-id=none"
+                "-optl-Wl,--sort-common"
+                "-optc-fdebug-prefix-map=/=."
+                "-j1"
+                "-dinitial-unique=8388608"
+                "-dunique-increment=-1"
+              ];
+            }
+          )
+
+          ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
+            # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
+            # on pretty much all unix platforms, but then blows up on windows m(
+            packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
+          })
+
+          ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
+            packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
+          })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
@@ -452,12 +467,6 @@
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
                   packages.simplex-chat.flags.client_library = true;
-                  # Determenistic builds
-                  packages.simplex-chat.components.library.ghcOptions = [
-                    "-j1"
-                    "-dinitial-unique=0"
-                    "-dunique-increment=1"
-                  ];
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
@@ -483,6 +492,12 @@
                   # "-debug"
                   "-optl-lffi"
                   "-optl-Wl,-z,max-page-size=16384"
+                  "-optl-Wl,--build-id=none"
+                  "-optl-Wl,--sort-common"
+                  "-optc-fdebug-prefix-map=/=."
+                  "-j1"
+                  "-dinitial-unique=8388608"
+                  "-dunique-increment=-1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -549,10 +564,12 @@
 
                   ${pkgs.tree}/bin/tree $out/_pkg
 
-                  # Set all files to init timestamp for determenistic zip archive
-                  find $out/_pkg -type f -exec touch -d "1970-01-01 00:00:00 UTC" {} +
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@0' {} +
 
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-aarch64-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
