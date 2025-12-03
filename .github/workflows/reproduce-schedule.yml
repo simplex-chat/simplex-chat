@@ -24,6 +24,7 @@ jobs:
         uses: actions/checkout@v3
         with:
           ref: ${{ env.TAG }}
+          repository: simplex-chat/simplex-chat
 
       # Otherwise we run out of disk space with Docker build
       - name: Free disk space
