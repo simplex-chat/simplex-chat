@@ -1814,7 +1814,7 @@ getIntroducedRelations db gmId =
 
 getIntroducedToRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
 getIntroducedToRelations db gmId =
-  map ((,MRIntroducedTo) . fromOnly) <$>
+  map ((,MRIntroduced) . fromOnly) <$>
     DB.query
       db
       [sql|

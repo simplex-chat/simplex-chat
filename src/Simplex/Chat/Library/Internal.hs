@@ -1110,8 +1110,8 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateToMemberVector reMembers =
       withGroupMemberLock "introduceMember, updateToMemberVector" (groupMemberId' toMember) $ do
         vec <- fromMaybe emptyVector <$> withStore' (\db -> getMemberRelationsVector_ db toMember)
-        let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, MRIntroduced)) reMembers
-            vec' = setMemberRelations relations vec
+        let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, IDReferencedIntroduced, MRIntroduced)) reMembers
+            vec' = setNewMemberRelations relations vec
         withStore' $ \db -> updateMemberRelationsVector db toMember vec'
     partitionReMembers :: [GroupMember] -> ([GroupMember], [(GroupMember, MemberRelationsVector)])
     partitionReMembers =
@@ -1127,7 +1127,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateReMembersVectors memsWithVec = do
       let GroupMember {indexInGroup} = toMember
       forM_ memsWithVec $ \(reMember, vec) -> do
-        let vec' = setMemberRelation indexInGroup MRIntroducedTo vec
+        let vec' = setNewMemberRelation indexInGroup IDSubjectIntroduced MRIntroduced vec
         withStore' $ \db -> updateMemberRelationsVector db reMember vec'
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
@@ -1148,7 +1148,8 @@ wasIntroduced :: MemberRelation -> Bool
 wasIntroduced = \case
   MRNew -> False
   MRIntroduced -> True
-  MRIntroducedTo -> True
+  MRSubjectConnected -> True
+  MRReferencedConnected -> True
   MRConnected -> True
 
 getMemberRelation :: Int64 -> MemberRelationsVector -> MemberRelation
@@ -1163,9 +1164,17 @@ setMemberRelation :: Int64 -> MemberRelation -> MemberRelationsVector -> MemberR
 setMemberRelation i r (MemberRelationsVector v) = MemberRelationsVector $ setRelation i r v
 {-# INLINE setMemberRelation #-}
 
-setMemberRelations :: [(Int64, MemberRelation)] -> MemberRelationsVector -> MemberRelationsVector
-setMemberRelations relations (MemberRelationsVector v) = MemberRelationsVector $ setRelations relations v
-{-# INLINE setMemberRelations #-}
+setNewMemberRelation :: Int64 -> IntroductionDirection -> MemberRelation -> MemberRelationsVector -> MemberRelationsVector
+setNewMemberRelation i dir r (MemberRelationsVector v) = MemberRelationsVector $ setNewRelation i dir r v
+{-# INLINE setNewMemberRelation #-}
+
+setNewMemberRelations :: [(Int64, IntroductionDirection, MemberRelation)] -> MemberRelationsVector -> MemberRelationsVector
+setNewMemberRelations relations (MemberRelationsVector v) = MemberRelationsVector $ setNewRelations relations v
+{-# INLINE setNewMemberRelations #-}
+
+setMemberRelationConnected :: Int64 -> MemberRelation -> MemberRelationsVector -> MemberRelationsVector
+setMemberRelationConnected i newStatus (MemberRelationsVector v) = MemberRelationsVector $ setRelationConnected i newStatus v
+{-# INLINE setMemberRelationConnected #-}
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
