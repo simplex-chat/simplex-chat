@@ -1663,7 +1663,7 @@ migrateMemberRelationsVector' db groupMemberId = do
               FROM group_member_intros i
               JOIN group_members m ON m.group_member_id = i.re_group_member_id
               WHERE i.to_group_member_id = group_members.group_member_id
-            )
+            ) AS relations
           ),
           updated_at = ?
         WHERE group_member_id = ?
