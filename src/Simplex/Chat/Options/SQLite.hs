@@ -11,7 +11,7 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Options.Applicative
-import Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
+import Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
 import Simplex.Messaging.Agent.Store.SQLite.Common (SQLiteFuncDef (..), SQLiteFuncPtrs (..))
 import Simplex.Messaging.Agent.Store.SQLite.DB (TrackQueries (..))

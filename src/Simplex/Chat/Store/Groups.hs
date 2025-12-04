@@ -101,20 +101,17 @@ module Simplex.Chat.Store.Groups
     createIntroductions,
     updateMemberRelationsVector,
     updateMemberRelationsVector',
+    migrateMemberRelationsVector,
+    migrateMemberRelationsVector',
     getMemberRelationsVector,
     getMemberRelationsVector_,
     getMemberRelationsVector_',
     updateIntroStatus,
     getIntroduction,
     getIntroducedGroupMemberIds,
-    getForwardIntroducedMembers,
     getForwardIntroducedModerators,
-    getForwardInvitedMembers,
     getForwardInvitedModerators,
     getForwardScopeMember,
-    getIntroducedRelations,
-    getIntroducedToRelations,
-    getIntroConnectedRelations,
     createIntroReMember,
     createIntroToMemberContact,
     getMatchingContacts,
@@ -181,7 +178,6 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -1637,6 +1633,44 @@ updateMemberRelationsVector' db groupMemberId relationsVector = do
     |]
     (relationsVector, currentTs, groupMemberId)
 
+migrateMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO MemberRelationsVector
+migrateMemberRelationsVector db GroupMember {groupMemberId} = do
+  liftIO $ migrateMemberRelationsVector' db groupMemberId
+  ExceptT . firstRow fromOnly (SEGroupMemberNotFound groupMemberId) $
+    DB.query
+      db
+      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+      (Only groupMemberId)
+
+migrateMemberRelationsVector' :: DB.Connection -> GroupMemberId -> IO ()
+migrateMemberRelationsVector' db groupMemberId = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET
+          member_relations_vector = (
+            SELECT migrate_relations_vector(idx, direction, intro_status)
+            FROM (
+              SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
+              FROM group_member_intros i
+              JOIN group_members m ON m.group_member_id = i.to_group_member_id
+              WHERE i.re_group_member_id = group_members.group_member_id
+              UNION ALL
+              SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
+              FROM group_member_intros i
+              JOIN group_members m ON m.group_member_id = i.re_group_member_id
+              WHERE i.to_group_member_id = group_members.group_member_id
+            )
+          ),
+          updated_at = ?
+        WHERE group_member_id = ?
+          AND member_relations_vector IS NULL
+      |]
+      (currentTs, groupMemberId)
+
 getMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO MemberRelationsVector
 getMemberRelationsVector db GroupMember {groupMemberId} =
   ExceptT $
@@ -1699,28 +1733,6 @@ getIntroducedGroupMemberIds db invitee =
       "SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?"
       (Only $ groupMemberId' invitee)
 
-getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
-getForwardIntroducedMembers db vr user invitee highlyAvailable = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' invitee
-    query
-      | highlyAvailable = DB.query db q (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-      | otherwise =
-          DB.query
-            db
-            (q <> " AND intro_chat_protocol_version >= ?")
-            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, groupForwardVersion)
-    q =
-      [sql|
-        SELECT re_group_member_id
-        FROM group_member_intros
-        WHERE to_group_member_id = ? AND intro_status NOT IN (?,?,?)
-      |]
-
--- for support scope we don't need to filter by intro_chat_protocol_version for non highly available client,
--- as we will filter moderators supporting this feature by a higher version (as opposed to getForwardIntroducedMembers)
 getForwardIntroducedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
 getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
   memberIds <- map fromOnly <$> query
@@ -1739,28 +1751,6 @@ getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
         |]
         (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
 
-getForwardInvitedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
-getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' forwardMember
-    query
-      | highlyAvailable = DB.query db q (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-      | otherwise =
-          DB.query
-            db
-            (q <> " AND intro_chat_protocol_version >= ?")
-            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, groupForwardVersion)
-    q =
-      [sql|
-        SELECT to_group_member_id
-        FROM group_member_intros
-        WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)
-      |]
-
--- for support scope we don't need to filter by intro_chat_protocol_version for non highly available client,
--- as we will filter moderators supporting this feature by a higher version (as opposed to getForwardInvitedMembers)
 getForwardInvitedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
 getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
   memberIds <- map fromOnly <$> query
@@ -1798,58 +1788,6 @@ getForwardScopeMember db vr user GroupMember {groupMemberId = sendingGMId} scope
         |]
         (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
   pure introExists_ $>> (eitherToMaybe <$> runExceptT (getGroupMemberById db vr user scopeGMId))
-
-getIntroducedRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
-getIntroducedRelations db gmId =
-  map ((,MRIntroduced) . fromOnly) <$>
-    DB.query
-      db
-      [sql|
-        SELECT m.index_in_group
-        FROM group_member_intros i
-        JOIN group_members m ON m.group_member_id = i.re_group_member_id
-        WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-      |]
-      (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-
-getIntroducedToRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
-getIntroducedToRelations db gmId =
-  map ((,MRIntroduced) . fromOnly) <$>
-    DB.query
-      db
-      [sql|
-        SELECT m.index_in_group
-        FROM group_member_intros i
-        JOIN group_members m ON m.group_member_id = i.to_group_member_id
-        WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-      |]
-      (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-
-getIntroConnectedRelations :: DB.Connection -> GroupMemberId -> IO [(Int64, MemberRelation)]
-getIntroConnectedRelations db gmId = do
-  introducedIdxs <-
-    map ((,MRConnected) . fromOnly) <$>
-      DB.query
-        db
-        [sql|
-          SELECT m.index_in_group
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.re_group_member_id
-          WHERE i.to_group_member_id = ? AND i.intro_status IN (?,?,?)
-        |]
-        (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-  invitedIdxs <-
-    map ((,MRConnected) . fromOnly) <$>
-      DB.query
-        db
-        [sql|
-          SELECT m.index_in_group
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.to_group_member_id
-          WHERE i.re_group_member_id = ? AND i.intro_status IN (?,?,?)
-        |]
-        (gmId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-  pure $ introducedIdxs <> invitedIdxs
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember

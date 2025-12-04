@@ -58,7 +58,7 @@ schemaDumpTest :: Spec
 schemaDumpTest = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
-  fit "verify schema down migrations" testSchemaMigrations
+  it "verify schema down migrations" testSchemaMigrations
 
 testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do

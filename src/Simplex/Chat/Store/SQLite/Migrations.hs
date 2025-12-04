@@ -145,7 +145,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections
 import Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
 import Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
 import Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
-import Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
+-- import Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]

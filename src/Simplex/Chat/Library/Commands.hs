@@ -82,7 +82,6 @@ import Simplex.Chat.Store.NoteFolders
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Util (liftIOEither, zipWith3')
@@ -4182,22 +4181,9 @@ runRelationsVectorMigration = do
       lift waitChatStartedAndActivated
       gmIds <- withStore' getGMsWithoutVectorIds
       forM_ gmIds $ \gmId -> do
-        processMember gmId `catchAllErrors` eToView
+        withStore' (`migrateMemberRelationsVector'` gmId) `catchAllErrors` eToView
         liftIO $ threadDelay' stepDelay
       unless (null gmIds) migrateMembers
-      where
-        processMember gmId =
-          withGroupMemberLock "runRelationsVectorMigration" gmId $
-            withStore' (\db -> getMemberRelationsVector_' db gmId) >>= \case
-              Just _ -> pure () -- already has vector
-              Nothing -> do
-                introducedRelations <- withStore' $ \db -> getIntroducedRelations db gmId
-                introducedToRelations <- withStore' $ \db -> getIntroducedToRelations db gmId
-                -- TODO [relations vector] differentiate MRSubjectConnected, MRReferencedConnected, MRConnected
-                connectedRelations <- withStore' $ \db -> getIntroConnectedRelations db gmId
-                let relations = introducedRelations <> introducedToRelations <> connectedRelations
-                    vec = MemberRelationsVector $ setRelations relations B.empty
-                withStore' $ \db -> updateMemberRelationsVector' db gmId vec
 
 cleanupManager :: CM ()
 cleanupManager = do
