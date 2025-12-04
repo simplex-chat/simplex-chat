@@ -1,11 +1,18 @@
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
 
 module Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2 where
 
+import qualified Data.ByteString as B
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
+import Database.SQLite3 (funcArgInt64, funcArgText, funcResultBlob)
+import Database.SQLite3.Bindings
+import Foreign.C.Types
+import Foreign.Ptr
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), fromIntroductionInt, setNewRelations)
+import Simplex.Messaging.Agent.Store.SQLite.Util (SQLiteFunc, SQLiteFuncFinal, mkSQLiteAggFinal, mkSQLiteAggStep)
 
--- TODO [relations vector] drop group_member_intros in the end of migration
 -- Build member_relations_vector for all members that don't have it yet.
 -- Vector byte encoding: 4 reserved | 1 direction | 3 status
 -- Direction: 0 = IDSubjectIntroduced, 1 = IDReferencedIntroduced
@@ -22,6 +29,37 @@ import Database.SQLite.Simple.QQ (sql)
 -- - intro_status 're-con': if direction=0 then MRSubjectConnected (2), else MRReferencedConnected (3)
 -- - intro_status 'to-con': if direction=0 then MRReferencedConnected (3), else MRSubjectConnected (2)
 -- - intro_status 'con': MRConnected (4)
+
+foreign export ccall "simplex_member_relations_step" sqliteMemberRelationsStep :: SQLiteFunc
+
+foreign import ccall "&simplex_member_relations_step" sqliteMemberRelationsStepPtr :: FunPtr SQLiteFunc
+
+foreign export ccall "simplex_member_relations_final" sqliteMemberRelationsFinal :: SQLiteFuncFinal
+
+foreign import ccall "&simplex_member_relations_final" sqliteMemberRelationsFinalPtr :: FunPtr SQLiteFuncFinal
+
+-- Step function for migrate_relations_vector aggregate.
+-- Accumulates (idx, direction, relation) tuples.
+sqliteMemberRelationsStep :: SQLiteFunc
+sqliteMemberRelationsStep = mkSQLiteAggStep [] $ \_ args acc -> do
+  idx <- funcArgInt64 args 0
+  direction <- fromIntroductionInt . fromIntegral <$> funcArgInt64 args 1
+  introStatus <- funcArgText args 2
+  let relation = introStatusToRelation direction introStatus
+  pure $ (idx, direction, relation) : acc
+  where
+    introStatusToRelation dir status = case status of
+      "re-con" -> if dir == IDSubjectIntroduced then MRSubjectConnected else MRReferencedConnected
+      "to-con" -> if dir == IDSubjectIntroduced then MRReferencedConnected else MRSubjectConnected
+      "con" -> MRConnected
+      _ -> MRIntroduced -- 'new', 'sent', 'rcv', 'fwd'
+
+-- Final function for migrate_relations_vector aggregate.
+-- Builds the vector from accumulated tuples using setNewRelations.
+sqliteMemberRelationsFinal :: SQLiteFuncFinal
+sqliteMemberRelationsFinal = mkSQLiteAggFinal [] $ \cxt acc -> funcResultBlob cxt $ setNewRelations acc B.empty
+
+-- TODO [relations vector] drop group_member_intros in the end of migration
 m20251128_member_relations_vector_stage_2 :: Query
 m20251128_member_relations_vector_stage_2 =
   [sql|

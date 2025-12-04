@@ -11,7 +11,9 @@ import qualified Data.ByteArray as BA
 import qualified Data.ByteString.Char8 as B
 import Foreign.C.String
 import Options.Applicative
+import Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
 import Simplex.Messaging.Agent.Store.Interface (DBOpts (..))
+import Simplex.Messaging.Agent.Store.SQLite.Common (SQLiteFuncDef (..), SQLiteFuncPtrs (..))
 import Simplex.Messaging.Agent.Store.SQLite.DB (TrackQueries (..))
 import System.FilePath (combine)
 
@@ -70,10 +72,11 @@ migrationBackupPathP =
 dbString :: ChatDbOpts -> String
 dbString ChatDbOpts {dbFilePrefix} = dbFilePrefix <> "_chat.db, " <> dbFilePrefix <> "_agent.db"
 
-toDBOpts :: ChatDbOpts -> String -> Bool -> DBOpts
-toDBOpts ChatDbOpts {dbFilePrefix, dbKey, trackQueries, vacuumOnMigration} dbSuffix keepKey = do
+toDBOpts :: ChatDbOpts -> String -> Bool -> [SQLiteFuncDef] -> DBOpts
+toDBOpts ChatDbOpts {dbFilePrefix, dbKey, trackQueries, vacuumOnMigration} dbSuffix keepKey dbFunctions = do
   DBOpts
     { dbFilePath = dbFilePrefix <> dbSuffix,
+      dbFunctions,
       dbKey,
       keepKey,
       vacuum = vacuumOnMigration,
@@ -85,6 +88,11 @@ chatSuffix = "_chat.db"
 
 agentSuffix :: String
 agentSuffix = "_agent.db"
+
+chatDBFunctions :: [SQLiteFuncDef]
+chatDBFunctions =
+  [ SQLiteFuncDef "migrate_relations_vector" 3 (SQLiteAggrPtrs sqliteMemberRelationsStepPtr sqliteMemberRelationsFinalPtr)
+  ]
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts
 mobileDbOpts fp key = do
