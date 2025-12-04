@@ -23,12 +23,15 @@ import Simplex.Messaging.Agent.Store.SQLite.Util (SQLiteFunc, SQLiteFuncFinal, m
 -- - direction 1 (IDReferencedIntroduced): current member (subject) is to_group_member_id, referenced member was introduced to it
 --
 -- This migration uses custom aggregate function migrate_relations_vector(idx, direction, intro_status).
--- It is registered on DB open in Simplex.Messaging.Agent.Store.SQLite `connectDB`.
--- The aggregate transforms (direction, intro_status) into the final byte value:
+-- It is passed via DBOpts and registered on DB open.
+--
+-- The aggregate transforms intro_status into relation status:
 -- - intro_status 'new'/'sent'/'rcv'/'fwd': MRIntroduced (1)
 -- - intro_status 're-con': if direction=0 then MRSubjectConnected (2), else MRReferencedConnected (3)
 -- - intro_status 'to-con': if direction=0 then MRReferencedConnected (3), else MRSubjectConnected (2)
 -- - intro_status 'con': MRConnected (4)
+--
+-- The final function builds the vector using setNewRelations.
 
 foreign export ccall "simplex_member_relations_step" sqliteMemberRelationsStep :: SQLiteFunc
 
