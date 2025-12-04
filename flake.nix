@@ -45,12 +45,7 @@
             {
               # Override ghcOptions for ALL packages
               ghcOptions = lib.mkDefault [
-                "-optl-Wl,--build-id=none"
-                "-optl-Wl,--sort-common"
-                "-optc-fdebug-prefix-map=/=."
                 "-j1"
-                "-dinitial-unique=8388608"
-                "-dunique-increment=-1"
               ];
             }
           )
@@ -383,6 +378,7 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-j1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -448,7 +444,13 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-armv7a-android-libsimplex.zip *)
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@0' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-armv7a-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -492,12 +494,7 @@
                   # "-debug"
                   "-optl-lffi"
                   "-optl-Wl,-z,max-page-size=16384"
-                  "-optl-Wl,--build-id=none"
-                  "-optl-Wl,--sort-common"
-                  "-optc-fdebug-prefix-map=/=."
                   "-j1"
-                  "-dinitial-unique=8388608"
-                  "-dunique-increment=-1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
