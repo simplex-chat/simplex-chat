@@ -63,7 +63,7 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE AGGREGATE migrate_relations_vector(BIGINT, INT, TEXT) (
   SFUNC = migrate_relations_vector_step,
   STYPE = BYTEA,
-  INITCOND = ''::BYTEA
+  INITCOND = ''
 );
 
 UPDATE group_members
