@@ -91,7 +91,8 @@ agentSuffix = "_agent.db"
 
 chatDBFunctions :: [SQLiteFuncDef]
 chatDBFunctions =
-  [ SQLiteFuncDef "migrate_relations_vector" 3 (SQLiteAggrPtrs sqliteMemberRelationsStepPtr sqliteMemberRelationsFinalPtr)
+  [ SQLiteFuncDef "migrate_relations_vector" 3 (SQLiteAggrPtrs sqliteMemberRelationsStepPtr sqliteMemberRelationsFinalPtr),
+    SQLiteFuncDef "set_member_vector_new_relation" 4 (SQLiteFuncPtr True sqliteSetMemberVectorNewRelationPtr)
   ]
 
 mobileDbOpts :: CString -> CString -> IO ChatDbOpts

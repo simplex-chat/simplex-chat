@@ -1090,10 +1090,10 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
   where
     sendIntroductions reMembers = do
       updateToMemberVector reMembers
-      let (memsWithoutVec, memsWithVec) = partitionReMembers reMembers
+      let (memsWithoutVec, memsWithVec) = partition (isNothing . relationsVector) reMembers
       memsWithousVec' <- withStore' $ \db -> createIntroductions db (maxVersion vr) memsWithoutVec toMember
       updateReMembersVectors memsWithVec
-      let reMembers' = memsWithousVec' <> map fst memsWithVec
+      let reMembers' = memsWithousVec' <> memsWithVec
       shuffledReMembers <- liftIO $ shuffleMembers reMembers'
       if toMember `supportsVersion` batchSendVersion
         then do
@@ -1106,22 +1106,10 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateToMemberVector reMembers = do
       let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, IDReferencedIntroduced, MRIntroduced)) reMembers
       withStore' $ \db -> setMemberVectorNewRelations db toMember relations
-    partitionReMembers :: [GroupMember] -> ([GroupMember], [(GroupMember, MemberRelationsVector)])
-    partitionReMembers =
-      foldr'
-        ( \reMember (withoutVec, withVec) ->
-            case relationsVector reMember of
-              Nothing -> (reMember : withoutVec, withVec)
-              Just vec -> (withoutVec, (reMember, vec) : withVec)
-        )
-        ([], [])
-    -- TODO [relations vector] optimize updates of reMembers vectors; take member locks/group lock?
-    updateReMembersVectors :: [(GroupMember, MemberRelationsVector)] -> CM ()
-    updateReMembersVectors memsWithVec = do
+    updateReMembersVectors :: [GroupMember] -> CM ()
+    updateReMembersVectors members = do
       let GroupMember {indexInGroup} = toMember
-      forM_ memsWithVec $ \(reMember, vec) -> do
-        let vec' = setNewMemberRelation indexInGroup IDSubjectIntroduced MRIntroduced vec
-        withStore' $ \db -> updateMemberRelationsVector db reMember vec'
+      withStore' $ \db -> setMembersVectorsNewRelation db members indexInGroup IDSubjectIntroduced MRIntroduced
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
       let mInfo = memberInfo gInfo reMember
@@ -1148,10 +1136,6 @@ wasIntroduced = \case
 getMemberRelation :: Int64 -> MemberRelationsVector -> MemberRelation
 getMemberRelation i (MemberRelationsVector v) = getRelation i v
 {-# INLINE getMemberRelation #-}
-
-setNewMemberRelation :: Int64 -> IntroductionDirection -> MemberRelation -> MemberRelationsVector -> MemberRelationsVector
-setNewMemberRelation i dir r (MemberRelationsVector v) = MemberRelationsVector $ setNewRelation i dir r v
-{-# INLINE setNewMemberRelation #-}
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks

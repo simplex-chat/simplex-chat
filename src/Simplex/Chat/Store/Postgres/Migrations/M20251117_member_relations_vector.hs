@@ -25,6 +25,28 @@ m20251117_member_relations_vector :: Text
 m20251117_member_relations_vector =
   T.pack
     [r|
+CREATE FUNCTION set_member_vector_new_relation(v BYTEA, idx BIGINT, direction INT, status INT)
+RETURNS BYTEA AS $$
+DECLARE
+  new_len INT;
+  result BYTEA;
+  byte_val INT;
+BEGIN
+  IF idx < 0 THEN
+    RETURN v;
+  END IF;
+  byte_val := (direction * 8) + status;
+  new_len := GREATEST(length(v), idx + 1);
+  IF new_len > length(v) THEN
+    result := v || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(v)));
+  ELSE
+    result := v;
+  END IF;
+  result := set_byte(result, idx::INT, byte_val);
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 CREATE FUNCTION migrate_relations_vector_step(state BYTEA, idx BIGINT, direction INT, intro_status TEXT)
 RETURNS BYTEA AS $$
 DECLARE
@@ -119,6 +141,7 @@ down_m20251117_member_relations_vector =
     [r|
 DROP AGGREGATE migrate_relations_vector(BIGINT, INT, TEXT);
 DROP FUNCTION migrate_relations_vector_step(BYTEA, BIGINT, INT, TEXT);
+DROP FUNCTION set_member_vector_new_relation(BYTEA, BIGINT, INT, INT);
 
 DROP INDEX idx_group_members_group_id_index_in_group;
 

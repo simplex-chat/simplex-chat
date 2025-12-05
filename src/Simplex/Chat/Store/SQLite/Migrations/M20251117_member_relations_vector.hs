@@ -6,12 +6,12 @@ module Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector wh
 import qualified Data.ByteString as B
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
-import Database.SQLite3 (funcArgInt64, funcArgText, funcResultBlob)
+import Database.SQLite3 (funcArgBlob, funcArgInt64, funcArgText, funcResultBlob)
 import Database.SQLite3.Bindings
 import Foreign.C.Types
 import Foreign.Ptr
-import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), fromIntroductionInt, setNewRelations)
-import Simplex.Messaging.Agent.Store.SQLite.Util (SQLiteFunc, SQLiteFuncFinal, mkSQLiteAggFinal, mkSQLiteAggStep)
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), fromIntroductionInt, fromRelationInt, setNewRelation, setNewRelations)
+import Simplex.Messaging.Agent.Store.SQLite.Util (SQLiteFunc, SQLiteFuncFinal, mkSQLiteAggFinal, mkSQLiteAggStep, mkSQLiteFunc)
 
 -- This module defines custom aggregate function migrate_relations_vector(idx, direction, intro_status).
 -- It is passed via DBOpts and registered on DB open.
@@ -57,6 +57,21 @@ sqliteMemberRelationsStep = mkSQLiteAggStep [] $ \_ args acc -> do
 -- Builds the vector from accumulated tuples using setNewRelations.
 sqliteMemberRelationsFinal :: SQLiteFuncFinal
 sqliteMemberRelationsFinal = mkSQLiteAggFinal [] $ \cxt acc -> funcResultBlob cxt $ setNewRelations acc B.empty
+
+-- Non-aggregate function set_member_vector_new_relation(vector, idx, direction, status).
+-- Sets a new relation in the vector and returns the updated vector.
+
+foreign export ccall "simplex_set_member_vector_new_relation" sqliteSetMemberVectorNewRelation :: SQLiteFunc
+
+foreign import ccall "&simplex_set_member_vector_new_relation" sqliteSetMemberVectorNewRelationPtr :: FunPtr SQLiteFunc
+
+sqliteSetMemberVectorNewRelation :: SQLiteFunc
+sqliteSetMemberVectorNewRelation = mkSQLiteFunc $ \cxt args -> do
+  v <- funcArgBlob args 0
+  idx <- funcArgInt64 args 1
+  direction <- fromIntroductionInt . fromIntegral <$> funcArgInt64 args 2
+  status <- fromRelationInt . fromIntegral <$> funcArgInt64 args 3
+  funcResultBlob cxt $ setNewRelation idx direction status v
 
 m20251117_member_relations_vector :: Query
 m20251117_member_relations_vector =

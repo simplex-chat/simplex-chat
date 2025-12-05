@@ -100,6 +100,7 @@ module Simplex.Chat.Store.Groups
     updateGroupMemberRole,
     createIntroductions,
     setMemberVectorNewRelations,
+    setMembersVectorsNewRelation,
     setMemberVectorRelationConnected,
     updateMemberRelationsVector,
     migrateGetMemberRelationsVector,
@@ -178,7 +179,7 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected)
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroductionInt, toRelationInt)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -1639,6 +1640,23 @@ setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
       WHERE group_member_id = ?
     |]
     (Binary v', currentTs, groupMemberId)
+
+setMembersVectorsNewRelation :: DB.Connection -> [GroupMember] -> Int64 -> IntroductionDirection -> MemberRelation -> IO ()
+setMembersVectorsNewRelation db members idx dir status = do
+  currentTs <- getCurrentTime
+#if defined(dbPostgres)
+  let memberIds = map groupMemberId' members
+  DB.execute
+    db
+    "UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id IN ?"
+    (idx, toIntroductionInt dir, toRelationInt status, currentTs, In memberIds)
+#else
+  forM_ members $ \GroupMember {groupMemberId} ->
+    DB.execute
+      db
+      "UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?"
+      (idx, toIntroductionInt dir, toRelationInt status, currentTs, groupMemberId)
+#endif
 
 setMemberVectorRelationConnected :: DB.Connection -> GroupMember -> GroupMember -> MemberRelation -> ExceptT StoreError IO ()
 setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {indexInGroup} newStatus = do
