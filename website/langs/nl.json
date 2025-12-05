@@ -17,7 +17,7 @@
     "chat-bot-example": "Chatbot voorbeeld",
     "smp-protocol": "SMP protocol",
     "donate": "Doneer",
-    "copyright-label": "© 2020-2025 SimpleX | Open-sourceproject",
+    "copyright-label": "© 2020-2025 SimpleX Chat | Open-sourceproject",
     "simplex-chat-protocol": "SimpleX Chat protocol",
     "terminal-cli": "Terminal CLI",
     "terms-and-privacy-policy": "Privacybeleid",
@@ -241,7 +241,7 @@
     "stable-versions-built-by-f-droid-org": "Stabiele versies gebouwd door F-Droid.org",
     "releases-to-this-repo-are-done-1-2-days-later": "De releases voor deze repository vinden enkele dagen later plaats",
     "f-droid-page-f-droid-org-repo-section-text": "SimpleX Chat- en F-Droid.org-repository's ondertekenen builds met de verschillende sleutels. Om over te stappen, alstublieft <a href='/docs/guide/chat-profiles.html#move-your-chat-profiles-to-another-device'>exporteer</a> de chatdatabase en installeer de app opnieuw.",
-    "docs-dropdown-8": "SimpleX Directory Service",
+    "docs-dropdown-8": "SimpleX Directory",
     "comparison-section-list-point-4a": "SimpleX relais kunnen de e2e-versleuteling niet in gevaar brengen. Controleer de beveiligingscode om aanvallen op out-of-band kanalen te beperken",
     "hero-overlay-3-title": "Beveiligings beoordeling",
     "hero-overlay-card-3-p-2": "Trail of Bits heeft in november 2022 de cryptografie en netwerkcomponenten van het SimpleX-platform beoordeeld. Lees meer in <a href=\"/blog/20221108-simplex-chat-v4.2-security-audit-new-website.html\">de aankondiging</a>.",
@@ -255,5 +255,7 @@
     "docs-dropdown-11": "FAQ",
     "docs-dropdown-12": "Beveiliging",
     "hero-overlay-card-3-p-3": "Trail of Bits heeft in juli 2024 het cryptografische ontwerp van SimpleX-netwerkprotocollen beoordeeld. <a href=\"/blog/20241014-simplex-network-v6-1-security-review-better-calls-user-experience.html\">Lees meer</a>.",
-    "docs-dropdown-14": "SimpleX voor bedrijven"
+    "docs-dropdown-14": "SimpleX voor bedrijven",
+    "directory": "Directory",
+    "about-and-contact-us": "Over ons & Contact"
 }

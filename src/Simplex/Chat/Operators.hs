@@ -46,7 +46,6 @@ import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
 import Simplex.Chat.Types (User)
-import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
 import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
 import Simplex.Messaging.Agent.Store.Entity
@@ -64,7 +63,7 @@ previousConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
 
 usageConditionsText :: Text
 usageConditionsText =
-  $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
+  $( let s = $(embedFile "PRIVACY.md")
       in [|stripFrontMatter $(lift (safeDecodeUtf8 s))|]
    )
 

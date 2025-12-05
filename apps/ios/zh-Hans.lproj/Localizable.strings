@@ -1122,7 +1122,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "已经接受下列运营方的条款：**%@**。";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "使用条款";
 
 /* No comment provided by engineer. */
@@ -3365,7 +3365,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "网络设置";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "网络状态";
 
 /* delete after time */
@@ -3997,9 +3997,6 @@ new chat action */
 /* No comment provided by engineer. */
 "received confirmation…" = "已受到确认……";
 
-/* notification */
-"Received file event" = "收到文件项目";
-
 /* message info title */
 "Received message" = "收到的信息";
 
@@ -4443,9 +4440,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "Sent directly" = "直接发送";
-
-/* notification */
-"Sent file event" = "已发送文件项目";
 
 /* message info title */
 "Sent message" = "已发信息";
@@ -5013,12 +5007,6 @@ chat item action */
 "Transport sessions" = "传输会话";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "正在尝试连接到用于从该联系人接收消息的服务器（错误：%@）。";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "正在尝试连接到用于从该联系人接收消息的服务器。";
-
-/* No comment provided by engineer. */
 "Turkish interface" = "土耳其语界面";
 
 /* No comment provided by engineer. */
@@ -5434,9 +5422,6 @@ chat item action */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "您已经加入了这个群组！\n重复加入请求？";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "您已连接到用于接收该联系人消息的服务器。";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "您被邀请加入群组";

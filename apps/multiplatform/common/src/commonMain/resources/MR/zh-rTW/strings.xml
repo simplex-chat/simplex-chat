@@ -238,7 +238,7 @@
     <string name="server_error">錯誤</string>
     <string name="server_connecting">連接中</string>
     <string name="connected_to_server_to_receive_messages_from_contact">你已連接到此聯絡人使用的伺服器以接收訊息。</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">嘗試連接至用於接收此聯絡人訊息的伺服器 (錯誤：%1$s)。</string>
+    <string name="error_connecting_to_server_to_receive_messages">嘗試連接至用於接收此聯絡人訊息的伺服器 (錯誤：%1$s)。</string>
     <string name="trying_to_connect_to_server_to_receive_messages">正在嘗試連接到用於接收此聯絡人訊息伺服器。</string>
     <string name="deleted_description">已刪除</string>
     <string name="marked_deleted_description">已標記為已刪除</string>
@@ -2125,4 +2125,7 @@
     <string name="v5_3_simpler_incognito_mode">簡化的匿名模式</string>
     <string name="contact_tap_to_connect">點擊以連接</string>
     <string name="settings_section_title_use_from_desktop">從桌面使用</string>
+    <string name="connect_plan_open_new_chat">開啓新聊天</string>
+    <string name="accept_contact_request">接受聯絡請求</string>
+    <string name="chat_banner_accept_contact_request">接受聯絡請求</string>
 </resources>

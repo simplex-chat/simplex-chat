@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 4, 4, 2]
+minRemoteCtrlVersion = AppVersion [6, 4, 6, 0]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 4, 4, 2]
+minRemoteHostVersion = AppVersion [6, 4, 6, 0]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -531,7 +531,7 @@ handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBo
         Left e -> eToView' $ ChatErrorRemoteCtrl $ RCEProtocolError e
 
 takeRCStep :: RCStepTMVar a -> CM a
-takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
+takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, agentConnId = AgentConnId "", connectionEntity_ = Nothing}) . atomically . takeTMVar
 
 type GetChunk = Int -> IO ByteString
 

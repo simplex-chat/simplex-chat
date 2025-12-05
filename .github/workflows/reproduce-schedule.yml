@@ -23,6 +23,10 @@ jobs:
           grep -i "tag_name" | \
           awk -F \" '{print "TAG="$4}' >> $GITHUB_ENV
 
+      # Otherwise we run out of disk space with Docker build
+      - name: Free disk space
+        shell: bash
+        run: ./scripts/ci/linux_util_free_space.sh
       - name: Execute reproduce script
         run: |
           ${GITHUB_WORKSPACE}/scripts/simplex-chat-reproduce-builds.sh "$TAG" || :

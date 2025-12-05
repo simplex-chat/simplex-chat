@@ -198,7 +198,7 @@ coreChatOptsP appDir defaultDbName = do
     switch
       ( long "connections"
           <> short 'c'
-          <> help "Log every contact and group connection on start (also with `-l info`)"
+          <> help "Log connections subscription errors on start (also with `-l info`)"
       )
   logServerHosts <-
     switch
