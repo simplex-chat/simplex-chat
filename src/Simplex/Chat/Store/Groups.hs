@@ -99,10 +99,10 @@ module Simplex.Chat.Store.Groups
     deleteGroupMemberConnection,
     updateGroupMemberRole,
     createIntroductions,
+    createIntrosOrUpdateVectors,
     setMemberVectorNewRelations,
     setMembersVectorsNewRelation,
     setMemberVectorRelationConnected,
-    updateMemberRelationsVector,
     migrateGetMemberRelationsVector,
     migrateMemberRelationsVector,
     migrateMemberRelationsVector',
@@ -165,10 +165,12 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (toLower)
 import Data.Either (rights)
+import Data.Foldable (foldrM)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
+import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -200,11 +202,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe MemberRelationsVector, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, relationsVector, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, relationsVector, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs))
 toMaybeGroupMember _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -495,7 +497,6 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         memberRole,
         memberCategory,
         memberStatus,
-        relationsVector = Nothing,
         memberSettings = defaultMemberSettings,
         blockedByAdmin = False,
         invitedBy,
@@ -1142,7 +1143,6 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             memberRole,
             memberCategory = GCInviteeMember,
             memberStatus = GSMemInvited,
-            relationsVector = Nothing,
             memberSettings = defaultMemberSettings,
             blockedByAdmin = False,
             invitedBy = IBUser,
@@ -1540,7 +1540,6 @@ createNewMember_
           memberRole,
           memberCategory,
           memberStatus,
-          relationsVector = Nothing,
           memberSettings = defaultMemberSettings,
           blockedByAdmin = maybe False mrsBlocked memRestriction,
           invitedBy,
@@ -1618,6 +1617,37 @@ createIntroductions db chatV reMembers toMember
               "SELECT 1 FROM group_member_intros WHERE re_group_member_id = ? AND to_group_member_id = ? LIMIT 1"
               (groupMemberId' toMember, groupMemberId' reMember)
 
+-- Create introductions for members without vectors and update vectors for members with vectors.
+-- Partitioning and updates happen in same transaction to avoid race conditions.
+createIntrosOrUpdateVectors :: DB.Connection -> VersionRangeChat -> [GroupMember] -> GroupMember -> IO [GroupMember]
+createIntrosOrUpdateVectors db vr reMembers toMember
+  | null reMembers = pure []
+  | otherwise = do
+      (memsWithVec, memsWithoutVec) <- partitionByVector reMembers
+      let GroupMember {indexInGroup} = toMember
+      setMembersVectorsNewRelation db memsWithVec indexInGroup IDSubjectIntroduced MRIntroduced
+      memsWithoutVec' <- createIntroductions db (maxVersion vr) memsWithoutVec toMember
+      pure $ memsWithoutVec' <> memsWithVec
+  where
+    partitionByVector :: [GroupMember] -> IO ([GroupMember], [GroupMember])
+#if defined(dbPostgres)
+    partitionByVector members = do
+      let memberIds = map groupMemberId' members
+      memberIdsWithVec <- S.fromList . map fromOnly <$>
+        DB.query
+          db
+          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL"
+          (Only $ In memberIds)
+      pure $ partition (\m -> groupMemberId' m `S.member` memberIdsWithVec) members
+#else
+    partitionByVector members = foldrM checkMember ([], []) members
+      where
+        checkMember m (withVec, withoutVec) = do
+          hasVec <- isJust <$> maybeFirstRow fromOnly
+            (DB.query db "SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL" (Only $ groupMemberId' m) :: IO [Only Int64])
+          pure $ if hasVec then (m : withVec, withoutVec) else (withVec, m : withoutVec)
+#endif
+
 setMemberVectorNewRelations :: DB.Connection -> GroupMember -> [(Int64, IntroductionDirection, MemberRelation)] -> IO ()
 setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
   v_ <- maybeFirstRow fromOnly $
@@ -1681,18 +1711,6 @@ setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {ind
       WHERE group_member_id = ?
     |]
     (Binary v', currentTs, groupMemberId)
-
-updateMemberRelationsVector :: DB.Connection -> GroupMember -> MemberRelationsVector -> IO ()
-updateMemberRelationsVector db GroupMember {groupMemberId} relationsVector = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET member_relations_vector = ?, updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (relationsVector, currentTs, groupMemberId)
 
 migrateGetMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO ByteString
 migrateGetMemberRelationsVector db m@GroupMember {groupMemberId} = do

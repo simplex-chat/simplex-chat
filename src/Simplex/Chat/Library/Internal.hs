@@ -1092,10 +1092,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
   where
     sendIntroductions reMembers = do
       updateToMemberVector reMembers
-      let (memsWithoutVec, memsWithVec) = partition (isNothing . relationsVector) reMembers
-      memsWithousVec' <- withStore' $ \db -> createIntroductions db (maxVersion vr) memsWithoutVec toMember
-      updateReMembersVectors memsWithVec
-      let reMembers' = memsWithousVec' <> memsWithVec
+      reMembers' <- withStore' $ \db -> createIntrosOrUpdateVectors db vr reMembers toMember
       shuffledReMembers <- liftIO $ shuffleMembers reMembers'
       if toMember `supportsVersion` batchSendVersion
         then do
@@ -1108,10 +1105,6 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateToMemberVector reMembers = do
       let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, IDReferencedIntroduced, MRIntroduced)) reMembers
       withStore' $ \db -> setMemberVectorNewRelations db toMember relations
-    updateReMembersVectors :: [GroupMember] -> CM ()
-    updateReMembersVectors members = do
-      let GroupMember {indexInGroup} = toMember
-      withStore' $ \db -> setMembersVectorsNewRelation db members indexInGroup IDSubjectIntroduced MRIntroduced
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
       let mInfo = memberInfo gInfo reMember

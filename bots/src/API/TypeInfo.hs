@@ -207,7 +207,6 @@ toTypeInfo tr =
         "GroupLinkId",
         "ImageData",
         "MemberId",
-        "MemberRelationsVector",
         "Text",
         "MREmojiChar",
         "ProtocolServer",

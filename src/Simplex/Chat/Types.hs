@@ -926,7 +926,6 @@ data GroupMember = GroupMember
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
     memberStatus :: GroupMemberStatus,
-    relationsVector :: Maybe MemberRelationsVector,
     memberSettings :: GroupMemberSettings,
     blockedByAdmin :: Bool,
     invitedBy :: InvitedBy,
@@ -1052,24 +1051,6 @@ instance ToJSON MemberId where
 
 nameFromMemberId :: MemberId -> ContactName
 nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
-
-newtype MemberRelationsVector = MemberRelationsVector {unRelationsVector :: ByteString}
-  deriving (Eq, Show)
-  deriving newtype (FromField)
-
-instance ToField MemberRelationsVector where toField (MemberRelationsVector m) = toField $ Binary m
-
-instance StrEncoding MemberRelationsVector where
-  strEncode (MemberRelationsVector m) = strEncode m
-  strDecode s = MemberRelationsVector <$> strDecode s
-  strP = MemberRelationsVector <$> strP
-
-instance FromJSON MemberRelationsVector where
-  parseJSON = strParseJSON "MemberRelationsVector"
-
-instance ToJSON MemberRelationsVector where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)

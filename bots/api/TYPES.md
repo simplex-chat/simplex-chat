@@ -2203,7 +2203,6 @@ Known:
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
 - memberStatus: [GroupMemberStatus](#groupmemberstatus)
-- relationsVector: string?
 - memberSettings: [GroupMemberSettings](#groupmembersettings)
 - blockedByAdmin: bool
 - invitedBy: [InvitedBy](#invitedby)

@@ -2492,7 +2492,6 @@ export interface GroupMember {
   memberRole: GroupMemberRole
   memberCategory: GroupMemberCategory
   memberStatus: GroupMemberStatus
-  relationsVector?: string
   memberSettings: GroupMemberSettings
   blockedByAdmin: boolean
   invitedBy: InvitedBy
