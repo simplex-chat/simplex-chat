@@ -25,13 +25,13 @@ import Data.List (intercalate, isInfixOf)
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
 import Simplex.Chat.Controller (ChatConfig (..), ChatHooks (..), defaultChatHooks)
-import Simplex.Chat.Library.Internal (setMemberRelation, uniqueMsgMentions, updatedMentionNames)
+import Simplex.Chat.Library.Internal (uniqueMsgMentions, updatedMentionNames)
 import Simplex.Chat.Markdown (parseMaybeMarkdownList)
 import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (MemberRelation (..))
+import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
@@ -5080,7 +5080,7 @@ updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
       |]
       (Only invitee2Name)
 
-    let invitee1Vec' = setMemberRelation invitee2Index relation (fromMaybe emptyVector invitee1Vec)
+    let invitee1Vec' = setRelation invitee2Index relation (fromMaybe B.empty invitee1Vec)
     DB.execute db
       [sql|
         UPDATE group_members
@@ -5089,7 +5089,7 @@ updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
       |]
       (invitee1Vec', invitee1Name)
 
-    let invitee2Vec' = setMemberRelation invitee1Index relation (fromMaybe emptyVector invitee2Vec)
+    let invitee2Vec' = setRelation invitee1Index relation (fromMaybe B.empty invitee2Vec)
     DB.execute db
       [sql|
         UPDATE group_members

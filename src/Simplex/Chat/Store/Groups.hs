@@ -106,7 +106,6 @@ module Simplex.Chat.Store.Groups
     migrateGetMemberRelationsVector,
     migrateMemberRelationsVector,
     migrateMemberRelationsVector',
-    getMemberRelationsVector,
     getMemberRelationsVector_,
     updateIntroStatus,
     getIntroduction,
@@ -1737,21 +1736,7 @@ migrateMemberRelationsVector' db groupMemberId = do
       |]
       (currentTs, groupMemberId)
 
-getMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO MemberRelationsVector
-getMemberRelationsVector db GroupMember {groupMemberId} =
-  ExceptT $
-    firstRow fromOnly (SEMemberRelationsVectorNotFound groupMemberId) $
-      DB.query
-        db
-        [sql|
-          SELECT member_relations_vector
-          FROM group_members
-          WHERE group_member_id = ?
-            AND member_relations_vector IS NOT NULL
-        |]
-        (Only groupMemberId)
-
-getMemberRelationsVector_ :: DB.Connection -> GroupMember -> IO (Maybe MemberRelationsVector)
+getMemberRelationsVector_ :: DB.Connection -> GroupMember -> IO (Maybe ByteString)
 getMemberRelationsVector_ db GroupMember {groupMemberId} =
   maybeFirstRow fromOnly $
     DB.query

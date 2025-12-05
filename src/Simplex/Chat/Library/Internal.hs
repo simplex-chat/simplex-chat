@@ -1040,28 +1040,30 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToAll vr user gInfo m@GroupMember {relationsVector} = do
+introduceToAll vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  let recipients = filter shouldIntroduce members
+  vector_ <- withStore' (`getMemberRelationsVector_` m)
+  let recipients = filter (shouldIntroduce vector_) members
   introduceMember vr user gInfo m recipients Nothing
   where
-    shouldIntroduce :: GroupMember -> Bool
-    shouldIntroduce mem = case relationsVector of
+    shouldIntroduce :: Maybe ByteString -> GroupMember -> Bool
+    shouldIntroduce vector_ mem = case vector_ of
       Nothing ->
         memberCurrent mem && groupMemberId' mem /= groupMemberId' m
       Just vec ->
         memberCurrent mem
           && groupMemberId' mem /= groupMemberId' m
-          && not (wasIntroduced $ getMemberRelation (indexInGroup mem) vec)
+          && not (wasIntroduced $ getRelation (indexInGroup mem) vec)
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
-introduceToRemaining vr user gInfo m@GroupMember {relationsVector} = do
+introduceToRemaining vr user gInfo m = do
   members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  recipients <- filterRecipients members
+  vector_ <- withStore' (`getMemberRelationsVector_` m)
+  recipients <- filterRecipients vector_ members
   introduceMember vr user gInfo m recipients Nothing
   where
-    filterRecipients :: [GroupMember] -> CM [GroupMember]
-    filterRecipients members = case relationsVector of
+    filterRecipients :: Maybe ByteString -> [GroupMember] -> CM [GroupMember]
+    filterRecipients vector_ members = case vector_ of
       Nothing -> do
         introducedGMIds <- withStore' $ \db -> getIntroducedGroupMemberIds db m
         pure $
@@ -1078,7 +1080,7 @@ introduceToRemaining vr user gInfo m@GroupMember {relationsVector} = do
             ( \mem ->
                 memberCurrent mem
                   && groupMemberId' mem /= groupMemberId' m
-                  && not (wasIntroduced $ getMemberRelation (indexInGroup mem) vec)
+                  && not (wasIntroduced $ getRelation (indexInGroup mem) vec)
             )
             members
 
@@ -1132,10 +1134,6 @@ wasIntroduced = \case
   MRSubjectConnected -> True
   MRReferencedConnected -> True
   MRConnected -> True
-
-getMemberRelation :: Int64 -> MemberRelationsVector -> MemberRelation
-getMemberRelation i (MemberRelationsVector v) = getRelation i v
-{-# INLINE getMemberRelation #-}
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
