@@ -6,10 +6,63 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
+-- This migration creates custom aggregate function migrate_relations_vector(idx, direction, intro_status).
+-- Used in live migration and stage 2 migration (M20251128_member_relations_vector_stage_2).
+--
+-- Vector byte encoding: 4 reserved | 1 direction | 3 status
+-- Direction: 0 = IDSubjectIntroduced, 1 = IDReferencedIntroduced
+-- Status values: 0 = MRNew, 1 = MRIntroduced, 2 = MRSubjectConnected, 3 = MRReferencedConnected, 4 = MRConnected
+--
+-- The aggregate transforms intro_status into relation status:
+-- - intro_status 'new'/'sent'/'rcv'/'fwd': MRIntroduced (1)
+-- - intro_status 're-con': if direction=0 then MRSubjectConnected (2), else MRReferencedConnected (3)
+-- - intro_status 'to-con': if direction=0 then MRReferencedConnected (3), else MRSubjectConnected (2)
+-- - intro_status 'con': MRConnected (4)
+--
+-- Final byte combines direction and status: byte = (direction << 3) | status
+
 m20251117_member_relations_vector :: Text
 m20251117_member_relations_vector =
   T.pack
     [r|
+CREATE FUNCTION migrate_relations_vector_step(state BYTEA, idx BIGINT, direction INT, intro_status TEXT)
+RETURNS BYTEA AS $$
+DECLARE
+  new_len INT;
+  result BYTEA;
+  status INT;
+  byte_val INT;
+BEGIN
+  IF idx < 0 THEN
+    RETURN state;
+  END IF;
+  IF intro_status = 're-con' THEN
+    IF direction = 0 THEN status := 2; ELSE status := 3; END IF;
+  ELSIF intro_status = 'to-con' THEN
+    IF direction = 0 THEN status := 3; ELSE status := 2; END IF;
+  ELSIF intro_status = 'con' THEN
+    status := 4;
+  ELSE
+    status := 1;
+  END IF;
+  byte_val := (direction * 8) + status;
+  new_len := GREATEST(length(state), idx + 1);
+  IF new_len > length(state) THEN
+    result := state || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(state)));
+  ELSE
+    result := state;
+  END IF;
+  result := set_byte(result, idx::INT, byte_val);
+  RETURN result;
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+CREATE AGGREGATE migrate_relations_vector(BIGINT, INT, TEXT) (
+  SFUNC = migrate_relations_vector_step,
+  STYPE = BYTEA,
+  INITCOND = ''
+);
+
 ALTER TABLE group_members ADD COLUMN index_in_group BIGINT NOT NULL DEFAULT 0;
 
 ALTER TABLE groups ADD COLUMN member_index BIGINT NOT NULL DEFAULT 0;
@@ -64,6 +117,9 @@ down_m20251117_member_relations_vector :: Text
 down_m20251117_member_relations_vector =
   T.pack
     [r|
+DROP AGGREGATE migrate_relations_vector(BIGINT, INT, TEXT);
+DROP FUNCTION migrate_relations_vector_step(BYTEA, BIGINT, INT, TEXT);
+
 DROP INDEX idx_group_members_group_id_index_in_group;
 
 ALTER TABLE group_members DROP COLUMN index_in_group;

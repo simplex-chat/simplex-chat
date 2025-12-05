@@ -3738,6 +3738,40 @@ SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_
 
 Query: 
         UPDATE group_members
+        SET
+          member_relations_vector = (
+            SELECT migrate_relations_vector(idx, direction, intro_status)
+            FROM (
+              SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
+              FROM group_member_intros i
+              JOIN group_members m ON m.group_member_id = i.to_group_member_id
+              WHERE i.re_group_member_id = group_members.group_member_id
+              UNION ALL
+              SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
+              FROM group_member_intros i
+              JOIN group_members m ON m.group_member_id = i.re_group_member_id
+              WHERE i.to_group_member_id = group_members.group_member_id
+            )
+          ),
+          updated_at = ?
+        WHERE group_member_id = ?
+          AND member_relations_vector IS NULL
+      
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+CORRELATED SCALAR SUBQUERY 3
+CO-ROUTINE (subquery-2)
+COMPOUND QUERY
+LEFT-MOST SUBQUERY
+SEARCH i USING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+UNION ALL
+SEARCH i USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
+SCAN (subquery-2)
+
+Query: 
+        UPDATE group_members
         SET contact_id = ?, local_display_name = ?, contact_profile_id = ?, updated_at = ?
         WHERE user_id = ? AND group_id = ? AND group_member_id = ?
       

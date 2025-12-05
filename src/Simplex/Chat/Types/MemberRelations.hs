@@ -3,6 +3,10 @@
 module Simplex.Chat.Types.MemberRelations
   ( IntroductionDirection (..),
     MemberRelation (..),
+    toIntroductionInt,
+    fromIntroductionInt,
+    toRelationInt,
+    fromRelationInt,
     getRelation,
     getRelation',
     getRelationsIndexes,

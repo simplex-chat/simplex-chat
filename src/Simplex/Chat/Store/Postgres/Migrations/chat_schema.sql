@@ -34,6 +34,41 @@ $$;
 
 
 
+CREATE FUNCTION test_chat_schema.migrate_relations_vector_step(state bytea, idx bigint, direction integer, intro_status text) RETURNS bytea
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+  new_len INT;
+  result BYTEA;
+  status INT;
+  byte_val INT;
+BEGIN
+  IF idx < 0 THEN
+    RETURN state;
+  END IF;
+  IF intro_status = 're-con' THEN
+    IF direction = 0 THEN status := 2; ELSE status := 3; END IF;
+  ELSIF intro_status = 'to-con' THEN
+    IF direction = 0 THEN status := 3; ELSE status := 2; END IF;
+  ELSIF intro_status = 'con' THEN
+    status := 4;
+  ELSE
+    status := 1;
+  END IF;
+  byte_val := (direction * 8) + status;
+  new_len := GREATEST(length(state), idx + 1);
+  IF new_len > length(state) THEN
+    result := state || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(state)));
+  ELSE
+    result := state;
+  END IF;
+  result := set_byte(result, idx::INT, byte_val);
+  RETURN result;
+END;
+$$;
+
+
+
 CREATE FUNCTION test_chat_schema.on_group_members_delete_update_summary() RETURNS trigger
     LANGUAGE plpgsql
     AS $$
@@ -83,6 +118,14 @@ BEGIN
   RETURN NEW;
 END;
 $$;
+
+
+
+CREATE AGGREGATE test_chat_schema.migrate_relations_vector(bigint, integer, text) (
+    SFUNC = test_chat_schema.migrate_relations_vector_step,
+    STYPE = bytea,
+    INITCOND = ''
+);
 
 
 SET default_table_access_method = heap;
