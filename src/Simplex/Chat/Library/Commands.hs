@@ -2993,7 +2993,6 @@ processChatCommand vr nm = \case
         CLConnection connId -> "Connection " <> tshow connId
         CLContact ctId -> "Contact " <> tshow ctId
         CLGroup gId -> "Group " <> tshow gId
-        CLGroupMember gmId -> "GroupMember " <> tshow gmId
         CLUserContact ucId -> "UserContact " <> tshow ucId
         CLContactRequest crId -> "ContactRequest " <> tshow crId
         CLFile fId -> "File " <> tshow fId

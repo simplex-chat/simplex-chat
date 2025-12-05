@@ -65,7 +65,6 @@ data ChatLockEntity
   | CLConnection Int64
   | CLContact ContactId
   | CLGroup GroupId
-  | CLGroupMember GroupMemberId -- member locks are taken on relations vector updates, not on processing agent events
   | CLUserContact Int64
   | CLContactRequest Int64
   | CLFile Int64
@@ -99,6 +98,7 @@ data StoreError
   | SEGroupHostMemberNotFound {groupId :: GroupId}
   | SEGroupMemberNotFoundByMemberId {memberId :: MemberId}
   | SEMemberContactGroupMemberNotFound {contactId :: ContactId}
+  | SEInvalidMemberRelationUpdate
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined

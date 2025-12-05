@@ -2716,62 +2716,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           blocked = mrsBlocked restriction
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> CM ()
-    xGrpMemCon gInfo sendingMem@GroupMember {relationsVector = sendingMemVec} memId = do
-      refMem@GroupMember {relationsVector = refMemVec} <-
-        withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
+    xGrpMemCon gInfo sendingMem memId = do
+      refMem <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
+      withStore' (`migrateMemberRelationsVector` sendingMem)
+      withStore' (`migrateMemberRelationsVector` refMem)
+      -- Updating vectors in separate transactions to avoid deadlocks.
       -- Update sending member's vector: subject (sendingMem) connected to referenced (refMem)
-      when (isJust sendingMemVec) $
-        updateMemberVector "xGrpMemCon, sending member" MRSubjectConnected sendingMem refMem
+      withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
       -- Update referenced member's vector: referenced (sendingMem) connected to subject (refMem)
-      when (isJust refMemVec) $
-        updateMemberVector "xGrpMemCon, referenced member" MRReferencedConnected refMem sendingMem
-      when (isNothing sendingMemVec || isNothing refMemVec) $
-        updateIntroductionRecord sendingMem refMem
-      where
-        updateMemberVector :: Text -> MemberRelation -> GroupMember -> GroupMember -> CM ()
-        updateMemberVector lockName newStatus member conMember =
-          withGroupMemberLock lockName (groupMemberId' member) $ do
-            vec <- withStore $ \db -> getMemberRelationsVector db member
-            let vec' = setMemberRelationConnected (indexInGroup conMember) newStatus vec
-            withStore' $ \db -> updateMemberRelationsVector db member vec'
-        updateIntroductionRecord :: GroupMember -> GroupMember -> CM ()
-        updateIntroductionRecord sendingMember refMember =
-          case (memberCategory sendingMember, memberCategory refMember) of
-            (GCInviteeMember, GCInviteeMember) ->
-              withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
-                Right intro -> inviteeXGrpMemCon intro
-                Left _ ->
-                  withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
-                    Right intro -> forwardMemberXGrpMemCon intro
-                    Left _ -> messageWarning "x.grp.mem.con: no introduction"
-            (GCInviteeMember, _) ->
-              withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
-                Right intro -> inviteeXGrpMemCon intro
-                Left _ -> messageWarning "x.grp.mem.con: no introduction"
-            (_, GCInviteeMember) ->
-              withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
-                Right intro -> forwardMemberXGrpMemCon intro
-                Left _ -> messageWarning "x.grp.mem.con: no introductiosupportn"
-            -- Note: we can allow XGrpMemCon to all member categories if we decide to support broader group forwarding,
-            -- deduplication (see saveGroupRcvMsg, saveGroupFwdRcvMsg) already supports sending XGrpMemCon
-            -- to any forwarding member, not only host/inviting member;
-            -- database would track all members connections then
-            -- (currently it's done via group_member_intros for introduced connections only)
-            _ ->
-              messageWarning "x.grp.mem.con: neither member is invitee"
-        inviteeXGrpMemCon :: GroupMemberIntro -> CM ()
-        inviteeXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
-          GMIntroReConnected -> updateStatus introId GMIntroConnected
-          GMIntroToConnected -> pure ()
-          GMIntroConnected -> pure ()
-          _ -> updateStatus introId GMIntroToConnected
-        forwardMemberXGrpMemCon :: GroupMemberIntro -> CM ()
-        forwardMemberXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
-          GMIntroToConnected -> updateStatus introId GMIntroConnected
-          GMIntroReConnected -> pure ()
-          GMIntroConnected -> pure ()
-          _ -> updateStatus introId GMIntroReConnected
-        updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
+      withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages chatMsg msg brokerTs forwarded = do
@@ -3277,8 +3230,8 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       unless (null mems) $ deliver body mems
                       where
                         buildMemberList sender = do
-                          vec <- withStore $ \db -> migrateMemberRelationsVector db sender
-                          let introducedMemsIdxs = getMemberRelationsIndexes (== MRIntroduced) vec
+                          vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
+                          let introducedMemsIdxs = getRelationsIndexes (== MRIntroduced) vec
                           mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
                           pure $ case jobScope of
                             DJSGroup {jobSpec}
