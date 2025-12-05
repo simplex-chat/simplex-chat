@@ -109,9 +109,6 @@ module Simplex.Chat.Store.Groups
     updateIntroStatus,
     getIntroduction,
     getIntroducedGroupMemberIds,
-    getForwardIntroducedModerators,
-    getForwardInvitedModerators,
-    getForwardScopeMember,
     createIntroReMember,
     createIntroToMemberContact,
     getMatchingContacts,
@@ -1732,62 +1729,6 @@ getIntroducedGroupMemberIds db invitee =
       db
       "SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?"
       (Only $ groupMemberId' invitee)
-
-getForwardIntroducedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
-getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' invitee
-    query =
-      DB.query
-        db
-        [sql|
-          SELECT i.re_group_member_id
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.re_group_member_id
-          WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
-        |]
-        (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
-
-getForwardInvitedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
-getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' forwardMember
-    query =
-      DB.query
-        db
-        [sql|
-          SELECT i.to_group_member_id
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.to_group_member_id
-          WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
-        |]
-        (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
-
-getForwardScopeMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMemberId -> IO (Maybe GroupMember)
-getForwardScopeMember db vr user GroupMember {groupMemberId = sendingGMId} scopeGMId = do
-  (introExists_ :: Maybe Int64) <-
-    liftIO $ maybeFirstRow fromOnly $
-      DB.query
-        db
-        [sql|
-          SELECT 1
-          FROM group_member_intros
-          WHERE
-            (
-              (re_group_member_id = ? AND to_group_member_id = ?) OR
-              (re_group_member_id = ? AND to_group_member_id = ?)
-            )
-            AND intro_status NOT IN (?,?,?)
-          LIMIT 1
-        |]
-        (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-  pure introExists_ $>> (eitherToMaybe <$> runExceptT (getGroupMemberById db vr user scopeGMId))
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember

@@ -3276,47 +3276,24 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       mems <- buildMemberList sender
                       unless (null mems) $ deliver body mems
                       where
-                        buildMemberList sender = case jobScope of
-                          DJSGroup {jobSpec}
-                            | jobSpecImpliedPending jobSpec ->
-                                filter memberCurrentOrPending <$> getAllIntroducedAndInvited
-                            | otherwise ->
-                                filter memberCurrent <$> getAllIntroducedAndInvited
-                          DJSMemberSupport scopeGMId ->
-                            case relationsVector sender of
-                              Nothing -> do
-                                -- moderators introduced to this invited member
-                                introducedModMs <-
-                                  if memberCategory sender == GCInviteeMember
-                                    then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
-                                    else pure []
-                                -- invited moderators to which this member was introduced
-                                invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
-                                let modMs = introducedModMs <> invitedModMs
-                                    modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
-                                if scopeGMId == groupMemberId' sender
-                                  then pure modMs'
-                                  else
-                                    withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
-                                      Just scopeMem -> pure $ scopeMem : modMs'
-                                      _ -> pure modMs'
-                              Just vec -> do
-                                let introducedMemsIdxs = getMemberRelationsIndexes (== MRIntroduced) vec
-                                mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
-                                let shouldForward mem@GroupMember {memberRole} =
-                                      memberRole >= GRModerator
-                                        && memberCurrent mem
-                                        && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                                    shouldForward' mem =
-                                      if scopeGMId == groupMemberId' sender
-                                        then shouldForward mem
-                                        else shouldForward mem || groupMemberId' mem == scopeGMId
-                                pure $ filter shouldForward' mems
-                          where
-                            getAllIntroducedAndInvited = do
-                              vec <- withStore $ \db -> migrateMemberRelationsVector db sender
-                              let introducedMemsIdxs = getMemberRelationsIndexes (== MRIntroduced) vec
-                              withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
+                        buildMemberList sender = do
+                          vec <- withStore $ \db -> migrateMemberRelationsVector db sender
+                          let introducedMemsIdxs = getMemberRelationsIndexes (== MRIntroduced) vec
+                          mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
+                          pure $ case jobScope of
+                            DJSGroup {jobSpec}
+                              | jobSpecImpliedPending jobSpec -> filter memberCurrentOrPending mems
+                              | otherwise -> filter memberCurrent mems
+                            DJSMemberSupport scopeGMId ->
+                              let shouldForward mem@GroupMember {memberRole} =
+                                    memberRole >= GRModerator
+                                      && memberCurrent mem
+                                      && maxVersion (memberChatVRange mem) >= groupKnockingVersion
+                                  shouldForward' mem =
+                                    if scopeGMId == groupMemberId' sender
+                                      then shouldForward mem
+                                      else shouldForward mem || groupMemberId' mem == scopeGMId
+                                in filter shouldForward' mems
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver msgBody mems =
