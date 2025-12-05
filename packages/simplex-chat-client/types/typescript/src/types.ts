@@ -3735,6 +3735,8 @@ export type StoreError =
   | StoreError.GroupNotFoundByName
   | StoreError.GroupMemberNameNotFound
   | StoreError.GroupMemberNotFound
+  | StoreError.GroupMemberNotFoundByIndex
+  | StoreError.MemberRelationsVectorNotFound
   | StoreError.GroupHostMemberNotFound
   | StoreError.GroupMemberNotFoundByMemberId
   | StoreError.MemberContactGroupMemberNotFound
@@ -3820,6 +3822,8 @@ export namespace StoreError {
     | "groupNotFoundByName"
     | "groupMemberNameNotFound"
     | "groupMemberNotFound"
+    | "groupMemberNotFoundByIndex"
+    | "memberRelationsVectorNotFound"
     | "groupHostMemberNotFound"
     | "groupMemberNotFoundByMemberId"
     | "memberContactGroupMemberNotFound"
@@ -3985,6 +3989,16 @@ export namespace StoreError {
 
   export interface GroupMemberNotFound extends Interface {
     type: "groupMemberNotFound"
+    groupMemberId: number // int64
+  }
+
+  export interface GroupMemberNotFoundByIndex extends Interface {
+    type: "groupMemberNotFoundByIndex"
+    groupMemberIndex: number // int64
+  }
+
+  export interface MemberRelationsVectorNotFound extends Interface {
+    type: "memberRelationsVectorNotFound"
     groupMemberId: number // int64
   }
 

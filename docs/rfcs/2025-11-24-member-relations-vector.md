@@ -72,10 +72,11 @@ note over A, B: Vectors (only Dan/Cath relation interests us<br>- we want to avo
 note left of A: Alice vectors<br>For Cath: Dan - MRNew<br>For Dan: Cath - MRNew
 note right of B: Bob vectors<br>For Cath: Dan - MRIntroduced<br>For Dan: Cath - MRIntroducedTo
 note over A, B: Only Bob forwards between Cath and Dan
+C <<->> D: connect
 C ->> B: x.grp.mem.con (connected to Dan)
 D ->> B: or: x.grp.mem.con (connected to Cath)<br>(x.grp.mem.con from either is enough)
 note right of B: Bob vectors<br>For Cath: Dan - MRConnected<br>For Dan: Cath - MRConnected
-note over A, B: Only Bob forwards between Cath and Dan
+note over A, B: Bob stops forwarding between Cath and Dan
 ```
 
 ### Avoid duplicate introductions

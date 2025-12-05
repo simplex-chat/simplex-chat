@@ -185,7 +185,7 @@ getNextDeliveryTasks db gInfo task =
       | otherwise =
           -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
           -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
-          -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
+          -- optimizing for this single sender (see processDeliveryJob -> fully connected group branch).
           -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
           map fromOnly
             <$> DB.query
