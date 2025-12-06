@@ -449,6 +449,7 @@
                   find "$out/_pkg" -type f -exec chmod 644 {} +
                   find "$out/_pkg" -type d -exec chmod 755 {} +
                   find "$out/_pkg" -exec touch -h -d '@0' {} +
+                  find "$out/_pkg" -type f -name "*.so" -exec ${android32Pkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
 
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-armv7a-android-libsimplex.zip *)
                   rm -fR $out/_pkg
@@ -565,6 +566,7 @@
                   find "$out/_pkg" -type f -exec chmod 644 {} +
                   find "$out/_pkg" -type d -exec chmod 755 {} +
                   find "$out/_pkg" -exec touch -h -d '@0' {} +
+                  find "$out/_pkg" -type f -name "*.so" -exec ${androidPkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
 
                   (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-aarch64-android-libsimplex.zip *)
                   rm -fR $out/_pkg
