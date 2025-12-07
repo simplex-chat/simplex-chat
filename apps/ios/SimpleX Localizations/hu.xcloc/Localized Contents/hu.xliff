@@ -365,9 +365,9 @@
         <target>**Hivatkozás beolvasása / beillesztése**: egy kapott hivatkozáson keresztüli kapcsolódáshoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve">
+      <trans-unit id="**Warning**: Instant push notifications require passphrase saved in Keychain." xml:space="preserve" approved="no">
         <source>**Warning**: Instant push notifications require passphrase saved in Keychain.</source>
-        <target>**Figyelmeztetés:** Az azonnali push-értesítésekhez a kulcstartóban tárolt jelmondat megadása szükséges.</target>
+        <target state="translated">**Figyelmeztetés:** Az azonnali leküldéses értesítésekhez a kulcstartóban tárolt jelmondat megadása szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Warning**: the archive will be removed." xml:space="preserve">
@@ -375,14 +375,14 @@
         <target>**Figyelmeztetés:** az archívum el lesz távolítva.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** audio call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** audio call</source>
-        <target>**e2e titkosított** hanghívás</target>
+        <target state="translated">**végpontok között titkosított** hanghívás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="**e2e encrypted** video call" xml:space="preserve">
+      <trans-unit id="**e2e encrypted** video call" xml:space="preserve" approved="no">
         <source>**e2e encrypted** video call</source>
-        <target>**e2e titkosított** videóhívás</target>
+        <target state="translated">**végpontok között titkosított** videóhívás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
@@ -1933,9 +1933,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Kapcsolódás egy hivatkozáson keresztül</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Connect via one-time link" xml:space="preserve">
+      <trans-unit id="Connect via one-time link" xml:space="preserve" approved="no">
         <source>Connect via one-time link</source>
-        <target>Kapcsolódás egyszer használható meghívón keresztül</target>
+        <target state="translated">Kapcsolódás az egyszer használható meghívón keresztül</target>
         <note>new chat sheet title</note>
       </trans-unit>
       <trans-unit id="Connect with %@" xml:space="preserve">
@@ -2990,9 +2990,9 @@ chat item action</note>
         <target>Időtartam</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="E2E encrypted notifications." xml:space="preserve">
+      <trans-unit id="E2E encrypted notifications." xml:space="preserve" approved="no">
         <source>E2E encrypted notifications.</source>
-        <target>Végpontok közötti titkosított értesítések.</target>
+        <target state="translated">Végpontok között titkosított értesítések.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Edit" xml:space="preserve">
@@ -4497,10 +4497,10 @@ További fejlesztések hamarosan!</target>
         <target>Azonnali</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve">
+      <trans-unit id="Instant push notifications will be hidden!&#10;" xml:space="preserve" approved="no">
         <source>Instant push notifications will be hidden!
 </source>
-        <target>Az azonnali push-értesítések el lesznek rejtve!
+        <target state="translated">Az azonnali leküldéses értesítések el lesznek rejtve!
 </target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4902,9 +4902,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Markdown az üzenetekben</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Max 30 seconds, received instantly." xml:space="preserve">
+      <trans-unit id="Max 30 seconds, received instantly." xml:space="preserve" approved="no">
         <source>Max 30 seconds, received instantly.</source>
-        <target>Max. 30 másodperc, azonnal érkezett.</target>
+        <target state="translated">Legfeljebb 30 másodperc, azonnal megérkezik.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Media &amp; file servers" xml:space="preserve">
@@ -5547,9 +5547,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Nincs privát útválasztási munkamenet</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="No push server" xml:space="preserve">
+      <trans-unit id="No push server" xml:space="preserve" approved="no">
         <source>No push server</source>
-        <target>Helyi</target>
+        <target state="translated">Nincs kiszolgáló a leküldéses értesítésekhez</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="No received or sent files" xml:space="preserve">
@@ -6098,9 +6098,9 @@ Hiba: %@</target>
         <target>Jelentse a fejlesztőknek.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve">
+      <trans-unit id="Please restart the app and migrate the database to enable push notifications." xml:space="preserve" approved="no">
         <source>Please restart the app and migrate the database to enable push notifications.</source>
-        <target>Indítsa újra az alkalmazást az adatbázis-átköltöztetéséhez szükséges push-értesítések engedélyezéséhez.</target>
+        <target state="translated">Indítsa újra az alkalmazást az adatbázis-átköltöztetéséhez szükséges leküldéses értesítések engedélyezéséhez.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Please store passphrase securely, you will NOT be able to access chat if you lose it." xml:space="preserve">
@@ -6365,14 +6365,14 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>A proxy jelszót igényel</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push notifications" xml:space="preserve">
+      <trans-unit id="Push notifications" xml:space="preserve" approved="no">
         <source>Push notifications</source>
-        <target>Push-értesítések</target>
+        <target state="translated">Leküldéses értesítések</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Push server" xml:space="preserve">
+      <trans-unit id="Push server" xml:space="preserve" approved="no">
         <source>Push server</source>
-        <target>Push-kiszolgáló</target>
+        <target state="translated">Leküldéses értesítéskiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Quantum resistant encryption" xml:space="preserve">
@@ -6567,9 +6567,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
 reject incoming call via notification
 swipe action</note>
       </trans-unit>
-      <trans-unit id="Reject (sender NOT notified)" xml:space="preserve">
+      <trans-unit id="Reject (sender NOT notified)" xml:space="preserve" approved="no">
         <source>Reject (sender NOT notified)</source>
-        <target>Elutasítás (a kérés küldője NEM fog értesítést kapni)</target>
+        <target state="translated">Elutasítás (a kérés küldője NEM lesz értesítve)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Reject contact request" xml:space="preserve">
@@ -7754,9 +7754,9 @@ chat item action</note>
         <target>Kihagyott üzenetek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Small groups (max 20)" xml:space="preserve">
+      <trans-unit id="Small groups (max 20)" xml:space="preserve" approved="no">
         <source>Small groups (max 20)</source>
-        <target>Kis csoportok (max. 20 tag)</target>
+        <target state="translated">Kis csoportok (legfeljebb 20 tag)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Soft" xml:space="preserve">
@@ -7807,9 +7807,9 @@ report reason</note>
         <target>Négyzet, kör vagy bármi a kettő között.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Start chat" xml:space="preserve">
+      <trans-unit id="Start chat" xml:space="preserve" approved="no">
         <source>Start chat</source>
-        <target>Csevegés indítása</target>
+        <target state="translated">Csevegés elindítása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Start chat?" xml:space="preserve">
@@ -8209,9 +8209,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A második jelölés, amit kihagytunk! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The sender will NOT be notified" xml:space="preserve">
+      <trans-unit id="The sender will NOT be notified" xml:space="preserve" approved="no">
         <source>The sender will NOT be notified</source>
-        <target>A kérés küldője NEM fog értesítést kapni</target>
+        <target state="translated">A kérés küldője NEM lesz értesítve</target>
         <note>alert message</note>
       </trans-unit>
       <trans-unit id="The servers for new connections of your current chat profile **%@**." xml:space="preserve">
@@ -8421,9 +8421,9 @@ A funkció bekapcsolása előtt a rendszer felszólítja a képernyőzár beáll
         <target>A parancsok küldéséhez kapcsolódva kell lennie.</target>
         <note>alert message</note>
       </trans-unit>
-      <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve">
+      <trans-unit id="To support instant push notifications the chat database has to be migrated." xml:space="preserve" approved="no">
         <source>To support instant push notifications the chat database has to be migrated.</source>
-        <target>Az azonnali push-értesítések támogatásához a csevegési adatbázis átköltöztetése szükséges.</target>
+        <target state="translated">Az azonnali leküldéses értesítések támogatásához a csevegési adatbázis átköltöztetése szükséges.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="To use another profile after connection attempt, delete the chat and use the link again." xml:space="preserve">
@@ -9285,9 +9285,9 @@ Megismétli a csatlakozási kérést?</target>
         <target>Megoszthatja ezt a SimpleX-címet a partnereivel, hogy kapcsolatba léphessenek vele: **%@**.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve">
+      <trans-unit id="You can start chat via app Settings / Database or by restarting the app" xml:space="preserve" approved="no">
         <source>You can start chat via app Settings / Database or by restarting the app</source>
-        <target>A csevegést az alkalmazás „Beállítások / Adatbázis” menüben vagy az alkalmazás újraindításával indíthatja el</target>
+        <target state="translated">A csevegés elindítható az alkalmazás „Beállítások / Adatbázis” menüjében vagy az alkalmazás újraindításával</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="You can still view conversation with %@ in the list of chats." xml:space="preserve">
@@ -9512,9 +9512,9 @@ Megismétli a kapcsolódási kérést?</target>
         <target>Partner</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve">
+      <trans-unit id="Your contact sent a file that is larger than currently supported maximum size (%@)." xml:space="preserve" approved="no">
         <source>Your contact sent a file that is larger than currently supported maximum size (%@).</source>
-        <target>A partnere a jelenleg megengedett maximális méretű (%@) fájlnál nagyobbat küldött.</target>
+        <target state="translated">A partnere a jelenleg támogatott legnagyobb (%@) fájlméretnél nagyobbat küldött.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your contacts can allow full message deletion." xml:space="preserve">
@@ -9702,9 +9702,9 @@ Megismétli a kapcsolódási kérést?</target>
         <target>kísérletek</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve">
+      <trans-unit id="audio call (not e2e encrypted)" xml:space="preserve" approved="no">
         <source>audio call (not e2e encrypted)</source>
-        <target>hanghívás (nem e2e titkosított)</target>
+        <target state="translated">hanghívás (végpontok között NEM titkosított)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="author" xml:space="preserve">
@@ -9843,9 +9843,9 @@ marked deleted chat item preview text</note>
         <target>kapcsolódás (bemutatkozó meghívó)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="connecting call" xml:space="preserve">
+      <trans-unit id="connecting call" xml:space="preserve" approved="no">
         <source>connecting call…</source>
-        <target>kapcsolódási hívás…</target>
+        <target state="translated">hívás kapcsolása…</target>
         <note>call status</note>
       </trans-unit>
       <trans-unit id="connecting…" xml:space="preserve">
@@ -9878,14 +9878,14 @@ marked deleted chat item preview text</note>
         <target>partner letiltva</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact has e2e encryption" xml:space="preserve">
+      <trans-unit id="contact has e2e encryption" xml:space="preserve" approved="no">
         <source>contact has e2e encryption</source>
-        <target>a partner e2e titkosítással rendelkezik</target>
+        <target state="translated">a partner végpontok közötti titkosítással rendelkezik</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="contact has no e2e encryption" xml:space="preserve">
+      <trans-unit id="contact has no e2e encryption" xml:space="preserve" approved="no">
         <source>contact has no e2e encryption</source>
-        <target>a partner nem rendelkezik e2e titkosítással</target>
+        <target state="translated">a partner nem rendelkezik végpontok közötti titkosítással</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="contact not ready" xml:space="preserve">
@@ -9979,9 +9979,9 @@ pref value</note>
         <target>duplikációk</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="e2e encrypted" xml:space="preserve">
+      <trans-unit id="e2e encrypted" xml:space="preserve" approved="no">
         <source>e2e encrypted</source>
-        <target>e2e titkosított</target>
+        <target state="translated">végpontok között titkosított</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="enabled" xml:space="preserve">
@@ -10089,14 +10089,14 @@ pref value</note>
         <target>óra</target>
         <note>time unit</note>
       </trans-unit>
-      <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve">
+      <trans-unit id="iOS Keychain is used to securely store passphrase - it allows receiving push notifications." xml:space="preserve" approved="no">
         <source>iOS Keychain is used to securely store passphrase - it allows receiving push notifications.</source>
-        <target>Az iOS kulcstartó a jelmondat biztonságos tárolására szolgál – lehetővé teszi a push-értesítések fogadását.</target>
+        <target state="translated">Az iOS kulcstartó a jelmondat biztonságos tárolására szolgál – lehetővé teszi a leküldéses értesítések fogadását.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve">
+      <trans-unit id="iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications." xml:space="preserve" approved="no">
         <source>iOS Keychain will be used to securely store passphrase after you restart the app or change passphrase - it will allow receiving push notifications.</source>
-        <target>Az iOS kulcstartó biztonságosan fogja tárolni a jelmondatot az alkalmazás újraindítása, vagy a jelmondat módosítása után – lehetővé teszi a push-értesítések fogadását.</target>
+        <target state="translated">Az iOS kulcstartó biztonságosan fogja tárolni a jelmondatot az alkalmazás újraindítása, vagy a jelmondat módosítása után – lehetővé teszi a leküldéses értesítések fogadását.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="inactive" xml:space="preserve">
@@ -10259,9 +10259,9 @@ pref value</note>
         <target>nem</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="no e2e encryption" xml:space="preserve">
+      <trans-unit id="no e2e encryption" xml:space="preserve" approved="no">
         <source>no e2e encryption</source>
-        <target>nincs e2e titkosítás</target>
+        <target state="translated">nincs végpontok közötti titkosítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no subscription" xml:space="preserve">
@@ -10581,9 +10581,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>videó</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve">
+      <trans-unit id="video call (not e2e encrypted)" xml:space="preserve" approved="no">
         <source>video call (not e2e encrypted)</source>
-        <target>videóhívás (nem e2e titkosított)</target>
+        <target state="translated">videóhívás (végpontok között NEM titkosított)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="waiting for answer…" xml:space="preserve">
@@ -10841,9 +10841,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Hozzászólás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve">
+      <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
         <source>Currently maximum supported file size is %@.</source>
-        <target>Jelenleg támogatott legnagyobb fájl méret: %@.</target>
+        <target state="translated">Jelenleg támogatott legnagyobb fájlméret: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database downgrade required" xml:space="preserve">
