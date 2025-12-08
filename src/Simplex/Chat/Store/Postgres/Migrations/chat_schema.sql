@@ -121,6 +121,31 @@ $$;
 
 
 
+CREATE FUNCTION test_chat_schema.set_member_vector_new_relation(v bytea, idx bigint, direction integer, status integer) RETURNS bytea
+    LANGUAGE plpgsql IMMUTABLE
+    AS $$
+DECLARE
+  new_len INT;
+  result BYTEA;
+  byte_val INT;
+BEGIN
+  IF idx < 0 THEN
+    RETURN v;
+  END IF;
+  byte_val := (direction * 8) + status;
+  new_len := GREATEST(length(v), idx + 1);
+  IF new_len > length(v) THEN
+    result := v || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(v)));
+  ELSE
+    result := v;
+  END IF;
+  result := set_byte(result, idx::INT, byte_val);
+  RETURN result;
+END;
+$$;
+
+
+
 CREATE AGGREGATE test_chat_schema.migrate_relations_vector(bigint, integer, text) (
     SFUNC = test_chat_schema.migrate_relations_vector_step,
     STYPE = bytea,
