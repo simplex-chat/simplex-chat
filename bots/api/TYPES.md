@@ -3369,6 +3369,9 @@ MemberContactGroupMemberNotFound:
 - type: "memberContactGroupMemberNotFound"
 - contactId: int64
 
+InvalidMemberRelationUpdate:
+- type: "invalidMemberRelationUpdate"
+
 GroupWithoutUser:
 - type: "groupWithoutUser"
 

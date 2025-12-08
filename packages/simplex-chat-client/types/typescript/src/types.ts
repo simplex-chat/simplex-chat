@@ -3740,6 +3740,7 @@ export type StoreError =
   | StoreError.GroupHostMemberNotFound
   | StoreError.GroupMemberNotFoundByMemberId
   | StoreError.MemberContactGroupMemberNotFound
+  | StoreError.InvalidMemberRelationUpdate
   | StoreError.GroupWithoutUser
   | StoreError.DuplicateGroupMember
   | StoreError.GroupAlreadyJoined
@@ -3827,6 +3828,7 @@ export namespace StoreError {
     | "groupHostMemberNotFound"
     | "groupMemberNotFoundByMemberId"
     | "memberContactGroupMemberNotFound"
+    | "invalidMemberRelationUpdate"
     | "groupWithoutUser"
     | "duplicateGroupMember"
     | "groupAlreadyJoined"
@@ -4015,6 +4017,10 @@ export namespace StoreError {
   export interface MemberContactGroupMemberNotFound extends Interface {
     type: "memberContactGroupMemberNotFound"
     contactId: number // int64
+  }
+
+  export interface InvalidMemberRelationUpdate extends Interface {
+    type: "invalidMemberRelationUpdate"
   }
 
   export interface GroupWithoutUser extends Interface {
