@@ -41,7 +41,6 @@ ALTER TABLE pending_group_messages DROP COLUMN group_member_intro_id;
 DROP TABLE group_member_intros;
 |]
 
--- TODO [relations vector] re-create group_member_intros
 down_m20251128_member_relations_vector_stage_2 :: Text
 down_m20251128_member_relations_vector_stage_2 =
   T.pack
