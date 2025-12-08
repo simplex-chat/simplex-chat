@@ -207,9 +207,32 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
 
 fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
   val server = object: NanoWSD(SERVER_HOST, SERVER_PORT) {
+    // add new resource path here that you allow to get. Check resources/assets/www directory
+    val allowedResources = arrayOf(
+      "/call.js",
+      "/lz-string.min.js",
+      "/desktop/call.html",
+      "/desktop/style.css",
+      "/desktop/ui.js",
+      "/desktop/images/ic_call_end_filled.svg",
+      "/desktop/images/ic_mic.svg",
+      "/desktop/images/ic_mic_off.svg",
+      "/desktop/images/ic_phone_in_talk.svg",
+      "/desktop/images/ic_screen_share.svg",
+      "/desktop/images/ic_stop_screen_share.svg",
+      "/desktop/images/ic_videocam_filled.svg",
+      "/desktop/images/ic_videocam_off.svg",
+      "/desktop/images/ic_volume_down.svg",
+      "/desktop/images/ic_volume_off.svg",
+      "/desktop/images/ic_volume_up.svg"
+    )
+
     override fun openWebSocket(session: IHTTPSession): WebSocket = MyWebSocket(onResponse, session)
 
     fun resourcesToResponse(path: String): Response {
+      // use whitelist of resources just in case there are any path traversal attempts. It's safer than trying to serialize user's query
+      if (!allowedResources.contains(path)) return resourceNotFound
+
       val uri = Class.forName("chat.simplex.common.AppKt").getResource("/assets/www$path") ?: return resourceNotFound
       val response = newFixedLengthResponse(
         Status.OK, getMimeTypeForFile(uri.file),
