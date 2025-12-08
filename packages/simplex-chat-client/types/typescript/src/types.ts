@@ -3764,7 +3764,6 @@ export type StoreError =
   | StoreError.ConnectionNotFoundById
   | StoreError.ConnectionNotFoundByMemberId
   | StoreError.PendingConnectionNotFound
-  | StoreError.IntroNotFound
   | StoreError.UniqueID
   | StoreError.LargeMsg
   | StoreError.InternalError
@@ -3852,7 +3851,6 @@ export namespace StoreError {
     | "connectionNotFoundById"
     | "connectionNotFoundByMemberId"
     | "pendingConnectionNotFound"
-    | "introNotFound"
     | "uniqueID"
     | "largeMsg"
     | "internalError"
@@ -4130,10 +4128,6 @@ export namespace StoreError {
   export interface PendingConnectionNotFound extends Interface {
     type: "pendingConnectionNotFound"
     connId: number // int64
-  }
-
-  export interface IntroNotFound extends Interface {
-    type: "introNotFound"
   }
 
   export interface UniqueID extends Interface {

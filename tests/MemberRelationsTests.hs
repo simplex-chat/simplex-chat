@@ -183,7 +183,7 @@ memberRelationsTests = do
 
     describe "setNewRelations" $ do
       it "sets multiple new relations with direction" $ do
-        let updates = [(0, IDSubjectIntroduced, MRIntroduced), (1, IDReferencedIntroduced, MRSubjectConnected)]
+        let updates = [(0, (IDSubjectIntroduced, MRIntroduced)), (1, (IDReferencedIntroduced, MRSubjectConnected))]
         let vec = setNewRelations updates B.empty
         getRelation 0 vec `shouldBe` MRIntroduced
         getRelation 1 vec `shouldBe` MRSubjectConnected

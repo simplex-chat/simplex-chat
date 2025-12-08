@@ -170,7 +170,6 @@ import Data.Int (Int64)
 import Data.List (partition, sortOn)
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
-import qualified Data.Set as S
 import Data.Text (Text)
 import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
@@ -180,7 +179,7 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
-import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroductionInt, toRelationInt)
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -195,6 +194,7 @@ import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>=),
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
+import qualified Data.Set as S
 import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
@@ -1648,7 +1648,7 @@ createIntrosOrUpdateVectors db vr reMembers toMember
           pure $ if hasVec then (m : withVec, withoutVec) else (withVec, m : withoutVec)
 #endif
 
-setMemberVectorNewRelations :: DB.Connection -> GroupMember -> [(Int64, IntroductionDirection, MemberRelation)] -> IO ()
+setMemberVectorNewRelations :: DB.Connection -> GroupMember -> [(Int64, (IntroductionDirection, MemberRelation))] -> IO ()
 setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
   v_ <- maybeFirstRow fromOnly $
     DB.query
@@ -1678,13 +1678,13 @@ setMembersVectorsNewRelation db members idx dir status = do
   DB.execute
     db
     "UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id IN ?"
-    (idx, toIntroductionInt dir, toRelationInt status, currentTs, In memberIds)
+    (idx, toIntroDirInt dir, toRelationInt status, currentTs, In memberIds)
 #else
   forM_ members $ \GroupMember {groupMemberId} ->
     DB.execute
       db
       "UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?"
-      (idx, toIntroductionInt dir, toRelationInt status, currentTs, groupMemberId)
+      (idx, toIntroDirInt dir, toRelationInt status, currentTs, groupMemberId)
 #endif
 
 setMemberVectorRelationConnected :: DB.Connection -> GroupMember -> GroupMember -> MemberRelation -> ExceptT StoreError IO ()

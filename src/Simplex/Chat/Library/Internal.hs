@@ -1087,7 +1087,7 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
           void $ sendDirectMemberMessage conn (memberIntro reMember) groupId
     updateToMemberVector :: [GroupMember] -> CM ()
     updateToMemberVector reMembers = do
-      let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, IDReferencedIntroduced, MRIntroduced)) reMembers
+      let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, (IDReferencedIntroduced, MRIntroduced))) reMembers
       withStore' $ \db -> setMemberVectorNewRelations db toMember relations
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =

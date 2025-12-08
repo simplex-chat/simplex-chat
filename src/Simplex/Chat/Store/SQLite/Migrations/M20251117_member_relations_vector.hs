@@ -10,7 +10,7 @@ import Database.SQLite3 (funcArgBlob, funcArgInt64, funcArgText, funcResultBlob)
 import Database.SQLite3.Bindings
 import Foreign.C.Types
 import Foreign.Ptr
-import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), fromIntroductionInt, fromRelationInt, setNewRelation, setNewRelations)
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), fromIntroDirInt, fromRelationInt, setNewRelation, setNewRelations)
 import Simplex.Messaging.Agent.Store.SQLite.Util (SQLiteFunc, SQLiteFuncFinal, mkSQLiteAggFinal, mkSQLiteAggStep, mkSQLiteFunc)
 
 -- This module defines custom aggregate function migrate_relations_vector(idx, direction, intro_status).
@@ -42,7 +42,7 @@ foreign import ccall "&simplex_member_relations_final" sqliteMemberRelationsFina
 sqliteMemberRelationsStep :: SQLiteFunc
 sqliteMemberRelationsStep = mkSQLiteAggStep [] $ \_ args acc -> do
   idx <- funcArgInt64 args 0
-  direction <- fromIntroductionInt . fromIntegral <$> funcArgInt64 args 1
+  direction <- fromIntroDirInt . fromIntegral <$> funcArgInt64 args 1
   introStatus <- funcArgText args 2
   let relation = introStatusToRelation direction introStatus
   pure $ (idx, direction, relation) : acc
@@ -69,7 +69,7 @@ sqliteSetMemberVectorNewRelation :: SQLiteFunc
 sqliteSetMemberVectorNewRelation = mkSQLiteFunc $ \cxt args -> do
   v <- funcArgBlob args 0
   idx <- funcArgInt64 args 1
-  direction <- fromIntroductionInt . fromIntegral <$> funcArgInt64 args 2
+  direction <- fromIntroDirInt . fromIntegral <$> funcArgInt64 args 2
   status <- fromRelationInt . fromIntegral <$> funcArgInt64 args 3
   funcResultBlob cxt $ setNewRelation idx direction status v
 

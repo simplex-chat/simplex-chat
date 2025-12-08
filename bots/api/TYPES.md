@@ -3458,9 +3458,6 @@ PendingConnectionNotFound:
 - type: "pendingConnectionNotFound"
 - connId: int64
 
-IntroNotFound:
-- type: "introNotFound"
-
 UniqueID:
 - type: "uniqueID"
 

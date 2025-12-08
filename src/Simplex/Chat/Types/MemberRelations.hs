@@ -3,8 +3,8 @@
 module Simplex.Chat.Types.MemberRelations
   ( IntroductionDirection (..),
     MemberRelation (..),
-    toIntroductionInt,
-    fromIntroductionInt,
+    toIntroDirInt,
+    fromIntroDirInt,
     toRelationInt,
     fromRelationInt,
     getRelation,
@@ -35,13 +35,13 @@ data IntroductionDirection
   | IDReferencedIntroduced -- Member referenced in vector is introduced to subject member
   deriving (Eq, Show)
 
-toIntroductionInt :: IntroductionDirection -> Word8
-toIntroductionInt = \case
+toIntroDirInt :: IntroductionDirection -> Word8
+toIntroDirInt = \case
   IDSubjectIntroduced -> 0
   IDReferencedIntroduced -> 1
 
-fromIntroductionInt :: Word8 -> IntroductionDirection
-fromIntroductionInt = \case
+fromIntroDirInt :: Word8 -> IntroductionDirection
+fromIntroDirInt = \case
   0 -> IDSubjectIntroduced
   1 -> IDReferencedIntroduced
   _ -> IDSubjectIntroduced
@@ -85,11 +85,11 @@ getRelation' i v
   | i < 0 || fromIntegral i >= B.length v = (IDSubjectIntroduced, MRNew)
   | otherwise =
       let b = v `B.index` fromIntegral i
-       in (fromIntroductionInt $ (b .&. directionMask) `shiftR` 3, fromRelationInt $ b .&. statusMask)
+       in (fromIntroDirInt $ (b .&. directionMask) `shiftR` 3, fromRelationInt $ b .&. statusMask)
 
 -- | Get the indexes of members that satisfy the given relation predicate.
-getRelationsIndexes :: (MemberRelation -> Bool) -> ByteString -> [Int64]
-getRelationsIndexes p v = [i | i <- [0 .. fromIntegral (B.length v) - 1], p (getRelation i v)]
+getRelationsIndexes :: MemberRelation -> ByteString -> [Int64]
+getRelationsIndexes p v = [i | i <- [0 .. fromIntegral (B.length v) - 1], getRelation i v == p]
 
 -- | Set the relation status of a member at a given index in the relations vector.
 -- Preserves the introduction direction. Expands the vector lazily if needed.
@@ -101,7 +101,7 @@ setRelation i r v
 -- | Set multiple relation statuses at once.
 -- Preserves the introduction direction. Expands the vector lazily if needed.
 setRelations :: [(Int64, MemberRelation)] -> ByteString -> ByteString
-setRelations relations v = setRelations' [(i, Nothing, r) | (i, r) <- relations] v
+setRelations = setRelations_ $ \r b -> (b .&. complement statusMask) .|. toRelationInt r
 
 -- | Set relation to connected state based on passed status and current status.
 -- newStatus should be MRSubjectConnected or MRReferencedConnected, otherwise returns vector unchanged.
@@ -129,32 +129,27 @@ setRelationConnected i newStatus v
 -- Expands the vector lazily if needed.
 setNewRelation :: Int64 -> IntroductionDirection -> MemberRelation -> ByteString -> ByteString
 setNewRelation i dir r v
-  | i >= 0 = setNewRelations [(i, dir, r)] v
+  | i >= 0 = setNewRelations [(i, (dir, r))] v
   | otherwise = v
 
 -- | Set multiple new relations with both direction and status at once.
 -- Expands the vector lazily if needed.
-setNewRelations :: [(Int64, IntroductionDirection, MemberRelation)] -> ByteString -> ByteString
-setNewRelations relations v = setRelations' [(i, Just dir, r) | (i, dir, r) <- relations] v
+setNewRelations :: [(Int64, (IntroductionDirection, MemberRelation))] -> ByteString -> ByteString
+setNewRelations = setRelations_ $ \(dir, r) b -> (b .&. relationMask) .|. (toIntroDirInt dir `shiftL` 3) .|. toRelationInt r
+  where
+    relationMask = complement (statusMask .|. directionMask)
 
--- | Internal function to set relations with optional direction update.
--- If direction is Nothing, preserves existing direction; if Just, sets new direction.
-setRelations' :: [(Int64, Maybe IntroductionDirection, MemberRelation)] -> ByteString -> ByteString
-setRelations' [] v = v
-setRelations' relations v =
+setRelations_ :: (r -> Word8 -> Word8) -> [(Int64, r)] -> ByteString -> ByteString
+setRelations_ _ [] v = v
+setRelations_ updateByte relations v =
   let (fp, off, len) = toForeignPtr v
-      newLen = max len $ fromIntegral $ maximum (map (\(i, _, _) -> i) relations) + 1
+      newLen = max len $ fromIntegral $ maximum (map fst relations) + 1
    in unsafeCreate newLen $ \ptr -> do
         withForeignPtr fp $ \vPtr -> copyBytes ptr (vPtr `plusPtr` off) len
         when (newLen > len) $ fillBytes (ptr `plusPtr` len) 0 (newLen - len)
-        forM_ relations $ \(ix, dir_, status) -> when (ix >= 0) $ do
+        forM_ relations $ \(ix, r) -> when (ix >= 0) $
           let i = fromIntegral ix
-          b <- peekByteOff ptr i
-          let b' = (b .&. complement statusMask) .|. toRelationInt status
-              b'' = case dir_ of
-                Just dir -> (b' .&. complement directionMask) .|. (toIntroductionInt dir `shiftL` 3)
-                Nothing -> b'
-          pokeByteOff ptr i b''
+           in pokeByteOff ptr i . updateByte r =<< peekByteOff ptr i
 
 statusMask :: Word8
 statusMask = 0x07 -- bits 0-2

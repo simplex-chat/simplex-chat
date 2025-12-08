@@ -3229,7 +3229,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       where
                         buildMemberList sender = do
                           vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
-                          let introducedMemsIdxs = getRelationsIndexes (== MRIntroduced) vec
+                          let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
                           ms <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
                           pure $ case jobScope of
                             DJSGroup {jobSpec}
