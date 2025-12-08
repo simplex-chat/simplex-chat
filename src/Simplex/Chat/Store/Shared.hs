@@ -122,7 +122,6 @@ data StoreError
   | SEConnectionNotFoundById {connId :: Int64}
   | SEConnectionNotFoundByMemberId {groupMemberId :: GroupMemberId}
   | SEPendingConnectionNotFound {connId :: Int64}
-  | SEIntroNotFound
   | SEUniqueID
   | SELargeMsg
   | SEInternalError {message :: String}

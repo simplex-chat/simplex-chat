@@ -1782,9 +1782,9 @@ updateIntroStatus db introId introStatus = do
     |]
     (introStatus, currentTs, introId)
 
-getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
-getIntroduction db reMember toMember = ExceptT $
-  firstRow toIntro SEIntroNotFound $
+getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> IO (Maybe GroupMemberIntro)
+getIntroduction db reMember toMember =
+  maybeFirstRow toIntro $
     DB.query
       db
       [sql|

@@ -28,7 +28,7 @@ import Data.Either (lefts, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
-import Data.List (find, foldl')
+import Data.List (find)
 import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
@@ -2616,13 +2616,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
-              intro_ <- eitherToMaybe <$> withStore' (\db -> runExceptT $ getIntroduction db reMember m)
-              let introId_ = introId <$> intro_
-              forM_ introId_ $ \introId ->
-                withStore' $ \db -> updateIntroStatus db introId GMIntroInvReceived
-              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) introId_ $
-                forM_ introId_ $ \introId ->
-                  withStore' $ \db -> updateIntroStatus db introId GMIntroInvForwarded
+              intro_ <- withStore' $ \db -> getIntroduction db reMember m
+              update intro_ GMIntroInvReceived
+              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) intro_ $
+                update intro_ GMIntroInvForwarded
+              where
+                update (Just GroupMemberIntro {introId}) status = withStore' $ \db -> updateIntroStatus db introId status
+                update Nothing _ = pure ()
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
@@ -3207,10 +3207,10 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     DJSMemberSupport scopeGMId -> do
                       -- for member support scope we just load all recipients in one go, without cursor
                       modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-                      let moderatorFilter mem =
-                            memberCurrent mem
-                            && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                            && Just (groupMemberId' mem) /= singleSenderGMId_
+                      let moderatorFilter m =
+                            memberCurrent m
+                              && maxVersion (memberChatVRange m) >= groupKnockingVersion
+                              && Just (groupMemberId' m) /= singleSenderGMId_
                           modMs' = filter moderatorFilter modMs
                       mems <-
                         if Just scopeGMId == singleSenderGMId_
@@ -3224,27 +3224,27 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required when not using relays"
                     Just singleSenderGMId -> do
                       sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
-                      mems <- buildMemberList sender
-                      unless (null mems) $ deliver body mems
+                      ms <- buildMemberList sender
+                      unless (null ms) $ deliver body ms
                       where
                         buildMemberList sender = do
                           vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
                           let introducedMemsIdxs = getRelationsIndexes (== MRIntroduced) vec
-                          mems <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
+                          ms <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
                           pure $ case jobScope of
                             DJSGroup {jobSpec}
-                              | jobSpecImpliedPending jobSpec -> filter memberCurrentOrPending mems
-                              | otherwise -> filter memberCurrent mems
-                            DJSMemberSupport scopeGMId ->
-                              let shouldForward mem@GroupMember {memberRole} =
-                                    memberRole >= GRModerator
-                                      && memberCurrent mem
-                                      && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                                  shouldForward' mem =
-                                    if scopeGMId == groupMemberId' sender
-                                      then shouldForward mem
-                                      else shouldForward mem || groupMemberId' mem == scopeGMId
-                                in filter shouldForward' mems
+                              | jobSpecImpliedPending jobSpec -> filter memberCurrentOrPending ms
+                              | otherwise -> filter memberCurrent ms
+                            DJSMemberSupport scopeGMId -> filter shouldForwardTo ms
+                              where
+                                shouldForwardTo m =
+                                  let mId = groupMemberId' m
+                                   in mId /= senderId && (mId == scopeGMId || currentModerator m)
+                                senderId = groupMemberId' sender
+                                currentModerator m@GroupMember {memberRole} =
+                                  memberRole >= GRModerator
+                                    && memberCurrent m
+                                    && maxVersion (memberChatVRange m) >= groupKnockingVersion
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver msgBody mems =
