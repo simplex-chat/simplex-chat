@@ -2721,9 +2721,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       withStore' (`migrateMemberRelationsVector` sendingMem)
       withStore' (`migrateMemberRelationsVector` refMem)
       -- Updating vectors in separate transactions to avoid deadlocks.
-      -- Update sending member's vector: subject (sendingMem) connected to referenced (refMem)
       withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
-      -- Update referenced member's vector: referenced (sendingMem) connected to subject (refMem)
       withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
