@@ -208,7 +208,7 @@ fun WebRTCController(callCommand: SnapshotStateList<WCallCommand>, onResponse: (
 fun startServer(onResponse: (WVAPIMessage) -> Unit): NanoWSD {
   val server = object: NanoWSD(SERVER_HOST, SERVER_PORT) {
     // add new resource path here that you allow to get. Check resources/assets/www directory
-    val allowedResources = arrayOf(
+    val allowedResources = setOf(
       "/call.js",
       "/lz-string.min.js",
       "/desktop/call.html",
