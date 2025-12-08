@@ -1728,7 +1728,15 @@ migrateMemberRelationsVector db GroupMember {groupMemberId} =
 migrateMemberRelationsVector' :: DB.Connection -> GroupMemberId -> IO ()
 migrateMemberRelationsVector' db groupMemberId = do
   currentTs <- liftIO getCurrentTime
-  liftIO $
+  liftIO $ do
+#if defined(dbPostgres)
+    -- Lock the row first to ensure computation runs only after lock is acquired
+    _ :: [Only Int] <-
+      DB.query
+        db
+        "SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NULL FOR UPDATE"
+        (Only groupMemberId)
+#endif
     DB.execute
       db
       [sql|
