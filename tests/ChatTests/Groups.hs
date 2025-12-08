@@ -36,6 +36,7 @@ import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -5087,7 +5088,7 @@ updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
         SET member_relations_vector = ?
         WHERE local_display_name = ?
       |]
-      (invitee1Vec', invitee1Name)
+      (Binary invitee1Vec', invitee1Name)
 
     let invitee2Vec' = setRelation invitee1Index relation (fromMaybe B.empty invitee2Vec)
     DB.execute db
@@ -5096,7 +5097,7 @@ updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
         SET member_relations_vector = ?
         WHERE local_display_name = ?
       |]
-      (invitee2Vec', invitee2Name)
+      (Binary invitee2Vec', invitee2Name)
 
 testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =

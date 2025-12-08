@@ -1640,7 +1640,7 @@ createIntrosOrUpdateVectors db vr reMembers toMember
           (Only $ In memberIds)
       pure $ partition (\m -> groupMemberId' m `S.member` memberIdsWithVec) members
 #else
-    partitionByVector members = foldrM checkMember ([], []) members
+    partitionByVector = foldrM checkMember ([], [])
       where
         checkMember m (withVec, withoutVec) = do
           hasVec <- isJust <$> maybeFirstRow fromOnly
