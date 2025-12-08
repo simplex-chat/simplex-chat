@@ -204,18 +204,6 @@ CREATE TABLE group_members(
   ON UPDATE CASCADE,
   UNIQUE(group_id, member_id)
 );
-CREATE TABLE group_member_intros(
-  group_member_intro_id INTEGER PRIMARY KEY,
-  re_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  to_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
-  group_queue_info BLOB,
-  direct_queue_info BLOB,
-  intro_status TEXT NOT NULL,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL),
-  intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
-  UNIQUE(re_group_member_id, to_group_member_id)
-);
 CREATE TABLE files(
   file_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -393,7 +381,6 @@ CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
-  group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
@@ -784,9 +771,6 @@ CREATE INDEX idx_files_chat_item_id ON files(chat_item_id);
 CREATE INDEX idx_files_user_id ON files(user_id);
 CREATE INDEX idx_files_group_id ON files(group_id);
 CREATE INDEX idx_files_contact_id ON files(contact_id);
-CREATE INDEX idx_group_member_intros_to_group_member_id ON group_member_intros(
-  to_group_member_id
-);
 CREATE INDEX idx_group_members_user_id_local_display_name ON group_members(
   user_id,
   local_display_name
@@ -804,9 +788,6 @@ CREATE INDEX idx_group_profiles_user_id ON group_profiles(user_id);
 CREATE INDEX idx_groups_chat_item_id ON groups(chat_item_id);
 CREATE INDEX idx_groups_group_profile_id ON groups(group_profile_id);
 CREATE INDEX idx_messages_group_id ON messages(group_id);
-CREATE INDEX idx_pending_group_messages_group_member_intro_id ON pending_group_messages(
-  group_member_intro_id
-);
 CREATE INDEX idx_pending_group_messages_message_id ON pending_group_messages(
   message_id
 );
@@ -924,9 +905,6 @@ CREATE INDEX idx_connections_via_contact_uri_hash ON connections(
 CREATE INDEX idx_contact_profiles_contact_link ON contact_profiles(
   user_id,
   contact_link
-);
-CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(
-  re_group_member_id
 );
 CREATE INDEX idx_group_members_invited_by_group_member_id ON group_members(
   invited_by_group_member_id

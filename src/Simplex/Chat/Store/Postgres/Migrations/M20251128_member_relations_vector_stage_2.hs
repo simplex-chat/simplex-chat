@@ -13,7 +13,6 @@ import Text.RawString.QQ (r)
 -- - direction 0 (IDSubjectIntroduced): current member (subject) is re_group_member_id, was introduced to referenced member
 -- - direction 1 (IDReferencedIntroduced): current member (subject) is to_group_member_id, referenced member was introduced to it
 
--- TODO [relations vector] drop group_member_intros in the end of migration
 m20251128_member_relations_vector_stage_2 :: Text
 m20251128_member_relations_vector_stage_2 =
   T.pack
@@ -34,6 +33,12 @@ SET member_relations_vector = (
   ) AS relations
 )
 WHERE member_relations_vector IS NULL;
+
+DROP INDEX idx_group_member_intros_to_group_member_id;
+DROP INDEX idx_group_member_intros_re_group_member_id;
+DROP INDEX idx_pending_group_messages_group_member_intro_id;
+ALTER TABLE pending_group_messages DROP COLUMN group_member_intro_id;
+DROP TABLE group_member_intros;
 |]
 
 -- TODO [relations vector] re-create group_member_intros
@@ -41,5 +46,20 @@ down_m20251128_member_relations_vector_stage_2 :: Text
 down_m20251128_member_relations_vector_stage_2 =
   T.pack
     [r|
-
+CREATE TABLE group_member_intros(
+  group_member_intro_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
+  re_group_member_id BIGINT NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  to_group_member_id BIGINT NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  group_queue_info BYTEA,
+  direct_queue_info BYTEA,
+  intro_status TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL,
+  updated_at TIMESTAMPTZ NOT NULL,
+  intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3,
+  UNIQUE(re_group_member_id, to_group_member_id)
+);
+ALTER TABLE pending_group_messages ADD COLUMN group_member_intro_id BIGINT REFERENCES group_member_intros ON DELETE CASCADE;
+CREATE INDEX idx_group_member_intros_to_group_member_id ON group_member_intros(to_group_member_id);
+CREATE INDEX idx_group_member_intros_re_group_member_id ON group_member_intros(re_group_member_id);
+CREATE INDEX idx_pending_group_messages_group_member_intro_id ON pending_group_messages(group_member_intro_id);
 |]

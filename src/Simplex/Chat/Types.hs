@@ -1746,49 +1746,6 @@ instance TextEncoding ConnType where
     ConnMember -> "member"
     ConnUserContact -> "user_contact"
 
-data GroupMemberIntro = GroupMemberIntro
-  { introId :: Int64,
-    reMember :: GroupMember,
-    toMember :: GroupMember,
-    introStatus :: GroupMemberIntroStatus
-  }
-  deriving (Show)
-
-data GroupMemberIntroStatus
-  = GMIntroPending
-  | GMIntroSent
-  | GMIntroInvReceived
-  | GMIntroInvForwarded
-  | GMIntroReConnected
-  | GMIntroToConnected
-  | GMIntroConnected
-  deriving (Eq, Show)
-
-instance FromField GroupMemberIntroStatus where fromField = fromTextField_ introStatusT
-
-instance ToField GroupMemberIntroStatus where toField = toField . serializeIntroStatus
-
-introStatusT :: Text -> Maybe GroupMemberIntroStatus
-introStatusT = \case
-  "new" -> Just GMIntroPending
-  "sent" -> Just GMIntroSent
-  "rcv" -> Just GMIntroInvReceived
-  "fwd" -> Just GMIntroInvForwarded
-  "re-con" -> Just GMIntroReConnected
-  "to-con" -> Just GMIntroToConnected
-  "con" -> Just GMIntroConnected
-  _ -> Nothing
-
-serializeIntroStatus :: GroupMemberIntroStatus -> Text
-serializeIntroStatus = \case
-  GMIntroPending -> "new"
-  GMIntroSent -> "sent"
-  GMIntroInvReceived -> "rcv"
-  GMIntroInvForwarded -> "fwd"
-  GMIntroReConnected -> "re-con"
-  GMIntroToConnected -> "to-con"
-  GMIntroConnected -> "con"
-
 type CommandId = Int64
 
 aCorrId :: CommandId -> ACorrId

@@ -1770,8 +1770,6 @@ testGroupDelayedModeration ps = do
       -- imitate not implemented group forwarding
       -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
       -- and forwarding client doesn't check compatibility)
-      void $ withCCTransaction alice $ \db ->
-        DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
       updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
@@ -1817,8 +1815,6 @@ testGroupDelayedModerationFullDelete ps = do
       -- imitate not implemented group forwarding
       -- (real client wouldn't have forwarding code, but tests use "current code" with configured version,
       -- and forwarding client doesn't check compatibility)
-      void $ withCCTransaction alice $ \db ->
-        DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
       updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
@@ -5045,15 +5041,6 @@ setupGroupForwarding host invitee1 invitee2 = do
         WHERE group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
       |]
       (Only invitee1Name)
-  void $ withCCTransaction host $ \db ->
-    DB.execute
-      db
-      [sql|
-        UPDATE group_member_intros SET intro_status='fwd'
-        WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
-          AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
-      |]
-      (invitee1Name, invitee2Name)
 
   setupGroupForwardingVectors host invitee1 invitee2
 
@@ -5106,8 +5093,6 @@ testGroupMsgForwardDeduplicate =
       createGroup3 "team" alice bob cath
 
       threadDelay 1000000 -- delay so member relations don't get overwritten to connected
-      void $ withCCTransaction alice $ \db ->
-        DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
       setupGroupForwardingVectors alice bob cath
 
       bob #> "#team hi there"
