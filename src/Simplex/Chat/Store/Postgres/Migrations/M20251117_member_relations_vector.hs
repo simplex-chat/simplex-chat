@@ -41,7 +41,7 @@ BEGIN
   ELSE
     old_byte := 0;
   END IF;
-  byte_val := (old_byte & 240) | (direction * 8) | status;
+  byte_val := (old_byte & 0xF0) | (direction * 8) | status;
   new_len := GREATEST(length(v), idx + 1);
   IF new_len > length(v) THEN
     result := v || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(v)));
