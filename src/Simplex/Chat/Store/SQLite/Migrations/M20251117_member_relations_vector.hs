@@ -45,7 +45,7 @@ sqliteMemberRelationsStep = mkSQLiteAggStep [] $ \_ args acc -> do
   direction <- fromIntroDirInt . fromIntegral <$> funcArgInt64 args 1
   introStatus <- funcArgText args 2
   let relation = introStatusToRelation direction introStatus
-  pure $ (idx, direction, relation) : acc
+  pure $ (idx, (direction, relation)) : acc
   where
     introStatusToRelation dir status = case status of
       "re-con" -> if dir == IDSubjectIntroduced then MRSubjectConnected else MRReferencedConnected
