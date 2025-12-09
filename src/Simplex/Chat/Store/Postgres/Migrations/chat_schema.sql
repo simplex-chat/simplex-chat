@@ -128,11 +128,17 @@ DECLARE
   new_len INT;
   result BYTEA;
   byte_val INT;
+  old_byte INT;
 BEGIN
   IF idx < 0 THEN
     RETURN v;
   END IF;
-  byte_val := (direction * 8) + status;
+  IF idx < length(v) THEN
+    old_byte := get_byte(v, idx::INT);
+  ELSE
+    old_byte := 0;
+  END IF;
+  byte_val := (old_byte & 240) | (direction * 8) | status;
   new_len := GREATEST(length(v), idx + 1);
   IF new_len > length(v) THEN
     result := v || (SELECT string_agg('\x00'::BYTEA, ''::BYTEA) FROM generate_series(1, new_len - length(v)));
