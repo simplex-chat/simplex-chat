@@ -1655,10 +1655,16 @@ createIntrosOrUpdateVectors db vr reMembers toMember
 #if defined(dbPostgres)
     partitionByVector members = do
       let memberIds = map groupMemberId' members
+      -- Lock rows first to ensure partitioning doesn't change in case of concurrent updates
+      _ :: [Only Int] <-
+        DB.query
+          db
+          "SELECT 1 FROM group_members WHERE group_member_id IN ? FOR UPDATE"
+          (Only $ In memberIds)
       memberIdsWithVec <- S.fromList . map fromOnly <$>
         DB.query
           db
-          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL FOR UPDATE"
+          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL"
           (Only $ In memberIds)
       pure $ partition (\m -> groupMemberId' m `S.member` memberIdsWithVec) members
 #else
