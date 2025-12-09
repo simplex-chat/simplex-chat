@@ -138,10 +138,15 @@ build() {
     mkdir -p "$android_tmp_folder"
     unzip -oqd "$android_tmp_folder" "$android_apk_output"
 
+    # Determenistic build
+    find "$android_tmp_folder" -type f -exec chmod 644 {} +
+    find "$android_tmp_folder" -type d -exec chmod 755 {} +
+    find "$android_tmp_folder" -exec touch -h -d '@0' {} +
+
     (
      cd "$android_tmp_folder" && \
-     zip -rq5 "$tmp/$android_apk_output_final" . && \
-     zip -rq0 "$tmp/$android_apk_output_final" resources.arsc res
+     find . -type f -print0 | sort -z | xargs -0 zip -X -rq5 "$tmp/$android_apk_output_final" && \
+     find res resources.arsc -type f -print0 | sort -z | xargs -0 zip -X -rq0 "$tmp/$android_apk_output_final"
     )
 
     zipalign -p -f 4 "$tmp/$android_apk_output_final" "$PWD/$android_apk_output_final"
