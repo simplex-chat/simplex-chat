@@ -18,6 +18,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
+import Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
@@ -30,10 +31,12 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -1769,6 +1772,7 @@ testGroupDelayedModeration ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -1815,6 +1819,7 @@ testGroupDelayedModerationFullDelete ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -3663,7 +3668,7 @@ testGroupMsgDecryptError ps =
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 2 connections on server localhost"
       alice #> "#team hello again"
-      bob <# "#team alice> skipped message ID 9..11"
+      bob <# "#team alice> skipped message ID 8..10"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"
@@ -5018,7 +5023,7 @@ testGroupMsgForwardReport =
 
 setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding host invitee1 invitee2 = do
-  threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+  threadDelay 1000000 -- delay so member relations don't get overwritten to connected
 
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
@@ -5050,15 +5055,60 @@ setupGroupForwarding host invitee1 invitee2 = do
       |]
       (invitee1Name, invitee2Name)
 
+  setupGroupForwardingVectors host invitee1 invitee2
+
+setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwardingVectors host invitee1 invitee2 = do
+  invitee1Name <- userName invitee1
+  invitee2Name <- userName invitee2
+  updateGroupForwardingVectors host invitee1Name invitee2Name MRIntroduced
+
+updateGroupForwardingVectors :: TestCC -> String -> String -> MemberRelation -> IO ()
+updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
+  void $ withCCTransaction host $ \db -> do
+    [(invitee1Index, invitee1Vec)] <- DB.query db
+      [sql|
+        SELECT index_in_group, member_relations_vector
+        FROM group_members
+        WHERE local_display_name = ?
+      |]
+      (Only invitee1Name)
+    [(invitee2Index, invitee2Vec)] <- DB.query db
+      [sql|
+        SELECT index_in_group, member_relations_vector
+        FROM group_members
+        WHERE local_display_name = ?
+      |]
+      (Only invitee2Name)
+
+    let invitee1Vec' = setRelation invitee2Index relation (fromMaybe B.empty invitee1Vec)
+    DB.execute db
+      [sql|
+        UPDATE group_members
+        SET member_relations_vector = ?
+        WHERE local_display_name = ?
+      |]
+      (Binary invitee1Vec', invitee1Name)
+
+    let invitee2Vec' = setRelation invitee1Index relation (fromMaybe B.empty invitee2Vec)
+    DB.execute db
+      [sql|
+        UPDATE group_members
+        SET member_relations_vector = ?
+        WHERE local_display_name = ?
+      |]
+      (Binary invitee2Vec', invitee2Name)
+
 testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+      threadDelay 1000000 -- delay so member relations don't get overwritten to connected
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+      setupGroupForwardingVectors alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
