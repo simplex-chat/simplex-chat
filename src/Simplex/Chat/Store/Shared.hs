@@ -93,9 +93,12 @@ data StoreError
   | SEGroupNotFoundByName {groupName :: GroupName}
   | SEGroupMemberNameNotFound {groupId :: GroupId, groupMemberName :: ContactName}
   | SEGroupMemberNotFound {groupMemberId :: GroupMemberId}
+  | SEGroupMemberNotFoundByIndex {groupMemberIndex :: Int64}
+  | SEMemberRelationsVectorNotFound {groupMemberId :: GroupMemberId}
   | SEGroupHostMemberNotFound {groupId :: GroupId}
   | SEGroupMemberNotFoundByMemberId {memberId :: MemberId}
   | SEMemberContactGroupMemberNotFound {contactId :: ContactId}
+  | SEInvalidMemberRelationUpdate
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
   | SEGroupAlreadyJoined
@@ -119,7 +122,6 @@ data StoreError
   | SEConnectionNotFoundById {connId :: Int64}
   | SEConnectionNotFoundByMemberId {groupMemberId :: GroupMemberId}
   | SEPendingConnectionNotFound {connId :: Int64}
-  | SEIntroNotFound
   | SEUniqueID
   | SELargeMsg
   | SEInternalError {message :: String}
