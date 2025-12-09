@@ -1050,7 +1050,7 @@ introduceToAll vr user gInfo m = do
     shouldIntroduce vector_ m' =
       memberCurrent m'
         && groupMemberId' m' /= groupMemberId' m
-        && maybe True (\v -> getRelation (indexInGroup m') v /= MRNew) vector_
+        && maybe True (\v -> getRelation (indexInGroup m') v == MRNew) vector_
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m = do

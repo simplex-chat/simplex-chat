@@ -3230,6 +3230,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         buildMemberList sender = case jobScope of
                           DJSGroup {jobSpec} -> do
                             vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
+                            -- this excludes the sender
                             let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
                             ms <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
                             pure $ filter shouldForwardTo ms
@@ -3239,14 +3240,12 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                                 | otherwise = memberCurrent m
                           DJSMemberSupport scopeGMId -> do
                             vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
+                            -- this excludes the sender
                             let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
                             ms <- withStore' $ \db -> getSupportScopeMembersByIndexes db vr user gInfo scopeGMId introducedMemsIdxs
                             pure $ filter shouldForwardTo ms
                             where
-                              shouldForwardTo m =
-                                let mId = groupMemberId' m
-                                  in mId /= senderId && (mId == scopeGMId || currentModerator m)
-                              senderId = groupMemberId' sender
+                              shouldForwardTo m = groupMemberId' m == scopeGMId || currentModerator m
                               currentModerator m@GroupMember {memberRole} =
                                 memberRole >= GRModerator
                                   && memberCurrent m
