@@ -1658,7 +1658,7 @@ createIntrosOrUpdateVectors db vr reMembers toMember
       memberIdsWithVec <- S.fromList . map fromOnly <$>
         DB.query
           db
-          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL"
+          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL FOR UPDATE"
           (Only $ In memberIds)
       pure $ partition (\m -> groupMemberId' m `S.member` memberIdsWithVec) members
 #else
