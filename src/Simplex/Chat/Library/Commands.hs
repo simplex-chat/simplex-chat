@@ -4175,11 +4175,12 @@ runRelationsVectorMigration = do
   liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
   migrateMembers
   where
-    stepDelay = 100000 -- 0.1 second
+    stepDelay = 1000000 -- 1 second
     migrateMembers = flip catchAllErrors eToView $ do
       lift waitChatStartedAndActivated
       gmIds <- withStore' getGMsWithoutVectorIds
       forM_ gmIds $ \gmId -> do
+        lift waitChatStartedAndActivated
         withStore' (`migrateMemberRelationsVector'` gmId) `catchAllErrors` eToView
         liftIO $ threadDelay' stepDelay
       unless (null gmIds) migrateMembers
