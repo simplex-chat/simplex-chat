@@ -64,6 +64,7 @@ module Simplex.Chat.Store.Groups
     getScopeMemberIdViaMemberId,
     getGroupMembers,
     getGroupMembersByIndexes,
+    getSupportScopeMembersByIndexes,
     getGroupModerators,
     getGroupRelays,
     getGroupMembersForExpiration,
@@ -1013,6 +1014,14 @@ getGroupMemberByIndex db vr user GroupInfo {groupId} indexInGroup =
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group = ?")
       (groupId, indexInGroup)
 
+getSupportScopeMemberByIndex :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMemberId -> Int64 -> ExceptT StoreError IO GroupMember
+getSupportScopeMemberByIndex db vr user GroupInfo {groupId} scopeGMId indexInGroup =
+  ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByIndex indexInGroup) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group = ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
+      (groupId, indexInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
+
 getGroupMemberByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMember
 getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByMemberId memberId) $
@@ -1054,6 +1063,19 @@ getGroupMembersByIndexes db vr user gInfo indexesInGroup = do
       (groupId, In indexesInGroup)
 #else
   rights <$> mapM (runExceptT . getGroupMemberByIndex db vr user gInfo) indexesInGroup
+#endif
+
+getSupportScopeMembersByIndexes :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMemberId -> [Int64] -> IO [GroupMember]
+getSupportScopeMembersByIndexes db vr user gInfo scopeGMId indexesInGroup = do
+#if defined(dbPostgres)
+  let GroupInfo {groupId} = gInfo
+  map (toContactMember vr user) <$>
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
+      (groupId, In indexesInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
+#else
+  rights <$> mapM (runExceptT . getSupportScopeMemberByIndex db vr user gInfo scopeGMId) indexesInGroup
 #endif
 
 getGroupModerators :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
