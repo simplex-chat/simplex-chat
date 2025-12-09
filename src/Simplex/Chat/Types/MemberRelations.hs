@@ -87,9 +87,9 @@ getRelation' i v
       let b = v `B.index` fromIntegral i
        in (fromIntroDirInt $ (b .&. directionMask) `shiftR` 3, fromRelationInt $ b .&. statusMask)
 
--- | Get the indexes of members that satisfy the given relation predicate.
+-- | Get the indexes of members with the given relation status from the relations vector.
 getRelationsIndexes :: MemberRelation -> ByteString -> [Int64]
-getRelationsIndexes p v = [i | i <- [0 .. fromIntegral (B.length v) - 1], getRelation i v == p]
+getRelationsIndexes r v = [i | i <- [0 .. fromIntegral (B.length v) - 1], getRelation i v == r]
 
 -- | Set the relation status of a member at a given index in the relations vector.
 -- Preserves the introduction direction. Expands the vector lazily if needed.
