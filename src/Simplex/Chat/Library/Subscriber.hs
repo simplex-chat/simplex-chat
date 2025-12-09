@@ -3227,29 +3227,27 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       ms <- buildMemberList sender
                       unless (null ms) $ deliver body ms
                       where
-                        buildMemberList sender = case jobScope of
-                          DJSGroup {jobSpec} -> do
-                            vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
-                            -- this excludes the sender
-                            let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
-                            ms <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
-                            pure $ filter shouldForwardTo ms
-                            where
-                              shouldForwardTo m
-                                | jobSpecImpliedPending jobSpec = memberCurrentOrPending m
-                                | otherwise = memberCurrent m
-                          DJSMemberSupport scopeGMId -> do
-                            vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
-                            -- this excludes the sender
-                            let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
-                            ms <- withStore' $ \db -> getSupportScopeMembersByIndexes db vr user gInfo scopeGMId introducedMemsIdxs
-                            pure $ filter shouldForwardTo ms
-                            where
-                              shouldForwardTo m = groupMemberId' m == scopeGMId || currentModerator m
-                              currentModerator m@GroupMember {memberRole} =
-                                memberRole >= GRModerator
-                                  && memberCurrent m
-                                  && maxVersion (memberChatVRange m) >= groupKnockingVersion
+                        buildMemberList sender = do
+                          vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
+                          -- this excludes the sender
+                          let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
+                          case jobScope of
+                            DJSGroup {jobSpec} -> do
+                              ms <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
+                              pure $ filter shouldForwardTo ms
+                              where
+                                shouldForwardTo m
+                                  | jobSpecImpliedPending jobSpec = memberCurrentOrPending m
+                                  | otherwise = memberCurrent m
+                            DJSMemberSupport scopeGMId -> do
+                              ms <- withStore' $ \db -> getSupportScopeMembersByIndexes db vr user gInfo scopeGMId introducedMemsIdxs
+                              pure $ filter shouldForwardTo ms
+                              where
+                                shouldForwardTo m = groupMemberId' m == scopeGMId || currentModerator m
+                                currentModerator m@GroupMember {memberRole} =
+                                  memberRole >= GRModerator
+                                    && memberCurrent m
+                                    && maxVersion (memberChatVRange m) >= groupKnockingVersion
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver msgBody mems =
