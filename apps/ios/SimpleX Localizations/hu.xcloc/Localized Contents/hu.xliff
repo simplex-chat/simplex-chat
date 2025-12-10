@@ -2919,9 +2919,9 @@ swipe action</note>
         <target>Ne maradjon le a fontos üzenetekről.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't show again" xml:space="preserve">
+      <trans-unit id="Don't show again" xml:space="preserve" approved="no">
         <source>Don't show again</source>
-        <target>Ne mutasd újra</target>
+        <target state="translated">Ne jelenjen meg újra</target>
         <note>alert action</note>
       </trans-unit>
       <trans-unit id="Done" xml:space="preserve">
@@ -4712,9 +4712,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Beszélgetés megtartása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve">
+      <trans-unit id="Keep the app open to use it from desktop" xml:space="preserve" approved="no">
         <source>Keep the app open to use it from desktop</source>
-        <target>A számítógépről való használathoz tartsd nyitva az alkalmazást</target>
+        <target state="translated">Alkalmazás megnyitva tartása a számítógépről való használathoz</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Keep unused invitation?" xml:space="preserve">
@@ -5372,9 +5372,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Új partneri kapcsolatkérés</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New contact:" xml:space="preserve">
+      <trans-unit id="New contact:" xml:space="preserve" approved="no">
         <source>New contact:</source>
-        <target>Új kapcsolat:</target>
+        <target state="translated">Új partner:</target>
         <note>notification</note>
       </trans-unit>
       <trans-unit id="New desktop app!" xml:space="preserve">
@@ -6390,9 +6390,9 @@ Engedélyezze a *Hálózat és kiszolgálók* menüben.</target>
         <target>Könnyen elérhető csevegési eszköztár</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="React…" xml:space="preserve">
+      <trans-unit id="React…" xml:space="preserve" approved="no">
         <source>React…</source>
-        <target>Reagálj…</target>
+        <target state="translated">Reagálás…</target>
         <note>chat item menu</note>
       </trans-unit>
       <trans-unit id="Read" xml:space="preserve">
@@ -7679,9 +7679,9 @@ chat item action</note>
         <target>SimpleX-cím vagy egyszer használható meghívó?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="SimpleX address settings" xml:space="preserve">
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
         <source>SimpleX address settings</source>
-        <target>Beállítások automatikus elfogadása</target>
+        <target state="translated">SimpleX-címbeállítások</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="SimpleX channel link" xml:space="preserve">
