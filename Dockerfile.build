@@ -38,6 +38,9 @@ RUN apt-get update && \
                        file \
                        appstream \
                        gpg \
+                       zipalign \
+                       apksigner \
+                       xz-utils \
                        unzip &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
 
