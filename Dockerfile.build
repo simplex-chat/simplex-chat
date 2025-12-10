@@ -76,7 +76,7 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
 
 RUN userdel -r ubuntu || :
 RUN groupadd -g ${USER_GID} ${USER_NAME} || :; useradd -u ${USER_UID} -g ${USER_GID} --create-home --shell /bin/bash ${USER_NAME} || :
-RUN mkdir /nix && chown ${USER_NAME}:${USER_NAME} /nix
+RUN mkdir /nix /out && chown ${USER_NAME}:${USER_NAME} /nix /out
 USER ${USER_NAME}
 WORKDIR /home/${USER_NAME}
 
