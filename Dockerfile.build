@@ -85,8 +85,9 @@ ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 # Install ghcup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
 
-# Adjust PATH/HOME
-ENV HOME="/home/ubuntu"
+# Setup basic env variables (required)
+ENV HOME="/home/ubuntu" USER=ubuntu
+# Adjust PATH
 ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
 # Set both as default
