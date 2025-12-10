@@ -390,7 +390,7 @@
     <string name="moderated_items_description">%2$s %1$d üzenetet moderált</string>
     <string name="disappearing_message">Eltűnő üzenet</string>
     <string name="dont_create_address">Ne hozzon létre címet</string>
-    <string name="dont_show_again">Ne mutasd újra</string>
+    <string name="dont_show_again">Ne jelenjen meg újra</string>
     <string name="auth_disable_simplex_lock">SimpleX-zár kikapcsolása</string>
     <string name="status_e2e_encrypted">végpontok között titkosított</string>
     <string name="settings_section_title_device">ESZKÖZ</string>
@@ -1081,7 +1081,7 @@
     <string name="settings_restart_app">Újraindítás</string>
     <string name="smp_servers">SMP-kiszolgálók</string>
     <string name="video_descr">Videó</string>
-    <string name="save_auto_accept_settings">SimpleX-cím beállításainak mentése</string>
+    <string name="save_auto_accept_settings">SimpleX-címbeállítások mentése</string>
     <string name="sync_connection_force_confirm">Újraegyeztetés</string>
     <string name="icon_descr_waiting_for_video">Várakozás a videóra</string>
     <string name="your_XFTP_servers">Saját XFTP-kiszolgálók</string>
