@@ -119,9 +119,9 @@ export class ChatClient {
     }
   }
 
-  async apiSendMessages(chatType: T.ChatType, chatId: number, messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
+  async apiSendMessages(chatType: T.ChatType, chatId: number, messages: T.ComposedMessage[], ttl?: number): Promise<T.AChatItem[]> {
     const r = await this.sendChatCmd(
-      CC.APISendMessages.cmdString({sendRef: {chatType, chatId}, composedMessages: messages, liveMessage: false})
+      CC.APISendMessages.cmdString({sendRef: {chatType, chatId}, composedMessages: messages, ttl, liveMessage: false})
     )
     if (r.type === "newChatItems") return r.chatItems
     throw new ChatCommandError("unexpected response", r)
