@@ -352,7 +352,7 @@ getPendingGroupMessages db groupMemberId =
     <$> DB.query
       db
       [sql|
-        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.chat_msg_event
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
