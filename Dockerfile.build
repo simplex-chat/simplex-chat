@@ -70,6 +70,10 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
         echo "Checksum mismatch" && exit 1; \
     fi
 
+RUN useradd --create-home --shell /bin/bash build
+RUN mkdir /nix && chown build:build /nix
+USER build
+
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
 ENV BOOTSTRAP_HASKELL_CABAL_VERSION=${CABAL}
@@ -82,7 +86,7 @@ ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
 
 # Adjust PATH
-ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
+ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
 # Set both as default
 RUN ghcup set ghc "${GHC}" && \
@@ -93,8 +97,8 @@ RUN ghcup set ghc "${GHC}" && \
 #=====================
 ARG SDK_VERSION=13114758
 
-ENV SDK_VERSION=$SDK_VERSION \
-    ANDROID_HOME=/root
+ENV SDK_VERSION="$SDK_VERSION" \
+    ANDROID_HOME="$HOME"
 
 RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VERSION}_latest.zip" && \
     unzip tools.zip && rm tools.zip && \
@@ -104,9 +108,9 @@ RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlineto
 ENV PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/tools/bin"
 
 # https://askubuntu.com/questions/885658/android-sdk-repositories-cfg-could-not-be-loaded
-RUN mkdir -p ~/.android ~/.gradle && \
-    touch ~/.android/repositories.cfg && \
-    echo 'org.gradle.console=plain' > ~/.gradle/gradle.properties &&\
+RUN mkdir -p "$HOME/.android" "$HOME/.gradle" && \
+    touch "$HOME/.android/repositories.cfg" && \
+    echo 'org.gradle.console=plain' > "$HOME/.gradle/gradle.properties" &&\
     yes | sdkmanager --licenses >/dev/null
 
 ENV PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
