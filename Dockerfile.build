@@ -13,6 +13,10 @@ ARG JAVA_HASH_ARM64=2b460859b681757b33a7591b6238ecaf51569d05d2684984e5f0a89c6514
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
 
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG USER_NAME=builder
+
 # Install curl, git and and simplex-chat dependencies
 RUN apt-get update && \
     apt-get install -y curl \
@@ -70,10 +74,11 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
         echo "Checksum mismatch" && exit 1; \
     fi
 
-RUN groupadd -g 1000 ubuntu || :; useradd -u 1000 -g 1000 --create-home --shell /bin/bash ubuntu || :
-RUN mkdir /nix && chown ubuntu:ubuntu /nix
-USER ubuntu
-WORKDIR /home/ubuntu
+RUN userdel -r ubuntu || :
+RUN groupadd -g ${USER_GID} ${USER_NAME} || :; useradd -u ${USER_UID} -g ${USER_GID} --create-home --shell /bin/bash ${USER_NAME} || :
+RUN mkdir /nix && chown ${USER_NAME}:${USER_NAME} /nix
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
 
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
@@ -87,7 +92,7 @@ ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
 
 # Setup basic env variables (required)
-ENV HOME="/home/ubuntu" USER=ubuntu
+ENV HOME="/home/${USER_NAME}" USER="${USER_NAME}"
 # Adjust PATH
 ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
