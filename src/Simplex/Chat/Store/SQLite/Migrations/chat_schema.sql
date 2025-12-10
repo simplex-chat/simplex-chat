@@ -155,7 +155,8 @@ CREATE TABLE groups(
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
-  summary_current_members_count INTEGER NOT NULL DEFAULT 0, -- received
+  summary_current_members_count INTEGER NOT NULL DEFAULT 0,
+  member_index INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -195,6 +196,8 @@ CREATE TABLE group_members(
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
   member_welcome_shared_msg_id BLOB,
+  index_in_group INTEGER NOT NULL DEFAULT 0,
+  member_relations_vector BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -1183,6 +1186,10 @@ CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
 CREATE INDEX idx_connections_to_subscribe ON connections(
   user_id,
   to_subscribe
+);
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(
+  group_id,
+  index_in_group
 );
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
