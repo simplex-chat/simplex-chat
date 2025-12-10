@@ -725,31 +725,6 @@ ALTER TABLE test_chat_schema.files ALTER COLUMN file_id ADD GENERATED ALWAYS AS 
 
 
 
-CREATE TABLE test_chat_schema.group_member_intros (
-    group_member_intro_id bigint NOT NULL,
-    re_group_member_id bigint NOT NULL,
-    to_group_member_id bigint NOT NULL,
-    group_queue_info bytea,
-    direct_queue_info bytea,
-    intro_status text NOT NULL,
-    created_at timestamp with time zone NOT NULL,
-    updated_at timestamp with time zone NOT NULL,
-    intro_chat_protocol_version integer DEFAULT 3 NOT NULL
-);
-
-
-
-ALTER TABLE test_chat_schema.group_member_intros ALTER COLUMN group_member_intro_id ADD GENERATED ALWAYS AS IDENTITY (
-    SEQUENCE NAME test_chat_schema.group_member_intros_group_member_intro_id_seq
-    START WITH 1
-    INCREMENT BY 1
-    NO MINVALUE
-    NO MAXVALUE
-    CACHE 1
-);
-
-
-
 CREATE TABLE test_chat_schema.group_members (
     group_member_id bigint NOT NULL,
     group_id bigint NOT NULL,
@@ -1033,7 +1008,6 @@ CREATE TABLE test_chat_schema.pending_group_messages (
     pending_group_message_id bigint NOT NULL,
     group_member_id bigint NOT NULL,
     message_id bigint NOT NULL,
-    group_member_intro_id bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -1521,16 +1495,6 @@ ALTER TABLE ONLY test_chat_schema.extra_xftp_file_descriptions
 
 ALTER TABLE ONLY test_chat_schema.files
     ADD CONSTRAINT files_pkey PRIMARY KEY (file_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.group_member_intros
-    ADD CONSTRAINT group_member_intros_pkey PRIMARY KEY (group_member_intro_id);
-
-
-
-ALTER TABLE ONLY test_chat_schema.group_member_intros
-    ADD CONSTRAINT group_member_intros_re_group_member_id_to_group_member_id_key UNIQUE (re_group_member_id, to_group_member_id);
 
 
 
@@ -2138,14 +2102,6 @@ CREATE INDEX idx_files_user_id ON test_chat_schema.files USING btree (user_id);
 
 
 
-CREATE INDEX idx_group_member_intros_re_group_member_id ON test_chat_schema.group_member_intros USING btree (re_group_member_id);
-
-
-
-CREATE INDEX idx_group_member_intros_to_group_member_id ON test_chat_schema.group_member_intros USING btree (to_group_member_id);
-
-
-
 CREATE INDEX idx_group_members_contact_id ON test_chat_schema.group_members USING btree (contact_id);
 
 
@@ -2271,10 +2227,6 @@ CREATE INDEX idx_operator_usage_conditions_server_operator_id ON test_chat_schem
 
 
 CREATE INDEX idx_pending_group_messages_group_member_id ON test_chat_schema.pending_group_messages USING btree (group_member_id);
-
-
-
-CREATE INDEX idx_pending_group_messages_group_member_intro_id ON test_chat_schema.pending_group_messages USING btree (group_member_intro_id);
 
 
 
@@ -2809,16 +2761,6 @@ ALTER TABLE ONLY test_chat_schema.users
 
 
 
-ALTER TABLE ONLY test_chat_schema.group_member_intros
-    ADD CONSTRAINT group_member_intros_re_group_member_id_fkey FOREIGN KEY (re_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.group_member_intros
-    ADD CONSTRAINT group_member_intros_to_group_member_id_fkey FOREIGN KEY (to_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
 ALTER TABLE ONLY test_chat_schema.group_members
     ADD CONSTRAINT group_members_contact_id_fkey FOREIGN KEY (contact_id) REFERENCES test_chat_schema.contacts(contact_id) ON DELETE CASCADE;
 
@@ -2936,11 +2878,6 @@ ALTER TABLE ONLY test_chat_schema.operator_usage_conditions
 
 ALTER TABLE ONLY test_chat_schema.pending_group_messages
     ADD CONSTRAINT pending_group_messages_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.pending_group_messages
-    ADD CONSTRAINT pending_group_messages_group_member_intro_id_fkey FOREIGN KEY (group_member_intro_id) REFERENCES test_chat_schema.group_member_intros(group_member_intro_id) ON DELETE CASCADE;
 
 
 
