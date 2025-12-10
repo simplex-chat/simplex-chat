@@ -70,7 +70,7 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
         echo "Checksum mismatch" && exit 1; \
     fi
 
-RUN groupadd -g 1000 || :; useradd -u 1000 -g 1000 --create-home --shell /bin/bash ubuntu || :
+RUN groupadd -g 1000 ubuntu || :; useradd -u 1000 -g 1000 --create-home --shell /bin/bash ubuntu || :
 RUN mkdir /nix && chown ubuntu:ubuntu /nix
 USER ubuntu
 WORKDIR /home/ubuntu
