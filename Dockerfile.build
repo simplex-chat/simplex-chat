@@ -70,10 +70,9 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
         echo "Checksum mismatch" && exit 1; \
     fi
 
-RUN useradd --create-home --shell /bin/bash build
-RUN mkdir /nix && chown build:build /nix
-USER build
-WORKDIR /home/build
+RUN mkdir /nix && chown ubuntu:ubuntu /nix
+USER ubuntu
+WORKDIR /home/ubuntu
 
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
@@ -87,7 +86,7 @@ ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
 
 # Adjust PATH/HOME
-ENV HOME="/home/build"
+ENV HOME="/home/ubuntu"
 ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
 # Set both as default
