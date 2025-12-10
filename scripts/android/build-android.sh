@@ -141,7 +141,7 @@ build() {
     # Determenistic build
     find "$android_tmp_folder" -type f -exec chmod 644 {} +
     find "$android_tmp_folder" -type d -exec chmod 755 {} +
-    find "$android_tmp_folder" -exec touch -h -d '@0' {} +
+    find "$android_tmp_folder" -exec touch -h -d '@1764547200' {} +
 
     (
      cd "$android_tmp_folder" && \
