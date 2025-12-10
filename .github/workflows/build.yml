@@ -212,14 +212,6 @@ jobs:
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
 
-      - name: Fix permissions for cache
-        if: matrix.should_run == true
-        shell: bash
-        run: |
-          echo "uid: $(id -u) gid: $(id -g)"
-          sudo chmod -R 777 dist-newstyle ~/.cabal
-          sudo chown -R $(id -u):$(id -g) dist-newstyle ~/.cabal
-
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
         if: matrix.should_run == true
