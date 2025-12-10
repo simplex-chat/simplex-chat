@@ -209,7 +209,6 @@ jobs:
         if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          chmod -R 777 dist-newstyle ~/.cabal && git config --global --add safe.directory '*'
           cabal clean
           cabal update
           cabal build -j --enable-tests
