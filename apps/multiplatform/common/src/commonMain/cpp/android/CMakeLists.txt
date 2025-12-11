@@ -53,6 +53,11 @@ add_library( support SHARED IMPORTED )
 set_target_properties( support PROPERTIES IMPORTED_LOCATION
     ${CMAKE_SOURCE_DIR}/libs/${ANDROID_ABI}/libsupport.so)
 
+target_compile_options(app-lib PRIVATE
+    -g0
+    -fdebug-types-section
+)
+
 # Specifies libraries CMake should link to your target library. You
 # can link multiple libraries, such as libraries you define in this
 # build script, prebuilt third-party libraries, or system libraries.
