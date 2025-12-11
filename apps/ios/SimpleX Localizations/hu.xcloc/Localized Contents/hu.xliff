@@ -2210,9 +2210,9 @@ Ez a saját egyszer használható meghívója!</target>
         <target>Lista létrehozása</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve">
+      <trans-unit id="Create new profile in [desktop app](https://simplex.chat/downloads/). 💻" xml:space="preserve" approved="no">
         <source>Create new profile in [desktop app](https://simplex.chat/downloads/). 💻</source>
-        <target>Új profil létrehozása a [számítógép-alkalmazásban](https://simplex.chat/downloads/). 💻</target>
+        <target state="translated">Új profil létrehozása a [számítógépes alkalmazásban](https://simplex.chat/downloads/). 💻</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Create profile" xml:space="preserve">
@@ -2704,9 +2704,9 @@ swipe action</note>
         <target>Számítógép címe</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve">
+      <trans-unit id="Desktop app version %@ is not compatible with this app." xml:space="preserve" approved="no">
         <source>Desktop app version %@ is not compatible with this app.</source>
-        <target>A számítógép-alkalmazás verziója (%@) nem kompatibilis ezzel az alkalmazással.</target>
+        <target state="translated">A számítógépes alkalmazás verziója (%@) nem kompatibilis ezzel az alkalmazással.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Desktop devices" xml:space="preserve">
@@ -4802,9 +4802,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target>Korlátozások</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve">
+      <trans-unit id="Link mobile and desktop apps! 🔗" xml:space="preserve" approved="no">
         <source>Link mobile and desktop apps! 🔗</source>
-        <target>Társítsa össze a hordozható eszköz- és számítógépes alkalmazásokat! 🔗</target>
+        <target state="translated">Társítsa össze a hordozható eszköz- és a számítógépes alkalmazásokat! 🔗</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Linked desktop options" xml:space="preserve">
@@ -5377,9 +5377,9 @@ Ez a saját hivatkozása a(z) %@ nevű csoporthoz!</target>
         <target state="translated">Új partner:</target>
         <note>notification</note>
       </trans-unit>
-      <trans-unit id="New desktop app!" xml:space="preserve">
+      <trans-unit id="New desktop app!" xml:space="preserve" approved="no">
         <source>New desktop app!</source>
-        <target>Új számítógép-alkalmazás!</target>
+        <target state="translated">Új számítógépes alkalmazás!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="New display name" xml:space="preserve">
@@ -8204,9 +8204,9 @@ Ez valamilyen hiba vagy sérült kapcsolat esetén fordulhat elő.</target>
         <target>A második előre beállított üzemeltető az alkalmazásban!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The second tick we missed! ✅" xml:space="preserve">
+      <trans-unit id="The second tick we missed! ✅" xml:space="preserve" approved="no">
         <source>The second tick we missed! ✅</source>
-        <target>A második jelölés, amit kihagytunk! ✅</target>
+        <target state="translated">A második pipa, ami már nagyon hiányzott! ✅</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve" approved="no">
@@ -9200,9 +9200,9 @@ Megismétli a csatlakozási kérést?</target>
         <target>Ön meghívást kapott a csoportba</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve" approved="no">
         <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
-        <target>Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetés).</target>
+        <target state="translated">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs feliratkozás).</target>
         <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
@@ -10264,9 +10264,9 @@ pref value</note>
         <target state="translated">nincs végpontok közötti titkosítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="no subscription" xml:space="preserve">
+      <trans-unit id="no subscription" xml:space="preserve" approved="no">
         <source>no subscription</source>
-        <target>nincs előfizetés</target>
+        <target state="translated">nincs feliratkozás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">
