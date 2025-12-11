@@ -10836,9 +10836,9 @@ utoljára fogadott üzenet: %2$@</target>
         <target>Nem lehet továbbítani az üzenetet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Comment" xml:space="preserve">
+      <trans-unit id="Comment" xml:space="preserve" approved="no">
         <source>Comment</source>
-        <target>Hozzászólás</target>
+        <target state="translated">Megjegyzés</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Currently maximum supported file size is %@." xml:space="preserve" approved="no">
