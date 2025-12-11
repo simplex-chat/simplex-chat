@@ -18,6 +18,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
+import Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
@@ -30,10 +31,12 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -87,6 +90,7 @@ chatGroupTests = do
     it "moderate message that arrives after the event of moderation (full delete)" testGroupDelayedModerationFullDelete
     it "remove member with messages (full deletion is enabled)" testDeleteMemberWithMessages
     it "remove member with messages mark deleted" testDeleteMemberMarkMessagesDeleted
+    it "remove member - delete messages of left/removed members" testDeleteMemberMessagesLeftRemoved
   describe "batch send messages" $ do
     it "send multiple messages api" testSendMulti
     it "send multiple timed messages" testSendMultiTimed
@@ -198,6 +202,7 @@ chatGroupTests = do
     it "member was blocked before joining group" testBlockForAllBeforeJoining
     it "repeat block, unblock" testBlockForAllRepeat
     it "block multiple members" testBlockForAllMultipleMembers
+    it "block left/removed members" testBlockForAllLeftRemoved
   describe "group member inactivity" $ do
     it "mark member inactive on reaching quota" testGroupMemberInactive
   describe "group member reports" $ do
@@ -1767,6 +1772,7 @@ testGroupDelayedModeration ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -1813,6 +1819,7 @@ testGroupDelayedModerationFullDelete ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -1909,6 +1916,59 @@ testDeleteMemberMarkMessagesDeleted =
       alice #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by you]"), (1, "removed bob")])
       bob #$> ("/_get chat #1 count=2", chat, [(1, "hello [marked deleted by alice]"), (0, "removed you")])
       cath #$> ("/_get chat #1 count=2", chat, [(0, "hello [marked deleted by alice]"), (0, "removed bob")])
+
+testDeleteMemberMessagesLeftRemoved :: HasCallStack => TestParams -> IO ()
+testDeleteMemberMessagesLeftRemoved =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+
+      threadDelay 1000000
+      cath #> "#team 1"
+      [alice, bob, dan] *<# "#team cath> 1"
+
+      threadDelay 1000000
+      dan #> "#team 2"
+      [alice, bob, cath] *<# "#team dan> 2"
+
+      alice #$> ("/_get chat #1 count=2", chat, [(0, "1"), (0, "2")])
+      bob #$> ("/_get chat #1 count=2", chat, [(0, "1"), (0, "2")])
+      cath #$> ("/_get chat #1 count=2", chat, [(1, "1"), (0, "2")])
+      dan #$> ("/_get chat #1 count=2", chat, [(0, "1"), (1, "2")])
+
+      threadDelay 1000000
+      cath ##> "/leave #team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group",
+          bob <## "#team: cath left the group",
+          dan <## "#team: cath left the group"
+        ]
+
+      threadDelay 1000000
+      alice ##> "/rm team dan"
+      concurrentlyN_
+        [ alice <## "#team: you removed dan from the group",
+          do
+            dan <## "#team: alice removed you from the group"
+            dan <## "use /d #team to delete the group",
+          bob <## "#team: alice removed dan from the group"
+        ]
+
+      alice ##> "/rm #team cath messages=on"
+      alice <## "#team: you removed cath from the group with all messages"
+      bob <## "#team: alice removed cath from the group with all messages"
+
+      alice ##> "/rm #team dan messages=on"
+      alice <## "#team: you removed dan from the group with all messages"
+      bob <## "#team: alice removed dan from the group with all messages"
+
+      alice #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by you]"), (0, "2 [marked deleted by you]"), (0, "left [marked deleted by you]"), (1, "removed dan")])
+      bob #$> ("/_get chat #1 count=4", chat, [(0, "1 [marked deleted by alice]"), (0, "2 [marked deleted by alice]"), (0, "left [marked deleted by alice]"), (0, "removed dan")])
+      cath #$> ("/_get chat #1 count=3", chat, [(1, "1"), (0, "2"), (1, "left")])
+      dan #$> ("/_get chat #1 count=4", chat, [(0, "1"), (1, "2"), (0, "left"), (0, "removed you")])
 
 testSendMulti :: HasCallStack => TestParams -> IO ()
 testSendMulti =
@@ -3608,7 +3668,7 @@ testGroupMsgDecryptError ps =
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 2 connections on server localhost"
       alice #> "#team hello again"
-      bob <# "#team alice> skipped message ID 9..11"
+      bob <# "#team alice> skipped message ID 8..10"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"
@@ -4963,7 +5023,7 @@ testGroupMsgForwardReport =
 
 setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding host invitee1 invitee2 = do
-  threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+  threadDelay 1000000 -- delay so member relations don't get overwritten to connected
 
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
@@ -4995,15 +5055,60 @@ setupGroupForwarding host invitee1 invitee2 = do
       |]
       (invitee1Name, invitee2Name)
 
+  setupGroupForwardingVectors host invitee1 invitee2
+
+setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwardingVectors host invitee1 invitee2 = do
+  invitee1Name <- userName invitee1
+  invitee2Name <- userName invitee2
+  updateGroupForwardingVectors host invitee1Name invitee2Name MRIntroduced
+
+updateGroupForwardingVectors :: TestCC -> String -> String -> MemberRelation -> IO ()
+updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
+  void $ withCCTransaction host $ \db -> do
+    [(invitee1Index, invitee1Vec)] <- DB.query db
+      [sql|
+        SELECT index_in_group, member_relations_vector
+        FROM group_members
+        WHERE local_display_name = ?
+      |]
+      (Only invitee1Name)
+    [(invitee2Index, invitee2Vec)] <- DB.query db
+      [sql|
+        SELECT index_in_group, member_relations_vector
+        FROM group_members
+        WHERE local_display_name = ?
+      |]
+      (Only invitee2Name)
+
+    let invitee1Vec' = setRelation invitee2Index relation (fromMaybe B.empty invitee1Vec)
+    DB.execute db
+      [sql|
+        UPDATE group_members
+        SET member_relations_vector = ?
+        WHERE local_display_name = ?
+      |]
+      (Binary invitee1Vec', invitee1Name)
+
+    let invitee2Vec' = setRelation invitee1Index relation (fromMaybe B.empty invitee2Vec)
+    DB.execute db
+      [sql|
+        UPDATE group_members
+        SET member_relations_vector = ?
+        WHERE local_display_name = ?
+      |]
+      (Binary invitee2Vec', invitee2Name)
+
 testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+      threadDelay 1000000 -- delay so member relations don't get overwritten to connected
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+      setupGroupForwardingVectors alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -6972,6 +7077,39 @@ testBlockForAllMultipleMembers =
 
       cath #> "#team 6"
       [alice, bob, dan] *<# "#team cath> 6"
+
+testBlockForAllLeftRemoved :: HasCallStack => TestParams -> IO ()
+testBlockForAllLeftRemoved =
+  testChat4 aliceProfile bobProfile cathProfile danProfile $
+    \alice bob cath dan -> do
+      createGroup4 "team" alice (bob, GRMember) (cath, GRMember) (dan, GRMember)
+
+      cath ##> "/leave #team"
+      concurrentlyN_
+        [ do
+            cath <## "#team: you left the group"
+            cath <## "use /d #team to delete the group",
+          alice <## "#team: cath left the group",
+          bob <## "#team: cath left the group",
+          dan <## "#team: cath left the group"
+        ]
+
+      alice ##> "/rm team dan"
+      concurrentlyN_
+        [ alice <## "#team: you removed dan from the group",
+          do
+            dan <## "#team: alice removed you from the group"
+            dan <## "use /d #team to delete the group",
+          bob <## "#team: alice removed dan from the group"
+        ]
+
+      alice ##> "/block for all #team cath"
+      alice <## "#team: you blocked cath"
+      bob <## "#team: alice blocked cath"
+
+      alice ##> "/block for all #team dan"
+      alice <## "#team: you blocked dan"
+      bob <## "#team: alice blocked dan"
 
 testGroupMemberInactive :: HasCallStack => TestParams -> IO ()
 testGroupMemberInactive ps = do

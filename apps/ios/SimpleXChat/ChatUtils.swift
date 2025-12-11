@@ -9,9 +9,7 @@
 import Foundation
 
 public protocol ChatLike {
-    var chatInfo: ChatInfo { get}
-    var chatItems: [ChatItem] { get }
-    var chatStats: ChatStats { get }
+    var chatInfo: ChatInfo { get }
 }
 
 extension ChatLike {

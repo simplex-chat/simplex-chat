@@ -233,15 +233,30 @@ private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMembe
     MR.strings.member_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.member_will_be_removed_from_chat_cannot_be_undone
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.button_remove_member_question),
-    text = generalGetString(messageId),
-    confirmText = generalGetString(MR.strings.remove_member_confirmation),
-    onConfirm = {
-      removeMembers(rhId, groupInfo, listOf(mem.groupMemberId))
-    },
-    destructive = true,
-  )
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    generalGetString(MR.strings.button_remove_member_question),
+    generalGetString(messageId),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = false)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = true)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    })
 }
 
 private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
@@ -249,15 +264,30 @@ private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: Lis
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
   else
     MR.strings.members_will_be_removed_from_chat_cannot_be_undone
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.button_remove_members_question),
-    text = generalGetString(messageId),
-    confirmText = generalGetString(MR.strings.remove_member_confirmation),
-    onConfirm = {
-      removeMembers(rhId, groupInfo, memberIds, onSuccess)
-    },
-    destructive = true,
-  )
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    generalGetString(MR.strings.button_remove_members_question),
+    generalGetString(messageId),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMembers(rhId, groupInfo, memberIds, withMessages = false, onSuccess = onSuccess)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMembers(rhId, groupInfo, memberIds, withMessages = true, onSuccess = onSuccess)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    })
 }
 
 @Composable
@@ -1052,20 +1082,26 @@ private fun setGroupAlias(chat: Chat, localAlias: String, chatModel: ChatModel) 
   }
 }
 
-fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
+fun removeMembers(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, withMessages: Boolean, onSuccess: () -> Unit = {}) {
   withBGApi {
-    val r = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds)
+    val r = chatModel.controller.apiRemoveMembers(rhId, groupInfo.groupId, memberIds, withMessages = withMessages)
     if (r != null) {
       val (updatedGroupInfo, updatedMembers) = r
       withContext(Dispatchers.Main) {
         chatModel.chatsContext.updateGroup(rhId, updatedGroupInfo)
         updatedMembers.forEach { updatedMember ->
           chatModel.chatsContext.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
+          if (withMessages) {
+            chatModel.chatsContext.removeMemberItems(rhId, updatedMember, byMember = groupInfo.membership, groupInfo)
+          }
         }
       }
       withContext(Dispatchers.Main) {
         updatedMembers.forEach { updatedMember ->
           chatModel.secondaryChatsContext.value?.upsertGroupMember(rhId, updatedGroupInfo, updatedMember)
+          if (withMessages) {
+            chatModel.chatsContext.removeMemberItems(rhId, updatedMember, byMember = groupInfo.membership, groupInfo)
+          }
         }
       }
       onSuccess()

@@ -111,9 +111,11 @@
     </nav>
 
     <div class="right-links">
-        <a class="box-btn token md:hidden" href="/token">
-            {{ 'navbar-token' | i18n({}, lang) }}
-        </a>
+        {% if ('donate' not in page.url) %}
+            <a class="box-btn token md:hidden" href="/donate">
+                {{ 'donate' | i18n({}, lang) }}
+            </a>
+        {% endif %}
         <button href="#" class="theme-switch-btn">
             <svg class="sun" width="469" height="469" viewBox="0 0 469 469" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M225.768 1.44594C220.301 3.84594 214.701 10.6459 213.768 15.9793C213.234 18.3793 213.101 31.7126 213.368 45.7126L213.768 71.1793L217.634 76.1126C226.701 88.1126 242.968 87.5793 252.301 75.0459C254.968 71.5793 255.101 69.5793 255.101 42.2459C255.101 14.9126 254.968 12.9126 252.301 9.44594C250.834 7.44594 248.034 4.51261 246.168 3.17928C241.768 -0.154057 231.101 -1.08739 225.768 1.44594Z"/>
@@ -132,7 +134,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('about' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('token' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('vouchers' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}
@@ -151,15 +153,9 @@
                         {% for language in languages.languages %}
                             {% if language.label == supportedLang %}
                                 <li>
-                                    {% if language.flag %}
-                                        <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">
-                                            <p>{{ language.name }}</p>
-                                        </a>
-                                    {% else %}
-                                        <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">
-                                            <p>{{ language.name }}</p>
-                                        </a>
-                                    {% endif %}
+                                    <a href="{% completeRoute {url: page.url, lang: language.label} %}">
+                                        <p>{{ language.name }}</p>
+                                    </a>
                                 </li>
                             {% endif %}
                         {% endfor %}
@@ -168,15 +164,9 @@
                     {% for language in languages.languages %}
                         {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) %}
                             <li>
-                                {% if language.flag %}
-                                    <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">
-                                        <p>{{ language.name }}</p>
-                                    </a>
-                                {% else %}
-                                    <a href="{% completeRoute {url:page.url,lang:language.label} %}" class="flag-anchor">
-                                        <p>{{ language.name }}</p>
-                                    </a>
-                                {% endif %}
+                                <a href="{% completeRoute {url: page.url, lang: language.label} %}">
+                                    <p>{{ language.name }}</p>
+                                </a>
                             </li>
                         {% endif %}
                     {% endfor %}
@@ -215,41 +205,40 @@ const userTheme = localStorage.getItem('theme');
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const prismThemeLink = document.getElementById('prism-theme')
 
-const iconToggle = () => {
+function iconToggle () {
     sunIcon.classList.toggle('hidden');
     moonIcon.classList.toggle('hidden');
 }
 
-const themeCheck = () => {
-    if(userTheme === 'dark' || (!userTheme && systemTheme)){
+function themeCheck() {
+    if (userTheme === 'dark' || (!userTheme && systemTheme)) {
         document.documentElement.classList.add('dark');
         moonIcon.classList.add('hidden');
-        if(prismThemeLink){
+        if (prismThemeLink) {
             prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
         }
     }
     else{
         sunIcon.classList.add('hidden');
-        if(prismThemeLink){
+        if (prismThemeLink) {
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
     }
 }
 themeCheck();
 
-const themeSwitch = () => {
-    if(document.documentElement.classList.contains('dark')){
+function themeSwitch () {
+    if (document.documentElement.classList.contains('dark')) {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme','light');
+        localStorage.setItem('theme', 'light');
         if(prismThemeLink){
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
         iconToggle();
-    }
-    else{
+    } else {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('theme','dark');
-        if(prismThemeLink){
+        localStorage.setItem('theme', 'dark');
+        if (prismThemeLink) {
             prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
         }
         iconToggle();

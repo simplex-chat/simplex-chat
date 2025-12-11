@@ -221,6 +221,16 @@ jobs:
           done
           strip /out/simplex-chat
 
+      - name: Build CLI deb
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        shell: docker exec -t builder sh -eu {0}
+        run: |
+          version=${{ github.ref }}
+          version=${version#refs/tags/v}
+          version=${version%-*}
+
+          ./scripts/desktop/build-cli-deb.sh "$version"
+
       - name: Copy tests from container
         if: matrix.should_run == true
         shell: bash
@@ -232,18 +242,38 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: bash
         run: |
-          docker cp builder:/out/simplex-chat ./simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}
-          path="${{ github.workspace }}/simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}"
-          echo "bin_path=$path" >> $GITHUB_OUTPUT
-          echo "bin_hash=$(echo SHA2-256\(simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+          cli_name="simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}"
+          cli_deb_name="${cli_name}.deb"
+          cli_path="${{ github.workspace }}"
+
+          docker cp builder:/out/simplex-chat "./${cli_name}"
+          docker cp builder:/out/deb-build/simplex-chat.deb "./${cli_deb_name}"
+
+          echo "bin_name=${cli_name}" >> $GITHUB_OUTPUT
+          echo "bin_path=${cli_path}/${cli_name}" >> $GITHUB_OUTPUT
+          echo "bin_hash=$(echo SHA2-256\(${cli_name}\)= $(openssl sha256 "${cli_path}/${cli_name}" | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+
+          echo "deb_name=${cli_deb_name}" >> $GITHUB_OUTPUT
+          echo "deb_path=${cli_path}/${cli_deb_name}" >> $GITHUB_OUTPUT
+          echo "deb_hash=$(echo SHA2-256\(${cli_deb_name}\)= $(openssl sha256 "${cli_path}/${cli_deb_name}" | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
 
       - name: Upload CLI
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         uses: ./.github/actions/prepare-release
         with:
+          bin_name: ${{ steps.linux_cli_prepare.outputs.bin_name }}
           bin_path: ${{ steps.linux_cli_prepare.outputs.bin_path }}
-          bin_name: simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}
           bin_hash: ${{ steps.linux_cli_prepare.outputs.bin_hash }}
+          github_ref: ${{ github.ref }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload CLI deb
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        uses: ./.github/actions/prepare-release
+        with:
+          bin_name: ${{ steps.linux_cli_prepare.outputs.deb_name }}
+          bin_path: ${{ steps.linux_cli_prepare.outputs.deb_path }}
+          bin_hash: ${{ steps.linux_cli_prepare.outputs.deb_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 

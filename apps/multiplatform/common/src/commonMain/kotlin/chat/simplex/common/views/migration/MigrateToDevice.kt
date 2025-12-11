@@ -633,7 +633,7 @@ private fun MutableState<MigrationToState?>.startDownloading(
 private fun MutableState<MigrationToState?>.importArchive(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   withLongRunningApi {
     try {
-      if (ChatController.ctrl == null || ChatController.ctrl == -1L) {
+      if (!ChatController.hasChatCtrl()) {
         chatInitControllerRemovingDatabases()
       }
       controller.apiDeleteStorage()
