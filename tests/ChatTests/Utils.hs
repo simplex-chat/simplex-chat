@@ -93,6 +93,9 @@ xit' = if os == "linux" then xit else it
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit'' = ifCI xit Hspec.it
 
+xitMacCI :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xitMacCI = ifCI (if os == "darwin" then xit else it) it
+
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
 xdescribe'' = ifCI xdescribe describe
 
@@ -139,34 +142,6 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
     withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
-
-withTestChatGroup3Connected :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatGroup3Connected ps dbPrefix action = do
-  withTestChat ps dbPrefix $ \cc -> do
-    cc <## "2 contacts connected (use /cs for the list)"
-    cc <## "#team: connected to server(s)"
-    action cc
-
-withTestChatGroup3Connected' :: HasCallStack => TestParams -> String -> IO ()
-withTestChatGroup3Connected' ps dbPrefix = withTestChatGroup3Connected ps dbPrefix $ \_ -> pure ()
-
-withTestChatContactConnected :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatContactConnected ps dbPrefix action =
-  withTestChat ps dbPrefix $ \cc -> do
-    cc <## "1 contacts connected (use /cs for the list)"
-    action cc
-
-withTestChatContactConnected' :: HasCallStack => TestParams -> String -> IO ()
-withTestChatContactConnected' ps dbPrefix = withTestChatContactConnected ps dbPrefix $ \_ -> pure ()
-
-withTestChatContactConnectedV1 :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatContactConnectedV1 ps dbPrefix action =
-  withTestChatV1 ps dbPrefix $ \cc -> do
-    cc <## "1 contacts connected (use /cs for the list)"
-    action cc
-
-withTestChatContactConnectedV1' :: HasCallStack => TestParams -> String -> IO ()
-withTestChatContactConnectedV1' ps dbPrefix = withTestChatContactConnectedV1 ps dbPrefix $ \_ -> pure ()
 
 -- | test sending direct messages
 (<##>) :: HasCallStack => TestCC -> TestCC -> IO ()

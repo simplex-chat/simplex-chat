@@ -153,8 +153,6 @@ agentToChatVersion v
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
-  | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
-  | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
@@ -164,8 +162,6 @@ connEntityInfo :: ConnectionEntity -> String
 connEntityInfo = \case
   RcvDirectMsgConnection c ct_ -> ctInfo ct_ <> ", status: " <> show (connStatus c)
   RcvGroupMsgConnection c g m -> mInfo g m <> ", status: " <> show (connStatus c)
-  SndFileConnection c _ft -> "snd file, status: " <> show (connStatus c)
-  RcvFileConnection c _ft -> "rcv file, status: " <> show (connStatus c)
   UserContactConnection c _uc -> "user address, status: " <> show (connStatus c)
   where
     ctInfo = maybe "connection" $ \Contact {contactId} -> "contact " <> show contactId
@@ -175,8 +171,6 @@ updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
   RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = Just $ st c}) <$> ct_)
   RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
-  SndFileConnection c ft -> SndFileConnection (st c) ft
-  RcvFileConnection c ft -> RcvFileConnection (st c) ft
   UserContactConnection c uc -> UserContactConnection (st c) uc
   where
     st c = c {connStatus}

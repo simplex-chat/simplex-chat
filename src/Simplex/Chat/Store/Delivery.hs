@@ -5,6 +5,7 @@
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Simplex.Chat.Store.Delivery
@@ -28,15 +29,12 @@ module Simplex.Chat.Store.Delivery
   )
 where
 
-import Control.Monad.Except
 import Data.ByteString.Char8 (ByteString)
-import Data.Either (rights)
 import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Time.Clock (UTCTime, getCurrentTime)
 import Simplex.Chat.Delivery
 import Simplex.Chat.Protocol hiding (Binary)
-import Simplex.Chat.Store.Groups (getGroupMemberById)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, getWorkItems, maybeFirstRow)
@@ -44,11 +42,14 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (firstRow')
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), (:.) (..))
+import Database.PostgreSQL.Simple (In (..), Only (..), (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
+import Control.Monad.Except
+import Data.Either (rights)
 import Database.SQLite.Simple (Only (..), (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
+import Simplex.Chat.Store.Groups (getGroupMemberById)
 #endif
 
 type DeliveryJobScopeRow = (DeliveryWorkerScope, Maybe DeliveryJobSpecTag, Maybe BoolInt, Maybe GroupMemberId)
@@ -164,7 +165,7 @@ getNextDeliveryTasks db gInfo task =
     MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
-      | useRelays =
+      | isTrue useRelays =
           map fromOnly
             <$> DB.query
               db
@@ -180,11 +181,11 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
-              ((Only groupId) :. jobScopeRow_ jobScope :.  (Only DTSNew))
+              ((Only groupId) :. jobScopeRow_ jobScope :. (Only DTSNew))
       | otherwise =
           -- For fully connected groups we guarantee a singleSenderGMId for a delivery job by additionally filtering
           -- on sender_group_member_id here, so that the job can then retrieve less members as recipients,
-          -- optimizing for this single sender (see processDeliveryJob -> getForwardIntroducedMembers, etc.).
+          -- optimizing for this single sender (see processDeliveryJob -> fully connected group branch).
           -- We do this optimization in the job to decrease load on admins using mobile devices for clients.
           map fromOnly
             <$> DB.query
@@ -202,7 +203,7 @@ getNextDeliveryTasks db gInfo task =
                   AND task_status = ?
                 ORDER BY delivery_task_id ASC
               |]
-              ((Only groupId) :. jobScopeRow_ jobScope :.  (senderGMId, DTSNew))
+              ((Only groupId) :. jobScopeRow_ jobScope :. (senderGMId, DTSNew))
 
 updateDeliveryTaskStatus :: DB.Connection -> Int64 -> DeliveryTaskStatus -> IO ()
 updateDeliveryTaskStatus db taskId status = updateDeliveryTaskStatus_ db taskId status Nothing
@@ -317,26 +318,39 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
 
 -- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
-getGroupMembersByCursor db vr user GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
-  memberIds <-
+getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
+  gmIds :: [Int64] <-
     map fromOnly <$> case cursorGMId_ of
       Nothing ->
         DB.query
           db
           (query <> orderLimit)
-          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, count)
+          ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
+              :. (Only count)
+          )
       Just cursorGMId ->
         DB.query
           db
           (query <> " AND group_member_id > ?" <> orderLimit)
-          (groupId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete, cursorGMId, count)
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
+          ( (groupId, userContactId, singleSenderGMId_, GSMemIntroduced, GSMemIntroInvited, GSMemAccepted, GSMemAnnounced, GSMemConnected, GSMemComplete)
+              :. (cursorGMId, count)
+          )
+#if defined(dbPostgres)
+  map (toContactMember vr user) <$>
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_member_id IN ?")
+      (Only (In gmIds))
+#else
+  rights <$> mapM (runExceptT . getGroupMemberById db vr user) gmIds
+#endif
   where
     query =
       [sql|
         SELECT group_member_id
         FROM group_members
         WHERE group_id = ?
+          AND contact_id IS DISTINCT FROM ?
           AND group_member_id IS DISTINCT FROM ?
           AND member_status IN (?,?,?,?,?,?)
       |]

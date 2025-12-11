@@ -1,8 +1,7 @@
 CREATE TABLE migrations(
-  name TEXT NOT NULL,
+  name TEXT NOT NULL PRIMARY KEY,
   ts TEXT NOT NULL,
-  down TEXT,
-  PRIMARY KEY(name)
+  down TEXT
 );
 CREATE TABLE contact_profiles(
   -- remote user profile
@@ -62,7 +61,6 @@ CREATE TABLE contacts(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
   is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
-  via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
@@ -156,7 +154,9 @@ CREATE TABLE groups(
   welcome_shared_msg_id BLOB,
   request_shared_msg_id BLOB,
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
-  via_group_link_uri BLOB, -- received
+  via_group_link_uri BLOB,
+  summary_current_members_count INTEGER NOT NULL DEFAULT 0,
+  member_index INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -196,6 +196,8 @@ CREATE TABLE group_members(
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
   member_welcome_shared_msg_id BLOB,
+  index_in_group INTEGER NOT NULL DEFAULT 0,
+  member_relations_vector BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -269,17 +271,6 @@ CREATE TABLE rcv_files(
   to_receive INTEGER,
   user_approved_relays INTEGER NOT NULL DEFAULT 0
 );
-CREATE TABLE snd_file_chunks(
-  file_id INTEGER NOT NULL,
-  connection_id INTEGER NOT NULL,
-  chunk_number INTEGER NOT NULL,
-  chunk_agent_msg_id INTEGER,
-  chunk_sent INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- 0(sent to agent), 1(sent to server)
-  FOREIGN KEY(file_id, connection_id) REFERENCES snd_files ON DELETE CASCADE,
-  PRIMARY KEY(file_id, connection_id, chunk_number)
-) WITHOUT ROWID;
 CREATE TABLE rcv_file_chunks(
   file_id INTEGER NOT NULL REFERENCES rcv_files ON DELETE CASCADE,
   chunk_number INTEGER NOT NULL,
@@ -675,7 +666,7 @@ CREATE TABLE operator_usage_conditions(
 );
 CREATE TABLE chat_tags(
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER REFERENCES users,
+  user_id INTEGER REFERENCES users ON DELETE CASCADE,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
   tag_order INTEGER NOT NULL
@@ -693,7 +684,7 @@ CREATE TABLE chat_item_mentions(
   display_name TEXT NOT NULL
 );
 CREATE TABLE delivery_tasks(
-  delivery_task_id INTEGER PRIMARY KEY,
+  delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
@@ -709,7 +700,7 @@ CREATE TABLE delivery_tasks(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE delivery_jobs(
-  delivery_job_id INTEGER PRIMARY KEY,
+  delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   worker_scope TEXT NOT NULL,
   job_scope_spec_tag TEXT,
@@ -723,6 +714,15 @@ CREATE TABLE delivery_jobs(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE group_member_status_predicates(
+  member_status TEXT NOT NULL PRIMARY KEY,
+  current_member INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE connections_sync(
+  connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  should_sync INTEGER NOT NULL DEFAULT 0,
+  last_sync_ts TEXT
 );
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
@@ -768,7 +768,6 @@ CREATE INDEX idx_connections_via_user_contact_link ON connections(
   via_user_contact_link
 );
 CREATE INDEX idx_connections_rcv_file_id ON connections(rcv_file_id);
-CREATE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE INDEX idx_connections_user_contact_link_id ON connections(
   user_contact_link_id
 );
@@ -780,7 +779,6 @@ CREATE INDEX idx_contact_requests_contact_profile_id ON contact_requests(
 CREATE INDEX idx_contact_requests_user_contact_link_id ON contact_requests(
   user_contact_link_id
 );
-CREATE INDEX idx_contacts_via_group ON contacts(via_group);
 CREATE INDEX idx_contacts_contact_profile_id ON contacts(contact_profile_id);
 CREATE INDEX idx_files_chat_item_id ON files(chat_item_id);
 CREATE INDEX idx_files_user_id ON files(user_id);
@@ -818,10 +816,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON pending_group_message
 CREATE INDEX idx_rcv_file_chunks_file_id ON rcv_file_chunks(file_id);
 CREATE INDEX idx_rcv_files_group_member_id ON rcv_files(group_member_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
-  file_id,
-  connection_id
-);
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
@@ -894,7 +888,6 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   user_id,
   item_status
 );
-CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
 CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
   contact_group_member_id
 );
@@ -1087,7 +1080,6 @@ CREATE INDEX idx_chat_items_groups_user_mention ON chat_items(
   user_mention
 );
 CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
-CREATE INDEX idx_connections_group_member_id ON connections(group_member_id);
 CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
   group_id,
   shared_msg_id
@@ -1184,3 +1176,50 @@ CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
   job_status
 );
 CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
+CREATE INDEX idx_groups_summary_current_members_count ON groups(
+  summary_current_members_count
+);
+CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
+  group_member_id
+);
+CREATE INDEX idx_connections_to_subscribe ON connections(
+  user_id,
+  to_subscribe
+);
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(
+  group_id,
+  index_in_group
+);
+CREATE TRIGGER on_group_members_insert_update_summary
+AFTER INSERT ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+BEGIN
+  UPDATE groups
+  SET summary_current_members_count = summary_current_members_count + 1
+  WHERE group_id = NEW.group_id;
+END;
+CREATE TRIGGER on_group_members_delete_update_summary
+AFTER DELETE ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+BEGIN
+  UPDATE groups
+  SET summary_current_members_count = summary_current_members_count - 1
+  WHERE group_id = OLD.group_id;
+END;
+CREATE TRIGGER on_group_members_update_update_summary
+AFTER UPDATE ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+     != EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+BEGIN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (
+          CASE WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+          THEN 1 ELSE -1 END
+        )
+    WHERE group_id = NEW.group_id;
+END;

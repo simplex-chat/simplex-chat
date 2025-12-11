@@ -18,7 +18,6 @@ module Simplex.Chat.Store.Groups
     GroupInfoRow,
     GroupMemberRow,
     MaybeGroupMemberRow,
-    GroupLink (..),
     toGroupInfo,
     toGroupMember,
     toMaybeGroupMember,
@@ -59,21 +58,22 @@ module Simplex.Chat.Store.Groups
     getMentionedGroupMember,
     getMentionedMemberByMemberId,
     getGroupMemberById,
+    getGroupMemberByIndex,
     getGroupMemberByMemberId,
     getGroupMemberIdViaMemberId,
     getScopeMemberIdViaMemberId,
     getGroupMembers,
+    getGroupMembersByIndexes,
+    getSupportScopeMembersByIndexes,
     getGroupModerators,
+    getGroupRelays,
     getGroupMembersForExpiration,
     getGroupCurrentMembersCount,
     deleteGroupChatItems,
     deleteGroupMembers,
     cleanupHostGroupLinkConn,
     deleteGroup,
-    getUserGroupsToSubscribe,
-    getUserGroupDetails,
-    getUserGroupsWithSummary,
-    getGroupSummary,
+    getBaseGroupDetails,
     getContactGroupPreferences,
     getGroupInvitation,
     createNewContactMember,
@@ -100,20 +100,19 @@ module Simplex.Chat.Store.Groups
     deleteGroupMemberConnection,
     updateGroupMemberRole,
     createIntroductions,
+    createIntrosOrUpdateVectors,
+    setMemberVectorNewRelations,
+    setMembersVectorsNewRelation,
+    setMemberVectorRelationConnected,
+    migrateGetMemberRelationsVector,
+    migrateMemberRelationsVector,
+    migrateMemberRelationsVector',
+    getMemberRelationsVector_,
     updateIntroStatus,
-    saveIntroInvitation,
     getIntroduction,
     getIntroducedGroupMemberIds,
-    getForwardIntroducedMembers,
-    getForwardIntroducedModerators,
-    getForwardInvitedMembers,
-    getForwardInvitedModerators,
-    getForwardScopeMember,
     createIntroReMember,
     createIntroToMemberContact,
-    saveMemberInvitation,
-    getViaGroupMember,
-    getViaGroupContact,
     getMatchingContacts,
     getMatchingMembers,
     getMatchingMemberContacts,
@@ -122,14 +121,12 @@ module Simplex.Chat.Store.Groups
     matchReceivedProbe,
     matchReceivedProbeHash,
     matchSentProbe,
-    mergeContactRecords,
     associateMemberWithContactRecord,
     associateContactWithMemberRecord,
     deleteOldProbes,
     updateGroupSettings,
     updateGroupMemberSettings,
     updateGroupMemberBlocked,
-    getXGrpMemIntroContDirect,
     getHostConnId,
     createMemberContact,
     getMemberContact,
@@ -154,6 +151,8 @@ module Simplex.Chat.Store.Groups
     setGroupChatTTL,
     getGroupChatTTL,
     getUserGroupsToExpire,
+    hasMembersWithoutVector,
+    getGMsWithoutVectorIds,
     updateGroupAlias,
   )
 where
@@ -162,16 +161,18 @@ import Control.Monad
 import Control.Monad.Except
 import Control.Monad.IO.Class
 import Crypto.Random (ChaChaDRG)
-import qualified Data.Aeson.TH as J
 import Data.Bifunctor (second)
-import Data.Bitraversable (bitraverse)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString as B
 import Data.Char (toLower)
 import Data.Either (rights)
+import Data.Foldable (foldrM)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
 import Data.Ord (Down (..))
 import Data.Text (Text)
+import qualified Data.Text as T
 import Data.Time.Clock (UTCTime (..), getCurrentTime)
 import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Messages
@@ -179,6 +180,7 @@ import Simplex.Chat.Protocol hiding (Binary)
 import Simplex.Chat.Store.Direct
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRelation (..), setNewRelations, setRelationConnected, toIntroDirInt, toRelationInt)
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
@@ -188,24 +190,24 @@ import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.Ratchet (pattern PQEncOff, pattern PQSupportOff)
-import Simplex.Messaging.Parsers (defaultJSON)
 import Simplex.Messaging.Protocol (SubscriptionMode (..))
-import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>), ($>>=), (<$$>))
+import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>=), (<$$>))
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
-import Database.PostgreSQL.Simple (Only (..), Query, (:.) (..))
+import qualified Data.Set as S
+import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe Int64, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs))
 toMaybeGroupMember _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -230,7 +232,7 @@ getGroupLinkConnection db vr User {userId} groupInfo@GroupInfo {groupId} =
       db
       [sql|
         SELECT c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
+          c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.user_contact_link_id,
           c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
           c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
         FROM connections c
@@ -279,16 +281,6 @@ deleteGroupLink db User {userId} GroupInfo {groupId} = do
     |]
     (userId, groupId)
   DB.execute db "DELETE FROM user_contact_links WHERE user_id = ? AND group_id = ?" (userId, groupId)
-
-data GroupLink = GroupLink
-  { userContactLinkId :: Int64,
-    connLinkContact :: CreatedLinkContact,
-    shortLinkDataSet :: Bool,
-    shortLinkLargeDataSet :: BoolDef,
-    groupLinkId :: GroupLinkId,
-    acceptMemberRole :: GroupMemberRole
-  }
-  deriving (Show)
 
 getGroupLink :: DB.Connection -> User -> GroupInfo -> ExceptT StoreError IO GroupLink
 getGroupLink db User {userId} gInfo@GroupInfo {groupId} =
@@ -359,7 +351,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
     pure
       GroupInfo
         { groupId,
-          useRelays = False,
+          useRelays = BoolDef False,
           localDisplayName = ldn,
           groupProfile,
           localAlias = "",
@@ -375,6 +367,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile = Exc
           chatTags = [],
           chatItemTTL = Nothing,
           uiThemes = Nothing,
+          groupSummary = GroupSummary 1,
           customData = Nothing,
           membersRequireAttention = 0,
           viaGroupLinkUri = Nothing
@@ -433,7 +426,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
           pure
             ( GroupInfo
                 { groupId,
-                  useRelays = False,
+                  useRelays = BoolDef False,
                   localDisplayName,
                   groupProfile,
                   localAlias = "",
@@ -449,6 +442,7 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   chatTags = [],
                   chatItemTTL = Nothing,
                   uiThemes = Nothing,
+                  groupSummary = GroupSummary 2,
                   customData = Nothing,
                   membersRequireAttention = 0,
                   viaGroupLinkUri = Nothing
@@ -471,18 +465,35 @@ getHostMemberId_ db User {userId} groupId =
   ExceptT . firstRow fromOnly (SEHostMemberIdNotFound groupId) $
     DB.query db "SELECT group_member_id FROM group_members WHERE user_id = ? AND group_id = ? AND member_category = ?" (userId, groupId, GCHostMember)
 
+getUpdateNextIndexInGroup_ :: DB.Connection -> GroupId -> ExceptT StoreError IO Int64
+getUpdateNextIndexInGroup_ db groupId =
+  ExceptT . firstRow fromOnly (SEGroupNotFound groupId) $
+    DB.query
+      db
+      [sql|
+        UPDATE groups
+        SET member_index = member_index + 1
+        WHERE group_id = ?
+        RETURNING member_index - 1
+      |]
+      (Only groupId)
+
 createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> Maybe GroupMemberId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ProfileId -> UTCTime -> VersionRangeChat -> ExceptT StoreError IO GroupMember
 createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMemberId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfileId createdAt vr = do
   incognitoProfile <- forM incognitoProfileId $ \profileId -> getProfileById db userId profileId
-  (localDisplayName, memberProfile) <- case (incognitoProfile, incognitoProfileId) of
-    (Just profile@LocalProfile {displayName}, Just profileId) ->
-      (,profile) <$> insertMemberIncognitoProfile_ displayName profileId
-    _ -> (,profile' userOrContact) <$> liftIO insertMember_
+  (indexInGroup, localDisplayName, memberProfile) <- case (incognitoProfile, incognitoProfileId) of
+    (Just profile@LocalProfile {displayName}, Just profileId) -> do
+      (indexInGroup, localDisplayName) <- insertMemberIncognitoProfile_ displayName profileId
+      pure (indexInGroup, localDisplayName, profile)
+    _ -> do
+      (indexInGroup, localDisplayName) <- insertMember_
+      pure (indexInGroup, localDisplayName, profile' userOrContact)
   groupMemberId <- liftIO $ insertedRowId db
   pure
     GroupMember
       { groupMemberId,
         groupId,
+        indexInGroup,
         memberId,
         memberRole,
         memberCategory,
@@ -503,40 +514,44 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
       }
   where
     memberChatVRange@(VersionRange minV maxV) = vr
-    insertMember_ :: IO ContactName
+    insertMember_ :: ExceptT StoreError IO (Int64, ContactName)
     insertMember_ = do
       let localDisplayName = localDisplayName' userOrContact
-      DB.execute
-        db
-        [sql|
-          INSERT INTO group_members
-            ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-              user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-              peer_chat_min_version, peer_chat_max_version)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        |]
-        ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
-            :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
-            :. (minV, maxV)
-        )
-      pure localDisplayName
-    insertMemberIncognitoProfile_ :: ContactName -> ProfileId -> ExceptT StoreError IO ContactName
-    insertMemberIncognitoProfile_ incognitoDisplayName customUserProfileId = ExceptT $
-      withLocalDisplayName db userId incognitoDisplayName $ \incognitoLdn -> do
+      indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+      liftIO $
         DB.execute
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, memberId, memberRole, memberCategory, memberStatus, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
-              :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, createdAt, createdAt)
+          ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
+              :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
               :. (minV, maxV)
           )
-        pure $ Right incognitoLdn
+      pure (indexInGroup, localDisplayName)
+    insertMemberIncognitoProfile_ :: ContactName -> ProfileId -> ExceptT StoreError IO (Int64, ContactName)
+    insertMemberIncognitoProfile_ incognitoDisplayName customUserProfileId =
+      ExceptT . withLocalDisplayName db userId incognitoDisplayName $ \incognitoLdn -> runExceptT $ do
+        indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+        liftIO $
+          DB.execute
+            db
+            [sql|
+              INSERT INTO group_members
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
+                  user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
+                  peer_chat_min_version, peer_chat_max_version)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            |]
+            ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
+                :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, createdAt, createdAt)
+                :. (minV, maxV)
+            )
+        pure (indexInGroup, incognitoLdn)
 
 deleteContactCardKeepConn :: DB.Connection -> Int64 -> Contact -> IO ()
 deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {profileId}} = do
@@ -561,16 +576,17 @@ createPreparedGroup db vr user@User {userId, userContactId} groupProfile busines
       let memberId = MemberId $ encodeUtf8 groupLDN <> "_host_unknown_id"
           hostProfile = profileFromName $ nameFromMemberId memberId
       (localDisplayName, profileId) <- createNewMemberProfile_ db user hostProfile currentTs
+      indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
         DB.execute
           db
           [sql|
             INSERT INTO group_members
-              ( group_id, member_id, member_role, member_category, member_status, invited_by,
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                 user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
-          ( (groupId, memberId, GRAdmin, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+          ( (groupId, indexInGroup, memberId, GRAdmin, GCHostMember, GSMemAccepted, Binary B.empty, fromInvitedBy userContactId IBUnknown)
               :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           )
         insertedRowId db
@@ -756,16 +772,17 @@ createGroupViaLink'
       insertHost_ currentTs groupId = do
         (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs
         let MemberIdRole {memberId, memberRole} = fromMember
+        indexInGroup <- getUpdateNextIndexInGroup_ db groupId
         liftIO $ do
           DB.execute
             db
             [sql|
               INSERT INTO group_members
-                ( group_id, member_id, member_role, member_category, member_status, invited_by,
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
                   user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
-            ( (groupId, memberId, memberRole, GCHostMember, GSMemAccepted, fromInvitedBy userContactId IBUnknown)
+            ( (groupId, indexInGroup, memberId, memberRole, GCHostMember, GSMemAccepted, Binary B.empty, fromInvitedBy userContactId IBUnknown)
                 :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
             )
           insertedRowId db
@@ -805,51 +822,6 @@ getGroup db vr user groupId = do
   gInfo <- getGroupInfo db vr user groupId
   members <- liftIO $ getGroupMembers db vr user gInfo
   pure $ Group gInfo members
-
-getGroupToSubscribe :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO ShortGroup
-getGroupToSubscribe db User {userId, userContactId} groupId = do
-  shortInfo <- getGroupInfoToSubscribe
-  members <- liftIO getGroupMembersToSubscribe
-  pure $ ShortGroup shortInfo members
-  where
-    getGroupInfoToSubscribe :: ExceptT StoreError IO ShortGroupInfo
-    getGroupInfoToSubscribe = ExceptT $ do
-      firstRow toInfo (SEGroupNotFound groupId) $
-        DB.query
-          db
-          [sql|
-              SELECT g.local_display_name, mu.member_status
-              FROM groups g
-              JOIN group_members mu ON mu.group_id = g.group_id
-              WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?
-                AND mu.member_status NOT IN (?,?,?)
-          |]
-          (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-      where
-        toInfo :: (GroupName, GroupMemberStatus) -> ShortGroupInfo
-        toInfo (groupName, membershipStatus) =
-          ShortGroupInfo groupId groupName membershipStatus
-    getGroupMembersToSubscribe :: IO [ShortGroupMember]
-    getGroupMembersToSubscribe = do
-      map toShortMember
-        <$> DB.query
-          db
-          [sql|
-              SELECT m.group_member_id, m.local_display_name, c.agent_conn_id
-              FROM group_members m
-              JOIN connections c ON c.connection_id = (
-                SELECT max(cc.connection_id)
-                FROM connections cc
-                WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
-              )
-              WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
-                AND m.member_status NOT IN (?,?,?)
-          |]
-          (userId, userId, groupId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted)
-      where
-        toShortMember :: (GroupMemberId, ContactName, AgentConnId) -> ShortGroupMember
-        toShortMember (groupMemberId, localDisplayName, agentConnId) =
-          ShortGroupMember groupMemberId groupId localDisplayName agentConnId
 
 deleteGroupChatItems :: DB.Connection -> User -> GroupInfo -> IO ()
 deleteGroupChatItems db User {userId} GroupInfo {groupId} =
@@ -942,67 +914,21 @@ deleteGroupProfile_ db userId groupId =
     |]
     (userId, groupId)
 
-getUserGroupsToSubscribe :: DB.Connection -> User -> IO [ShortGroup]
-getUserGroupsToSubscribe db user@User {userId} = do
-  groupIds <- map fromOnly <$> DB.query db "SELECT group_id FROM groups WHERE user_id = ?" (Only userId)
-  rights <$> mapM (runExceptT . getGroupToSubscribe db user) groupIds
-
-getUserGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfo]
-getUserGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
-  g_ <-
-    map (toGroupInfo vr userContactId [])
-      <$> DB.query
-        db
-        [sql|
-          SELECT
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
-            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-            g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
-            mu.group_member_id, g.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category, mu.member_status, mu.show_messages, mu.member_restriction,
-            mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id, pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at,
-            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
-          FROM groups g
-          JOIN group_profiles gp USING (group_profile_id)
-          JOIN group_members mu USING (group_id)
-          JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          WHERE g.user_id = ? AND mu.contact_id = ?
-            AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
-              OR LOWER(gp.full_name) LIKE '%' || ? || '%'
-              OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
-              OR LOWER(gp.description) LIKE '%' || ? || '%'
-            )
-        |]
-        (userId, userContactId, search, search, search, search)
-  mapM (addGroupChatTags db) g_
+getBaseGroupDetails :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe Text -> IO [GroupInfo]
+getBaseGroupDetails db vr User {userId, userContactId} _contactId_ search_ = do
+  map (toGroupInfo vr userContactId [])
+    <$> DB.query db (groupInfoQuery <> " " <> condition) (userId, userContactId, search, search, search, search)
   where
-    search = maybe "" (map toLower) search_
-
-getUserGroupsWithSummary :: DB.Connection -> VersionRangeChat -> User -> Maybe ContactId -> Maybe String -> IO [GroupInfoSummary]
-getUserGroupsWithSummary db vr user _contactId_ search_ =
-  getUserGroupDetails db vr user _contactId_ search_
-    >>= mapM (\g@GroupInfo {groupId} -> GIS g <$> getGroupSummary db user groupId)
-
--- the statuses on non-current members should match memberCurrent' function
-getGroupSummary :: DB.Connection -> User -> GroupId -> IO GroupSummary
-getGroupSummary db User {userId} groupId = do
-  currentMembers_ <-
-    maybeFirstRow fromOnly $
-      DB.query
-        db
-        [sql|
-          SELECT count (m.group_member_id)
-          FROM groups g
-          JOIN group_members m USING (group_id)
-          WHERE g.user_id = ?
-            AND g.group_id = ?
-            AND m.member_status NOT IN (?,?,?,?,?)
-        |]
-        (userId, groupId, GSMemRejected, GSMemRemoved, GSMemLeft, GSMemUnknown, GSMemInvited)
-  pure GroupSummary {currentMembers = fromMaybe 0 currentMembers_}
+    condition =
+      [sql|
+        WHERE g.user_id = ? AND mu.contact_id = ?
+          AND (LOWER(gp.display_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.full_name) LIKE '%' || ? || '%'
+            OR LOWER(gp.short_descr) LIKE '%' || ? || '%'
+            OR LOWER(gp.description) LIKE '%' || ? || '%'
+          )
+      |]
+    search = maybe "" (T.map toLower) search_
 
 getContactGroupPreferences :: DB.Connection -> User -> Contact -> IO [(GroupMemberRole, FullGroupPreferences)]
 getContactGroupPreferences db User {userId} Contact {contactId} = do
@@ -1023,42 +949,21 @@ getGroupInfoByName db vr user gName = do
   gId <- getGroupIdByName db user gName
   getGroupInfo db vr user gId
 
-groupMemberQuery :: Query
-groupMemberQuery =
-  [sql|
-    SELECT
-      m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-      m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-      m.created_at, m.updated_at,
-      m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-      c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-      c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-      c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-      c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-    FROM group_members m
-    JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-    LEFT JOIN connections c ON c.connection_id = (
-      SELECT max(cc.connection_id)
-      FROM connections cc
-      WHERE cc.user_id = ? AND cc.group_member_id = m.group_member_id
-    )
-  |]
-
 getGroupMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO GroupMember
 getGroupMember db vr user@User {userId} groupId groupMemberId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFound groupMemberId) $
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.group_member_id = ? AND m.user_id = ?")
-      (userId, groupId, groupMemberId, userId)
+      (groupId, groupMemberId, userId)
 
 getHostMember :: DB.Connection -> VersionRangeChat -> User -> GroupId -> ExceptT StoreError IO GroupMember
-getHostMember db vr user@User {userId} groupId =
+getHostMember db vr user groupId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupHostMemberNotFound groupId) $
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_category = ?")
-      (userId, groupId, GCHostMember)
+      (groupId, GCHostMember)
 
 getMentionedGroupMember :: DB.Connection -> User -> GroupId -> GroupMemberId -> ExceptT StoreError IO CIMention
 getMentionedGroupMember db User {userId} groupId gmId =
@@ -1099,15 +1004,31 @@ getGroupMemberById db vr user@User {userId} groupMemberId =
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_member_id = ? AND m.user_id = ?")
-      (userId, groupMemberId, userId)
+      (groupMemberId, userId)
+
+getGroupMemberByIndex :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Int64 -> ExceptT StoreError IO GroupMember
+getGroupMemberByIndex db vr user GroupInfo {groupId} indexInGroup =
+  ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByIndex indexInGroup) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group = ?")
+      (groupId, indexInGroup)
+
+getSupportScopeMemberByIndex :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMemberId -> Int64 -> ExceptT StoreError IO GroupMember
+getSupportScopeMemberByIndex db vr user GroupInfo {groupId} scopeGMId indexInGroup =
+  ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByIndex indexInGroup) $
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group = ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
+      (groupId, indexInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
 
 getGroupMemberByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> ExceptT StoreError IO GroupMember
-getGroupMemberByMemberId db vr user@User {userId} GroupInfo {groupId} memberId =
+getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
   ExceptT . firstRow (toContactMember vr user) (SEGroupMemberNotFoundByMemberId memberId) $
     DB.query
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
-      (userId, groupId, memberId)
+      (groupId, memberId)
 
 getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
 getScopeMemberIdViaMemberId db user g@GroupInfo {membership} sender scopeMemberId
@@ -1124,12 +1045,38 @@ getGroupMemberIdViaMemberId db User {userId} GroupInfo {groupId} memberId =
       (userId, groupId, memberId)
 
 getGroupMembers :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
-getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} = do
+getGroupMembers db vr user@User {userId, userContactId} GroupInfo {groupId} =
   map (toContactMember vr user)
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)")
-      (userId, userId, groupId, userContactId)
+      (userId, groupId, userContactId)
+
+getGroupMembersByIndexes :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> [Int64] -> IO [GroupMember]
+getGroupMembersByIndexes db vr user gInfo indexesInGroup = do
+#if defined(dbPostgres)
+  let GroupInfo {groupId} = gInfo
+  map (toContactMember vr user) <$>
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ?")
+      (groupId, In indexesInGroup)
+#else
+  rights <$> mapM (runExceptT . getGroupMemberByIndex db vr user gInfo) indexesInGroup
+#endif
+
+getSupportScopeMembersByIndexes :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> GroupMemberId -> [Int64] -> IO [GroupMember]
+getSupportScopeMembersByIndexes db vr user gInfo scopeGMId indexesInGroup = do
+#if defined(dbPostgres)
+  let GroupInfo {groupId} = gInfo
+  map (toContactMember vr user) <$>
+    DB.query
+      db
+      (groupMemberQuery <> " WHERE m.group_id = ? AND m.index_in_group IN ? AND (m.member_role IN (?,?,?) OR m.group_member_id = ?)")
+      (groupId, In indexesInGroup, GRModerator, GRAdmin, GROwner, scopeGMId)
+#else
+  rights <$> mapM (runExceptT . getSupportScopeMemberByIndex db vr user gInfo scopeGMId) indexesInGroup
+#endif
 
 getGroupModerators :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1137,7 +1084,16 @@ getGroupModerators db vr user@User {userId, userContactId} GroupInfo {groupId} =
     <$> DB.query
       db
       (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)")
-      (userId, userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
+      (userId, groupId, userContactId, GRModerator, GRAdmin, GROwner)
+
+-- TODO [channels fwd] retrieve relays based on knowledge about member from protocol, not role (isMemberRelay)
+getGroupRelays :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
+getGroupRelays db vr user@User {userId, userContactId} GroupInfo {groupId} = do
+  map (toContactMember vr user)
+    <$> DB.query
+      db
+      (groupMemberQuery <> " WHERE m.user_id = ? AND m.group_id = ? AND m.contact_id IS DISTINCT FROM ? AND m.member_role = ?")
+      (userId, groupId, userContactId, GRAdmin)
 
 getGroupMembersForExpiration :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> IO [GroupMember]
 getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {groupId} = do
@@ -1145,6 +1101,7 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
     <$> DB.query
       db
       ( groupMemberQuery
+          <> " "
           <> [sql|
                 WHERE m.group_id = ? AND m.user_id = ? AND (m.contact_id IS NULL OR m.contact_id != ?)
                   AND m.member_status IN (?, ?, ?, ?)
@@ -1153,11 +1110,7 @@ getGroupMembersForExpiration db vr user@User {userId, userContactId} GroupInfo {
                   )
               |]
       )
-      (userId, groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
-
-toContactMember :: VersionRangeChat -> User -> (GroupMemberRow :. MaybeConnectionRow) -> GroupMember
-toContactMember vr User {userContactId} (memberRow :. connRow) =
-  (toGroupMember userContactId memberRow) {activeConn = toMaybeConnection vr connRow}
+      (groupId, userId, userContactId, GSMemRemoved, GSMemLeft, GSMemGroupDeleted, GSMemUnknown)
 
 getGroupCurrentMembersCount :: DB.Connection -> User -> GroupInfo -> IO Int
 getGroupCurrentMembersCount db User {userId} GroupInfo {groupId} = do
@@ -1192,21 +1145,22 @@ getGroupInvitation db vr user groupId =
 createNewContactMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> ConnId -> ConnReqInvitation -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createNewContactMember _ _ _ _ Contact {localDisplayName, activeConn = Nothing} _ _ _ _ = throwError $ SEContactNotReady localDisplayName
 createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile, activeConn = Just Connection {connChatVersion, peerChatVRange}} memberRole agentConnId connRequest subMode =
-  createWithRandomId gVar $ \memId -> do
+  createWithRandomId' gVar $ \memId -> runExceptT $ do
     createdAt <- liftIO getCurrentTime
     member@GroupMember {groupMemberId} <- createMember_ (MemberId memId) createdAt
-    void $ createMemberConnection_ db userId groupMemberId agentConnId connChatVersion peerChatVRange Nothing 0 createdAt subMode
+    void $ liftIO $ createMemberConnection_ db userId groupMemberId agentConnId connChatVersion peerChatVRange Nothing 0 createdAt subMode
     pure member
   where
     VersionRange minV maxV = peerChatVRange
     invitedByGroupMemberId = groupMemberId' membership
     createMember_ memberId createdAt = do
-      insertMember_
+      indexInGroup <- insertMember_
       groupMemberId <- liftIO $ insertedRowId db
       pure
         GroupMember
           { groupMemberId,
             groupId,
+            indexInGroup,
             memberId,
             memberRole,
             memberCategory = GCInviteeMember,
@@ -1226,45 +1180,50 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             supportChat = Nothing
           }
       where
-        insertMember_ =
-          DB.execute
-            db
-            [sql|
-              INSERT INTO group_members
-                ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                  user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at,
-                  peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-            |]
-            ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, invitedByGroupMemberId)
-                :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
-                :. (minV, maxV)
-            )
+        insertMember_ = do
+          indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+          liftIO $
+            DB.execute
+              db
+              [sql|
+                INSERT INTO group_members
+                  ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
+                    user_id, local_display_name, contact_id, contact_profile_id, sent_inv_queue_info, created_at, updated_at,
+                    peer_chat_min_version, peer_chat_max_version)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              |]
+              ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, Binary B.empty, fromInvitedBy userContactId IBUser, invitedByGroupMemberId)
+                  :. (userId, localDisplayName, contactId, localProfileId profile, connRequest, createdAt, createdAt)
+                  :. (minV, maxV)
+              )
+          pure indexInGroup
 
 createNewContactMemberAsync :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> Contact -> GroupMemberRole -> (CommandId, ConnId) -> VersionChat -> VersionRangeChat -> SubscriptionMode -> ExceptT StoreError IO ()
 createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo {groupId, membership} Contact {contactId, localDisplayName, profile} memberRole (cmdId, agentConnId) chatV peerChatVRange subMode =
-  createWithRandomId gVar $ \memId -> do
+  createWithRandomId' gVar $ \memId -> runExceptT $ do
     createdAt <- liftIO getCurrentTime
     insertMember_ (MemberId memId) createdAt
     groupMemberId <- liftIO $ insertedRowId db
-    Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 createdAt subMode
-    setCommandConnId db user cmdId connId
+    Connection {connId} <- liftIO $ createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 createdAt subMode
+    liftIO $ setCommandConnId db user cmdId connId
   where
     VersionRange minV maxV = peerChatVRange
-    insertMember_ memberId createdAt =
-      DB.execute
-        db
-        [sql|
-          INSERT INTO group_members
-            ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-              user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-              peer_chat_min_version, peer_chat_max_version)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        |]
-        ( (groupId, memberId, memberRole, GCInviteeMember, GSMemInvited, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-            :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
-            :. (minV, maxV)
-        )
+    insertMember_ memberId createdAt = do
+      indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+      liftIO $
+        DB.execute
+          db
+          [sql|
+            INSERT INTO group_members
+              ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
+                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+                peer_chat_min_version, peer_chat_max_version)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+          |]
+          ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, GSMemInvited, Binary B.empty, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+              :. (userId, localDisplayName, contactId, localProfileId profile, createdAt, createdAt)
+              :. (minV, maxV)
+          )
 
 createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
 createJoiningMember
@@ -1286,26 +1245,28 @@ createJoiningMember
           "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
           (displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs)
       profileId <- liftIO $ insertedRowId db
-      createWithRandomId gVar $ \memId -> do
+      createWithRandomId' gVar $ \memId -> runExceptT $ do
         insertMember_ ldn profileId (MemberId memId) currentTs
         groupMemberId <- liftIO $ insertedRowId db
         pure (groupMemberId, MemberId memId)
     where
       VersionRange minV maxV = cReqChatVRange
-      insertMember_ ldn profileId memberId currentTs =
-        DB.execute
-          db
-          [sql|
-            INSERT INTO group_members
-              ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
-                peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-          |]
-          ( (groupId, memberId, memberRole, GCInviteeMember, memberStatus, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-              :. (userId, ldn, Nothing :: (Maybe Int64), profileId, cReqXContactId_, welcomeMsgId_, currentTs, currentTs)
-              :. (minV, maxV)
-          )
+      insertMember_ ldn profileId memberId currentTs = do
+        indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+        liftIO $
+          DB.execute
+            db
+            [sql|
+              INSERT INTO group_members
+                ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
+                  user_id, local_display_name, contact_id, contact_profile_id, member_xcontact_id, member_welcome_shared_msg_id, created_at, updated_at,
+                  peer_chat_min_version, peer_chat_max_version)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            |]
+            ( (groupId, indexInGroup, memberId, memberRole, GCInviteeMember, memberStatus, Binary B.empty, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+                :. (userId, ldn, Nothing :: (Maybe Int64), profileId, cReqXContactId_, welcomeMsgId_, currentTs, currentTs)
+                :. (minV, maxV)
+            )
 
 getMemberJoinRequest :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (Maybe (Maybe XContactId, Maybe SharedMsgId))
 getMemberJoinRequest db User {userId} GroupInfo {groupId} GroupMember {groupMemberId = mId} =
@@ -1367,22 +1328,24 @@ createBusinessRequestGroup
         membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
         pure (groupId, membership)
       VersionRange minV maxV = cReqChatVRange
-      insertClientMember_ currentTs groupId membership = ExceptT $ do
-        withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
-          createWithRandomId gVar $ \memId -> do
-            DB.execute
-              db
-              [sql|
-                INSERT INTO group_members
-                  ( group_id, member_id, member_role, member_category, member_status, invited_by, invited_by_group_member_id,
-                    user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-                    peer_chat_min_version, peer_chat_max_version)
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-              |]
-              ( (groupId, MemberId memId, GRMember, GCInviteeMember, GSMemAccepted, fromInvitedBy userContactId IBUser, groupMemberId' membership)
-                  :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
-                  :. (minV, maxV)
-              )
+      insertClientMember_ currentTs groupId membership =
+        ExceptT . withLocalDisplayName db userId displayName $ \localDisplayName -> runExceptT $ do
+          createWithRandomId' gVar $ \memId -> runExceptT $ do
+            indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+            liftIO $
+              DB.execute
+                db
+                [sql|
+                  INSERT INTO group_members
+                    ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
+                      user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+                      peer_chat_min_version, peer_chat_max_version)
+                  VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                |]
+                ( (groupId, indexInGroup, MemberId memId, GRMember, GCInviteeMember, GSMemAccepted, Binary B.empty, fromInvitedBy userContactId IBUser, groupMemberId' membership)
+                    :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
+                    :. (minV, maxV)
+                )
             groupMemberId <- liftIO $ insertedRowId db
             pure (groupMemberId, MemberId memId)
 
@@ -1537,7 +1500,7 @@ createNewGroupMember db user gInfo invitingMember memInfo@MemberInfo {profile} m
             memContactId = Nothing,
             memProfileId
           }
-  liftIO $ createNewMember_ db user gInfo newMember currentTs
+  createNewMember_ db user gInfo newMember currentTs
 
 createNewMemberProfile_ :: DB.Connection -> User -> Profile -> UTCTime -> ExceptT StoreError IO (Text, ProfileId)
 createNewMemberProfile_ db User {userId} Profile {displayName, fullName, shortDescr, image, contactLink, preferences} createdAt =
@@ -1549,7 +1512,7 @@ createNewMemberProfile_ db User {userId} Profile {displayName, fullName, shortDe
     profileId <- insertedRowId db
     pure $ Right (ldn, profileId)
 
-createNewMember_ :: DB.Connection -> User -> GroupInfo -> NewGroupMember -> UTCTime -> IO GroupMember
+createNewMember_ :: DB.Connection -> User -> GroupInfo -> NewGroupMember -> UTCTime -> ExceptT StoreError IO GroupMember
 createNewMember_
   db
   User {userId, userContactId}
@@ -1569,24 +1532,27 @@ createNewMember_
     let invitedById = fromInvitedBy userContactId invitedBy
         activeConn = Nothing
         memberChatVRange@(VersionRange minV maxV) = maybe chatInitialVRange fromChatVRange memChatVRange
-    DB.execute
-      db
-      [sql|
-        INSERT INTO group_members
-          (group_id, member_id, member_role, member_category, member_status, member_restriction, invited_by, invited_by_group_member_id,
-           user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
-           peer_chat_min_version, peer_chat_max_version)
-          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-      |]
-      ( (groupId, memberId, memberRole, memberCategory, memberStatus, memRestriction, invitedById, memInvitedByGroupMemberId)
-          :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
-          :. (minV, maxV)
-      )
-    groupMemberId <- insertedRowId db
+    indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+    liftIO $
+      DB.execute
+        db
+        [sql|
+          INSERT INTO group_members
+            (group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, member_restriction, invited_by, invited_by_group_member_id,
+            user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+            peer_chat_min_version, peer_chat_max_version)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        |]
+        ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty, memRestriction, invitedById, memInvitedByGroupMemberId)
+            :. (userId, localDisplayName, memberContactId, memberContactProfileId, createdAt, createdAt)
+            :. (minV, maxV)
+        )
+    groupMemberId <- liftIO $ insertedRowId db
     pure
       GroupMember
         { groupMemberId,
           groupId,
+          indexInGroup,
           memberId,
           memberRole,
           memberCategory,
@@ -1642,16 +1608,14 @@ updateGroupMemberRole :: DB.Connection -> User -> GroupMember -> GroupMemberRole
 updateGroupMemberRole db User {userId} GroupMember {groupMemberId} memRole =
   DB.execute db "UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?" (memRole, userId, groupMemberId)
 
-createIntroductions :: DB.Connection -> VersionChat -> [GroupMember] -> GroupMember -> IO [GroupMemberIntro]
-createIntroductions db chatV members toMember = do
-  let reMembers = filter (\m -> memberCurrent m && groupMemberId' m /= groupMemberId' toMember) members
-  if null reMembers
-    then pure []
-    else do
+createIntroductions :: DB.Connection -> VersionChat -> [GroupMember] -> GroupMember -> IO [GroupMember]
+createIntroductions db chatV reMembers toMember
+  | null reMembers = pure []
+  | otherwise = do
       currentTs <- getCurrentTime
       catMaybes <$> mapM (createIntro_ currentTs) reMembers
   where
-    createIntro_ :: UTCTime -> GroupMember -> IO (Maybe GroupMemberIntro)
+    createIntro_ :: UTCTime -> GroupMember -> IO (Maybe GroupMember)
     createIntro_ ts reMember =
       -- when members connect concurrently, host would try to create introductions between them in both directions;
       -- this check avoids creating second (redundant) introduction
@@ -1666,8 +1630,7 @@ createIntroductions db chatV members toMember = do
               VALUES (?,?,?,?,?,?)
             |]
             (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
-          introId <- insertedRowId db
-          pure $ Just GroupMemberIntro {introId, reMember, toMember, introStatus = GMIntroPending, introInvitation = Nothing}
+          pure $ Just reMember
       where
         checkInverseIntro :: IO (Maybe Int64)
         checkInverseIntro =
@@ -1676,6 +1639,165 @@ createIntroductions db chatV members toMember = do
               db
               "SELECT 1 FROM group_member_intros WHERE re_group_member_id = ? AND to_group_member_id = ? LIMIT 1"
               (groupMemberId' toMember, groupMemberId' reMember)
+
+-- Create introductions for members without vectors and update vectors for members with vectors.
+-- Partitioning and updates happen in same transaction to avoid race conditions.
+createIntrosOrUpdateVectors :: DB.Connection -> VersionRangeChat -> [GroupMember] -> GroupMember -> IO [GroupMember]
+createIntrosOrUpdateVectors db vr reMembers toMember
+  | null reMembers = pure []
+  | otherwise = do
+      (memsWithVec, memsWithoutVec) <- partitionByVector reMembers
+      let GroupMember {indexInGroup} = toMember
+      setMembersVectorsNewRelation db memsWithVec indexInGroup IDSubjectIntroduced MRIntroduced
+      memsWithoutVec' <- createIntroductions db (maxVersion vr) memsWithoutVec toMember
+      pure $ memsWithoutVec' <> memsWithVec
+  where
+    partitionByVector :: [GroupMember] -> IO ([GroupMember], [GroupMember])
+#if defined(dbPostgres)
+    partitionByVector members = do
+      let memberIds = map groupMemberId' members
+      -- Lock rows first to ensure partitioning doesn't change in case of concurrent updates
+      _ :: [Only Int] <-
+        DB.query
+          db
+          "SELECT 1 FROM group_members WHERE group_member_id IN ? FOR UPDATE"
+          (Only $ In memberIds)
+      memberIdsWithVec <- S.fromList . map fromOnly <$>
+        DB.query
+          db
+          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL"
+          (Only $ In memberIds)
+      pure $ partition (\m -> groupMemberId' m `S.member` memberIdsWithVec) members
+#else
+    partitionByVector = foldrM checkMember ([], [])
+      where
+        checkMember m (withVec, withoutVec) = do
+          hasVec <- isJust <$> maybeFirstRow fromOnly
+            (DB.query db "SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL" (Only $ groupMemberId' m) :: IO [Only Int64])
+          pure $ if hasVec then (m : withVec, withoutVec) else (withVec, m : withoutVec)
+#endif
+
+setMemberVectorNewRelations :: DB.Connection -> GroupMember -> [(Int64, (IntroductionDirection, MemberRelation))] -> IO ()
+setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
+  v_ <- maybeFirstRow fromOnly $
+    DB.query
+      db
+#if defined(dbPostgres)
+      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? FOR UPDATE"
+#else
+      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+#endif
+      (Only groupMemberId)
+  let v' = setNewRelations relations $ fromMaybe B.empty v_
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_relations_vector = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (Binary v', currentTs, groupMemberId)
+
+setMembersVectorsNewRelation :: DB.Connection -> [GroupMember] -> Int64 -> IntroductionDirection -> MemberRelation -> IO ()
+setMembersVectorsNewRelation db members idx dir status = do
+  currentTs <- getCurrentTime
+#if defined(dbPostgres)
+  let memberIds = map groupMemberId' members
+  DB.execute
+    db
+    "UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id IN ?"
+    (idx, toIntroDirInt dir, toRelationInt status, currentTs, In memberIds)
+#else
+  forM_ members $ \GroupMember {groupMemberId} ->
+    DB.execute
+      db
+      "UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?"
+      (idx, toIntroDirInt dir, toRelationInt status, currentTs, groupMemberId)
+#endif
+
+setMemberVectorRelationConnected :: DB.Connection -> GroupMember -> GroupMember -> MemberRelation -> ExceptT StoreError IO ()
+setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {indexInGroup} newStatus = do
+  when (newStatus /= MRSubjectConnected && newStatus /= MRReferencedConnected) $
+    throwError SEInvalidMemberRelationUpdate
+  v <- ExceptT $
+    firstRow fromOnly (SEMemberRelationsVectorNotFound groupMemberId) $
+      DB.query
+        db
+#if defined(dbPostgres)
+        "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL FOR UPDATE"
+#else
+        "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL"
+#endif
+        (Only groupMemberId)
+  let v' = setRelationConnected indexInGroup newStatus v
+  currentTs <- liftIO getCurrentTime
+  liftIO $ DB.execute
+    db
+    [sql|
+      UPDATE group_members
+      SET member_relations_vector = ?, updated_at = ?
+      WHERE group_member_id = ?
+    |]
+    (Binary v', currentTs, groupMemberId)
+
+migrateGetMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO ByteString
+migrateGetMemberRelationsVector db m@GroupMember {groupMemberId} = do
+  liftIO $ migrateMemberRelationsVector db m
+  ExceptT . firstRow fromOnly (SEGroupMemberNotFound groupMemberId) $
+    DB.query
+      db
+      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+      (Only groupMemberId)
+
+migrateMemberRelationsVector :: DB.Connection -> GroupMember -> IO ()
+migrateMemberRelationsVector db GroupMember {groupMemberId} =
+  migrateMemberRelationsVector' db groupMemberId
+
+migrateMemberRelationsVector' :: DB.Connection -> GroupMemberId -> IO ()
+migrateMemberRelationsVector' db groupMemberId = do
+  currentTs <- liftIO getCurrentTime
+  liftIO $ do
+#if defined(dbPostgres)
+    -- Lock the row first to ensure computation runs only after lock is acquired
+    _ :: [Only Int] <-
+      DB.query
+        db
+        "SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NULL FOR UPDATE"
+        (Only groupMemberId)
+#endif
+    DB.execute
+      db
+      [sql|
+        UPDATE group_members
+        SET
+          member_relations_vector = (
+            SELECT migrate_relations_vector(idx, direction, intro_status)
+            FROM (
+              SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
+              FROM group_member_intros i
+              JOIN group_members m ON m.group_member_id = i.to_group_member_id
+              WHERE i.re_group_member_id = group_members.group_member_id
+              UNION ALL
+              SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
+              FROM group_member_intros i
+              JOIN group_members m ON m.group_member_id = i.re_group_member_id
+              WHERE i.to_group_member_id = group_members.group_member_id
+            ) AS relations
+          ),
+          updated_at = ?
+        WHERE group_member_id = ?
+          AND member_relations_vector IS NULL
+      |]
+      (currentTs, groupMemberId)
+
+getMemberRelationsVector_ :: DB.Connection -> GroupMember -> IO (Maybe ByteString)
+getMemberRelationsVector_ db GroupMember {groupMemberId} =
+  maybeFirstRow fromOnly $
+    DB.query
+      db
+      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+      (Only groupMemberId)
 
 updateIntroStatus :: DB.Connection -> Int64 -> GroupMemberIntroStatus -> IO ()
 updateIntroStatus db introId introStatus = do
@@ -1689,56 +1811,21 @@ updateIntroStatus db introId introStatus = do
     |]
     (introStatus, currentTs, introId)
 
-saveIntroInvitation :: DB.Connection -> GroupMember -> GroupMember -> IntroInvitation -> ExceptT StoreError IO GroupMemberIntro
-saveIntroInvitation db reMember toMember introInv@IntroInvitation {groupConnReq} = do
-  intro <- getIntroduction db reMember toMember
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute
+getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> IO (Maybe GroupMemberIntro)
+getIntroduction db reMember toMember =
+  maybeFirstRow toIntro $
+    DB.query
       db
       [sql|
-        UPDATE group_member_intros
-        SET intro_status = ?,
-            group_queue_info = ?,
-            direct_queue_info = ?,
-            updated_at = ?
-        WHERE group_member_intro_id = ?
-      |]
-      (GMIntroInvReceived, groupConnReq, directConnReq introInv, currentTs, introId intro)
-  pure intro {introInvitation = Just introInv, introStatus = GMIntroInvReceived}
-
-saveMemberInvitation :: DB.Connection -> GroupMember -> IntroInvitation -> GroupMemberStatus -> IO ()
-saveMemberInvitation db GroupMember {groupMemberId} IntroInvitation {groupConnReq, directConnReq} newMemberStatus = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_members
-      SET member_status = ?,
-          group_queue_info = ?,
-          direct_queue_info = ?,
-          updated_at = ?
-      WHERE group_member_id = ?
-    |]
-    (newMemberStatus, groupConnReq, directConnReq, currentTs, groupMemberId)
-
-getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> ExceptT StoreError IO GroupMemberIntro
-getIntroduction db reMember toMember = ExceptT $ do
-  toIntro
-    <$> DB.query
-      db
-      [sql|
-        SELECT group_member_intro_id, group_queue_info, direct_queue_info, intro_status
+        SELECT group_member_intro_id, intro_status
         FROM group_member_intros
         WHERE re_group_member_id = ? AND to_group_member_id = ?
       |]
       (groupMemberId' reMember, groupMemberId' toMember)
   where
-    toIntro :: [(Int64, Maybe ConnReqInvitation, Maybe ConnReqInvitation, GroupMemberIntroStatus)] -> Either StoreError GroupMemberIntro
-    toIntro [(introId, groupConnReq, directConnReq, introStatus)] =
-      let introInvitation = IntroInvitation <$> groupConnReq <*> pure directConnReq
-       in Right GroupMemberIntro {introId, reMember, toMember, introStatus, introInvitation}
-    toIntro _ = Left SEIntroNotFound
+    toIntro :: (Int64, GroupMemberIntroStatus) -> GroupMemberIntro
+    toIntro (introId, introStatus) =
+      GroupMemberIntro {introId, reMember, toMember, introStatus}
 
 getIntroducedGroupMemberIds :: DB.Connection -> GroupMember -> IO [GroupMemberId]
 getIntroducedGroupMemberIds db invitee =
@@ -1747,106 +1834,6 @@ getIntroducedGroupMemberIds db invitee =
       db
       "SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?"
       (Only $ groupMemberId' invitee)
-
-getForwardIntroducedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
-getForwardIntroducedMembers db vr user invitee highlyAvailable = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' invitee
-    query
-      | highlyAvailable = DB.query db q (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-      | otherwise =
-          DB.query
-            db
-            (q <> " AND intro_chat_protocol_version >= ?")
-            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, groupForwardVersion)
-    q =
-      [sql|
-        SELECT re_group_member_id
-        FROM group_member_intros
-        WHERE to_group_member_id = ? AND intro_status NOT IN (?,?,?)
-      |]
-
--- for support scope we don't need to filter by intro_chat_protocol_version for non highly available client,
--- as we will filter moderators supporting this feature by a higher version (as opposed to getForwardIntroducedMembers)
-getForwardIntroducedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
-getForwardIntroducedModerators db vr user@User {userContactId} invitee = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' invitee
-    query =
-      DB.query
-        db
-        [sql|
-          SELECT i.re_group_member_id
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.re_group_member_id
-          WHERE i.to_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
-        |]
-        (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
-
-getForwardInvitedMembers :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> Bool -> IO [GroupMember]
-getForwardInvitedMembers db vr user forwardMember highlyAvailable = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' forwardMember
-    query
-      | highlyAvailable = DB.query db q (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-      | otherwise =
-          DB.query
-            db
-            (q <> " AND intro_chat_protocol_version >= ?")
-            (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, groupForwardVersion)
-    q =
-      [sql|
-        SELECT to_group_member_id
-        FROM group_member_intros
-        WHERE re_group_member_id = ? AND intro_status NOT IN (?,?,?)
-      |]
-
--- for support scope we don't need to filter by intro_chat_protocol_version for non highly available client,
--- as we will filter moderators supporting this feature by a higher version (as opposed to getForwardInvitedMembers)
-getForwardInvitedModerators :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO [GroupMember]
-getForwardInvitedModerators db vr user@User {userContactId} forwardMember = do
-  memberIds <- map fromOnly <$> query
-  rights <$> mapM (runExceptT . getGroupMemberById db vr user) memberIds
-  where
-    mId = groupMemberId' forwardMember
-    query =
-      DB.query
-        db
-        [sql|
-          SELECT i.to_group_member_id
-          FROM group_member_intros i
-          JOIN group_members m ON m.group_member_id = i.to_group_member_id
-          WHERE i.re_group_member_id = ? AND i.intro_status NOT IN (?,?,?)
-            AND (m.contact_id IS NULL OR m.contact_id != ?) AND m.member_role IN (?,?,?)
-        |]
-        (mId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected, userContactId, GRModerator, GRAdmin, GROwner)
-
-getForwardScopeMember :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> GroupMemberId -> IO (Maybe GroupMember)
-getForwardScopeMember db vr user GroupMember {groupMemberId = sendingGMId} scopeGMId = do
-  (introExists_ :: Maybe Int64) <-
-    liftIO $ maybeFirstRow fromOnly $
-      DB.query
-        db
-        [sql|
-          SELECT 1
-          FROM group_member_intros
-          WHERE
-            (
-              (re_group_member_id = ? AND to_group_member_id = ?) OR
-              (re_group_member_id = ? AND to_group_member_id = ?)
-            )
-            AND intro_status NOT IN (?,?,?)
-          LIMIT 1
-        |]
-        (sendingGMId, scopeGMId, scopeGMId, sendingGMId, GMIntroReConnected, GMIntroToConnected, GMIntroConnected)
-  pure introExists_ $>> (eitherToMaybe <$> runExceptT (getGroupMemberById db vr user scopeGMId))
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember
@@ -1865,11 +1852,10 @@ createIntroReMember
     currentTs <- liftIO getCurrentTime
     (localDisplayName, memProfileId) <- createNewMemberProfile_ db user memberProfile currentTs
     let newMember = NewGroupMember {memInfo, memCategory = GCPreMember, memStatus = GSMemIntroduced, memRestriction, memInvitedBy = IBUnknown, memInvitedByGroupMemberId = Nothing, localDisplayName, memContactId = Nothing, memProfileId}
-    liftIO $ do
-      member <- createNewMember_ db user gInfo newMember currentTs
-      conn@Connection {connId = groupConnId} <- createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId chatV mcvr memberContactId cLevel currentTs subMode
-      liftIO $ setCommandConnId db user groupCmdId groupConnId
-      pure (member :: GroupMember) {activeConn = Just conn}
+    member <- createNewMember_ db user gInfo newMember currentTs
+    conn@Connection {connId = groupConnId} <- liftIO $ createMemberConnection_ db userId (groupMemberId' member) groupAgentConnId chatV mcvr memberContactId cLevel currentTs subMode
+    liftIO $ setCommandConnId db user groupCmdId groupConnId
+    pure (member :: GroupMember) {activeConn = Just conn}
 
 createIntroToMemberContact :: DB.Connection -> User -> GroupMember -> GroupMember -> VersionChat -> VersionRangeChat -> (CommandId, ConnId) -> Maybe (CommandId, ConnId) -> Maybe ProfileId -> SubscriptionMode -> IO ()
 createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = viaContactId, activeConn} _to@GroupMember {groupMemberId, localDisplayName} chatV mcvr (groupCmdId, groupAgentConnId) directConnIds customUserProfileId subMode = do
@@ -1888,8 +1874,8 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
       DB.execute
         db
         [sql|
-          INSERT INTO contacts (contact_profile_id, via_group, local_display_name, user_id, created_at, updated_at, chat_ts)
-          SELECT contact_profile_id, group_id, ?, ?, ?, ?, ?
+          INSERT INTO contacts (contact_profile_id local_display_name, user_id, created_at, updated_at, chat_ts)
+          SELECT contact_profile_id, ?, ?, ?, ?, ?
           FROM group_members
           WHERE group_member_id = ?
         |]
@@ -1911,77 +1897,6 @@ createIntroToMemberContact db user@User {userId} GroupMember {memberContactId = 
 createMemberConnection_ :: DB.Connection -> UserId -> Int64 -> ConnId -> VersionChat -> VersionRangeChat -> Maybe Int64 -> Int -> UTCTime -> SubscriptionMode -> IO Connection
 createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange viaContact connLevel currentTs subMode =
   createConnection_ db userId ConnMember (Just groupMemberId) agentConnId ConnNew chatV peerChatVRange viaContact Nothing Nothing connLevel currentTs subMode PQSupportOff
-
-getViaGroupMember :: DB.Connection -> VersionRangeChat -> User -> Contact -> IO (Maybe (GroupInfo, GroupMember))
-getViaGroupMember db vr User {userId, userContactId} Contact {contactId} = do
-  gm_ <-
-    maybeFirstRow toGroupAndMember $
-      DB.query
-        db
-        [sql|
-          SELECT
-            -- GroupInfo
-            g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
-            g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
-            g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
-            g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
-            g.business_chat, g.business_member_id, g.customer_member_id,
-            g.ui_themes, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
-            -- GroupInfo {membership}
-            mu.group_member_id, mu.group_id, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-            mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
-            -- GroupInfo {membership = GroupMember {memberProfile}}
-            pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
-            mu.created_at, mu.updated_at,
-            mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts,
-            -- via GroupMember
-            m.group_member_id, m.group_id, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
-            m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-            m.created_at, m.updated_at,
-            m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
-            c.connection_id, c.agent_conn_id, c.conn_level, c.via_contact, c.via_user_contact_link, c.via_group_link, c.group_link_id, c.xcontact_id, c.custom_user_profile_id,
-            c.conn_status, c.conn_type, c.contact_conn_initiated, c.local_alias, c.contact_id, c.group_member_id, c.snd_file_id, c.rcv_file_id, c.user_contact_link_id,
-            c.created_at, c.security_code, c.security_code_verified_at, c.pq_support, c.pq_encryption, c.pq_snd_enabled, c.pq_rcv_enabled, c.auth_err_counter, c.quota_err_counter,
-            c.conn_chat_version, c.peer_chat_min_version, c.peer_chat_max_version
-          FROM group_members m
-          JOIN contacts ct ON ct.contact_id = m.contact_id
-          JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-          JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-          JOIN group_profiles gp USING (group_profile_id)
-          JOIN group_members mu ON g.group_id = mu.group_id
-          JOIN contact_profiles pu ON pu.contact_profile_id = COALESCE(mu.member_profile_id, mu.contact_profile_id)
-          LEFT JOIN connections c ON c.connection_id = (
-            SELECT max(cc.connection_id)
-            FROM connections cc
-            where cc.user_id = ? AND cc.group_member_id = m.group_member_id
-          )
-          WHERE ct.user_id = ? AND ct.contact_id = ? AND mu.contact_id = ? AND ct.deleted = 0
-        |]
-        (userId, userId, contactId, userContactId)
-  mapM (bitraverse (addGroupChatTags db) pure) gm_
-  where
-    toGroupAndMember :: (GroupInfoRow :. GroupMemberRow :. MaybeConnectionRow) -> (GroupInfo, GroupMember)
-    toGroupAndMember (groupInfoRow :. memberRow :. connRow) =
-      let groupInfo = toGroupInfo vr userContactId [] groupInfoRow
-          member = toGroupMember userContactId memberRow
-       in (groupInfo, (member :: GroupMember) {activeConn = toMaybeConnection vr connRow})
-
-getViaGroupContact :: DB.Connection -> VersionRangeChat -> User -> GroupMember -> IO (Maybe Contact)
-getViaGroupContact db vr user@User {userId} GroupMember {groupMemberId} = do
-  contactId_ <-
-    maybeFirstRow fromOnly $
-      DB.query
-        db
-        [sql|
-          SELECT ct.contact_id
-          FROM group_members m
-          JOIN groups g ON g.group_id = m.group_id
-          JOIN contacts ct ON ct.contact_id = m.contact_id AND ct.via_group = g.group_id
-          WHERE m.user_id = ? AND m.group_member_id = ? AND ct.deleted = 0
-          LIMIT 1
-        |]
-        (userId, groupMemberId)
-  maybe (pure Nothing) (fmap eitherToMaybe . runExceptT . getContact db vr user) contactId_
 
 updateGroupProfile :: DB.Connection -> User -> GroupInfo -> GroupProfile -> ExceptT StoreError IO GroupInfo
 updateGroupProfile db user@User {userId} g@GroupInfo {groupId, localDisplayName, groupProfile = GroupProfile {displayName}} p'@GroupProfile {displayName = newName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
@@ -2309,69 +2224,6 @@ getContactOrMember_ db vr user ids =
     (_, Just gId, Just gmId) -> COMGroupMember <$> getGroupMember db vr user gId gmId
     _ -> throwError $ SEInternalError ""
 
--- if requested merge direction is overruled (toFromContacts), keepLDN is kept
-mergeContactRecords :: DB.Connection -> VersionRangeChat -> User -> Contact -> Contact -> ExceptT StoreError IO Contact
-mergeContactRecords db vr user@User {userId} to@Contact {localDisplayName = keepLDN} from = do
-  let (toCt, fromCt) = toFromContacts to from
-      Contact {contactId = toContactId, localDisplayName = toLDN} = toCt
-      Contact {contactId = fromContactId, localDisplayName = fromLDN} = fromCt
-  assertNotUser db user toCt
-  assertNotUser db user fromCt
-  liftIO $ do
-    currentTs <- getCurrentTime
-    DB.execute
-      db
-      "UPDATE connections SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      "UPDATE connections SET via_contact = ?, updated_at = ? WHERE via_contact = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      "UPDATE group_members SET invited_by = ?, updated_at = ? WHERE invited_by = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      "UPDATE chat_items SET contact_id = ?, updated_at = ? WHERE contact_id = ? AND user_id = ?"
-      (toContactId, currentTs, fromContactId, userId)
-    DB.execute
-      db
-      [sql|
-        UPDATE group_members
-        SET contact_id = ?,
-            local_display_name = (SELECT local_display_name FROM contacts WHERE contact_id = ?),
-            contact_profile_id = (SELECT contact_profile_id FROM contacts WHERE contact_id = ?),
-            updated_at = ?
-        WHERE contact_id = ?
-          AND user_id = ?
-      |]
-      (toContactId, toContactId, toContactId, currentTs, fromContactId, userId)
-    deleteContactProfile_ db userId fromContactId
-    DB.execute db "DELETE FROM contacts WHERE contact_id = ? AND user_id = ?" (fromContactId, userId)
-    deleteUnusedDisplayName_ db userId fromLDN
-    when (keepLDN /= toLDN && keepLDN == fromLDN) $
-      DB.execute
-        db
-        [sql|
-          UPDATE display_names
-          SET local_display_name = ?, updated_at = ?
-          WHERE user_id = ? AND local_display_name = ?
-        |]
-        (keepLDN, currentTs, userId, toLDN)
-  getContact db vr user toContactId
-  where
-    toFromContacts :: Contact -> Contact -> (Contact, Contact)
-    toFromContacts c1 c2
-      | d1 && not d2 = (c1, c2)
-      | d2 && not d1 = (c2, c1)
-      | ctCreatedAt c1 <= ctCreatedAt c2 = (c1, c2)
-      | otherwise = (c2, c1)
-      where
-        d1 = directOrUsed c1
-        d2 = directOrUsed c2
-        ctCreatedAt Contact {createdAt} = createdAt
-
 associateMemberWithContactRecord :: DB.Connection -> User -> Contact -> GroupMember -> IO ()
 associateMemberWithContactRecord
   db
@@ -2495,36 +2347,6 @@ updateGroupMemberBlocked db User {userId} GroupInfo {groupId} mrs m@GroupMember 
     (mrs, currentTs, userId, groupId, groupMemberId)
   pure m {blockedByAdmin = mrsBlocked mrs}
 
-getXGrpMemIntroContDirect :: DB.Connection -> User -> Contact -> IO (Maybe (Int64, XGrpMemIntroCont))
-getXGrpMemIntroContDirect db User {userId} Contact {contactId} = do
-  fmap join . maybeFirstRow toCont $
-    DB.query
-      db
-      [sql|
-        SELECT ch.connection_id, g.group_id, m.group_member_id, m.member_id, c.conn_req_inv
-        FROM contacts ct
-        JOIN group_members m ON m.contact_id = ct.contact_id
-        LEFT JOIN connections c ON c.connection_id = (
-          SELECT MAX(cc.connection_id)
-          FROM connections cc
-          WHERE cc.group_member_id = m.group_member_id
-        )
-        JOIN groups g ON g.group_id = m.group_id AND g.group_id = ct.via_group
-        JOIN group_members mh ON mh.group_id = g.group_id
-        LEFT JOIN connections ch ON ch.connection_id = (
-          SELECT max(cc.connection_id)
-          FROM connections cc
-          where cc.user_id = ? AND cc.group_member_id = mh.group_member_id
-        )
-        WHERE ct.user_id = ? AND ct.contact_id = ? AND ct.deleted = 0 AND mh.member_category = ?
-      |]
-      (userId, userId, contactId, GCHostMember)
-  where
-    toCont :: (Int64, GroupId, GroupMemberId, MemberId, Maybe ConnReqInvitation) -> Maybe (Int64, XGrpMemIntroCont)
-    toCont (hostConnId, groupId, groupMemberId, memberId, connReq_) = case connReq_ of
-      Just groupConnReq -> Just (hostConnId, XGrpMemIntroCont {groupId, groupMemberId, memberId, groupConnReq})
-      _ -> Nothing
-
 getHostConnId :: DB.Connection -> User -> GroupId -> ExceptT StoreError IO GroupMemberId
 getHostConnId db user@User {userId} groupId = do
   hostMemberId <- getHostMemberId_ db user groupId
@@ -2601,7 +2423,7 @@ createMemberContact
               quotaErrCounter = 0
             }
         mergedPreferences = contactUserPreferences user userPreferences preferences $ connIncognito ctConn
-    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, viaGroup = Nothing, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
+    pure Contact {contactId, localDisplayName, profile = memberProfile, activeConn = Just ctConn, contactUsed = True, contactStatus = CSActive, chatSettings = defaultChatSettings, userPreferences, mergedPreferences, createdAt = currentTs, updatedAt = currentTs, chatTs = Just currentTs, preparedContact = Nothing, contactRequestId = Nothing, contactGroupMemberId = Just groupMemberId, contactGrpInvSent = False, groupDirectInv = Nothing, chatTags = [], chatItemTTL = Nothing, uiThemes = Nothing, chatDeleted = False, customData = Nothing}
 
 getMemberContact :: DB.Connection -> VersionRangeChat -> User -> ContactId -> ExceptT StoreError IO (GroupInfo, GroupMember, Contact, ConnReqInvitation)
 getMemberContact db vr user contactId = do
@@ -2793,21 +2615,22 @@ createNewUnknownGroupMember db vr user@User {userId, userContactId} GroupInfo {g
   currentTs <- liftIO getCurrentTime
   let memberProfile = profileFromName memberName
   (localDisplayName, profileId) <- createNewMemberProfile_ db user memberProfile currentTs
-  groupMemberId <- liftIO $ do
+  indexInGroup <- getUpdateNextIndexInGroup_ db groupId
+  liftIO $
     DB.execute
       db
       [sql|
         INSERT INTO group_members
-          ( group_id, member_id, member_role, member_category, member_status, invited_by,
+          ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by,
             user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
             peer_chat_min_version, peer_chat_max_version)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       |]
-      ( (groupId, memberId, GRAuthor, GCPreMember, GSMemUnknown, fromInvitedBy userContactId IBUnknown)
+      ( (groupId, indexInGroup, memberId, GRAuthor, GCPreMember, GSMemUnknown, Binary B.empty, fromInvitedBy userContactId IBUnknown)
           :. (userId, localDisplayName, Nothing :: (Maybe Int64), profileId, currentTs, currentTs)
           :. (minV, maxV)
       )
-    insertedRowId db
+  groupMemberId <- liftIO $ insertedRowId db
   getGroupMemberById db vr user groupMemberId
   where
     VersionRange minV maxV = vr
@@ -2901,10 +2724,27 @@ getUserGroupsToExpire db User {userId} globalTTL =
   where
     cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
 
+hasMembersWithoutVector :: DB.Connection -> IO Bool
+hasMembersWithoutVector db =
+  fromOnly . head
+    <$> DB.query_
+      db
+      "SELECT EXISTS (SELECT 1 FROM group_members WHERE member_relations_vector IS NULL LIMIT 1)"
+
+getGMsWithoutVectorIds :: DB.Connection -> IO [GroupMemberId]
+getGMsWithoutVectorIds db =
+  map fromOnly <$>
+    DB.query_
+      db
+      [sql|
+        SELECT group_member_id
+        FROM group_members
+        WHERE member_relations_vector IS NULL
+        LIMIT 1000
+      |]
+
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
 updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
   updatedAt <- getCurrentTime
   DB.execute db "UPDATE groups SET local_alias = ?, updated_at = ? WHERE user_id = ? AND group_id = ?" (localAlias, updatedAt, userId, groupId)
   pure (g :: GroupInfo) {localAlias = localAlias}
-
-$(J.deriveJSON defaultJSON ''GroupLink)

@@ -65,6 +65,7 @@ export type AgentErrorType =
   | AgentErrorType.RCP
   | AgentErrorType.BROKER
   | AgentErrorType.AGENT
+  | AgentErrorType.NOTICE
   | AgentErrorType.INTERNAL
   | AgentErrorType.CRITICAL
   | AgentErrorType.INACTIVE
@@ -82,6 +83,7 @@ export namespace AgentErrorType {
     | "RCP"
     | "BROKER"
     | "AGENT"
+    | "NOTICE"
     | "INTERNAL"
     | "CRITICAL"
     | "INACTIVE"
@@ -152,6 +154,13 @@ export namespace AgentErrorType {
     agentErr: SMPAgentError
   }
 
+  export interface NOTICE extends Interface {
+    type: "NOTICE"
+    server: string
+    preset: boolean
+    expiresAt?: string // ISO-8601 timestamp
+  }
+
   export interface INTERNAL extends Interface {
     type: "INTERNAL"
     internalErr: string
@@ -174,6 +183,7 @@ export interface AutoAccept {
 
 export interface BlockingInfo {
   reason: BlockingReason
+  notice?: ClientNotice
 }
 
 export enum BlockingReason {
@@ -941,6 +951,7 @@ export namespace ChatError {
   export interface ErrorAgent extends Interface {
     type: "errorAgent"
     agentError: AgentErrorType
+    agentConnId: string
     connectionEntity_?: ConnectionEntity
   }
 
@@ -997,7 +1008,6 @@ export type ChatErrorType =
   | ChatErrorType.FileCancelled
   | ChatErrorType.FileCancel
   | ChatErrorType.FileAlreadyExists
-  | ChatErrorType.FileRead
   | ChatErrorType.FileWrite
   | ChatErrorType.FileSend
   | ChatErrorType.FileRcvChunk
@@ -1074,7 +1084,6 @@ export namespace ChatErrorType {
     | "fileCancelled"
     | "fileCancel"
     | "fileAlreadyExists"
-    | "fileRead"
     | "fileWrite"
     | "fileSend"
     | "fileRcvChunk"
@@ -1328,12 +1337,6 @@ export namespace ChatErrorType {
   export interface FileAlreadyExists extends Interface {
     type: "fileAlreadyExists"
     filePath: string
-  }
-
-  export interface FileRead extends Interface {
-    type: "fileRead"
-    filePath: string
-    message: string
   }
 
   export interface FileWrite extends Interface {
@@ -1594,6 +1597,10 @@ export enum ChatWallpaperScale {
   Repeat = "repeat",
 }
 
+export interface ClientNotice {
+  ttl?: number // int64
+}
+
 export enum Color {
   Black = "black",
   Red = "red",
@@ -1734,17 +1741,10 @@ export interface Connection {
 export type ConnectionEntity = 
   | ConnectionEntity.RcvDirectMsgConnection
   | ConnectionEntity.RcvGroupMsgConnection
-  | ConnectionEntity.SndFileConnection
-  | ConnectionEntity.RcvFileConnection
   | ConnectionEntity.UserContactConnection
 
 export namespace ConnectionEntity {
-  export type Tag = 
-    | "rcvDirectMsgConnection"
-    | "rcvGroupMsgConnection"
-    | "sndFileConnection"
-    | "rcvFileConnection"
-    | "userContactConnection"
+  export type Tag = "rcvDirectMsgConnection" | "rcvGroupMsgConnection" | "userContactConnection"
 
   interface Interface {
     type: Tag
@@ -1761,18 +1761,6 @@ export namespace ConnectionEntity {
     entityConnection: Connection
     groupInfo: GroupInfo
     groupMember: GroupMember
-  }
-
-  export interface SndFileConnection extends Interface {
-    type: "sndFileConnection"
-    entityConnection: Connection
-    sndFileTransfer: SndFileTransfer
-  }
-
-  export interface RcvFileConnection extends Interface {
-    type: "rcvFileConnection"
-    entityConnection: Connection
-    rcvFileTransfer: RcvFileTransfer
   }
 
   export interface UserContactConnection extends Interface {
@@ -1861,7 +1849,6 @@ export interface Contact {
   localDisplayName: string
   profile: LocalProfile
   activeConn?: Connection
-  viaGroup?: number // int64
   contactUsed: boolean
   contactStatus: ContactStatus
   chatSettings: ChatSettings
@@ -2444,13 +2431,9 @@ export interface GroupInfo {
   chatItemTTL?: number // int64
   uiThemes?: UIThemeEntityOverrides
   customData?: object
+  groupSummary: GroupSummary
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
-}
-
-export interface GroupInfoSummary {
-  groupInfo: GroupInfo
-  groupSummary: GroupSummary
 }
 
 export interface GroupLink {
@@ -2504,6 +2487,7 @@ export namespace GroupLinkPlan {
 export interface GroupMember {
   groupMemberId: number // int64
   groupId: number // int64
+  indexInGroup: number // int64
   memberId: string
   memberRole: GroupMemberRole
   memberCategory: GroupMemberCategory
@@ -2604,7 +2588,7 @@ export interface GroupShortLinkData {
 }
 
 export interface GroupSummary {
-  currentMembers: number // int
+  currentMembers: number // int64
 }
 
 export interface GroupSupportChat {
@@ -3278,12 +3262,6 @@ export interface RcvFileDescr {
   fileDescrComplete: boolean
 }
 
-export interface RcvFileInfo {
-  filePath: string
-  connId?: number // int64
-  agentConnId?: string
-}
-
 export type RcvFileStatus = 
   | RcvFileStatus.New
   | RcvFileStatus.Accepted
@@ -3304,22 +3282,22 @@ export namespace RcvFileStatus {
 
   export interface Accepted extends Interface {
     type: "accepted"
-    fileInfo: RcvFileInfo
+    filePath: string
   }
 
   export interface Connected extends Interface {
     type: "connected"
-    fileInfo: RcvFileInfo
+    filePath: string
   }
 
   export interface Complete extends Interface {
     type: "complete"
-    fileInfo: RcvFileInfo
+    filePath: string
   }
 
   export interface Cancelled extends Interface {
     type: "cancelled"
-    fileInfo_?: RcvFileInfo
+    filePath_?: string
   }
 }
 
@@ -3757,9 +3735,12 @@ export type StoreError =
   | StoreError.GroupNotFoundByName
   | StoreError.GroupMemberNameNotFound
   | StoreError.GroupMemberNotFound
+  | StoreError.GroupMemberNotFoundByIndex
+  | StoreError.MemberRelationsVectorNotFound
   | StoreError.GroupHostMemberNotFound
   | StoreError.GroupMemberNotFoundByMemberId
   | StoreError.MemberContactGroupMemberNotFound
+  | StoreError.InvalidMemberRelationUpdate
   | StoreError.GroupWithoutUser
   | StoreError.DuplicateGroupMember
   | StoreError.GroupAlreadyJoined
@@ -3783,7 +3764,6 @@ export type StoreError =
   | StoreError.ConnectionNotFoundById
   | StoreError.ConnectionNotFoundByMemberId
   | StoreError.PendingConnectionNotFound
-  | StoreError.IntroNotFound
   | StoreError.UniqueID
   | StoreError.LargeMsg
   | StoreError.InternalError
@@ -3842,9 +3822,12 @@ export namespace StoreError {
     | "groupNotFoundByName"
     | "groupMemberNameNotFound"
     | "groupMemberNotFound"
+    | "groupMemberNotFoundByIndex"
+    | "memberRelationsVectorNotFound"
     | "groupHostMemberNotFound"
     | "groupMemberNotFoundByMemberId"
     | "memberContactGroupMemberNotFound"
+    | "invalidMemberRelationUpdate"
     | "groupWithoutUser"
     | "duplicateGroupMember"
     | "groupAlreadyJoined"
@@ -3868,7 +3851,6 @@ export namespace StoreError {
     | "connectionNotFoundById"
     | "connectionNotFoundByMemberId"
     | "pendingConnectionNotFound"
-    | "introNotFound"
     | "uniqueID"
     | "largeMsg"
     | "internalError"
@@ -4010,6 +3992,16 @@ export namespace StoreError {
     groupMemberId: number // int64
   }
 
+  export interface GroupMemberNotFoundByIndex extends Interface {
+    type: "groupMemberNotFoundByIndex"
+    groupMemberIndex: number // int64
+  }
+
+  export interface MemberRelationsVectorNotFound extends Interface {
+    type: "memberRelationsVectorNotFound"
+    groupMemberId: number // int64
+  }
+
   export interface GroupHostMemberNotFound extends Interface {
     type: "groupHostMemberNotFound"
     groupId: number // int64
@@ -4023,6 +4015,10 @@ export namespace StoreError {
   export interface MemberContactGroupMemberNotFound extends Interface {
     type: "memberContactGroupMemberNotFound"
     contactId: number // int64
+  }
+
+  export interface InvalidMemberRelationUpdate extends Interface {
+    type: "invalidMemberRelationUpdate"
   }
 
   export interface GroupWithoutUser extends Interface {
@@ -4132,10 +4128,6 @@ export namespace StoreError {
   export interface PendingConnectionNotFound extends Interface {
     type: "pendingConnectionNotFound"
     connId: number // int64
-  }
-
-  export interface IntroNotFound extends Interface {
-    type: "introNotFound"
   }
 
   export interface UniqueID extends Interface {

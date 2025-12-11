@@ -56,6 +56,7 @@ fun initChatControllerOnStart() {
 }
 
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
+  Log.d(TAG, "initChatController")
   try {
     if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
@@ -92,7 +93,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
-    chatController.ctrl = ctrl
+    chatController.setChatCtrl(ctrl)
     chatModel.chatDbEncrypted.value = dbKey != ""
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
@@ -206,7 +207,7 @@ fun chatInitControllerRemovingDatabases() {
   }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
 
   val ctrl = migrated[1] as Long
-  chatController.ctrl = ctrl
+  chatController.setChatCtrl(ctrl)
   // We need only controller, not databases
   File(dbPath + "_chat.db").delete()
   File(dbPath + "_agent.db").delete()

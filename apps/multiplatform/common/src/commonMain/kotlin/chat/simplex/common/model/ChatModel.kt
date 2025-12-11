@@ -96,11 +96,12 @@ object ChatModel {
   val dbMigrationInProgress = mutableStateOf(false)
   val incompleteInitializedDbRemoved = mutableStateOf(false)
   // map of connections network statuses, key is agent connection id
-  val networkStatuses = mutableStateMapOf<String, NetworkStatus>()
   val switchingUsersAndHosts = mutableStateOf(false)
 
   // current chat
   val chatId = mutableStateOf<String?>(null)
+  val chatAgentConnId = mutableStateOf<String?>(null)
+  val chatSubStatus = mutableStateOf<SubscriptionStatus?>(null)
   val openAroundItemId: MutableState<Long?> = mutableStateOf(null)
   val chatsContext = ChatsContext(null)
   val secondaryChatsContext = mutableStateOf<ChatsContext?>(null)
@@ -133,6 +134,7 @@ object ChatModel {
 
   // set when app is opened via contact or invitation URI (rhId, uri)
   val appOpenUrl = mutableStateOf<Pair<Long?, String>?>(null)
+  val appOpenUrlConnecting = mutableStateOf<Boolean>(false)
 
   // Needed to check for bottom nav bar and to apply or not navigation bar color on Android
   val newChatSheetVisible = mutableStateOf(false)
@@ -681,11 +683,6 @@ object ChatModel {
         return updatedItem
       }
 
-      // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-      if (byMember.groupMemberId == groupInfo.membership.groupMemberId) {
-        Log.d(TAG, "exiting removeMemberItems")
-        return
-      }
       val cInfo = ChatInfo.Group(groupInfo, groupChatScope = null) // TODO [knocking] review
       if (chatId.value == groupInfo.id) {
         for (i in 0 until chatItems.value.size) {
@@ -1144,21 +1141,6 @@ object ChatModel {
 
   fun markShowingInvitationUsed() {
     showingInvitation.value = showingInvitation.value?.copy(connChatUsed = true)
-  }
-
-  fun setContactNetworkStatus(contact: Contact, status: NetworkStatus) {
-    val conn = contact.activeConn
-    if (conn != null) {
-      networkStatuses[conn.agentConnId] = status
-    }
-  }
-
-  fun contactNetworkStatus(contact: Contact): NetworkStatus {
-    val conn = contact.activeConn
-    return if (conn != null)
-      networkStatuses[conn.agentConnId] ?: NetworkStatus.Unknown()
-    else
-      NetworkStatus.Unknown()
   }
 
   fun addTerminalItem(item: TerminalItem) {
@@ -1721,30 +1703,6 @@ sealed class ChatInfo: SomeChat, NamedChat {
 }
 
 @Serializable
-sealed class NetworkStatus {
-  val statusString: String get() =
-    when (this) {
-      is Connected -> generalGetString(MR.strings.server_connected)
-      is Error -> generalGetString(MR.strings.server_error)
-      else -> generalGetString(MR.strings.server_connecting)
-    }
-  val statusExplanation: String get() =
-    when (this) {
-      is Connected -> generalGetString(MR.strings.connected_to_server_to_receive_messages_from_contact)
-      is Error -> String.format(generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages_with_error), connectionError)
-      else -> generalGetString(MR.strings.trying_to_connect_to_server_to_receive_messages)
-    }
-
-  @Serializable @SerialName("unknown") class Unknown: NetworkStatus()
-  @Serializable @SerialName("connected") class Connected: NetworkStatus()
-  @Serializable @SerialName("disconnected") class Disconnected: NetworkStatus()
-  @Serializable @SerialName("error") class Error(val connectionError: String): NetworkStatus()
-}
-
-@Serializable
-data class ConnNetworkStatus(val agentConnId: String, val networkStatus: NetworkStatus)
-
-@Serializable
 data class Contact(
   val contactId: Long,
   override val localDisplayName: String,
@@ -1914,12 +1872,6 @@ class ContactRef(
 ) {
   val id: ChatId get() = "@$contactId"
 }
-
-@Serializable
-class ContactSubStatus(
-  val contact: Contact,
-  val contactError: ChatError? = null
-)
 
 @Serializable
 data class Connection(
@@ -2338,19 +2290,18 @@ data class GroupMember (
 
   fun canBeRemoved(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft
-        && userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
+    return userRole >= GroupMemberRole.Admin && userRole >= memberRole && groupInfo.membership.memberActive
   }
 
   fun canChangeRoleTo(groupInfo: GroupInfo): List<GroupMemberRole>? =
-    if (!canBeRemoved(groupInfo) || memberPending) null
+    if (!canBeRemoved(groupInfo) || memberStatus == GroupMemberStatus.MemRemoved || memberStatus == GroupMemberStatus.MemLeft || memberPending) null
     else groupInfo.membership.memberRole.let { userRole ->
       GroupMemberRole.selectableRoles.filter { it <= userRole }
     }
 
   fun canBlockForAll(groupInfo: GroupInfo): Boolean {
     val userRole = groupInfo.membership.memberRole
-    return memberStatus != GroupMemberStatus.MemRemoved && memberStatus != GroupMemberStatus.MemLeft && memberRole < GroupMemberRole.Moderator
+    return memberRole < GroupMemberRole.Moderator
         && userRole >= GroupMemberRole.Moderator && userRole >= memberRole && groupInfo.membership.memberActive
         && !memberPending
   }
@@ -2519,12 +2470,6 @@ class LinkPreview (
     )
   }
 }
-
-@Serializable
-class MemberSubError (
-  val member: GroupMemberIds,
-  val memberError: ChatError
-)
 
 @Serializable
 class NoteFolder(
@@ -2845,30 +2790,29 @@ data class ChatItem (
     }
 
   val mergeCategory: CIMergeCategory?
-    get() = when (content) {
-      is CIContent.RcvChatFeature,
-      is CIContent.SndChatFeature,
-      is CIContent.RcvGroupFeature,
-      is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
-      is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
-        is RcvGroupEvent.UserRole,
-        is RcvGroupEvent.UserDeleted,
-        is RcvGroupEvent.GroupDeleted,
-        is RcvGroupEvent.MemberCreatedContact,
-        is RcvGroupEvent.NewMemberPendingReview ->
-          null
-        else -> CIMergeCategory.RcvGroupEvent
-      }
-      is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
-        is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
-        else -> CIMergeCategory.SndGroupEvent
-      }
-      else -> {
-        if (meta.itemDeleted == null) {
-          null
-        } else {
-          if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+    get() = if (meta.itemDeleted != null) {
+      if (chatDir.sent) CIMergeCategory.SndItemDeleted else CIMergeCategory.RcvItemDeleted
+    } else {
+      when (content) {
+        is CIContent.RcvChatFeature,
+        is CIContent.SndChatFeature,
+        is CIContent.RcvGroupFeature,
+        is CIContent.SndGroupFeature -> CIMergeCategory.ChatFeature
+        is CIContent.RcvGroupEventContent -> when (content.rcvGroupEvent) {
+          is RcvGroupEvent.UserRole,
+          is RcvGroupEvent.UserDeleted,
+          is RcvGroupEvent.GroupDeleted,
+          is RcvGroupEvent.MemberCreatedContact,
+          is RcvGroupEvent.NewMemberPendingReview ->
+            null
+          else -> CIMergeCategory.RcvGroupEvent
         }
+        is CIContent.SndGroupEventContent -> when (content.sndGroupEvent) {
+          is SndGroupEvent.UserRole, is SndGroupEvent.UserLeft, is SndGroupEvent.MemberAccepted, is SndGroupEvent.UserPendingReview -> null
+          else -> CIMergeCategory.SndGroupEvent
+        }
+        else ->
+          null
       }
     }
 

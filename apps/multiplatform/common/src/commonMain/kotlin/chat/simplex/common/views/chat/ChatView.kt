@@ -102,6 +102,7 @@ fun ChatView(
   val chat = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }
   // They have their own iterator inside for a reason to prevent crash "Reading a state that was created after the snapshot..."
   val remoteHostId = remember { derivedStateOf { chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }?.remoteHostId } }
+  val chatRh = remoteHostId.value
   val activeChat = remember { derivedStateOf {
     var chat = chatModel.chats.value.firstOrNull { chat -> chat.chatInfo.id == staleChatId.value }
     val chatInfo = chat?.chatInfo
@@ -120,6 +121,8 @@ fun ChatView(
   if (chat == null || chatInfo == null || user == null) {
     LaunchedEffect(Unit) {
       chatModel.chatId.value = null
+      chatModel.chatAgentConnId.value = null
+      chatModel.chatSubStatus.value = null
       ModalManager.end.closeModals()
     }
   } else {
@@ -161,10 +164,32 @@ fun ChatView(
             }
             if (chatsCtx.secondaryContextFilter == null) {
               markUnreadChatAsRead(chatId)
+              chatModel.groupMembers.value = emptyList()
+              chatModel.groupMembersIndexes.value = emptyMap()
+              chatModel.membersLoaded.value = false
             }
             showSearch.value = false
             searchText.value = ""
             selectedChatItems.value = null
+            if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
+              withBGApi {
+                val r = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
+                if (r != null) {
+                  val contactStats = r.first
+                  if (contactStats != null)
+                    withContext(Dispatchers.Main) {
+                      chatModel.chatsContext.updateContactConnectionStats(chatRh, chat.chatInfo.contact, contactStats)
+                      chatModel.chatAgentConnId.value = chat.chatInfo.contact.activeConn.agentConnId
+                      chatModel.chatSubStatus.value = contactStats.subStatus
+                    }
+                }
+              }
+            } else {
+              withContext(Dispatchers.Main) {
+                chatModel.chatAgentConnId.value = null
+                chatModel.chatSubStatus.value = null
+              }
+            }
           }
       }
     }
@@ -181,7 +206,6 @@ fun ChatView(
       }
     }
     val view = LocalMultiplatformView()
-    val chatRh = remoteHostId.value
     // We need to have real unreadCount value for displaying it inside top right button
     // Having activeChat reloaded on every change in it is inefficient (UI lags)
     val unreadCount = remember {
@@ -353,7 +377,7 @@ fun ChatView(
                     if (chatInfo is ChatInfo.Direct) {
                       var contactInfo: Pair<ConnectionStats?, Profile?>? by remember { mutableStateOf(preloadedContactInfo) }
                       var code: String? by remember { mutableStateOf(preloadedCode) }
-                      KeyChangeEffect(chatInfo.id, ChatModel.networkStatuses.toMap()) {
+                      KeyChangeEffect(chatInfo.id) {
                         contactInfo = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
                         preloadedContactInfo = contactInfo
                         code = chatModel.controller.apiGetContactCode(chatRh, chatInfo.apiId)?.second
@@ -1278,7 +1302,49 @@ fun ChatInfoToolbarTitle(cInfo: ChatInfo, imageSize: Dp = 40.dp, iconColor: Colo
         )
       }
     }
+    val chatSubStatus = chatModel.chatSubStatus.value
+    if (
+      cInfo is ChatInfo.Direct &&
+      cInfo.contact.ready &&
+      cInfo.contact.active &&
+      chatSubStatus != null &&
+      chatSubStatus != SubscriptionStatus.Active
+      ) {
+      Box(
+        Modifier.padding(start = 10.dp)
+      ) {
+        SubStatusView(chatSubStatus)
+      }
+    }
   }
+}
+
+@Composable
+fun SubStatusView(status: SubscriptionStatus) {
+  when (status) {
+    SubscriptionStatus.Active ->
+      Box {}
+    SubscriptionStatus.Pending ->
+      SubProgressView()
+    is SubscriptionStatus.Removed, SubscriptionStatus.NoSub ->
+      Icon(
+        painterResource(MR.images.ic_error),
+        contentDescription = null,
+        tint = MaterialTheme.colors.secondary,
+        modifier = Modifier
+          .size(19.sp.toDp())
+      )
+  }
+}
+
+@Composable
+private fun SubProgressView() {
+  CircularProgressIndicator(
+    Modifier
+      .size(15.sp.toDp()),
+    color = MaterialTheme.colors.secondary,
+    strokeWidth = 1.5.dp
+  )
 }
 
 @Composable

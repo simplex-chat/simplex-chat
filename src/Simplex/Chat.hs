@@ -39,13 +39,13 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Entity
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
@@ -106,8 +106,9 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
-      coreApi = False,
       highlyAvailable = False,
+      deliveryWorkerDelay = 0,
+      deliveryBucketSize = 10000,
       deviceNameForRemote = "",
       chatHooks = defaultChatHooks
     }
@@ -115,10 +116,10 @@ defaultChatConfig =
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-createChatDatabase :: ChatDbOpts -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
-createChatDatabase chatDbOpts confirmMigrations = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False) confirmMigrations
-  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False) confirmMigrations
+createChatDatabase :: ChatDbOpts -> MigrationConfig -> IO (Either MigrationError ChatDatabase)
+createChatDatabase chatDbOpts migrationConfig = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False chatDBFunctions) migrationConfig
+  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False []) migrationConfig
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
@@ -148,7 +149,6 @@ newChatController
     eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
-    connNetworkStatuses <- TM.emptyIO
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- TM.emptyIO
@@ -190,7 +190,6 @@ newChatController
           eventSeq,
           inputQ,
           outputQ,
-          connNetworkStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -251,7 +250,7 @@ newChatController
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains}
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

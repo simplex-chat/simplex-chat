@@ -47,6 +47,7 @@ This file is generated automatically.
 - [ChatType](#chattype)
 - [ChatWallpaper](#chatwallpaper)
 - [ChatWallpaperScale](#chatwallpaperscale)
+- [ClientNotice](#clientnotice)
 - [Color](#color)
 - [CommandError](#commanderror)
 - [CommandErrorType](#commanderrortype)
@@ -89,7 +90,6 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
-- [GroupInfoSummary](#groupinfosummary)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -137,7 +137,6 @@ This file is generated automatically.
 - [RcvConnEvent](#rcvconnevent)
 - [RcvDirectEvent](#rcvdirectevent)
 - [RcvFileDescr](#rcvfiledescr)
-- [RcvFileInfo](#rcvfileinfo)
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
@@ -290,6 +289,12 @@ AGENT:
 - type: "AGENT"
 - agentErr: [SMPAgentError](#smpagenterror)
 
+NOTICE:
+- type: "NOTICE"
+- server: string
+- preset: bool
+- expiresAt: UTCTime?
+
 INTERNAL:
 - type: "INTERNAL"
 - internalErr: string
@@ -317,6 +322,7 @@ INACTIVE:
 
 **Record type**:
 - reason: [BlockingReason](#blockingreason)
+- notice: [ClientNotice](#clientnotice)?
 
 
 ---
@@ -913,6 +919,7 @@ Error:
 ErrorAgent:
 - type: "errorAgent"
 - agentError: [AgentErrorType](#agenterrortype)
+- agentConnId: string
 - connectionEntity_: [ConnectionEntity](#connectionentity)?
 
 ErrorStore:
@@ -1102,11 +1109,6 @@ FileCancel:
 FileAlreadyExists:
 - type: "fileAlreadyExists"
 - filePath: string
-
-FileRead:
-- type: "fileRead"
-- filePath: string
-- message: string
 
 FileWrite:
 - type: "fileWrite"
@@ -1386,6 +1388,14 @@ self == 'direct' ? '@' : self == 'group' ? '#' : self == 'local' ? '*' : '' // J
 
 ---
 
+## ClientNotice
+
+**Record type**:
+- ttl: int64?
+
+
+---
+
 ## Color
 
 **Enum type**:
@@ -1530,16 +1540,6 @@ RcvGroupMsgConnection:
 - groupInfo: [GroupInfo](#groupinfo)
 - groupMember: [GroupMember](#groupmember)
 
-SndFileConnection:
-- type: "sndFileConnection"
-- entityConnection: [Connection](#connection)
-- sndFileTransfer: [SndFileTransfer](#sndfiletransfer)
-
-RcvFileConnection:
-- type: "rcvFileConnection"
-- entityConnection: [Connection](#connection)
-- rcvFileTransfer: [RcvFileTransfer](#rcvfiletransfer)
-
 UserContactConnection:
 - type: "userContactConnection"
 - entityConnection: [Connection](#connection)
@@ -1609,7 +1609,6 @@ Error:
 - localDisplayName: string
 - profile: [LocalProfile](#localprofile)
 - activeConn: [Connection](#connection)?
-- viaGroup: int64?
 - contactUsed: bool
 - contactStatus: [ContactStatus](#contactstatus)
 - chatSettings: [ChatSettings](#chatsettings)
@@ -2148,17 +2147,9 @@ MemberSupport:
 - chatItemTTL: int64?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 - customData: JSONObject?
+- groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
-
-
----
-
-## GroupInfoSummary
-
-**Record type**:
-- groupInfo: [GroupInfo](#groupinfo)
-- groupSummary: [GroupSummary](#groupsummary)
 
 
 ---
@@ -2207,6 +2198,7 @@ Known:
 **Record type**:
 - groupMemberId: int64
 - groupId: int64
+- indexInGroup: int64
 - memberId: string
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
@@ -2351,7 +2343,7 @@ Known:
 ## GroupSummary
 
 **Record type**:
-- currentMembers: int
+- currentMembers: int64
 
 
 ---
@@ -2933,16 +2925,6 @@ GroupInvLinkReceived:
 
 ---
 
-## RcvFileInfo
-
-**Record type**:
-- filePath: string
-- connId: int64?
-- agentConnId: string?
-
-
----
-
 ## RcvFileStatus
 
 **Discriminated union type**:
@@ -2952,19 +2934,19 @@ New:
 
 Accepted:
 - type: "accepted"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Connected:
 - type: "connected"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Complete:
 - type: "complete"
-- fileInfo: [RcvFileInfo](#rcvfileinfo)
+- filePath: string
 
 Cancelled:
 - type: "cancelled"
-- fileInfo_: [RcvFileInfo](#rcvfileinfo)?
+- filePath_: string?
 
 
 ---
@@ -3367,6 +3349,14 @@ GroupMemberNotFound:
 - type: "groupMemberNotFound"
 - groupMemberId: int64
 
+GroupMemberNotFoundByIndex:
+- type: "groupMemberNotFoundByIndex"
+- groupMemberIndex: int64
+
+MemberRelationsVectorNotFound:
+- type: "memberRelationsVectorNotFound"
+- groupMemberId: int64
+
 GroupHostMemberNotFound:
 - type: "groupHostMemberNotFound"
 - groupId: int64
@@ -3378,6 +3368,9 @@ GroupMemberNotFoundByMemberId:
 MemberContactGroupMemberNotFound:
 - type: "memberContactGroupMemberNotFound"
 - contactId: int64
+
+InvalidMemberRelationUpdate:
+- type: "invalidMemberRelationUpdate"
 
 GroupWithoutUser:
 - type: "groupWithoutUser"
@@ -3464,9 +3457,6 @@ ConnectionNotFoundByMemberId:
 PendingConnectionNotFound:
 - type: "pendingConnectionNotFound"
 - connId: int64
-
-IntroNotFound:
-- type: "introNotFound"
 
 UniqueID:
 - type: "uniqueID"

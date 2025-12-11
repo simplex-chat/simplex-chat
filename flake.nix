@@ -41,14 +41,24 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [
-        ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
-          # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
-          # on pretty much all unix platforms, but then blows up on windows m(
-          packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-        })
-        ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
-          packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-        })] ++ extra-modules;
+          ({ pkgs, lib, config, ... }:
+            {
+              # Override ghcOptions for ALL packages
+              ghcOptions = lib.mkDefault [
+                "-j1"
+              ];
+            }
+          )
+
+          ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
+            # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
+            # on pretty much all unix platforms, but then blows up on windows m(
+            packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
+          })
+
+          ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
+            packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
+          })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
@@ -309,6 +319,7 @@
                   aarch64-unknown-linux-android-ghc -shared -o libsupport.so \
                     -optl-Wl,-u,setLineBuffering \
                     -optl-Wl,-u,pipe_std_to_socket \
+                    -optl-Wl,-z,max-page-size=16384 \
                     dist/build/*.a
                 '';
 
@@ -367,6 +378,7 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-j1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -432,7 +444,16 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-armv7a-android-libsimplex.zip *)
+
+                  # Strip from debug symbols
+                  find "$out/_pkg" -type f -name "*.so" -exec ${android32Pkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@1764547200' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-armv7a-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -475,6 +496,8 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-optl-Wl,-z,max-page-size=16384"
+                  "-j1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -540,7 +563,16 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
+
+                  # Strip from debug symbols
+                  find "$out/_pkg" -type f -name "*.so" -exec ${androidPkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@1764547200' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-aarch64-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \

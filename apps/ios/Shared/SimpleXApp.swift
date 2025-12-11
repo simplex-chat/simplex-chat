@@ -19,7 +19,6 @@ struct SimpleXApp: App {
 
     @Environment(\.scenePhase) var scenePhase
     @State private var enteredBackgroundAuthenticated: TimeInterval? = nil
-    @State private var appOpenUrlLater: URL?
 
     init() {
         DispatchQueue.global(qos: .background).sync {
@@ -46,7 +45,7 @@ struct SimpleXApp: App {
                     if AppChatState.shared.value == .active {
                         chatModel.appOpenUrl = url
                     } else {
-                        appOpenUrlLater = url
+                        chatModel.appOpenUrlLater = url
                     }
                 }
                 .onAppear() {
@@ -98,15 +97,15 @@ struct SimpleXApp: App {
                                             if !chatModel.showCallView && !CallController.shared.hasActiveCalls() {
                                                 await updateCallInvitations()
                                             }
-                                            if let url = appOpenUrlLater {
+                                            if let url = chatModel.appOpenUrlLater {
                                                 await MainActor.run {
-                                                    appOpenUrlLater = nil
+                                                    chatModel.appOpenUrlLater = nil
                                                     chatModel.appOpenUrl = url
                                                 }
                                             }
                                         }
-                                    } else if let url = appOpenUrlLater {
-                                        appOpenUrlLater = nil
+                                    } else if let url = chatModel.appOpenUrlLater {
+                                        chatModel.appOpenUrlLater = nil
                                         chatModel.appOpenUrl = url
                                     }
                                 }

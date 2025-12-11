@@ -1063,7 +1063,7 @@
     <string name="to_verify_compare">כדי לאמת הצפנה מקצה־לקצה עם איש הקשר שלכם, יש להשוות (או לסרוק) את הקוד במכשירים שלכם.</string>
     <string name="your_chat_profiles">פרופילי צ׳אט</string>
     <string name="update_network_session_mode_question">לעדכן מצב בידוד תעבורה\?</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה (שגיאה: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">מנסה להתחבר לשרת המשמש לקבלת הודעות מאיש קשר זה (שגיאה: %1$s).</string>
     <string name="unknown_message_format">פורמט הודעה לא ידוע</string>
     <string name="simplex_link_mode_browser">דרך הדפדפן</string>
     <string name="unmute_chat">בטל השתקה</string>
