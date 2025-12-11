@@ -1682,7 +1682,7 @@ deleteOrUpdateMemberRecord user gInfo m =
 
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
-  (gInfo', m') <- tryDeleteSupportChat db user gInfo m
+  (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
   checkGroupMemberHasItems db user m' >>= \case
     Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
     Nothing -> deleteGroupMember db user m'
@@ -1691,12 +1691,12 @@ deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
 updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
   withStore' $ \db -> do
-    (gInfo', m') <- tryDeleteSupportChat db user gInfo m
+    (gInfo', m') <- deleteSupportChatIfExists db user gInfo m
     updateGroupMemberStatus db userId m' newStatus
     pure gInfo'
 
-tryDeleteSupportChat :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
-tryDeleteSupportChat db user gInfo m = do
+deleteSupportChatIfExists :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
+deleteSupportChatIfExists db user gInfo m = do
   gInfo' <-
     if gmRequiresAttention m
       then decreaseGroupMembersRequireAttention db user gInfo
