@@ -184,7 +184,7 @@ getUsersInfo db = getUsers db >>= mapM getUserInfo
               SELECT COUNT(1)
               FROM chat_items i
               JOIN groups g USING (group_id)
-              WHERE i.user_id = ? AND i.group_scope_tag IS NULL AND i.group_scope_group_member_id IS NULL AND i.item_status = ?
+              WHERE i.user_id = ? AND i.item_status = ?
                 AND (g.enable_ntfs = 1 OR g.enable_ntfs IS NULL OR (g.enable_ntfs = 2 AND i.user_mention = 1))
             |]
             (userId, CISRcvNew)
