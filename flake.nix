@@ -40,12 +40,25 @@
           src = ./.;
         };
         sha256map = import ./scripts/nix/sha256map.nix;
-        modules = [{
-          packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-        }
-        ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
-          packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-        })] ++ extra-modules;
+        modules = [
+          ({ pkgs, lib, config, ... }:
+            {
+              # Override ghcOptions for ALL packages
+              ghcOptions = lib.mkDefault [
+                "-j1"
+              ];
+            }
+          )
+
+          ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
+            # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
+            # on pretty much all unix platforms, but then blows up on windows m(
+            packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
+          })
+
+          ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
+            packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
+          })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
@@ -176,7 +189,7 @@
                 # for android we build a shared library, passing these arguments is a bit tricky, as
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
                 # template haskell cross compilation. Thus we just pass them as linker options (-optl).
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi" "-j1"];
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
@@ -214,7 +227,16 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-armv7a-android-libsimplex.zip *)
+
+                  # Strip from debug symbols
+                  find "$out/_pkg" -type f -name "*.so" -exec ${android32Pkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@1764547200' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-armv7a-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -242,7 +264,7 @@
                 # for android we build a shared library, passing these arguments is a bit tricky, as
                 # we want only the threaded rts (HSrts_thr) and ffi to be linked, but not fed into iserv for
                 # template haskell cross compilation. Thus we just pass them as linker options (-optl).
-                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi"];
+                setupBuildFlags = map (x: "--ghc-option=${x}") [ "-shared" "-o" "libsimplex.so" "-optl-lHSrts_thr" "-optl-lffi" "-j1"];
                 postInstall = ''
                   set -x
                   ${pkgs.tree}/bin/tree $out
@@ -280,7 +302,16 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
+
+                  # Strip from debug symbols
+                  find "$out/_pkg" -type f -name "*.so" -exec ${androidPkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@1764547200' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-aarch64-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \

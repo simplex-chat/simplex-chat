@@ -34,6 +34,7 @@ node customize_docs_frontmatter.js
 for lang in "${langs[@]}"; do
   mkdir -p src/$lang
   cp src/index.html src/$lang
+  cp src/old.html src/$lang
   cp src/messaging.html src/$lang
   cp src/contact.html src/$lang
   cp src/invitation.html src/$lang

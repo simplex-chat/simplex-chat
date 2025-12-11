@@ -284,7 +284,7 @@
     "index-token-h2": "Communities That Last",
     "index-token-p1": "You will support your favorite groups with future Community Vouchers.",
     "index-token-p2": "Vouchers will pay for servers, to let your communities stay free and independent.",
-    "index-token-cta": "Learn more and <strong>get your free NFT</strong><br>for early testing.",
+    "index-token-cta": "Learn more and <strong>get a free access pass</strong> for early testing.",
     "index-roadmap-h2": "SimpleX Roadmap to Free Internet",
     "index-roadmap-2025": "2025",
     "index-roadmap-2025-title": "Scale to Large Communities",
@@ -312,5 +312,6 @@
     "messengers-comparison-section-list-point-3": "It appears that the usage of cryptographic signatures compromises repudiation (deniability), but it needs to be clarified.",
     "messengers-comparison-section-list-point-4": "Multi-device implementation compromises post-compromise security of Double Ratchet",
     "messengers-comparison-section-list-point-5": "2-factor key exchange is optional via security code verification.",
-    "messengers-comparison-section-list-point-6": "Post-quantum key agreement is \"sparse\" &mdash; it protects only some of the ratchet steps."
+    "messengers-comparison-section-list-point-6": "Post-quantum key agreement is \"sparse\" &mdash; it protects only some of the ratchet steps.",
+    "navbar-old-site": "Old site"
 }
