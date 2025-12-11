@@ -314,7 +314,7 @@
     <string name="send_disappearing_message_custom_time">Egyéni időköz</string>
     <string name="connect_via_link_incognito">Kapcsolódás inkognitóban</string>
     <string name="settings_section_title_chats">CSEVEGÉSEK</string>
-    <string name="v5_3_new_desktop_app_descr">Új profil létrehozása a számítógép alkalmazásban. 💻</string>
+    <string name="v5_3_new_desktop_app_descr">Új profil létrehozása a számítógépes alkalmazásban. 💻</string>
     <string name="group_member_status_announced">kapcsolódás (bejelentve)</string>
     <string name="contact_connection_pending">kapcsolódás…</string>
     <string name="chat_database_deleted">Csevegési adatbázis törölve</string>
@@ -448,7 +448,7 @@
     <string name="chat_preferences_default">alapértelmezett (%s)</string>
     <string name="integrity_msg_duplicate">duplikált üzenet</string>
     <string name="disconnect_desktop_question">Leválasztja a számítógépet?</string>
-    <string name="desktop_app_version_is_incompatible">A számítógép-alkalmazás verziója (%s) nem kompatibilis ezzel az alkalmazással.</string>
+    <string name="desktop_app_version_is_incompatible">A számítógépes alkalmazás verziója (%s) nem kompatibilis ezzel az alkalmazással.</string>
     <string name="delivery">Kézbesítés</string>
     <string name="total_files_count_and_size">%d fájl, %s összméretben</string>
     <string name="database_passphrase_is_required">A csevegés megnyitásához adja meg az adatbázis jelmondatát.</string>
@@ -711,13 +711,13 @@
     <string name="info_row_local_name">Helyi név</string>
     <string name="network_and_servers">Hálózat és kiszolgálók</string>
     <string name="settings_notification_preview_title">Értesítésekben megjelenő információk</string>
-    <string name="v5_4_link_mobile_desktop">Társítsa össze a hordozható eszköz- és számítógépes alkalmazásokat! 🔗</string>
+    <string name="v5_4_link_mobile_desktop">Társítsa össze a hordozható eszköz- és a számítógépes alkalmazásokat! 🔗</string>
     <string name="conn_level_desc_indirect">közvetett (%1$s)</string>
     <string name="v4_6_reduced_battery_usage_descr">Hamarosan további fejlesztések érkeznek!</string>
     <string name="message_reactions_prohibited_in_this_chat">A reakciók hozzáadása az üzenetekhez le van tiltva ebben a csevegésben.</string>
     <string name="incorrect_code">Helytelen biztonsági kód!</string>
     <string name="alert_text_fragment_encryption_out_of_sync_old_database">Ez akkor fordulhat elő, ha Ön vagy a partnere egy régi adatbázis biztonsági mentését használta.</string>
-    <string name="v5_3_new_desktop_app">Új számítógép-alkalmazás!</string>
+    <string name="v5_3_new_desktop_app">Új számítógépes alkalmazás!</string>
     <string name="v4_6_group_moderation_descr">Most már az adminisztrátorok is:\n- törölhetik a tagok üzeneteit.\n- letilthatnak tagokat (megfigyelő szerepkör)</string>
     <string name="rcv_group_event_member_added">meghívta őt: %1$s</string>
     <string name="message_reactions_are_prohibited">A reakciók hozzáadása az üzenetekhez le van tiltva.</string>
@@ -1443,7 +1443,7 @@
     <string name="v4_6_chinese_spanish_interface_descr">Köszönet a felhasználóknak a Weblate-en való közreműködésért!</string>
     <string name="save_passphrase_in_settings">Jelmondat mentése a beállításokban</string>
     <string name="send_receipts_disabled_alert_msg">Ennek a csoportnak több mint %1$d tagja van, a kézbesítési jelentések nem lesznek elküldve.</string>
-    <string name="v5_2_message_delivery_receipts_descr">A második jelölés, amit kihagytunk! ✅</string>
+    <string name="v5_2_message_delivery_receipts_descr">A második pipa, ami már nagyon hiányzott! ✅</string>
     <string name="relay_server_protects_ip">A továbbítókiszolgáló megvédi az IP-címét, de megfigyelheti a hívás időtartamát.</string>
     <string name="v4_5_message_draft_descr">Az utolsó üzenet tervezetének megőrzése a mellékletekkel együtt.</string>
     <string name="saved_ICE_servers_will_be_removed">A mentett WebRTC ICE-kiszolgálók el lesznek távolítva.</string>
@@ -2503,8 +2503,8 @@
     <string name="proxy_destination_error_unknown_ca">A célkiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="smp_proxy_error_unknown_ca">A továbbítókiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
     <string name="network_error_unknown_ca">A kiszolgáló címében szereplő ujjlenyomat nem egyezik a tanúsítvánnyal: %1$s.</string>
-    <string name="server_no_sub">nincs előfizetés</string>
-    <string name="not_connected_to_server_to_receive_messages_no_sub">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs előfizetés).</string>
+    <string name="server_no_sub">nincs feliratkozás</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Ön nem kapcsolódott ahhoz a kiszolgálóhoz, amely az adott partnerétől érkező üzenetek fogadására szolgál (nincs feliratkozás).</string>
     <string name="button_delete_member_messages">Tag üzeneteinek törlése</string>
     <string name="button_delete_member_messages_question">Törli a tag üzeneteit?</string>
     <string name="delete_member_messages_confirmation">Üzenetek törlése</string>
