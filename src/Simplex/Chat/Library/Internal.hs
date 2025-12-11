@@ -1681,16 +1681,11 @@ deleteOrUpdateMemberRecord user gInfo m =
   withStore' $ \db -> deleteOrUpdateMemberRecordIO db user gInfo m
 
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
-deleteOrUpdateMemberRecordIO db user@User {userId, localDisplayName = un} gInfo m@GroupMember {localDisplayName = mn} = do
+deleteOrUpdateMemberRecordIO db user@User {userId} gInfo m = do
   (gInfo', m') <- tryDeleteSupportChat db user gInfo m
-  when (un == "alice") $ print $ show un <> " :: deleteOrUpdateMemberRecordIO " <> show mn
   checkGroupMemberHasItems db user m' >>= \case
-    Just _ -> do
-      when (un == "alice") $ print $ show un <> " :: updateGroupMemberStatus GSMemRemoved " <> show mn
-      updateGroupMemberStatus db userId m' GSMemRemoved
-    Nothing -> do
-      when (un == "alice") $ print $ show un <> " :: deleteGroupMember " <> show mn
-      deleteGroupMember db user m'
+    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
+    Nothing -> deleteGroupMember db user m'
   pure gInfo'
 
 updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo

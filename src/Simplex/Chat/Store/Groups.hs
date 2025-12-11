@@ -1577,18 +1577,12 @@ checkGroupMemberHasItems db User {userId} GroupMember {groupMemberId, groupId} =
   maybeFirstRow fromOnly $ DB.query db "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ? LIMIT 1" (userId, groupId, groupMemberId)
 
 deleteGroupMember :: DB.Connection -> User -> GroupMember -> IO ()
-deleteGroupMember db user@User {userId, localDisplayName = un} m@GroupMember {groupMemberId, groupId, memberProfile} = do
-  when (un == "alice") $ print $ "deleteGroupMember 1"
+deleteGroupMember db user@User {userId} m@GroupMember {groupMemberId, groupId, memberProfile} = do
   deleteGroupMemberConnection db user m
-  when (un == "alice") $ print $ "deleteGroupMember 2"
   DB.execute db "DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND group_member_id = ?" (userId, groupId, groupMemberId)
-  when (un == "alice") $ print $ "deleteGroupMember 3"
   DB.execute db "DELETE FROM group_members WHERE user_id = ? AND group_member_id = ?" (userId, groupMemberId)
-  when (un == "alice") $ print $ "deleteGroupMember 4"
   cleanupMemberProfileAndName_ db user m
-  when (un == "alice") $ print $ "deleteGroupMember 5"
   when (memberIncognito m) $ deleteUnusedIncognitoProfileById_ db user $ localProfileId memberProfile
-  when (un == "alice") $ print $ "deleteGroupMember 6"
 
 cleanupMemberProfileAndName_ :: DB.Connection -> User -> GroupMember -> IO ()
 cleanupMemberProfileAndName_ db user@User {userId} GroupMember {groupMemberId, memberContactId, memberContactProfileId, localDisplayName} =
