@@ -2735,7 +2735,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
-          deleteMemberItem RGEUserDeleted
+          deleteMemberItem gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
         else
@@ -2746,34 +2746,33 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Right deletedMember@GroupMember {groupMemberId, memberProfile, memberStatus} ->
               checkRole deletedMember $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
-                if isUserGrpFwdRelay gInfo && not forwarded
+                let shouldForward = isUserGrpFwdRelay gInfo && not forwarded
+                if shouldForward
                   then do
                     -- Special case: forward before deleting connection.
-                    -- It allows us to avoid adding logic in forwardMsgs to circumvent member filtering.
                     forwardToMember deletedMember
                     deleteMemberConnection' deletedMember True
                   else deleteMemberConnection deletedMember
-                -- undeleted "member connected" chat item will prevent deletion of member record
-                let User {localDisplayName = un} = user
-                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 1"
-                gInfo' <- deleteOrUpdateMemberRecord user gInfo deletedMember
+                let deliveryScope = memberEventDeliveryScope deletedMember
+                gInfo' <- case deliveryScope of
+                  -- Keep member record if it's support scope - it will be required for forwarding inside that scope.
+                  Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeleted user gInfo deletedMember GSMemRemoved
+                  -- Undeleted "member connected" chat item will prevent deletion of member record.
+                  _ -> deleteOrUpdateMemberRecord user gInfo deletedMember
                 let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
                     deletedMember' = deletedMember {memberStatus = GSMemRemoved}
-                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 2"
                 when withMessages $ deleteMessages gInfo' deletedMember' SMDRcv
-                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 3"
-                unless wasDeleted $ deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                when (un == "alice") $ liftIO $ print $ show un <> " :: xGrpMemDel 4"
+                unless wasDeleted $ deleteMemberItem gInfo' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo' m deletedMember' withMessages
-                pure $ memberEventDeliveryScope deletedMember
+                pure deliveryScope
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
               messageError "x.grp.mem.del with insufficient member permissions" $> Nothing
           | otherwise = a
-        deleteMemberItem gEvent = do
-          (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
+        deleteMemberItem gi gEvent = do
+          (gi', m', scopeInfo) <- mkGroupChatScope gi m
+          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
         deleteMessages :: MsgDirectionI d => GroupInfo -> GroupMember -> SMsgDirection d -> CM ()
         deleteMessages gInfo' delMem msgDir
@@ -2796,12 +2795,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpLeave gInfo m msg brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
-      gInfo' <- withStore' $ \db -> do
-        updateGroupMemberStatus db userId m GSMemLeft
-        when (isJust $ supportChat m) $ void $ deleteGroupMemberSupportChat db m
-        if gmRequiresAttention m
-          then decreaseGroupMembersRequireAttention db user gInfo
-          else pure gInfo
+      gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
       groupMsgToView cInfo ci

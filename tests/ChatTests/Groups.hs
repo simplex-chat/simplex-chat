@@ -222,8 +222,9 @@ chatGroupTests = do
     it "should forward group wide message (x.grp.info) to all members, including in review" testScopedSupportForwardAll
     it "should not forward messages between support scopes" testScopedSupportDontForwardBetweenScopes
     it "should forward file inside support scope" testScopedSupportForwardFile
-    fit "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
+    it "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
     it "should forward admin removal in support scope in review (x.grp.mem.del, relay forwards it was removed)" testScopedSupportForwardAdminRemoval
+    it "should forward pending member leaving in support scope in review (x.grp.leave)" testScopedSupportForwardLeave
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
@@ -7853,9 +7854,6 @@ testScopedSupportForwardMemberRemoval =
       createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
       setupReviewForward alice bob cath dan eve
 
-      void $ withCCTransaction alice $ \db ->
-        DB.execute_ db "PRAGMA foreign_keys = OFF;"
-
       -- bob removes eve, eve and dan receive member removal message
       bob ##> "/_remove #1 5"
       concurrentlyN_
@@ -7870,9 +7868,9 @@ testScopedSupportForwardMemberRemoval =
       alice ##> "#team (support: eve) hi"
       alice <## "bad chat command: support member not current or pending"
       bob ##> "#team (support: eve) hi"
-      bob <## "bad chat command: support member not current or pending"
+      bob <##. "chat db error: SEGroupMemberNameNotFound"
       dan ##> "#team (support: eve) hi"
-      dan <## "bad chat command: support member not current or pending"
+      dan <##. "chat db error: SEGroupMemberNameNotFound"
       eve ##> "/groups"
       eve <## "#team (you are removed, delete local copy: /d #team)"
 
@@ -7977,6 +7975,30 @@ testScopedSupportForwardAdminRemoval =
 
       alice ##> "/groups"
       alice <## "#team (you are removed, delete local copy: /d #team)"
+
+testScopedSupportForwardLeave :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardLeave =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
+      setupReviewForward alice bob cath dan eve
+
+      -- eve leaves group, bob and dan receive member leave message
+      eve ##> "/leave #team"
+      eve <## "#team: you left the group"
+      eve <## "use /d #team to delete the group"
+      alice <## "#team: eve left the group"
+      bob <## "#team: eve left the group"
+      dan <## "#team: eve left the group"
+
+      alice ##> "#team (support: eve) hi"
+      alice <## "bad chat command: support member not current or pending"
+      bob ##> "#team (support: eve) hi"
+      bob <##. "bad chat command: support member not current or pending"
+      dan ##> "#team (support: eve) hi"
+      dan <##. "bad chat command: support member not current or pending"
+      eve ##> "/groups"
+      eve <## "#team (you left, delete local copy: /d #team)"
 
 testScopedSupportForwardGroupDeletion :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardGroupDeletion =

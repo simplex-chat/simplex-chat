@@ -1682,6 +1682,26 @@ deleteOrUpdateMemberRecord user gInfo m =
 
 deleteOrUpdateMemberRecordIO :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO GroupInfo
 deleteOrUpdateMemberRecordIO db user@User {userId, localDisplayName = un} gInfo m@GroupMember {localDisplayName = mn} = do
+  (gInfo', m') <- tryDeleteSupportChat db user gInfo m
+  when (un == "alice") $ print $ show un <> " :: deleteOrUpdateMemberRecordIO " <> show mn
+  checkGroupMemberHasItems db user m' >>= \case
+    Just _ -> do
+      when (un == "alice") $ print $ show un <> " :: updateGroupMemberStatus GSMemRemoved " <> show mn
+      updateGroupMemberStatus db userId m' GSMemRemoved
+    Nothing -> do
+      when (un == "alice") $ print $ show un <> " :: deleteGroupMember " <> show mn
+      deleteGroupMember db user m'
+  pure gInfo'
+
+updateMemberRecordDeleted :: User -> GroupInfo -> GroupMember -> GroupMemberStatus -> CM GroupInfo
+updateMemberRecordDeleted user@User {userId} gInfo m newStatus =
+  withStore' $ \db -> do
+    (gInfo', m') <- tryDeleteSupportChat db user gInfo m
+    updateGroupMemberStatus db userId m' newStatus
+    pure gInfo'
+
+tryDeleteSupportChat :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
+tryDeleteSupportChat db user gInfo m = do
   gInfo' <-
     if gmRequiresAttention m
       then decreaseGroupMembersRequireAttention db user gInfo
@@ -1690,13 +1710,7 @@ deleteOrUpdateMemberRecordIO db user@User {userId, localDisplayName = un} gInfo 
     if isJust (supportChat m)
       then deleteGroupMemberSupportChat db m
       else pure m
-  when (un == "alice") $ print $ show un <> " :: deleteOrUpdateMemberRecordIO " <> show mn
-  checkGroupMemberHasItems db user m' >>= \case
-    Just _ -> updateGroupMemberStatus db userId m' GSMemRemoved
-    Nothing -> do
-      when (un == "alice") $ print $ show un <> " :: deleteGroupMember"
-      deleteGroupMember db user m'
-  pure gInfo'
+  pure (gInfo', m')
 
 sendDirectContactMessages :: MsgEncodingI e => User -> Contact -> NonEmpty (ChatMsgEvent e) -> CM [Either ChatError SndMessage]
 sendDirectContactMessages user ct events = do
