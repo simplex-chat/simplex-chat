@@ -44,10 +44,10 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
         list_of_files=$(unzip -l "$ORIG_NAME_COPY" | grep res/ | sed -e "s|.*res/|res/|" | sort -z)
         for file in $list_of_files; do
             unzip -o -q -d apk "$ORIG_NAME_COPY" "$file"
-            chmod 644 "$file"
-            touch -h -d '2025-12-01T00:00:00' "$file"
             (
                 cd apk
+                chmod 644 "$file"
+                touch -h -d '2025-12-01T00:00:00' "$file"
                 zip -X -r -q -0 ../"$ORIG_NAME" "$file"
             )
         done
