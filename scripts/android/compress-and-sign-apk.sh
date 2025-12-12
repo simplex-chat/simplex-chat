@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Fail fast in case any command fails
-set -ex
+set -e
 
 level=$1
 apk_parent_dir=$2
