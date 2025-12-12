@@ -221,7 +221,7 @@ processAgentMsgSndFile _corrId aFileId msg = do
                       toView $ CEvtSndFileCompleteXFTP user ci' ft
                       where
                         getRecipients
-                          | isTrue (useRelays g) = withStore' $ \db -> getGroupRelays db vr user g
+                          | useRelays' g = withStore' $ \db -> getGroupRelayMembers db vr user g
                           | otherwise = withStore' $ \db -> getGroupMembers db vr user g
                         memberFTs :: [GroupMember] -> [(Connection, SndFileTransfer)]
                         memberFTs ms = M.elems $ M.intersectionWith (,) (M.fromList mConns') (M.fromList sfts')
@@ -729,6 +729,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     -- [async agent commands] no continuation needed, but command should be asynchronous for stability
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
+              XGrpRelayAcpt relayLink
+                | memberRole' membership == GROwner && isRelay' m -> do
+                    withStore $ \db -> do
+                      relay <- getGroupRelayByGMId db (groupMemberId' m)
+                      liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
+                      void $ liftIO $ setRelayLinkAccepted db relay relayLink
+                    allowAgentConnectionAsync user conn' confId XOk
+                | otherwise -> messageError "x.grp.relay.acpt: only owner can add relay"
               _ -> messageError "CONF from invited member must have x.grp.acpt"
           GCHostMember ->
             case chatMsgEvent of
@@ -791,6 +799,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     pure gInfo {membership = membership {memberStatus = GSMemConnected}}
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
+            -- TODO [relays] member: don't duplicate e2ee and descr chat items for each relay
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
             let cd = CDGroupRcv gInfo'' scopeInfo m''
@@ -800,39 +809,59 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             memberConnectedChatItem gInfo'' scopeInfo m''
             let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
             unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
-          GCInviteeMember -> do
-            (gInfo', mStatus) <-
-              if not (memberPending m)
-                then do
-                  mStatus <- withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
-                  pure (gInfo, mStatus)
-                else do
-                  gInfo' <- withStore' $ \db -> increaseGroupMembersRequireAttention db user gInfo
-                  pure (gInfo', memberStatus m)
-            (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
-            memberConnectedChatItem gInfo'' scopeInfo m'
-            case scopeInfo of
-              Just (GCSIMemberSupport _) -> do
-                createInternalChatItem user (CDGroupRcv gInfo'' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
-              _ -> pure ()
-            toView $ CEvtJoinedGroupMember user gInfo'' m' {memberStatus = mStatus}
-            let Connection {viaUserContactLink} = conn
-            when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
-            when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
-            case mStatus of
-              GSMemPendingApproval -> pure ()
-              GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
-              _ -> do
-                introduceToAll vr user gInfo'' m'
-                let memberIsCustomer = case businessChat gInfo'' of
-                      Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
-                      _ -> False
-                when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
-            where
-              sendXGrpLinkMem gInfo'' = do
-                let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
-                    profileToSend = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
-                void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
+          GCInviteeMember
+            | isRelay' m -> do
+                withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
+                let m' = m {memberStatus = GSMemConnected}
+                -- TODO [relays] owner: agent async setConnShortLink api
+                setGroupLinkData' NRMBackground user gInfo >>= \case
+                  Just gLink -> do
+                    relays <- withStore $ \db -> do
+                      relay <- getGroupRelayByGMId db (groupMemberId' m)
+                      void $ liftIO $ updateRelayStatus db relay RSActive
+                      liftIO $ setGroupInProgressDone db gInfo
+                      liftIO $ getGroupRelays db gInfo
+                    -- TODO [relays] owner: relay added chat item?
+                    toView $ CEvtRelayJoined user gInfo m' gLink relays
+                  Nothing -> messageError "x.grp.relay.acpt: group link not updated"
+            | otherwise -> do
+                (gInfo', mStatus) <-
+                  if not (memberPending m)
+                    then do
+                      mStatus <- withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected $> GSMemConnected
+                      pure (gInfo, mStatus)
+                    else do
+                      gInfo' <- withStore' $ \db -> increaseGroupMembersRequireAttention db user gInfo
+                      pure (gInfo', memberStatus m)
+                (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
+                memberConnectedChatItem gInfo'' scopeInfo m'
+                case scopeInfo of
+                  Just (GCSIMemberSupport _) -> do
+                    createInternalChatItem user (CDGroupRcv gInfo'' scopeInfo m') (CIRcvGroupEvent RGENewMemberPendingReview) Nothing
+                  _ -> pure ()
+                toView $ CEvtJoinedGroupMember user gInfo'' m' {memberStatus = mStatus}
+                let Connection {viaUserContactLink} = conn
+                when (isJust viaUserContactLink && isNothing (memberContactId m')) $ sendXGrpLinkMem gInfo''
+                when (connChatVersion < batchSend2Version) $ getAutoReplyMsg >>= mapM_ (\mc -> sendGroupAutoReply mc Nothing)
+                if useRelays' gInfo''
+                  then do
+                    introduceModerators vr user gInfo'' m'
+                    when (groupFeatureAllowed SGFHistory gInfo'') $ sendHistory user gInfo'' m'
+                  else
+                    case mStatus of
+                      GSMemPendingApproval -> pure ()
+                      GSMemPendingReview -> introduceToModerators vr user gInfo'' m'
+                      _ -> do
+                        introduceToAll vr user gInfo'' m'
+                        let memberIsCustomer = case businessChat gInfo'' of
+                              Just BusinessChatInfo {chatType = BCCustomer, customerId} -> memberId' m' == customerId
+                              _ -> False
+                        when (groupFeatureAllowed SGFHistory gInfo'' && not memberIsCustomer) $ sendHistory user gInfo'' m'
+                where
+                  sendXGrpLinkMem gInfo'' = do
+                    let incognitoProfile = ExistingIncognito <$> incognitoMembershipProfile gInfo''
+                        profileToSend = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
+                    void $ sendDirectMemberMessage conn (XGrpLinkMem profileToSend) groupId
           _ -> do
             unless (memberPending m) $ withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
             notifyMemberConnected gInfo m Nothing
@@ -1141,6 +1170,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
+          XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
           _ -> pure ()
       MERR _ err -> do
@@ -1309,6 +1339,42 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                   | otherwise -> do
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
+        relayContactRequest :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
+        relayContactRequest invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
+          -- TODO [relays] relay: retrieve group link data asynchronously/add recovery
+          (_cReq, cData) <- getShortLinkConnReq NRMBackground user groupLink
+          liftIO (decodeLinkUserData cData) >>= \case
+            Nothing -> messageError "relayContactRequest: no group link data"
+            Just (GroupShortLinkData gp) -> do
+              validateGroupProfile gp
+              (gInfo, ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user gp groupRelayInv
+              relayLink <- createRelayLink gInfo
+              (_gInfo', _ownerMember') <- acceptRelayJoinRequestAsync user uclId gInfo ownerMember invId chatVRange relayLink
+              -- TODO [relays] relay: group invite accepted event, chat item (?)
+              pure ()
+              where
+                validateGroupProfile :: GroupProfile -> CM ()
+                validateGroupProfile _groupProfile = do
+                  -- TODO [relays] relay: validate group profile, verify owner's signature
+                  pure ()
+                createRelayLink :: GroupInfo -> CM ShortLinkContact
+                createRelayLink gInfo@GroupInfo {groupProfile} = do
+                  -- TODO [relays] relay: create relay link asynchronously/add recovery; set relay link data
+                  -- TODO   - link data: relay key for group, relay identity (profile, certificate, relay identity key)
+                  -- TODO   - TBC link's member role - owner to communicate in invitation?
+                  groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+                  subMode <- chatReadVar subscriptionMode
+                  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+                      crClientData = encodeJSON $ CRDataGroup groupLinkId
+                  (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
+                  ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+                  sLnk <- case toShortLinkContact ccLink' of
+                    Just sl -> pure sl
+                    Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
+                  gVar <- asks random
+                  void $ withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+                  pure sLnk
 
     memberCanSend ::
       GroupMember ->
@@ -2585,19 +2651,26 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case memberCategory m of
         GCHostMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-            Right _ -> messageError "x.grp.mem.intro ignored: member already exists"
-            Left _ -> do
-              when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
-              case memChatVRange of
-                Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
-                Just (ChatVersionRange mcvr)
-                  | maxVersion mcvr >= groupDirectInvVersion -> do
-                      subMode <- chatReadVar subscriptionMode
-                      -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
-                      groupConnIds <- createConn subMode
-                      let chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
-                      void $ withStore $ \db -> createIntroReMember db user gInfo m chatV memInfo memRestrictions groupConnIds subMode
-                  | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
+            Right _ ->
+              unless (useRelays' gInfo) $
+                messageError "x.grp.mem.intro ignored: member already exists"
+            Left _
+              | useRelays' gInfo ->
+                  void $ withStore $ \db -> createIntroReMember db user gInfo memInfo memRestrictions
+              | otherwise -> do
+                  when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole c)
+                  case memChatVRange of
+                    Nothing -> messageError "x.grp.mem.intro: member chat version range incompatible"
+                    Just (ChatVersionRange mcvr)
+                      | maxVersion mcvr >= groupDirectInvVersion -> do
+                          subMode <- chatReadVar subscriptionMode
+                          -- [async agent commands] commands should be asynchronous, continuation is to send XGrpMemInv - have to remember one has completed and process on second
+                          groupConnIds <- createConn subMode
+                          let chatV = maybe (minVersion vr) (\peerVR -> vr `peerConnChatVersion` fromChatVRange peerVR) memChatVRange
+                          void $ withStore $ \db -> do
+                            reMember <- createIntroReMember db user gInfo memInfo memRestrictions
+                            createIntroReMemberConn db user m reMember chatV memInfo groupConnIds subMode
+                      | otherwise -> messageError "x.grp.mem.intro: member chat version range incompatible"
         _ -> messageError "x.grp.mem.intro can be only sent by host member"
       where
         createConn subMode = createAgentConnectionAsync user CFCreateConnGrpMemInv (chatHasNtfs chatSettings) SCMInvitation subMode
@@ -2785,11 +2858,15 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               event = XGrpMsgForward memberId memberName chatMsg brokerTs
           sendGroupMemberMessage gInfo member event Nothing (pure ())
 
-    -- TODO [channels fwd] base on differentiation between groups and channels
     isUserGrpFwdRelay :: GroupInfo -> Bool
-    isUserGrpFwdRelay GroupInfo {useRelays, membership = membership@GroupMember {memberRole}}
-      | isTrue useRelays = isMemberRelay membership
-      | otherwise = memberRole >= GRAdmin
+    isUserGrpFwdRelay gInfo@GroupInfo {membership}
+      | useRelays' gInfo = isRelay' membership
+      | otherwise = memberRole' membership >= GRAdmin
+
+    isMemberGrpFwdRelay :: GroupInfo -> GroupMember -> Bool
+    isMemberGrpFwdRelay gInfo m
+      | useRelays' gInfo = isRelay' m
+      | otherwise = memberRole' m >= GRAdmin
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
     xGrpLeave gInfo m msg brokerTs = do
@@ -2827,7 +2904,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 (ci, cInfo) <- saveRcvChatItemNoParse user cd msg brokerTs (CIRcvGroupEvent $ RGEGroupUpdated p')
                 groupMsgToView cInfo ci
               createGroupFeatureChangedItems user cd CIRcvGroupFeature g g''
-              void $ forkIO $ setGroupLinkData' NRMBackground user g''
+              void $ forkIO $ void $ setGroupLinkData' NRMBackground user g''
             Just _ -> updateGroupPrefs_ g m $ fromMaybe defaultBusinessGroupPrefs $ groupPreferences p'
           pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
 
@@ -2935,8 +3012,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       createInternalChatItem user (CDDirectRcv ct) (CIRcvConnEvent RCEVerificationCodeReset) Nothing
 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
-    xGrpMsgForward gInfo m@GroupMember {memberRole, localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
-      when (memberRole < GRAdmin) $ throwChatError (CEGroupContactRole localDisplayName)
+    xGrpMsgForward gInfo m@GroupMember {localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
+      unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
       withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
         Right author -> processForwardedMsg author
         Left (SEGroupMemberNotFoundByMemberId _) -> do
@@ -3065,7 +3142,7 @@ deleteGroupConnections user gInfo waitDelivery = do
   deleteMembersConnections' user members waitDelivery
   where
     getMembers vr
-      | isTrue (useRelays gInfo) = withStore' $ \db -> getGroupRelays db vr user gInfo
+      | useRelays' gInfo = withStore' $ \db -> getGroupRelayMembers db vr user gInfo
       | otherwise = withStore' $ \db -> getGroupMembers db vr user gInfo
 
 startDeliveryTaskWorkers :: CM ()
@@ -3189,7 +3266,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
             MessageDeliveryJob {jobId, jobScope, singleSenderGMId_, body, cursorGMId_ = startingCursor} = job
             sendBodyToMembers :: CM ()
             sendBodyToMembers
-              | isTrue (useRelays gInfo) = -- channel
+              | useRelays' gInfo = -- channel
                   case jobScope of
                     -- there's no member review in channels, so job spec includePending is ignored
                     DJSGroup {} -> do

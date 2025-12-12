@@ -102,6 +102,7 @@ This file is generated automatically.
 - [GroupPreference](#grouppreference)
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
+- [GroupRelay](#grouprelay)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
@@ -140,6 +141,7 @@ This file is generated automatically.
 - [RcvFileStatus](#rcvfilestatus)
 - [RcvFileTransfer](#rcvfiletransfer)
 - [RcvGroupEvent](#rcvgroupevent)
+- [RelayStatus](#relaystatus)
 - [ReportReason](#reportreason)
 - [RoleGroupPreference](#rolegrouppreference)
 - [SMPAgentError](#smpagenterror)
@@ -2134,6 +2136,7 @@ MemberSupport:
 **Record type**:
 - groupId: int64
 - useRelays: bool
+- relayOwnStatus: [RelayStatus](#relaystatus)?
 - localDisplayName: string
 - groupProfile: [GroupProfile](#groupprofile)
 - localAlias: string
@@ -2176,6 +2179,7 @@ MemberSupport:
 
 Ok:
 - type: "ok"
+- direct: bool
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 OwnLink:
@@ -2219,7 +2223,7 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
-- isChatRelay: bool
+- isRelay: bool
 
 
 ---
@@ -2330,8 +2334,21 @@ Known:
 - shortDescr: string?
 - description: string?
 - image: string?
+- groupLink: string?
 - groupPreferences: [GroupPreferences](#grouppreferences)?
 - memberAdmission: [GroupMemberAdmission](#groupmemberadmission)?
+
+
+---
+
+## GroupRelay
+
+**Record type**:
+- groupRelayId: int64
+- groupMemberId: int64
+- userChatRelayId: int64
+- relayStatus: [RelayStatus](#relaystatus)
+- relayLink: string?
 
 
 ---
@@ -3044,6 +3061,17 @@ NewMemberPendingReview:
 
 ---
 
+## RelayStatus
+
+**Enum type**:
+- "new"
+- "invited"
+- "accepted"
+- "active"
+
+
+---
+
 ## ReportReason
 
 **Enum type**:
@@ -3570,6 +3598,18 @@ OperatorNotFound:
 
 UsageConditionsNotFound:
 - type: "usageConditionsNotFound"
+
+UserChatRelayNotFound:
+- type: "userChatRelayNotFound"
+- chatRelayId: int64
+
+GroupRelayNotFound:
+- type: "groupRelayNotFound"
+- groupRelayId: int64
+
+GroupRelayNotFoundByMemberId:
+- type: "groupRelayNotFoundByMemberId"
+- groupMemberId: int64
 
 InvalidQuote:
 - type: "invalidQuote"

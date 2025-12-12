@@ -88,7 +88,7 @@ disabledSimplexChatSMPServers =
     "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
   ]
 
--- TODO [chat relays] real chat relays
+-- TODO [relays] real chat relays
 simplexChatRelays :: [NewUserChatRelay]
 simplexChatRelays =
   [ presetChatRelay True "chat_relay_1" ["simplex.im"] (either error id $ strDecode "https://smp111.simplex.im/r#Pz9qz7ZVljMofoRxiDDpL_w2DZSazK8IgafxqnWKv6Y"),

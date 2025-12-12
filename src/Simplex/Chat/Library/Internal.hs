@@ -90,6 +90,7 @@ import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (NetworkConfig (..), NetworkRequestMode (..))
 import Simplex.Messaging.Compression (compressionLevel)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile (..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern IKPQOff, pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
@@ -1017,9 +1018,29 @@ acceptBusinessJoinRequestAsync
     -- TODO [short links] get updated business chat group and member? (currently not used)
     pure (gInfo, clientMember)
 
+acceptRelayJoinRequestAsync :: User -> Int64 -> GroupInfo -> GroupMember -> InvitationId -> VersionRangeChat -> ShortLinkContact -> CM (GroupInfo, GroupMember)
+acceptRelayJoinRequestAsync
+  user
+  uclId
+  gInfo
+  _ownerMember@GroupMember {groupMemberId}
+  cReqInvId
+  cReqChatVRange
+  relayLink = do
+    let msg = XGrpRelayAcpt relayLink
+    subMode <- chatReadVar subscriptionMode
+    vr <- chatVersionRange
+    let chatV = vr `peerConnChatVersion` cReqChatVRange
+    connIds <- agentAcceptContactAsync user True cReqInvId msg subMode PQSupportOff chatV
+    withStore $ \db -> do
+      liftIO $ createJoiningMemberConnection db user uclId connIds chatV cReqChatVRange groupMemberId subMode
+      gInfo' <- liftIO $ updateRelayOwnStatusFromTo db gInfo RSInvited RSAccepted
+      ownerMember' <- getGroupMemberById db vr user groupMemberId
+      pure (gInfo', ownerMember')
+
 businessGroupProfile :: Profile -> GroupPreferences -> GroupProfile
 businessGroupProfile Profile {displayName, fullName, shortDescr, image} groupPreferences =
-  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
+  GroupProfile {displayName, fullName, description = Nothing, shortDescr, image, groupLink = Nothing, groupPreferences = Just groupPreferences, memberAdmission = Nothing}
 
 introduceToModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRole, memberId} = do
@@ -1080,20 +1101,15 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
       shuffledReMembers <- liftIO $ shuffleMembers reMembers'
       if toMember `supportsVersion` batchSendVersion
         then do
-          let events = map memberIntro shuffledReMembers
+          let events = map (memberIntroEvt gInfo) shuffledReMembers
           forM_ (L.nonEmpty events) $ \events' ->
             sendGroupMemberMessages user conn events' groupId
         else forM_ shuffledReMembers $ \reMember ->
-          void $ sendDirectMemberMessage conn (memberIntro reMember) groupId
+          void $ sendDirectMemberMessage conn (memberIntroEvt gInfo reMember) groupId
     updateToMemberVector :: [GroupMember] -> CM ()
     updateToMemberVector reMembers = do
       let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, (IDReferencedIntroduced, MRIntroduced))) reMembers
       withStore' $ \db -> setMemberVectorNewRelations db toMember relations
-    memberIntro :: GroupMember -> ChatMsgEvent 'Json
-    memberIntro reMember =
-      let mInfo = memberInfo gInfo reMember
-          mRestrictions = memberRestrictions reMember
-       in XGrpMemIntro mInfo mRestrictions
     shuffleMembers :: [GroupMember] -> IO [GroupMember]
     shuffleMembers reMembers = do
       let (admins, others) = partition isAdmin reMembers
@@ -1103,6 +1119,26 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
       where
         isAdmin GroupMember {memberRole} = memberRole >= GRAdmin
         hasPicture GroupMember {memberProfile = LocalProfile {image}} = isJust image
+
+memberIntroEvt :: GroupInfo -> GroupMember -> ChatMsgEvent 'Json
+memberIntroEvt gInfo reMember =
+  let mInfo = memberInfo gInfo reMember
+      mRestrictions = memberRestrictions reMember
+   in XGrpMemIntro mInfo mRestrictions
+
+-- Used in groups with relays to introduce moderators and above to a new member.
+-- Member is not introduced to anybody:
+--   - in channels member will be prohibited to send, so it doesn't matter;
+--   - if member does send, recipients will create unknown member record;
+--   - later - to do member profile request protocol.
+-- This doesn't create introduction records in db, compared to above methods.
+introduceModerators :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
+introduceModerators _ _ _ GroupMember {activeConn = Nothing} = throwChatError $ CEInternalError "member connection not active"
+introduceModerators vr user gInfo@GroupInfo {groupId} GroupMember {activeConn = Just conn} = do
+  modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
+  let events = map (memberIntroEvt gInfo) modMs
+  forM_ (L.nonEmpty events) $ \events' ->
+    sendGroupMemberMessages user conn events' groupId
 
 userProfileInGroup :: User -> GroupInfo -> Maybe Profile -> Profile
 userProfileInGroup user = userProfileInGroup' user . groupFeatureUserAllowed SGFSimplexLinks
@@ -1240,22 +1276,41 @@ splitFileDescr partSize rfdText = splitParts 1 rfdText
             then fileDescr :| []
             else fileDescr <| splitParts (partNo + 1) rest
 
-setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> CM ()
+setGroupLinkData' :: NetworkRequestMode -> User -> GroupInfo -> CM (Maybe GroupLink)
 setGroupLinkData' nm user gInfo =
   withFastStore' (\db -> runExceptT $ getGroupLink db user gInfo) >>= \case
     Right gLink@GroupLink {shortLinkDataSet}
-      | shortLinkDataSet -> void $ setGroupLinkData nm user gInfo gLink
-    _ -> pure ()
+      | shortLinkDataSet -> Just <$> setGroupLinkData nm user gInfo gLink
+    _ -> pure Nothing
 
+-- TODO [relays] owner: set owners on updating link data
 setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM GroupLink
 setGroupLinkData nm user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
   vr <- chatVersionRange
-  conn <- withFastStore $ \db -> getGroupLinkConnection db vr user gInfo
-  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+  (conn, groupRelays) <- withFastStore $ \db ->
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+  let direct = not $ useRelays' gInfo
+      relays = mapMaybe relayLink groupRelays
+      userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+      userLinkData = UserContactLinkData UserContactData {direct, owners = [], relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
   sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
   withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+
+restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
+restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
+
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
+getShortLinkConnReq nm user@User {userChatRelay} l = do
+  l' <- restoreShortLink' l
+  (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  case cData of
+    ContactLinkData _ UserContactData {direct, relays}
+      | not supported -> throwChatError CEUnsupportedConnReq
+      where
+        supported = direct || not (null relays) || isTrue userChatRelay
+    _ -> pure ()
+  pure (cReq, cData)
 
 encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
 encodeShortLinkData d =
@@ -1267,8 +1322,8 @@ encodeShortLinkData d =
         | otherwise = s
     in UserLinkData s'
 
-decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
-decodeShortLinkData cData
+decodeLinkUserData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
+decodeLinkUserData cData
   | B.null s = pure Nothing
   | B.head s == 'X' = case Z1.decompress $ B.drop 1 s of
       Z1.Error e -> Nothing <$ logError ("Error decompressing link data: " <> tshow e)
@@ -1298,6 +1353,9 @@ createdRelayLink (CCLink cReq shortLink) = CCLink cReq (toShortRelayLink <$> sho
 
 toShortRelayLink :: ShortLinkContact -> ShortLinkContact
 toShortRelayLink (CSLContact sch _ srv k) = CSLContact sch CCTRelay srv k
+
+toShortLinkContact :: CreatedLinkContact -> Maybe ShortLinkContact
+toShortLinkContact (CCLink _cReq sLink) = sLink
 
 deleteGroupLink' :: User -> GroupInfo -> CM ()
 deleteGroupLink' user gInfo = do
@@ -1477,10 +1535,10 @@ getChatScopeInfo vr user = \case
     pure $ GCSIMemberSupport (Just supportMem)
 
 getGroupRecipients :: VersionRangeChat -> User -> GroupInfo -> Maybe GroupChatScopeInfo -> VersionChat -> CM [GroupMember]
-getGroupRecipients vr user gInfo@GroupInfo {useRelays, membership} scopeInfo modsCompatVersion
-  | isTrue useRelays && not (isMemberRelay membership) = do
+getGroupRecipients vr user gInfo@GroupInfo {membership} scopeInfo modsCompatVersion
+  | useRelays' gInfo && not (isRelay' membership) = do
       unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
-      withFastStore' $ \db -> getGroupRelays db vr user gInfo
+      withFastStore' $ \db -> getGroupRelayMembers db vr user gInfo
   | otherwise = case scopeInfo of
       Nothing -> do
         unless (memberCurrent membership && memberActive membership) $ throwChatError $ CECommandError "not current member"
@@ -2031,14 +2089,14 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
 memberSendAction :: GroupInfo -> NonEmpty (ChatMsgEvent e) -> [GroupMember] -> GroupMember -> Maybe MemberSendAction
-memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember {memberRole, memberStatus}
+memberSendAction gInfo@GroupInfo {membership} events members m@GroupMember {memberRole, memberStatus}
   -- groups with relays require newer version - we don't need to check member version for batching and forwarding support
-  | isTrue useRelays =
+  | useRelays' gInfo =
       if
         -- if user is chat relay, send to all non chat relay members
-        | isMemberRelay membership && not (isMemberRelay m) -> MSASendBatched . snd <$> readyMemberConn m
+        | isRelay' membership && not (isRelay' m) -> MSASendBatched . snd <$> readyMemberConn m
         -- if user is not chat relay, send only to chat relays
-        | not (isMemberRelay membership) && isMemberRelay m -> MSASendBatched . snd <$> readyMemberConn m
+        | not (isRelay' membership) && isRelay' m -> MSASendBatched . snd <$> readyMemberConn m
         | otherwise -> Nothing -- TODO [channels fwd] MSAForwarded to create GSSForwarded snd statuses?
   | otherwise = case memberConn m of
       Nothing -> pendingOrForwarded
@@ -2146,7 +2204,7 @@ saveGroupRcvMsg user groupId authorMember conn@Connection {connId} agentMsgMeta 
   pure (am', conn', msg)
 
 saveGroupFwdRcvMsg :: MsgEncodingI e => User -> GroupInfo -> GroupMember -> GroupMember -> MsgBody -> ChatMessage e -> UTCTime -> CM (Maybe RcvMessage)
-saveGroupFwdRcvMsg user GroupInfo {groupId, useRelays} forwardingMember refAuthorMember@GroupMember {memberId = refMemberId} msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs = do
+saveGroupFwdRcvMsg user gInfo@GroupInfo {groupId} forwardingMember refAuthorMember@GroupMember {memberId = refMemberId} msgBody ChatMessage {msgId = sharedMsgId_, chatMsgEvent} brokerTs = do
   let newMsg = NewRcvMessage {chatMsgEvent, msgBody, brokerTs}
       fwdMemberId = Just $ groupMemberId' forwardingMember
       refAuthorId = Just $ groupMemberId' refAuthorMember
@@ -2154,7 +2212,7 @@ saveGroupFwdRcvMsg user GroupInfo {groupId, useRelays} forwardingMember refAutho
   withStore' (\db -> runExceptT $ createNewRcvMessage db (GroupId groupId) newMsg sharedMsgId_ refAuthorId fwdMemberId) >>= \case
     Right msg -> pure $ Just msg
     Left e@SEDuplicateGroupMessage {authorGroupMemberId, forwardedByGroupMemberId}
-      | isTrue useRelays -> pure Nothing -- with chat relays, duplicates are expected
+      | useRelays' gInfo -> pure Nothing -- with chat relays, duplicates are expected
       | otherwise -> case (authorGroupMemberId, forwardedByGroupMemberId) of
           (Just authorGMId, Nothing) -> do
             vr <- chatVersionRange
@@ -2637,3 +2695,6 @@ timeItToView s action = do
 
 epochStart :: UTCTime
 epochStart = UTCTime (fromGregorian 1970 1 1) (secondsToDiffTime 0)
+
+drgRandomBytes :: Int -> CM ByteString
+drgRandomBytes n = asks random >>= atomically . C.randomBytes n
