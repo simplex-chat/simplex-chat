@@ -36,7 +36,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
 
     (
         cd apk
-        find . -type f -print0 | sort -z | xargs -0 zip -X -r -q -"$level" ../"$ORIG_NAME"
+        find . -not -path './res/*' -not -name 'resources.arsc' -type f -print0 | sort -z | xargs -0 zip -X -r -q -"$level" ../"$ORIG_NAME"
     )
 
     if [ $case_insensitive -eq 1 ]; then
