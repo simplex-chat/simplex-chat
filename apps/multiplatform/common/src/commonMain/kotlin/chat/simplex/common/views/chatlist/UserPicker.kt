@@ -131,7 +131,7 @@ fun UserPicker(
   }
   LaunchedEffect(Unit) {
     // Controller.ctrl can be null when self-destructing activates
-    if (controller.ctrl != null && controller.ctrl != -1L) {
+    if (controller.hasChatCtrl()) {
       withBGApi {
         controller.reloadRemoteHosts()
       }

@@ -10,12 +10,12 @@
         <meta property="og:type" content="website"/>
         <meta property="og:title" content="{{ title }}"/>
         <meta property="og:description" content="{{ description }}"/>
-        <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.png"/>
+        <meta property="og:image" content="{% cfg 'siteLocation' %}/img/share_simplex.jpg"/>
         <meta name="twitter:card" content="summary"/>
         <link rel="icon" type="image/png" sizes="96x96" href="/img/favicon.ico"/>
-        <meta http-equiv="refresh" content="0; url={{ groupLink }}" />
+        <meta http-equiv="refresh" content="0; url={{ destinationURI }}" />
     </head>
     <body>
-        <p><a href="{{ groupLink }}">{{ groupLinkText }}</a></p>
+        <p><a href="{{ destinationURI }}">{{ destinationText }}</a></p>
     </body>
 </html>

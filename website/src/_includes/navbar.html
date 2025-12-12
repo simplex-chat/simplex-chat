@@ -111,9 +111,9 @@
     </nav>
 
     <div class="right-links">
-        {% if ('old' not in page.url) %}
-            <a class="box-btn token md:hidden" href="/token">
-                {{ 'navbar-token' | i18n({}, lang) }}
+        {% if ('donate' not in page.url) %}
+            <a class="box-btn token md:hidden" href="/donate">
+                {{ 'donate' | i18n({}, lang) }}
             </a>
         {% endif %}
         <button href="#" class="theme-switch-btn">
@@ -134,7 +134,7 @@
             </svg>
         </button>
 
-        {% if ('blog' not in page.url) and ('about' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('token' not in page.url) %}
+        {% if ('blog' not in page.url) and ('about' not in page.url) and ('donate' not in page.url) and ('privacy' not in page.url) and ('directory' not in page.url) and ('vouchers' not in page.url) %}
         <div class="nav-link flag-container">
             <a href="javascript:void(0);">
                 {% for language in languages.languages %}
@@ -153,7 +153,7 @@
                         {% for language in languages.languages %}
                             {% if language.label == supportedLang %}
                                 <li>
-                                    <a href="{% completeRoute {url: page.url, lang: language.label} %}" class="flag-anchor">
+                                    <a href="{% completeRoute {url: page.url, lang: language.label} %}">
                                         <p>{{ language.name }}</p>
                                     </a>
                                 </li>
@@ -164,7 +164,7 @@
                     {% for language in languages.languages %}
                         {% if language.enabled and (language.home or (page.url != '/' and page.url != '/' + lang + '/')) %}
                             <li>
-                                <a href="{% completeRoute {url: page.url, lang: language.label} %}" class="flag-anchor">
+                                <a href="{% completeRoute {url: page.url, lang: language.label} %}">
                                     <p>{{ language.name }}</p>
                                 </a>
                             </li>
@@ -205,41 +205,40 @@ const userTheme = localStorage.getItem('theme');
 const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches;
 const prismThemeLink = document.getElementById('prism-theme')
 
-const iconToggle = () => {
+function iconToggle () {
     sunIcon.classList.toggle('hidden');
     moonIcon.classList.toggle('hidden');
 }
 
-const themeCheck = () => {
-    if(userTheme === 'dark' || (!userTheme && systemTheme)){
+function themeCheck() {
+    if (userTheme === 'dark' || (!userTheme && systemTheme)) {
         document.documentElement.classList.add('dark');
         moonIcon.classList.add('hidden');
-        if(prismThemeLink){
+        if (prismThemeLink) {
             prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
         }
     }
     else{
         sunIcon.classList.add('hidden');
-        if(prismThemeLink){
+        if (prismThemeLink) {
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
     }
 }
 themeCheck();
 
-const themeSwitch = () => {
-    if(document.documentElement.classList.contains('dark')){
+function themeSwitch () {
+    if (document.documentElement.classList.contains('dark')) {
         document.documentElement.classList.remove('dark');
-        localStorage.setItem('theme','light');
+        localStorage.setItem('theme', 'light');
         if(prismThemeLink){
             prismThemeLink.setAttribute('href','/css/prism-light.min.css')
         }
         iconToggle();
-    }
-    else{
+    } else {
         document.documentElement.classList.add('dark');
-        localStorage.setItem('theme','dark');
-        if(prismThemeLink){
+        localStorage.setItem('theme', 'dark');
+        if (prismThemeLink) {
             prismThemeLink.setAttribute('href','/css/prism-dark.min.css')
         }
         iconToggle();
