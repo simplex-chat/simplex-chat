@@ -358,6 +358,32 @@ ALTER TABLE test_chat_schema.chat_items ALTER COLUMN chat_item_id ADD GENERATED 
 
 
 
+CREATE TABLE test_chat_schema.chat_relays (
+    chat_relay_id bigint NOT NULL,
+    address text NOT NULL,
+    name text NOT NULL,
+    domains text NOT NULL,
+    preset smallint DEFAULT 0 NOT NULL,
+    tested smallint,
+    enabled smallint DEFAULT 1 NOT NULL,
+    user_id bigint NOT NULL,
+    created_at text DEFAULT now() NOT NULL,
+    updated_at text DEFAULT now() NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.chat_relays ALTER COLUMN chat_relay_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.chat_relays_chat_relay_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.chat_tags (
     chat_tag_id bigint NOT NULL,
     user_id bigint,
@@ -782,7 +808,8 @@ CREATE TABLE test_chat_schema.group_members (
     member_xcontact_id bytea,
     member_welcome_shared_msg_id bytea,
     index_in_group bigint DEFAULT 0 NOT NULL,
-    member_relations_vector bytea
+    member_relations_vector bytea,
+    is_chat_relay smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1350,7 +1377,8 @@ CREATE TABLE test_chat_schema.users (
     user_member_profile_updated_at timestamp with time zone,
     ui_themes text,
     active_order bigint DEFAULT 0 NOT NULL,
-    auto_accept_member_contacts smallint DEFAULT 0 NOT NULL
+    auto_accept_member_contacts smallint DEFAULT 0 NOT NULL,
+    is_user_chat_relay smallint DEFAULT 0 NOT NULL
 );
 
 
@@ -1431,6 +1459,21 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 ALTER TABLE ONLY test_chat_schema.chat_items
     ADD CONSTRAINT chat_items_pkey PRIMARY KEY (chat_item_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_relays
+    ADD CONSTRAINT chat_relays_pkey PRIMARY KEY (chat_relay_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_relays
+    ADD CONSTRAINT chat_relays_user_id_address_key UNIQUE (user_id, address);
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_relays
+    ADD CONSTRAINT chat_relays_user_id_name_key UNIQUE (user_id, name);
 
 
 
@@ -1911,6 +1954,10 @@ CREATE INDEX idx_chat_items_timed_delete_at ON test_chat_schema.chat_items USING
 
 
 CREATE INDEX idx_chat_items_user_id_item_status ON test_chat_schema.chat_items USING btree (user_id, item_status);
+
+
+
+CREATE INDEX idx_chat_relays_user_id ON test_chat_schema.chat_relays USING btree (user_id);
 
 
 
@@ -2541,6 +2588,11 @@ ALTER TABLE ONLY test_chat_schema.chat_items
 
 ALTER TABLE ONLY test_chat_schema.chat_items
     ADD CONSTRAINT chat_items_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.chat_relays
+    ADD CONSTRAINT chat_relays_user_id_fkey FOREIGN KEY (user_id) REFERENCES test_chat_schema.users(user_id) ON DELETE CASCADE;
 
 
 
