@@ -62,7 +62,10 @@ target_compile_options(app-lib PRIVATE
 # build script, prebuilt third-party libraries, or system libraries.
 
 # https://developer.android.com/guide/practices/page-sizes#cmake
-target_link_options(app-lib PRIVATE "-Wl,-z,max-page-size=16384")
+target_link_options(app-lib PRIVATE
+    "-Wl,-z,max-page-size=16384"
+    "-Wl,--build-id=none"
+)
 
 target_link_libraries( # Specifies the target library.
     app-lib
@@ -71,4 +74,10 @@ target_link_libraries( # Specifies the target library.
 
     # Links the target library to the log library
     # included in the NDK.
-    ${log-lib})
+    ${log-lib}
+)
+
+add_custom_command(TARGET app-lib POST_BUILD
+        COMMAND ${CMAKE_STRIP} --remove-section=.comment $<TARGET_FILE:app-lib>
+        COMMENT "Stripping .comment section from app-lib"
+)
