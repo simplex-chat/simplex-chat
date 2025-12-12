@@ -32,7 +32,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
     # Determenistic build
     find apk -type f -exec chmod 644 {} +
     find apk -type d -exec chmod 755 {} +
-    find apk -exec touch -h -d '@1764547200' {} +
+    find apk -exec touch -h -d '2025-12-01T00:00:00' {} +
 
     (
         cd apk
@@ -45,7 +45,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
         for file in $list_of_files; do
             unzip -o -q -d apk "$ORIG_NAME_COPY" "$file"
             chmod 644 "$file"
-            touch -h -d '@1764547200' "$file"
+            touch -h -d '2025-12-01T00:00:00' "$file"
             (
                 cd apk
                 zip -X -r -q -0 ../"$ORIG_NAME" "$file"
