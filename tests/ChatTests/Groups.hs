@@ -224,11 +224,15 @@ chatGroupTests = do
     it "should forward file inside support scope" testScopedSupportForwardFile
     it "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
     it "should forward admin removal in support scope in review (x.grp.mem.del, relay forwards it was removed)" testScopedSupportForwardAdminRemoval
+    it "should forward pending member leaving in support scope in review (x.grp.leave)" testScopedSupportForwardLeave
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+    it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
+    it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
+    it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
   -- TODO [channels fwd] enable tests (requires communicating useRelays to members)
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
@@ -7849,9 +7853,9 @@ testScopedSupportForwardMemberRemoval =
       alice ##> "#team (support: eve) hi"
       alice <## "bad chat command: support member not current or pending"
       bob ##> "#team (support: eve) hi"
-      bob <## "bad chat command: support member not current or pending"
+      bob <##. "chat db error: SEGroupMemberNameNotFound"
       dan ##> "#team (support: eve) hi"
-      dan <## "bad chat command: support member not current or pending"
+      dan <##. "chat db error: SEGroupMemberNameNotFound"
       eve ##> "/groups"
       eve <## "#team (you are removed, delete local copy: /d #team)"
 
@@ -7956,6 +7960,30 @@ testScopedSupportForwardAdminRemoval =
 
       alice ##> "/groups"
       alice <## "#team (you are removed, delete local copy: /d #team)"
+
+testScopedSupportForwardLeave :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardLeave =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
+      setupReviewForward alice bob cath dan eve
+
+      -- eve leaves group, bob and dan receive member leave message
+      eve ##> "/leave #team"
+      eve <## "#team: you left the group"
+      eve <## "use /d #team to delete the group"
+      alice <## "#team: eve left the group"
+      bob <## "#team: eve left the group"
+      dan <## "#team: eve left the group"
+
+      alice ##> "#team (support: eve) hi"
+      alice <## "bad chat command: support member not current or pending"
+      bob ##> "#team (support: eve) hi"
+      bob <##. "bad chat command: support member not current or pending"
+      dan ##> "#team (support: eve) hi"
+      dan <##. "bad chat command: support member not current or pending"
+      eve ##> "/groups"
+      eve <## "#team (you left, delete local copy: /d #team)"
 
 testScopedSupportForwardGroupDeletion :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardGroupDeletion =
@@ -8285,6 +8313,99 @@ testScopedSupportUnreadStatsCorrectOnOpen =
         { markRead = False
         }
 
+testScopedSupportMemberRemoved :: HasCallStack => TestParams -> IO ()
+testScopedSupportMemberRemoved =
+  testChatOpts3 opts aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRAdmin)
+
+    bob #> "#team (support) 1"
+    [alice, cath] *<# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    [alice, cath] *<# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    cath ##> "/rm team bob"
+    concurrentlyN_
+      [ cath <## "#team: you removed bob from the group",
+        do
+          bob <## "#team: cath removed you from the group"
+          bob <## "use /d #team to delete the group",
+        alice <## "#team: cath removed bob from the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUserRemovesMember :: HasCallStack => TestParams -> IO ()
+testScopedSupportUserRemovesMember =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRMember) True
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    alice ##> "/rm team bob"
+    concurrentlyN_
+      [ alice <## "#team: you removed bob from the group",
+        do
+          bob <## "#team: alice removed you from the group"
+          bob <## "use /d #team to delete the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportMemberLeaves :: HasCallStack => TestParams -> IO ()
+testScopedSupportMemberLeaves =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRMember) True
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    bob ##> "/l team"
+    concurrentlyN_
+      [ do
+          bob <## "#team: you left the group"
+          bob <## "use /d #team to delete the group",
+        alice <## "#team: bob left the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
 testChannelsRelayDeliver :: HasCallStack => TestParams -> IO ()
 testChannelsRelayDeliver =
   testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do

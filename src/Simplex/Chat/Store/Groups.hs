@@ -1404,9 +1404,8 @@ updateGroupMemberAccepted db User {userId} m@GroupMember {groupMemberId} status 
     (status, role, currentTs, userId, groupMemberId)
   pure m {memberStatus = status, memberRole = role, updatedAt = currentTs}
 
-deleteGroupMemberSupportChat :: DB.Connection -> User -> GroupInfo -> GroupMember -> IO (GroupInfo, GroupMember)
-deleteGroupMemberSupportChat db user g m@GroupMember {groupMemberId} = do
-  let requiredAttention = gmRequiresAttention m
+deleteGroupMemberSupportChat :: DB.Connection -> GroupMember -> IO GroupMember
+deleteGroupMemberSupportChat db m@GroupMember {groupMemberId} = do
   currentTs <- getCurrentTime
   DB.execute
     db
@@ -1428,11 +1427,7 @@ deleteGroupMemberSupportChat db user g m@GroupMember {groupMemberId} = do
       WHERE group_member_id = ?
     |]
     (currentTs, groupMemberId)
-  let m' = m {supportChat = Nothing, updatedAt = currentTs}
-  g' <- if requiredAttention
-    then decreaseGroupMembersRequireAttention db user g
-    else pure g
-  pure (g', m')
+  pure m {supportChat = Nothing, updatedAt = currentTs}
 
 updateGroupMembersRequireAttention :: DB.Connection -> User -> GroupInfo -> GroupMember -> GroupMember -> IO GroupInfo
 updateGroupMembersRequireAttention db user g member member'

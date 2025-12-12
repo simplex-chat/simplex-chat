@@ -490,17 +490,26 @@ class AppPreferences {
 private const val MESSAGE_TIMEOUT: Int = 300_000_000
 
 object ChatController {
-  var ctrl: ChatCtrl? = -1
+  private var chatCtrl: ChatCtrl? = -1
   val appPrefs: AppPreferences by lazy { AppPreferences() }
 
   val messagesChannel: Channel<API> = Channel()
 
   val chatModel = ChatModel
-  private var receiverStarted = false
+  private var receiverJob: Job? = null
   var lastMsgReceivedTimestamp: Long = System.currentTimeMillis()
     private set
 
-  fun hasChatCtrl() = ctrl != -1L && ctrl != null
+  fun hasChatCtrl() = chatCtrl != -1L && chatCtrl != null
+
+  fun getChatCtrl(): ChatCtrl? = chatCtrl
+
+  fun setChatCtrl(ctrl: ChatCtrl?) {
+    val wasRunning = receiverJob != null
+    stopReceiver()
+    chatCtrl = ctrl
+    if (wasRunning && ctrl != null) startReceiver()
+  }
 
   suspend fun getAgentSubsTotal(rh: Long?): Pair<SMPServerSubs, Boolean>? {
     val userId = currentUserId("getAgentSubsTotal")
@@ -647,17 +656,16 @@ object ChatController {
 
   private fun startReceiver() {
     Log.d(TAG, "ChatController startReceiver")
-    if (receiverStarted) return
-    receiverStarted = true
-    CoroutineScope(Dispatchers.IO).launch {
+    if (receiverJob != null || chatCtrl == null) return
+    receiverJob = CoroutineScope(Dispatchers.IO).launch {
       var releaseLock: (() -> Unit) = {}
-      while (true) {
+      while (isActive) {
         /** Global [ctrl] can be null. It's needed for having the same [ChatModel] that already made in [ChatController] without the need
          * to change it everywhere in code after changing a database.
          * Since it can be changed in background thread, making this check to prevent NullPointerException */
-        val ctrl = ctrl
+        val ctrl = chatCtrl
         if (ctrl == null) {
-          receiverStarted = false
+          stopReceiver()
           break
         }
         try {
@@ -694,6 +702,15 @@ object ChatController {
           AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), e.stackTraceToString())
         }
       }
+    }
+  }
+
+  private fun stopReceiver() {
+    Log.d(TAG, "ChatController stopReceiver")
+    val job = receiverJob
+    if (job != null) {
+      receiverJob = null
+      job.cancel()
     }
   }
 
@@ -781,7 +798,7 @@ object ChatController {
   }
 
   suspend fun sendCmd(rhId: Long?, cmd: CC, otherCtrl: ChatCtrl? = null, retryNum: Int = 0, log: Boolean = true): API {
-    val ctrl = otherCtrl ?: ctrl ?: throw Exception("Controller is not initialized")
+    val ctrl = otherCtrl ?: chatCtrl ?: throw Exception("Controller is not initialized")
 
     return withContext(Dispatchers.IO) {
       val c = cmd.cmdString
