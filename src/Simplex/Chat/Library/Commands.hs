@@ -167,6 +167,9 @@ startChatController mainApp enableSndFiles = do
   runExceptT (syncConnections' users) >>= \case
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
+  runExceptT migrateMemberRelations >>= \case
+    Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
+    Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -178,6 +181,10 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
+    migrateMemberRelations =
+      when mainApp $
+        whenM (withStore' hasMembersWithoutVector) $
+          void $ forkIO runRelationsVectorMigration
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -2445,7 +2452,13 @@ processChatCommand vr nm = \case
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
     when (isNothing $ supportChat m) $ throwCmdError "member has no support chat"
     when (memberPending m) $ throwCmdError "member is pending"
-    (gInfo', m') <- withFastStore' $ \db -> deleteGroupMemberSupportChat db user gInfo m
+    (gInfo', m') <- withFastStore' $ \db -> do
+      gInfo' <-
+        if gmRequiresAttention m
+          then decreaseGroupMembersRequireAttention db user gInfo
+          else pure gInfo
+      m' <- deleteGroupMemberSupportChat db m
+      pure (gInfo', m')
     pure $ CRMemberSupportChatDeleted user gInfo' m'
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId $ do
@@ -2627,19 +2640,25 @@ processChatCommand vr nm = \case
           let chatScope = toChatScope <$> chatScopeInfo
               events = L.map (\GroupMember {memberId} -> XGrpMemDel memberId withMessages) memsToDelete'
           (msgs_, _gsr) <- sendGroupMessages user gInfo chatScope recipients events
-          let itemsData = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
+          let itemsData_ = zipWith (fmap . sndItemData) memsToDelete (L.toList msgs_)
+              skipUnwantedItem = \case
+                Right Nothing -> Nothing
+                Right (Just a) -> Just $ Right a
+                Left e -> Just $ Left e
+              itemsData = mapMaybe skipUnwantedItem itemsData_
           cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData Nothing False
-          when (length cis_ /= length memsToDelete) $ logError "deleteCurrentMems: memsToDelete and cis_ length mismatch"
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
           pure (errs, deleted, acis)
           where
-            sndItemData :: GroupMember -> SndMessage -> NewSndChatItemData c
-            sndItemData GroupMember {groupMemberId, memberProfile} msg =
-              let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
-                  ts = ciContentTexts content
-               in NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
+            sndItemData :: GroupMember -> SndMessage -> Maybe (NewSndChatItemData c)
+            sndItemData GroupMember {groupMemberId, memberProfile, memberStatus} msg
+              | memberStatus == GSMemRemoved || memberStatus == GSMemLeft = Nothing
+              | otherwise =
+                  let content = CISndGroupEvent $ SGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                      ts = ciContentTexts content
+                   in Just $ NewSndChatItemData msg content ts M.empty Nothing Nothing Nothing
             delMember db m = do
               -- We're in a function used in batch member deletion, and since we're passing same gInfo for each member,
               -- voided result (updated group info) may have incorrect state of membersRequireAttention.
@@ -3633,10 +3652,9 @@ processChatCommand vr nm = \case
               dm <- encodeConnInfo $ XGrpRelayInv relayInv
               (sqSecured, _serviceId) <- withAgent $ \a -> joinConnection a nm (aUserId user) (aConnId conn) True cReq dm PQSupportOff subMode
               let newConnStatus = if sqSecured then ConnSndReady else ConnJoined
-              groupRelay' <- withFastStore' $ \db -> do
+              withFastStore' $ \db -> do
                 void $ updateConnectionStatusFromTo db conn ConnPrepared newConnStatus
                 updateRelayStatusFromTo db groupRelay RSNew RSInvited
-              pure groupRelay'
     privateGetUser :: UserId -> CM User
     privateGetUser userId =
       tryAllErrors (withStore (`getUser` userId)) >>= \case
@@ -4314,6 +4332,21 @@ agentSubscriber = do
         run action = action `catchAllErrors'` (eToView')
 
 type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
+
+runRelationsVectorMigration :: CM ()
+runRelationsVectorMigration = do
+  liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
+  migrateMembers
+  where
+    stepDelay = 1000000 -- 1 second
+    migrateMembers = flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      gmIds <- withStore' getGMsWithoutVectorIds
+      forM_ gmIds $ \gmId -> do
+        lift waitChatStartedAndActivated
+        withStore' (`migrateMemberRelationsVector'` gmId) `catchAllErrors` eToView
+        liftIO $ threadDelay' stepDelay
+      unless (null gmIds) migrateMembers
 
 cleanupManager :: CM ()
 cleanupManager = do

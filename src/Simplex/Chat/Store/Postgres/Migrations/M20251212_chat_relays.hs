@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20251018_chat_relays where
+module Simplex.Chat.Store.Postgres.Migrations.M20251212_chat_relays where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
-m20251018_chat_relays :: Text
-m20251018_chat_relays =
+m20251212_chat_relays :: Text
+m20251212_chat_relays =
   T.pack
     [r|
 CREATE TABLE chat_relays(
@@ -54,18 +54,15 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 ALTER TABLE group_members ADD COLUMN is_relay SMALLINT NOT NULL DEFAULT 0;
 |]
 
-down_m20251018_chat_relays :: Text
-down_m20251018_chat_relays =
+down_m20251212_chat_relays :: Text
+down_m20251212_chat_relays =
   T.pack
     [r|
-DROP INDEX idx_chat_relays_user_id;
-DROP INDEX idx_chat_relays_user_id_address;
-DROP INDEX idx_chat_relays_user_id_name;
-DROP TABLE chat_relays;
-
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 ALTER TABLE groups DROP COLUMN use_relays;
+
+ALTER TABLE groups DROP COLUMN creating_in_progress;
 
 ALTER TABLE groups DROP COLUMN relay_own_status;
 
@@ -75,6 +72,11 @@ DROP INDEX idx_group_relays_group_id;
 DROP INDEX idx_group_relays_group_member_id;
 DROP INDEX idx_group_relays_chat_relay_id;
 DROP TABLE group_relays;
+
+DROP INDEX idx_chat_relays_user_id;
+DROP INDEX idx_chat_relays_user_id_address;
+DROP INDEX idx_chat_relays_user_id_name;
+DROP TABLE chat_relays;
 
 ALTER TABLE group_members DROP COLUMN is_relay;
 |]

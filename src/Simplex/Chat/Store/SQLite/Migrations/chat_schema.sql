@@ -158,7 +158,9 @@ CREATE TABLE groups(
   conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
   via_group_link_uri BLOB,
   summary_current_members_count INTEGER NOT NULL DEFAULT 0,
+  member_index INTEGER NOT NULL DEFAULT 0,
   use_relays INTEGER NOT NULL DEFAULT 0,
+  creating_in_progress INTEGER NOT NULL DEFAULT 0,
   relay_own_status TEXT, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
@@ -199,6 +201,8 @@ CREATE TABLE group_members(
   support_chat_last_msg_from_member_ts TEXT,
   member_xcontact_id BLOB,
   member_welcome_shared_msg_id BLOB,
+  index_in_group INTEGER NOT NULL DEFAULT 0,
+  member_relations_vector BLOB,
   is_relay INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
@@ -728,7 +732,7 @@ CREATE TABLE connections_sync(
 );
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
-  address TEXT NOT NULL,
+  address BLOB NOT NULL,
   name TEXT NOT NULL,
   domains TEXT NOT NULL,
   preset INTEGER NOT NULL DEFAULT 0,
@@ -737,9 +741,7 @@ CREATE TABLE chat_relays(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
-  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
-  UNIQUE(user_id, address),
-  UNIQUE(user_id, name)
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
 CREATE TABLE group_relays(
   group_relay_id INTEGER PRIMARY KEY,
@@ -1214,7 +1216,16 @@ CREATE INDEX idx_connections_to_subscribe ON connections(
   user_id,
   to_subscribe
 );
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(
+  group_id,
+  index_in_group
+);
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(
+  user_id,
+  address
+);
+CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(
   group_member_id

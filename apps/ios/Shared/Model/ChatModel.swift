@@ -766,11 +766,6 @@ final class ChatModel: ObservableObject {
     }
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
-        // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-        if byMember.groupMemberId == groupInfo.membership.groupMemberId {
-            logger.debug("exiting removeMemberItems")
-            return
-        }
         if chatId == groupInfo.id {
             for i in 0..<im.reversedChatItems.count {
                 if let updatedItem = removedUpdatedItem(im.reversedChatItems[i]) {

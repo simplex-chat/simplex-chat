@@ -2205,6 +2205,7 @@ Known:
 **Record type**:
 - groupMemberId: int64
 - groupId: int64
+- indexInGroup: int64
 - memberId: string
 - memberRole: [GroupMemberRole](#groupmemberrole)
 - memberCategory: [GroupMemberCategory](#groupmembercategory)
@@ -3381,6 +3382,14 @@ GroupMemberNotFound:
 - type: "groupMemberNotFound"
 - groupMemberId: int64
 
+GroupMemberNotFoundByIndex:
+- type: "groupMemberNotFoundByIndex"
+- groupMemberIndex: int64
+
+MemberRelationsVectorNotFound:
+- type: "memberRelationsVectorNotFound"
+- groupMemberId: int64
+
 GroupHostMemberNotFound:
 - type: "groupHostMemberNotFound"
 - groupId: int64
@@ -3392,6 +3401,9 @@ GroupMemberNotFoundByMemberId:
 MemberContactGroupMemberNotFound:
 - type: "memberContactGroupMemberNotFound"
 - contactId: int64
+
+InvalidMemberRelationUpdate:
+- type: "invalidMemberRelationUpdate"
 
 GroupWithoutUser:
 - type: "groupWithoutUser"
@@ -3478,9 +3490,6 @@ ConnectionNotFoundByMemberId:
 PendingConnectionNotFound:
 - type: "pendingConnectionNotFound"
 - connId: int64
-
-IntroNotFound:
-- type: "introNotFound"
 
 UniqueID:
 - type: "uniqueID"

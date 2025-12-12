@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20251018_chat_relays where
+module Simplex.Chat.Store.SQLite.Migrations.M20251212_chat_relays where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
@@ -16,8 +16,8 @@ import Database.SQLite.Simple.QQ (sql)
 --     but has group relays using it
 -- - group_members.is_relay - indicates that the member is a chat relay
 -- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (RelayStatus)
-m20251018_chat_relays :: Query
-m20251018_chat_relays =
+m20251212_chat_relays :: Query
+m20251212_chat_relays =
   [sql|
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
@@ -63,17 +63,14 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 ALTER TABLE group_members ADD COLUMN is_relay INTEGER NOT NULL DEFAULT 0;
 |]
 
-down_m20251018_chat_relays :: Query
-down_m20251018_chat_relays =
+down_m20251212_chat_relays :: Query
+down_m20251212_chat_relays =
   [sql|
-DROP INDEX idx_chat_relays_user_id;
-DROP INDEX idx_chat_relays_user_id_address;
-DROP INDEX idx_chat_relays_user_id_name;
-DROP TABLE chat_relays;
-
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
 ALTER TABLE groups DROP COLUMN use_relays;
+
+ALTER TABLE groups DROP COLUMN creating_in_progress;
 
 ALTER TABLE groups DROP COLUMN relay_own_status;
 
@@ -83,6 +80,11 @@ DROP INDEX idx_group_relays_group_id;
 DROP INDEX idx_group_relays_group_member_id;
 DROP INDEX idx_group_relays_chat_relay_id;
 DROP TABLE group_relays;
+
+DROP INDEX idx_chat_relays_user_id;
+DROP INDEX idx_chat_relays_user_id_address;
+DROP INDEX idx_chat_relays_user_id_name;
+DROP TABLE chat_relays;
 
 ALTER TABLE group_members DROP COLUMN is_relay;
 |]

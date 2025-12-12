@@ -62,6 +62,7 @@ import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.FileTransfer.Description (ValidFileDescription)
@@ -2688,13 +2689,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
             Right reMember -> do
-              introId <- withStore $ \db -> do
-                GroupMemberIntro {introId} <- getIntroduction db reMember m
-                liftIO $ updateIntroStatus db introId GMIntroInvReceived
-                pure introId
-              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) (Just introId) $
-                withStore' $
-                  \db -> updateIntroStatus db introId GMIntroInvForwarded
+              intro_ <- withStore' $ \db -> getIntroduction db reMember m
+              update intro_ GMIntroInvReceived
+              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) intro_ $
+                update intro_ GMIntroInvForwarded
+              where
+                update (Just GroupMemberIntro {introId}) status = withStore' $ \db -> updateIntroStatus db introId status
+                update Nothing _ = pure ()
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
@@ -2788,45 +2789,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           blocked = mrsBlocked restriction
 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> CM ()
-    xGrpMemCon gInfo sendingMember memId = do
-      refMember <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
-      case (memberCategory sendingMember, memberCategory refMember) of
-        (GCInviteeMember, GCInviteeMember) ->
-          withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
-            Right intro -> inviteeXGrpMemCon intro
-            Left _ ->
-              withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
-                Right intro -> forwardMemberXGrpMemCon intro
-                Left _ -> messageWarning "x.grp.mem.con: no introduction"
-        (GCInviteeMember, _) ->
-          withStore' (\db -> runExceptT $ getIntroduction db refMember sendingMember) >>= \case
-            Right intro -> inviteeXGrpMemCon intro
-            Left _ -> messageWarning "x.grp.mem.con: no introduction"
-        (_, GCInviteeMember) ->
-          withStore' (\db -> runExceptT $ getIntroduction db sendingMember refMember) >>= \case
-            Right intro -> forwardMemberXGrpMemCon intro
-            Left _ -> messageWarning "x.grp.mem.con: no introductiosupportn"
-        -- Note: we can allow XGrpMemCon to all member categories if we decide to support broader group forwarding,
-        -- deduplication (see saveGroupRcvMsg, saveGroupFwdRcvMsg) already supports sending XGrpMemCon
-        -- to any forwarding member, not only host/inviting member;
-        -- database would track all members connections then
-        -- (currently it's done via group_member_intros for introduced connections only)
-        _ ->
-          messageWarning "x.grp.mem.con: neither member is invitee"
-      where
-        inviteeXGrpMemCon :: GroupMemberIntro -> CM ()
-        inviteeXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
-          GMIntroReConnected -> updateStatus introId GMIntroConnected
-          GMIntroToConnected -> pure ()
-          GMIntroConnected -> pure ()
-          _ -> updateStatus introId GMIntroToConnected
-        forwardMemberXGrpMemCon :: GroupMemberIntro -> CM ()
-        forwardMemberXGrpMemCon GroupMemberIntro {introId, introStatus} = case introStatus of
-          GMIntroToConnected -> updateStatus introId GMIntroConnected
-          GMIntroReConnected -> pure ()
-          GMIntroConnected -> pure ()
-          _ -> updateStatus introId GMIntroReConnected
-        updateStatus introId status = withStore' $ \db -> updateIntroStatus db introId status
+    xGrpMemCon gInfo sendingMem memId = do
+      refMem <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
+      withStore' (`migrateMemberRelationsVector` sendingMem)
+      withStore' (`migrateMemberRelationsVector` refMem)
+      -- Updating vectors in separate transactions to avoid deadlocks.
+      withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
+      withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
 
     xGrpMemDel :: GroupInfo -> GroupMember -> MemberId -> Bool -> ChatMessage 'Json -> RcvMessage -> UTCTime -> Bool -> CM (Maybe DeliveryJobScope)
     xGrpMemDel gInfo@GroupInfo {membership} m@GroupMember {memberRole = senderRole} memId withMessages chatMsg msg brokerTs forwarded = do
@@ -2839,7 +2808,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           withStore' $ \db -> updateGroupMemberStatus db userId membership GSMemRemoved
           let membership' = membership {memberStatus = GSMemRemoved}
           when withMessages $ deleteMessages gInfo membership' SMDSnd
-          deleteMemberItem RGEUserDeleted
+          deleteMemberItem gInfo RGEUserDeleted
           toView $ CEvtDeletedMemberUser user gInfo {membership = membership'} m withMessages
           pure $ Just DJSGroup {jobSpec = DJRelayRemoved}
         else
@@ -2847,31 +2816,36 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             Left _ -> do
               messageError "x.grp.mem.del with unknown member ID"
               pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
-            Right deletedMember@GroupMember {groupMemberId, memberProfile} ->
+            Right deletedMember@GroupMember {groupMemberId, memberProfile, memberStatus} ->
               checkRole deletedMember $ do
                 -- ? prohibit deleting member if it's the sender - sender should use x.grp.leave
-                if isUserGrpFwdRelay gInfo && not forwarded
+                let shouldForward = isUserGrpFwdRelay gInfo && not forwarded
+                if shouldForward
                   then do
                     -- Special case: forward before deleting connection.
-                    -- It allows us to avoid adding logic in forwardMsgs to circumvent member filtering.
                     forwardToMember deletedMember
                     deleteMemberConnection' deletedMember True
                   else deleteMemberConnection deletedMember
-                -- undeleted "member connected" chat item will prevent deletion of member record
-                gInfo' <- deleteOrUpdateMemberRecord user gInfo deletedMember
-                let deletedMember' = deletedMember {memberStatus = GSMemRemoved}
+                let deliveryScope = memberEventDeliveryScope deletedMember
+                gInfo' <- case deliveryScope of
+                  -- Keep member record if it's support scope - it will be required for forwarding inside that scope.
+                  Just (DJSMemberSupport _) | shouldForward -> updateMemberRecordDeleted user gInfo deletedMember GSMemRemoved
+                  -- Undeleted "member connected" chat item will prevent deletion of member record.
+                  _ -> deleteOrUpdateMemberRecord user gInfo deletedMember
+                let wasDeleted = memberStatus == GSMemRemoved || memberStatus == GSMemLeft
+                    deletedMember' = deletedMember {memberStatus = GSMemRemoved}
                 when withMessages $ deleteMessages gInfo' deletedMember' SMDRcv
-                deleteMemberItem $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
+                unless wasDeleted $ deleteMemberItem gInfo' $ RGEMemberDeleted groupMemberId (fromLocalProfile memberProfile)
                 toView $ CEvtDeletedMember user gInfo' m deletedMember' withMessages
-                pure $ memberEventDeliveryScope deletedMember
+                pure deliveryScope
       where
         checkRole GroupMember {memberRole} a
           | senderRole < GRAdmin || senderRole < memberRole =
               messageError "x.grp.mem.del with insufficient member permissions" $> Nothing
           | otherwise = a
-        deleteMemberItem gEvent = do
-          (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
+        deleteMemberItem gi gEvent = do
+          (gi', m', scopeInfo) <- mkGroupChatScope gi m
+          (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gi' scopeInfo m') msg brokerTs (CIRcvGroupEvent gEvent)
           groupMsgToView cInfo ci
         deleteMessages :: MsgDirectionI d => GroupInfo -> GroupMember -> SMsgDirection d -> CM ()
         deleteMessages gInfo' delMem msgDir
@@ -2898,11 +2872,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpLeave gInfo m msg brokerTs = do
       deleteMemberConnection m
       -- member record is not deleted to allow creation of "member left" chat item
-      gInfo' <- withStore' $ \db -> do
-        updateGroupMemberStatus db userId m GSMemLeft
-        if gmRequiresAttention m
-          then decreaseGroupMembersRequireAttention db user gInfo
-          else pure gInfo
+      gInfo' <- updateMemberRecordDeleted user gInfo m GSMemLeft
       (gInfo'', m', scopeInfo) <- mkGroupChatScope gInfo' m
       (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo'' scopeInfo m') msg brokerTs (CIRcvGroupEvent RGEMemberLeft)
       groupMsgToView cInfo ci
@@ -3314,10 +3284,10 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     DJSMemberSupport scopeGMId -> do
                       -- for member support scope we just load all recipients in one go, without cursor
                       modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-                      let moderatorFilter mem =
-                            memberCurrent mem
-                            && maxVersion (memberChatVRange mem) >= groupKnockingVersion
-                            && Just (groupMemberId' mem) /= singleSenderGMId_
+                      let moderatorFilter m =
+                            memberCurrent m
+                              && maxVersion (memberChatVRange m) >= groupKnockingVersion
+                              && Just (groupMemberId' m) /= singleSenderGMId_
                           modMs' = filter moderatorFilter modMs
                       mems <-
                         if Just scopeGMId == singleSenderGMId_
@@ -3331,42 +3301,30 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                     Nothing -> throwChatError $ CEInternalError "delivery job worker: singleSenderGMId is required when not using relays"
                     Just singleSenderGMId -> do
                       sender <- withStore $ \db -> getGroupMemberById db vr user singleSenderGMId
-                      mems <- buildMemberList sender
-                      unless (null mems) $ deliver body mems
+                      ms <- buildMemberList sender
+                      unless (null ms) $ deliver body ms
                       where
-                        buildMemberList sender = case jobScope of
-                          DJSGroup {jobSpec}
-                            | jobSpecImpliedPending jobSpec ->
-                                filter memberCurrentOrPending <$> getAllIntroducedAndInvited
-                            | otherwise ->
-                                filter memberCurrent <$> getAllIntroducedAndInvited
-                          DJSMemberSupport scopeGMId -> do
-                            -- moderators introduced to this invited member
-                            introducedModMs <-
-                              if memberCategory sender == GCInviteeMember
-                                then withStore' $ \db -> getForwardIntroducedModerators db vr user sender
-                                else pure []
-                            -- invited moderators to which this member was introduced
-                            invitedModMs <- withStore' $ \db -> getForwardInvitedModerators db vr user sender
-                            let modMs = introducedModMs <> invitedModMs
-                                modMs' = filter (\mem -> memberCurrent mem && maxVersion (memberChatVRange mem) >= groupKnockingVersion) modMs
-                            if scopeGMId == groupMemberId' sender
-                              then pure modMs'
-                              else
-                                withStore' (\db -> getForwardScopeMember db vr user sender scopeGMId) >>= \case
-                                  Just scopeMem -> pure $ scopeMem : modMs'
-                                  _ -> pure modMs'
-                          where
-                            getAllIntroducedAndInvited = do
-                              ChatConfig {highlyAvailable} <- asks config
-                              -- members introduced to this invited member
-                              introducedMembers <-
-                                if memberCategory sender == GCInviteeMember
-                                  then withStore' $ \db -> getForwardIntroducedMembers db vr user sender highlyAvailable
-                                  else pure []
-                              -- invited members to which this member was introduced
-                              invitedMembers <- withStore' $ \db -> getForwardInvitedMembers db vr user sender highlyAvailable
-                              pure $ introducedMembers <> invitedMembers
+                        buildMemberList sender = do
+                          vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
+                          -- this excludes the sender
+                          let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
+                          case jobScope of
+                            DJSGroup {jobSpec} -> do
+                              ms <- withStore' $ \db -> getGroupMembersByIndexes db vr user gInfo introducedMemsIdxs
+                              pure $ filter shouldForwardTo ms
+                              where
+                                shouldForwardTo m
+                                  | jobSpecImpliedPending jobSpec = memberCurrentOrPending m
+                                  | otherwise = memberCurrent m
+                            DJSMemberSupport scopeGMId -> do
+                              ms <- withStore' $ \db -> getSupportScopeMembersByIndexes db vr user gInfo scopeGMId introducedMemsIdxs
+                              pure $ filter shouldForwardTo ms
+                              where
+                                shouldForwardTo m = groupMemberId' m == scopeGMId || currentModerator m
+                                currentModerator m@GroupMember {memberRole} =
+                                  memberRole >= GRModerator
+                                    && memberCurrent m
+                                    && maxVersion (memberChatVRange m) >= groupKnockingVersion
               where
                 deliver :: ByteString -> [GroupMember] -> CM ()
                 deliver msgBody mems =
