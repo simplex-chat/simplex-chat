@@ -172,7 +172,7 @@ newChatController
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
-    relayChecksAsync <- newTVarIO Nothing
+    relayGroupLinkChecksAsync <- newTVarIO Nothing
     timedItemThreads <- TM.emptyIO
     chatActivated <- newTVarIO True
     showLiveItems <- newTVarIO False
@@ -214,7 +214,7 @@ newChatController
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,
-          relayChecksAsync,
+          relayGroupLinkChecksAsync,
           timedItemThreads,
           chatActivated,
           showLiveItems,

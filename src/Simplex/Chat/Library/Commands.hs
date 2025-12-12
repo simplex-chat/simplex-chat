@@ -221,10 +221,10 @@ startChatController mainApp enableSndFiles = do
     startRelayChecks users = do
       let relayUser_ = find (\User {userChatRelay} -> isTrue userChatRelay) users
       forM_ relayUser_ $ \relayUser -> do
-        relayAsync <- asks relayChecksAsync
+        relayAsync <- asks relayGroupLinkChecksAsync
         readTVarIO relayAsync >>= \case
           Nothing -> do
-            a <- Just <$> async (void $ runExceptT $ runRelayChecks relayUser)
+            a <- Just <$> async (void $ runExceptT $ runRelayGroupLinkChecks relayUser)
             atomically $ writeTVar relayAsync a
           _ -> pure ()
     startExpireCIs user = whenM shouldExpireChats $ do
@@ -4425,14 +4425,12 @@ deleteInProgressGroup user gInfo = do
   deleteGroupConnections user gInfo False
   withFastStore' $ \db -> deleteGroup db user gInfo
 
-runRelayChecks :: User -> CM ()
-runRelayChecks _user = do
-  -- TODO [relays] relay: periodically check served groups
-  -- TODO   - get groups where user is chat relay
-  -- TODO   - retrive group link data, check presence of relay link
+runRelayGroupLinkChecks :: User -> CM ()
+runRelayGroupLinkChecks _user = do
+  -- TODO [relays] relay: periodically check presence of relay link in group links of served groups
+  -- TODO   - retrieve group link data
   -- TODO   - if relay link is present, update relay status to RSActive
-  -- TODO   - if relay link is absent and staus was RSActive -> update to new "Removed" status?
-  -- TODO   - * recovery for joining served group (add relay protocol) - also in this thread?
+  -- TODO   - if relay link is absent and status was RSActive -> update to new "Removed" status?
   pure ()
 
 expireChatItems :: User -> Int64 -> Bool -> CM ()
