@@ -55,7 +55,6 @@ set_target_properties( support PROPERTIES IMPORTED_LOCATION
 
 target_compile_options(app-lib PRIVATE
     -g0
-    -fdebug-types-section
 )
 
 # Specifies libraries CMake should link to your target library. You
