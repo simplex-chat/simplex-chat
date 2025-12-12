@@ -1343,7 +1343,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         relayContactRequest invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
           -- TODO [relays] relay: retrieve group link data asynchronously/add recovery
           (_cReq, cData) <- getShortLinkConnReq NRMBackground user groupLink
-          (liftIO $ decodeLinkUserData cData) >>= \case
+          liftIO (decodeLinkUserData cData) >>= \case
             Nothing -> messageError "relayContactRequest: no group link data"
             Just (GroupShortLinkData gp) -> do
               validateGroupProfile gp
