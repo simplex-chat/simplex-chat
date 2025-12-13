@@ -48,7 +48,7 @@
     <string name="socks_proxy_setting_limitations"><![CDATA[<b>Megjegyzés:</b> az üzenet- és fájltovábbító kiszolgálók SOCKS proxyn keresztül kapcsolódnak. A hívások és a hivatkozások előnézetének küldése közvetlen kapcsolatot használ.]]></string>
     <string name="full_backup">Alkalmazásadatok biztonsági mentése</string>
     <string name="database_initialization_error_title">Az adatbázis előkészítése sikertelen</string>
-    <string name="all_your_contacts_will_remain_connected_update_sent">A partnereivel kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
+    <string name="all_your_contacts_will_remain_connected_update_sent">Az összes partnerével továbbra is kapcsolatban marad. A profilfrissítés el lesz küldve a partnerei számára.</string>
     <string name="v4_5_transport_isolation_descr">A csevegési profillal (alapértelmezett), vagy a kapcsolattal (BÉTA).</string>
     <string name="connect__a_new_random_profile_will_be_shared">Egy új, véletlenszerű profil lesz megosztva.</string>
     <string name="allow_voice_messages_only_if">A hangüzenetek küldése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi.</string>
@@ -97,7 +97,7 @@
     <string name="smp_servers_add_to_another_device">Hozzáadás egy másik eszközhöz</string>
     <string name="allow_message_reactions">A reakciók hozzáadása az üzenetekhez engedélyezve van.</string>
     <string name="icon_descr_cancel_file_preview">Fájlelőnézet visszavonása</string>
-    <string name="all_group_members_will_remain_connected">Az összes csoporttag kapcsolatban marad.</string>
+    <string name="all_group_members_will_remain_connected">Az összes csoporttag továbbra is kapcsolatban marad.</string>
     <string name="onboarding_notifications_mode_service_desc"><![CDATA[<b>Több akkumulátort használ</b>! Az alkalmazás mindig fut a háttérben – az értesítések azonnal megjelennek.]]></string>
     <string name="block_member_confirmation">Letiltás</string>
     <string name="group_member_role_admin">adminisztrátor</string>
@@ -118,7 +118,7 @@
     <string name="chat_preferences_always">mindig</string>
     <string name="call_already_ended">A hívás már befejeződött!</string>
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
-    <string name="all_your_contacts_will_remain_connected">Az összes partnerével kapcsolatban marad.</string>
+    <string name="all_your_contacts_will_remain_connected">Az összes partnerével továbbra is kapcsolatban marad.</string>
     <string name="icon_descr_cancel_live_message">Élő csevegési üzenet visszavonása</string>
     <string name="allow_irreversible_message_deletion_only_if">Az üzenetek végleges törlése csak abban az esetben van engedélyezve, ha a partnere is engedélyezi. (24 óra)</string>
     <string name="v4_6_audio_video_calls">Hang- és videóhívások</string>
@@ -1288,7 +1288,7 @@
     <string name="to_preserve_privacy_simplex_has_background_service_instead_of_push_notifications_it_uses_a_few_pc_battery"><![CDATA[Az adatvédelem növelése érdekében <b> a SimpleX a háttérben fut</b> a leküldéses értesítések használata helyett.]]></string>
     <string name="alert_text_connection_pending_they_need_to_be_online_can_delete_and_retry">A partnereinek online kell lennie ahhoz, hogy a kapcsolat létrejöjjön.\nVisszavonhatja ezt a kapcsolatot és eltávolíthatja a partnert (ezt később ismét megpróbálhatja egy új hivatkozással).</string>
     <string name="restore_passphrase_not_found_desc">A jelmondat nem található a Keystore-ban, ezért kézzel szükséges megadni. Ez akkor történhetett meg, ha visszaállította az alkalmazás adatait egy biztonsági mentési eszközzel. Ha nem így történt, akkor lépjen kapcsolatba a fejlesztőkkel.</string>
-    <string name="your_contacts_will_remain_connected">A partnerei továbbra is kapcsolódva maradnak.</string>
+    <string name="your_contacts_will_remain_connected">A partnereivel továbbra is kapcsolatban marad.</string>
     <string name="error_xftp_test_server_auth">A kiszolgálónak hitelesítésre van szüksége a feltöltéshez, ellenőrizze a jelszavát.</string>
     <string name="database_initialization_error_desc">Az adatbázis nem működik megfelelően. Koppintson ide a további információkért</string>
     <string name="stop_snd_file__message">A fájl küldése le fog állni.</string>
@@ -1366,7 +1366,7 @@
     <string name="you_sent_group_invitation">Csoportmeghívó elküldve</string>
     <string name="update_network_session_mode_question">Frissíti az átvitelelkülönítési módot?</string>
     <string name="network_session_mode_transport_isolation">Átvitelelkülönítés</string>
-    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Ettől a csoporttól nem fog értesítéseket kapni. A csevegési előzmények megmaradnak.</string>
+    <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Nem fog több üzenetet kapni ebből a csoportból, de a csevegés előzményei megmaradnak.</string>
     <string name="database_is_not_encrypted">A csevegési adatbázis nem titkosított – állítson be egy jelmondatot annak védelméhez.</string>
     <string name="network_disable_socks">Közvetlen internetkapcsolat használata?</string>
     <string name="you_will_still_receive_calls_and_ntfs">Továbbra is kap hívásokat és értesítéseket a némított profiloktól, ha azok aktívak.</string>
@@ -2178,7 +2178,7 @@
     <string name="onboarding_notifications_mode_battery">Értesítések és akkumulátor</string>
     <string name="onboarding_notifications_mode_service_desc_short">Az alkalmazás mindig fut a háttérben</string>
     <string name="leave_chat_question">Elhagyja a csevegést?</string>
-    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Ön nem fog több üzenetet kapni ebből a csevegésből, de a csevegés előzményei megmaradnak.</string>
+    <string name="you_will_stop_receiving_messages_from_this_chat_chat_history_will_be_preserved">Nem fog több üzenetet kapni ebből a csevegésből, de a csevegés előzményei megmaradnak.</string>
     <string name="button_delete_chat">Csevegés törlése</string>
     <string name="invite_to_chat_button">Meghívás a csevegésbe</string>
     <string name="button_add_friends">Barátok hozzáadása</string>
