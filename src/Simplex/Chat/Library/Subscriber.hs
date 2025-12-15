@@ -3370,14 +3370,14 @@ runRelayRequestWorker a Worker {doWork} = do
                     Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
                     Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
                 Nothing -> do
-                  (gInfo', sLnk) <- fetchLinkAndCreateRelayLink rrd
+                  (gInfo', sLnk) <- getLinkDataCreateRelayLink rrd
                   acceptOwnerConnection rrd gInfo' sLnk
           where
-            fetchLinkAndCreateRelayLink :: RelayRequestData -> CM (GroupInfo, ShortLinkContact)
-            fetchLinkAndCreateRelayLink RelayRequestData {ownerGroupLink} = do
+            getLinkDataCreateRelayLink :: RelayRequestData -> CM (GroupInfo, ShortLinkContact)
+            getLinkDataCreateRelayLink RelayRequestData {ownerGroupLink} = do
               (_cReq, cData) <- getShortLinkConnReq NRMBackground user ownerGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
-                Nothing -> throwChatError $ CEException "fetchLinkAndCreateRelayLink: no group link data"
+                Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just (GroupShortLinkData gp) -> do
                   validateGroupProfile gp
                   gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo gp
