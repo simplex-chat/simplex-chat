@@ -1405,14 +1405,14 @@ createGroupRelayInvitation db vr user@User {userId} GroupRelayInvitation {fromMe
         }
   (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) currentTs
   -- Store relay request data for recovery
-  liftIO $ storeRelayRequestData_ groupId currentTs
+  liftIO $ setRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
   _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user invitedMember GCUserMember GSMemAccepted IBUnknown Nothing True currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
   where
-    storeRelayRequestData_ groupId currentTs =
+    setRelayRequestData_ groupId currentTs =
       DB.execute
         db
         [sql|
