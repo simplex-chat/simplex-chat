@@ -440,7 +440,7 @@ jobs:
 
       - uses: actions/upload-artifact@v6
         with:
-          name: ${{ steps.mac_desktop_build.outputs.package_path }}.zip
+          name: ${{ matrix.desktop_asset_name }}.zip
           path: ${{ steps.mac_desktop_build.outputs.package_path }}
 
       - name: Upload Desktop
