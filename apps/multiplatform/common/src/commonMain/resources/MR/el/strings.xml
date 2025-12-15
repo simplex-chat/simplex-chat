@@ -1570,7 +1570,7 @@
     <string name="errors_in_servers_configuration">Σφάλματα στη διαμόρφωση των διακομιστών.</string>
     <string name="error_starting_chat">Σφάλμα κατά την έναρξη της συνομιλίας</string>
     <string name="error_stopping_chat">Σφάλμα κατά τη διακοπή της συνομιλίας</string>
-    <string name="switching_profile_error_title">Σφάλμα κατά την αλλαγή προφίλ</string>
+    <string name="switching_profile_error_title">Σφάλμα κατά την εναλλαγή προφίλ</string>
     <string name="failed_to_active_user_title">Σφάλμα κατά την αλλαγή προφίλ!</string>
     <string name="error_synchronizing_connection">Σφάλμα κατά τo συγχρονισμό της σύνδεσης</string>
     <string name="error_updating_chat_tags">Σφάλμα κατά την ενημέρωση της λίστας συνομιλιών</string>
@@ -2223,7 +2223,7 @@
     <string name="settings_shutdown">Απενεργοποίηση</string>
     <string name="shutdown_alert_question">Απενεργοποίηση;</string>
     <string name="theme_simplex">SImpleX</string>
-    <string name="simplex_address">Διεύθυνση SimpleX</string>
+    <string name="simplex_address">SimpleX διεύθυνση</string>
     <string name="icon_descr_address">Διεύθυνση SimpleX</string>
     <string name="simplex_address_and_1_time_links_are_safe_to_share">Η διεύθυνση SimpleX και οι σύνδεσμοι 1-χρήσης είναι ασφαλές να διαμοιράζονται μέσω οποιασδήποτε εφαρμογής ανταλλαγής μηνυμάτων.</string>
     <string name="simplex_address_or_1_time_link">Διεύθυνση SimpleX ή σύνδεσμος 1-χρήσης;</string>
