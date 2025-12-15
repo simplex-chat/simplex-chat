@@ -2615,4 +2615,10 @@
     <string name="network_error_unknown_ca">Хэш в адресе сервера не соответствует сертификату: %1$s.</string>
     <string name="simplex_link_relay">Ссылка SimpleX relay</string>
     <string name="proxy_destination_error_unknown_ca">Хэш в адресе сервера назначения не соответствует сертификату: %1$s.</string>
+    <string name="button_delete_member_messages">Удалить сообщения участника</string>
+    <string name="button_delete_member_messages_question">Удалить сообщения участника?</string>
+    <string name="delete_member_messages_confirmation">Удалить сообщения</string>
+    <string name="member_messages_will_be_deleted_cannot_be_undone">Сообщения участника будут удалены - это действие не обратимо!</string>
+    <string name="server_no_sub">нет подписки</string>
+    <string name="not_connected_to_server_to_receive_messages_no_sub">Вы не подключенны к серверу через который Вы получали сообщения от этого контакта (без подписки).</string>
 </resources>
