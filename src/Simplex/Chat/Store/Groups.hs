@@ -201,7 +201,7 @@ import Simplex.Chat.Types.MemberRelations (IntroductionDirection (..), MemberRel
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Chat.Types.UITheme
-import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), UserId)
+import Simplex.Messaging.Agent.Protocol (ConnId, CreatedConnLink (..), InvitationId, UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, fromOnlyBI, maybeFirstRow)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -1389,16 +1389,42 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> GroupRelayInvitation -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createGroupRelayInvitation db vr user@User {userId} groupProfile GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember} = do
+createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createGroupRelayInvitation db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember, groupLink} invId peerChatVRange = do
   currentTs <- liftIO getCurrentTime
-  (groupId, _groupLDN) <- createGroup_ db userId groupProfile Nothing Nothing True (Just RSInvited) currentTs
+  -- Create group with placeholder profile
+  let placeholderProfile = GroupProfile
+        { displayName = "relay_request_" <> displayName (fromMemberProfile :: Profile),
+          fullName = "",
+          shortDescr = Nothing,
+          description = Nothing,
+          image = Nothing,
+          groupLink = Nothing,
+          groupPreferences = Nothing,
+          memberAdmission = Nothing
+        }
+  (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) currentTs
+  -- Store relay request data for recovery
+  liftIO $ storeRelayRequestData_ groupId currentTs
   ownerMemberId <- insertOwner_ currentTs groupId
   _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user invitedMember GCUserMember GSMemAccepted IBUnknown Nothing True currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
   where
+    storeRelayRequestData_ groupId currentTs =
+      DB.execute
+        db
+        [sql|
+          UPDATE groups
+          SET relay_request_group_link = ?,
+              relay_request_inv_id = ?,
+              relay_request_peer_chat_min_version = ?,
+              relay_request_peer_chat_max_version = ?,
+              updated_at = ?
+          WHERE group_id = ?
+        |]
+        (groupLink, invId, minVersion peerChatVRange, maxVersion peerChatVRange, currentTs, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
       (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs

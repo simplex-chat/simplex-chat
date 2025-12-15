@@ -60,6 +60,7 @@ import Simplex.Chat.Store.Files
 import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Messages
 import Simplex.Chat.Store.Profiles
+import Simplex.Chat.Store.RelayRequests
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.MemberRelations
@@ -1340,41 +1341,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         relayContactRequest :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
-        relayContactRequest invId chatVRange groupRelayInv@GroupRelayInvitation {groupLink} = do
-          -- TODO [relays] relay: retrieve group link data asynchronously/add recovery
-          (_cReq, cData) <- getShortLinkConnReq NRMBackground user groupLink
-          liftIO (decodeLinkUserData cData) >>= \case
-            Nothing -> messageError "relayContactRequest: no group link data"
-            Just (GroupShortLinkData gp) -> do
-              validateGroupProfile gp
-              (gInfo, ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user gp groupRelayInv
-              relayLink <- createRelayLink gInfo
-              (_gInfo', _ownerMember') <- acceptRelayJoinRequestAsync user uclId gInfo ownerMember invId chatVRange relayLink
-              -- TODO [relays] relay: group invite accepted event, chat item (?)
-              pure ()
-              where
-                validateGroupProfile :: GroupProfile -> CM ()
-                validateGroupProfile _groupProfile = do
-                  -- TODO [relays] relay: validate group profile, verify owner's signature
-                  pure ()
-                createRelayLink :: GroupInfo -> CM ShortLinkContact
-                createRelayLink gInfo@GroupInfo {groupProfile} = do
-                  -- TODO [relays] relay: create relay link asynchronously/add recovery; set relay link data
-                  -- TODO   - link data: relay key for group, relay identity (profile, certificate, relay identity key)
-                  -- TODO   - TBC link's member role - owner to communicate in invitation?
-                  groupLinkId <- GroupLinkId <$> drgRandomBytes 16
-                  subMode <- chatReadVar subscriptionMode
-                  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
-                      crClientData = encodeJSON $ CRDataGroup groupLinkId
-                  (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
-                  ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-                  sLnk <- case toShortLinkContact ccLink' of
-                    Just sl -> pure sl
-                    Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
-                  gVar <- asks random
-                  void $ withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
-                  pure sLnk
+        relayContactRequest invId chatVRange groupRelayInv = do
+          (_gInfo, _ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user groupRelayInv invId chatVRange
+          lift $ void $ getRelayRequestWorker True
 
     memberCanSend ::
       GroupMember ->
@@ -3345,3 +3314,100 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                               Nothing -> VRValue Nothing msgBody -- sending to one member, do not reference body
                               Just 1 -> VRValue (Just 1) msgBody
                               Just _ -> VRRef 1
+
+-- Single worker processes all relay requests (XGrpRelayInv).
+-- We use map with a single key 1 to fit into existing worker management framework.
+relayRequestWorkerKey :: Int
+relayRequestWorkerKey = 1
+
+startRelayRequestWorker :: CM ()
+startRelayRequestWorker = do
+  hasPending <- withStore' hasPendingRelayRequests
+  when hasPending $ lift resumeRelayRequestWork
+
+resumeRelayRequestWork :: CM' ()
+resumeRelayRequestWork = void $ getRelayRequestWorker False
+
+getRelayRequestWorker :: Bool -> CM' Worker
+getRelayRequestWorker hasWork = do
+  ws <- asks relayRequestWorkers
+  a <- asks smpAgent
+  getAgentWorker "relay_request" hasWork a relayRequestWorkerKey ws $
+    runRelayRequestWorker a
+
+runRelayRequestWorker :: AgentClient -> Worker -> CM ()
+runRelayRequestWorker a Worker {doWork} = do
+  vr <- chatVersionRange
+  (user, uclId) <- withStore $ \db -> do
+    user <- getRelayUser db
+    UserContactLink {userContactLinkId} <- getUserAddress db user
+    pure (user, userContactLinkId)
+  forever $ do
+    lift $ waitForWork doWork
+    runRelayRequestOperation vr user uclId
+  where
+    -- TODO [relays] relay: add retry on temporary errors using withRetryInterval
+    -- ri <- asks $ reconnectInterval . config
+    runRelayRequestOperation :: VersionRangeChat -> User -> Int64 -> CM ()
+    runRelayRequestOperation vr user uclId =
+      withWork_ a doWork (withStore' $ \db -> getNextPendingRelayRequest db vr user) $ \gInfo@GroupInfo {groupId} ->
+        processRelayRequest gInfo
+          `catchAllErrors` \e -> do
+            -- TODO [relays] relay: distinguish temporary vs permanent errors, only mark failed for permanent
+            withStore' $ \db -> markRelayRequestFailed db groupId
+            eToView e
+      where
+        processRelayRequest :: GroupInfo -> CM ()
+        processRelayRequest gInfo@GroupInfo {groupId, relayRequestData} =
+          case relayRequestData of
+            Nothing -> throwChatError $ CEException "processRelayRequest: no relay request data"
+            Just rrd -> do
+              -- Check if relay link already exists (recovery case)
+              groupLink_ <- fmap eitherToMaybe $ runExceptT $ withStore $ \db -> getGroupLink db user gInfo
+              case groupLink_ of
+                Just GroupLink {connLinkContact = CCLink _ sLnk_} ->
+                  case sLnk_ of
+                    Just sLnk -> acceptOwnerConnection rrd gInfo sLnk
+                    Nothing -> throwChatError $ CEException "processRelayRequest: relay link doesn't have short link"
+                Nothing -> do
+                  (gInfo', sLnk) <- fetchLinkAndCreateRelayLink rrd
+                  acceptOwnerConnection rrd gInfo' sLnk
+          where
+            fetchLinkAndCreateRelayLink :: RelayRequestData -> CM (GroupInfo, ShortLinkContact)
+            fetchLinkAndCreateRelayLink RelayRequestData {ownerGroupLink} = do
+              (_cReq, cData) <- getShortLinkConnReq NRMBackground user ownerGroupLink
+              liftIO (decodeLinkUserData cData) >>= \case
+                Nothing -> throwChatError $ CEException "fetchLinkAndCreateRelayLink: no group link data"
+                Just (GroupShortLinkData gp) -> do
+                  validateGroupProfile gp
+                  gInfo' <- withStore $ \db -> updateGroupProfile db user gInfo gp
+                  sLnk <- createRelayLink gInfo'
+                  pure (gInfo', sLnk)
+              where
+                validateGroupProfile :: GroupProfile -> CM ()
+                validateGroupProfile _groupProfile = do
+                  -- TODO [relays] relay: validate group profile, verify owner's signature
+                  pure ()
+                createRelayLink :: GroupInfo -> CM ShortLinkContact
+                createRelayLink gi@GroupInfo {groupProfile} = do
+                  -- TODO [relays] relay: set relay link data
+                  -- TODO   - link data: relay key for group, relay identity (profile, certificate, relay identity key)
+                  -- TODO   - TBC link's member role - owner to communicate in invitation?
+                  groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+                  subMode <- chatReadVar subscriptionMode
+                  let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
+                      userLinkData = UserContactLinkData UserContactData {direct = True, owners = [], relays = [], userData}
+                      crClientData = encodeJSON $ CRDataGroup groupLinkId
+                  (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a NRMBackground (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) CR.IKPQOff subMode
+                  ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+                  sLnk <- case toShortLinkContact ccLink' of
+                    Just sl -> pure sl
+                    Nothing -> throwChatError $ CEException "failed to create relay link: no short link"
+                  gVar <- asks random
+                  void $ withFastStore $ \db -> createGroupLink db gVar user gi connId ccLink' groupLinkId GRMember subMode
+                  pure sLnk
+            acceptOwnerConnection :: RelayRequestData -> GroupInfo -> ShortLinkContact -> CM ()
+            acceptOwnerConnection RelayRequestData {relayInvId, peerChatVRange} gi relayLink = do
+              ownerMember <- withStore $ \db -> getHostMember db vr user groupId
+              void $ acceptRelayJoinRequestAsync user uclId gi ownerMember relayInvId peerChatVRange relayLink
+              -- TODO [relays] relay: group invite accepted event, chat item (?)

@@ -197,6 +197,7 @@ startChatController mainApp enableSndFiles = do
           startXFTP xftpStartWorkers
           void $ forkIO $ startFilesToReceive users
           startDeliveryWorkers
+          startRelayRequestWorker_
           startCleanupManager
           void $ forkIO $ mapM_ startExpireCIs users
           startRelayChecks users
@@ -210,6 +211,10 @@ startChatController mainApp enableSndFiles = do
     startDeliveryWorkers =
       runExceptT (startDeliveryTaskWorkers >> startDeliveryJobWorkers) >>= \case
         Left e -> liftIO $ putStrLn $ "Error starting delivery workers: " <> show e
+        Right _ -> pure ()
+    startRelayRequestWorker_ =
+      runExceptT startRelayRequestWorker >>= \case
+        Left e -> liftIO $ putStrLn $ "Error starting relay request worker: " <> show e
         Right _ -> pure ()
     startCleanupManager = do
       cleanupAsync <- asks cleanupManagerAsync

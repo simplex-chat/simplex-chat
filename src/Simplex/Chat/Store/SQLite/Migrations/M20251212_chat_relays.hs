@@ -44,6 +44,12 @@ ALTER TABLE groups ADD COLUMN creating_in_progress INTEGER NOT NULL DEFAULT 0;
 
 ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
 
+ALTER TABLE groups ADD COLUMN relay_request_group_link BLOB;
+ALTER TABLE groups ADD COLUMN relay_request_inv_id BLOB;
+ALTER TABLE groups ADD COLUMN relay_request_peer_chat_min_version INTEGER;
+ALTER TABLE groups ADD COLUMN relay_request_peer_chat_max_version INTEGER;
+ALTER TABLE groups ADD COLUMN relay_request_failed INTEGER DEFAULT 0;
+
 ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
 
 CREATE TABLE group_relays(
@@ -73,6 +79,12 @@ ALTER TABLE groups DROP COLUMN use_relays;
 ALTER TABLE groups DROP COLUMN creating_in_progress;
 
 ALTER TABLE groups DROP COLUMN relay_own_status;
+
+ALTER TABLE groups DROP COLUMN relay_request_group_link;
+ALTER TABLE groups DROP COLUMN relay_request_inv_id;
+ALTER TABLE groups DROP COLUMN relay_request_peer_chat_min_version;
+ALTER TABLE groups DROP COLUMN relay_request_peer_chat_max_version;
+ALTER TABLE groups DROP COLUMN relay_request_failed;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 

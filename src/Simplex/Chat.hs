@@ -169,6 +169,7 @@ newChatController
     chatStoreChanged <- newTVarIO False
     deliveryTaskWorkers <- TM.emptyIO
     deliveryJobWorkers <- TM.emptyIO
+    relayRequestWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
@@ -211,6 +212,7 @@ newChatController
           filesFolder,
           deliveryTaskWorkers,
           deliveryJobWorkers,
+          relayRequestWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,
