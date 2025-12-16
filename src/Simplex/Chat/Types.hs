@@ -986,6 +986,13 @@ data RelayStatus
   | RSActive
   deriving (Eq, Show)
 
+data RelayRequestData = RelayRequestData
+  { relayInvId :: InvitationId,
+    reqGroupLink :: ShortLinkContact,
+    reqChatVRange :: VersionRangeChat
+  }
+  deriving (Eq, Show)
+
 relayStatusText :: RelayStatus -> Text
 relayStatusText = \case
   RSNew -> "new"

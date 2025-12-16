@@ -74,6 +74,7 @@ data ChatLockEntity
 data StoreError
   = SEDuplicateName
   | SEUserNotFound {userId :: UserId}
+  | SERelayUserNotFound
   | SEUserNotFoundByName {contactName :: ContactName}
   | SEUserNotFoundByContactId {contactId :: ContactId}
   | SEUserNotFoundByGroupId {groupId :: GroupId}

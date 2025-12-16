@@ -26,6 +26,7 @@ module Simplex.Chat.Store.Profiles
     getUsers,
     setActiveUser,
     getUser,
+    getRelayUser,
     getUserIdByName,
     getUserByAConnId,
     getUserByASndFileId,
@@ -216,6 +217,11 @@ getUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
 getUser db userId =
   ExceptT . firstRow toUser (SEUserNotFound userId) $
     DB.query db (userQuery <> " WHERE u.user_id = ?") (Only userId)
+
+getRelayUser :: DB.Connection -> ExceptT StoreError IO User
+getRelayUser db =
+  ExceptT . firstRow toUser SERelayUserNotFound $
+    DB.query_ db (userQuery <> " WHERE u.is_user_chat_relay = 1")
 
 getUserIdByName :: DB.Connection -> UserName -> ExceptT StoreError IO Int64
 getUserIdByName db uName =
