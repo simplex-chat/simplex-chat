@@ -36,11 +36,13 @@ hasPendingRelayRequests db =
     <$> DB.query
       db
       [sql|
-        SELECT 1
-        FROM groups
-        WHERE relay_own_status = ?
-          AND relay_request_failed = 0
-        LIMIT 1
+        SELECT EXISTS (
+          SELECT 1
+          FROM groups
+          WHERE relay_own_status = ?
+            AND relay_request_failed = 0
+          LIMIT 1
+        )
       |]
       (Only RSInvited)
 

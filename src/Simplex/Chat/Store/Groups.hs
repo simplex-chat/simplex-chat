@@ -89,7 +89,7 @@ module Simplex.Chat.Store.Groups
     updateRelayStatusFromTo,
     setRelayLinkAccepted,
     setGroupInProgressDone,
-    createGroupRelayInvitation,
+    createRelayRequestGroup,
     updateRelayOwnStatusFromTo,
     createNewContactMemberAsync,
     createJoiningMember,
@@ -1389,8 +1389,8 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     "UPDATE groups SET creating_in_progress = 0, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
 
-createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createGroupRelayInvitation db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember, groupLink} invId reqChatVRange = do
+createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember, groupLink} invId reqChatVRange = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile

@@ -1342,7 +1342,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason
         relayContactRequest :: InvitationId -> VersionRangeChat -> GroupRelayInvitation -> CM ()
         relayContactRequest invId chatVRange groupRelayInv = do
-          (_gInfo, _ownerMember) <- withStore $ \db -> createGroupRelayInvitation db vr user groupRelayInv invId chatVRange
+          (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
           lift $ void $ getRelayRequestWorker True
 
     memberCanSend ::
