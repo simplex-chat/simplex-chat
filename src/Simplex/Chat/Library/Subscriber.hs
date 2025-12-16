@@ -3361,6 +3361,7 @@ runRelayRequestWorker a Worker {doWork} = do
         retryTmpError loop groupId = \case
           ChatErrorAgent {agentError} | temporaryOrHostError agentError -> loop
           e -> do
+            -- TODO [relays] relay: possible improvement - save error on group record
             withStore' $ \db -> markRelayRequestFailed db groupId
             eToView e
         processRelayRequest :: GroupId -> RelayRequestData -> CM ()
