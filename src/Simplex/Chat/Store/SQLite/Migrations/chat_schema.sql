@@ -161,7 +161,12 @@ CREATE TABLE groups(
   member_index INTEGER NOT NULL DEFAULT 0,
   use_relays INTEGER NOT NULL DEFAULT 0,
   creating_in_progress INTEGER NOT NULL DEFAULT 0,
-  relay_own_status TEXT, -- received
+  relay_own_status TEXT,
+  relay_request_inv_id BLOB,
+  relay_request_group_link BLOB,
+  relay_request_peer_chat_min_version INTEGER,
+  relay_request_peer_chat_max_version INTEGER,
+  relay_request_failed INTEGER DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

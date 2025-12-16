@@ -3742,6 +3742,7 @@ export namespace SrvError {
 export type StoreError = 
   | StoreError.DuplicateName
   | StoreError.UserNotFound
+  | StoreError.RelayUserNotFound
   | StoreError.UserNotFoundByName
   | StoreError.UserNotFoundByContactId
   | StoreError.UserNotFoundByGroupId
@@ -3832,6 +3833,7 @@ export namespace StoreError {
   export type Tag = 
     | "duplicateName"
     | "userNotFound"
+    | "relayUserNotFound"
     | "userNotFoundByName"
     | "userNotFoundByContactId"
     | "userNotFoundByGroupId"
@@ -3929,6 +3931,10 @@ export namespace StoreError {
   export interface UserNotFound extends Interface {
     type: "userNotFound"
     userId: number // int64
+  }
+
+  export interface RelayUserNotFound extends Interface {
+    type: "relayUserNotFound"
   }
 
   export interface UserNotFoundByName extends Interface {

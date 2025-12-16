@@ -938,7 +938,12 @@ CREATE TABLE test_chat_schema.groups (
     member_index bigint DEFAULT 0 NOT NULL,
     use_relays smallint DEFAULT 0 NOT NULL,
     creating_in_progress smallint DEFAULT 0 NOT NULL,
-    relay_own_status text
+    relay_own_status text,
+    relay_request_inv_id bytea,
+    relay_request_group_link bytea,
+    relay_request_peer_chat_min_version integer,
+    relay_request_peer_chat_max_version integer,
+    relay_request_failed smallint DEFAULT 0
 );
 
 

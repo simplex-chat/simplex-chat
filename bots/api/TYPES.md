@@ -3308,6 +3308,9 @@ UserNotFound:
 - type: "userNotFound"
 - userId: int64
 
+RelayUserNotFound:
+- type: "relayUserNotFound"
+
 UserNotFoundByName:
 - type: "userNotFoundByName"
 - contactName: string

@@ -72,8 +72,9 @@ import Simplex.FileTransfer.Protocol (FilePartyI)
 import qualified Simplex.FileTransfer.Transport as XFTP
 import Simplex.FileTransfer.Types (FileErrorType (..), RcvFileId, SndFileId)
 import Simplex.Messaging.Agent
-import Simplex.Messaging.Agent.Client (getAgentWorker, waitForWork, withWork_, withWorkItems)
-import Simplex.Messaging.Agent.Env.SQLite (Worker (..))
+import Simplex.Messaging.Agent.Client (getAgentWorker, temporaryOrHostError, waitForUserNetwork, waitForWork, waitWhileSuspended, withWork_, withWorkItems)
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), Worker (..))
+import Simplex.Messaging.Agent.RetryInterval (withRetryInterval)
 import Simplex.Messaging.Agent.Protocol
 import qualified Simplex.Messaging.Agent.Protocol as AP (AgentErrorType (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
@@ -3346,17 +3347,22 @@ runRelayRequestWorker a Worker {doWork} = do
     lift $ waitForWork doWork
     runRelayRequestOperation vr user uclId
   where
-    -- TODO [relays] relay: add retry on temporary errors using withRetryInterval
-    -- ri <- asks $ reconnectInterval . config
     runRelayRequestOperation :: VersionRangeChat -> User -> Int64 -> CM ()
     runRelayRequestOperation vr user uclId =
-      withWork_ a doWork (withStore' getNextPendingRelayRequest) $ \(groupId, rrd) ->
-        processRelayRequest groupId rrd
-          `catchAllErrors` \e -> do
-            -- TODO [relays] relay: distinguish temporary vs permanent errors, only mark failed for permanent
+      withWork_ a doWork (withStore' getNextPendingRelayRequest) $
+        \(groupId, rrd) -> do
+          ri <- asks $ reconnectInterval . agentConfig . config
+          withRetryInterval ri $ \_ loop -> do
+            liftIO $ waitWhileSuspended a
+            liftIO $ waitForUserNetwork a
+            processRelayRequest groupId rrd `catchAllErrors` retryTmpError loop groupId
+      where
+        retryTmpError :: CM () -> GroupId -> ChatError -> CM ()
+        retryTmpError loop groupId = \case
+          ChatErrorAgent {agentError} | temporaryOrHostError agentError -> loop
+          e -> do
             withStore' $ \db -> markRelayRequestFailed db groupId
             eToView e
-      where
         processRelayRequest :: GroupId -> RelayRequestData -> CM ()
         processRelayRequest groupId rrd = do
           gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
