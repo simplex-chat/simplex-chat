@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
-set -eu
+set -eux
 
 SIMPLEX_KEY='3C:52:C4:FD:3C:AD:1C:07:C9:B0:0A:70:80:E3:58:FA:B9:FE:FC:B8:AF:5A:EC:14:77:65:F1:6D:0F:21:AD:85'
 
 REPO_NAME="simplex-chat"
-REPO="https://github.com/simplex-chat/${repo_name}"
+REPO="https://github.com/simplex-chat/${REPO_NAME}"
 
 IMAGE_NAME='sx-local-android'
 CONTAINER_NAME='sx-builder-android'
@@ -15,7 +15,12 @@ SIMPLEX_REPO='simplex-chat/simplex-chat'
 CMDS="curl git docker"
 
 INIT_DIR="$PWD"
-TEMPDIR="$(mktemp -d)"
+# DO NOT FORGET TO CHANGE THAT TO
+# TEMPDIR="$(mktemp -d)"
+TEMPDIR="${INIT_DIR}/tempdir"
+mkdir -p "$TEMPDIR"
+
+ARCHES="${ARCHES:-aarch64 armv7a}"
 
 check() {
   set +u
@@ -49,14 +54,17 @@ download_apk() {
 
 setup_git() {
   dir="$1"
+
+  git -C "${dir}" clone "${REPO}.git" "${REPO_NAME}"
+}
+
+checkout_git() {
+  dir="$1"
   tag="$2"
 
-  git -C "${dir}" clone "${REPO}.git"
-
-  (
-    cd "${dir}/${REPO_NAME}"
-    git checkout "${tag}"
-  )
+  git -C "${dir}/${REPO_NAME}" reset --hard
+  git -C "${dir}/${REPO_NAME}" clean -dfx
+  git -C "${dir}/${REPO_NAME}" checkout "${tag}"
 }
 
 setup_tag_structure() {
@@ -70,7 +78,7 @@ check_apk() {
   apk_file="$1"
   expected="$2"
 
-  actual=$(docker exec -t "${CONTAINER_NAME}" apksigner verify --print-certs "${apk_file}" | grep 'SHA-256' | awk '{print \$NF}' | fold -w2 | paste -sd: | tr '[:lower:]' '[:upper:]')
+  actual=$(docker exec "${CONTAINER_NAME}" apksigner verify --print-certs "${apk_file}" | grep 'SHA-256' | awk '{print $NF}' | fold -w2 | paste -sd: | tr '[:lower:]' '[:upper:]')
 
   if [ "$expected" = "$actual" ]; then
     return 0
@@ -80,16 +88,23 @@ check_apk() {
 }
 
 print_vercode() {
+  dir="$1"
   awk -F'=' '/android.version_code=/ {print $2}' "${dir}/${REPO_NAME}/apps/multiplatform/gradle.properties"
 }
 
 setup_container() {
   dir="$1"
 
+  # DO NOT FORGET TO SWITCH BACK TO
+  # -f "${dir}/${REPO_NAME}/Dockerfile.build" \
+  #
+  # AND ADD
+  # --no-cache \
   docker build \
-    --no-cache \
-    -f "${dir}/${REPO_NAME}/Dockerfile.build" \
+    -f "${INIT_DIR}/Dockerfile.build" \
     -t "${IMAGE_NAME}" \
+    --build-arg=USER_UID="$(id -u)" \
+    --build-arg=USER_GID="$(id -g)" \
     .
 
   # Run container in background
@@ -107,12 +122,12 @@ build_apk() {
   vercode="${2}"
 
   # Gradle setup
-  docker exec -t "${CONTAINER_NAME}" sh << EOF
+  docker exec -i "${CONTAINER_NAME}" sh << EOF
 cd /project/apps/multiplatform
 ./gradlew
 EOF
 
-  docker exec -t "${CONTAINER_NAME}" sh << EOF
+  docker exec -i "${CONTAINER_NAME}" sh << EOF
 GRADLE_BIN=\$(find \$HOME/.gradle/wrapper/dists -name "gradle" -type f -executable 2>/dev/null | head -1)
 GRADLE_DIR=\$(dirname "\$GRADLE_BIN")
 export PATH="\$GRADLE_DIR:\$PATH"
@@ -128,25 +143,32 @@ main() {
 
   setup_tag_structure "$INIT_DIR" "$TAG"
 
-  setup_git "$TEMPDIR" "$TAG"
+  # Setup initial git for Dockerfile.build
+  # setup_git "$TEMPDIR" "$TAG"
+  checkout_git "$TEMPDIR" "$TAG"
   setup_container "$TEMPDIR"
 
   vercode=$(print_vercode "$TEMPDIR")
 
-  for arch in armv7a aarch64; do
+  for arch in $ARCHES; do
     case "$arch" in
       armv7a)
         vercode_adjusted="$((vercode-1))"
+        build_tag="${TAG}-armv7a"
         ;;
       aarch64)
         vercode_adjusted="$vercode"
+        build_tag="${TAG}"
         ;;
+      *)
+        printf "Unknown architecture! Skipping build...\n"
+        continue
     esac
 
     release="simplex-${arch}.apk"
   
     download_apk "$TAG" "$release" "${TEMPDIR}/${REPO_NAME}/${release}"
-    if check_apk "${TEMPDIR}/${REPO_NAME}/${release}" "$SIMPLEX_KEY"; then
+    if check_apk "${release}" "$SIMPLEX_KEY"; then
       echo "Looks good"
       mv "${TEMPDIR}/${REPO_NAME}/${release}" "${INIT_DIR}/${tag}-${REPO_NAME}/prebuilt/"
     else
@@ -154,6 +176,8 @@ main() {
       exit 1
     fi
 
+    # Setup the code
+    checkout_git "$TEMPDIR" "${build_tag}"
     build_apk "$arch" "$vercode_adjusted"
   done
 }
