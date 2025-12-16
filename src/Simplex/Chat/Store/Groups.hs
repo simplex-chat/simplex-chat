@@ -1390,11 +1390,12 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     (currentTs, groupId)
 
 createGroupRelayInvitation :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createGroupRelayInvitation db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember, groupLink} invId peerChatVRange = do
+createGroupRelayInvitation db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, invitedMember, groupLink} invId reqChatVRange = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
-  let placeholderProfile = GroupProfile
-        { displayName = "relay_request_" <> displayName (fromMemberProfile :: Profile),
+  let Profile {displayName = fromMemberLDN} = fromMemberProfile
+      placeholderProfile = GroupProfile
+        { displayName = "relay_request_" <> fromMemberLDN,
           fullName = "",
           shortDescr = Nothing,
           description = Nothing,
@@ -1405,26 +1406,25 @@ createGroupRelayInvitation db vr user@User {userId} GroupRelayInvitation {fromMe
         }
   (groupId, _groupLDN) <- createGroup_ db userId placeholderProfile Nothing Nothing True (Just RSInvited) currentTs
   -- Store relay request data for recovery
-  liftIO $ setRelayRequestData_ groupId currentTs
+  liftIO $ setRelayRequestData_ groupId
   ownerMemberId <- insertOwner_ currentTs groupId
   _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user invitedMember GCUserMember GSMemAccepted IBUnknown Nothing True currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
   where
-    setRelayRequestData_ groupId currentTs =
+    setRelayRequestData_ groupId =
       DB.execute
         db
         [sql|
           UPDATE groups
-          SET relay_request_group_link = ?,
-              relay_request_inv_id = ?,
+          SET relay_request_inv_id = ?,
+              relay_request_group_link = ?,
               relay_request_peer_chat_min_version = ?,
-              relay_request_peer_chat_max_version = ?,
-              updated_at = ?
+              relay_request_peer_chat_max_version = ?
           WHERE group_id = ?
         |]
-        (groupLink, invId, minVersion peerChatVRange, maxVersion peerChatVRange, currentTs, groupId)
+        (Binary invId, groupLink, minVersion reqChatVRange, maxVersion reqChatVRange, groupId)
     insertOwner_ currentTs groupId = do
       let MemberIdRole {memberId, memberRole} = fromMember
       (localDisplayName, profileId) <- createNewMemberProfile_ db user fromMemberProfile currentTs

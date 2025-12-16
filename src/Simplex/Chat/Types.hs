@@ -450,7 +450,6 @@ data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
     relayOwnStatus :: Maybe RelayStatus,
-    relayRequestData :: Maybe RelayRequestData,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -988,9 +987,9 @@ data RelayStatus
   deriving (Eq, Show)
 
 data RelayRequestData = RelayRequestData
-  { ownerGroupLink :: ShortLinkContact,
-    relayInvId :: InvitationId,
-    peerChatVRange :: VersionRangeChat
+  { relayInvId :: InvitationId,
+    reqGroupLink :: ShortLinkContact,
+    reqChatVRange :: VersionRangeChat
   }
   deriving (Eq, Show)
 
