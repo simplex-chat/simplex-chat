@@ -1565,7 +1565,7 @@ withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
     >>= liftIO . runExceptT . action
-    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "") Nothing)
+    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "acId") Nothing)
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action
