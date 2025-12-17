@@ -44,6 +44,8 @@ RUN apt-get update && \
                        gpg \
                        zipalign \
                        apksigner \
+                       python3 \
+                       python3-venv \
                        xz-utils \
                        unzip &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
@@ -121,6 +123,12 @@ RUN mkdir -p "$HOME/.android" "$HOME/.gradle" && \
     echo 'org.gradle.console=plain' > "$HOME/.gradle/gradle.properties" &&\
     yes | sdkmanager --licenses >/dev/null
 
-ENV PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+ENV PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools"
+
+# Android reproducibility scripts
+RUN python3 -m venv "$HOME/.venv"
+RUN "$HOME/.venv/bin/pip" install apksigcopier repro-apk
+
+ENV PATH="$HOME/.venv/bin:$PATH"
 
 WORKDIR /project
