@@ -1,5 +1,5 @@
 #!/usr/bin/env sh
-set -eux
+set -eu
 
 SIMPLEX_KEY='3C:52:C4:FD:3C:AD:1C:07:C9:B0:0A:70:80:E3:58:FA:B9:FE:FC:B8:AF:5A:EC:14:77:65:F1:6D:0F:21:AD:85'
 
@@ -17,10 +17,7 @@ SIMPLEX_REPO='simplex-chat/simplex-chat'
 CMDS="curl git docker"
 
 INIT_DIR="$PWD"
-# DO NOT FORGET TO CHANGE THAT TO
-# TEMPDIR="$(mktemp -d)"
-TEMPDIR="${INIT_DIR}/tempdir"
-mkdir -p "$TEMPDIR"
+TEMPDIR="$(mktemp -d)"
 
 ARCHES="${ARCHES:-aarch64 armv7a}"
 
@@ -80,7 +77,7 @@ check_apk() {
   apk_name="$1"
   expected="$2"
 
-  actual=$(docker exec "${CONTAINER_NAME}" apksigner verify --print-certs "${DOCKER_PATH_VERIFY}/${apk_name}" | grep 'SHA-256' | awk '{print $NF}' | fold -w2 | paste -sd: | tr '[:lower:]' '[:upper:]')
+  actual=$(docker exec "${CONTAINER_NAME}" apksigner verify --print-certs "${DOCKER_PATH_VERIFY}/prebuilt/${apk_name}" | grep 'SHA-256' | awk '{print $NF}' | fold -w2 | paste -sd: | tr '[:lower:]' '[:upper:]')
 
   if [ "$expected" = "$actual" ]; then
     return 0
@@ -111,15 +108,11 @@ print_vercode() {
 setup_container() {
   dir_git="$1"
   dir_apk="$2"
-  tag="$2"
+  tag="$3"
 
-  # DO NOT FORGET TO SWITCH BACK TO
-  # -f "${dir}/${REPO_NAME}/Dockerfile.build" \
-  #
-  # AND ADD
-  # --no-cache \
   docker build \
-    -f "${INIT_DIR}/Dockerfile.build" \
+    --no-cache \
+    -f "${dir}/${REPO_NAME}/Dockerfile.build" \
     -t "${IMAGE_NAME}" \
     --build-arg=USER_UID="$(id -u)" \
     --build-arg=USER_GID="$(id -g)" \
@@ -168,7 +161,7 @@ main() {
   setup_tag_structure "$INIT_DIR" "$TAG"
 
   # Setup initial git for Dockerfile.build
-  # setup_git "$TEMPDIR" "$TAG"
+  setup_git "$TEMPDIR" "$TAG"
   checkout_git "$TEMPDIR" "$TAG"
   setup_container "$TEMPDIR" "$INIT_DIR" "$TAG"
 
