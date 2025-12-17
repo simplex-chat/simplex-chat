@@ -90,7 +90,8 @@ verify_apk() {
   apk_name="$1"
 
   # https://github.com/obfusk/apksigcopier?tab=readme-ov-file#what-about-signatures-made-by-apksigner-from-build-tools--3500-rc1
-  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --pad-like-apksigner --replace "${DOCKER_PATH_VERIFY}/from-source/${apk_name}"
+  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --pad-like-apksigner --replace "${DOCKER_PATH_VERIFY}/from-source/${apk_name}" "${DOCKER_PATH_VERIFY}/from-source/${apk_name}.aligned"
+  docker exec "${CONTAINER_NAME}" mv "${DOCKER_PATH_VERIFY}/from-source/${apk_name}.aligned" "${DOCKER_PATH_VERIFY}/from-source/${apk_name}"
 
   # https://gitlab.com/fdroid/wiki/-/wikis/Tips-for-fdroiddata-contributors/HOWTO:-diff-&-fix-APKs-for-Reproducible-Builds?redirected_from=HOWTO:-diff-&-fix-APKs-for-Reproducible-Builds#apksigcopier
   if docker exec "${CONTAINER_NAME}" apksigcopier compare "${DOCKER_PATH_VERIFY}/prebuilt/${apk_name}" --unsigned "${DOCKER_PATH_VERIFY}/from-source/${apk_name}"; then
@@ -201,8 +202,8 @@ main() {
 
   # Verification phase
   for arch in $ARCHES; do
-    if ! verify_apk "simplex-$arch.apk"; then
-      echo "Failed to verify %s! Aborting."
+    if ! verify_apk "simplex-${arch}.apk"; then
+      printf 'Failed to verify %s! Aborting.\n' "simplex-${arch}.apk"
       exit 1
     fi
   done
