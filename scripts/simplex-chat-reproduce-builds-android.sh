@@ -8,6 +8,8 @@ REPO="https://github.com/simplex-chat/${REPO_NAME}"
 
 IMAGE_NAME='sx-local-android'
 CONTAINER_NAME='sx-builder-android'
+DOCKER_PATH_PROJECT='/project'
+DOCKER_PATH_VERIFY='/verify'
 
 export DOCKER_BUILDKIT=1
 
@@ -75,12 +77,26 @@ setup_tag_structure() {
 }
 
 check_apk() {
-  apk_file="$1"
+  apk_name="$1"
   expected="$2"
 
-  actual=$(docker exec "${CONTAINER_NAME}" apksigner verify --print-certs "${apk_file}" | grep 'SHA-256' | awk '{print $NF}' | fold -w2 | paste -sd: | tr '[:lower:]' '[:upper:]')
+  actual=$(docker exec "${CONTAINER_NAME}" apksigner verify --print-certs "${DOCKER_PATH_VERIFY}/${apk_name}" | grep 'SHA-256' | awk '{print $NF}' | fold -w2 | paste -sd: | tr '[:lower:]' '[:upper:]')
 
   if [ "$expected" = "$actual" ]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+verify_apk() {
+  apk_name="$1"
+
+  # https://github.com/obfusk/apksigcopier?tab=readme-ov-file#what-about-signatures-made-by-apksigner-from-build-tools--3500-rc1
+  docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --pad-like-apksigner --replace "${DOCKER_PATH_VERIFY}/from-source/${apk_name}"
+
+  # https://gitlab.com/fdroid/wiki/-/wikis/Tips-for-fdroiddata-contributors/HOWTO:-diff-&-fix-APKs-for-Reproducible-Builds?redirected_from=HOWTO:-diff-&-fix-APKs-for-Reproducible-Builds#apksigcopier
+  if docker exec "${CONTAINER_NAME}" apksigcopier compare "${DOCKER_PATH_VERIFY}/prebuilt/${apk_name}" --unsigned "${DOCKER_PATH_VERIFY}/from-source/${apk_name}"; then
     return 0
   else
     return 1
@@ -93,7 +109,9 @@ print_vercode() {
 }
 
 setup_container() {
-  dir="$1"
+  dir_git="$1"
+  dir_apk="$2"
+  tag="$2"
 
   # DO NOT FORGET TO SWITCH BACK TO
   # -f "${dir}/${REPO_NAME}/Dockerfile.build" \
@@ -113,7 +131,9 @@ setup_container() {
     --device /dev/fuse \
     --cap-add SYS_ADMIN \
     --security-opt apparmor:unconfined \
-    -v "${dir}/${REPO_NAME}:/project" \
+    --security-opt seccomp:unconfined \
+    -v "${dir_git}/${REPO_NAME}:${DOCKER_PATH_PROJECT}" \
+    -v "${dir_apk}/${tag}-${REPO_NAME}:${DOCKER_PATH_VERIFY}" \
     "${IMAGE_NAME}"
 }
 
@@ -123,7 +143,7 @@ build_apk() {
 
   # Gradle setup
   docker exec -i "${CONTAINER_NAME}" sh << EOF
-cd /project/apps/multiplatform
+cd $DOCKER_PATH_PROJECT/apps/multiplatform
 ./gradlew
 EOF
 
@@ -133,6 +153,10 @@ GRADLE_DIR=\$(dirname "\$GRADLE_BIN")
 export PATH="\$GRADLE_DIR:\$PATH"
 
 ARCHES="$arch" ./scripts/android/build-android.sh -gs "$vercode"
+
+APK_FILE=\$(find . -maxdepth 1 -type f -name '*.apk')
+
+mv "\$APK_FILE" $DOCKER_PATH_VERIFY/from-source/simplex-$arch.apk
 EOF
 }
 
@@ -146,10 +170,11 @@ main() {
   # Setup initial git for Dockerfile.build
   # setup_git "$TEMPDIR" "$TAG"
   checkout_git "$TEMPDIR" "$TAG"
-  setup_container "$TEMPDIR"
+  setup_container "$TEMPDIR" "$INIT_DIR" "$TAG"
 
   vercode=$(print_vercode "$TEMPDIR")
 
+  # Build phase
   for arch in $ARCHES; do
     case "$arch" in
       armv7a)
@@ -170,7 +195,7 @@ main() {
     download_apk "$TAG" "$release" "${TEMPDIR}/${REPO_NAME}/${release}"
     if check_apk "${release}" "$SIMPLEX_KEY"; then
       echo "Looks good"
-      mv "${TEMPDIR}/${REPO_NAME}/${release}" "${INIT_DIR}/${tag}-${REPO_NAME}/prebuilt/"
+      mv "${TEMPDIR}/${REPO_NAME}/${release}" "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/"
     else
       echo "Looks bad"
       exit 1
@@ -179,6 +204,22 @@ main() {
     # Setup the code
     checkout_git "$TEMPDIR" "${build_tag}"
     build_apk "$arch" "$vercode_adjusted"
+  done
+
+  # Verification phase
+  for arch in $ARCHES; do
+    if ! verify_apk "simplex-$arch.apk"; then
+      echo "Failed to verify %s! Aborting."
+      exit 1
+    fi
+  done
+
+  # Compute hashes to file
+  for file in "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt"/*.apk; do
+    filename="$(basename ${file})"
+    hash=$(sha256sum "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/${filename}" | awk '{print $1}')
+
+    printf '%s  %s\n' "$hash" "${TAG}/${filename}" >> "${INIT_DIR}/${TAG}-${REPO_NAME}/_sha256sums-apk"
   done
 }
 
