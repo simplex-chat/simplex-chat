@@ -234,11 +234,12 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
     pollEvents rhId rhClient = do
       oq <- asks outputQ
       forever $
-        handlePollError $ do
+        handlePollError oq $ do
           r_ <- liftRH rhId $ remoteRecv rhClient 10000000
           forM_ r_ $ \r -> atomically $ writeTBQueue oq (Just rhId, r)
       where
-        handlePollError a = a `catchAllErrors` (logError . ("pollEvents error: " <>) . tshow)
+        handlePollError oq a = a `catchAllErrors` \e ->
+          atomically $ writeTBQueue oq (Just rhId, Left e)
     httpError :: RemoteHostId -> HTTP2ClientError -> ChatError
     httpError rhId = ChatErrorRemoteHost (RHId rhId) . RHEProtocolError . RPEHTTP2 . tshow
 
