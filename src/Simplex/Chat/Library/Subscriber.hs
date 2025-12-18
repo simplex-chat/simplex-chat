@@ -105,7 +105,7 @@ processAgentMessage _ _ (DEL_RCVQS delQs) =
 processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
-  eToView $ ChatErrorAgent e (AgentConnId "acId") Nothing
+  eToView $ ChatErrorAgent e (AgentConnId "") Nothing
 processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
@@ -1393,7 +1393,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
-        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) (AgentConnId "acId") Nothing
+        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) (AgentConnId "") Nothing
         Left e -> do
           withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
