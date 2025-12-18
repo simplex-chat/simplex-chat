@@ -91,7 +91,7 @@ You can join either by opening these links in the app or by opening them in a de
 
 We publish our updates and releases via:
 
-- [Reddit](https://www.reddit.com/r/SimpleXChat/), [Twitter](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), [Mastodon](https://mastodon.social/@simplex) and [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
+- [Reddit](https://www.reddit.com/r/SimpleXChat/), [Twitter](https://twitter.com/SimpleXChat), [Lemmy](https://lemmy.ml/c/simplex), <a rel="me" href="https://mastodon.social/@simplex">Mastodon</a> and [Nostr](https://snort.social/p/npub1exv22uulqnmlluszc4yk92jhs2e5ajcs6mu3t00a6avzjcalj9csm7d828).
 - SimpleX Chat [team profile](#connect-to-the-team).
 - [blog](https://simplex.chat/blog/) and [RSS feed](https://simplex.chat/feed.rss).
 - [mailing list](https://simplex.chat/#join-simplex), very rarely.
