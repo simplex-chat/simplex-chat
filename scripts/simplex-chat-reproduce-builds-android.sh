@@ -21,6 +21,13 @@ TEMPDIR="$(mktemp -d)"
 
 ARCHES="${ARCHES:-aarch64 armv7a}"
 
+cleanup() {
+  rm -rf -- "${TEMPDIR}"
+  docker rm --force "${CONTAINER_NAME}" 2>/dev/null || :
+  docker image rm "${IMAGE_NAME}" 2>/dev/null || :
+}
+trap 'cleanup' EXIT INT
+
 check() {
   set +u
 
@@ -45,10 +52,10 @@ check() {
 
 download_apk() {
   tag="$1"
-  release="$2"
-  out="$3"
+  filename="$2"
+  path_out="$3"
 
-  curl -L "${REPO}/releases/download/${tag}/${release}" -o "$out"
+  curl -L "${REPO}/releases/download/${tag}/${filename}" -o "${path_out}/${filename}"
 }
 
 setup_git() {
@@ -186,12 +193,9 @@ main() {
 
     release="simplex-${arch}.apk"
   
-    download_apk "$TAG" "$release" "${TEMPDIR}/${REPO_NAME}/${release}"
-    if check_apk "${release}" "$SIMPLEX_KEY"; then
-      echo "Looks good"
-      mv "${TEMPDIR}/${REPO_NAME}/${release}" "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/"
-    else
-      echo "Looks bad"
+    download_apk "$TAG" "$release" "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/"
+    if ! check_apk "${release}" "$SIMPLEX_KEY"; then
+      printf '%s is not signed by the SimpleX Chat Team! Aborting..\n' "$release"
       exit 1
     fi
 
@@ -208,13 +212,9 @@ main() {
     fi
   done
 
-  # Compute hashes to file
-  for file in "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt"/*.apk; do
-    filename="$(basename ${file})"
-    hash=$(sha256sum "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/${filename}" | awk '{print $1}')
+  printf '%s is reproducible.\n' "$TAG"
 
-    printf '%s  %s\n' "$hash" "${TAG}/${filename}" >> "${INIT_DIR}/${TAG}-${REPO_NAME}/_sha256sums-apk"
-  done
+  cleanup
 }
 
 main "$@"
