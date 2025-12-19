@@ -173,17 +173,13 @@ main() {
   checkout_git "$TEMPDIR" "$TAG"
   setup_container "$TEMPDIR" "$INIT_DIR" "$TAG"
 
-  vercode=$(print_vercode "$TEMPDIR")
-
   # Build phase
   for arch in $ARCHES; do
     case "$arch" in
       armv7a)
-        vercode_adjusted="$((vercode-1))"
         build_tag="${TAG}-armv7a"
         ;;
       aarch64)
-        vercode_adjusted="$vercode"
         build_tag="${TAG}"
         ;;
       *)
@@ -201,7 +197,8 @@ main() {
 
     # Setup the code
     checkout_git "$TEMPDIR" "${build_tag}"
-    build_apk "$arch" "$vercode_adjusted"
+    vercode=$(print_vercode "$TEMPDIR")
+    build_apk "$arch" "$vercode"
   done
 
   # Verification phase
