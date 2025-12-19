@@ -21,6 +21,9 @@ TEMPDIR="$(mktemp -d)"
 
 ARCHES="${ARCHES:-aarch64 armv7a}"
 
+COLOR_CYAN="\033[36m"
+COLOR_RESET="\033[0m"
+
 cleanup() {
   rm -rf -- "${TEMPDIR}"
   docker rm --force "${CONTAINER_NAME}" 2>/dev/null || :
@@ -164,6 +167,16 @@ EOF
 main() {
   TAG="$1"
 
+  printf 'This script will:
+1) build docker container.
+2) download APK from GitHub and validate signatures.
+3) build core library with nix (12-24 hours).
+4) build APK and compare with downloaded one
+
+Continue?'
+
+  read _
+
   check
 
   setup_tag_structure "$INIT_DIR" "$TAG"
@@ -171,7 +184,23 @@ main() {
   # Setup initial git for Dockerfile.build
   setup_git "$TEMPDIR" "$TAG"
   checkout_git "$TEMPDIR" "$TAG"
+
+  printf "${COLOR_CYAN}Building Docker container...${COLOR_RESET}\n"
   setup_container "$TEMPDIR" "$INIT_DIR" "$TAG"
+
+  # Check phase
+  for arch in $ARCHES; do
+
+    release="simplex-${arch}.apk"
+  
+    download_apk "$TAG" "$release" "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/"
+    if check_apk "${release}" "$SIMPLEX_KEY"; then
+      printf "${COLOR_CYAN}APK for %s is signed by valid key.${COLOR_RESET}\n" "$arch"
+    else
+      printf "${COLOR_CYAN}Signature of APK for %s is invalid., aborting the script.${COLOR_RESET}\n" "$arch"
+      exit 1
+    fi
+  done
 
   # Build phase
   for arch in $ARCHES; do
@@ -183,33 +212,27 @@ main() {
         build_tag="${TAG}"
         ;;
       *)
-        printf "Unknown architecture! Skipping build...\n"
+        printf "${COLOR_CYAN}Unknown architecture: %s! Skipping the build...${COLOR_RESET}\n" "$arch"
         continue
     esac
-
-    release="simplex-${arch}.apk"
-  
-    download_apk "$TAG" "$release" "${INIT_DIR}/${TAG}-${REPO_NAME}/prebuilt/"
-    if ! check_apk "${release}" "$SIMPLEX_KEY"; then
-      printf '%s is not signed by the SimpleX Chat Team! Aborting..\n' "$release"
-      exit 1
-    fi
 
     # Setup the code
     checkout_git "$TEMPDIR" "${build_tag}"
     vercode=$(print_vercode "$TEMPDIR")
+
+    printf "${COLOR_CYAN}Building APK for for %s...${COLOR_RESET}\n" "$arch"
     build_apk "$arch" "$vercode"
   done
 
   # Verification phase
   for arch in $ARCHES; do
     if ! verify_apk "simplex-${arch}.apk"; then
-      printf 'Failed to verify %s! Aborting.\n' "simplex-${arch}.apk"
+      printf "${COLOR_CYAN}Failed to verify %s! Aborting.\n${COLOR_RESET}" "simplex-${arch}.apk"
       exit 1
     fi
   done
 
-  printf '%s is reproducible.\n' "$TAG"
+  printf "${COLOR_CYAN}%s is reproducible.${COLOR_RESET}\n" "$TAG"
 
   cleanup
 }
