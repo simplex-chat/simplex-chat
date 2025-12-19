@@ -650,6 +650,16 @@ Plan:
 SEARCH delivery_jobs USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
+            SELECT
+              relay_request_inv_id, relay_request_group_link,
+              relay_request_peer_chat_min_version, relay_request_peer_chat_max_version
+            FROM groups
+            WHERE group_id = ?
+          
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
             SELECT COUNT(1)
             FROM (
               SELECT 1
@@ -911,6 +921,17 @@ Query:
 Plan:
 SEARCH g USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH gp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+            SELECT group_id
+            FROM groups
+            WHERE relay_own_status = ?
+              AND relay_request_failed = 0
+            ORDER BY group_id ASC
+            LIMIT 1
+          
+Plan:
+SCAN groups
 
 Query: 
             SELECT i.chat_item_id
@@ -1674,6 +1695,17 @@ Query:
 Plan:
 SEARCH group_profiles USING INTEGER PRIMARY KEY (rowid=?)
 LIST SUBQUERY 1
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+          UPDATE groups
+          SET relay_request_inv_id = ?,
+              relay_request_group_link = ?,
+              relay_request_peer_chat_min_version = ?,
+              relay_request_peer_chat_max_version = ?
+          WHERE group_id = ?
+        
+Plan:
 SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
@@ -3213,6 +3245,20 @@ Query:
       
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_notes (user_id=? AND note_folder_id=? AND item_status=?)
+
+Query: 
+        SELECT EXISTS (
+          SELECT 1
+          FROM groups
+          WHERE relay_own_status = ?
+            AND relay_request_failed = 0
+          LIMIT 1
+        )
+      
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SCAN groups
 
 Query: 
         SELECT agent_conn_id
@@ -5739,6 +5785,18 @@ Query:
 Plan:
 SEARCH nf USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+    SELECT u.user_id, u.agent_user_id, u.contact_id, ucp.contact_profile_id, u.active_user, u.active_order, u.local_display_name, ucp.full_name, ucp.short_descr, ucp.image, ucp.contact_link, ucp.chat_peer_type, ucp.preferences,
+      u.show_ntfs, u.send_rcpts_contacts, u.send_rcpts_small_groups, u.auto_accept_member_contacts, u.view_pwd_hash, u.view_pwd_salt, u.user_member_profile_updated_at, u.ui_themes, u.is_user_chat_relay
+    FROM users u
+    JOIN contacts uct ON uct.contact_id = u.contact_id
+    JOIN contact_profiles ucp ON ucp.contact_profile_id = uct.contact_profile_id
+   WHERE u.is_user_chat_relay = 1
+Plan:
+SCAN u
 SEARCH uct USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH ucp USING INTEGER PRIMARY KEY (rowid=?)
 
