@@ -119,7 +119,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
--- TODO [chat relay] filter out chat relay users where necessary (e.g. loading list of users for UI)
+-- TODO [relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -450,6 +450,7 @@ type GroupId = Int64
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
+    relayOwnStatus :: Maybe RelayStatus,
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -471,6 +472,9 @@ data GroupInfo = GroupInfo
     viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
+
+useRelays' :: GroupInfo -> Bool
+useRelays' GroupInfo {useRelays} = isTrue useRelays
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -732,6 +736,7 @@ data GroupProfile = GroupProfile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
+    groupLink :: Maybe ShortLinkContact,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
@@ -811,6 +816,14 @@ data GroupLinkRejection = GroupLinkRejection
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+data GroupRelayInvitation = GroupRelayInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberProfile :: Profile,
+    invitedMember :: MemberIdRole,
+    groupLink :: ShortLinkContact
   }
   deriving (Eq, Show)
 
@@ -951,9 +964,59 @@ data GroupMember = GroupMember
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
     supportChat :: Maybe GroupSupportChat,
-    isChatRelay :: BoolDef
+    isRelay :: BoolDef
   }
   deriving (Eq, Show)
+
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
+
+data GroupRelay = GroupRelay
+  { groupRelayId :: Int64,
+    groupMemberId :: GroupMemberId,
+    userChatRelayId :: Int64, -- ID of configured UserChatRelay
+    relayStatus :: RelayStatus,
+    relayLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data RelayStatus
+  = RSNew -- only for owner
+  | RSInvited
+  | RSAccepted
+  | RSActive
+  deriving (Eq, Show)
+
+data RelayRequestData = RelayRequestData
+  { relayInvId :: InvitationId,
+    reqGroupLink :: ShortLinkContact,
+    reqChatVRange :: VersionRangeChat
+  }
+  deriving (Eq, Show)
+
+relayStatusText :: RelayStatus -> Text
+relayStatusText = \case
+  RSNew -> "new"
+  RSInvited -> "invited"
+  RSAccepted -> "accepted"
+  RSActive -> "active"
+
+instance TextEncoding RelayStatus where
+  textEncode = \case
+    RSNew -> "new"
+    RSInvited -> "invited"
+    RSAccepted -> "accepted"
+    RSActive -> "active"
+  textDecode = \case
+    "new" -> Just RSNew
+    "invited" -> Just RSInvited
+    "accepted" -> Just RSAccepted
+    "active" -> Just RSActive
+    _ -> Nothing
+
+instance FromField RelayStatus where fromField = fromTextField_ textDecode
+
+instance ToField RelayStatus where toField = toField . textEncode
 
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
@@ -978,10 +1041,8 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
--- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
--- TODO   - in channels members should directly connect only to relays
-isMemberRelay :: GroupMember -> Bool
-isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
+isRelay' :: GroupMember -> Bool
+isRelay' GroupMember {isRelay} = isTrue isRelay
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1034,7 +1095,7 @@ data NewGroupMember = NewGroupMember
     localDisplayName :: ContactName,
     memProfileId :: Int64,
     memContactId :: Maybe Int64,
-    isChatRelay :: Bool
+    isRelay :: Bool
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
@@ -1990,6 +2051,10 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelay)
+
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
@@ -2029,6 +2094,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 
