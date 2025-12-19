@@ -1074,7 +1074,7 @@
     <string name="mtr_error_no_down_migration">версия базы данных новее чем приложения, но нет миграции для отката: %s</string>
     <string name="mtr_error_different">разная миграция в приложении/базе данных: %s / %s</string>
     <string name="downgrade_and_open_chat">Откатить версию и открыть чат</string>
-    <string name="database_downgrade_warning">Предупреждение: Вы можете потерять какие то данные!</string>
+    <string name="database_downgrade_warning">Предупреждение: Вы можете потерять некоторые данные!</string>
     <string name="developer_options">ID базы данных и опция Отдельные транспортные сессии.</string>
     <string name="show_developer_options">Показать опции для разработчиков</string>
     <string name="delete_chat_profile">Удалить профиль чата</string>
