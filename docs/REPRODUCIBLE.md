@@ -105,7 +105,8 @@ To reproduce the build you must have:
 In addition to basic requirments, Android build will:
 
 - Take ~150gb of disc space
-- Take ~12h to build all the architectures
+- Take ~20h to build all the architectures (depends on core count)
+- Require at least 16gb of RAM
 
 1. Download script:
 
