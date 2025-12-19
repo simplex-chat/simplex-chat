@@ -2616,7 +2616,7 @@ object ChatController {
               if (chatModel.chatsContext.hasChat(rhId, r.chat_.id)) {
                 chatModel.chatsContext.updateChatInfo(rhId, r.chat_.chatInfo)
               } else {
-                chatModel.chatsContext.addChat(r.chat_)
+                chatModel.chatsContext.addChat(r.chat_.copy(remoteHostId = rhId))
               }
             } else {
               val cInfo = ChatInfo.ContactRequest(contactRequest)
