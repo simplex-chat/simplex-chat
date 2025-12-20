@@ -50,6 +50,8 @@ for os in '22.04' '24.04'; do
         --no-cache \
         --build-arg TAG="${os}" \
         --build-arg GHC="${ghc}" \
+        --build-arg=USER_UID="$(id -u)" \
+        --build-arg=USER_GID="$(id -g)" \
         -f "${tempdir}/${repo_name}/Dockerfile.build" \
         -t "${image_name}" \
         .
