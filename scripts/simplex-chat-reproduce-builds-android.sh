@@ -101,7 +101,7 @@ verify_apk() {
   docker exec "${CONTAINER_NAME}" repro-apk zipalign --page-size 16 --pad-like-apksigner --replace "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}" \
                                                                                                    "${DOCKER_PATH_VERIFY}/${apk_name}.aligned"
   docker exec "${CONTAINER_NAME}" mv "${DOCKER_PATH_VERIFY}/${apk_name}.aligned" \
-                                     "${DOCKER_PATH_VERIFY}/${apk_name}.${APK_BUILT}"
+                                     "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}"
 
   docker exec "${CONTAINER_NAME}" apksigcopier copy "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_DOWNLOADED}" \
                                                     "${DOCKER_PATH_VERIFY}/${apk_name}.${SUFFIX_BUILT}" \
@@ -163,7 +163,7 @@ GRADLE_BIN=\$(find \$HOME/.gradle/wrapper/dists -name "gradle" -type f -executab
 GRADLE_DIR=\$(dirname "\$GRADLE_BIN")
 export PATH="\$GRADLE_DIR:\$PATH"
 
-ARCHES="$arch" ./scripts/android/build-android.sh -gs "$vercode"
+ARCHES="$arch" ./scripts/android/build-android.sh -gs "$vercode" || ARCHES="$arch" ./scripts/android/build-android.sh -gs "$vercode"
 
 APK_FILE=\$(find . -maxdepth 1 -type f -name '*.apk')
 
@@ -175,7 +175,7 @@ main() {
   tag="$1"
 
   build_directory="${TEMPDIR}/${REPO_NAME}"
-  final_directory="$INIT_DIR/${TAG}-${REPO_NAME}"
+  final_directory="$INIT_DIR/${tag}-${REPO_NAME}"
   apk_directory="${final_directory}/android"
 
   printf 'This script will:
@@ -193,7 +193,7 @@ Continue?'
   mkdir -p "${apk_directory}"
 
   # Setup initial git for Dockerfile.build
-  setup_git "$TEMDIR" "$REPO_NAME"
+  setup_git "$TEMPDIR" "$REPO_NAME"
   checkout_git "$build_directory" "$tag"
 
   printf "${COLOR_CYAN}Building Docker container...${COLOR_RESET}\n"
@@ -245,7 +245,7 @@ Continue?'
     fi
   done
 
-  printf "${COLOR_CYAN}%s is reproducible.${COLOR_RESET}\n" "$TAG"
+  printf "${COLOR_CYAN}%s is reproducible.${COLOR_RESET}\n" "$tag"
 
   cleanup
 }
