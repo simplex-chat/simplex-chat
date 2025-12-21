@@ -4,8 +4,10 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle, zipWith3') where
+module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle, calculateChecksum, zipWith3') where
 
+import Crypto.Hash (SHA256, hash)
+import qualified Crypto.Hash as Crypto
 import Control.Exception (Exception)
 import Control.Monad
 import Control.Monad.Except
@@ -14,6 +16,7 @@ import Control.Monad.IO.Unlift (MonadUnliftIO (..))
 import Control.Monad.Reader
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LB
+import qualified Data.ByteString as B
 import Data.List (sortBy)
 import Data.List.NonEmpty (NonEmpty (..))
 import Data.Ord (comparing)
@@ -42,6 +45,13 @@ encryptFile fromPath toPath cfArgs = do
       ch <- liftIO $ LB.hGet r chunkSize
       unless (LB.null ch) $ liftIO $ CF.hPut w ch
       unless (LB.length ch < chunkSize) $ encryptChunks r w
+
+calculateChecksum :: FilePath -> IO (Crypto.Digest SHA256)
+calculateChecksum filePath = do
+  -- Checksum logic
+  -- can be used for file verification too
+  content <- B.readFile filePath
+  return (Crypto.hash content)
 
 chunkSize :: Num a => a
 chunkSize = 65536

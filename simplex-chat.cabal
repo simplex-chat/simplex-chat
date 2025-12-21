@@ -409,7 +409,7 @@ executable simplex-broadcast-bot
 
 executable simplex-chat
   if flag(client_library)
-      buildable: False
+      buildable: True
   main-is: Main.hs
   other-modules:
       Server

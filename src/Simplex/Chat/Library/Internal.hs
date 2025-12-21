@@ -72,7 +72,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
-import Simplex.Chat.Util (encryptFile, shuffle)
+import Simplex.Chat.Util (encryptFile, shuffle, calculateChecksum)
 import Simplex.FileTransfer.Description (FileDescriptionURI (..), ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FileParty (..), FilePartyI)
@@ -1542,7 +1542,12 @@ appendFileChunk ft@RcvFileTransfer {fileId, fileStatus, cryptoArgs, fileInvitati
           tryAllErrors (liftError encryptErr $ encryptFile fsFilePath tmpFile cfArgs) >>= \case
             Right () -> do
               removeFile fsFilePath `catchAllErrors` \_ -> pure ()
-              renameFile tmpFile fsFilePath
+              copyFile tmpFile fsFilePath
+              checksum1 <- liftIO $ calculateChecksum tmpFile
+              checksum2 <- liftIO $ calculateChecksum fsFilePath
+              if checksum1 == checksum2
+                then removeFile tmpFile `catchAllErrors` \_ -> pure ()
+                else throwChatError $ CEFileInternal "File copy failed: checksum mismatch"
             Left e -> do
               eToView e
               removeFile tmpFile `catchAllErrors` \_ -> pure ()

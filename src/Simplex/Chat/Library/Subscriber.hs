@@ -59,6 +59,7 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
+import Simplex.Chat.Util (calculateChecksum)
 import Simplex.FileTransfer.Description (ValidFileDescription)
 import qualified Simplex.FileTransfer.Description as FD
 import Simplex.FileTransfer.Protocol (FilePartyI)
@@ -324,7 +325,13 @@ processAgentMsgRcvFile _corrId aFileId msg = do
             Nothing -> throwChatError $ CEInternalError "no target path for received XFTP file"
             Just targetPath -> do
               fsTargetPath <- lift $ toFSFilePath targetPath
-              renameFile xftpPath fsTargetPath
+              copyFile xftpPath fsTargetPath
+              checksum1 <- liftIO $ calculateChecksum fsTargetPath
+              checksum2 <- liftIO $ calculateChecksum xftpPath
+              if checksum1 == checksum2
+                then removeFile xftpPath `catchAllErrors` \_ -> pure ()
+                else throwChatError $ CEFileInternal "File copy failed: checksum mismatch!"
+              
               ci_ <- withStore $ \db -> do
                 liftIO $ do
                   updateRcvFileStatus db fileId FSComplete
