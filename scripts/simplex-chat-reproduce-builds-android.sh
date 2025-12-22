@@ -36,16 +36,14 @@ cleanup() {
 trap 'cleanup' EXIT INT
 
 check() {
+  commands="$1"
+
   set +u
 
   for i in $commands; do
-    case $i in
-      *)
-        if ! command -v "$i" > /dev/null 2>&1; then
-          commands_failed="$i $commands_failed"
-        fi
-        ;;
-    esac
+    if ! command -v "$i" > /dev/null 2>&1; then
+      commands_failed="$i $commands_failed"
+    fi
   done
 
   if [ -n "$commands_failed" ]; then
@@ -188,7 +186,7 @@ Continue?'
 
   read _
 
-  check
+  check "$CMDS"
 
   mkdir -p "${apk_directory}"
 
