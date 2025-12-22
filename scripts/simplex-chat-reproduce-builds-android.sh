@@ -36,6 +36,8 @@ cleanup() {
 trap 'cleanup' EXIT INT
 
 check() {
+  commands="$1"
+
   set +u
 
   for i in $commands; do
@@ -188,7 +190,7 @@ Continue?'
 
   read _
 
-  check
+  check "$CMDS"
 
   mkdir -p "${apk_directory}"
 
