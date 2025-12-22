@@ -140,6 +140,7 @@ struct ChatListView: View {
     @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
+    @State private var showNewChatSheet = false
     @State private var searchMode = false
     @FocusState private var searchFocussed
     @State private var searchText = ""
@@ -189,6 +190,10 @@ struct ChatListView: View {
             onDismiss: { chatModel.laRequest = nil },
             content: { UserPickerSheetView(sheet: $0) }
         )
+        .appSheet(isPresented: $showNewChatSheet) {
+            NewChatSheet()
+                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
+        }
         .onChange(of: activeUserPickerSheet) {
             if $0 != nil {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -331,7 +336,7 @@ struct ChatListView: View {
     
     @ViewBuilder var trailingToolbarItem: some View {
         switch chatModel.chatRunning {
-        case .some(true): NewChatMenuButton()
+        case .some(true): NewChatMenuButton(showNewChatSheet: $showNewChatSheet)
         case .some(false): chatStoppedIcon()
         case .none: EmptyView()
         }
