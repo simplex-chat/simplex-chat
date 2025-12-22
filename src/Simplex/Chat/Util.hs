@@ -4,7 +4,7 @@
 {-# LANGUAGE TupleSections #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
-module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle) where
+module Simplex.Chat.Util (week, encryptFile, chunkSize, liftIOEither, shuffle, zipWith3') where
 
 import Control.Exception (Exception)
 import Control.Monad
@@ -15,6 +15,7 @@ import Control.Monad.Reader
 import Data.Bifunctor (first)
 import qualified Data.ByteString.Lazy as LB
 import Data.List (sortBy)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Ord (comparing)
 import Data.Time (NominalDiffTime)
 import Data.Word (Word16)
@@ -51,6 +52,9 @@ shuffle xs = map snd . sortBy (comparing fst) <$> mapM (\x -> (,x) <$> random) x
   where
     random :: IO Word16
     random = randomRIO (0, 65535)
+
+zipWith3' :: (a -> b -> c -> d) -> NonEmpty a -> NonEmpty b -> NonEmpty c -> NonEmpty d
+zipWith3' f ~(x :| xs) ~(y :| ys) ~(z :| zs) = f x y z :| zipWith3 f xs ys zs
 
 liftIOEither :: (MonadIO m, MonadError e m) => IO (Either e a) -> m a
 liftIOEither a = liftIO a >>= liftEither

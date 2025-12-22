@@ -16,19 +16,15 @@ struct NativeTextEditor: UIViewRepresentable {
     @Binding var disableEditing: Bool
     @Binding var height: CGFloat
     @Binding var focused: Bool
+    @Binding var lastUnfocusedDate: Date
     @Binding var placeholder: String?
+    @Binding var selectedRange: NSRange
     let onImagesAdded: ([UploadContent]) -> Void
     
-    private let minHeight: CGFloat = 37
+    static let minHeight: CGFloat = 39
 
-    private let defaultHeight: CGFloat = {
-        let field = CustomUITextField(height: Binding.constant(0))
-        field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
-        return min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, 37), 360).rounded(.down)
-    }()
-    
-    func makeUIView(context: Context) -> UITextView {
-        let field = CustomUITextField(height: _height)
+    func makeUIView(context: Context) -> CustomUITextField {
+        let field = CustomUITextField(parent: self, height: _height)
         field.backgroundColor = .clear
         field.text = text
         field.textAlignment = alignment(text)
@@ -37,10 +33,9 @@ struct NativeTextEditor: UIViewRepresentable {
             if !disableEditing {
                 text = newText
                 field.textAlignment = alignment(text)
-                updateFont(field)
+                field.updateFont()
                 // Speed up the process of updating layout, reduce jumping content on screen
-                updateHeight(field)
-                self.height = field.frame.size.height
+                field.updateHeight()
             } else {
                 field.text = text
             }
@@ -48,49 +43,45 @@ struct NativeTextEditor: UIViewRepresentable {
                 onImagesAdded(images)
             }
         }
-        field.setOnFocusChangedListener { focused = $0 }
+        field.setOnFocusChangedListener {
+            focused = $0
+            if !focused {
+                lastUnfocusedDate = .now
+            }
+        }
         field.delegate = field
         field.textContainerInset = UIEdgeInsets(top: 8, left: 5, bottom: 6, right: 4)
         field.setPlaceholderView()
-        updateFont(field)
-        updateHeight(field)
+        field.updateFont()
+        field.updateHeight(updateBindingNow: false)
         return field
     }
     
-    func updateUIView(_ field: UITextView, context: Context) {
+    func updateUIView(_ field: CustomUITextField, context: Context) {
         if field.markedTextRange == nil && field.text != text {
             field.text = text
             field.textAlignment = alignment(text)
-            updateFont(field)
-            updateHeight(field)
+            field.updateFont()
+            field.updateHeight(updateBindingNow: false)
+            field.placeholder = text.isEmpty ? placeholder : ""
         }
-        
-        let castedField = field as! CustomUITextField
-        if castedField.placeholder != placeholder {
-            castedField.placeholder = placeholder
+        if field.placeholder != placeholder {
+            field.placeholder = text.isEmpty ? placeholder : ""
         }
-    }
-
-    private func updateHeight(_ field: UITextView) {
-        let maxHeight = min(360, field.font!.lineHeight * 12)
-        // When having emoji in text view and then removing it, sizeThatFits shows previous size (too big for empty text view), so using work around with default size
-        let newHeight = field.text == ""
-        ? defaultHeight
-        : min(max(field.sizeThatFits(CGSizeMake(field.frame.size.width, CGFloat.greatestFiniteMagnitude)).height, minHeight), maxHeight).rounded(.down)
-
-        if field.frame.size.height != newHeight {
-            field.frame.size = CGSizeMake(field.frame.size.width, newHeight)
-            (field as! CustomUITextField).invalidateIntrinsicContentHeight(newHeight)
+        if field.selectedRange != selectedRange {
+            field.selectedRange = selectedRange
         }
-    }
-
-    private func updateFont(_ field: UITextView) {
-        let newFont = isShortEmoji(field.text)
-        ? (field.text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
-        : UIFont.preferredFont(forTextStyle: .body)
-        if field.font != newFont {
-            field.font = newFont
-        }
+// This block causes delays in closing keyboard when navigating from chat view to chat list.
+// It is also a candidate for iOS 26.1 freeze.
+// This was added in commit below to open keyboard programmatically via a passed binding but this approach is not reliable.
+// https://github.com/simplex-chat/simplex-chat/pull/6003/commits/cb666de51375623451a5e80dcf59449adc7d2a5f
+//        if focused && !field.isFocused {
+//            DispatchQueue.main.async {
+//                if !field.isFocused {
+//                    field.becomeFirstResponder()
+//                }
+//            }
+//        }
     }
 }
 
@@ -98,15 +89,17 @@ private func alignment(_ text: String) -> NSTextAlignment {
     isRightToLeft(text) ? .right : .left
 }
 
-private class CustomUITextField: UITextView, UITextViewDelegate {
+class CustomUITextField: UITextView, UITextViewDelegate {
+    var parent: NativeTextEditor?
     var height: Binding<CGFloat>
     var newHeight: CGFloat = 0
     var onTextChanged: (String, [UploadContent]) -> Void = { newText, image in }
     var onFocusChanged: (Bool) -> Void = { focused in }
-    
+
     private let placeholderLabel: UILabel = UILabel()
 
-    init(height: Binding<CGFloat>) {
+    init(parent: NativeTextEditor?, height: Binding<CGFloat>) {
+        self.parent = parent
         self.height = height
         super.init(frame: .zero, textContainer: nil)
     }
@@ -128,11 +121,44 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
         invalidateIntrinsicContentSize()
     }
 
-    override var intrinsicContentSize: CGSize {
-        if height.wrappedValue != newHeight {
-            DispatchQueue.main.asyncAfter(deadline: .now(), execute: { self.height.wrappedValue = self.newHeight })
+    func updateHeight(updateBindingNow: Bool = true) {
+        let maxHeight = min(360, font!.lineHeight * 12)
+        let newHeight = min(max(sizeThatFits(CGSizeMake(frame.size.width, CGFloat.greatestFiniteMagnitude)).height, NativeTextEditor.minHeight), maxHeight).rounded(.down)
+
+        if self.newHeight != newHeight {
+            frame.size = CGSizeMake(frame.size.width, newHeight)
+            invalidateIntrinsicContentHeight(newHeight)
+            if updateBindingNow {
+                self.height.wrappedValue = newHeight
+            } else {
+                DispatchQueue.main.async {
+                    self.height.wrappedValue = newHeight
+                }
+            }
         }
-        return CGSizeMake(0, newHeight)
+    }
+
+    func updateFont() {
+        let newFont = isShortEmoji(text)
+        ? (text.count < 4 ? largeEmojiUIFont : mediumEmojiUIFont)
+        : UIFont.preferredFont(forTextStyle: .body)
+        if font != newFont {
+            font = newFont
+            // force apply new font because it has problem with doing it when the field had two emojis
+            if text.count == 0 {
+                text = " "
+                text = ""
+            }
+        }
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        updateHeight()
+    }
+
+    override var intrinsicContentSize: CGSize {
+        CGSizeMake(0, newHeight)
     }
 
     func setOnTextChangedListener(onTextChanged: @escaping (String, [UploadContent]) -> Void) {
@@ -232,10 +258,22 @@ private class CustomUITextField: UITextView, UITextViewDelegate {
     
     func textViewDidBeginEditing(_ textView: UITextView) {
         onFocusChanged(true)
+        updateSelectedRange(textView)
     }
     
     func textViewDidEndEditing(_ textView: UITextView) {
         onFocusChanged(false)
+        updateSelectedRange(textView)
+    }
+    
+    func textViewDidChangeSelection(_ textView: UITextView) {
+        updateSelectedRange(textView)
+    }
+    
+    private func updateSelectedRange(_ textView: UITextView) {
+        if parent?.selectedRange != textView.selectedRange {
+            parent?.selectedRange = textView.selectedRange
+        }
     }
 }
 
@@ -246,7 +284,9 @@ struct NativeTextEditor_Previews: PreviewProvider{
             disableEditing: Binding.constant(false),
             height: Binding.constant(100),
             focused: Binding.constant(false),
+            lastUnfocusedDate: Binding.constant(.now),
             placeholder: Binding.constant("Placeholder"),
+            selectedRange: Binding.constant(NSRange(location: 0, length: 0)),
             onImagesAdded: { _ in }
         )
         .fixedSize(horizontal: false, vertical: true)

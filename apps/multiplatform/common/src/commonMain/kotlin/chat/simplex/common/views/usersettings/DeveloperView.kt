@@ -2,18 +2,10 @@ package chat.simplex.common.views.usersettings
 
 import SectionBottomSpacer
 import SectionDividerSpaced
-import SectionSpacer
 import SectionTextFooter
 import SectionView
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.*
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
-import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import dev.icerock.moko.resources.compose.painterResource
@@ -67,7 +59,15 @@ fun DeveloperView(withAuth: (title: String, desc: String, block: () -> Unit) -> 
         SettingsPreferenceItem(painterResource(MR.images.ic_avg_pace), stringResource(MR.strings.show_slow_api_calls), appPreferences.showSlowApiCalls)
       }
     }
-    SectionBottomSpacer()
+    SectionDividerSpaced(maxTopPadding = true)
+    SectionView(stringResource(MR.strings.deprecated_options_section).uppercase()) {
+      val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
+      SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
+        simplexLinkMode.set(it)
+        chatModel.simplexLinkMode.value = it
+      })
+      SectionBottomSpacer()
+    }
   }
 }
 

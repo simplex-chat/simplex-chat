@@ -1,10 +1,4 @@
 /* No comment provided by engineer. */
-"\n" = "\n";
-
-/* No comment provided by engineer. */
-" (" = " (";
-
-/* No comment provided by engineer. */
 " (can be copied)" = " (สามารถคัดลอกได้)";
 
 /* No comment provided by engineer. */
@@ -17,22 +11,7 @@
 "- voice messages up to 5 minutes.\n- custom time to disappear.\n- editing history." = "- ข้อความเสียงนานสุด 5 นาที\n- เวลาที่กำหนดเองที่จะหายไป\n- ประวัติการแก้ไข";
 
 /* No comment provided by engineer. */
-", " = ", ";
-
-/* No comment provided by engineer. */
-": " = ": ";
-
-/* No comment provided by engineer. */
 "!1 colored!" = "!1 มีสี!";
-
-/* No comment provided by engineer. */
-"." = ".";
-
-/* No comment provided by engineer. */
-"(" = "(";
-
-/* No comment provided by engineer. */
-")" = ")";
 
 /* No comment provided by engineer. */
 "[Contribute](https://github.com/simplex-chat/simplex-chat#contribute)" = "[มีส่วนร่วม](https://github.com/simplex-chat/simplex-chat#contribute)";
@@ -143,9 +122,6 @@
 "%lld minutes" = "%lld นาที";
 
 /* No comment provided by engineer. */
-"%lld second(s)" = "%lld วินาที";
-
-/* No comment provided by engineer. */
 "%lld seconds" = "%lld วินาที";
 
 /* No comment provided by engineer. */
@@ -187,7 +163,8 @@
 /* No comment provided by engineer. */
 "0s" = "0s";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 day" = "1 วัน";
 
 /* time interval */
@@ -196,10 +173,12 @@
 /* No comment provided by engineer. */
 "1 minute" = "1 นาที";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 month" = "1 เดือน";
 
-/* time interval */
+/* delete after time
+time interval */
 "1 week" = "1 สัปดาห์";
 
 /* No comment provided by engineer. */
@@ -239,15 +218,16 @@
 "above, then choose:" = "ด้านบน จากนั้นเลือก:";
 
 /* accept contact request via notification
-   accept incoming call via notification
-   swipe action */
+accept incoming call via notification
+alert action
+swipe action */
 "Accept" = "รับ";
 
 /* notification body */
 "Accept contact request from %@?" = "รับการขอติดต่อจาก %@?";
 
-/* accept contact request via notification
-   swipe action */
+/* alert action
+swipe action */
 "Accept incognito" = "ยอมรับโหมดไม่ระบุตัวตน";
 
 /* call status */
@@ -506,7 +486,8 @@
 "Can't invite contacts!" = "ไม่สามารถเชิญผู้ติดต่อได้!";
 
 /* alert action
-   alert button */
+alert button
+new chat action */
 "Cancel" = "ยกเลิก";
 
 /* feature offered item */
@@ -546,7 +527,7 @@
 "Change self-destruct mode" = "เปลี่ยนโหมดทําลายตัวเอง";
 
 /* authentication reason
-   set passcode view */
+set passcode view */
 "Change self-destruct passcode" = "เปลี่ยนรหัสผ่านแบบทำลายตัวเอง";
 
 /* chat item text */
@@ -651,7 +632,7 @@
 /* No comment provided by engineer. */
 "connect to SimpleX Chat developers." = "เชื่อมต่อกับนักพัฒนา SimpleX Chat";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Connect via link" = "เชื่อมต่อผ่านลิงก์";
 
 /* No comment provided by engineer. */
@@ -687,7 +668,7 @@
 /* No comment provided by engineer. */
 "Connection" = "การเชื่อมต่อ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection error" = "การเชื่อมต่อผิดพลาด";
 
 /* No comment provided by engineer. */
@@ -699,7 +680,7 @@
 /* No comment provided by engineer. */
 "Connection request sent!" = "ส่งคําขอเชื่อมต่อแล้ว!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Connection timeout" = "หมดเวลาการเชื่อมต่อ";
 
 /* connection information */
@@ -758,9 +739,6 @@
 
 /* server test step */
 "Create queue" = "สร้างคิว";
-
-/* No comment provided by engineer. */
-"Create secret group" = "สร้างกลุ่มลับ";
 
 /* No comment provided by engineer. */
 "Create SimpleX address" = "สร้างที่อยู่ SimpleX";
@@ -855,7 +833,8 @@
 /* message decrypt error item */
 "Decryption error" = "ข้อผิดพลาดในการ decrypt";
 
-/* pref value */
+/* delete after time
+pref value */
 "default (%@)" = "ค่าเริ่มต้น (%@)";
 
 /* No comment provided by engineer. */
@@ -865,8 +844,7 @@
 "default (yes)" = "ค่าเริ่มต้น (ใช่)";
 
 /* alert action
-   chat item action
-   swipe action */
+swipe action */
 "Delete" = "ลบ";
 
 /* No comment provided by engineer. */
@@ -932,7 +910,7 @@
 /* No comment provided by engineer. */
 "Delete message?" = "ลบข้อความ?";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Delete messages" = "ลบข้อความ";
 
 /* No comment provided by engineer. */
@@ -1049,7 +1027,7 @@
 /* No comment provided by engineer. */
 "Don't enable" = "อย่าเปิดใช้งาน";
 
-/* No comment provided by engineer. */
+/* alert action */
 "Don't show again" = "ไม่ต้องแสดงอีก";
 
 /* No comment provided by engineer. */
@@ -1082,7 +1060,7 @@
 /* No comment provided by engineer. */
 "Enable (keep overrides)" = "เปิดใช้งาน (เก็บการแทนที่)";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Enable automatic message deletion?" = "เปิดใช้งานการลบข้อความอัตโนมัติ?";
 
 /* No comment provided by engineer. */
@@ -1220,7 +1198,7 @@
 /* No comment provided by engineer. */
 "Error changing role" = "เกิดข้อผิดพลาดในการเปลี่ยนบทบาท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error changing setting" = "เกิดข้อผิดพลาดในการเปลี่ยนการตั้งค่า";
 
 /* No comment provided by engineer. */
@@ -1235,19 +1213,19 @@
 /* No comment provided by engineer. */
 "Error creating profile!" = "เกิดข้อผิดพลาดในการสร้างโปรไฟล์!";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลแชท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting chat!" = "เกิดข้อผิดพลาดในการลบแชท!";
 
 /* No comment provided by engineer. */
 "Error deleting connection" = "เกิดข้อผิดพลาดในการลบการเชื่อมต่อ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error deleting old database" = "เกิดข้อผิดพลาดในการลบฐานข้อมูลเก่า";
 
 /* No comment provided by engineer. */
@@ -1265,10 +1243,10 @@
 /* No comment provided by engineer. */
 "Error encrypting database" = "เกิดข้อผิดพลาดในการ encrypt ฐานข้อมูล";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error exporting chat database" = "เกิดข้อผิดพลาดในการส่งออกฐานข้อมูลแชท";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error importing chat database" = "เกิดข้อผิดพลาดในการนำเข้าฐานข้อมูลแชท";
 
 /* No comment provided by engineer. */
@@ -1277,7 +1255,7 @@
 /* alert title */
 "Error receiving file" = "เกิดข้อผิดพลาดในการรับไฟล์";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Error removing member" = "เกิดข้อผิดพลาดในการลบสมาชิก";
 
 /* No comment provided by engineer. */
@@ -1331,7 +1309,9 @@
 /* No comment provided by engineer. */
 "Error: " = "ผิดพลาด: ";
 
-/* alert message */
+/* alert message
+file error text
+snd error text */
 "Error: %@" = "ข้อผิดพลาด: % @";
 
 /* No comment provided by engineer. */
@@ -1399,6 +1379,9 @@
 
 /* No comment provided by engineer. */
 "Find chats faster" = "ค้นหาแชทได้เร็วขึ้น";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
 
 /* No comment provided by engineer. */
 "Fix" = "แก้ไข";
@@ -1722,9 +1705,9 @@
 "Join" = "เข้าร่วม";
 
 /* No comment provided by engineer. */
-"join as %@" = "เข้าร่วมเป็น %@";
+"Join as %@" = "เข้าร่วมเป็น %@";
 
-/* No comment provided by engineer. */
+/* new chat sheet title */
 "Join group" = "เข้าร่วมกลุ่ม";
 
 /* No comment provided by engineer. */
@@ -1928,7 +1911,7 @@
 /* No comment provided by engineer. */
 "Multiple chat profiles" = "โปรไฟล์การแชทหลายรายการ";
 
-/* swipe action */
+/* notification label action */
 "Mute" = "ปิดเสียง";
 
 /* No comment provided by engineer. */
@@ -1943,10 +1926,10 @@
 /* No comment provided by engineer. */
 "Network settings" = "การตั้งค่าเครือข่าย";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "สถานะเครือข่าย";
 
-/* No comment provided by engineer. */
+/* delete after time */
 "never" = "ไม่เคย";
 
 /* notification */
@@ -2034,8 +2017,9 @@
 "observer" = "ผู้สังเกตการณ์";
 
 /* enabled status
-   group pref value
-   time to disappear */
+group pref value
+member criteria value
+time to disappear */
 "off" = "ปิด";
 
 /* blur media */
@@ -2047,7 +2031,9 @@
 /* feature offered item */
 "offered %@: %@" = "เสนอแล้ว %1$@: %2$@";
 
-/* alert button */
+/* alert action
+alert button
+new chat action */
 "Ok" = "ตกลง";
 
 /* No comment provided by engineer. */
@@ -2110,7 +2096,7 @@
 /* No comment provided by engineer. */
 "Only your contact can send voice messages." = "ผู้ติดต่อของคุณเท่านั้นที่สามารถส่งข้อความเสียงได้";
 
-/* No comment provided by engineer. */
+/* new chat action */
 "Open chat" = "เปิดแชท";
 
 /* authentication reason */
@@ -2164,7 +2150,7 @@
 /* No comment provided by engineer. */
 "Please check that you used the correct link or ask your contact to send you another one." = "โปรดตรวจสอบว่าคุณใช้ลิงก์ที่ถูกต้องหรือขอให้ผู้ติดต่อของคุณส่งลิงก์ใหม่ให้คุณ";
 
-/* No comment provided by engineer. */
+/* alert message */
 "Please check your network connection with %@ and try again." = "โปรดตรวจสอบการเชื่อมต่อเครือข่ายของคุณกับ %@ แล้วลองอีกครั้ง";
 
 /* No comment provided by engineer. */
@@ -2196,9 +2182,6 @@
 
 /* No comment provided by engineer. */
 "Polish interface" = "อินเตอร์เฟซภาษาโปแลนด์";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "อาจเป็นไปได้ว่าลายนิ้วมือของ certificate ในที่อยู่เซิร์ฟเวอร์ไม่ถูกต้อง";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "เก็บข้อความที่ร่างไว้ล่าสุดพร้อมไฟล์แนบ";
@@ -2302,9 +2285,6 @@
 /* No comment provided by engineer. */
 "received confirmation…" = "ได้รับการยืนยัน…";
 
-/* notification */
-"Received file event" = "ได้รับไฟล์";
-
 /* message info title */
 "Received message" = "ได้รับข้อความ";
 
@@ -2335,11 +2315,12 @@
 /* No comment provided by engineer. */
 "Reduced battery usage" = "ลดการใช้แบตเตอรี่";
 
-/* reject incoming call via notification
-   swipe action */
+/* alert action
+reject incoming call via notification
+swipe action */
 "Reject" = "ปฏิเสธ";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Reject contact request" = "ปฏิเสธคำขอติดต่อ";
 
 /* call status */
@@ -2433,7 +2414,7 @@
 "Run chat" = "เรียกใช้แชท";
 
 /* alert button
-   chat item action */
+chat item action */
 "Save" = "บันทึก";
 
 /* alert button */
@@ -2586,9 +2567,6 @@
 /* copied message info */
 "Sent at: %@" = "ส่งเมื่อ: %@";
 
-/* notification */
-"Sent file event" = "เหตุการณ์ไฟล์ที่ส่ง";
-
 /* message info title */
 "Sent message" = "ข้อความที่ส่งแล้ว";
 
@@ -2596,10 +2574,10 @@
 "Sent messages will be deleted after set time." = "ข้อความที่ส่งจะถูกลบหลังเกินเวลาที่กําหนด";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
+"Server requires authorization to create queues, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการสร้างคิว โปรดตรวจสอบรหัสผ่าน";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
+"Server requires authorization to upload, check password." = "เซิร์ฟเวอร์ต้องการการอนุญาตในการอัปโหลด โปรดตรวจสอบรหัสผ่าน";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "การทดสอบเซิร์ฟเวอร์ล้มเหลว!";
@@ -2635,7 +2613,7 @@
 "Settings" = "การตั้งค่า";
 
 /* alert action
-   chat item action */
+chat item action */
 "Share" = "แชร์";
 
 /* No comment provided by engineer. */
@@ -2849,12 +2827,9 @@
 "The old database was not removed during the migration, it can be deleted." = "ฐานข้อมูลเก่าไม่ได้ถูกลบในระหว่างการย้ายข้อมูล แต่สามารถลบได้";
 
 /* No comment provided by engineer. */
-"The profile is only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
-
-/* No comment provided by engineer. */
 "The second tick we missed! ✅" = "ขีดที่สองที่เราพลาด! ✅";
 
-/* No comment provided by engineer. */
+/* alert message */
 "The sender will NOT be notified" = "ผู้ส่งจะไม่ได้รับแจ้ง";
 
 /* No comment provided by engineer. */
@@ -2915,12 +2890,6 @@
 "Transport isolation" = "การแยกการขนส่ง";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "กำลังพยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้ (ข้อผิดพลาด: %@)";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "พยายามเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
-
-/* No comment provided by engineer. */
 "Turn off" = "ปิด";
 
 /* No comment provided by engineer. */
@@ -2971,7 +2940,7 @@
 /* authentication reason */
 "Unlock app" = "ปลดล็อคแอป";
 
-/* swipe action */
+/* notification label action */
 "Unmute" = "เปิดเสียง";
 
 /* swipe action */
@@ -3143,12 +3112,6 @@
 "You are already connected to %@." = "คุณได้เชื่อมต่อกับ %@ แล้ว";
 
 /* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "คุณเชื่อมต่อกับเซิร์ฟเวอร์ที่ใช้รับข้อความจากผู้ติดต่อนี้";
-
-/* No comment provided by engineer. */
-"you are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
-
-/* No comment provided by engineer. */
 "You are invited to group" = "คุณได้รับเชิญให้เข้าร่วมกลุ่ม";
 
 /* No comment provided by engineer. */
@@ -3190,7 +3153,7 @@
 /* No comment provided by engineer. */
 "You can use markdown to format messages:" = "คุณสามารถใช้มาร์กดาวน์เพื่อจัดรูปแบบข้อความ:";
 
-/* No comment provided by engineer. */
+/* alert title */
 "You can't send messages!" = "คุณไม่สามารถส่งข้อความได้!";
 
 /* chat item text */
@@ -3311,10 +3274,10 @@
 "Your privacy" = "ความเป็นส่วนตัวของคุณ";
 
 /* No comment provided by engineer. */
-"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
+"Your profile is stored on your device and only shared with your contacts." = "โปรไฟล์นี้แชร์กับผู้ติดต่อของคุณเท่านั้น";
 
 /* No comment provided by engineer. */
-"Your profile, contacts and delivered messages are stored on your device." = "โปรไฟล์ รายชื่อผู้ติดต่อ และข้อความที่ส่งของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณ";
+"Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." = "โปรไฟล์ของคุณจะถูกจัดเก็บไว้ในอุปกรณ์ของคุณและแชร์กับผู้ติดต่อของคุณเท่านั้น เซิร์ฟเวอร์ SimpleX ไม่สามารถดูโปรไฟล์ของคุณได้";
 
 /* No comment provided by engineer. */
 "Your random profile" = "โปรไฟล์แบบสุ่มของคุณ";
@@ -3327,7 +3290,4 @@
 
 /* No comment provided by engineer. */
 "Your SimpleX address" = "ที่อยู่ SimpleX ของคุณ";
-
-/* No comment provided by engineer. */
-"Your SMP servers" = "เซิร์ฟเวอร์ SMP ของคุณ";
 

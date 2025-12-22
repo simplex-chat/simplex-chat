@@ -19,42 +19,42 @@ struct CIFileView: View {
     var body: some View {
         if smallViewSize != nil {
             fileIndicator()
-            .onTapGesture(perform: fileAction)
+            .simultaneousGesture(TapGesture().onEnded(fileAction))
         } else {
             let metaReserve = edited
             ? "                           "
             : "                       "
-            Button(action: fileAction) {
-                HStack(alignment: .bottom, spacing: 6) {
-                    fileIndicator()
-                        .padding(.top, 5)
-                        .padding(.bottom, 3)
-                    if let file = file {
-                        let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(file.fileName)
-                                .lineLimit(1)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(theme.colors.onBackground)
-                            Text(prettyFileSize + metaReserve)
-                                .font(.caption)
-                                .lineLimit(1)
-                                .multilineTextAlignment(.leading)
-                                .foregroundColor(theme.colors.secondary)
-                        }
-                    } else {
-                        Text(metaReserve)
+            HStack(alignment: .bottom, spacing: 6) {
+                fileIndicator()
+                    .padding(.top, 5)
+                    .padding(.bottom, 3)
+                if let file = file {
+                    let prettyFileSize = ByteCountFormatter.string(fromByteCount: file.fileSize, countStyle: .binary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(file.fileName)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(theme.colors.onBackground)
+                        Text(prettyFileSize + metaReserve)
+                            .font(.caption)
+                            .lineLimit(1)
+                            .multilineTextAlignment(.leading)
+                            .foregroundColor(theme.colors.secondary)
                     }
+                } else {
+                    Text(metaReserve)
                 }
-                .padding(.top, 4)
-                .padding(.bottom, 6)
-                .padding(.leading, 10)
-                .padding(.trailing, 12)
             }
+            .padding(.top, 4)
+            .padding(.bottom, 6)
+            .padding(.leading, 10)
+            .padding(.trailing, 12)
+            .simultaneousGesture(TapGesture().onEnded(fileAction))
             .disabled(!itemInteractive)
         }
     }
 
+    @inline(__always)
     private var itemInteractive: Bool {
         if let file = file {
             switch (file.fileStatus) {
@@ -278,6 +278,7 @@ func showFileErrorAlert(_ err: FileError, temporary: Bool = false) {
 
 struct CIFileView_Previews: PreviewProvider {
     static var previews: some View {
+        let im = ItemsModel.shared
         let sentFile: ChatItem = ChatItem(
             chatDir: .directSnd,
             meta: CIMeta.getSample(1, .now, "", .sndSent(sndProgress: .complete), itemEdited: true),
@@ -293,16 +294,16 @@ struct CIFileView_Previews: PreviewProvider {
             file: nil
         )
         Group {
-            ChatItemView(chat: Chat.sampleData, chatItem: sentFile)
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample())
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation))
-            ChatItemView(chat: Chat.sampleData, chatItem: fileChatItemWtFile)
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: sentFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileName: "some_long_file_name_here", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvAccepted), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvTransfer(rcvProgress: 7, rcvTotal: 10)), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileStatus: .rcvCancelled), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(fileSize: 1_000_000_000, fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Hello there", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: ChatItem.getFileMsgContentSample(text: "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.", fileStatus: .rcvInvitation), scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
+            ChatItemView(chat: Chat.sampleData, im: im, chatItem: fileChatItemWtFile, scrollToItem: { _ in }, scrollToItemId: Binding.constant(nil))
         }
         .environment(\.revealed, false)
         .previewLayout(.fixed(width: 360, height: 360))

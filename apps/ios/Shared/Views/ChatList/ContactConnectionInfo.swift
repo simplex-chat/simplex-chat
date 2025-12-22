@@ -14,6 +14,7 @@ struct ContactConnectionInfo: View {
     @EnvironmentObject var theme: AppTheme
     @Environment(\.dismiss) var dismiss: DismissAction
     @State var contactConnection: PendingContactConnection
+    @State private var showShortLink: Bool = true
     @State private var alert: CCInfoAlert?
     @State private var localAlias = ""
     @State private var showIncognitoSheet = false
@@ -61,14 +62,19 @@ struct ContactConnectionInfo: View {
                     }
 
                     if contactConnection.initiated,
-                       let connReqInv = contactConnection.connReqInv {
-                        SimpleXLinkQRCode(uri: simplexChatLink(connReqInv))
+                       let connLinkInv = contactConnection.connLinkInv {
+                        SimpleXCreatedLinkQRCode(link: connLinkInv, short: $showShortLink)
+                            .id("simplex-invitation-qrcode-\(connLinkInv.simplexChatUri(short: showShortLink))")
                         incognitoEnabled()
-                        shareLinkButton(connReqInv, theme.colors.secondary)
-                        oneTimeLinkLearnMoreButton(theme.colors.secondary)
+                        shareLinkButton(connLinkInv, short: showShortLink)
+                        oneTimeLinkLearnMoreButton()
                     } else {
                         incognitoEnabled()
-                        oneTimeLinkLearnMoreButton(theme.colors.secondary)
+                        oneTimeLinkLearnMoreButton()
+                    }
+                } header: {
+                    if let connLinkInv = contactConnection.connLinkInv, connLinkInv.connShortLink != nil {
+                        ToggleShortLinkHeader(text: Text(""), link: connLinkInv, short: $showShortLink)
                     }
                 } footer: {
                     sharedProfileInfo(contactConnection.incognito)
@@ -108,6 +114,7 @@ struct ContactConnectionInfo: View {
         .onAppear {
             localAlias = contactConnection.localAlias
         }
+        .onDisappear(perform: setConnectionAlias)
     }
 
     private func setConnectionAlias() {
@@ -167,26 +174,22 @@ struct ContactConnectionInfo: View {
     }
 }
 
-private func shareLinkButton(_ connReqInvitation: String, _ secondaryColor: Color) -> some View {
+private func shareLinkButton(_ connLinkInvitation: CreatedConnLink, short: Bool) -> some View {
     Button {
-        showShareSheet(items: [simplexChatLink(connReqInvitation)])
+        showShareSheet(items: [connLinkInvitation.simplexChatUri(short: short)])
     } label: {
-        settingsRow("square.and.arrow.up", color: secondaryColor) {
-            Text("Share 1-time link")
-        }
+        Label("Share 1-time link", systemImage: "square.and.arrow.up")
     }
 }
 
-private func oneTimeLinkLearnMoreButton(_ secondaryColor: Color) -> some View {
+private func oneTimeLinkLearnMoreButton() -> some View {
     NavigationLink {
         AddContactLearnMore(showTitle: false)
             .navigationTitle("One-time invitation link")
             .modifier(ThemedBackground())
             .navigationBarTitleDisplayMode(.large)
     } label: {
-        settingsRow("info.circle", color: secondaryColor) {
-            Text("Learn more")
-        }
+        Label("Learn more", systemImage: "info.circle")
     }
 }
 

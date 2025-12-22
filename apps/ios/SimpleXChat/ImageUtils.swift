@@ -454,7 +454,7 @@ public func getLinkPreview(url: URL, cb: @escaping (LinkPreview?) -> Void) {
                        let resized = resizeImageToStrSizeSync(image, maxDataSize: 14000),
                        let title = metadata.title,
                        let uri = metadata.originalURL {
-                        linkPreview = LinkPreview(uri: uri, title: title, image: resized)
+                        linkPreview = LinkPreview(uri: uri.absoluteString, title: title, image: resized)
                     }
                 }
                 cb(linkPreview)

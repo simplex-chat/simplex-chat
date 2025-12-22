@@ -492,7 +492,7 @@ private suspend fun connectDesktopAddress(sessionAddress: MutableState<String>, 
   }
 }
 
-private suspend fun connectDesktop(sessionAddress: MutableState<String>, connect: suspend () -> Pair<SomeRemoteCtrl?, CR.ChatCmdError?>): Boolean {
+private suspend fun connectDesktop(sessionAddress: MutableState<String>, connect: suspend () -> Pair<SomeRemoteCtrl?, ChatError?>): Boolean {
   val res = connect()
   if (res.first != null) {
     val (rc_, ctrlAppInfo, v) = res.first!!
@@ -505,13 +505,13 @@ private suspend fun connectDesktop(sessionAddress: MutableState<String>, connect
   } else {
     val e = res.second ?: return false
     when {
-      e.chatError is ChatError.ChatErrorRemoteCtrl && e.chatError.remoteCtrlError is RemoteCtrlError.BadInvitation -> showBadInvitationErrorAlert()
-      e.chatError is ChatError.ChatErrorChat && e.chatError.errorType is ChatErrorType.CommandError -> showBadInvitationErrorAlert()
-      e.chatError is ChatError.ChatErrorRemoteCtrl && e.chatError.remoteCtrlError is RemoteCtrlError.BadVersion -> showBadVersionAlert(v = e.chatError.remoteCtrlError.appVersion)
-      e.chatError is ChatError.ChatErrorAgent && e.chatError.agentError is AgentErrorType.RCP && e.chatError.agentError.rcpErr is RCErrorType.VERSION -> showBadVersionAlert(v = null)
-      e.chatError is ChatError.ChatErrorAgent && e.chatError.agentError is AgentErrorType.RCP && e.chatError.agentError.rcpErr is RCErrorType.CTRL_AUTH -> showDesktopDisconnectedErrorAlert()
+      e is ChatError.ChatErrorRemoteCtrl && e.remoteCtrlError is RemoteCtrlError.BadInvitation -> showBadInvitationErrorAlert()
+      e is ChatError.ChatErrorChat && e.errorType is ChatErrorType.CommandError -> showBadInvitationErrorAlert()
+      e is ChatError.ChatErrorRemoteCtrl && e.remoteCtrlError is RemoteCtrlError.BadVersion -> showBadVersionAlert(v = e.remoteCtrlError.appVersion)
+      e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.RCP && e.agentError.rcpErr is RCErrorType.VERSION -> showBadVersionAlert(v = null)
+      e is ChatError.ChatErrorAgent && e.agentError is AgentErrorType.RCP && e.agentError.rcpErr is RCErrorType.CTRL_AUTH -> showDesktopDisconnectedErrorAlert()
       else -> {
-        val errMsg = "${e.responseType}: ${e.details}"
+        val errMsg = "error: ${e.string}"
         Log.e(TAG, "bad response: $errMsg")
         AlertManager.shared.showAlertMsg(generalGetString(MR.strings.error), errMsg)
       }

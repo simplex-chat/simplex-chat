@@ -11,12 +11,10 @@ import SimpleXChat
 
 private enum NoticesSheet: Identifiable {
     case whatsNew(updatedConditions: Bool)
-    case updatedConditions
 
     var id: String {
         switch self {
         case .whatsNew: return "whatsNew"
-        case .updatedConditions: return "updatedConditions"
         }
     }
 }
@@ -47,20 +45,9 @@ struct ContentView: View {
     @State private var showChooseLAMode = false
     @State private var showSetPasscode = false
     @State private var waitingForOrPassedAuth = true
-    @State private var chatListActionSheet: ChatListActionSheet? = nil
     @State private var chatListUserPickerSheet: UserPickerSheet? = nil
 
     private let callTopPadding: CGFloat = 40
-
-    private enum ChatListActionSheet: Identifiable {
-        case planAndConnectSheet(sheet: PlanAndConnectActionSheet)
-
-        var id: String {
-            switch self {
-            case let .planAndConnectSheet(sheet): return sheet.id
-            }
-        }
-    }
 
     private var accessAuthenticated: Bool {
         chatModel.contentViewAccessAuthenticated || contentAccessAuthenticationExtended
@@ -76,7 +63,7 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder func allViews() -> some View {
+    func allViews() -> some View {
         ZStack {
             let showCallArea = chatModel.activeCall != nil && chatModel.activeCall?.callState != .waitCapabilities && chatModel.activeCall?.callState != .invitationAccepted
             // contentView() has to be in a single branch, so that enabling authentication doesn't trigger re-rendering and close settings.
@@ -183,11 +170,6 @@ struct ContentView: View {
             if case .onboardingComplete = step,
                chatModel.currentUser != nil {
                 mainView()
-                    .actionSheet(item: $chatListActionSheet) { sheet in
-                        switch sheet {
-                        case let .planAndConnectSheet(sheet): return planAndConnectActionSheet(sheet, dismiss: false)
-                        }
-                    }
             } else {
                 OnboardingView(onboarding: step)
             }
@@ -211,7 +193,7 @@ struct ContentView: View {
         }
     }
 
-    @ViewBuilder private func activeCallInteractiveArea(_ call: Call) -> some View {
+    private func activeCallInteractiveArea(_ call: Call) -> some View {
         HStack {
             Text(call.contact.displayName).font(.body).foregroundColor(.white)
             Spacer()
@@ -278,18 +260,18 @@ struct ContentView: View {
                             let showWhatsNew = shouldShowWhatsNew()
                             let showUpdatedConditions = chatModel.conditions.conditionsAction?.showNotice ?? false
                             noticesShown = showWhatsNew || showUpdatedConditions
-                            if showWhatsNew {
+                            if showWhatsNew || showUpdatedConditions {
                                 noticesSheetItem = .whatsNew(updatedConditions: showUpdatedConditions)
-                            } else if showUpdatedConditions {
-                                noticesSheetItem = .updatedConditions
                             }
                         }
                     }
                 }
                 prefShowLANotice = true
                 connectViaUrl()
+                showReRegisterTokenAlert()
             }
             .onChange(of: chatModel.appOpenUrl) { _ in connectViaUrl() }
+            .onChange(of: chatModel.reRegisterTknStatus) { _ in showReRegisterTokenAlert() }
             .sheet(item: $noticesSheetItem) { item in
                 switch item {
                 case let .whatsNew(updatedConditions):
@@ -298,13 +280,6 @@ struct ContentView: View {
                         .if(updatedConditions) { v in
                             v.task { await setConditionsNotified_() }
                         }
-                case .updatedConditions:
-                    UsageConditionsView(
-                        currUserServers: Binding.constant([]),
-                        userServers: Binding.constant([])
-                    )
-                    .modifier(ThemedBackground(grouped: true))
-                    .task { await setConditionsNotified_() }
                 }
             }
             if chatModel.setDeliveryReceipts {
@@ -315,6 +290,12 @@ struct ContentView: View {
         .onContinueUserActivity("INStartCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartAudioCallIntent", perform: processUserActivity)
         .onContinueUserActivity("INStartVideoCallIntent", perform: processUserActivity)
+        .onContinueUserActivity(NSUserActivityTypeBrowsingWeb) { userActivity in
+            if let url = userActivity.webpageURL {
+                logger.debug("onContinueUserActivity.NSUserActivityTypeBrowsingWeb: \(url)")
+                chatModel.appOpenUrl = url
+            }
+        }
     }
 
     private func setConditionsNotified_() async {
@@ -446,30 +427,47 @@ struct ContentView: View {
     }
 
     func connectViaUrl() {
+        let m = ChatModel.shared
+        if let url = m.appOpenUrl {
+            m.appOpenUrl = nil
+            connectViaUrl_(url)
+        } else if let url = m.appOpenUrlLater, AppChatState.shared.value == .active, scenePhase == .active {
+            // correcting branch in case .onChange(of: scenePhase) in SimpleXApp doesn't trigger and transfer appOpenUrlLater into appOpenUrl
+            m.appOpenUrlLater = nil
+            connectViaUrl_(url)
+        }
+    }
+
+    func connectViaUrl_(_ url: URL) {
         dismissAllSheets() {
-            let m = ChatModel.shared
-            if let url = m.appOpenUrl {
-                m.appOpenUrl = nil
-                var path = url.path
-                if (path == "/contact" || path == "/invitation") {
-                    path.removeFirst()
-                    let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
-                    planAndConnect(
-                        link,
-                        showAlert: showPlanAndConnectAlert,
-                        showActionSheet: { chatListActionSheet = .planAndConnectSheet(sheet: $0) },
-                        dismiss: false,
-                        incognito: nil
-                    )
-                } else {
-                    AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
-                }
+            var path = url.path
+            if (path == "/contact" || path == "/invitation" || path == "/a" || path == "/c" || path == "/g" || path == "/i") {
+                path.removeFirst()
+                let link = url.absoluteString.replacingOccurrences(of: "///\(path)", with: "/\(path)")
+                planAndConnect(
+                    link,
+                    theme: theme,
+                    dismiss: false
+                )
+            } else {
+                AlertManager.shared.showAlert(Alert(title: Text("Error: URL is invalid")))
             }
         }
     }
 
-    private func showPlanAndConnectAlert(_ alert: PlanAndConnectAlert) {
-        AlertManager.shared.showAlert(planAndConnectAlert(alert, dismiss: false))
+    func showReRegisterTokenAlert() {
+        dismissAllSheets() {
+            let m = ChatModel.shared
+            if let errorTknStatus = m.reRegisterTknStatus, let token = chatModel.deviceToken {
+                chatModel.reRegisterTknStatus = nil
+                AlertManager.shared.showAlert(Alert(
+                    title: Text("Notifications error"),
+                    message: Text(tokenStatusInfo(errorTknStatus, register: true)),
+                    primaryButton: .default(Text("Register")) { reRegisterToken(token: token) },
+                    secondaryButton: .cancel()
+                ))
+            }
+        }
     }
 }
 

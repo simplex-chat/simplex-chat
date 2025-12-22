@@ -30,6 +30,7 @@ import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
 import Simplex.Chat.Operators
+import Simplex.Chat.Operators.Presets
 import Simplex.Chat.Options
 import Simplex.Chat.Options.DB
 import Simplex.Chat.Protocol
@@ -38,46 +39,19 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.Messaging.Agent as Agent
-import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), ServerRoles (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
+import Simplex.Messaging.Agent
+import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.Entity
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import Simplex.Messaging.Client (defaultNetworkConfig)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Protocol (ProtoServerWithAuth (..), ProtocolType (..), SProtocolType (..), SubscriptionMode (..), UserProtocol)
 import qualified Simplex.Messaging.TMap as TM
 import qualified UnliftIO.Exception as E
 import UnliftIO.STM
-
-operatorSimpleXChat :: NewServerOperator
-operatorSimpleXChat =
-  ServerOperator
-    { operatorId = DBNewEntity,
-      operatorTag = Just OTSimplex,
-      tradeName = "SimpleX Chat",
-      legalName = Just "SimpleX Chat Ltd",
-      serverDomains = ["simplex.im"],
-      conditionsAcceptance = CARequired Nothing,
-      enabled = True,
-      smpRoles = allRoles,
-      xftpRoles = allRoles
-    }
-
-operatorFlux :: NewServerOperator
-operatorFlux =
-  ServerOperator
-    { operatorId = DBNewEntity,
-      operatorTag = Just OTFlux,
-      tradeName = "Flux",
-      legalName = Just "InFlux Technologies Limited",
-      serverDomains = ["simplexonflux.com"],
-      conditionsAcceptance = CARequired Nothing,
-      enabled = False,
-      smpRoles = ServerRoles {storage = False, proxy = True},
-      xftpRoles = ServerRoles {storage = False, proxy = True}
-    }
 
 defaultChatConfig :: ChatConfig
 defaultChatConfig =
@@ -112,6 +86,11 @@ defaultChatConfig =
             ntf = _defaultNtfServers,
             netCfg = defaultNetworkConfig
           },
+      -- please note: if these servers are changed, this option needs to be split to two,
+      -- to have a different set of servers on the receiving end and on the sending end.
+      -- To preserve backward compatibility receiving end should update before the sending.
+      shortLinkPresetServers = allPresetServers,
+      presetDomains = [".simplex.im", ".simplexonflux.com"],
       tbqSize = 1024,
       fileChunkSize = 15780, -- do not change
       xftpDescrPartSize = 14000,
@@ -127,66 +106,20 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
-      coreApi = False,
       highlyAvailable = False,
+      deliveryWorkerDelay = 0,
+      deliveryBucketSize = 10000,
       deviceNameForRemote = "",
       chatHooks = defaultChatHooks
     }
 
-simplexChatSMPServers :: [NewUserServer 'PSMP]
-simplexChatSMPServers =
-  map
-    (presetServer True)
-    [ "smp://0YuTwO05YJWS8rkjn9eLJDjQhFKvIYd8d4xG8X1blIU=@smp8.simplex.im,beccx4yfxxbvyhqypaavemqurytl6hozr47wfc7uuecacjqdvwpw2xid.onion",
-      "smp://SkIkI6EPd2D63F4xFKfHk7I1UGZVNn6k1QWZ5rcyr6w=@smp9.simplex.im,jssqzccmrcws6bhmn77vgmhfjmhwlyr3u7puw4erkyoosywgl67slqqd.onion",
-      "smp://6iIcWT_dF2zN_w5xzZEY7HI2Prbh3ldP07YTyDexPjE=@smp10.simplex.im,rb2pbttocvnbrngnwziclp2f4ckjq65kebafws6g4hy22cdaiv5dwjqd.onion",
-      "smp://1OwYGt-yqOfe2IyVHhxz3ohqo3aCCMjtB-8wn4X_aoY=@smp11.simplex.im,6ioorbm6i3yxmuoezrhjk6f6qgkc4syabh7m3so74xunb5nzr4pwgfqd.onion",
-      "smp://UkMFNAXLXeAAe0beCa4w6X_zp18PwxSaSjY17BKUGXQ=@smp12.simplex.im,ie42b5weq7zdkghocs3mgxdjeuycheeqqmksntj57rmejagmg4eor5yd.onion",
-      "smp://enEkec4hlR3UtKx2NMpOUK_K4ZuDxjWBO1d9Y4YXVaA=@smp14.simplex.im,aspkyu2sopsnizbyfabtsicikr2s4r3ti35jogbcekhm3fsoeyjvgrid.onion",
-      "smp://h--vW7ZSkXPeOUpfxlFGgauQmXNFOzGoizak7Ult7cw=@smp15.simplex.im,oauu4bgijybyhczbnxtlggo6hiubahmeutaqineuyy23aojpih3dajad.onion",
-      "smp://hejn2gVIqNU6xjtGM3OwQeuk8ZEbDXVJXAlnSBJBWUA=@smp16.simplex.im,p3ktngodzi6qrf7w64mmde3syuzrv57y55hxabqcq3l5p6oi7yzze6qd.onion",
-      "smp://ZKe4uxF4Z_aLJJOEsC-Y6hSkXgQS5-oc442JQGkyP8M=@smp17.simplex.im,ogtwfxyi3h2h5weftjjpjmxclhb5ugufa5rcyrmg7j4xlch7qsr5nuqd.onion",
-      "smp://PtsqghzQKU83kYTlQ1VKg996dW4Cw4x_bvpKmiv8uns=@smp18.simplex.im,lyqpnwbs2zqfr45jqkncwpywpbtq7jrhxnib5qddtr6npjyezuwd3nqd.onion",
-      "smp://N_McQS3F9TGoh4ER0QstUf55kGnNSd-wXfNPZ7HukcM=@smp19.simplex.im,i53bbtoqhlc365k6kxzwdp5w3cdt433s7bwh3y32rcbml2vztiyyz5id.onion"
-    ]
-    <> map
-      (presetServer False)
-      [ "smp://u2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU=@smp4.simplex.im,o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion",
-        "smp://hpq7_4gGJiilmz5Rf-CswuU5kZGkm_zOIooSw6yALRg=@smp5.simplex.im,jjbyvoemxysm7qxap7m5d5m35jzv5qq6gnlv7s4rsn7tdwwmuqciwpid.onion",
-        "smp://PQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo=@smp6.simplex.im,bylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion"
-      ]
-
-fluxSMPServers :: [NewUserServer 'PSMP]
-fluxSMPServers =
-  map
-    (presetServer True)
-    [ "smp://xQW_ufMkGE20UrTlBl8QqceG1tbuylXhr9VOLPyRJmw=@smp1.simplexonflux.com,qb4yoanyl4p7o33yrknv4rs6qo7ugeb2tu2zo66sbebezs4cpyosarid.onion",
-      "smp://LDnWZVlAUInmjmdpQQoIo6FUinRXGe0q3zi5okXDE4s=@smp2.simplexonflux.com,yiqtuh3q4x7hgovkomafsod52wvfjucdljqbbipg5sdssnklgongxbqd.onion",
-      "smp://1jne379u7IDJSxAvXbWb_JgoE7iabcslX0LBF22Rej0=@smp3.simplexonflux.com,a5lm4k7ufei66cdck6fy63r4lmkqy3dekmmb7jkfdm5ivi6kfaojshad.onion",
-      "smp://xmAmqj75I9mWrUihLUlI0ZuNLXlIwFIlHRq5Pb6cHAU=@smp4.simplexonflux.com,qpcz2axyy66u26hfdd2e23uohcf3y6c36mn7dcuilcgnwjasnrvnxjqd.onion",
-      "smp://rWvBYyTamuRCBYb_KAn-nsejg879ndhiTg5Sq3k0xWA=@smp5.simplexonflux.com,4ao347qwiuluyd45xunmii4skjigzuuox53hpdsgbwxqafd4yrticead.onion",
-      "smp://PN7-uqLBToqlf1NxHEaiL35lV2vBpXq8Nj8BW11bU48=@smp6.simplexonflux.com,hury6ot3ymebbr2535mlp7gcxzrjpc6oujhtfxcfh2m4fal4xw5fq6qd.onion"
-    ]
-
-fluxXFTPServers :: [NewUserServer 'PXFTP]
-fluxXFTPServers =
-  map
-    (presetServer True)
-    [ "xftp://92Sctlc09vHl_nAqF2min88zKyjdYJ9mgxRCJns5K2U=@xftp1.simplexonflux.com,apl3pumq3emwqtrztykyyoomdx4dg6ysql5zek2bi3rgznz7ai3odkid.onion",
-      "xftp://YBXy4f5zU1CEhnbbCzVWTNVNsaETcAGmYqGNxHntiE8=@xftp2.simplexonflux.com,c5jjecisncnngysah3cz2mppediutfelco4asx65mi75d44njvua3xid.onion",
-      "xftp://ARQO74ZSvv2OrulRF3CdgwPz_AMy27r0phtLSq5b664=@xftp3.simplexonflux.com,dc4mohiubvbnsdfqqn7xhlhpqs5u4tjzp7xpz6v6corwvzvqjtaqqiqd.onion",
-      "xftp://ub2jmAa9U0uQCy90O-fSUNaYCj6sdhl49Jh3VpNXP58=@xftp4.simplexonflux.com,4qq5pzier3i4yhpuhcrhfbl6j25udc4czoyascrj4yswhodhfwev3nyd.onion",
-      "xftp://Rh19D5e4Eez37DEE9hAlXDB3gZa1BdFYJTPgJWPO9OI=@xftp5.simplexonflux.com,q7itltdn32hjmgcqwhow4tay5ijetng3ur32bolssw32fvc5jrwvozad.onion",
-      "xftp://0AznwoyfX8Od9T_acp1QeeKtxUi676IBIiQjXVwbdyU=@xftp6.simplexonflux.com,upvzf23ou6nrmaf3qgnhd6cn3d74tvivlmz3p7wdfwq6fhthjrjiiqid.onion"
-    ]
-
 logCfg :: LogConfig
 logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
-createChatDatabase :: ChatDbOpts -> MigrationConfirmation -> IO (Either MigrationError ChatDatabase)
-createChatDatabase chatDbOpts confirmMigrations = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False) confirmMigrations
-  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False) confirmMigrations
+createChatDatabase :: ChatDbOpts -> MigrationConfig -> IO (Either MigrationError ChatDatabase)
+createChatDatabase chatDbOpts migrationConfig = runExceptT $ do
+  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False chatDBFunctions) migrationConfig
+  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False []) migrationConfig
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
@@ -194,7 +127,7 @@ newChatController
   ChatDatabase {chatStore, agentStore}
   user
   cfg@ChatConfig {agentConfig = aCfg, presetServers, inlineFiles, deviceNameForRemote, confirmMigrations}
-  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, highlyAvailable, yesToUpMigrations}, deviceName, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
+  ChatOpts {coreOptions = CoreChatOpts {smpServers, xftpServers, simpleNetCfg, logLevel, logConnections, logServerHosts, logFile, tbqSize, deviceName, highlyAvailable, yesToUpMigrations}, optFilesFolder, optTempDirectory, showReactions, allowInstantFiles, autoAcceptFileSize}
   backgroundMode = do
     let inlineFiles' = if allowInstantFiles || autoAcceptFileSize > 0 then inlineFiles else inlineFiles {sendChunks = 0, receiveInstant = False}
         confirmMigrations' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
@@ -216,7 +149,6 @@ newChatController
     eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
-    connNetworkStatuses <- TM.emptyIO
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- TM.emptyIO
@@ -231,6 +163,8 @@ newChatController
     remoteCtrlSession <- newTVarIO Nothing
     filesFolder <- newTVarIO optFilesFolder
     chatStoreChanged <- newTVarIO False
+    deliveryTaskWorkers <- TM.emptyIO
+    deliveryJobWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
@@ -256,7 +190,6 @@ newChatController
           eventSeq,
           inputQ,
           outputQ,
-          connNetworkStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -271,6 +204,8 @@ newChatController
           remoteCtrlSession,
           config,
           filesFolder,
+          deliveryTaskWorkers,
+          deliveryJobWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,
@@ -310,12 +245,12 @@ newChatController
       randomServerCfgs name p opDomains rndSrvs =
         toJustOrError name $ L.nonEmpty $ agentServerCfgs p opDomains $ concatMap (pServers p) rndSrvs
       agentServers :: DB.Connection -> ChatConfig -> NonEmpty PresetOperator -> RandomAgentServers -> IO InitialAgentServers
-      agentServers db ChatConfig {presetServers = PresetServers {ntf, netCfg}} presetOps as = do
+      agentServers db ChatConfig {presetServers = PresetServers {ntf, netCfg}, presetDomains} presetOps as = do
         users <- getUsers db
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg}
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

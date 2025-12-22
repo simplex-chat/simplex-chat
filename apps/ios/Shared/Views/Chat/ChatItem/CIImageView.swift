@@ -12,6 +12,7 @@ import SimpleXChat
 struct CIImageView: View {
     @EnvironmentObject var m: ChatModel
     let chatItem: ChatItem
+    var scrollToItem: ((ChatItem.ID) -> Void)? = nil
     var preview: UIImage?
     let maxWidth: CGFloat
     var imgWidth: CGFloat?
@@ -25,12 +26,14 @@ struct CIImageView: View {
             if let uiImage = getLoadedImage(file) {
                 Group { if smallView { smallViewImageView(uiImage) } else { imageView(uiImage) } }
                 .fullScreenCover(isPresented: $showFullScreenImage) {
-                    FullScreenMediaView(chatItem: chatItem, image: uiImage, showView: $showFullScreenImage)
+                    FullScreenMediaView(chatItem: chatItem, scrollToItem: scrollToItem, image: uiImage, showView: $showFullScreenImage)
                 }
                 .if(!smallView) { view in
                     view.modifier(PrivacyBlur(blurred: $blurred))
                 }
-                .onTapGesture { showFullScreenImage = true }
+                .if(!blurred) { v in
+                    v.simultaneousGesture(TapGesture().onEnded { showFullScreenImage = true })
+                }
                 .onChange(of: m.activeCallViewIsCollapsed) { _ in
                     showFullScreenImage = false
                 }
@@ -42,7 +45,7 @@ struct CIImageView: View {
                         imageView(preview).modifier(PrivacyBlur(blurred: $blurred))
                     }
                 }
-                    .onTapGesture {
+                    .simultaneousGesture(TapGesture().onEnded {
                         if let file = file {
                             switch file.fileStatus {
                             case .rcvInvitation, .rcvAborted:
@@ -79,7 +82,7 @@ struct CIImageView: View {
                             default: ()
                             }
                         }
-                    }
+                    })
             }
         }
         .onDisappear {

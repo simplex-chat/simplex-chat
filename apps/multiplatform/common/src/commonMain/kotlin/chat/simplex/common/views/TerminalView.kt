@@ -10,8 +10,10 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,16 +47,16 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val developerTools = chatModel.controller.appPrefs.developerTools.get()
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
   val s = composeState.value.message
-  if (s.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
-    val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
-    chatModel.addTerminalItem(TerminalItem.cmd(null, CC.Console(s)))
+  if (s.text.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
+    val resp = API.Error(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
+    chatModel.addTerminalItem(TerminalItem.cmd(null, CC.Console(s.text)))
     chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
   } else {
     withBGApi {
       // show "in progress"
       // TODO show active remote host in chat console?
-      chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s))
+      chatModel.controller.sendCmd(chatModel.remoteHostId(), CC.Console(s.text))
       composeState.value = ComposeState(useLinkPreviews = false)
       // hide "in progress"
     }
@@ -70,7 +72,7 @@ fun TerminalLayout(
   val smallFont = MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onBackground)
   val textStyle = remember { mutableStateOf(smallFont) }
 
-  fun onMessageChange(s: String) {
+  fun onMessageChange(s: ComposeMessage) {
     composeState.value = composeState.value.copy(message = s)
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
@@ -97,12 +99,11 @@ fun TerminalLayout(
             isDirectChat = false,
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             sendMsgEnabled = true,
+            userCantSendReason = null,
             sendButtonEnabled = true,
-            nextSendGrpInv = false,
+            nextConnect = false,
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
-            userIsObserver = false,
-            userCanSend = true,
             allowVoiceToContact = {},
             placeholder = "",
             sendMessage = { sendCommand() },
@@ -111,7 +112,8 @@ fun TerminalLayout(
             editPrevMessage = {},
             onMessageChange = ::onMessageChange,
             onFilesPasted = {},
-            textStyle = textStyle
+            textStyle = textStyle,
+            focusRequester = remember { FocusRequester() }
           )
         }
       }

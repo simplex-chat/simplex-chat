@@ -54,6 +54,7 @@ website/translations.json
 website/src/img/images/
 website/src/images/
 website/src/js/lottie.min.js
+website/src/js/ethers*
 website/src/privacy.md
 # Generated files
 website/package/generated*
@@ -79,3 +80,4 @@ website/package-lock.json
 website/.cache
 website/test/stubs-layout-cache/_includes/*.js
 apps/android/app/release
+apps/multiplatform/.kotlin/sessions

@@ -1,8 +1,7 @@
 CREATE TABLE migrations(
-  name TEXT NOT NULL,
+  name TEXT NOT NULL PRIMARY KEY,
   ts TEXT NOT NULL,
-  down TEXT,
-  PRIMARY KEY(name)
+  down TEXT
 );
 CREATE TABLE contact_profiles(
   -- remote user profile
@@ -18,7 +17,9 @@ CREATE TABLE contact_profiles(
   incognito INTEGER,
   local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   preferences TEXT,
-  contact_link BLOB
+  contact_link BLOB,
+  short_descr TEXT,
+  chat_peer_type TEXT
 );
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
@@ -36,7 +37,8 @@ CREATE TABLE users(
   send_rcpts_small_groups INTEGER NOT NULL DEFAULT 0,
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
-  active_order INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  active_order INTEGER NOT NULL DEFAULT 0,
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -59,7 +61,6 @@ CREATE TABLE contacts(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
   is_user INTEGER NOT NULL DEFAULT 0, -- 1 if this contact is a user
-  via_group INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT CHECK(updated_at NOT NULL),
   xcontact_id BLOB,
@@ -79,6 +80,16 @@ CREATE TABLE contacts(
   ui_themes TEXT,
   chat_deleted INTEGER NOT NULL DEFAULT 0,
   chat_item_ttl INTEGER,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
+  contact_request_id INTEGER REFERENCES contact_requests ON DELETE SET NULL,
+  grp_direct_inv_link BLOB,
+  grp_direct_inv_from_group_id INTEGER REFERENCES groups(group_id) ON DELETE SET NULL,
+  grp_direct_inv_from_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE SET NULL,
+  grp_direct_inv_from_member_conn_id INTEGER REFERENCES connections(connection_id) ON DELETE SET NULL,
+  grp_direct_inv_started_connection INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -108,7 +119,9 @@ CREATE TABLE group_profiles(
   image TEXT,
   user_id INTEGER DEFAULT NULL REFERENCES users ON DELETE CASCADE,
   preferences TEXT,
-  description TEXT NULL
+  description TEXT NULL,
+  member_admission TEXT,
+  short_descr TEXT
 );
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
@@ -120,7 +133,6 @@ CREATE TABLE groups(
   updated_at TEXT CHECK(updated_at NOT NULL),
   chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE SET NULL,
   enable_ntfs INTEGER,
-  host_conn_custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   unread_chat INTEGER DEFAULT 0 CHECK(unread_chat NOT NULL),
   chat_ts TEXT,
   favorite INTEGER NOT NULL DEFAULT 0,
@@ -134,7 +146,17 @@ CREATE TABLE groups(
   business_xcontact_id BLOB NULL,
   customer_member_id BLOB NULL,
   chat_item_ttl INTEGER,
-  local_alias TEXT DEFAULT '', -- received
+  local_alias TEXT DEFAULT '',
+  members_require_attention INTEGER NOT NULL DEFAULT 0,
+  conn_full_link_to_connect BLOB,
+  conn_short_link_to_connect BLOB,
+  conn_link_started_connection INTEGER NOT NULL DEFAULT 0,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
+  conn_link_prepared_connection INTEGER NOT NULL DEFAULT 0,
+  via_group_link_uri BLOB,
+  summary_current_members_count INTEGER NOT NULL DEFAULT 0,
+  member_index INTEGER NOT NULL DEFAULT 0, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -167,6 +189,15 @@ CREATE TABLE group_members(
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   member_restriction TEXT,
+  support_chat_ts TEXT,
+  support_chat_items_unread INTEGER NOT NULL DEFAULT 0,
+  support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0,
+  support_chat_items_mentions INTEGER NOT NULL DEFAULT 0,
+  support_chat_last_msg_from_member_ts TEXT,
+  member_xcontact_id BLOB,
+  member_welcome_shared_msg_id BLOB,
+  index_in_group INTEGER NOT NULL DEFAULT 0,
+  member_relations_vector BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -240,17 +271,6 @@ CREATE TABLE rcv_files(
   to_receive INTEGER,
   user_approved_relays INTEGER NOT NULL DEFAULT 0
 );
-CREATE TABLE snd_file_chunks(
-  file_id INTEGER NOT NULL,
-  connection_id INTEGER NOT NULL,
-  chunk_number INTEGER NOT NULL,
-  chunk_agent_msg_id INTEGER,
-  chunk_sent INTEGER NOT NULL DEFAULT 0,
-  created_at TEXT CHECK(created_at NOT NULL),
-  updated_at TEXT CHECK(updated_at NOT NULL), -- 0(sent to agent), 1(sent to server)
-  FOREIGN KEY(file_id, connection_id) REFERENCES snd_files ON DELETE CASCADE,
-  PRIMARY KEY(file_id, connection_id, chunk_number)
-) WITHOUT ROWID;
 CREATE TABLE rcv_file_chunks(
   file_id INTEGER NOT NULL REFERENCES rcv_files ON DELETE CASCADE,
   chunk_number INTEGER NOT NULL,
@@ -298,6 +318,9 @@ CREATE TABLE connections(
   pq_snd_enabled INTEGER,
   pq_rcv_enabled INTEGER,
   quota_err_counter INTEGER NOT NULL DEFAULT 0,
+  short_link_inv BLOB,
+  via_short_link_contact BLOB,
+  via_contact_uri BLOB,
   FOREIGN KEY(snd_file_id, connection_id)
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
@@ -317,12 +340,15 @@ CREATE TABLE user_contact_links(
   group_link_id BLOB,
   group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
+  short_link_contact BLOB,
+  short_link_data_set INTEGER NOT NULL DEFAULT 0,
+  short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
 CREATE TABLE contact_requests(
   contact_request_id INTEGER PRIMARY KEY,
-  user_contact_link_id INTEGER NOT NULL REFERENCES user_contact_links
-  ON UPDATE CASCADE ON DELETE CASCADE,
+  user_contact_link_id INTEGER REFERENCES user_contact_links
+  ON UPDATE CASCADE ON DELETE SET NULL,
   agent_invitation_id BLOB NOT NULL,
   contact_profile_id INTEGER REFERENCES contact_profiles
   ON DELETE SET NULL
@@ -336,6 +362,9 @@ CREATE TABLE contact_requests(
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
   pq_support INTEGER NOT NULL DEFAULT 0,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
+  business_group_id INTEGER REFERENCES groups(group_id) ON DELETE CASCADE,
+  welcome_shared_msg_id BLOB,
+  request_shared_msg_id BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON UPDATE CASCADE
@@ -357,7 +386,8 @@ CREATE TABLE messages(
   shared_msg_id BLOB,
   shared_msg_id_user INTEGER,
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
-  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL
+  forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
+  broker_ts TEXT
 );
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
@@ -407,7 +437,11 @@ CREATE TABLE chat_items(
   fwd_from_chat_item_id INTEGER REFERENCES chat_items ON DELETE SET NULL,
   via_proxy INTEGER,
   msg_content_tag TEXT,
-  include_in_history INTEGER NOT NULL DEFAULT 0
+  include_in_history INTEGER NOT NULL DEFAULT 0,
+  user_mention INTEGER NOT NULL DEFAULT 0,
+  group_scope_tag TEXT,
+  group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  show_group_as_sender INTEGER NOT NULL DEFAULT 0
 );
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
@@ -632,7 +666,7 @@ CREATE TABLE operator_usage_conditions(
 );
 CREATE TABLE chat_tags(
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
-  user_id INTEGER REFERENCES users,
+  user_id INTEGER REFERENCES users ON DELETE CASCADE,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
   tag_order INTEGER NOT NULL
@@ -642,15 +676,61 @@ CREATE TABLE chat_tags_chats(
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
 );
+CREATE TABLE chat_item_mentions(
+  chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  member_id BLOB NOT NULL,
+  chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
+  display_name TEXT NOT NULL
+);
+CREATE TABLE delivery_tasks(
+  delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  worker_scope TEXT NOT NULL,
+  job_scope_spec_tag TEXT,
+  job_scope_include_pending INTEGER,
+  job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  sender_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  message_id INTEGER REFERENCES messages ON DELETE CASCADE,
+  message_from_channel INTEGER NOT NULL DEFAULT 0,
+  task_status TEXT NOT NULL,
+  task_err_reason TEXT,
+  failed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE delivery_jobs(
+  delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
+  worker_scope TEXT NOT NULL,
+  job_scope_spec_tag TEXT,
+  job_scope_include_pending INTEGER,
+  job_scope_support_gm_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  single_sender_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
+  body BLOB,
+  cursor_group_member_id INTEGER,
+  job_status TEXT NOT NULL,
+  job_err_reason TEXT,
+  failed INTEGER DEFAULT 0,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now'))
+);
+CREATE TABLE group_member_status_predicates(
+  member_status TEXT NOT NULL PRIMARY KEY,
+  current_member INTEGER NOT NULL DEFAULT 0
+);
+CREATE TABLE connections_sync(
+  connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
+  should_sync INTEGER NOT NULL DEFAULT 0,
+  last_sync_ts TEXT
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
 );
 CREATE INDEX idx_groups_inv_queue_info ON groups(inv_queue_info);
-CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(xcontact_id);
 CREATE INDEX idx_contacts_xcontact_id ON contacts(xcontact_id);
 CREATE INDEX idx_messages_shared_msg_id ON messages(shared_msg_id);
-CREATE INDEX idx_chat_items_shared_msg_id ON chat_items(shared_msg_id);
 CREATE UNIQUE INDEX idx_chat_items_direct_shared_msg_id ON chat_items(
   user_id,
   contact_id,
@@ -688,7 +768,6 @@ CREATE INDEX idx_connections_via_user_contact_link ON connections(
   via_user_contact_link
 );
 CREATE INDEX idx_connections_rcv_file_id ON connections(rcv_file_id);
-CREATE INDEX idx_connections_contact_id ON connections(contact_id);
 CREATE INDEX idx_connections_user_contact_link_id ON connections(
   user_contact_link_id
 );
@@ -700,7 +779,6 @@ CREATE INDEX idx_contact_requests_contact_profile_id ON contact_requests(
 CREATE INDEX idx_contact_requests_user_contact_link_id ON contact_requests(
   user_contact_link_id
 );
-CREATE INDEX idx_contacts_via_group ON contacts(via_group);
 CREATE INDEX idx_contacts_contact_profile_id ON contacts(contact_profile_id);
 CREATE INDEX idx_files_chat_item_id ON files(chat_item_id);
 CREATE INDEX idx_files_user_id ON files(user_id);
@@ -723,9 +801,6 @@ CREATE INDEX idx_group_members_contact_profile_id ON group_members(
 CREATE INDEX idx_group_members_user_id ON group_members(user_id);
 CREATE INDEX idx_group_members_invited_by ON group_members(invited_by);
 CREATE INDEX idx_group_profiles_user_id ON group_profiles(user_id);
-CREATE INDEX idx_groups_host_conn_custom_user_profile_id ON groups(
-  host_conn_custom_user_profile_id
-);
 CREATE INDEX idx_groups_chat_item_id ON groups(chat_item_id);
 CREATE INDEX idx_groups_group_profile_id ON groups(group_profile_id);
 CREATE INDEX idx_messages_group_id ON messages(group_id);
@@ -741,10 +816,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON pending_group_message
 CREATE INDEX idx_rcv_file_chunks_file_id ON rcv_file_chunks(file_id);
 CREATE INDEX idx_rcv_files_group_member_id ON rcv_files(group_member_id);
 CREATE INDEX idx_settings_user_id ON settings(user_id);
-CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(
-  file_id,
-  connection_id
-);
 CREATE INDEX idx_snd_files_group_member_id ON snd_files(group_member_id);
 CREATE INDEX idx_snd_files_connection_id ON snd_files(connection_id);
 CREATE INDEX idx_snd_files_file_id ON snd_files(file_id);
@@ -817,7 +888,6 @@ CREATE INDEX idx_chat_items_user_id_item_status ON chat_items(
   user_id,
   item_status
 );
-CREATE INDEX idx_connections_to_subscribe ON connections(to_subscribe);
 CREATE INDEX idx_contacts_contact_group_member_id ON contacts(
   contact_group_member_id
 );
@@ -991,3 +1061,165 @@ CREATE INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id ON group_s
   chat_item_id,
   group_member_id
 );
+CREATE INDEX idx_chat_item_mentions_group_id ON chat_item_mentions(group_id);
+CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(
+  chat_item_id
+);
+CREATE UNIQUE INDEX idx_chat_item_mentions_display_name ON chat_item_mentions(
+  chat_item_id,
+  display_name
+);
+CREATE UNIQUE INDEX idx_chat_item_mentions_member_id ON chat_item_mentions(
+  chat_item_id,
+  member_id
+);
+CREATE INDEX idx_chat_items_groups_user_mention ON chat_items(
+  user_id,
+  group_id,
+  item_status,
+  user_mention
+);
+CREATE INDEX idx_chat_items_group_id ON chat_items(group_id);
+CREATE INDEX idx_chat_items_group_id_shared_msg_id ON chat_items(
+  group_id,
+  shared_msg_id
+);
+CREATE INDEX idx_chat_items_group_scope_group_member_id ON chat_items(
+  group_scope_group_member_id
+);
+CREATE INDEX idx_chat_items_group_scope_item_ts ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_ts
+);
+CREATE INDEX idx_chat_items_group_scope_item_status ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status,
+  item_ts
+);
+CREATE INDEX idx_contacts_contact_request_id ON contacts(contact_request_id);
+CREATE INDEX idx_contact_requests_business_group_id ON contact_requests(
+  business_group_id
+);
+CREATE INDEX idx_contact_requests_xcontact_id ON contact_requests(
+  user_id,
+  xcontact_id
+);
+CREATE INDEX idx_chat_items_group_scope_stats_all ON chat_items(
+  user_id,
+  group_id,
+  group_scope_tag,
+  group_scope_group_member_id,
+  item_status,
+  chat_item_id,
+  user_mention
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_id ON contacts(
+  grp_direct_inv_from_group_id
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_group_member_id ON contacts(
+  grp_direct_inv_from_group_member_id
+);
+CREATE INDEX idx_contacts_grp_direct_inv_from_member_conn_id ON contacts(
+  grp_direct_inv_from_member_conn_id
+);
+CREATE INDEX idx_delivery_tasks_group_id ON delivery_tasks(group_id);
+CREATE INDEX idx_delivery_tasks_job_scope_support_gm_id ON delivery_tasks(
+  job_scope_support_gm_id
+);
+CREATE INDEX idx_delivery_tasks_sender_group_member_id ON delivery_tasks(
+  sender_group_member_id
+);
+CREATE INDEX idx_delivery_tasks_message_id ON delivery_tasks(message_id);
+CREATE INDEX idx_delivery_tasks_next ON delivery_tasks(
+  group_id,
+  worker_scope,
+  failed,
+  task_status
+);
+CREATE INDEX idx_delivery_tasks_next_for_job_scope ON delivery_tasks(
+  group_id,
+  worker_scope,
+  job_scope_spec_tag,
+  job_scope_include_pending,
+  job_scope_support_gm_id,
+  failed,
+  task_status
+);
+CREATE INDEX idx_delivery_tasks_next_for_job_scope_sender ON delivery_tasks(
+  group_id,
+  worker_scope,
+  job_scope_spec_tag,
+  job_scope_include_pending,
+  job_scope_support_gm_id,
+  sender_group_member_id,
+  failed,
+  task_status
+);
+CREATE INDEX idx_delivery_tasks_created_at ON delivery_tasks(created_at);
+CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
+CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(
+  job_scope_support_gm_id
+);
+CREATE INDEX idx_delivery_jobs_single_sender_group_member_id ON delivery_jobs(
+  single_sender_group_member_id
+);
+CREATE INDEX idx_delivery_jobs_next ON delivery_jobs(
+  group_id,
+  worker_scope,
+  failed,
+  job_status
+);
+CREATE INDEX idx_delivery_jobs_created_at ON delivery_jobs(created_at);
+CREATE INDEX idx_groups_summary_current_members_count ON groups(
+  summary_current_members_count
+);
+CREATE UNIQUE INDEX idx_connections_contact_id ON connections(contact_id);
+CREATE UNIQUE INDEX idx_connections_group_member_id ON connections(
+  group_member_id
+);
+CREATE INDEX idx_connections_to_subscribe ON connections(
+  user_id,
+  to_subscribe
+);
+CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(
+  group_id,
+  index_in_group
+);
+CREATE TRIGGER on_group_members_insert_update_summary
+AFTER INSERT ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+BEGIN
+  UPDATE groups
+  SET summary_current_members_count = summary_current_members_count + 1
+  WHERE group_id = NEW.group_id;
+END;
+CREATE TRIGGER on_group_members_delete_update_summary
+AFTER DELETE ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+BEGIN
+  UPDATE groups
+  SET summary_current_members_count = summary_current_members_count - 1
+  WHERE group_id = OLD.group_id;
+END;
+CREATE TRIGGER on_group_members_update_update_summary
+AFTER UPDATE ON group_members
+FOR EACH ROW
+WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = OLD.member_status AND current_member = 1)
+     != EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+BEGIN
+    UPDATE groups
+    SET summary_current_members_count = summary_current_members_count +
+        (
+          CASE WHEN EXISTS (SELECT 1 FROM group_member_status_predicates WHERE member_status = NEW.member_status AND current_member = 1)
+          THEN 1 ELSE -1 END
+        )
+    WHERE group_id = NEW.group_id;
+END;

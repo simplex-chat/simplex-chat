@@ -12,17 +12,15 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatController.chatModel
 import chat.simplex.common.model.ChatModel.getChatItemIndexOrNull
 import chat.simplex.common.ui.theme.*
-import chat.simplex.common.views.chat.group.LocalContentTag
 import chat.simplex.common.views.helpers.generalGetString
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.stringResource
 import kotlinx.datetime.Clock
 
 @Composable
-fun MarkedDeletedItemView(ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
+fun MarkedDeletedItemView(chatsCtx: ChatModel.ChatsContext, ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: Int?, revealed: State<Boolean>, showViaProxy: Boolean, showTimestamp: Boolean) {
   val sentColor = MaterialTheme.appColors.sentMessage
   val receivedColor = MaterialTheme.appColors.receivedMessage
   Surface(
@@ -35,7 +33,7 @@ fun MarkedDeletedItemView(ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: In
       verticalAlignment = Alignment.CenterVertically
     ) {
       Box(Modifier.weight(1f, false)) {
-        MergedMarkedDeletedText(ci, chatInfo, revealed)
+        MergedMarkedDeletedText(chatsCtx, ci, chatInfo, revealed)
       }
       CIMetaView(ci, timedMessagesTTL, showViaProxy = showViaProxy, showTimestamp = showTimestamp)
     }
@@ -43,8 +41,8 @@ fun MarkedDeletedItemView(ci: ChatItem, chatInfo: ChatInfo, timedMessagesTTL: In
 }
 
 @Composable
-private fun MergedMarkedDeletedText(chatItem: ChatItem, chatInfo: ChatInfo, revealed: State<Boolean>) {
-  val reversedChatItems = chatModel.chatItemsForContent(LocalContentTag.current).value.asReversed()
+private fun MergedMarkedDeletedText(chatsCtx: ChatModel.ChatsContext, chatItem: ChatItem, chatInfo: ChatInfo, revealed: State<Boolean>) {
+  val reversedChatItems = chatsCtx.chatItems.value.asReversed()
   var i = getChatItemIndexOrNull(chatItem, reversedChatItems)
   val ciCategory = chatItem.mergeCategory
   val text =  if (!revealed.value && ciCategory != null && i != null) {
@@ -95,7 +93,7 @@ private fun MergedMarkedDeletedText(chatItem: ChatItem, chatInfo: ChatInfo, reve
 
 fun markedDeletedText(cItem: ChatItem, chatInfo: ChatInfo): String =
   if (cItem.meta.itemDeleted != null && cItem.isReport) {
-    if (cItem.meta.itemDeleted is CIDeleted.Moderated && cItem.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as ChatInfo.Group?)?.groupInfo?.membership?.groupMemberId) {
+    if (cItem.meta.itemDeleted is CIDeleted.Moderated && cItem.meta.itemDeleted.byGroupMember.groupMemberId != (chatInfo as? ChatInfo.Group)?.groupInfo?.membership?.groupMemberId) {
       generalGetString(MR.strings.report_item_archived_by).format(cItem.meta.itemDeleted.byGroupMember.displayName)
     } else {
       generalGetString(MR.strings.report_item_archived)

@@ -1,12 +1,16 @@
 {-# LANGUAGE CPP #-}
+{-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell #-}
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module MobileTests where
+module MobileTests (mobileTests) where
 
+import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent.STM
 import Control.Monad.Except
@@ -27,8 +31,9 @@ import Foreign.StablePtr
 import Foreign.Storable (peek)
 import GHC.IO.Encoding (setLocaleEncoding, setFileSystemEncoding, setForeignEncoding)
 import JSONFixtures
-import Simplex.Chat.Controller (ChatController (..))
-import Simplex.Chat.Mobile
+import Simplex.Chat
+import Simplex.Chat.Controller (ChatController (..), ChatDatabase (..))
+import Simplex.Chat.Mobile hiding (error)
 import Simplex.Chat.Mobile.File
 import Simplex.Chat.Mobile.Shared
 import Simplex.Chat.Mobile.WebRTC
@@ -36,8 +41,8 @@ import Simplex.Chat.Options.DB
 import Simplex.Chat.Store
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types (AgentUserId (..), Profile (..))
-import Simplex.Messaging.Agent.Store.Interface
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
+import qualified Simplex.Messaging.Agent.Store.SQLite.DB as DB
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile(..), CryptoFileArgs (..))
 import qualified Simplex.Messaging.Crypto.File as CF
@@ -48,7 +53,7 @@ import System.FilePath ((</>))
 import System.IO (utf8)
 import Test.Hspec hiding (it)
 
-mobileTests :: HasCallStack => SpecWith FilePath
+mobileTests :: HasCallStack => SpecWith TestParams
 mobileTests = do
   describe "mobile API" $ do
     runIO $ do
@@ -73,6 +78,9 @@ mobileTests = do
       it "should convert invalid name to a valid name" testValidNameCApi
     describe "JSON length" $ do
       it "should compute length of JSON encoded string" testChatJsonLengthCApi
+    describe "Parsers" $ do
+      it "should parse server address" testChatParseServer
+      it "should parse and sanitize URI" testChatParseUri
 
 noActiveUser :: LB.ByteString
 noActiveUser =
@@ -106,36 +114,12 @@ chatStarted =
   chatStartedTagged
 #endif
 
-networkStatuses :: LB.ByteString
-networkStatuses =
+connectionsDiff :: LB.ByteString
+connectionsDiff =
 #if defined(darwin_HOST_OS) && defined(swiftJSON)
-  networkStatusesSwift
+  connectionsDiffSwift
 #else
-  networkStatusesTagged
-#endif
-
-memberSubSummary :: LB.ByteString
-memberSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  memberSubSummarySwift
-#else
-  memberSubSummaryTagged
-#endif
-
-userContactSubSummary :: LB.ByteString
-userContactSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  userContactSubSummarySwift
-#else
-  userContactSubSummaryTagged
-#endif
-
-pendingSubSummary :: LB.ByteString
-pendingSubSummary =
-#if defined(darwin_HOST_OS) && defined(swiftJSON)
-  pendingSubSummarySwift
-#else
-  pendingSubSummaryTagged
+  connectionsDiffTagged
 #endif
 
 parsedMarkdown :: LB.ByteString
@@ -146,9 +130,10 @@ parsedMarkdown =
   parsedMarkdownTagged
 #endif
 
-testChatApiNoUser :: FilePath -> IO ()
-testChatApiNoUser tmp = do
-  let dbPrefix = tmp </> "1"
+testChatApiNoUser :: TestParams -> IO ()
+testChatApiNoUser ps = do
+  let tmp = tmpPath ps
+      dbPrefix = tmp </> "1"
   Right cc <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "myKey" "yesUp"
   chatSendCmd cc "/u" `shouldReturn` noActiveUser
@@ -156,25 +141,27 @@ testChatApiNoUser tmp = do
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUser
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
 
-testChatApi :: FilePath -> IO ()
-testChatApi tmp = do
-  let dbPrefix = tmp </> "1"
-      f = dbPrefix <> chatSuffix
-  Right st <- createChatStore (DBOpts f "myKey" False True) MCYesUp
-  Right _ <- withTransaction st $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
+testChatApi :: TestParams -> IO ()
+testChatApi ps = do
+  let tmp = tmpPath ps
+      dbPrefix = tmp </> "1"
+  Right ChatDatabase {chatStore, agentStore} <- createChatDatabase (ChatDbOpts dbPrefix "myKey" DB.TQOff True) (MigrationConfig MCYesUp Nothing)
+  insertUser agentStore
+  Right _ <- withTransaction chatStore $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"
   chatSendCmd cc "/u" `shouldReturn` activeUser
   chatSendCmd cc "/create user alice Alice" `shouldReturn` activeUserExists
   chatSendCmd cc "/_start" `shouldReturn` chatStarted
-  chatRecvMsg cc `shouldReturn` networkStatuses
+  chatRecvMsg cc `shouldReturn` connectionsDiff
   chatRecvMsgWait cc 10000 `shouldReturn` ""
   chatParseMarkdown "hello" `shouldBe` "{}"
   chatParseMarkdown "*hello*" `shouldBe` parsedMarkdown
 
-testMediaApi :: HasCallStack => FilePath -> IO ()
-testMediaApi tmp = do
+testMediaApi :: HasCallStack => TestParams -> IO ()
+testMediaApi ps = do
+  let tmp = tmpPath ps
   Right c@ChatController {random = g} <- chatMigrateInit (tmp </> "1") "" "yesUp"
   cc <- newStablePtr c
   key <- atomically $ C.randomBytes 32 g
@@ -187,8 +174,9 @@ testMediaApi tmp = do
   B.length encrypted `shouldBe` B.length frame'
   runExceptT (chatDecryptMedia keyStr encrypted) `shouldReturn` Right frame'
 
-testMediaCApi :: HasCallStack => FilePath -> IO ()
-testMediaCApi tmp = do
+testMediaCApi :: HasCallStack => TestParams -> IO ()
+testMediaCApi ps = do
+  let tmp = tmpPath ps
   Right c@ChatController {random = g} <- chatMigrateInit (tmp </> "1") "" "yesUp"
   cc <- newStablePtr c
   key <- atomically $ C.randomBytes 32 g
@@ -216,8 +204,9 @@ instance FromJSON WriteFileResult where
 instance FromJSON ReadFileResult where
   parseJSON = $(JQ.mkParseJSON (sumTypeJSON $ dropPrefix "RF") ''ReadFileResult)
 
-testFileCApi :: FilePath -> FilePath -> IO ()
-testFileCApi fileName tmp = do
+testFileCApi :: FilePath -> TestParams -> IO ()
+testFileCApi fileName ps = do
+  let tmp = tmpPath ps
   cc <- mkCCPtr tmp
   src <- B.readFile "./tests/fixtures/test.pdf"
   let path = tmp </> (fileName <> ".pdf")
@@ -241,8 +230,9 @@ testFileCApi fileName tmp = do
   contents `shouldBe` src
   sz' `shouldBe` len
 
-testMissingFileCApi :: FilePath -> IO ()
-testMissingFileCApi tmp = do
+testMissingFileCApi :: TestParams -> IO ()
+testMissingFileCApi ps = do
+  let tmp = tmpPath ps
   let path = tmp </> "missing_file"
   cPath <- newCString path
   CFArgs key nonce <- atomically . CF.randomArgs =<< C.newRandom
@@ -253,8 +243,9 @@ testMissingFileCApi tmp = do
   err <- peekCAString (ptr `plusPtr` 1)
   err `shouldContain` "missing_file: openBinaryFile: does not exist"
 
-testFileEncryptionCApi :: FilePath -> FilePath -> IO ()
-testFileEncryptionCApi fileName tmp = do
+testFileEncryptionCApi :: FilePath -> TestParams -> IO ()
+testFileEncryptionCApi fileName ps = do
+  let tmp = tmpPath ps
   cc <- mkCCPtr tmp
   let fromPath = tmp </> (fileName <> ".source.pdf")
   copyFile "./tests/fixtures/test.pdf" fromPath
@@ -272,8 +263,9 @@ testFileEncryptionCApi fileName tmp = do
   "" <- peekCAString =<< cChatDecryptFile cToPath cKey cNonce cToPath'
   B.readFile toPath' `shouldReturn` src
 
-testMissingFileEncryptionCApi :: FilePath -> IO ()
-testMissingFileEncryptionCApi tmp = do
+testMissingFileEncryptionCApi :: TestParams -> IO ()
+testMissingFileEncryptionCApi ps = do
+  let tmp = tmpPath ps
   cc <- mkCCPtr tmp
   let fromPath = tmp </> "missing_file.source.pdf"
       toPath = tmp </> "missing_file.encrypted.pdf"
@@ -293,7 +285,7 @@ testMissingFileEncryptionCApi tmp = do
 mkCCPtr :: FilePath -> IO (StablePtr ChatController)
 mkCCPtr tmp = either (error . show) newStablePtr =<< chatMigrateInit (tmp </> "1") "" "yesUp"
 
-testValidNameCApi :: FilePath -> IO ()
+testValidNameCApi :: TestParams -> IO ()
 testValidNameCApi _ = do
   let goodName = "Джон Доу 👍"
   cName1 <- cChatValidName =<< newCString goodName
@@ -301,12 +293,20 @@ testValidNameCApi _ = do
   cName2 <- cChatValidName =<< newCString " @'Джон'  Доу   👍 "
   peekCString cName2 `shouldReturn` goodName
 
-testChatJsonLengthCApi :: FilePath -> IO ()
+testChatJsonLengthCApi :: TestParams -> IO ()
 testChatJsonLengthCApi _ = do
   cInt1 <- cChatJsonLength =<< newCString "Hello!"
   cInt1 `shouldBe` 6
   cInt2 <- cChatJsonLength =<< newCString "こんにちは！"
   cInt2 `shouldBe` 18
+
+testChatParseServer :: TestParams -> IO ()
+testChatParseServer _ = do
+  pure ()
+
+testChatParseUri :: TestParams -> IO ()
+testChatParseUri _ = do
+  pure ()
 
 jDecode :: FromJSON a => String -> IO (Maybe a)
 jDecode = pure . J.decode . LB.pack

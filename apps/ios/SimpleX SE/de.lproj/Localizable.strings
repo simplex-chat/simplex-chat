@@ -17,13 +17,13 @@
 "Comment" = "Kommentieren";
 
 /* No comment provided by engineer. */
-"Currently maximum supported file size is %@." = "Die maximale erlaubte Dateigröße beträgt aktuell %@.";
+"Currently maximum supported file size is %@." = "Die maximal erlaubte Dateigröße beträgt aktuell %@.";
 
 /* No comment provided by engineer. */
-"Database downgrade required" = "Datenbank-Herabstufung erforderlich";
+"Database downgrade required" = "Datenbank-Herunterstufung ist erforderlich";
 
 /* No comment provided by engineer. */
-"Database encrypted!" = "Datenbank verschlüsselt!";
+"Database encrypted!" = "Datenbank ist verschlüsselt!";
 
 /* No comment provided by engineer. */
 "Database error" = "Datenbankfehler";
@@ -32,7 +32,7 @@
 "Database passphrase is different from saved in the keychain." = "Das Datenbank-Passwort unterscheidet sich vom im Schlüsselbund gespeicherten.";
 
 /* No comment provided by engineer. */
-"Database passphrase is required to open chat." = "Ein Datenbank-Passwort ist erforderlich, um den Chat zu öffnen.";
+"Database passphrase is required to open chat." = "Um den Chat zu öffnen, ist ein Datenbank-Passwort ist erforderlich.";
 
 /* No comment provided by engineer. */
 "Database upgrade required" = "Datenbank-Aktualisierung erforderlich";
@@ -47,7 +47,7 @@
 "Error: %@" = "Fehler: %@";
 
 /* No comment provided by engineer. */
-"File error" = "Dateifehler";
+"File error" = "Datei-Fehler";
 
 /* No comment provided by engineer. */
 "Incompatible database version" = "Datenbank-Version nicht kompatibel";
@@ -68,19 +68,19 @@
 "Ok" = "OK";
 
 /* No comment provided by engineer. */
-"Open the app to downgrade the database." = "Öffne die App, um die Datenbank herabzustufen.";
+"Open the app to downgrade the database." = "Öffnen Sie die App, um die Datenbank herunterzustufen.";
 
 /* No comment provided by engineer. */
-"Open the app to upgrade the database." = "Öffne die App, um die Datenbank zu aktualisieren.";
+"Open the app to upgrade the database." = "Öffnen Sie die App, um die Datenbank zu aktualisieren.";
 
 /* No comment provided by engineer. */
 "Passphrase" = "Passwort";
 
 /* No comment provided by engineer. */
-"Please create a profile in the SimpleX app" = "Bitte erstelle ein Profil in der SimpleX-App";
+"Please create a profile in the SimpleX app" = "Bitte erstellen Sie in der SimpleX-App ein Profil";
 
 /* No comment provided by engineer. */
-"Selected chat preferences prohibit this message." = "Diese Nachricht ist wegen der gewählten Chat-Einstellungen nicht erlaubt.";
+"Selected chat preferences prohibit this message." = "Die gewählten Chat-Einstellungen erlauben diese Nachricht nicht.";
 
 /* No comment provided by engineer. */
 "Sending a message takes longer than expected." = "Das Senden einer Nachricht dauert länger als erwartet.";
@@ -107,5 +107,5 @@
 "Wrong database passphrase" = "Falsches Datenbank-Passwort";
 
 /* No comment provided by engineer. */
-"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Du kannst das Teilen in den Einstellungen zu Datenschutz & Sicherheit - SimpleX-Sperre erlauben.";
+"You can allow sharing in Privacy & Security / SimpleX Lock settings." = "Sie können das Teilen in den Einstellungen zu Datenschutz & Sicherheit / SimpleX-Sperre erlauben.";
 

@@ -229,5 +229,5 @@ fun isMediaIntent(intent: Intent): Boolean =
 //  val str: String = """
 //  """.trimIndent()
 //
-//  println(json.decodeFromString<APIResponse>(str))
+//  println(json.decodeFromString<APIResult>(str))
 //}

@@ -40,9 +40,10 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
     UserProfileLayout(
       profile = profile,
       close,
-      saveProfile = { displayName, fullName, image ->
+      saveProfile = { displayName, fullName, shortDescr, image ->
         withBGApi {
-          val updated = chatModel.controller.apiUpdateProfile(user.remoteHostId, profile.copy(displayName = displayName.trim(), fullName = fullName, image = image))
+          val updatedProfile = profile.copy(displayName = displayName.trim(), fullName = fullName.trim(), shortDescr = shortDescr.trim().ifEmpty { null }, image = image)
+          val updated = chatModel.controller.apiUpdateProfile(user.remoteHostId, updatedProfile)
           if (updated != null) {
             val (newProfile, _) = updated
             chatModel.updateCurrentUser(user.remoteHostId, newProfile)
@@ -59,11 +60,12 @@ fun UserProfileView(chatModel: ChatModel, close: () -> Unit) {
 fun UserProfileLayout(
   profile: Profile,
   close: () -> Unit,
-  saveProfile: (String, String, String?) -> Unit,
+  saveProfile: (String, String, String, String?) -> Unit,
 ) {
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = remember { mutableStateOf(profile.displayName) }
   val fullName = remember { mutableStateOf(profile.fullName) }
+  val shortDescr = remember { mutableStateOf(profile.shortDescr ?: "") }
   val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(profile.image) }
   val scope = rememberCoroutineScope()
@@ -85,14 +87,15 @@ fun UserProfileLayout(
       sheetShape = RoundedCornerShape(topStart = 18.dp, topEnd = 18.dp)
     ) {
       val dataUnchanged =
-        displayName.value == profile.displayName &&
-            fullName.value == profile.fullName &&
+        displayName.value.trim() == profile.displayName &&
+            fullName.value.trim() == profile.fullName &&
+            shortDescr.value.trim() == (profile.shortDescr ?: "") &&
             profile.image == profileImage.value
       val closeWithAlert = {
-        if (dataUnchanged || !canSaveProfile(displayName.value, profile)) {
+        if (dataUnchanged || !canSaveProfile(displayName.value, shortDescr.value, profile)) {
           close()
         } else {
-          showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, profileImage.value) }, close)
+          showUnsavedChangesAlert({ saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }, close)
         }
       }
       ModalView(close = closeWithAlert) {
@@ -144,9 +147,29 @@ fun UserProfileLayout(
               )
               ProfileNameField(fullName)
             }
+
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canSaveProfile(displayName.value, profile)
-            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, profileImage.value) }
+
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              Text(
+                stringResource(MR.strings.short_descr__field),
+                fontSize = 16.sp,
+              )
+              if (!bioFitsLimit(shortDescr.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                IconButton(
+                  onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.bio_too_large)) },
+                  Modifier.size(20.dp)
+                ) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
+              }
+            }
+            ProfileNameField(shortDescr)
+
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            val enabled = !dataUnchanged && canSaveProfile(displayName.value, shortDescr.value, profile)
+            val saveModifier: Modifier = Modifier.clickable(enabled) { saveProfile(displayName.value, fullName.value, shortDescr.value, profileImage.value) }
             val saveColor: Color = if (enabled) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
             Text(
               stringResource(MR.strings.save_and_notify_contacts),
@@ -209,10 +232,10 @@ private fun isValidNewProfileName(displayName: String, profile: Profile): Boolea
   displayName == profile.displayName || isValidDisplayName(displayName.trim())
 
 private fun showFullName(profile: Profile): Boolean =
-  profile.fullName.isNotEmpty() && profile.fullName != profile.displayName
+  profile.fullName.trim().isNotEmpty() && profile.fullName.trim() != profile.displayName.trim()
 
-private fun canSaveProfile(displayName: String, profile: Profile): Boolean =
-  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile)
+private fun canSaveProfile(displayName: String, shortDescr: String, profile: Profile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, profile) && bioFitsLimit(shortDescr)
 
 @Preview/*(
   uiMode = Configuration.UI_MODE_NIGHT_YES,
@@ -225,7 +248,7 @@ fun PreviewUserProfileLayoutEditOff() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _ -> }
+      saveProfile = { _, _, _, _ -> }
     )
   }
 }
@@ -241,7 +264,7 @@ fun PreviewUserProfileLayoutEditOn() {
     UserProfileLayout(
       profile = Profile.sampleData,
       close = {},
-      saveProfile = { _, _, _ -> }
+      saveProfile = { _, _, _, _ -> }
     )
   }
 }

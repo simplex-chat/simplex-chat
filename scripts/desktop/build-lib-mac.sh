@@ -6,6 +6,7 @@ OS=mac
 ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
 COMPOSE_ARCH=$ARCH
 GHC_VERSION=9.6.3
+DATABASE_BACKEND="${2:-sqlite}"
 
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
@@ -24,7 +25,14 @@ for elem in "${exports[@]}"; do count=$(grep -R "$elem$" libsimplex.dll.def | wc
 for elem in "${exports[@]}"; do count=$(grep -R "\"$elem\"" flake.nix | wc -l); if [ $count -ne 2 ]; then echo Wrong exports in flake.nix. Add \"$elem\" in two places of the file; exit 1; fi ; done
 
 rm -rf $BUILD_DIR
-cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library' --constraint 'jpeg-turbo +static'
+
+if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
+    echo "Building with postgres backend..."
+    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres' --constraint 'jpeg-turbo +static'
+else
+    echo "Building with sqlite backend..."
+    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library' --constraint 'jpeg-turbo +static'
+fi
 
 cd $BUILD_DIR/build
 mkdir deps 2> /dev/null || true
@@ -33,12 +41,12 @@ mkdir deps 2> /dev/null || true
 #cp $GHC_LIBS_DIR/libffi.dylib ./deps
 (
   BUILD=$PWD
-  cp /tmp/libffi-3.4.4/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
+  cp /tmp/libffi-3.5.2/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
     ( \
     cd /tmp && \
-    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/libffi-3.4.4/libffi-3.4.4.tar.gz?inline=false" -o libffi.tar.gz && \
+    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/3914c27381526ce586ea0ac0359a332fd82987af/libffi-3.5.2.tar.gz?inline=false" -o libffi.tar.gz && \
     tar -xzvf libffi.tar.gz && \
-    cd "libffi-3.4.4" && \
+    cd "libffi-3.5.2" && \
     ./configure && \
     make && \
     cp *-apple-darwin*/.libs/libffi.dylib $BUILD/deps \
@@ -99,8 +107,8 @@ cp $BUILD_DIR/build/libHSsimplex-chat-*-inplace-ghc*.$LIB_EXT apps/multiplatform
 
 cd apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
-LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
+LIBCRYPTO_PATH=$(otool -l libHSsmplxmq-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsmplxmq-*.$LIB_EXT
 cp $LIBCRYPTO_PATH libcrypto.3.0.$LIB_EXT
 chmod 755 libcrypto.3.0.$LIB_EXT
 install_name_tool -id "libcrypto.3.0.$LIB_EXT" libcrypto.3.0.$LIB_EXT
@@ -111,14 +119,18 @@ if [ -n "$LIBCRYPTO_PATH" ]; then
     install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT $LIB
 fi
 
-LIBCRYPTO_PATH=$(otool -l libHSsmplxmq*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsmplxmq*.$LIB_EXT
-fi
+# We could change libpq and libHSpstgrsql for postgres (?), remove sqlite condition for exit below.
+# Unnecessary for now as app with postgres backend is not for distribution.
+if [[ "$DATABASE_BACKEND" == "sqlite" ]]; then
+    LIBCRYPTO_PATH=$(otool -l libHSdrct-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+    if [ -n "$LIBCRYPTO_PATH" ]; then
+        install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSdrct-*.$LIB_EXT
+    fi
 
-LIBCRYPTO_PATH=$(otool -l libHSsqlcphr-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
-if [ -n "$LIBCRYPTO_PATH" ]; then
-    install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
+    LIBCRYPTO_PATH=$(otool -l libHSsqlcphr-*.$LIB_EXT | grep libcrypto | cut -d' ' -f11)
+    if [ -n "$LIBCRYPTO_PATH" ]; then
+        install_name_tool -change $LIBCRYPTO_PATH @rpath/libcrypto.3.0.$LIB_EXT libHSsqlcphr-*.$LIB_EXT
+    fi
 fi
 
 for lib in $(find . -type f -name "*.$LIB_EXT"); do
@@ -132,7 +144,9 @@ LOCAL_DIRS=`for lib in $(find . -type f -name "*.$LIB_EXT"); do otool -l $lib | 
 if [ -n "$LOCAL_DIRS" ]; then
     echo These libs still point to local directories:
     echo $LOCAL_DIRS
-    exit 1
+    if [[ "$DATABASE_BACKEND" == "sqlite" ]]; then
+        exit 1
+    fi
 fi
 
 cd -

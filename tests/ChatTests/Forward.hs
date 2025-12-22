@@ -4,6 +4,7 @@
 module ChatTests.Forward where
 
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import qualified Data.ByteString.Char8 as B
@@ -14,7 +15,7 @@ import Simplex.Chat.Types (ImageData (..))
 import System.Directory (copyFile, doesFileExist, removeFile)
 import Test.Hspec hiding (it)
 
-chatForwardTests :: SpecWith FilePath
+chatForwardTests :: SpecWith TestParams
 chatForwardTests = do
   describe "forward messages" $ do
     it "from contact to contact" testForwardContactToContact
@@ -42,7 +43,7 @@ chatForwardTests = do
     it "from group to group" testForwardGroupToGroupMulti
     it "with relative paths: multiple files from contact to contact" testMultiForwardFiles
 
-testForwardContactToContact :: HasCallStack => FilePath -> IO ()
+testForwardContactToContact :: HasCallStack => TestParams -> IO ()
 testForwardContactToContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -88,7 +89,7 @@ testForwardContactToContact =
       alice .<## ": hey"
       alice <##. "forwarded from: @bob, chat item id:"
 
-testForwardContactToGroup :: HasCallStack => FilePath -> IO ()
+testForwardContactToGroup :: HasCallStack => TestParams -> IO ()
 testForwardContactToGroup =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -112,7 +113,7 @@ testForwardContactToGroup =
       cath <# "#team alice> -> forwarded"
       cath <## "      hey"
 
-testForwardContactToNotes :: HasCallStack => FilePath -> IO ()
+testForwardContactToNotes :: HasCallStack => TestParams -> IO ()
 testForwardContactToNotes =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -132,7 +133,7 @@ testForwardContactToNotes =
       alice <# "* <- @bob"
       alice <## "      hey"
 
-testForwardGroupToContact :: HasCallStack => FilePath -> IO ()
+testForwardGroupToContact :: HasCallStack => TestParams -> IO ()
 testForwardGroupToContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -156,7 +157,7 @@ testForwardGroupToContact =
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
-testForwardGroupToGroup :: HasCallStack => FilePath -> IO ()
+testForwardGroupToGroup :: HasCallStack => TestParams -> IO ()
 testForwardGroupToGroup =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -197,7 +198,7 @@ testForwardGroupToGroup =
       cath <# "#club alice> -> forwarded"
       cath <## "      hey"
 
-testForwardGroupToNotes :: HasCallStack => FilePath -> IO ()
+testForwardGroupToNotes :: HasCallStack => TestParams -> IO ()
 testForwardGroupToNotes =
   testChat2 aliceProfile bobProfile $
     \alice bob -> do
@@ -217,7 +218,7 @@ testForwardGroupToNotes =
       alice <# "* <- #team"
       alice <## "      hey"
 
-testForwardNotesToContact :: HasCallStack => FilePath -> IO ()
+testForwardNotesToContact :: HasCallStack => TestParams -> IO ()
 testForwardNotesToContact =
   testChat2 aliceProfile cathProfile $
     \alice cath -> do
@@ -230,7 +231,7 @@ testForwardNotesToContact =
       alice <# "@cath hi"
       cath <# "alice> hi"
 
-testForwardNotesToGroup :: HasCallStack => FilePath -> IO ()
+testForwardNotesToGroup :: HasCallStack => TestParams -> IO ()
 testForwardNotesToGroup =
   testChat2 aliceProfile cathProfile $
     \alice cath -> do
@@ -243,9 +244,9 @@ testForwardNotesToGroup =
       alice <# "#team hi"
       cath <# "#team alice> hi"
 
-testForwardNotesToNotes :: HasCallStack => FilePath -> IO ()
-testForwardNotesToNotes tmp =
-  withNewTestChat tmp "alice" aliceProfile $ \alice -> do
+testForwardNotesToNotes :: HasCallStack => TestParams -> IO ()
+testForwardNotesToNotes ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
     createCCNoteFolder alice
 
     alice >* "hi"
@@ -257,7 +258,7 @@ testForwardNotesToNotes tmp =
     alice <# "* hi"
     alice <# "* hi"
 
-testForwardPreserveInfo :: HasCallStack => FilePath -> IO ()
+testForwardPreserveInfo :: HasCallStack => TestParams -> IO ()
 testForwardPreserveInfo =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -285,7 +286,7 @@ testForwardPreserveInfo =
       dan <# "#team alice> -> forwarded"
       dan <## "      hey"
 
-testForwardRcvMsgNewInfo :: HasCallStack => FilePath -> IO ()
+testForwardRcvMsgNewInfo :: HasCallStack => TestParams -> IO ()
 testForwardRcvMsgNewInfo =
   testChat4 aliceProfile bobProfile cathProfile danProfile $
     \alice bob cath dan -> do
@@ -313,7 +314,7 @@ testForwardRcvMsgNewInfo =
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
-testForwardQuotedMsg :: HasCallStack => FilePath -> IO ()
+testForwardQuotedMsg :: HasCallStack => TestParams -> IO ()
 testForwardQuotedMsg =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -343,7 +344,7 @@ testForwardQuotedMsg =
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
-testForwardEditProhibited :: HasCallStack => FilePath -> IO ()
+testForwardEditProhibited :: HasCallStack => TestParams -> IO ()
 testForwardEditProhibited =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -363,7 +364,7 @@ testForwardEditProhibited =
       alice ##> ("/_update item @3 " <> msgId <> " text hey edited")
       alice <## "cannot update this item"
 
-testForwardDeleteForOther :: HasCallStack => FilePath -> IO ()
+testForwardDeleteForOther :: HasCallStack => TestParams -> IO ()
 testForwardDeleteForOther =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -384,7 +385,7 @@ testForwardDeleteForOther =
       alice <## "message marked deleted"
       cath <# "alice> [marked deleted] hey"
 
-testForwardFileNoFilesFolder :: HasCallStack => FilePath -> IO ()
+testForwardFileNoFilesFolder :: HasCallStack => TestParams -> IO ()
 testForwardFileNoFilesFolder =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -438,7 +439,7 @@ testForwardFileNoFilesFolder =
       dest2 <- B.readFile "./tests/tmp/test_1.pdf"
       dest2 `shouldBe` src
 
-testForwardFileContactToContact :: HasCallStack => FilePath -> IO ()
+testForwardFileContactToContact :: HasCallStack => TestParams -> IO ()
 testForwardFileContactToContact =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -504,7 +505,7 @@ testForwardFileContactToContact =
       fwdFileExists <- doesFileExist "./tests/tmp/bob_files/test_1.pdf"
       fwdFileExists `shouldBe` True
 
-testForwardFileGroupToNotes :: HasCallStack => FilePath -> IO ()
+testForwardFileGroupToNotes :: HasCallStack => TestParams -> IO ()
 testForwardFileGroupToNotes =
   testChat2 aliceProfile cathProfile $
     \alice cath -> withXFTPServer $ do
@@ -552,7 +553,7 @@ testForwardFileGroupToNotes =
       fwdFileExists <- doesFileExist "./tests/tmp/cath_files/test_1.pdf"
       fwdFileExists `shouldBe` True
 
-testForwardFileNotesToGroup :: HasCallStack => FilePath -> IO ()
+testForwardFileNotesToGroup :: HasCallStack => TestParams -> IO ()
 testForwardFileNotesToGroup =
   testChat2 aliceProfile cathProfile $
     \alice cath -> withXFTPServer $ do
@@ -599,7 +600,7 @@ testForwardFileNotesToGroup =
       fwdFileExists <- doesFileExist "./tests/tmp/alice_files/test_1.pdf"
       fwdFileExists `shouldBe` True
 
-testForwardContactToContactMulti :: HasCallStack => FilePath -> IO ()
+testForwardContactToContactMulti :: HasCallStack => TestParams -> IO ()
 testForwardContactToContactMulti =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -629,7 +630,7 @@ testForwardContactToContactMulti =
       cath <# "alice> -> forwarded"
       cath <## "      hey"
 
-testForwardGroupToGroupMulti :: HasCallStack => FilePath -> IO ()
+testForwardGroupToGroupMulti :: HasCallStack => TestParams -> IO ()
 testForwardGroupToGroupMulti =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
@@ -673,7 +674,7 @@ testForwardGroupToGroupMulti =
       cath <# "#club alice> -> forwarded"
       cath <## "      hey"
 
-testMultiForwardFiles :: HasCallStack => FilePath -> IO ()
+testMultiForwardFiles :: HasCallStack => TestParams -> IO ()
 testMultiForwardFiles =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do

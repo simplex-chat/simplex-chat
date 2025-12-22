@@ -18,6 +18,7 @@ struct GroupWelcomeView: View {
     @State private var editMode = true
     @FocusState private var keyboardVisible: Bool
     @State private var showSaveDialog = false
+    @State private var showSecrets: Set<Int> = []
 
     let maxByteCount = 1200
 
@@ -58,7 +59,8 @@ struct GroupWelcomeView: View {
     }
 
     private func textPreview() -> some View {
-        messageText(welcomeText, parseSimpleXMarkdown(welcomeText), nil, showSecrets: false, secondaryColor: theme.colors.secondary)
+        let r = markdownText(welcomeText, showSecrets: showSecrets, backgroundColor: theme.colors.background)
+        return msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
             .frame(minHeight: 130, alignment: .topLeading)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -155,6 +157,9 @@ struct GroupWelcomeView: View {
 
 struct GroupWelcomeView_Previews: PreviewProvider {
     static var previews: some View {
-        GroupProfileView(groupInfo: Binding.constant(GroupInfo.sampleData), groupProfile: GroupProfile.sampleData)
+        GroupProfileView(
+            groupInfo: Binding.constant(GroupInfo.sampleData),
+            groupProfile: GroupProfile.sampleData
+        )
     }
 }

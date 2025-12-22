@@ -19,11 +19,11 @@ private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
 
 class ShareModel: ObservableObject {
     @Published var sharedContent: SharedContent?
-    @Published var chats: [ChatData] = []
+    @Published var chats: [SEChatData] = []
     @Published var profileImages: [ChatInfo.ID: UIImage] = [:]
     @Published var search = ""
     @Published var comment = ""
-    @Published var selected: ChatData?
+    @Published var selected: SEChatData?
     @Published var isLoaded = false
     @Published var bottomBar: BottomBar = .loadingSpinner
     @Published var errorAlert: ErrorAlert?
@@ -60,13 +60,13 @@ class ShareModel: ObservableObject {
         }
     }
 
-    func isProhibited(_ chat: ChatData?) -> Bool {
+    func isProhibited(_ chat: SEChatData?) -> Bool {
         if let chat, let sharedContent {
             sharedContent.prohibited(in: chat, hasSimplexLink: hasSimplexLink)
         } else { false }
     }
 
-    var filteredChats: [ChatData] {
+    var filteredChats: [SEChatData] {
         search.isEmpty
         ? filterChatsToForwardTo(chats: chats)
         : filterChatsToForwardTo(chats: chats)
@@ -179,7 +179,7 @@ class ShareModel: ObservableObject {
                 resetChatCtrl() // Clears retained migration result
                 registerGroupDefaults()
                 haskell_init_se()
-                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation())
+                let (_, result) = chatMigrateInit(dbKey, confirmMigrations: defaultMigrationConfirmation(), backgroundMode: false)
                 if let e = migrationError(result) { return e }
                 try apiSetAppFilePaths(
                     filesFolder: getAppFilesDirectory().path,
@@ -253,7 +253,7 @@ class ShareModel: ObservableObject {
         }
     }
     
-    private func fetchChats() -> Result<Array<ChatData>, ErrorAlert> {
+    private func fetchChats() -> Result<Array<SEChatData>, ErrorAlert> {
         do {
             guard let user = try apiGetActiveUser() else {
                 return .failure(
@@ -303,8 +303,9 @@ class ShareModel: ObservableObject {
                     }
                 }
             }
-            switch recvSimpleXMsg(messageTimeout: 1_000_000) {
-            case let .sndFileProgressXFTP(_, ci, _, sentSize, totalSize):
+            let r: APIResult<SEChatEvent>? = recvSimpleXMsg(messageTimeout: 1_000_000)
+            switch r {
+            case let .result(.sndFileProgressXFTP(_, ci, _, sentSize, totalSize)):
                 guard isMessage(for: ci) else { continue }
                 networkTimeout = CFAbsoluteTimeGetCurrent()
                 await MainActor.run {
@@ -313,14 +314,14 @@ class ShareModel: ObservableObject {
                         bottomBar = .loadingBar(progress: progress)
                     }
                 }
-            case let .sndFileCompleteXFTP(_, ci, _):
+            case let .result(.sndFileCompleteXFTP(_, ci, _)):
                 guard isMessage(for: ci) else { continue }
                 if isGroupChat {
                     await MainActor.run { bottomBar = .loadingSpinner }
                 }
                 await ch.completeFile()
                 if await !ch.isRunning { break }
-            case let .chatItemsStatusesUpdated(_, chatItems):
+            case let .result(.chatItemsStatusesUpdated(_, chatItems)):
                 guard let ci = chatItems.last else { continue }
                 guard isMessage(for: ci) else { continue }
                 if let (title, message) = ci.chatItem.meta.itemStatus.statusInfo {
@@ -342,17 +343,15 @@ class ShareModel: ObservableObject {
                         }
                     }
                 }
-            case let .sndFileError(_, ci, _, errorMessage):
+            case let .result(.sndFileError(_, ci, _, errorMessage)):
                 guard isMessage(for: ci) else { continue }
                 if let ci { cleanupFile(ci) }
                 return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
-            case let .sndFileWarning(_, ci, _, errorMessage):
+            case let .result(.sndFileWarning(_, ci, _, errorMessage)):
                 guard isMessage(for: ci) else { continue }
                 if let ci { cleanupFile(ci) }
                 return ErrorAlert(title: "File error", message: "\(fileErrorInfo(ci) ?? errorMessage)")
-            case let .chatError(_, chatError):
-                return ErrorAlert(chatError)
-            case let .chatCmdError(_, chatError):
+            case let .error(chatError):
                 return ErrorAlert(chatError)
             default: continue
             }
@@ -391,13 +390,13 @@ enum SharedContent {
         switch self {
         case let .image(preview, _): .image(text: comment, image: preview)
         case let .movie(preview, duration, _): .video(text: comment, image: preview, duration: duration)
-        case let .url(preview): .link(text: preview.uri.absoluteString + (comment == "" ? "" : "\n" + comment), preview: preview)
+        case let .url(preview): .link(text: preview.uri + (comment == "" ? "" : "\n" + comment), preview: preview)
         case .text: .text(comment)
         case .data: .file(comment)
         }
     }
 
-    func prohibited(in chatData: ChatData, hasSimplexLink: Bool) -> Bool {
+    func prohibited(in chatData: SEChatData, hasSimplexLink: Bool) -> Bool {
         chatData.prohibitedByPref(
             hasSimplexLink: hasSimplexLink,
             isMediaOrFileAttachment: cryptoFile != nil,
@@ -465,12 +464,13 @@ fileprivate func getSharedContent(_ ip: NSItemProvider) async -> Result<SharedCo
         // Prepare Link message
         case .url:
             if let url = try? await ip.loadItem(forTypeIdentifier: type.identifier) as? URL {
-                let content: SharedContent =
-                    if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
-                        .url(preview: linkPreview)
-                    } else {
-                        .text(string: url.absoluteString)
-                    }
+                let content: SharedContent
+                if privacyLinkPreviewsGroupDefault.get(), let linkPreview = await getLinkPreview(for: url) {
+                    privacyLinkPreviewsShowAlertGroupDefault.set(false) // to avoid showing alert to current users, show alert in v6.5
+                    content = .url(preview: linkPreview)
+                } else {
+                    content = .text(string: url.absoluteString)
+                }
                 return .success(content)
             } else { return .failure(ErrorAlert("Error preparing message")) }
 

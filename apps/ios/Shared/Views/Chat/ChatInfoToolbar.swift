@@ -12,6 +12,7 @@ import SimpleXChat
 struct ChatInfoToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
+    @EnvironmentObject var m: ChatModel
     @ObservedObject var chat: Chat
     var imageSize: CGFloat = 32
 
@@ -22,11 +23,28 @@ struct ChatInfoToolbar: View {
                 Image(systemName: "theatermasks").frame(maxWidth: 24, maxHeight: 24, alignment: .center).foregroundColor(.indigo)
                 Spacer().frame(width: 16)
             }
-            ChatInfoImage(
-                chat: chat,
-                size: imageSize,
-                color: Color(uiColor: .tertiaryLabel)
-            )
+            ZStack(alignment: .bottomTrailing) {
+                ChatInfoImage(
+                    chat: chat,
+                    size: imageSize,
+                    color: Color(uiColor: .tertiaryLabel)
+                )
+                if chat.chatStats.reportsCount > 0 {
+                    Image(systemName: "flag.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .red)
+                } else if chat.supportUnreadCount > 0 {
+                    Image(systemName: "flag.circle.fill")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 14, height: 14)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, theme.colors.primary)
+                }
+            }
             .padding(.trailing, 4)
             let t = Text(cInfo.displayName).font(.headline)
             (cInfo.contact?.verified == true ? contactVerifiedShield + t : t)
@@ -39,6 +57,13 @@ struct ChatInfoToolbar: View {
                             .padding(.top, -2)
                     }
                 }
+            if let contact = chat.chatInfo.contact,
+               contact.ready && contact.active,
+               let chatSubStatus = m.chatSubStatus,
+               chatSubStatus != .active {
+                SubStatusView(status: chatSubStatus)
+                    .padding(.leading, 4)
+            }
         }
         .foregroundColor(theme.colors.onBackground)
         .frame(width: 220)
@@ -50,6 +75,30 @@ struct ChatInfoToolbar: View {
             .foregroundColor(theme.colors.secondary)
             .baselineOffset(1)
             .kerning(-2)
+    }
+
+    struct SubStatusView: View {
+        @Environment(\.dynamicTypeSize) private var userFont: DynamicTypeSize
+        @EnvironmentObject var theme: AppTheme
+        var status: SubscriptionStatus
+
+        var body: some View {
+            switch status {
+            case .active: EmptyView()
+            case .pending: ProgressView()
+            case .removed: subStatusError()
+            case .noSub: subStatusError()
+            }
+        }
+
+        @ViewBuilder private func subStatusError() -> some View {
+            let dynamicChatInfoSize = dynamicSize(userFont).chatInfoSize
+            Image(systemName: "exclamationmark.circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: dynamicChatInfoSize, height: dynamicChatInfoSize)
+                .foregroundColor(theme.colors.secondary)
+        }
     }
 }
 

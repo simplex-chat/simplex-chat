@@ -8,6 +8,7 @@
 module Simplex.Chat.Options
   ( ChatOpts (..),
     CoreChatOpts (..),
+    CreateBotOpts (..),
     ChatCmdLog (..),
     chatOptsP,
     coreChatOptsP,
@@ -29,7 +30,7 @@ import Numeric.Natural (Natural)
 import Options.Applicative
 import Simplex.Chat.Controller (ChatLogLevel (..), SimpleNetCfg (..), updateStr, versionNumber, versionString)
 import Simplex.FileTransfer.Description (mb)
-import Simplex.Messaging.Client (HostMode (..), SocksMode (..), textToHostMode)
+import Simplex.Messaging.Client (HostMode (..), SMPWebPortServers (..), SocksMode (..), textToHostMode)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (parseAll)
 import Simplex.Messaging.Protocol (ProtoServerWithAuth, ProtocolTypeI, SMPServerWithAuth, XFTPServerWithAuth)
@@ -38,7 +39,6 @@ import Simplex.Chat.Options.DB
 
 data ChatOpts = ChatOpts
   { coreOptions :: CoreChatOpts,
-    deviceName :: Maybe Text,
     chatCmd :: String,
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
@@ -50,6 +50,7 @@ data ChatOpts = ChatOpts
     autoAcceptFileSize :: Integer,
     muteNotifications :: Bool,
     markRead :: Bool,
+    createBot :: Maybe CreateBotOpts,
     maintenance :: Bool
   }
 
@@ -64,8 +65,15 @@ data CoreChatOpts = CoreChatOpts
     logAgent :: Maybe LogLevel,
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
+    deviceName :: Maybe Text,
     highlyAvailable :: Bool,
-    yesToUpMigrations :: Bool
+    yesToUpMigrations :: Bool,
+    migrationBackupPath :: Maybe FilePath
+  }
+
+data CreateBotOpts = CreateBotOpts
+  { botDisplayName :: Text,
+    allowFiles :: Bool
   }
 
 data ChatCmdLog = CCLAll | CCLMessages | CCLNone
@@ -153,11 +161,17 @@ coreChatOptsP appDir defaultDbName = do
             <> metavar "SMP_PROXY_FALLBACK_MODE"
             <> help "Allow downgrade and connect directly: no, [when IP address is] protected (default), yes"
         )
-  smpWebPort <-
-    switch
+  smpWebPortServers <-
+    flag' SWPAll
       ( long "smp-web-port"
           <> help "Use port 443 with SMP servers when not specified"
       )
+      <|> option
+        strParse
+          ( long "smp-web-port-servers"
+              <> help "Use port 443 with SMP servers when not specified: all, preset (default), off"
+              <> value SWPPreset
+          )
   t <-
     option
       auto
@@ -184,7 +198,7 @@ coreChatOptsP appDir defaultDbName = do
     switch
       ( long "connections"
           <> short 'c'
-          <> help "Log every contact and group connection on start (also with `-l info`)"
+          <> help "Log connections subscription errors on start (also with `-l info`)"
       )
   logServerHosts <-
     switch
@@ -212,6 +226,13 @@ coreChatOptsP appDir defaultDbName = do
           <> value 1024
           <> showDefault
       )
+  deviceName <-
+    optional $
+      strOption
+        ( long "device-name"
+            <> metavar "DEVICE"
+            <> help "Device name to use in connections with remote hosts and controller"
+        )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -223,6 +244,7 @@ coreChatOptsP appDir defaultDbName = do
           <> short 'y'
           <> help "Automatically confirm \"up\" database migrations"
       )
+  migrationBackupPath <- migrationBackupPathP
   pure
     CoreChatOpts
       { dbOptions,
@@ -236,7 +258,7 @@ coreChatOptsP appDir defaultDbName = do
               requiredHostMode,
               smpProxyMode_,
               smpProxyFallback_,
-              smpWebPort,
+              smpWebPortServers,
               tcpTimeout_ = Just $ useTcpTimeout socksProxy t,
               logTLSErrors
             },
@@ -246,8 +268,10 @@ coreChatOptsP appDir defaultDbName = do
         logAgent = if logAgent || logLevel == CLLDebug then Just $ agentLogLevel logLevel else Nothing,
         logFile,
         tbqSize,
+        deviceName,
         highlyAvailable,
-        yesToUpMigrations
+        yesToUpMigrations,
+        migrationBackupPath
       }
   where
     useTcpTimeout p t = 1000000 * if t > 0 then t else maybe 7 (const 15) p
@@ -260,13 +284,6 @@ defaultHostMode = \case
 chatOptsP :: FilePath -> FilePath -> Parser ChatOpts
 chatOptsP appDir defaultDbName = do
   coreOptions <- coreChatOptsP appDir defaultDbName
-  deviceName <-
-    optional $
-      strOption
-        ( long "device-name"
-            <> metavar "DEVICE"
-            <> help "Device name to use in connections with remote hosts and controller"
-        )
   chatCmd <-
     strOption
       ( long "execute"
@@ -347,6 +364,18 @@ chatOptsP appDir defaultDbName = do
           <> short 'r'
           <> help "Mark shown messages as read"
       )
+  createBotDisplayName <-
+    optional $
+      strOption
+        ( long "create-bot-display-name"
+            <> metavar "BOT_NAME"
+            <> help "Create new bot user on the first start with the passed display name"
+        )
+  createBotAllowFiles <-
+    switch
+      ( long "create-bot-allow-files"
+          <> help "Flag for created bot to allow files (only allowed together with --create-bot option)"
+      )
   maintenance <-
     switch
       ( long "maintenance"
@@ -356,7 +385,6 @@ chatOptsP appDir defaultDbName = do
   pure
     ChatOpts
       { coreOptions,
-        deviceName,
         chatCmd,
         chatCmdDelay,
         chatCmdLog,
@@ -368,6 +396,11 @@ chatOptsP appDir defaultDbName = do
         autoAcceptFileSize,
         muteNotifications,
         markRead,
+        createBot = case createBotDisplayName of
+          Just botDisplayName -> Just CreateBotOpts {botDisplayName, allowFiles = createBotAllowFiles}
+          Nothing
+            | createBotAllowFiles -> error "--create-bot-allow-files option requires --create-bot-name option"
+            | otherwise -> Nothing,
         maintenance
       }
 

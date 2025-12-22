@@ -10,8 +10,7 @@ import androidx.compose.material.TextFieldDefaults.textFieldWithLabelPadding
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.key.*
@@ -45,25 +44,27 @@ import kotlin.text.substring
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  disabledText: String?,
   sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
-  onMessageChange: (String) -> Unit,
+  onMessageChange: (ComposeMessage) -> Unit,
   onUpArrow: () -> Unit,
   onFilesPasted: (List<URI>) -> Unit,
+  focusRequester: FocusRequester?,
   onDone: () -> Unit,
 ) {
+
   val cs = composeState.value
-  val focusRequester = remember { FocusRequester() }
   val focusManager = LocalFocusManager.current
   val keyboard = LocalSoftwareKeyboardController.current
+  val focusReq = focusRequester ?: remember { FocusRequester() }
   LaunchedEffect(cs.contextItem) {
     if (cs.contextItem !is ComposeContextItem.QuotedItem) return@LaunchedEffect
     // In replying state
-    focusRequester.requestFocus()
+    focusReq.requestFocus()
     delay(50)
     keyboard?.show()
   }
@@ -74,9 +75,9 @@ actual fun PlatformTextField(
       keyboard?.hide()
     }
   }
-  val lastTimeWasRtlByCharacters = remember { mutableStateOf(isRtl(cs.message.subSequence(0, min(50, cs.message.length)))) }
+  val lastTimeWasRtlByCharacters = remember { mutableStateOf(isRtl(cs.message.text.subSequence(0, min(50, cs.message.text.length)))) }
   val isRtlByCharacters = remember(cs.message) {
-    if (cs.message.isNotEmpty()) isRtl(cs.message.subSequence(0, min(50, cs.message.length))) else lastTimeWasRtlByCharacters.value
+    if (cs.message.text.isNotEmpty()) isRtl(cs.message.text.subSequence(0, min(50, cs.message.text.length))) else lastTimeWasRtlByCharacters.value
   }
   LaunchedEffect(isRtlByCharacters) {
     lastTimeWasRtlByCharacters.value = isRtlByCharacters
@@ -84,12 +85,12 @@ actual fun PlatformTextField(
   val isLtrGlobally = LocalLayoutDirection.current == LayoutDirection.Ltr
   // Different padding here is for a text that is considered RTL with non-RTL locale set globally.
   // In this case padding from right side should be bigger
-  val startEndPadding = if (cs.message.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
+  val startEndPadding = if (cs.message.text.isEmpty() && showVoiceButton && isRtlByCharacters && isLtrGlobally) 95.dp else 50.dp
   val startPadding = if (isRtlByCharacters && isLtrGlobally) startEndPadding else 0.dp
   val endPadding = if (isRtlByCharacters && isLtrGlobally) 0.dp else startEndPadding
   val padding = PaddingValues(startPadding, 12.dp, endPadding, 0.dp)
-  var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message)) }
-  val textFieldValue = textFieldValueState.copy(text = cs.message)
+  var textFieldValueState by remember { mutableStateOf(TextFieldValue(text = cs.message.text, selection = cs.message.selection)) }
+  val textFieldValue = textFieldValueState.copy(text = cs.message.text, selection = cs.message.selection)
   val clipboard = LocalClipboardManager.current
   BasicTextField(
     value = textFieldValue,
@@ -105,7 +106,7 @@ actual fun PlatformTextField(
           }
         }
         textFieldValueState = it
-        onMessageChange(it.text)
+        onMessageChange(ComposeMessage(it.text, it.selection))
       }
     },
     textStyle = textStyle.value,
@@ -118,7 +119,7 @@ actual fun PlatformTextField(
       .padding(start = startPadding, end = endPadding)
       .offset(y = (-5).dp)
       .fillMaxWidth()
-      .focusRequester(focusRequester)
+      .focusRequester(focusReq)
       .onPreviewKeyEvent {
         if ((it.key == Key.Enter || it.key == Key.NumPadEnter) && it.type == KeyEventType.KeyDown) {
           if (it.isShiftPressed) {
@@ -129,12 +130,12 @@ actual fun PlatformTextField(
               text = newText,
               selection = TextRange(textFieldValue.selection.min + 1)
             )
-            onMessageChange(newText)
+            onMessageChange(ComposeMessage(newText, textFieldValueState.selection))
           } else if (!sendMsgButtonDisabled) {
             onDone()
           }
           true
-        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.isEmpty()) {
+        } else if (it.key == Key.DirectionUp && it.type == KeyEventType.KeyDown && cs.message.text.isEmpty()) {
           onUpArrow()
           true
         } else if (it.key == Key.V &&
@@ -166,7 +167,7 @@ actual fun PlatformTextField(
                     chatModel.filesToDelete.add(tempFile)
 
                     tempFile.writeBytes(bytes)
-                    composeState.processPickedMedia(listOf(tempFile.toURI()), composeState.value.message)
+                    composeState.processPickedMedia(listOf(tempFile.toURI()), composeState.value.message.text)
                   }
                 } catch (e: Exception) {
                   Log.e(TAG, "Pasting image exception: ${e.stackTraceToString()}")
@@ -200,18 +201,18 @@ actual fun PlatformTextField(
         }
     }
   )
-  showDeleteTextButton.value = cs.message.split("\n").size >= 4 && !cs.inProgress
+  showDeleteTextButton.value = cs.message.text.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
-  } else if (userIsObserver) {
-    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
+    ComposeOverlay(generalGetString(MR.strings.voice_message_send_text), textStyle, padding)
+  } else if (disabledText != null) {
+    ComposeOverlay(disabledText, textStyle, padding)
   }
 }
 
 @Composable
-private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+private fun ComposeOverlay(text: String, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
   Text(
-    generalGetString(textId),
+    text,
     Modifier.padding(padding),
     color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)

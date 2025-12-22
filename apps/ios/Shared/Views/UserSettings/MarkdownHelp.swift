@@ -19,7 +19,7 @@ struct MarkdownHelp: View {
             mdFormat("_italic_", Text("italic").italic())
             mdFormat("~strike~", Text("strike").strikethrough())
             mdFormat("`a + b`", Text("`a + b`").font(.body.monospaced()))
-            mdFormat("!1 colored!", Text("colored").foregroundColor(.red) + Text(" (") + color("1", .red) + color("2", .green) + color("3", .blue) + color("4", .yellow) + color("5", .cyan) + Text("6").foregroundColor(.purple) + Text(")"))
+            mdFormat("!1 colored!", Text("colored").foregroundColor(.red) + Text(verbatim: " (") + color("1", .red) + color("2", .green) + color("3", .blue) + color("4", .yellow) + color("5", .cyan) + Text("6").foregroundColor(.purple) + Text(verbatim: ")"))
             (
                 mdFormat("#secret#", Text("secret")
                     .foregroundColor(.clear)
@@ -39,7 +39,7 @@ private func mdFormat(_ format: LocalizedStringKey, _ example: Text) -> some Vie
 }
 
 private func color(_ s: String, _ c: Color) -> Text {
-    Text(s).foregroundColor(c) + Text(", ")
+    Text(s).foregroundColor(c) + Text(verbatim: ", ")
 }
 
 struct MarkdownHelp_Previews: PreviewProvider {

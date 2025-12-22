@@ -93,6 +93,13 @@ fun ProtocolServerView(
             if (isActive) {
               draftServer.value = res.first
               testing.value = false
+              val failure = res.second
+              if (failure != null) {
+                AlertManager.shared.showAlertMsg(
+                  title = generalGetString(MR.strings.smp_servers_test_failed),
+                  text = failure.localizedDescription
+                )
+              }
             }
           }
         },
@@ -189,7 +196,7 @@ fun CustomServer(
   if (valid.value) {
     SectionDividerSpaced()
     SectionView(stringResource(MR.strings.smp_servers_add_to_another_device).uppercase()) {
-      QRCode(serverAddress.value)
+      QRCode(serverAddress.value, small = true)
     }
   }
 }

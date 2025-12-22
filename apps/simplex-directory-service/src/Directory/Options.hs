@@ -1,33 +1,48 @@
 {-# LANGUAGE ApplicativeDo #-}
 {-# LANGUAGE DuplicateRecordFields #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Directory.Options
   ( DirectoryOpts (..),
+    MigrateLog (..),
     getDirectoryOpts,
     mkChatOpts,
   )
 where
 
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
-import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, coreChatOptsP)
+import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
+import Simplex.Messaging.Parsers (parseAll)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    blockedWordsFile :: Maybe FilePath,
+    blockedFragmentsFile :: Maybe FilePath,
+    blockedExtensionRules :: Maybe FilePath,
+    nameSpellingFile :: Maybe FilePath,
+    profileNameLimit :: Int,
+    captchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
+    migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
     runCLI :: Bool,
     searchResults :: Int,
+    webFolder :: Maybe FilePath,
     testing :: Bool
   }
+
+data MigrateLog = MLCheck | MLImport | MLExport | MLListing
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
 directoryOpts appDir defaultDbName = do
@@ -55,35 +70,101 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  blockedWordsFile <-
+    optional $
+      strOption
+        ( long "blocked-words-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of words not allowed in profiles"
+        )
+  blockedFragmentsFile <-
+    optional $
+      strOption
+        ( long "blocked-fragments-file"
+            <> metavar "BLOCKED_WORDS_FILE"
+            <> help "File with the basic forms of word fragments not allowed in profiles"
+        )
+  blockedExtensionRules <-
+    optional $
+      strOption
+        ( long "blocked-extenstion-rules"
+            <> metavar "BLOCKED_EXTENSION_RULES"
+            <> help "Substitions to extend the list of blocked words"
+        )
+  nameSpellingFile <-
+    optional $
+      strOption
+        ( long "name-spelling-file"
+            <> metavar "NAME_SPELLING_FILE"
+            <> help "File with the character substitions to match in profile names"
+        )
+  profileNameLimit <-
+    option
+      auto
+      ( long "profile-name-limit"
+          <> metavar "PROFILE_NAME_LIMIT"
+          <> help "Max length of profile name that will be allowed to connect and to join groups"
+          <> value maxBound
+      )
+  captchaGenerator <-
+    optional $
+      strOption
+        ( long "captcha-generator"
+            <> metavar "CAPTCHA_GENERATOR"
+            <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
+        )
   directoryLog <-
-    Just
-      <$> strOption
+    optional $
+      strOption
         ( long "directory-file"
             <> metavar "DIRECTORY_FILE"
             <> help "Append only log for directory state"
+        )
+  migrateDirectoryLog <-
+    optional $
+      option
+        parseMigrateLog
+        ( long "migrate-directory-file"
+            <> metavar "MIGRATE_COMMAND"
+            <> help "Command to import/export directory log file"
         )
   serviceName <-
     strOption
       ( long "service-name"
           <> metavar "SERVICE_NAME"
-          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX-Directory)"
-          <> value "SimpleX-Directory"
+          <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
+          <> value "SimpleX Directory"
       )
-  runCLI <- 
+  runCLI <-
     switch
       ( long "run-cli"
           <> help "Run directory service as CLI"
       )
+  webFolder <-
+    optional $
+      strOption
+        ( long "web-folder"
+            <> metavar "WEB_FOLDER"
+            <> help "Folder to store static web assets"
+        )
   pure
     DirectoryOpts
       { coreOptions,
         adminUsers,
         superUsers,
         ownersGroup,
+        blockedWordsFile,
+        blockedFragmentsFile,
+        blockedExtensionRules,
+        nameSpellingFile,
+        profileNameLimit,
+        captchaGenerator,
         directoryLog,
+        migrateDirectoryLog,
         serviceName = T.pack serviceName,
         runCLI,
         searchResults = 10,
+        webFolder,
         testing = False
       }
 
@@ -99,10 +180,9 @@ getDirectoryOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: DirectoryOpts -> ChatOpts
-mkChatOpts DirectoryOpts {coreOptions} =
+mkChatOpts DirectoryOpts {coreOptions, serviceName} =
   ChatOpts
     { coreOptions,
-      deviceName = Nothing,
       chatCmd = "",
       chatCmdDelay = 3,
       chatCmdLog = CCLNone,
@@ -114,5 +194,17 @@ mkChatOpts DirectoryOpts {coreOptions} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False},
       maintenance = False
     }
+
+parseMigrateLog :: ReadM MigrateLog
+parseMigrateLog = eitherReader $ parseAll mlP . encodeUtf8 . T.pack
+  where
+    mlP =
+      A.takeTill (== ' ') >>= \case
+        "check" -> pure MLCheck
+        "import" -> pure MLImport
+        "export" -> pure MLExport
+        "listing" -> pure MLListing
+        _ -> fail "bad MigrateLog"

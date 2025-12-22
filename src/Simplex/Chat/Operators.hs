@@ -37,7 +37,6 @@ import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isNothing, mapMaybe)
-import Data.Scientific (floatingOrInteger)
 import Data.Set (Set)
 import qualified Data.Set as S
 import Data.Text (Text)
@@ -46,53 +45,27 @@ import Data.Time (addUTCTime)
 import Data.Time.Clock (UTCTime, nominalDay)
 import Language.Haskell.TH.Syntax (lift)
 import Simplex.Chat.Operators.Conditions
-import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (User)
-import Simplex.Chat.Types.Util (textParseJSON)
 import Simplex.Messaging.Agent.Env.SQLite (ServerCfg (..), ServerRoles (..), allRoles)
+import Simplex.Messaging.Agent.Store.DB (FromField (..), ToField (..), fromTextField_)
+import Simplex.Messaging.Agent.Store.Entity
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, fromTextField_, sumTypeJSON)
+import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
 import Simplex.Messaging.Protocol (AProtocolType (..), ProtoServerWithAuth (..), ProtocolServer (..), ProtocolType (..), ProtocolTypeI, SProtocolType (..), UserProtocol)
 import Simplex.Messaging.Transport.Client (TransportHost (..))
 import Simplex.Messaging.Util (atomicModifyIORef'_, safeDecodeUtf8)
 
 usageConditionsCommit :: Text
-usageConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
+usageConditionsCommit = "7471fd2af5838dc0467aebc570b5ea75e5df3209"
 
 previousConditionsCommit :: Text
-previousConditionsCommit = "11a44dc1fd461a93079f897048b46998db55da5c"
+previousConditionsCommit = "a5061f3147165a05979d6ace33960aced2d6ac03"
 
 usageConditionsText :: Text
 usageConditionsText =
-  $( let s = $(embedFile =<< makeRelativeToProject "PRIVACY.md")
+  $( let s = $(embedFile "PRIVACY.md")
       in [|stripFrontMatter $(lift (safeDecodeUtf8 s))|]
    )
-
-data DBStored = DBStored | DBNew
-
-data SDBStored (s :: DBStored) where
-  SDBStored :: SDBStored 'DBStored
-  SDBNew :: SDBStored 'DBNew
-
-deriving instance Show (SDBStored s)
-
-class DBStoredI s where sdbStored :: SDBStored s
-
-instance DBStoredI 'DBStored where sdbStored = SDBStored
-
-instance DBStoredI 'DBNew where sdbStored = SDBNew
-
-data DBEntityId' (s :: DBStored) where
-  DBEntityId :: Int64 -> DBEntityId' 'DBStored
-  DBNewEntity :: DBEntityId' 'DBNew
-
-deriving instance Show (DBEntityId' s)
-
-deriving instance Eq (DBEntityId' s)
-
-type DBEntityId = DBEntityId' 'DBStored
-
-type DBNewEntity = DBEntityId' 'DBNew
 
 data OperatorTag = OTSimplex | OTFlux
   deriving (Eq, Ord, Show)
@@ -116,19 +89,6 @@ instance TextEncoding OperatorTag where
   textEncode = \case
     OTSimplex -> "simplex"
     OTFlux -> "flux"
-
--- this and other types only define instances of serialization for known DB IDs only,
--- entities without IDs cannot be serialized to JSON
-instance FromField DBEntityId
-#if defined(dbPostgres)
-  where
-    fromField f dat = DBEntityId <$> fromField f dat
-#else
-  where
-    fromField f = DBEntityId <$> fromField f
-#endif
-
-instance ToField DBEntityId where toField (DBEntityId i) = toField i
 
 data UsageConditions = UsageConditions
   { conditionsId :: Int64,
@@ -274,6 +234,10 @@ data UserServer' s (p :: ProtocolType) = UserServer
   }
   deriving (Show)
 
+presetServerAddress :: UserServer' s p -> ProtocolServer p
+presetServerAddress UserServer {server = ProtoServerWithAuth srv _} = srv
+{-# INLINE presetServerAddress #-}
+
 data PresetOperator = PresetOperator
   { operator :: Maybe NewServerOperator,
     smp :: [NewUserServer 'PSMP],
@@ -295,6 +259,9 @@ operatorServersToUse :: UserProtocol p => SProtocolType p -> PresetOperator -> I
 operatorServersToUse p PresetOperator {useSMP, useXFTP} = case p of
   SPSMP -> useSMP
   SPXFTP -> useXFTP
+
+presetServer' :: Bool -> ProtocolServer p -> NewUserServer p
+presetServer' enabled = presetServer enabled . (`ProtoServerWithAuth` Nothing)
 
 presetServer :: Bool -> ProtoServerWithAuth p -> NewUserServer p
 presetServer = newUserServer_ True
@@ -477,25 +444,6 @@ validateUserServers curr others = currUserErrs <> concatMap otherUserErrs others
           | otherwise = (S.insert h hs, dups)
     userServers :: (UserServersClass u, UserProtocol p) => SProtocolType p -> [u] -> [AUserServer p]
     userServers p = map aUserServer' . concatMap (servers' p)
-
-instance ToJSON (DBEntityId' s) where
-  toEncoding = \case
-    DBEntityId i -> toEncoding i
-    DBNewEntity -> JE.null_
-  toJSON = \case
-    DBEntityId i -> toJSON i
-    DBNewEntity -> J.Null
-
-instance DBStoredI s => FromJSON (DBEntityId' s) where
-  parseJSON v = case (v, sdbStored @s) of
-    (J.Null, SDBNew) -> pure DBNewEntity
-    (J.Number n, SDBStored) -> case floatingOrInteger n of
-      Left (_ :: Double) -> fail "bad DBEntityId"
-      Right i -> pure $ DBEntityId (fromInteger i)
-    _ -> fail "bad DBEntityId"
-  omittedField = case sdbStored @s of
-    SDBStored -> Nothing
-    SDBNew -> Just DBNewEntity
 
 $(JQ.deriveJSON defaultJSON ''UsageConditions)
 

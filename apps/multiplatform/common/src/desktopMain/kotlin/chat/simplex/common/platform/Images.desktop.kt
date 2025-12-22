@@ -135,9 +135,9 @@ actual fun ImageBitmap.hasAlpha(): Boolean {
   return false
 }
 
-actual fun ImageBitmap.addLogo(): ImageBitmap {
-  val radius = (width * 0.16f).toInt()
-  val logoSize = (width * 0.24).toInt()
+actual fun ImageBitmap.addLogo(size: Float): ImageBitmap {
+  val radius = (width * size).toInt()
+  val logoSize = (width * size * 1.5).toInt()
   val logo: BufferedImage = MR.images.icon_foreground_common.image
   val original = toAwtImage()
   val withLogo = BufferedImage(width, height, original.type)

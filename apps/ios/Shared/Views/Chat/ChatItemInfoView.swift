@@ -14,6 +14,7 @@ struct ChatItemInfoView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var theme: AppTheme
     var ci: ChatItem
+    var userMemberId: String?
     @Binding var chatItemInfo: ChatItemInfo?
     @State private var selection: CIInfoTab = .history
     @State private var alert: CIInfoViewAlert? = nil
@@ -130,9 +131,9 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func details() -> some View {
+    private func details() -> some View {
         let meta = ci.meta
-        VStack(alignment: .leading, spacing: 16) {
+        return VStack(alignment: .leading, spacing: 16) {
             Text(title)
                 .font(.largeTitle)
                 .bold()
@@ -196,7 +197,7 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func historyTab() -> some View {
+    private func historyTab() -> some View {
         GeometryReader { g in
             let maxWidth = (g.size.width - 32) * 0.84
             ScrollView {
@@ -226,12 +227,13 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil)
+    private func itemVersionView(_ itemVersion: ChatItemVersion, _ maxWidth: CGFloat, current: Bool) -> some View {
+        let backgroundColor = chatItemFrameColor(ci, theme)
+        return VStack(alignment: .leading, spacing: 4) {
+            textBubble(itemVersion.msgContent.text, itemVersion.formattedText, nil, backgroundColor: backgroundColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(chatItemFrameColor(ci, theme))
+                .background(backgroundColor)
                 .modifier(ChatItemClipped())
                 .contextMenu {
                     if itemVersion.msgContent.text != "" {
@@ -256,9 +258,9 @@ struct ChatItemInfoView: View {
         .frame(maxWidth: maxWidth, alignment: .leading)
     }
 
-    @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil) -> some View {
+    @ViewBuilder private func textBubble(_ text: String, _ formattedText: [FormattedText]?, _ sender: String? = nil, backgroundColor: Color) -> some View {
         if text != "" {
-            TextBubble(text: text, formattedText: formattedText, sender: sender)
+            TextBubble(text: text, formattedText: formattedText, sender: sender, mentions: ci.mentions, userMemberId: userMemberId, backgroundColor: backgroundColor)
         } else {
             Text("no text")
                 .italic()
@@ -271,14 +273,18 @@ struct ChatItemInfoView: View {
         var text: String
         var formattedText: [FormattedText]?
         var sender: String? = nil
-        @State private var showSecrets = false
+        var mentions: [String: CIMention]?
+        var userMemberId: String?
+        var backgroundColor: Color
+        @State private var showSecrets: Set<Int> = []
 
         var body: some View {
-            toggleSecrets(formattedText, $showSecrets, messageText(text, formattedText, sender, showSecrets: showSecrets, secondaryColor: theme.colors.secondary))
+            let r = messageText(text, formattedText, sender: sender, mentions: mentions, userMemberId: userMemberId, showSecrets: showSecrets, backgroundColor: UIColor(backgroundColor))
+            return msgTextResultView(r, Text(AttributedString(r.string)), showSecrets: $showSecrets)
         }
     }
 
-    @ViewBuilder private func quoteTab(_ qi: CIQuote) -> some View {
+    private func quoteTab(_ qi: CIQuote) -> some View {
         GeometryReader { g in
             let maxWidth = (g.size.width - 32) * 0.84
             ScrollView {
@@ -296,9 +302,10 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            textBubble(qi.text, qi.formattedText, qi.getSender(nil))
+    private func quotedMsgView(_ qi: CIQuote, _ maxWidth: CGFloat) -> some View {
+        let backgroundColor = quotedMsgFrameColor(qi, theme)
+        return VStack(alignment: .leading, spacing: 4) {
+            textBubble(qi.text, qi.formattedText, qi.getSender(nil), backgroundColor: backgroundColor)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(quotedMsgFrameColor(qi, theme))
@@ -331,7 +338,7 @@ struct ChatItemInfoView: View {
         : theme.appColors.receivedMessage
     }
 
-    @ViewBuilder private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
+    private func forwardedFromTab(_ forwardedFromItem: AChatItem) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 details()
@@ -351,8 +358,9 @@ struct ChatItemInfoView: View {
             Button {
                 Task {
                     await MainActor.run {
-                        ItemsModel.shared.loadOpenChat(forwardedFromItem.chatInfo.id)
-                        dismiss()
+                        ItemsModel.shared.loadOpenChat(forwardedFromItem.chatInfo.id) {
+                            dismiss()
+                        }
                     }
                 }
             } label: {
@@ -368,7 +376,7 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func forwardedFromSender(_ forwardedFromItem: AChatItem) -> some View {
+    private func forwardedFromSender(_ forwardedFromItem: AChatItem) -> some View {
         HStack {
             ChatInfoImage(chat: Chat(chatInfo: forwardedFromItem.chatInfo), size: 48)
                 .padding(.trailing, 6)
@@ -399,7 +407,7 @@ struct ChatItemInfoView: View {
         }
     }
 
-    @ViewBuilder private func deliveryTab(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
+    private func deliveryTab(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
                 details()
@@ -414,7 +422,7 @@ struct ChatItemInfoView: View {
         .frame(maxHeight: .infinity, alignment: .top)
     }
 
-    @ViewBuilder private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
+    private func memberDeliveryStatusesView(_ memberDeliveryStatuses: [MemberDeliveryStatus]) -> some View {
         LazyVStack(alignment: .leading, spacing: 12) {
             let mss = membersStatuses(memberDeliveryStatuses)
             if !mss.isEmpty {
@@ -548,6 +556,6 @@ func localTimestamp(_ date: Date) -> String {
 
 struct ChatItemInfoView_Previews: PreviewProvider {
     static var previews: some View {
-        ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, .now, "hello"), chatItemInfo: Binding.constant(nil))
+        ChatItemInfoView(ci: ChatItem.getSample(1, .directSnd, .now, "hello"), userMemberId: Chat.sampleData.chatInfo.groupInfo?.membership.memberId, chatItemInfo: Binding.constant(nil))
     }
 }

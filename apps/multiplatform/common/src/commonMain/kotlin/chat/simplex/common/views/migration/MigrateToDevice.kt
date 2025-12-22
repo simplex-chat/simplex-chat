@@ -580,12 +580,13 @@ private fun MutableState<MigrationToState?>.startDownloading(
 ) {
   withBGApi {
     chatReceiver.value = MigrationToChatReceiver(ctrl, tempDatabaseFile) { msg ->
-        when (msg) {
-          is CR.RcvFileProgressXFTP -> {
-            state = MigrationToState.DownloadProgress(msg.receivedSize, msg.totalSize, msg.rcvFileTransfer.fileId, link, archivePath, netCfg, networkProxy, ctrl)
+        val r = msg.result
+        when {
+          r is CR.RcvFileProgressXFTP -> {
+            state = MigrationToState.DownloadProgress(r.receivedSize, r.totalSize, r.rcvFileTransfer.fileId, link, archivePath, netCfg, networkProxy, ctrl)
             MigrationToDeviceState.save(MigrationToDeviceState.DownloadProgress(link, File(archivePath).name, netCfg, networkProxy))
           }
-          is CR.RcvStandaloneFileComplete -> {
+          r is CR.RcvStandaloneFileComplete -> {
             delay(500)
             // User closed the whole screen before new state was saved
             if (state == null) {
@@ -595,22 +596,22 @@ private fun MutableState<MigrationToState?>.startDownloading(
               MigrationToDeviceState.save(MigrationToDeviceState.ArchiveImport(File(archivePath).name, netCfg, networkProxy))
             }
           }
-          is CR.RcvFileError -> {
+          r is CR.RcvFileError -> {
             AlertManager.shared.showAlertMsg(
               generalGetString(MR.strings.migrate_to_device_download_failed),
               generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
             )
             state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
           }
-          is CR.ChatRespError -> {
-            if (msg.chatError is ChatError.ChatErrorChat && msg.chatError.errorType is ChatErrorType.NoRcvFileUser) {
+          msg is API.Error -> {
+            if (msg.err is ChatError.ChatErrorChat && msg.err.errorType is ChatErrorType.NoRcvFileUser) {
               AlertManager.shared.showAlertMsg(
                 generalGetString(MR.strings.migrate_to_device_download_failed),
                 generalGetString(MR.strings.migrate_to_device_file_delete_or_link_invalid)
               )
               state = MigrationToState.DownloadFailed(totalBytes, link, archivePath, netCfg, networkProxy)
             } else {
-              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.chatError)}")
+              Log.d(TAG, "unsupported error: ${msg.responseType}, ${json.encodeToString(msg.err)}")
             }
           }
           else -> Log.d(TAG, "unsupported event: ${msg.responseType}")
@@ -632,7 +633,7 @@ private fun MutableState<MigrationToState?>.startDownloading(
 private fun MutableState<MigrationToState?>.importArchive(archivePath: String, netCfg: NetCfg, networkProxy: NetworkProxy?) {
   withLongRunningApi {
     try {
-      if (ChatController.ctrl == null || ChatController.ctrl == -1L) {
+      if (!ChatController.hasChatCtrl()) {
         chatInitControllerRemovingDatabases()
       }
       controller.apiDeleteStorage()
@@ -739,7 +740,7 @@ private class MigrationToChatReceiver(
   val ctrl: ChatCtrl,
   val databaseUrl: File,
   var receiveMessages: Boolean = true,
-  val processReceivedMsg: suspend (CR) -> Unit
+  val processReceivedMsg: suspend (API) -> Unit
 ) {
   fun start() {
     Log.d(TAG, "MigrationChatReceiver startReceiver")
@@ -748,19 +749,18 @@ private class MigrationToChatReceiver(
         try {
           val msg = ChatController.recvMsg(ctrl)
           if (msg != null && receiveMessages) {
-            val r = msg.resp
-            val rhId = msg.remoteHostId
-            Log.d(TAG, "processReceivedMsg: ${r.responseType}")
-            chatModel.addTerminalItem(TerminalItem.resp(rhId, r))
+            val rhId = msg.rhId
+            Log.d(TAG, "processReceivedMsg: ${msg.responseType}")
+            chatModel.addTerminalItem(TerminalItem.resp(rhId, msg))
             val finishedWithoutTimeout = withTimeoutOrNull(60_000L) {
-              processReceivedMsg(r)
+              processReceivedMsg(msg)
             }
             if (finishedWithoutTimeout == null) {
-              Log.e(TAG, "Timeout reached while processing received message: " + msg.resp.responseType)
+              Log.e(TAG, "Timeout reached while processing received message: " + msg.responseType)
               if (appPreferences.developerTools.get() && appPreferences.showSlowApiCalls.get()) {
                 AlertManager.shared.showAlertMsg(
                   title = generalGetString(MR.strings.possible_slow_function_title),
-                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.resp.responseType + "\n" + Exception().stackTraceToString()),
+                  text = generalGetString(MR.strings.possible_slow_function_desc).format(60, msg.responseType + "\n" + Exception().stackTraceToString()),
                   shareText = true
                 )
               }

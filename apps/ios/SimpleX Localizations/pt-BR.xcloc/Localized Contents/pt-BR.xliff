@@ -2,7 +2,7 @@
 <xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 http://docs.oasis-open.org/xliff/v1.2/os/xliff-core-1.2-strict.xsd">
   <file original="en.lproj/Localizable.strings" source-language="en" target-language="pt-BR" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"></tool>
     </header>
     <body>
       <trans-unit id="&#10;" xml:space="preserve" approved="no">
@@ -2352,8 +2352,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">Guarde a senha em um local seguro, você NÃO poderá alterá-la se a perder.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve" approved="no">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve" approved="no">
+        <source>Fingerprint in server address does not match certificate.</source>
         <target state="translated">Possivelmente, a impressão digital do certificado no endereço do servidor está incorreta</target>
         <note>server test error</note>
       </trans-unit>
@@ -2727,8 +2727,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <target state="translated">Mensagens enviadas serão excluídas depois do tempo definido.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve" approved="no">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve" approved="no">
+        <source>Server requires authorization to create queues, check password.</source>
         <target state="translated">O servidor requer autorização para criar filas, verifique a senha</target>
         <note>server test error</note>
       </trans-unit>
@@ -3002,8 +3002,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The old database was not removed during the migration, it can be deleted.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve" approved="no">
-        <source>The profile is only shared with your contacts.</source>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve" approved="no">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
         <target state="translated">O perfil é compartilhado apenas com seus contatos.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3934,7 +3934,7 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">itálico</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4130,8 +4130,8 @@ SimpleX servers cannot see your profile.</source>
         <target state="translated">sim</target>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve" approved="no">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve" approved="no">
+        <source>You are invited to group</source>
         <target state="translated">você está convidado para o grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4610,8 +4610,8 @@ Disponível na 5.1</target>
         <target state="translated">Salvar e atualizar perfil do grupo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve" approved="no">
-        <source>Server requires authorization to upload, check password</source>
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve" approved="no">
+        <source>Server requires authorization to upload, check password.</source>
         <target state="translated">O servidor requer autorização para fazer upload, verifique a senha</target>
         <note>server test error</note>
       </trans-unit>
@@ -5565,8 +5565,8 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Chat migrated!</source>
         <target state="translated">Conversa migrada!</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">Aceitar automaticamente configurações</target>
       </trans-unit>
       <trans-unit id="App encrypts new local files (except videos)." xml:space="preserve" approved="no">
@@ -5645,11 +5645,99 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
         <source>Chat profile</source>
         <target state="translated">Perfil da conversa</target>
       </trans-unit>
+      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
+        <source>%d seconds(s)</source>
+        <target state="translated">%d segundo(s)</target>
+      </trans-unit>
+      <trans-unit id="**Scan / Paste link**: to connect via a link you received." xml:space="preserve" approved="no">
+        <source>**Scan / Paste link**: to connect via a link you received.</source>
+        <target state="translated">**Escanear / Colar link**: para conectar através de um link que você recebeu.</target>
+      </trans-unit>
+      <trans-unit id="1 year" xml:space="preserve" approved="no">
+        <source>1 year</source>
+        <target state="translated">1 ano</target>
+      </trans-unit>
+      <trans-unit id="About operators" xml:space="preserve" approved="no">
+        <source>About operators</source>
+        <target state="translated">Sobre operadores</target>
+      </trans-unit>
+      <trans-unit id="Accept as member" xml:space="preserve" approved="no">
+        <source>Accept as member</source>
+        <target state="translated">Aceitar como membro</target>
+      </trans-unit>
+      <trans-unit id="Accept as observer" xml:space="preserve" approved="no">
+        <source>Accept as observer</source>
+        <target state="translated">Aceitar como observador</target>
+      </trans-unit>
+      <trans-unit id="Accept conditions" xml:space="preserve" approved="no">
+        <source>Accept conditions</source>
+        <target state="translated">Aceitar condições</target>
+      </trans-unit>
+      <trans-unit id="Accept contact request" xml:space="preserve" approved="no">
+        <source>Accept contact request</source>
+        <target state="translated">Aceitar solicitação de contato</target>
+      </trans-unit>
+      <trans-unit id="Accept member" xml:space="preserve" approved="no">
+        <source>Accept member</source>
+        <target state="translated">Aceitar membro</target>
+      </trans-unit>
+      <trans-unit id="Accepted conditions" xml:space="preserve" approved="no">
+        <source>Accepted conditions</source>
+        <target state="translated">Condições aceitas</target>
+      </trans-unit>
+      <trans-unit id="Active" xml:space="preserve" approved="no">
+        <source>Active</source>
+        <target state="translated">Ativo</target>
+      </trans-unit>
+      <trans-unit id="Add friends" xml:space="preserve" approved="no">
+        <source>Add friends</source>
+        <target state="translated">Adicionar amigos</target>
+      </trans-unit>
+      <trans-unit id="Add list" xml:space="preserve" approved="no">
+        <source>Add list</source>
+        <target state="translated">Adicionar lista</target>
+      </trans-unit>
+      <trans-unit id="Add message" xml:space="preserve" approved="no">
+        <source>Add message</source>
+        <target state="translated">Adicionar mensagem</target>
+      </trans-unit>
+      <trans-unit id="Add team members" xml:space="preserve" approved="no">
+        <source>Add team members</source>
+        <target state="translated">Adicionar membros da equipe</target>
+      </trans-unit>
+      <trans-unit id="Add to list" xml:space="preserve" approved="no">
+        <source>Add to list</source>
+        <target state="translated">Adicionar à lista</target>
+      </trans-unit>
+      <trans-unit id="Add your team members to the conversations." xml:space="preserve" approved="no">
+        <source>Add your team members to the conversations.</source>
+        <target state="translated">Adicione membros da sua equipe às conversas.</target>
+      </trans-unit>
+      <trans-unit id="Added media &amp; file servers" xml:space="preserve" approved="no">
+        <source>Added media &amp; file servers</source>
+        <target state="translated">Servidores de mídia e arquivos adicionados</target>
+      </trans-unit>
+      <trans-unit id="Added message servers" xml:space="preserve" approved="no">
+        <source>Added message servers</source>
+        <target state="translated">Servidores de mensagem adicionados</target>
+      </trans-unit>
+      <trans-unit id="Address or 1-time link?" xml:space="preserve" approved="no">
+        <source>Address or 1-time link?</source>
+        <target state="translated">Endereço ou link de uso único?</target>
+      </trans-unit>
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
+        <source>Address settings</source>
+        <target state="translated">Configurações de endereço</target>
+      </trans-unit>
+      <trans-unit id="All" xml:space="preserve" approved="no">
+        <source>All</source>
+        <target state="translated">Todos</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="pt-BR" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"></tool>
     </header>
     <body>
       <trans-unit id="CFBundleName" xml:space="preserve" approved="no">
@@ -5677,7 +5765,7 @@ Isso pode acontecer por causa de algum bug ou quando a conexão está comprometi
   </file>
   <file original="SimpleX NSE/en.lproj/InfoPlist.strings" source-language="en" target-language="pt-BR" datatype="plaintext">
     <header>
-      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"/>
+      <tool tool-id="com.apple.dt.xcode" tool-name="Xcode" tool-version="14.0" build-num="14A309"></tool>
     </header>
     <body>
       <trans-unit id="CFBundleDisplayName" xml:space="preserve" approved="no">

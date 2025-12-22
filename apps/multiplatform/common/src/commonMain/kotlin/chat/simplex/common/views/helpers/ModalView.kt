@@ -32,6 +32,7 @@ fun ModalView(
   searchAlwaysVisible: Boolean = false,
   onSearchValueChanged: (String) -> Unit = {},
   endButtons: @Composable RowScope.() -> Unit = {},
+  appBar: @Composable (BoxScope.() -> Unit)? = null,
   content: @Composable BoxScope.() -> Unit,
 ) {
   if (showClose && showAppBar) {
@@ -48,14 +49,20 @@ fun ModalView(
           StatusBarBackground()
         }
         Box(Modifier.align(if (oneHandUI.value) Alignment.BottomStart else Alignment.TopStart)) {
-          DefaultAppBar(
-            navigationButton = if (showClose) {{ NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }} else null,
-            onTop = !oneHandUI.value,
-            showSearch = showSearch,
-            searchAlwaysVisible = searchAlwaysVisible,
-            onSearchValueChanged = onSearchValueChanged,
-            buttons = endButtons
-          )
+          if (appBar != null) {
+            appBar()
+          } else {
+            DefaultAppBar(
+              navigationButton = if (showClose) {
+                { NavigationButtonBack(onButtonClicked = if (enableClose) close else null) }
+              } else null,
+              onTop = !oneHandUI.value,
+              showSearch = showSearch,
+              searchAlwaysVisible = searchAlwaysVisible,
+              onSearchValueChanged = onSearchValueChanged,
+              buttons = endButtons
+            )
+          }
         }
       }
     }
@@ -78,7 +85,8 @@ class ModalData(val keyboardCoversBar: Boolean = true) {
 }
 
 enum class ModalViewId {
-  GROUP_REPORTS
+  SECONDARY_CHAT,
+  CONTEXT_USER_PICKER_INCOGNITO
 }
 
 class ModalManager(private val placement: ModalPlacement? = null) {
@@ -154,13 +162,20 @@ class ModalManager(private val placement: ModalPlacement? = null) {
 
   fun closeModal() {
     if (modalViews.isNotEmpty()) {
-      if (modalViews.lastOrNull()?.animated == false) modalViews.removeAt(modalViews.lastIndex)
-      else runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
+      val lastModal = modalViews.lastOrNull()
+      if (lastModal != null) {
+        if (lastModal.id == ModalViewId.SECONDARY_CHAT) chatModel.secondaryChatsContext.value = null
+        if (!lastModal.animated)
+          modalViews.removeAt(modalViews.lastIndex)
+        else
+          runAtomically { toRemove.add(modalViews.lastIndex - min(toRemove.size, modalViews.lastIndex)) }
+      }
     }
     _modalCount.value = modalViews.size - toRemove.size
   }
 
   fun closeModals() {
+    chatModel.secondaryChatsContext.value = null
     modalViews.clear()
     toRemove.clear()
     _modalCount.value = 0

@@ -28,9 +28,11 @@ val appVersionInfo: Pair<String, Int?> = if (appPlatform == AppPlatform.ANDROID)
 else
   BuildConfigCommon.DESKTOP_VERSION_NAME to BuildConfigCommon.DESKTOP_VERSION_CODE
 
+val databaseBackend: String = if (appPlatform == AppPlatform.ANDROID) "sqlite" else BuildConfigCommon.DATABASE_BACKEND
+
 class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
   override fun add(element: E): Boolean {
-    if(size > capacity) removeFirst()
+    if (size > capacity) removeFirstOrNull()
     return super.add(element)
   }
 }

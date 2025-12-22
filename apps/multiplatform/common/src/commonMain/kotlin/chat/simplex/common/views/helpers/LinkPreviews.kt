@@ -9,6 +9,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layoutId
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -19,6 +20,8 @@ import chat.simplex.common.model.LinkPreview
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.chat.chatViewScrollState
+import chat.simplex.common.views.chat.item.CHAT_IMAGE_LAYOUT_ID
+import chat.simplex.common.views.chat.item.imageViewFullWidth
 import chat.simplex.res.MR
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -40,11 +43,21 @@ suspend fun getLinkPreview(url: String): LinkPreview? {
           url
         }
         else -> {
-          val response = Jsoup.connect(url)
+          val connection = Jsoup.connect(url)
             .ignoreContentType(true)
             .timeout(10000)
             .followRedirects(true)
-            .execute()
+
+          val response = if (url.lowercase().startsWith("https://x.com/")) {
+            // Apple sends request with special user-agent which handled differently by X.com.
+            // Different response that includes video poster from post
+            connection
+              .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_11_1) AppleWebKit/601.2.4 (KHTML, like Gecko) Version/9.0.1 Safari/601.2.4 facebookexternalhit/1.1 Facebot Twitterbot/1.0")
+              .execute()
+          } else {
+            connection
+              .execute()
+          }
           val doc = response.parse()
           val ogTags = doc.select(OG_SELECT_QUERY)
           title = ogTags.firstOrNull { it.attr("property") == "og:title" }?.attr("content") ?: doc.title()
@@ -123,10 +136,15 @@ fun ComposeLinkView(linkPreview: LinkPreview?, cancelPreview: () -> Unit, cancel
 
 @Composable
 fun ChatItemLinkView(linkPreview: LinkPreview, showMenu: State<Boolean>, onLongClick: () -> Unit) {
-  Column(Modifier.widthIn(max = DEFAULT_MAX_IMAGE_WIDTH)) {
+  val image = base64ToBitmap(linkPreview.image)
+  Column(
+    Modifier
+    .layoutId(CHAT_IMAGE_LAYOUT_ID)
+    .width(if (image.width * 0.97 <= image.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+  ) {
     val blurred = remember { mutableStateOf(appPrefs.privacyMediaBlurRadius.get() > 0) }
     Image(
-      base64ToBitmap(linkPreview.image),
+      image,
       stringResource(MR.strings.image_descr_link_preview),
       modifier = Modifier
         .fillMaxWidth()

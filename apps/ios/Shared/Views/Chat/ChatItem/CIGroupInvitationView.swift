@@ -84,12 +84,12 @@ struct CIGroupInvitationView: View {
         }
 
         if action {
-            v.onTapGesture {
+            v.simultaneousGesture(TapGesture().onEnded {
                 inProgress = true
                 joinGroup(groupInvitation.groupId) {
                     await MainActor.run { inProgress = false }
                 }
-            }
+            })
             .disabled(inProgress)
         } else {
             v

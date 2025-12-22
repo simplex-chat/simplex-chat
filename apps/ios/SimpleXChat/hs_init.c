@@ -29,10 +29,10 @@ void haskell_init_nse(void) {
     char *argv[] = {
         "simplex",
         "+RTS", // requires `hs_init_with_rtsopts`
-        "-A1m", // chunk size for new allocations
-        "-H1m", // initial heap size
+        "-A256k", // chunk size for new allocations
+        "-H512k", // initial heap size
         "-F0.5", // heap growth triggering GC
-        "-Fd1", // memory return
+        "-Fd0.3", // memory return
         "-c", // compacting garbage collector
         0
     };

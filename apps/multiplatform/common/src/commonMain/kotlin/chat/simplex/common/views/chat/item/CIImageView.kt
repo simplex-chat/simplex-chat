@@ -8,6 +8,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
@@ -92,12 +93,6 @@ fun CIImageView(
   }
 
   @Composable
-  fun imageViewFullWidth(): Dp {
-    val approximatePadding = 100.dp
-    return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
-  }
-
-  @Composable
   fun imageView(imageBitmap: ImageBitmap, onClick: () -> Unit) {
     Image(
       imageBitmap,
@@ -122,7 +117,7 @@ fun CIImageView(
     // IllegalStateException: Recording currently in progress - missing #endRecording() call?
     // but can display 5000px image. Using even lower value here just to feel safer.
     // It happens to WebP because it's not compressed while sending since it can be animated.
-    if (painter.intrinsicSize.width <= 4320 && painter.intrinsicSize.height <= 4320) {
+    if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width <= 4320 && painter.intrinsicSize.height <= 4320) {
       Image(
         painter,
         contentDescription = stringResource(MR.strings.image_descr),
@@ -140,7 +135,7 @@ fun CIImageView(
       )
     } else {
       Box(Modifier
-        .width(if (painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
+        .width(if (painter.intrinsicSize != Size.Unspecified && painter.intrinsicSize.width * 0.97 <= painter.intrinsicSize.height) imageViewFullWidth() * 0.75f else DEFAULT_MAX_IMAGE_WIDTH)
         .combinedClickable(
           onLongClick = { showMenu.value = true },
           onClick = {}
@@ -262,6 +257,12 @@ fun CIImageView(
       }
     }
   }
+}
+
+@Composable
+fun imageViewFullWidth(): Dp {
+  val approximatePadding = 100.dp
+  return with(LocalDensity.current) { minOf(DEFAULT_MAX_IMAGE_WIDTH, LocalWindowWidth() - approximatePadding) }
 }
 
 private fun showDownloadButton(status: CIFileStatus?): Boolean =

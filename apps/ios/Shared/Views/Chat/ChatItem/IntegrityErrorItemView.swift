@@ -31,8 +31,8 @@ struct IntegrityErrorItemView: View {
             case .msgBadHash:
                 AlertManager.shared.showAlert(Alert(
                     title: Text("Bad message hash"),
-                    message: Text("The hash of the previous message is different.") + Text("\n") +
-                        Text(decryptErrorReason) + Text("\n") +
+                    message: Text("The hash of the previous message is different.") + textNewLine +
+                        Text(decryptErrorReason) + textNewLine +
                         Text("Please report it to the developers.")
                 ))
             case .msgBadId: msgBadIdAlert()
@@ -47,7 +47,7 @@ struct IntegrityErrorItemView: View {
             message: Text("""
                 The ID of the next message is incorrect (less or equal to the previous).
                 It can happen because of some bug or when the connection is compromised.
-                """) + Text("\n") +
+                """) + textNewLine +
                 Text("Please report it to the developers.")
         ))
     }
@@ -71,7 +71,7 @@ struct CIMsgError: View {
         .padding(.vertical, 6)
         .background { chatItemFrameColor(chatItem, theme).modifier(ChatTailPadding()) }
         .textSelection(.disabled)
-        .onTapGesture(perform: onTap)
+        .simultaneousGesture(TapGesture().onEnded(onTap))
     }
 }
 

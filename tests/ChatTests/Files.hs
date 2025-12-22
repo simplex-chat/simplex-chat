@@ -6,6 +6,7 @@
 module ChatTests.Files where
 
 import ChatClient
+import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
@@ -24,7 +25,7 @@ import Simplex.Messaging.Encoding.String
 import System.Directory (copyFile, createDirectoryIfMissing, doesFileExist, getFileSize)
 import Test.Hspec hiding (it)
 
-chatFileTests :: SpecWith FilePath
+chatFileTests :: SpecWith TestParams
 chatFileTests = do
   describe "messages with files" $ do
     it "send and receive message with file" runTestMessageWithFile
@@ -63,7 +64,7 @@ chatFileTests = do
     xit "removes sent file from server" testXFTPStandaloneCancelSnd -- no error shown in tests
     it "removes received temporary files" testXFTPStandaloneCancelRcv
 
-runTestMessageWithFile :: HasCallStack => FilePath -> IO ()
+runTestMessageWithFile :: HasCallStack => TestParams -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
   connectUsers alice bob
 
@@ -89,7 +90,7 @@ runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withX
   alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
   bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
-testSendImage :: HasCallStack => FilePath -> IO ()
+testSendImage :: HasCallStack => TestParams -> IO ()
 testSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
@@ -120,7 +121,7 @@ testSendImage =
       fileExists <- doesFileExist "./tests/tmp/test.jpg"
       fileExists `shouldBe` True
 
-testSenderMarkItemDeleted :: HasCallStack => FilePath -> IO ()
+testSenderMarkItemDeleted :: HasCallStack => TestParams -> IO ()
 testSenderMarkItemDeleted =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
@@ -143,7 +144,7 @@ testSenderMarkItemDeleted =
       bob ##> "/fs 1"
       bob <## "receiving file 1 (test_1MB.pdf) cancelled"
 
-testFilesFoldersSendImage :: HasCallStack => FilePath -> IO ()
+testFilesFoldersSendImage :: HasCallStack => TestParams -> IO ()
 testFilesFoldersSendImage =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
@@ -175,7 +176,7 @@ testFilesFoldersSendImage =
         bob <## "alice: contact is deleted"
         alice <## "bob (Bob) deleted contact with you"
 
-testFilesFoldersImageSndDelete :: HasCallStack => FilePath -> IO ()
+testFilesFoldersImageSndDelete :: HasCallStack => TestParams -> IO ()
 testFilesFoldersImageSndDelete =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
@@ -208,7 +209,7 @@ testFilesFoldersImageSndDelete =
         bob ##> "/d alice"
         bob <## "alice: contact is deleted"
 
-testFilesFoldersImageRcvDelete :: HasCallStack => FilePath -> IO ()
+testFilesFoldersImageRcvDelete :: HasCallStack => TestParams -> IO ()
 testFilesFoldersImageRcvDelete =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
@@ -235,7 +236,7 @@ testFilesFoldersImageRcvDelete =
         bob <## "alice: contact is deleted"
         alice <## "bob (Bob) deleted contact with you"
 
-testSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
+testSendImageWithTextAndQuote :: HasCallStack => TestParams -> IO ()
 testSendImageWithTextAndQuote =
   testChat2 aliceProfile bobProfile $
     \alice bob -> withXFTPServer $ do
@@ -310,7 +311,7 @@ testSendImageWithTextAndQuote =
 
       B.readFile "./tests/tmp/test_1.jpg" `shouldReturn` src
 
-testGroupSendImage :: HasCallStack => FilePath -> IO ()
+testGroupSendImage :: HasCallStack => TestParams -> IO ()
 testGroupSendImage =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -352,7 +353,7 @@ testGroupSendImage =
       bob #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
       cath #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
 
-testGroupSendImageWithTextAndQuote :: HasCallStack => FilePath -> IO ()
+testGroupSendImageWithTextAndQuote :: HasCallStack => TestParams -> IO ()
 testGroupSendImageWithTextAndQuote =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> withXFTPServer $ do
@@ -371,9 +372,9 @@ testGroupSendImageWithTextAndQuote =
       alice <## "use /fc 1 to cancel sending"
       concurrentlyN_
         [ do
-            bob <# "#team alice> > bob hi team"
+            bob <# "#team alice!> > bob hi team"
             bob <## "      hey bob"
-            bob <# "#team alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <# "#team alice!> sends file test.jpg (136.5 KiB / 139737 bytes)"
             bob <## "use /fr 1 [<dir>/ | <path>] to receive it",
           do
             cath <# "#team alice> > bob hi team"
@@ -409,7 +410,7 @@ testGroupSendImageWithTextAndQuote =
       cath #$> ("/_get chat #1 count=2", chat'', [((0, "hi team"), Nothing, Nothing), ((0, "hey bob"), Just (0, "hi team"), Just "./tests/tmp/test_1.jpg")])
       cath @@@ [("#team", "hey bob"), ("@alice", "received invitation to join group team as admin")]
 
-testSendMultiFilesDirect :: HasCallStack => FilePath -> IO ()
+testSendMultiFilesDirect :: HasCallStack => TestParams -> IO ()
 testSendMultiFilesDirect =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -473,7 +474,7 @@ testSendMultiFilesDirect =
       alice #$> ("/_get chat @2 count=3", chatF, [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")])
       bob #$> ("/_get chat @2 count=3", chatF, [((0, "message without file"), Nothing), ((0, "sending file 1"), Just "test.jpg"), ((0, "sending file 2"), Just "test.pdf")])
 
-testSendMultiFilesGroup :: HasCallStack => FilePath -> IO ()
+testSendMultiFilesGroup :: HasCallStack => TestParams -> IO ()
 testSendMultiFilesGroup =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     withXFTPServer $ do
@@ -582,7 +583,7 @@ testXFTPRoundFDCount = do
   roundedFDCount 128 `shouldBe` 128
   roundedFDCount 500 `shouldBe` 512
 
-testXFTPFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransfer :: HasCallStack => TestParams -> IO ()
 testXFTPFileTransfer =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -611,7 +612,7 @@ testXFTPFileTransfer =
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
 
-testXFTPFileTransferEncrypted :: HasCallStack => FilePath -> IO ()
+testXFTPFileTransferEncrypted :: HasCallStack => TestParams -> IO ()
 testXFTPFileTransferEncrypted =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     src <- B.readFile "./tests/fixtures/test.pdf"
@@ -638,7 +639,7 @@ testXFTPFileTransferEncrypted =
       LB.length dest `shouldBe` fromIntegral srcLen
       LB.toStrict dest `shouldBe` src
 
-testXFTPAcceptAfterUpload :: HasCallStack => FilePath -> IO ()
+testXFTPAcceptAfterUpload :: HasCallStack => TestParams -> IO ()
 testXFTPAcceptAfterUpload =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -663,7 +664,7 @@ testXFTPAcceptAfterUpload =
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
 
-testXFTPGroupFileTransfer :: HasCallStack => FilePath -> IO ()
+testXFTPGroupFileTransfer :: HasCallStack => TestParams -> IO ()
 testXFTPGroupFileTransfer =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     withXFTPServer $ do
@@ -701,7 +702,7 @@ testXFTPGroupFileTransfer =
       dest1 `shouldBe` src
       dest2 `shouldBe` src
 
-testXFTPDeleteUploadedFile :: HasCallStack => FilePath -> IO ()
+testXFTPDeleteUploadedFile :: HasCallStack => TestParams -> IO ()
 testXFTPDeleteUploadedFile =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -722,7 +723,7 @@ testXFTPDeleteUploadedFile =
       bob ##> "/fr 1 ./tests/tmp"
       bob <## "file cancelled: test.pdf"
 
-testXFTPDeleteUploadedFileGroup :: HasCallStack => FilePath -> IO ()
+testXFTPDeleteUploadedFileGroup :: HasCallStack => TestParams -> IO ()
 testXFTPDeleteUploadedFileGroup =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> do
     withXFTPServer $ do
@@ -774,7 +775,7 @@ testXFTPDeleteUploadedFileGroup =
       cath ##> "/fr 1 ./tests/tmp"
       cath <## "file cancelled: test.pdf"
 
-testXFTPWithRelativePaths :: HasCallStack => FilePath -> IO ()
+testXFTPWithRelativePaths :: HasCallStack => TestParams -> IO ()
 testXFTPWithRelativePaths =
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -802,11 +803,11 @@ testXFTPWithRelativePaths =
       dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
       dest `shouldBe` src
 
-testXFTPContinueRcv :: HasCallStack => FilePath -> IO ()
-testXFTPContinueRcv tmp = do
+testXFTPContinueRcv :: HasCallStack => TestParams -> IO ()
+testXFTPContinueRcv ps = do
   withXFTPServer $ do
-    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-      withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
         connectUsers alice bob
 
         alice #> "/f @bob ./tests/fixtures/test.pdf"
@@ -816,8 +817,8 @@ testXFTPContinueRcv tmp = do
         alice <## "completed uploading file 1 (test.pdf) for bob"
 
   -- server is down - file is not received
-  withTestChat tmp "bob" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+  withTestChat ps "bob" $ \bob -> do
+    bob <## "subscribed 1 connections on server localhost"
     bob ##> "/fr 1 ./tests/tmp"
     bob
       <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
@@ -831,14 +832,14 @@ testXFTPContinueRcv tmp = do
 
   withXFTPServer $ do
     -- server is up - file reception is continued
-    withTestChat tmp "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
       bob <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
       dest `shouldBe` src
 
-testXFTPMarkToReceive :: HasCallStack => FilePath -> IO ()
+testXFTPMarkToReceive :: HasCallStack => TestParams -> IO ()
 testXFTPMarkToReceive = do
   testChat2 aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -865,7 +866,7 @@ testXFTPMarkToReceive = do
       bob <## "chat started"
 
       bob
-        <### [ "1 contacts connected (use /cs for the list)",
+        <### [ "subscribed 1 connections on server localhost",
                "started receiving file 1 (test.pdf) from alice",
                "saving file 1 from alice to test.pdf"
              ]
@@ -875,11 +876,11 @@ testXFTPMarkToReceive = do
       dest <- B.readFile "./tests/tmp/bob_files/test.pdf"
       dest `shouldBe` src
 
-testXFTPRcvError :: HasCallStack => FilePath -> IO ()
-testXFTPRcvError tmp = do
+testXFTPRcvError :: HasCallStack => TestParams -> IO ()
+testXFTPRcvError ps = do
   withXFTPServer $ do
-    withNewTestChat tmp "alice" aliceProfile $ \alice -> do
-      withNewTestChat tmp "bob" bobProfile $ \bob -> do
+    withNewTestChat ps "alice" aliceProfile $ \alice -> do
+      withNewTestChat ps "bob" bobProfile $ \bob -> do
         connectUsers alice bob
 
         alice #> "/f @bob ./tests/fixtures/test.pdf"
@@ -890,8 +891,8 @@ testXFTPRcvError tmp = do
 
   -- server is up w/t store log - file reception should fail
   withXFTPServer' xftpServerConfig {storeLogFile = Nothing} $ do
-    withTestChat tmp "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+    withTestChat ps "bob" $ \bob -> do
+      bob <## "subscribed 1 connections on server localhost"
       bob ##> "/fr 1 ./tests/tmp"
       bob
         <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
@@ -903,7 +904,7 @@ testXFTPRcvError tmp = do
       bob ##> "/fs 1"
       bob <## "receiving file 1 (test.pdf) error: FileErrAuth"
 
-testXFTPCancelRcvRepeat :: HasCallStack => FilePath -> IO ()
+testXFTPCancelRcvRepeat :: HasCallStack => TestParams -> IO ()
 testXFTPCancelRcvRepeat =
   testChatCfg2 cfg aliceProfile bobProfile $ \alice bob -> do
     withXFTPServer $ do
@@ -952,7 +953,7 @@ testXFTPCancelRcvRepeat =
   where
     cfg = testCfg {xftpDescrPartSize = 200}
 
-testAutoAcceptFile :: HasCallStack => FilePath -> IO ()
+testAutoAcceptFile :: HasCallStack => TestParams -> IO ()
 testAutoAcceptFile =
   testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
     connectUsers alice bob
@@ -977,7 +978,7 @@ testAutoAcceptFile =
   where
     opts = (testOpts :: ChatOpts) {autoAcceptFileSize = 200000}
 
-testProhibitFiles :: HasCallStack => FilePath -> IO ()
+testProhibitFiles :: HasCallStack => TestParams -> IO ()
 testProhibitFiles =
   testChat3 aliceProfile bobProfile cathProfile $ \alice bob cath -> withXFTPServer $ do
     createGroup3 "team" alice bob cath
@@ -999,7 +1000,7 @@ testProhibitFiles =
     (bob </)
     (cath </)
 
-testXFTPStandaloneSmall :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmall :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
@@ -1024,7 +1025,7 @@ testXFTPStandaloneSmall = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     srcBody <- B.readFile "./tests/fixtures/logo.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
-testXFTPStandaloneSmallInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneSmallInfo :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
@@ -1054,7 +1055,7 @@ testXFTPStandaloneSmallInfo = testChat2 aliceProfile aliceDesktopProfile $ \src 
     srcBody <- B.readFile "./tests/fixtures/logo.jpg"
     B.readFile dstFile `shouldReturn` srcBody
 
-testXFTPStandaloneLarge :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLarge :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
@@ -1081,7 +1082,7 @@ testXFTPStandaloneLarge = testChat2 aliceProfile aliceDesktopProfile $ \src dst 
     srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody
 
-testXFTPStandaloneLargeInfo :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneLargeInfo :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneLargeInfo = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
@@ -1114,7 +1115,7 @@ testXFTPStandaloneLargeInfo = testChat2 aliceProfile aliceDesktopProfile $ \src 
     srcBody <- B.readFile "./tests/tmp/testfile.in"
     B.readFile dstFile `shouldReturn` srcBody
 
-testXFTPStandaloneCancelSnd :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneCancelSnd :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]
@@ -1144,7 +1145,7 @@ testXFTPStandaloneCancelSnd = testChat2 aliceProfile aliceDesktopProfile $ \src 
     dst <## "error receiving file 1 (should.not.extist)"
     dst <## "INTERNAL {internalErr = \"XFTP {xftpErr = AUTH}\"}"
 
-testXFTPStandaloneRelativePaths :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneRelativePaths :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneRelativePaths = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     logNote "sending"
@@ -1175,7 +1176,7 @@ testXFTPStandaloneRelativePaths = testChat2 aliceProfile aliceDesktopProfile $ \
     srcBody <- B.readFile "./tests/tmp/src_files/testfile.in"
     B.readFile "./tests/tmp/dst_files/testfile.out" `shouldReturn` srcBody
 
-testXFTPStandaloneCancelRcv :: HasCallStack => FilePath -> IO ()
+testXFTPStandaloneCancelRcv :: HasCallStack => TestParams -> IO ()
 testXFTPStandaloneCancelRcv = testChat2 aliceProfile aliceDesktopProfile $ \src dst -> do
   withXFTPServer $ do
     xftpCLI ["rand", "./tests/tmp/testfile.in", "17mb"] `shouldReturn` ["File created: " <> "./tests/tmp/testfile.in"]

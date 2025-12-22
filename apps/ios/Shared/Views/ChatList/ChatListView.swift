@@ -137,6 +137,7 @@ struct UserPickerSheetView: View {
 
 struct ChatListView: View {
     @EnvironmentObject var chatModel: ChatModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @EnvironmentObject var theme: AppTheme
     @Binding var activeUserPickerSheet: UserPickerSheet?
     @State private var searchMode = false
@@ -148,7 +149,11 @@ struct ChatListView: View {
     @State private var userPickerShown: Bool = false
     @State private var sheet: SomeSheet<AnyView>? = nil
     @StateObject private var chatTagsModel = ChatTagsModel.shared
-    
+    @State private var scrollToItemId: ChatItem.ID? = nil
+
+    // iOS 15 is required it to show/hide toolbar while chat is hidden/visible
+    @State private var viewOnScreen = true
+
     @AppStorage(GROUP_DEFAULT_ONE_HAND_UI, store: groupDefaults) private var oneHandUI = true
     @AppStorage(DEFAULT_ONE_HAND_UI_CARD_SHOWN) private var oneHandUICardShown = false
     @AppStorage(DEFAULT_ADDRESS_CREATION_CARD_SHOWN) private var addressCreationCardShown = false
@@ -203,7 +208,17 @@ struct ChatListView: View {
                 .navigationBarHidden(searchMode || oneHandUI)
         }
         .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
-        .onDisappear() { activeUserPickerSheet = nil }
+        .onAppear {
+            if #unavailable(iOS 16.0), !viewOnScreen {
+                viewOnScreen = true
+            }
+        }
+        .onDisappear {
+            activeUserPickerSheet = nil
+            if #unavailable(iOS 16.0) {
+                viewOnScreen = false
+            }
+        }
         .refreshable {
             AlertManager.shared.showAlert(Alert(
                 title: Text("Reconnect servers?"),
@@ -258,7 +273,7 @@ struct ChatListView: View {
             }
         } else {
             if oneHandUI {
-                content().toolbar { bottomToolbarGroup }
+                content().toolbar { bottomToolbarGroup() }
             } else {
                 content().toolbar { topToolbar }
             }
@@ -286,9 +301,9 @@ struct ChatListView: View {
         }
     }
     
-    @ToolbarContentBuilder var bottomToolbarGroup: some ToolbarContent {
+    @ToolbarContentBuilder func bottomToolbarGroup() -> some ToolbarContent {
         let padding: Double = Self.hasHomeIndicator ? 0 : 14
-        ToolbarItemGroup(placement: .bottomBar) {
+        ToolbarItemGroup(placement: viewOnScreen ? .bottomBar : .principal) {
             leadingToolbarItem.padding(.bottom, padding)
             Spacer()
             SubsStatusIndicator().padding(.bottom, padding)
@@ -322,9 +337,9 @@ struct ChatListView: View {
         }
     }
     
-    @ViewBuilder private var chatList: some View {
+    private var chatList: some View {
         let cs = filteredChats()
-        ZStack {
+        return ZStack {
             ScrollViewReader { scrollProxy in
                 List {
                     if !chatModel.chats.isEmpty {
@@ -354,13 +369,7 @@ struct ChatListView: View {
                         .offset(x: -8)
                     } else {
                         ForEach(cs, id: \.viewId) { chat in
-                            VStack(spacing: .zero) {
-                                Divider()
-                                    .padding(.leading, 16)
-                                ChatListNavLink(chat: chat,  parentSheet: $sheet)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 6)
-                            }
+                            ChatListNavLink(chat: chat,  parentSheet: $sheet)
                             .scaleEffect(x: 1, y: oneHandUI ? -1 : 1, anchor: .center)
                             .listRowSeparator(.hidden)
                             .listRowInsets(EdgeInsets())
@@ -439,7 +448,14 @@ struct ChatListView: View {
     
     @ViewBuilder private func chatView() -> some View {
         if let chatId = chatModel.chatId, let chat = chatModel.getChat(chatId) {
-            ChatView(chat: chat)
+            let im = ItemsModel.shared
+            ChatView(
+                chat: chat,
+                im: im,
+                mergedItems: BoxedValue(MergedItems.create(im, [])),
+                floatingButtonModel: FloatingButtonModel(im: im),
+                scrollToItemId: $scrollToItemId
+            )
         }
     }
     
@@ -480,7 +496,7 @@ struct ChatListView: View {
             switch chatTagsModel.activeFilter {
             case let .presetTag(tag): presetTagMatchesChat(tag, chat.chatInfo, chat.chatStats)
             case let .userTag(tag): chat.chatInfo.chatTags?.contains(tag.chatTagId) == true
-            case .unread: chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
+            case .unread: chat.unreadTag
             case .none: true
             }
         }
@@ -557,6 +573,7 @@ struct ChatListSearchBar: View {
     @EnvironmentObject var m: ChatModel
     @EnvironmentObject var theme: AppTheme
     @EnvironmentObject var chatTagsModel: ChatTagsModel
+    @StateObject private var connectProgressManager = ConnectProgressManager.shared
     @Binding var searchMode: Bool
     @FocusState.Binding var searchFocussed: Bool
     @Binding var searchText: String
@@ -564,8 +581,6 @@ struct ChatListSearchBar: View {
     @Binding var searchChatFilteredBySimplexLink: String?
     @Binding var parentSheet: SomeSheet<AnyView>?
     @State private var ignoreSearchTextChange = false
-    @State private var alert: PlanAndConnectAlert?
-    @State private var sheet: PlanAndConnectActionSheet?
 
     var body: some View {
         VStack(spacing: 12) {
@@ -578,6 +593,9 @@ struct ChatListSearchBar: View {
                         .disabled(searchShowingSimplexLink)
                         .focused($searchFocussed)
                         .frame(maxWidth: .infinity)
+                    if connectProgressManager.showConnectProgress != nil {
+                        ProgressView()
+                    }
                     if !searchText.isEmpty {
                         Image(systemName: "xmark.circle.fill")
                             .onTapGesture {
@@ -611,7 +629,7 @@ struct ChatListSearchBar: View {
             } else {
                 if let link = strHasSingleSimplexLink(t.trimmingCharacters(in: .whitespaces)) { // if SimpleX link is pasted, show connection dialogue
                     searchFocussed = false
-                    if case let .simplexLink(linkType, _, smpHosts) = link.format {
+                    if case let .simplexLink(_, linkType, _, smpHosts) = link.format {
                         ignoreSearchTextChange = true
                         searchText = simplexLinkText(linkType, smpHosts)
                     }
@@ -621,6 +639,8 @@ struct ChatListSearchBar: View {
                 } else {
                     if t != "" { // if some other text is pasted, enter search mode
                         searchFocussed = true
+                    } else {
+                        ConnectProgressManager.shared.cancelConnectProgress()
                     }
                     searchShowingSimplexLink = false
                     searchChatFilteredBySimplexLink = nil
@@ -629,12 +649,6 @@ struct ChatListSearchBar: View {
         }
         .onChange(of: chatTagsModel.activeFilter) { _ in
             searchText = ""
-        }
-        .alert(item: $alert) { a in
-            planAndConnectAlert(a, dismiss: true, cleanup: { searchText = "" })
-        }
-        .actionSheet(item: $sheet) { s in
-            planAndConnectActionSheet(s, dismiss: true, cleanup: { searchText = "" })
         }
     }
 
@@ -661,10 +675,12 @@ struct ChatListSearchBar: View {
     private func connect(_ link: String) {
         planAndConnect(
             link,
-            showAlert: { alert = $0 },
-            showActionSheet: { sheet = $0 },
+            theme: theme,
             dismiss: false,
-            incognito: nil,
+            cleanup: {
+                searchText = ""
+                searchFocussed = false
+            },
             filterKnownContact: { searchChatFilteredBySimplexLink = $0.id },
             filterKnownGroup: { searchChatFilteredBySimplexLink = $0.id }
         )
@@ -791,7 +807,7 @@ struct TagsView: View {
         }
     }
 
-    @ViewBuilder private func expandedPresetTagsFiltersView() -> some View {
+    private func expandedPresetTagsFiltersView() -> some View {
         ForEach(PresetTag.allCases, id: \.id) { tag in
             if (chatTagsModel.presetTags[tag] ?? 0) > 0 {
                 expandedTagFilterView(tag)
@@ -882,15 +898,15 @@ func presetTagMatchesChat(_ tag: PresetTag, _ chatInfo: ChatInfo, _ chatStats: C
         chatInfo.chatSettings?.favorite == true
     case .contacts:
         switch chatInfo {
-        case let .direct(contact): !(contact.activeConn == nil && contact.profile.contactLink != nil && contact.active) && !contact.chatDeleted
+        case let .direct(contact): !contact.isContactCard && !contact.chatDeleted
         case .contactRequest: true
         case .contactConnection: true
-        case let .group(groupInfo): groupInfo.businessChat?.chatType == .customer
+        case let .group(groupInfo, _): groupInfo.businessChat?.chatType == .customer
         default: false
         }
     case .groups:
         switch chatInfo {
-        case let .group(groupInfo): groupInfo.businessChat == nil
+        case let .group(groupInfo, _): groupInfo.businessChat == nil
         default: false
         }
     case .business:

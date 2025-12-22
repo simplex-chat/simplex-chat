@@ -114,12 +114,12 @@
       </trans-unit>
       <trans-unit id="%lld" xml:space="preserve">
         <source>%lld</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld %@" xml:space="preserve">
         <source>%lld %@</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lld contact(s) selected" xml:space="preserve" approved="no">
@@ -144,12 +144,12 @@
       </trans-unit>
       <trans-unit id="%lldd" xml:space="preserve">
         <source>%lldd</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldh" xml:space="preserve">
         <source>%lldh</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldk" xml:space="preserve">
@@ -158,7 +158,7 @@
       </trans-unit>
       <trans-unit id="%lldm" xml:space="preserve">
         <source>%lldm</source>
-        <target></target>
+        <target/>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldmth" xml:space="preserve">
@@ -173,12 +173,14 @@
         <source>%lldw</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="(" xml:space="preserve">
+      <trans-unit id="(" xml:space="preserve" approved="no">
         <source>(</source>
+        <target state="translated">(</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id=")" xml:space="preserve">
+      <trans-unit id=")" xml:space="preserve" approved="no">
         <source>)</source>
+        <target state="translated">)</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Create link / QR code** for your contact to use." xml:space="preserve" approved="no">
@@ -248,22 +250,22 @@
       </trans-unit>
       <trans-unit id="1 day" xml:space="preserve" approved="no">
         <source>1 day</source>
-        <target state="needs-translation">1 dan</target>
+        <target state="translated">1 dan</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 hour" xml:space="preserve" approved="no">
         <source>1 hour</source>
-        <target state="needs-translation">1 sat</target>
+        <target state="translated">1 sat</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 month" xml:space="preserve" approved="no">
         <source>1 month</source>
-        <target state="needs-translation">1 mjesec</target>
+        <target state="translated">1 mesec</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="1 week" xml:space="preserve" approved="no">
         <source>1 week</source>
-        <target state="needs-translation">1 tjedan</target>
+        <target state="translated">1 nedelja</target>
         <note>message ttl</note>
       </trans-unit>
       <trans-unit id="2 weeks" xml:space="preserve" approved="no">
@@ -1518,16 +1520,19 @@
         <source>Immune to spam</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import" xml:space="preserve">
+      <trans-unit id="Import" xml:space="preserve" approved="no">
         <source>Import</source>
+        <target state="translated">Uvesti</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import chat database?" xml:space="preserve">
+      <trans-unit id="Import chat database?" xml:space="preserve" approved="no">
         <source>Import chat database?</source>
+        <target state="translated">Uvesti data bazu razgovora?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Import database" xml:space="preserve">
+      <trans-unit id="Import database" xml:space="preserve" approved="no">
         <source>Import database</source>
+        <target state="translated">Uvesti data bazu</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Improved privacy and security" xml:space="preserve">
@@ -1688,12 +1693,14 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Live message!</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Live messages" xml:space="preserve">
+      <trans-unit id="Live messages" xml:space="preserve" approved="no">
         <source>Live messages</source>
+        <target state="translated">Žive poruke</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Local name" xml:space="preserve">
+      <trans-unit id="Local name" xml:space="preserve" approved="no">
         <source>Local name</source>
+        <target state="translated">Lokalno ime</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Local profile data only" xml:space="preserve">
@@ -2036,8 +2043,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -2364,8 +2371,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Sent messages will be deleted after set time.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -2612,8 +2619,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The old database was not removed during the migration, it can be deleted.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
-        <source>The profile is only shared with your contacts.</source>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -3152,8 +3159,9 @@ SimpleX servers cannot see your profile.</source>
         <source>\_italic_</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="`a + b`" xml:space="preserve">
+      <trans-unit id="`a + b`" xml:space="preserve" approved="no">
         <source>\`a + b`</source>
+        <target state="translated">\`a + b`</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="above, then choose:" xml:space="preserve">
@@ -3404,7 +3412,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3569,8 +3577,8 @@ SimpleX servers cannot see your profile.</source>
         <source>yes</source>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you changed address" xml:space="preserve">
@@ -3612,6 +3620,110 @@ SimpleX servers cannot see your profile.</source>
       <trans-unit id="~strike~" xml:space="preserve">
         <source>\~strike~</source>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="# %@" xml:space="preserve" approved="no">
+        <source># %@</source>
+        <target state="translated"># %@</target>
+      </trans-unit>
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
+        <source>%@ server</source>
+        <target state="translated">%@ server</target>
+      </trans-unit>
+      <trans-unit id="%@ servers" xml:space="preserve" approved="no">
+        <source>%@ servers</source>
+        <target state="translated">%@ serveri</target>
+      </trans-unit>
+      <trans-unit id="Import failed" xml:space="preserve" approved="no">
+        <source>Import failed</source>
+        <target state="translated">Uvoz neuspešan</target>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ preuzeto</target>
+      </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+        <source>%@ uploaded</source>
+        <target state="translated">%@ otpremljeno</target>
+      </trans-unit>
+      <trans-unit id="1 minute" xml:space="preserve" approved="no">
+        <source>1 minute</source>
+        <target state="translated">1 minut</target>
+      </trans-unit>
+      <trans-unit id="Password" xml:space="preserve" approved="no">
+        <source>Password</source>
+        <target state="translated">Šifra</target>
+      </trans-unit>
+      <trans-unit id="## History" xml:space="preserve" approved="no">
+        <source>## History</source>
+        <target state="translated">## Istorija</target>
+      </trans-unit>
+      <trans-unit id="%@ (current)" xml:space="preserve" approved="no">
+        <source>%@ (current)</source>
+        <target state="translated">%@ (trenutan)</target>
+      </trans-unit>
+      <trans-unit id="%@ and %@" xml:space="preserve" approved="no">
+        <source>%@ and %@</source>
+        <target state="translated">%@ i %@</target>
+      </trans-unit>
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
+        <source>%@ connected</source>
+        <target state="translated">%@ povezan</target>
+      </trans-unit>
+      <trans-unit id="0 sec" xml:space="preserve" approved="no">
+        <source>0 sec</source>
+        <target state="translated">0 sek</target>
+      </trans-unit>
+      <trans-unit id="5 minutes" xml:space="preserve" approved="no">
+        <source>5 minutes</source>
+        <target state="translated">5 minuta</target>
+      </trans-unit>
+      <trans-unit id="%@ (current):" xml:space="preserve" approved="no">
+        <source>%@ (current):</source>
+        <target state="translated">%@ (trenutan):</target>
+      </trans-unit>
+      <trans-unit id="%@ and %@ connected" xml:space="preserve" approved="no">
+        <source>%@ and %@ connected</source>
+        <target state="translated">%@ i %@ su povezani</target>
+      </trans-unit>
+      <trans-unit id="%@:" xml:space="preserve" approved="no">
+        <source>%@:</source>
+        <target state="translated">%@:</target>
+      </trans-unit>
+      <trans-unit id="%@ at %@:" xml:space="preserve" approved="no">
+        <source>%1$@ at %2$@:</source>
+        <target state="translated">%1$@ u %2$@:</target>
+      </trans-unit>
+      <trans-unit id="30 seconds" xml:space="preserve" approved="no">
+        <source>30 seconds</source>
+        <target state="translated">30 sekundi</target>
+      </trans-unit>
+      <trans-unit id="Password to show" xml:space="preserve" approved="no">
+        <source>Password to show</source>
+        <target state="translated">Prikazati šifru</target>
+      </trans-unit>
+      <trans-unit id="%@, %@" xml:space="preserve" approved="no">
+        <source>%1$@, %2$@</source>
+        <target state="translated">%1$@, %2$@</target>
+      </trans-unit>
+      <trans-unit id="0s" xml:space="preserve" approved="no">
+        <source>0s</source>
+        <target state="translated">0s</target>
+      </trans-unit>
+      <trans-unit id="Import theme" xml:space="preserve" approved="no">
+        <source>Import theme</source>
+        <target state="translated">Uvesti temu</target>
+      </trans-unit>
+      <trans-unit id="Immediately" xml:space="preserve" approved="no">
+        <source>Immediately</source>
+        <target state="translated">Odmah</target>
+      </trans-unit>
+      <trans-unit id="Address settings" xml:space="preserve" approved="no">
+        <source>Address settings</source>
+        <target state="translated">Podešavanje adrese</target>
+      </trans-unit>
+      <trans-unit id="Admins can block a member for all." xml:space="preserve" approved="no">
+        <source>Admins can block a member for all.</source>
+        <target state="needs-translation">Administratori mogu da blokiraju</target>
       </trans-unit>
     </body>
   </file>

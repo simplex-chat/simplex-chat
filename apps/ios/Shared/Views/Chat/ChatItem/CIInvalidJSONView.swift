@@ -7,10 +7,11 @@
 //
 
 import SwiftUI
+import SimpleXChat
 
 struct CIInvalidJSONView: View {
     @EnvironmentObject var theme: AppTheme
-    var json: String
+    var json: Data?
     @State private var showJSON = false
     
     var body: some View {
@@ -23,16 +24,16 @@ struct CIInvalidJSONView: View {
         .padding(.vertical, 6)
         .background(Color(uiColor: .tertiarySystemGroupedBackground))
         .textSelection(.disabled)
-        .onTapGesture { showJSON = true }
+        .simultaneousGesture(TapGesture().onEnded { showJSON = true })
         .appSheet(isPresented: $showJSON) {
-            invalidJSONView(json)
+            invalidJSONView(dataToString(json))
         }
     }
 }
 
 func invalidJSONView(_ json: String) -> some View {
     VStack(alignment: .leading, spacing: 16) {
-        Button {
+        Button { // this is used in the sheet, Button works here
             showShareSheet(items: [json])
         } label: {
             Image(systemName: "square.and.arrow.up")
@@ -49,6 +50,6 @@ func invalidJSONView(_ json: String) -> some View {
 
 struct CIInvalidJSONView_Previews: PreviewProvider {
     static var previews: some View {
-        CIInvalidJSONView(json: "{}")
+        CIInvalidJSONView(json: "{}".data(using: .utf8)!)
     }
 }

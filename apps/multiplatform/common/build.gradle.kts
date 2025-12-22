@@ -3,6 +3,7 @@ plugins {
   id("org.jetbrains.compose")
   id("com.android.library")
   id("org.jetbrains.kotlin.plugin.serialization")
+  id("org.jetbrains.kotlin.plugin.compose")
   id("dev.icerock.mobile.multiplatform-resources")
   id("com.github.gmazzo.buildconfig") version "5.3.5"
 }
@@ -39,6 +40,8 @@ kotlin {
         api("com.russhwolf:multiplatform-settings:1.1.1")
         api("com.charleskorn.kaml:kaml:0.59.0")
         api("org.jetbrains.compose.ui:ui-text:${rootProject.extra["compose.version"] as String}")
+        implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
+        implementation("org.jetbrains.compose.material:material-icons-extended:1.7.3")
         implementation("org.jetbrains.compose.components:components-animatedimage:${rootProject.extra["compose.version"] as String}")
         //Barcode
         api("org.boofcv:boofcv-core:1.1.3")
@@ -92,7 +95,8 @@ kotlin {
 
         implementation("com.jakewharton:process-phoenix:3.0.0")
 
-        val cameraXVersion = "1.3.4"
+        // https://issuetracker.google.com/issues/351313880
+        val cameraXVersion = "1.5.1"
         implementation("androidx.camera:camera-core:${cameraXVersion}")
         implementation("androidx.camera:camera-camera2:${cameraXVersion}")
         implementation("androidx.camera:camera-lifecycle:${cameraXVersion}")
@@ -110,7 +114,7 @@ kotlin {
         }
         // For jSystemThemeDetector only
         implementation("net.java.dev.jna:jna-platform:5.14.0")
-        implementation("com.sshtools:two-slices:0.9.0-SNAPSHOT")
+        implementation("com.sshtools:two-slices:0.9.1")
         implementation("org.slf4j:slf4j-simple:2.0.12")
         implementation("uk.co.caprica:vlcj:4.8.3")
         implementation("net.java.dev.jna:jna:5.14.0")
@@ -125,7 +129,7 @@ kotlin {
 
 android {
   namespace = "chat.simplex.common"
-  compileSdk = 34
+  compileSdk = 35
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
   defaultConfig {
     minSdk = 26
@@ -154,6 +158,8 @@ buildConfig {
     buildConfigField("int", "ANDROID_VERSION_CODE", "${extra["android.version_code"]}")
     buildConfigField("String", "DESKTOP_VERSION_NAME", "\"${extra["desktop.version_name"]}\"")
     buildConfigField("int", "DESKTOP_VERSION_CODE", "${extra["desktop.version_code"]}")
+    buildConfigField("String", "DATABASE_BACKEND", "\"${extra["database.backend"]}\"")
+    buildConfigField("Boolean", "ANDROID_BUNDLE", "${extra["android.bundle"]}")
   }
 }
 
@@ -249,8 +255,11 @@ afterEvaluate {
       val fileRegex = Regex("MR/../strings.xml$|MR/..-.../strings.xml$|MR/..-../strings.xml$|MR/base/strings.xml$")
       val tree = kotlin.sourceSets["commonMain"].resources.filter { fileRegex.containsMatchIn(it.absolutePath.replace("\\", "/")) }.asFileTree
       val baseStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("base/strings.xml") } ?: throw Exception("No base/strings.xml found")
+      val lvStringsFile = tree.firstOrNull { it.absolutePath.replace("\\", "/").endsWith("lv/strings.xml") } ?: throw Exception("No base/strings.xml found")
       val treeList = ArrayList(tree.toList())
       treeList.remove(baseStringsFile)
+      // removed lv/strings.xml file with 100+ errors
+      treeList.remove(lvStringsFile)
       treeList.add(0, baseStringsFile)
       val baseFormatting = mutableMapOf<String, List<String>>()
       treeList.forEachIndexed { index, file ->

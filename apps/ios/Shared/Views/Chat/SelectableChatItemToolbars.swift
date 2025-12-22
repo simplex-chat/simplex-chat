@@ -25,16 +25,19 @@ struct SelectedItemsTopToolbar: View {
 struct SelectedItemsBottomToolbar: View {
     @Environment(\.colorScheme) var colorScheme
     @EnvironmentObject var theme: AppTheme
-    let chatItems: [ChatItem]
+    let im: ItemsModel
     @Binding var selectedChatItems: Set<Int64>?
     var chatInfo: ChatInfo
     // Bool - delete for everyone is possible
     var deleteItems: (Bool) -> Void
+    var archiveItems: () -> Void
     var moderateItems: () -> Void
     //var shareItems: () -> Void
     var forwardItems: () -> Void
     @State var deleteEnabled: Bool = false
     @State var deleteForEveryoneEnabled: Bool = false
+
+    @State var canArchiveReports: Bool = false
 
     @State var canModerate: Bool = false
     @State var moderateEnabled: Bool = false
@@ -50,7 +53,11 @@ struct SelectedItemsBottomToolbar: View {
 
             HStack(alignment: .center) {
                 Button {
-                    deleteItems(deleteForEveryoneEnabled)
+                    if canArchiveReports {
+                        archiveItems()
+                    } else {
+                        deleteItems(deleteForEveryoneEnabled)
+                    }
                 } label: {
                     Image(systemName: "trash")
                         .resizable()
@@ -68,9 +75,9 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!moderateEnabled || deleteCountProhibited ? theme.colors.secondary : .red)
+                        .foregroundColor(!moderateEnabled || deleteCountProhibited || im.secondaryIMFilter != nil ? theme.colors.secondary : .red)
                 }
-                .disabled(!moderateEnabled || deleteCountProhibited)
+                .disabled(!moderateEnabled || deleteCountProhibited || im.secondaryIMFilter != nil)
                 .opacity(canModerate ? 1 : 0)
 
                 Spacer()
@@ -81,24 +88,24 @@ struct SelectedItemsBottomToolbar: View {
                         .resizable()
                         .scaledToFit()
                         .frame(width: 20, height: 20, alignment: .center)
-                        .foregroundColor(!forwardEnabled || forwardCountProhibited ? theme.colors.secondary : theme.colors.primary)
+                        .foregroundColor(!forwardEnabled || forwardCountProhibited || im.secondaryIMFilter != nil ? theme.colors.secondary : theme.colors.primary)
                 }
-                .disabled(!forwardEnabled || forwardCountProhibited)
+                .disabled(!forwardEnabled || forwardCountProhibited || im.secondaryIMFilter != nil)
             }
             .frame(maxHeight: .infinity)
             .padding([.leading, .trailing], 12)
         }
         .onAppear {
-            recheckItems(chatInfo, chatItems, selectedChatItems)
+            recheckItems(chatInfo, im.reversedChatItems, selectedChatItems)
         }
         .onChange(of: chatInfo) { info in
-            recheckItems(info, chatItems, selectedChatItems)
+            recheckItems(info, im.reversedChatItems, selectedChatItems)
         }
-        .onChange(of: chatItems) { items in
+        .onChange(of: im.reversedChatItems) { items in
             recheckItems(chatInfo, items, selectedChatItems)
         }
         .onChange(of: selectedChatItems) { selected in
-            recheckItems(chatInfo, chatItems, selected)
+            recheckItems(chatInfo, im.reversedChatItems, selected)
         }
         .frame(height: 55.5)
         .background(.thinMaterial)
@@ -109,19 +116,25 @@ struct SelectedItemsBottomToolbar: View {
         deleteCountProhibited = count == 0 || count > 200
         forwardCountProhibited = count == 0 || count > 20
         canModerate = possibleToModerate(chatInfo)
+        let groupInfo: GroupInfo? = if case let ChatInfo.group(groupInfo: info, _) = chatInfo {
+            info
+        } else {
+             nil
+        }
         if let selected = selectedItems {
             let me: Bool
             let onlyOwnGroupItems: Bool
-            (deleteEnabled, deleteForEveryoneEnabled, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, [])) { (r, ci) in
+            (deleteEnabled, deleteForEveryoneEnabled, canArchiveReports, me, onlyOwnGroupItems, forwardEnabled, selectedChatItems) = chatItems.reduce((true, true, true, true, true, true, [])) { (r, ci) in
                 if selected.contains(ci.id) {
-                    var (de, dee, me, onlyOwnGroupItems, fe, sel) = r
+                    var (de, dee, ar, me, onlyOwnGroupItems, fe, sel) = r
                     de = de && ci.canBeDeletedForSelf
                     dee = dee && ci.meta.deletable && !ci.localNote && !ci.isReport
+                    ar = ar && ci.isActiveReport && ci.chatDir != .groupSnd && groupInfo != nil && groupInfo!.membership.memberRole >= .moderator
                     onlyOwnGroupItems = onlyOwnGroupItems && ci.chatDir == .groupSnd && !ci.isReport
                     me = me && ci.content.msgContent != nil && ci.memberToModerate(chatInfo) != nil && !ci.isReport
                     fe = fe && ci.content.msgContent != nil && ci.meta.itemDeleted == nil && !ci.isLiveDummy && !ci.isReport
                     sel.insert(ci.id) // we are collecting new selected items here to account for any changes in chat items list
-                    return (de, dee, me, onlyOwnGroupItems, fe, sel)
+                    return (de, dee, ar, me, onlyOwnGroupItems, fe, sel)
                 } else {
                     return r
                 }
@@ -132,8 +145,8 @@ struct SelectedItemsBottomToolbar: View {
 
     private func possibleToModerate(_ chatInfo: ChatInfo) -> Bool {
         return switch chatInfo {
-        case let .group(groupInfo):
-            groupInfo.membership.memberRole >= .admin
+        case let .group(groupInfo, _):
+            groupInfo.membership.memberRole >= .moderator
         default: false
         }
     }

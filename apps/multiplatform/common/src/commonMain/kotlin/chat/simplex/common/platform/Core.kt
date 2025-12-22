@@ -22,12 +22,13 @@ external fun pipeStdOutToSocket(socketName: String) : Int
 typealias ChatCtrl = Long
 external fun chatMigrateInit(dbPath: String, dbKey: String, confirm: String): Array<Any>
 external fun chatCloseStore(ctrl: ChatCtrl): String
-external fun chatSendCmd(ctrl: ChatCtrl, msg: String): String
-external fun chatSendRemoteCmd(ctrl: ChatCtrl, rhId: Int, msg: String): String
+external fun chatSendCmdRetry(ctrl: ChatCtrl, msg: String, retryNum: Int): String
+external fun chatSendRemoteCmdRetry(ctrl: ChatCtrl, rhId: Int, msg: String, retryNum: Int): String
 external fun chatRecvMsg(ctrl: ChatCtrl): String
 external fun chatRecvMsgWait(ctrl: ChatCtrl, timeout: Int): String
 external fun chatParseMarkdown(str: String): String
 external fun chatParseServer(str: String): String
+external fun chatParseUri(str: String, safe: Int): String
 external fun chatPasswordHash(pwd: String, salt: String): String
 external fun chatValidName(name: String): String
 external fun chatJsonLength(str: String): Int
@@ -57,6 +58,7 @@ fun initChatControllerOnStart() {
 }
 
 suspend fun initChatController(useKey: String? = null, confirmMigrations: MigrationConfirmation? = null, startChat: () -> CompletableDeferred<Boolean> = { CompletableDeferred(true) }) {
+  Log.d(TAG, "initChatController")
   try {
     if (chatModel.ctrlInitInProgress.value) return
     chatModel.ctrlInitInProgress.value = true
@@ -65,7 +67,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     val dbKey = useKey ?: DatabaseUtils.useDatabaseKey()
     val confirm = confirmMigrations ?: if (appPreferences.developerTools.get() && appPreferences.confirmDBUpgrades.get()) MigrationConfirmation.Error else MigrationConfirmation.YesUp
-    var migrated: Array<Any> = chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    var migrated: Array<Any> = if (databaseBackend == "postgres") {
+      chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", MigrationConfirmation.Error.value)
+    } else {
+      chatMigrateInit(dbAbsolutePrefixPath, dbKey, MigrationConfirmation.Error.value)
+    }
     var res: DBMigrationResult = runCatching {
       json.decodeFromString<DBMigrationResult>(migrated[0] as String)
     }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -77,7 +83,11 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     }
     if (rerunMigration) {
       chatModel.dbMigrationInProgress.value = true
-      migrated = chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      migrated = if (databaseBackend == "postgres") {
+        chatMigrateInit("simplex_v1", "postgresql://simplex@/simplex_v1", confirm.value)
+      } else {
+        chatMigrateInit(dbAbsolutePrefixPath, dbKey, confirm.value)
+      }
       res = runCatching {
         json.decodeFromString<DBMigrationResult>(migrated[0] as String)
       }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
@@ -85,7 +95,7 @@ suspend fun initChatController(useKey: String? = null, confirmMigrations: Migrat
     val ctrl = if (res is DBMigrationResult.OK) {
       migrated[1] as Long
     } else null
-    chatController.ctrl = ctrl
+    chatController.setChatCtrl(ctrl)
     chatModel.chatDbEncrypted.value = dbKey != ""
     chatModel.chatDbStatus.value = res
     if (res != DBMigrationResult.OK) {
@@ -199,7 +209,7 @@ fun chatInitControllerRemovingDatabases() {
   }.getOrElse { DBMigrationResult.Unknown(migrated[0] as String) }
 
   val ctrl = migrated[1] as Long
-  chatController.ctrl = ctrl
+  chatController.setChatCtrl(ctrl)
   // We need only controller, not databases
   File(dbPath + "_chat.db").delete()
   File(dbPath + "_agent.db").delete()

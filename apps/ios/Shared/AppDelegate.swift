@@ -54,7 +54,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
                             try await apiVerifyToken(token: token, nonce: nonce, code: verification)
                             m.tokenStatus = .active
                         } catch {
-                            if let cr = error as? ChatResponse, case .chatCmdError(_, .errorAgent(.NTF(.AUTH))) = cr {
+                            if let cr = error as? ChatError, case .errorAgent(.NTF(.AUTH)) = cr {
                                 m.tokenStatus = .expired
                             }
                             logger.error("AppDelegate: didReceiveRemoteNotification: apiVerifyToken or apiIntervalNofication error: \(responseError(error))")

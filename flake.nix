@@ -41,14 +41,24 @@
         };
         sha256map = import ./scripts/nix/sha256map.nix;
         modules = [
-        ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
-          # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
-          # on pretty much all unix platforms, but then blows up on windows m(
-          packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
-        })
-        ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
-          packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
-        })] ++ extra-modules;
+          ({ pkgs, lib, config, ... }:
+            {
+              # Override ghcOptions for ALL packages
+              ghcOptions = lib.mkDefault [
+                "-j1"
+              ];
+            }
+          )
+
+          ({ pkgs, lib, ...}: lib.mkIf (!pkgs.stdenv.hostPlatform.isWindows) {
+            # This patch adds `dl` as an extra-library to direct-sqlciper, which is needed
+            # on pretty much all unix platforms, but then blows up on windows m(
+            packages.direct-sqlcipher.patches = [ ./scripts/nix/direct-sqlcipher-2.3.27.patch ];
+          })
+
+          ({ pkgs,lib, ... }: lib.mkIf (pkgs.stdenv.hostPlatform.isAndroid) {
+            packages.simplex-chat.components.library.ghcOptions = [ "-pie" ];
+          })] ++ extra-modules;
       }; in
       # by defualt we don't need to pass extra-modules.
       let drv = pkgs': drv' { extra-modules = []; inherit pkgs'; }; in
@@ -198,7 +208,8 @@
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
-                  packages."jpeg-turbo".flags.static = true;
+                  packages.jpeg-turbo.flags.static = true;
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
@@ -309,6 +320,7 @@
                   aarch64-unknown-linux-android-ghc -shared -o libsupport.so \
                     -optl-Wl,-u,setLineBuffering \
                     -optl-Wl,-u,pipe_std_to_socket \
+                    -optl-Wl,-z,max-page-size=16384 \
                     dist/build/*.a
                 '';
 
@@ -341,6 +353,7 @@
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (android32Pkgs.openssl.override { static = true; enableKTLS = false; })
@@ -370,6 +383,7 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-j1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -385,12 +399,15 @@
                   "chat_migrate_init"
                   "chat_parse_markdown"
                   "chat_parse_server"
+                  "chat_parse_uri"
                   "chat_password_hash"
                   "chat_read_file"
                   "chat_recv_msg"
                   "chat_recv_msg_wait"
                   "chat_send_cmd"
+                  "chat_send_cmd_retry"
                   "chat_send_remote_cmd"
+                  "chat_send_remote_cmd_retry"
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
@@ -434,7 +451,16 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-armv7a-android-libsimplex.zip *)
+
+                  # Strip from debug symbols
+                  find "$out/_pkg" -type f -name "*.so" -exec ${android32Pkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@1764547200' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-armv7a-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -456,7 +482,7 @@
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
-
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (androidPkgs.openssl.override { static = true; })
@@ -481,6 +507,8 @@
                   "-threaded"
                   # "-debug"
                   "-optl-lffi"
+                  "-optl-Wl,-z,max-page-size=16384"
+                  "-j1"
                 ]
                 # This is fairly idiotic. LLD will strip out foreign exported
                 # symbols (a GHC bug? Codegen bug?). So we need to pass `-u <sym>`
@@ -496,12 +524,15 @@
                   "chat_migrate_init"
                   "chat_parse_markdown"
                   "chat_parse_server"
+                  "chat_parse_uri"
                   "chat_password_hash"
                   "chat_read_file"
                   "chat_recv_msg"
                   "chat_recv_msg_wait"
                   "chat_send_cmd"
+                  "chat_send_cmd_retry"
                   "chat_send_remote_cmd"
+                  "chat_send_remote_cmd_retry"
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
@@ -545,7 +576,16 @@
                   done
 
                   ${pkgs.tree}/bin/tree $out/_pkg
-                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/pkg-aarch64-android-libsimplex.zip *)
+
+                  # Strip from debug symbols
+                  find "$out/_pkg" -type f -name "*.so" -exec ${androidPkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+
+                  # Normalize permissions + timestamps
+                  find "$out/_pkg" -type f -exec chmod 644 {} +
+                  find "$out/_pkg" -type d -exec chmod 755 {} +
+                  find "$out/_pkg" -exec touch -h -d '@1764547200' {} +
+
+                  (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 -X $out/pkg-aarch64-android-libsimplex.zip *)
                   rm -fR $out/_pkg
                   mkdir -p $out/nix-support
                   echo "file binary-dist \"$(echo $out/*.zip)\"" \
@@ -568,6 +608,7 @@
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     # TODO: have a cross override for iOS, that sets this.
@@ -587,6 +628,7 @@
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     ((pkgs.openssl.override { static = true; }).overrideDerivation (old: { CFLAGS = "-mcpu=apple-a7 -march=armv8-a+norcpc" ;}))
@@ -609,6 +651,7 @@
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.openssl.override { static = true; })
@@ -627,6 +670,7 @@
                   packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.libjpeg_turbo.override { enableStatic = true; })
                   ];
+                  packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
                     (pkgs.openssl.override { static = true; })

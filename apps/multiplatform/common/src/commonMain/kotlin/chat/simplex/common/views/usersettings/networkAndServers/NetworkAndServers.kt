@@ -22,8 +22,12 @@ import androidx.compose.ui.text.*
 import androidx.compose.ui.text.input.*
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.*
 import chat.simplex.common.model.*
@@ -180,7 +184,14 @@ fun ModalData.NetworkAndServersView(closeNetworkAndServers: () -> Unit) {
   @Composable
   fun ConditionsButton(conditionsAction: UsageConditionsAction, rhId: Long?) {
     SectionItemView(
-      click = { ModalManager.start.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close -> UsageConditionsView(currUserServers, userServers, close, rhId) } },
+      click = { ModalManager.start.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
+        UsageConditionsView(
+          currUserServers,
+          userServers,
+          close,
+          rhId
+        )
+      } },
     ) {
       Text(
         stringResource(if (conditionsAction is UsageConditionsAction.Review) MR.strings.operator_review_conditions else MR.strings.operator_conditions_accepted),
@@ -583,7 +594,7 @@ fun UseOnionHosts(
         onSelected = {}
       )
     }
-    SectionTextFooter(values.first { it.value == onionHosts.value }.description)
+    SectionTextFooter(values.firstOrNull { it.value == onionHosts.value }?.description ?: AnnotatedString(""))
   }
 }
 
@@ -733,17 +744,43 @@ fun UsageConditionsView(
     }
   }
 
+  @Composable
+  fun ConditionsDiffButton() {
+    val uriHandler = LocalUriHandler.current
+    val commit = chatModel.conditions.value.currentConditions.conditionsCommit
+    Column (
+      modifier = Modifier.fillMaxWidth(),
+      horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+      Row(
+        modifier = Modifier
+          .clip(shape = CircleShape)
+          .clickable {
+            val commitUrl = "https://github.com/simplex-chat/simplex-chat/commit/$commit"
+            uriHandler.openUriCatching(commitUrl)
+          }
+          .padding(horizontal = 6.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.Center
+      ) {
+        Text(stringResource(MR.strings.operator_open_changes), color = MaterialTheme.colors.primary)
+        Spacer(Modifier.width(8.dp))
+        Icon(painterResource(MR.images.ic_outbound), contentDescription = null, tint = MaterialTheme.colors.primary)
+      }
+    }
+  }
+
   ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
-    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
     when (val conditionsAction = chatModel.conditions.value.conditionsAction) {
       is UsageConditionsAction.Review -> {
+        AppBarTitle(stringResource(MR.strings.operator_updated_conditions), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
         if (conditionsAction.operators.isNotEmpty()) {
           ReadableText(MR.strings.operators_conditions_will_be_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
         }
         Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
           ConditionsTextView(rhId)
         }
-        AcceptConditionsButton(conditionsAction.operators.map { it.operatorId }, close, if (conditionsAction.deadline != null) DEFAULT_PADDING_HALF else DEFAULT_PADDING * 2)
+        AcceptConditionsButton(conditionsAction.operators.map { it.operatorId }, close, DEFAULT_PADDING_HALF)
         if (conditionsAction.deadline != null) {
           SectionTextFooter(
             text = AnnotatedString(String.format(generalGetString(MR.strings.operator_conditions_accepted_for_enabled_operators_on), localDate(conditionsAction.deadline))),
@@ -751,9 +788,12 @@ fun UsageConditionsView(
           )
           Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
         }
+        ConditionsDiffButton()
+        Spacer(Modifier.fillMaxWidth().height(DEFAULT_PADDING))
       }
 
       is UsageConditionsAction.Accepted -> {
+        AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
         if (conditionsAction.operators.isNotEmpty()) {
           ReadableText(MR.strings.operators_conditions_accepted_for, args = conditionsAction.operators.joinToString(", ") { it.legalName_ })
         }
@@ -763,10 +803,23 @@ fun UsageConditionsView(
       }
 
       else -> {
+        AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
         Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
           ConditionsTextView(rhId)
         }
       }
+    }
+  }
+}
+
+@Composable
+fun SimpleConditionsView(
+  rhId: Long?
+) {
+  ColumnWithScrollBar(modifier = Modifier.fillMaxSize().padding(horizontal = DEFAULT_PADDING)) {
+    AppBarTitle(stringResource(MR.strings.operator_conditions_of_use), enableAlphaChanges = false, withPadding = false, bottomPadding = DEFAULT_PADDING)
+    Column(modifier = Modifier.weight(1f).padding(bottom = DEFAULT_PADDING, top = DEFAULT_PADDING_HALF)) {
+      ConditionsTextView(rhId)
     }
   }
 }

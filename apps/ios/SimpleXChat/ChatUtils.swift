@@ -9,14 +9,12 @@
 import Foundation
 
 public protocol ChatLike {
-    var chatInfo: ChatInfo { get}
-    var chatItems: [ChatItem] { get }
-    var chatStats: ChatStats { get }
+    var chatInfo: ChatInfo { get }
 }
 
 extension ChatLike {
     public func groupFeatureEnabled(_ feature: GroupFeature) -> Bool {
-        if case let .group(groupInfo) = self.chatInfo {
+        if case let .group(groupInfo, _) = self.chatInfo {
             let p = groupInfo.fullGroupPreferences
             return switch feature {
             case .timedMessages: p.timedMessages.on
@@ -27,6 +25,7 @@ extension ChatLike {
             case .files: p.files.on(for: groupInfo.membership)
             case .simplexLinks: p.simplexLinks.on(for: groupInfo.membership)
             case .history: p.history.on
+            case .reports: p.reports.on
             }
         } else {
             return true
@@ -81,9 +80,9 @@ public func foundChat(_ chat: ChatLike, _ searchStr: String) -> Bool {
 
 private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
     switch cInfo {
-    case let .direct(contact): contact.sendMsgEnabled && !contact.nextSendGrpInv
-    case let .group(groupInfo): groupInfo.sendMsgEnabled
-    case let .local(noteFolder): noteFolder.sendMsgEnabled
+    case let .direct(contact): cInfo.sendMsgEnabled && !contact.sendMsgToConnect
+    case .group: cInfo.sendMsgEnabled
+    case .local: cInfo.sendMsgEnabled
     case .contactRequest: false
     case .contactConnection: false
     case .invalidJSON: false
@@ -92,13 +91,8 @@ private func canForwardToChat(_ cInfo: ChatInfo) -> Bool {
 
 public func chatIconName(_ cInfo: ChatInfo) -> String {
     switch cInfo {
-    case .direct: "person.crop.circle.fill"
-    case let .group(groupInfo):
-        switch groupInfo.businessChat?.chatType {
-        case .none: "person.2.circle.fill"
-        case .business: "briefcase.circle.fill"
-        case .customer: "person.crop.circle.fill"
-        }
+    case let .direct(contact): contact.chatIconName
+    case let .group(groupInfo, _): groupInfo.chatIconName
     case .local: "folder.circle.fill"
     case .contactRequest: "person.crop.circle.fill"
     default:  "circle.fill"

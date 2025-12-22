@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.*
 import chat.simplex.common.AppLock
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatController.setConditionsNotified
 import chat.simplex.common.model.ChatController.stopRemoteHostAndReloadHosts
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
@@ -38,8 +37,6 @@ import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.newchat.*
 import chat.simplex.common.views.onboarding.*
 import chat.simplex.common.views.usersettings.*
-import chat.simplex.common.views.usersettings.networkAndServers.ConditionsLinkButton
-import chat.simplex.common.views.usersettings.networkAndServers.UsageConditionsView
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
@@ -58,6 +55,7 @@ sealed class ActiveFilter {
 }
 
 private fun showNewChatSheet(oneHandUI: State<Boolean>) {
+  connectProgressManager.cancelConnectProgress()
   ModalManager.start.closeModals()
   ModalManager.end.closeModals()
   chatModel.newChatSheetVisible.value = true
@@ -127,32 +125,19 @@ fun ToggleChatListCard() {
 @Composable
 fun ChatListView(chatModel: ChatModel, userPickerState: MutableStateFlow<AnimatedViewState>, setPerformLA: (Boolean) -> Unit, stopped: Boolean) {
   val oneHandUI = remember { appPrefs.oneHandUI.state }
-  val rhId = chatModel.remoteHostId()
 
   LaunchedEffect(Unit) {
     val showWhatsNew = shouldShowWhatsNew(chatModel)
     val showUpdatedConditions = chatModel.conditions.value.conditionsAction?.shouldShowNotice ?: false
-    if (showWhatsNew) {
+    if (showWhatsNew || showUpdatedConditions) {
       delay(1000L)
       ModalManager.center.showCustomModal { close -> WhatsNewView(close = close, updatedConditions = showUpdatedConditions) }
-    } else if (showUpdatedConditions) {
-      ModalManager.center.showModalCloseable(endButtons = { ConditionsLinkButton() }) { close ->
-        LaunchedEffect(Unit) {
-          val conditionsId = chatModel.conditions.value.currentConditions.conditionsId
-          try {
-            setConditionsNotified(rh = rhId, conditionsId = conditionsId)
-          } catch (e: Exception) {
-            Log.d(TAG, "UsageConditionsView setConditionsNotified error: ${e.message}")
-          }
-        }
-        UsageConditionsView(userServers = mutableStateOf(emptyList()), currUserServers = mutableStateOf(emptyList()), close = close, rhId = rhId)
-      }
     }
   }
 
   if (appPlatform.isDesktop) {
     KeyChangeEffect(chatModel.chatId.value) {
-      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.GROUP_REPORTS)) {
+      if (chatModel.chatId.value != null && !ModalManager.end.isLastModalOpen(ModalViewId.SECONDARY_CHAT)) {
         ModalManager.end.closeModalsExceptFirst()
       }
       AudioPlayer.stop()
@@ -364,22 +349,64 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
   val updatingProgress = remember { chatModel.updatingProgress }.value
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
-  if (oneHandUI.value) {
-    val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
-
-    if (appPlatform.isDesktop && oneHandUI.value) {
-      val call = remember { chatModel.activeCall }
-      if (call.value != null) {
-        barButtons.add {
-          val c = call.value
-          if (c != null) {
-            ActiveCallInteractiveArea(c)
-            Spacer(Modifier.width(5.dp))
-          }
+  if (updatingProgress != null) {
+    barButtons.add {
+      val interactionSource = remember { MutableInteractionSource() }
+      val hovered = interactionSource.collectIsHoveredAsState().value
+      IconButton(onClick = {
+        chatModel.updatingRequest?.close()
+      }, Modifier.hoverable(interactionSource)) {
+        if (hovered) {
+          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
+        } else if (updatingProgress == -1f) {
+          CIFileViewScope.progressIndicator()
+        } else {
+          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
         }
       }
     }
-    if (!stopped) {
+  }
+
+  if (stopped) {
+    barButtons.add {
+      IconButton(onClick = {
+        AlertManager.shared.showAlertMsg(
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
+        )
+      }) {
+        Icon(
+          painterResource(MR.images.ic_report_filled),
+          generalGetString(MR.strings.chat_is_stopped_indication),
+          tint = Color.Red,
+        )
+      }
+    }
+  } else {
+    if (connectProgressManager.showConnectProgress != null) {
+      barButtons.add {
+        Box(Modifier.padding(horizontal = DEFAULT_PADDING_HALF)) {
+          CIFileViewScope.progressIndicator()
+        }
+      }
+    }
+
+    if (oneHandUI.value) {
+      val sp16 = with(LocalDensity.current) { 16.sp.toDp() }
+
+      if (appPlatform.isDesktop && oneHandUI.value) {
+        val call = remember { chatModel.activeCall }
+        if (call.value != null) {
+          barButtons.add {
+            val c = call.value
+            if (c != null) {
+              ActiveCallInteractiveArea(c)
+              Spacer(Modifier.width(5.dp))
+            }
+          }
+        }
+      }
+
       barButtons.add {
         IconButton(
           onClick = {
@@ -404,38 +431,6 @@ private fun ChatListToolbar(userPickerState: MutableStateFlow<AnimatedViewState>
     }
   }
 
-  if (updatingProgress != null) {
-    barButtons.add {
-      val interactionSource = remember { MutableInteractionSource() }
-      val hovered = interactionSource.collectIsHoveredAsState().value
-      IconButton(onClick = {
-        chatModel.updatingRequest?.close()
-      }, Modifier.hoverable(interactionSource)) {
-        if (hovered) {
-          Icon(painterResource(MR.images.ic_close), null, tint = WarningOrange)
-        } else if (updatingProgress == -1f) {
-          CIFileViewScope.progressIndicator()
-        } else {
-          CIFileViewScope.progressCircle((updatingProgress * 100).toLong(), 100)
-        }
-      }
-    }
-  } else if (stopped) {
-    barButtons.add {
-      IconButton(onClick = {
-        AlertManager.shared.showAlertMsg(
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          generalGetString(MR.strings.you_can_start_chat_via_setting_or_by_restarting_the_app)
-        )
-      }) {
-        Icon(
-          painterResource(MR.images.ic_report_filled),
-          generalGetString(MR.strings.chat_is_stopped_indication),
-          tint = Color.Red,
-        )
-      }
-    }
-  }
   val clipboard = LocalClipboardManager.current
   val scope = rememberCoroutineScope()
   val canScrollToZero = remember { derivedStateOf { listState.firstVisibleItemIndex != 0 || listState.firstVisibleItemScrollOffset != 0 } }
@@ -606,7 +601,8 @@ fun connectIfOpenedViaUri(rhId: Long?, uri: String, chatModel: ChatModel) {
     chatModel.appOpenUrl.value = rhId to uri
   } else {
     withBGApi {
-      planAndConnect(rhId, uri, incognito = null, close = null)
+      chatModel.appOpenUrlConnecting.value = true
+      planAndConnect(rhId, uri, close = null, cleanup = { chatModel.appOpenUrlConnecting.value = false })
     }
   }
 }
@@ -664,7 +660,7 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
               // if SimpleX link is pasted, show connection dialogue
               hideKeyboard(view)
               if (link.format is Format.SimplexLink) {
-                val linkText = link.simplexLinkText(link.format.linkType, link.format.smpHosts)
+                val linkText = link.format.simplexLinkText
                 searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
               }
               searchShowingSimplexLink.value = true
@@ -674,8 +670,13 @@ private fun ChatListSearchBar(listState: LazyListState, searchText: MutableState
               if (it.isNotEmpty()) {
                 // if some other text is pasted, enter search mode
                 focusRequester.requestFocus()
-              } else if (listState.layoutInfo.totalItemsCount > 0) {
-                listState.scrollToItem(0)
+              } else {
+                if (!chatModel.appOpenUrlConnecting.value) {
+                  connectProgressManager.cancelConnectProgress()
+                }
+                if (listState.layoutInfo.totalItemsCount > 0) {
+                  listState.scrollToItem(0)
+                }
               }
               searchShowingSimplexLink.value = false
               searchChatFilteredBySimplexLink.value = null
@@ -693,7 +694,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       filterKnownGroup = { searchChatFilteredBySimplexLink.value = it.id },
       close = null,
@@ -1219,7 +1219,7 @@ private fun filtered(chat: Chat, activeFilter: ActiveFilter?): Boolean =
   when (activeFilter) {
     is ActiveFilter.PresetTag -> presetTagMatchesChat(activeFilter.tag, chat.chatInfo, chat.chatStats)
     is ActiveFilter.UserTag -> chat.chatInfo.chatTags?.contains(activeFilter.tag.chatTagId) ?: false
-    is ActiveFilter.Unread -> chat.chatStats.unreadChat ||  chat.chatInfo.ntfsEnabled && chat.chatStats.unreadCount > 0
+    is ActiveFilter.Unread -> chat.unreadTag
     else -> true
   }
 
@@ -1228,7 +1228,7 @@ fun presetTagMatchesChat(tag: PresetTagKind, chatInfo: ChatInfo, chatStats: Chat
     PresetTagKind.GROUP_REPORTS -> chatStats.reportsCount > 0
     PresetTagKind.FAVORITES -> chatInfo.chatSettings?.favorite == true
     PresetTagKind.CONTACTS -> when (chatInfo) {
-      is ChatInfo.Direct -> !(chatInfo.contact.activeConn == null && chatInfo.contact.profile.contactLink != null && chatInfo.contact.active) && !chatInfo.contact.chatDeleted
+      is ChatInfo.Direct -> !chatInfo.contact.isContactCard && !chatInfo.contact.chatDeleted
       is ChatInfo.ContactRequest -> true
       is ChatInfo.ContactConnection -> true
       is ChatInfo.Group -> chatInfo.groupInfo.businessChat?.chatType == BusinessChatType.Customer

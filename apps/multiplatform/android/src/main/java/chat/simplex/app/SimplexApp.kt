@@ -24,7 +24,6 @@ import chat.simplex.app.views.call.CallActivity
 import chat.simplex.common.helpers.*
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.call.*
@@ -33,7 +32,6 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.onboarding.OnboardingStage
 import com.jakewharton.processphoenix.ProcessPhoenix
 import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.map
 import java.io.*
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -48,6 +46,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
 
   override fun onCreate() {
     super.onCreate()
+    AppContextProvider.initialize(this)
     if (ProcessPhoenix.isPhoenixProcess(this)) {
       return
     } else {
@@ -71,6 +70,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
     context = this
     initHaskell(packageName)
     initMultiplatform()
+    reconfigureBroadcastReceivers()
     runMigrations()
     tmpDir.deleteRecursively()
     tmpDir.mkdir()
@@ -93,7 +93,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
         Lifecycle.Event.ON_START -> {
           isAppOnForeground = true
           if (chatModel.chatRunning.value == true) {
-            withChats {
+            withContext(Dispatchers.Main) {
               kotlin.runCatching {
                 val currentUserId = chatModel.currentUser.value?.userId
                 val chats = ArrayList(chatController.apiGetChats(chatModel.remoteHostId()))
@@ -106,7 +106,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
                     /** Pass old chatStats because unreadCounter can be changed already while [ChatController.apiGetChats] is executing */
                     if (indexOfCurrentChat >= 0) chats[indexOfCurrentChat] = chats[indexOfCurrentChat].copy(chatStats = oldStats)
                   }
-                  updateChats(chats)
+                  chatModel.chatsContext.updateChats(chats)
                 }
               }.onFailure { Log.e(TAG, it.stackTraceToString()) }
             }
@@ -216,6 +216,7 @@ class SimplexApp: Application(), LifecycleEventObserver {
           appPrefs.backgroundServiceNoticeShown.set(false)
         }
         SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+        SimplexService.AppUpdateReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
         CoroutineScope(Dispatchers.Default).launch {
           if (mode == NotificationsMode.SERVICE) {
             SimplexService.start()
@@ -371,4 +372,10 @@ class SimplexApp: Application(), LifecycleEventObserver {
       override val androidApiLevel: Int get() = Build.VERSION.SDK_INT
     }
   }
+
+  // Make sure that receivers enabled state is in actual state (same as in prefs)
+  private fun reconfigureBroadcastReceivers() {
+    val mode = appPrefs.notificationsMode.get()
+    SimplexService.StartReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)
+    SimplexService.AppUpdateReceiver.toggleReceiver(mode == NotificationsMode.SERVICE)}
 }
