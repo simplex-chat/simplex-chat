@@ -128,10 +128,10 @@ In addition to basic requirments, Android build will:
 
    The script executes these steps (please review the script to confirm):
 
-   1) builds all Android apks for the release in docker container.
-   2) downloads apks from the same GitHub release
-   3) compares the releases by copying the signature from downloaded apk to locally built apk
-   4) if the resulting build bit-by-bit identical, print the message that this tag is reproducible
+   1) Downloads and checks that apks from Github is signed with valid key.
+   2) Builds Android apks in the Docker container.
+   3) Compares the releases by copying the signature from downloaded apk to locally built apk
+   4) If the resulting build bit-by-bit identical, prints the message that this tag is reproducible
 
    This will take a while.
 
@@ -169,6 +169,8 @@ echo -e "trust\n5\ny\nquit" | gpg --command-fd 0 --edit-key build@simplex.chat
 
 ## Verifying the signature
 
+**CLI/Dekstop releases**:
+
 To verify the signature, download the *.asc file and the build. For example:
 
 ```sh
@@ -180,4 +182,22 @@ Then, verify the signature:
 
 ```sh
 gpg --verify _sha256sums.asc _sha256sums
+```
+
+**Android apks**:
+
+To verify the signature, download the *.asc and apk files. For example, to verify the `v6.5.0-beta.2` release:
+
+```sh
+curl -LO 'https://github.com/simplex-chat/simplex-chat/releases/download/v6.5.0-beta.2/simplex-aarch64.apk'
+curl -LO 'https://github.com/simplex-chat/simplex-chat/releases/download/v6.5.0-beta.2/_simplex-aarch64.apk.asc'
+curl -LO 'https://github.com/simplex-chat/simplex-chat/releases/download/v6.5.0-beta.2/simplex-armv7a.apk'
+curl -LO 'https://github.com/simplex-chat/simplex-chat/releases/download/v6.5.0-beta.2/_simplex-armv7a.apk.asc'
+```
+
+Then, verify the signatures:
+
+```sh
+gpg --verify _simplex-armv7a.apk.asc simplex-armv7a.apk
+gpg --verify _simplex-aarch64.apk.asc simplex-aarch64.apk
 ```
