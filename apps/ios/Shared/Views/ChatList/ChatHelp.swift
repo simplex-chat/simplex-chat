@@ -10,6 +10,7 @@ import SwiftUI
 
 struct ChatHelp: View {
     @EnvironmentObject var chatModel: ChatModel
+    @State private var showNewChatSheet = false
     let dismissSettingsSheet: DismissAction
 
     var body: some View {
@@ -38,7 +39,7 @@ struct ChatHelp: View {
 
                 HStack(spacing: 8) {
                     Text("Tap button ")
-                    NewChatMenuButton()
+                    NewChatMenuButton(showNewChatSheet: $showNewChatSheet)
                     Text("above, then choose:")
                 }
 
