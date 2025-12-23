@@ -13,6 +13,10 @@ ARG JAVA_HASH_ARM64=2b460859b681757b33a7591b6238ecaf51569d05d2684984e5f0a89c6514
 ENV TZ=Etc/UTC \
     DEBIAN_FRONTEND=noninteractive
 
+ARG USER_UID=1000
+ARG USER_GID=1000
+ARG USER_NAME=builder
+
 # Install curl, git and and simplex-chat dependencies
 RUN apt-get update && \
     apt-get install -y curl \
@@ -38,6 +42,11 @@ RUN apt-get update && \
                        file \
                        appstream \
                        gpg \
+                       zipalign \
+                       apksigner \
+                       python3 \
+                       python3-venv \
+                       xz-utils \
                        unzip &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
 
@@ -67,6 +76,12 @@ RUN export JAVA_FILENAME='java-corretto.deb' \
         echo "Checksum mismatch" && exit 1; \
     fi
 
+RUN userdel -r ubuntu || :
+RUN groupadd -g ${USER_GID} ${USER_NAME} || :; useradd -u ${USER_UID} -g ${USER_GID} --create-home --shell /bin/bash ${USER_NAME} || :
+RUN mkdir /nix /out && chown ${USER_NAME}:${USER_NAME} /nix /out
+USER ${USER_NAME}
+WORKDIR /home/${USER_NAME}
+
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=${GHC}
 ENV BOOTSTRAP_HASKELL_CABAL_VERSION=${CABAL}
@@ -78,8 +93,10 @@ ENV BOOTSTRAP_HASKELL_INSTALL_NO_STACK_HOOK=true
 # Install ghcup
 RUN curl --proto '=https' --tlsv1.2 -sSf https://get-ghcup.haskell.org | BOOTSTRAP_HASKELL_NONINTERACTIVE=1 sh
 
+# Setup basic env variables (required)
+ENV HOME="/home/${USER_NAME}" USER="${USER_NAME}"
 # Adjust PATH
-ENV PATH="/root/.cabal/bin:/root/.ghcup/bin:$PATH"
+ENV PATH="$HOME/.cabal/bin:$HOME/.ghcup/bin:$PATH"
 
 # Set both as default
 RUN ghcup set ghc "${GHC}" && \
@@ -90,8 +107,8 @@ RUN ghcup set ghc "${GHC}" && \
 #=====================
 ARG SDK_VERSION=13114758
 
-ENV SDK_VERSION=$SDK_VERSION \
-    ANDROID_HOME=/root
+ENV SDK_VERSION="$SDK_VERSION" \
+    ANDROID_HOME="$HOME"
 
 RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlinetools-linux-${SDK_VERSION}_latest.zip" && \
     unzip tools.zip && rm tools.zip && \
@@ -101,11 +118,17 @@ RUN curl -L -o tools.zip "https://dl.google.com/android/repository/commandlineto
 ENV PATH="$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/cmdline-tools/tools/bin"
 
 # https://askubuntu.com/questions/885658/android-sdk-repositories-cfg-could-not-be-loaded
-RUN mkdir -p ~/.android ~/.gradle && \
-    touch ~/.android/repositories.cfg && \
-    echo 'org.gradle.console=plain' > ~/.gradle/gradle.properties &&\
+RUN mkdir -p "$HOME/.android" "$HOME/.gradle" && \
+    touch "$HOME/.android/repositories.cfg" && \
+    echo 'org.gradle.console=plain' > "$HOME/.gradle/gradle.properties" &&\
     yes | sdkmanager --licenses >/dev/null
 
-ENV PATH=$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools
+ENV PATH="$PATH:$ANDROID_HOME/platform-tools:$ANDROID_HOME/build-tools"
+
+# Android reproducibility scripts
+RUN python3 -m venv "$HOME/.venv"
+RUN "$HOME/.venv/bin/pip" install apksigcopier repro-apk
+
+ENV PATH="$HOME/.venv/bin:$PATH"
 
 WORKDIR /project
