@@ -373,7 +373,7 @@ jobs:
             cli_asset_name: simplex-chat-macos-aarch64
             desktop_asset_name: simplex-desktop-macos-aarch64.dmg
             openssl_dir: "/opt/homebrew/opt"
-          - os: macos-13
+          - os: macos-15-intel
             ghc: ${{ needs.variables.outputs.GHC_VER }}
             cli_asset_name: simplex-chat-macos-x86-64
             desktop_asset_name: simplex-desktop-macos-x86_64.dmg
