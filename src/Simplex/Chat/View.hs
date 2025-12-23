@@ -259,11 +259,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| _, ctrlPort} ->
-    [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
-      "Remote session invitation:",
-      plain invitation
-    ]
+  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| addrs, ctrlPort} ->
+    [plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_]
+      <> [plain $ "other addresses: " <> intercalate " " (map (\RCCtrlAddress {address = a} -> B.unpack (strEncode a)) addrs) | not (null addrs)]
+      <> ["Remote session invitation:", plain invitation]
     where
       started = " started on " <> B.unpack (strEncode address) <> ":" <> ctrlPort
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->
