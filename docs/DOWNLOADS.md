@@ -24,6 +24,8 @@ You can link your mobile device with desktop to use the same profile remotely, b
 - Ubuntu 22.04 and Debian-based distros ([x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-x86_64.deb), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-22_04-aarch64.deb)).
 - Ubuntu 24.04 ([x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-x86_64.deb), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-ubuntu-24_04-aarch64.deb)).
 
+You can [verify and reproduce](./REPRODUCE.md) Linux builds.
+
 **Mac**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-x86_64.dmg) (Intel), [aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-macos-aarch64.dmg) (Apple Silicon).
 
 **Windows**: [x86_64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-desktop-windows-x86_64.msi).
@@ -32,7 +34,9 @@ You can link your mobile device with desktop to use the same profile remotely, b
 
 **iOS**: [App store](https://apps.apple.com/us/app/simplex-chat/id1605771084), [TestFlight](https://testflight.apple.com/join/DWuT2LQu).
 
-**Android**: [Play store](https://play.google.com/store/apps/details?id=chat.simplex.app), [F-Droid](https://simplex.chat/fdroid/), [APK aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk), [APK armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk).
+**Android**: [Play store](https://play.google.com/store/apps/details?id=chat.simplex.app), [F-Droid](https://simplex.chat/fdroid/), [APK aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk), [APK armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk).
+
+You can [verify and reproduce](./REPRODUCE.md) Android APKs.
 
 ## Terminal (console) app
 
