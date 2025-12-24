@@ -86,7 +86,7 @@
     <string name="back">Vissza</string>
     <string name="it_can_disabled_via_settings_notifications_still_shown"><![CDATA[<b>Kikapcsolható a beállításokban</b> – az értesítések továbbra is meg lesznek jelenítve amíg az alkalmazás fut.]]></string>
     <string name="v4_2_group_links_desc">Az adminisztrátorok hivatkozásokat hozhatnak létre a csoportokhoz való csatlakozáshoz.</string>
-    <string name="call_on_lock_screen">Hívások a zárolási képernyőn:</string>
+    <string name="call_on_lock_screen">Hívások a zárolási képernyőn</string>
     <string name="conn_event_ratchet_sync_started">titkosítás elfogadása…</string>
     <string name="invite_prohibited">Nem lehet meghívni a partnert!</string>
     <string name="integrity_msg_bad_id">hibás az üzenet azonosítója</string>
@@ -114,7 +114,7 @@
     <string name="app_passcode_replaced_with_self_destruct">Az alkalmazásjelkód helyettesítve lesz egy önmegsemmisítő jelkóddal.</string>
     <string name="v5_3_new_interface_languages_descr">Arab, bolgár, finn, héber, thai és ukrán – köszönet a felhasználóknak és a Weblate-nek.</string>
     <string name="allow_voice_messages_question">Engedélyezi a hangüzeneteket?</string>
-    <string name="always_use_relay">Mindig használjon továbbítókiszolgálót</string>
+    <string name="always_use_relay">Mindig legyen használva továbbítókiszolgáló</string>
     <string name="chat_preferences_always">mindig</string>
     <string name="call_already_ended">A hívás már befejeződött!</string>
     <string name="turn_off_battery_optimization_button">Engedélyezés</string>
@@ -1739,10 +1739,10 @@
     <string name="network_smp_proxy_fallback_prohibit">Nem</string>
     <string name="network_smp_proxy_mode_unprotected">Nem védett</string>
     <string name="network_smp_proxy_fallback_allow">Igen</string>
-    <string name="network_smp_proxy_mode_never_description">NE használjon privát útválasztást.</string>
+    <string name="network_smp_proxy_mode_never_description">NE legyen használva privát útválasztás.</string>
     <string name="network_smp_proxy_mode_private_routing">Privát útválasztás</string>
     <string name="network_smp_proxy_mode_unknown_description">Privát útválasztás használata az ismeretlen kiszolgálókhoz.</string>
-    <string name="network_smp_proxy_mode_always_description">Mindig használjon privát útválasztást.</string>
+    <string name="network_smp_proxy_mode_always_description">Mindig legyen használva privát útválasztás.</string>
     <string name="update_network_smp_proxy_mode_question">Üzenet-útválasztási mód</string>
     <string name="network_smp_proxy_fallback_allow_protected_description">Közvetlen üzenetküldés, ha az IP-cím védett és a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
     <string name="network_smp_proxy_fallback_allow_description">Közvetlen üzenetküldés, ha a saját kiszolgálója vagy a célkiszolgáló nem támogatja a privát útválasztást.</string>
