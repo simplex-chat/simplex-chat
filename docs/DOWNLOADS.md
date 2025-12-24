@@ -34,7 +34,7 @@ You can [verify and reproduce](./REPRODUCE.md) Linux builds.
 
 **iOS**: [App store](https://apps.apple.com/us/app/simplex-chat/id1605771084), [TestFlight](https://testflight.apple.com/join/DWuT2LQu).
 
-**Android**: [Play store](https://play.google.com/store/apps/details?id=chat.simplex.app), [F-Droid](https://simplex.chat/fdroid/), [APK aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk), [APK armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk).
+**Android**: [Play store](https://play.google.com/store/apps/details?id=chat.simplex.app), [F-Droid](https://simplex.chat/fdroid/), [APK aarch64](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk), [APK armv7](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-armv7a.apk).
 
 You can [verify and reproduce](./REPRODUCE.md) Android APKs.
 
