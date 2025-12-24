@@ -102,7 +102,7 @@
 
         sha256sum $out/_pkg/*.a
 
-        find "$out/_pkg" -type f -name "*.a" -exec ${pkgs.stdenv.cc.targetPrefix}strip --strip-unneeded {} +
+        find "$out/_pkg" -type f -name "*.a" -exec ${pkgs.stdenv.cc.targetPrefix}strip {} +
 
         (cd $out/_pkg; ${pkgs.zip}/bin/zip -r -9 $out/${bundleName}.zip *)
         rm -fR $out/_pkg
