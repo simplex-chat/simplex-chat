@@ -982,14 +982,14 @@ swipe action</note>
         <target>A csatlakozás folyamatban van a csoporthoz!</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="Always use private routing." xml:space="preserve">
+      <trans-unit id="Always use private routing." xml:space="preserve" approved="no">
         <source>Always use private routing.</source>
-        <target>Mindig használjon privát útválasztást.</target>
+        <target state="translated">Mindig legyen használva privát útválasztás.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Always use relay" xml:space="preserve">
+      <trans-unit id="Always use relay" xml:space="preserve" approved="no">
         <source>Always use relay</source>
-        <target>Mindig használjon továbbítókiszolgálót</target>
+        <target state="translated">Mindig legyen használva továbbítókiszolgáló</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="An empty chat profile with the provided name is created, and the app opens as usual." xml:space="preserve">
@@ -2879,9 +2879,9 @@ swipe action</note>
         <target>NE használja a SimpleXet segélyhívásokhoz.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Do NOT use private routing." xml:space="preserve">
+      <trans-unit id="Do NOT use private routing." xml:space="preserve" approved="no">
         <source>Do NOT use private routing.</source>
-        <target>NE használjon privát útválasztást.</target>
+        <target state="translated">NE legyen használva privát útválasztás.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Do it later" xml:space="preserve">
