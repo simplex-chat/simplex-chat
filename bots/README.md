@@ -197,3 +197,4 @@ If you have to run your bot on another machine, you need to secure access to bot
 - [Broadcast bot](../apps/simplex-broadcast-bot/) (Haskell) - we use it to send [status and release updates](https://status.simplex.chat/status/public).
 - [Moderation bot](https://github.com/NCalex42/simplex-bot) (Java)
 - [Matterbridge bot](https://github.com/UnkwUsr/matterbridge-simplex) (JavaScript)
+- [Nodify](https://nodify.ie) (Low-Code)
