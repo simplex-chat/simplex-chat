@@ -167,6 +167,9 @@ startChatController mainApp enableSndFiles = do
   runExceptT (syncConnections' users) >>= \case
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
+  runExceptT migrateMemberRelations >>= \case
+    Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
+    Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -178,6 +181,10 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
+    migrateMemberRelations =
+      when mainApp $
+        whenM (withStore' hasMembersWithoutVector) $
+          void $ forkIO runRelationsVectorMigration
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -2340,7 +2347,13 @@ processChatCommand vr nm = \case
     (gInfo, m) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user gmId
     when (isNothing $ supportChat m) $ throwCmdError "member has no support chat"
     when (memberPending m) $ throwCmdError "member is pending"
-    (gInfo', m') <- withFastStore' $ \db -> deleteGroupMemberSupportChat db user gInfo m
+    (gInfo', m') <- withFastStore' $ \db -> do
+      gInfo' <-
+        if gmRequiresAttention m
+          then decreaseGroupMembersRequireAttention db user gInfo
+          else pure gInfo
+      m' <- deleteGroupMemberSupportChat db m
+      pure (gInfo', m')
     pure $ CRMemberSupportChatDeleted user gInfo' m'
   APIMembersRole groupId memberIds newRole -> withUser $ \user ->
     withGroupLock "memberRole" groupId $ do
@@ -4162,6 +4175,21 @@ agentSubscriber = do
         run action = action `catchAllErrors'` (eToView')
 
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
+
+runRelationsVectorMigration :: CM ()
+runRelationsVectorMigration = do
+  liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
+  migrateMembers
+  where
+    stepDelay = 1000000 -- 1 second
+    migrateMembers = flip catchAllErrors eToView $ do
+      lift waitChatStartedAndActivated
+      gmIds <- withStore' getGMsWithoutVectorIds
+      forM_ gmIds $ \gmId -> do
+        lift waitChatStartedAndActivated
+        withStore' (`migrateMemberRelationsVector'` gmId) `catchAllErrors` eToView
+        liftIO $ threadDelay' stepDelay
+      unless (null gmIds) migrateMembers
 
 cleanupManager :: CM ()
 cleanupManager = do

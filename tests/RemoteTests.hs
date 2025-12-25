@@ -9,9 +9,11 @@ import ChatClient
 import ChatTests.DBUtils
 import ChatTests.Utils
 import Control.Logger.Simple
+import Control.Monad
 import qualified Data.Aeson as J
 import qualified Data.ByteString as B
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.List (find, isPrefixOf)
 import qualified Data.Map.Strict as M
 import Simplex.Chat.Controller (versionNumber)
 import qualified Simplex.Chat.Controller as Controller
@@ -33,7 +35,7 @@ remoteTests = describe "Remote" $ do
     it "connects with new pairing (stops mobile)" $ remoteHandshakeTest False
     it "connects with new pairing (stops desktop)" $ remoteHandshakeTest True
     it "connects with stored pairing" remoteHandshakeStoredTest
-    it "connects with multicast discovery" remoteHandshakeDiscoverTest
+    xitMacCI "connects with multicast discovery" remoteHandshakeDiscoverTest
     it "refuses invalid client cert" remoteHandshakeRejectTest
     it "connects with stored server bindings" storedBindingsTest
   it "sends messages" remoteMessageTest
@@ -116,6 +118,7 @@ remoteHandshakeRejectTest = testChat3 aliceProfile aliceDesktopProfile bobProfil
   mobileBob <## "ok"
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobileBob ##> ("/connect remote ctrl " <> inv)
@@ -143,8 +146,18 @@ storedBindingsTest = testChat2 aliceProfile aliceDesktopProfile $ \mobile deskto
   mobile ##> "/set device name Mobile"
   mobile <## "ok"
 
-  desktop ##> "/start remote host new addr=127.0.0.1 iface=\"lo\" port=52230"
-  desktop <##. "new remote host started on 127.0.0.1:52230" -- TODO: show ip?
+  desktop ##> "/start remote host new"
+  desktop <##. "new remote host started on "
+  addrs <- words . dropStrPrefix "other addresses: " <$> getTermLine desktop
+  Just localAddress <- pure $ find ("127." `isPrefixOf`) addrs
+  desktop <## "Remote session invitation:"
+  void $ getTermLine desktop
+  desktop ##> "/stop remote host new"
+  desktop <## "ok"
+
+  desktop ##> ("/start remote host new addr=" <> localAddress <> " iface=\"lo\" port=52230")
+  desktop <## ("new remote host started on " <> localAddress <> ":52230")
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
 
@@ -497,6 +510,7 @@ startRemote mobile desktop = do
   mobile <## "ok"
   desktop ##> "/start remote host new"
   desktop <##. "new remote host started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -512,6 +526,7 @@ startRemoteStored :: TestCC -> TestCC -> IO ()
 startRemoteStored mobile desktop = do
   desktop ##> "/start remote host 1"
   desktop <##. "remote host 1 started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   inv <- getTermLine desktop
   mobile ##> ("/connect remote ctrl " <> inv)
@@ -526,6 +541,7 @@ startRemoteDiscover :: TestCC -> TestCC -> IO ()
 startRemoteDiscover mobile desktop = do
   desktop ##> "/start remote host 1 multicast=on"
   desktop <##. "remote host 1 started on "
+  desktop <##. "other addresses: "
   desktop <## "Remote session invitation:"
   _inv <- getTermLine desktop -- will use multicast instead
   mobile ##> "/find remote ctrl"

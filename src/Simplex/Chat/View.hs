@@ -24,7 +24,6 @@ import Data.Function (on)
 import Data.Int (Int64)
 import Data.List (groupBy, intercalate, intersperse, sortOn)
 import Data.List.NonEmpty (NonEmpty (..))
-import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
 import Data.Maybe (fromMaybe, isJust, isNothing, mapMaybe)
@@ -260,11 +259,10 @@ chatResponseToView hu cfg@ChatConfig {logLevel, showReactions, testView} liveIte
         rhi_
     ]
   CRRemoteHostList hs -> viewRemoteHosts hs
-  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| _, ctrlPort} ->
-    [ plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_,
-      "Remote session invitation:",
-      plain invitation
-    ]
+  CRRemoteHostStarted {remoteHost_, invitation, localAddrs = RCCtrlAddress {address} :| addrs, ctrlPort} ->
+    [plain $ maybe ("new remote host" <> started) (\RemoteHostInfo {remoteHostId = rhId} -> "remote host " <> show rhId <> started) remoteHost_]
+      <> [plain $ "other addresses: " <> intercalate " " (map (\RCCtrlAddress {address = a} -> B.unpack (strEncode a)) addrs) | not (null addrs)]
+      <> ["Remote session invitation:", plain invitation]
     where
       started = " started on " <> B.unpack (strEncode address) <> ":" <> ctrlPort
   CRRemoteFileStored rhId (CryptoFile filePath cfArgs_) ->

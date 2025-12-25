@@ -18,6 +18,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (concurrently_)
 import Control.Monad (forM_, void, when)
 import Data.Bifunctor (second)
+import Data.Maybe (fromMaybe)
 import qualified Data.ByteString.Char8 as B
 import Data.Int (Int64)
 import Data.List (intercalate, isInfixOf)
@@ -30,10 +31,12 @@ import Simplex.Chat.Messages (CIMention (..), CIMentionMember (..), ChatItemId)
 import Simplex.Chat.Options
 import Simplex.Chat.Protocol (MsgMention (..), MsgContent (..), msgContentText)
 import Simplex.Chat.Types
+import Simplex.Chat.Types.MemberRelations (MemberRelation (..), setRelation)
 import Simplex.Chat.Types.Shared (GroupMemberRole (..), GroupAcceptance (..))
 import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
+import Simplex.Messaging.Agent.Store.DB (Binary (..))
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
@@ -221,11 +224,15 @@ chatGroupTests = do
     it "should forward file inside support scope" testScopedSupportForwardFile
     it "should forward member removal in support scope in review (x.grp.mem.del)" testScopedSupportForwardMemberRemoval
     it "should forward admin removal in support scope in review (x.grp.mem.del, relay forwards it was removed)" testScopedSupportForwardAdminRemoval
+    it "should forward pending member leaving in support scope in review (x.grp.leave)" testScopedSupportForwardLeave
     it "should forward group deletion in support scope in review (x.grp.del)" testScopedSupportForwardGroupDeletion
     it "should send messages to admins and members" testSupportCLISendCommand
     it "should correctly maintain unread stats for support chats on reading chat items" testScopedSupportUnreadStatsOnRead
     it "should correctly maintain unread stats for support chats on deleting chat items" testScopedSupportUnreadStatsOnDelete
     it "should correct member attention stat for support chat on opening it" testScopedSupportUnreadStatsCorrectOnOpen
+    it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
+    it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
+    it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
   -- TODO [channels fwd] enable tests (requires communicating useRelays to members)
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
@@ -1769,6 +1776,7 @@ testGroupDelayedModeration ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -1815,6 +1823,7 @@ testGroupDelayedModerationFullDelete ps = do
       -- and forwarding client doesn't check compatibility)
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='con'"
+      updateGroupForwardingVectors alice "bob" "cath" MRConnected
 
       cath #> "#team hi" -- message is pending for bob
       alice <# "#team cath> hi"
@@ -3663,7 +3672,7 @@ testGroupMsgDecryptError ps =
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 2 connections on server localhost"
       alice #> "#team hello again"
-      bob <# "#team alice> skipped message ID 9..11"
+      bob <# "#team alice> skipped message ID 8..10"
       bob <# "#team alice> hello again"
       bob #> "#team received!"
       alice <# "#team bob> received!"
@@ -5018,7 +5027,7 @@ testGroupMsgForwardReport =
 
 setupGroupForwarding :: TestCC -> TestCC -> TestCC -> IO ()
 setupGroupForwarding host invitee1 invitee2 = do
-  threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+  threadDelay 1000000 -- delay so member relations don't get overwritten to connected
 
   invitee1Name <- userName invitee1
   invitee2Name <- userName invitee2
@@ -5050,15 +5059,60 @@ setupGroupForwarding host invitee1 invitee2 = do
       |]
       (invitee1Name, invitee2Name)
 
+  setupGroupForwardingVectors host invitee1 invitee2
+
+setupGroupForwardingVectors :: TestCC -> TestCC -> TestCC -> IO ()
+setupGroupForwardingVectors host invitee1 invitee2 = do
+  invitee1Name <- userName invitee1
+  invitee2Name <- userName invitee2
+  updateGroupForwardingVectors host invitee1Name invitee2Name MRIntroduced
+
+updateGroupForwardingVectors :: TestCC -> String -> String -> MemberRelation -> IO ()
+updateGroupForwardingVectors host invitee1Name invitee2Name relation = do
+  void $ withCCTransaction host $ \db -> do
+    [(invitee1Index, invitee1Vec)] <- DB.query db
+      [sql|
+        SELECT index_in_group, member_relations_vector
+        FROM group_members
+        WHERE local_display_name = ?
+      |]
+      (Only invitee1Name)
+    [(invitee2Index, invitee2Vec)] <- DB.query db
+      [sql|
+        SELECT index_in_group, member_relations_vector
+        FROM group_members
+        WHERE local_display_name = ?
+      |]
+      (Only invitee2Name)
+
+    let invitee1Vec' = setRelation invitee2Index relation (fromMaybe B.empty invitee1Vec)
+    DB.execute db
+      [sql|
+        UPDATE group_members
+        SET member_relations_vector = ?
+        WHERE local_display_name = ?
+      |]
+      (Binary invitee1Vec', invitee1Name)
+
+    let invitee2Vec' = setRelation invitee1Index relation (fromMaybe B.empty invitee2Vec)
+    DB.execute db
+      [sql|
+        UPDATE group_members
+        SET member_relations_vector = ?
+        WHERE local_display_name = ?
+      |]
+      (Binary invitee2Vec', invitee2Name)
+
 testGroupMsgForwardDeduplicate :: HasCallStack => TestParams -> IO ()
 testGroupMsgForwardDeduplicate =
   testChat3 aliceProfile bobProfile cathProfile $
     \alice bob cath -> do
       createGroup3 "team" alice bob cath
 
-      threadDelay 1000000 -- delay so intro_status doesn't get overwritten to connected
+      threadDelay 1000000 -- delay so member relations don't get overwritten to connected
       void $ withCCTransaction alice $ \db ->
         DB.execute_ db "UPDATE group_member_intros SET intro_status='fwd'"
+      setupGroupForwardingVectors alice bob cath
 
       bob #> "#team hi there"
       alice <# "#team bob> hi there"
@@ -7814,9 +7868,9 @@ testScopedSupportForwardMemberRemoval =
       alice ##> "#team (support: eve) hi"
       alice <## "bad chat command: support member not current or pending"
       bob ##> "#team (support: eve) hi"
-      bob <## "bad chat command: support member not current or pending"
+      bob <##. "chat db error: SEGroupMemberNameNotFound"
       dan ##> "#team (support: eve) hi"
-      dan <## "bad chat command: support member not current or pending"
+      dan <##. "chat db error: SEGroupMemberNameNotFound"
       eve ##> "/groups"
       eve <## "#team (you are removed, delete local copy: /d #team)"
 
@@ -7921,6 +7975,30 @@ testScopedSupportForwardAdminRemoval =
 
       alice ##> "/groups"
       alice <## "#team (you are removed, delete local copy: /d #team)"
+
+testScopedSupportForwardLeave :: HasCallStack => TestParams -> IO ()
+testScopedSupportForwardLeave =
+  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $
+    \alice bob cath dan eve -> do
+      createGroup4 "team" alice (bob, GRAdmin) (cath, GRMember) (dan, GRModerator)
+      setupReviewForward alice bob cath dan eve
+
+      -- eve leaves group, bob and dan receive member leave message
+      eve ##> "/leave #team"
+      eve <## "#team: you left the group"
+      eve <## "use /d #team to delete the group"
+      alice <## "#team: eve left the group"
+      bob <## "#team: eve left the group"
+      dan <## "#team: eve left the group"
+
+      alice ##> "#team (support: eve) hi"
+      alice <## "bad chat command: support member not current or pending"
+      bob ##> "#team (support: eve) hi"
+      bob <##. "bad chat command: support member not current or pending"
+      dan ##> "#team (support: eve) hi"
+      dan <##. "bad chat command: support member not current or pending"
+      eve ##> "/groups"
+      eve <## "#team (you left, delete local copy: /d #team)"
 
 testScopedSupportForwardGroupDeletion :: HasCallStack => TestParams -> IO ()
 testScopedSupportForwardGroupDeletion =
@@ -8250,6 +8328,99 @@ testScopedSupportUnreadStatsCorrectOnOpen =
         { markRead = False
         }
 
+testScopedSupportMemberRemoved :: HasCallStack => TestParams -> IO ()
+testScopedSupportMemberRemoved =
+  testChatOpts3 opts aliceProfile bobProfile cathProfile $ \alice bob cath -> do
+    createGroup3' "team" alice (bob, GRMember) (cath, GRAdmin)
+
+    bob #> "#team (support) 1"
+    [alice, cath] *<# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    [alice, cath] *<# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    cath ##> "/rm team bob"
+    concurrentlyN_
+      [ cath <## "#team: you removed bob from the group",
+        do
+          bob <## "#team: cath removed you from the group"
+          bob <## "use /d #team to delete the group",
+        alice <## "#team: cath removed bob from the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportUserRemovesMember :: HasCallStack => TestParams -> IO ()
+testScopedSupportUserRemovesMember =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRMember) True
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    alice ##> "/rm team bob"
+    concurrentlyN_
+      [ alice <## "#team: you removed bob from the group",
+        do
+          bob <## "#team: alice removed you from the group"
+          bob <## "use /d #team to delete the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
+
+testScopedSupportMemberLeaves :: HasCallStack => TestParams -> IO ()
+testScopedSupportMemberLeaves =
+  testChatOpts2 opts aliceProfile bobProfile $ \alice bob -> do
+    createGroup2' "team" alice (bob, GRMember) True
+
+    bob #> "#team (support) 1"
+    alice <# "#team (support: bob) bob> 1"
+
+    bob #> "#team (support) 2"
+    alice <# "#team (support: bob) bob> 2"
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 1"
+    alice <## "bob (Bob) (id 2): unread: 2, require attention: 2, mentions: 0"
+
+    bob ##> "/l team"
+    concurrentlyN_
+      [ do
+          bob <## "#team: you left the group"
+          bob <## "use /d #team to delete the group",
+        alice <## "#team: bob left the group"
+      ]
+
+    alice ##> "/member support chats #team"
+    alice <## "members require attention: 0"
+  where
+    opts =
+      testOpts
+        { markRead = False
+        }
 testChannelsRelayDeliver :: HasCallStack => TestParams -> IO ()
 testChannelsRelayDeliver =
   testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do

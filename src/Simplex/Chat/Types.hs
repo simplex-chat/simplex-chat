@@ -36,6 +36,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -921,6 +922,7 @@ type GroupMemberId = Int64
 data GroupMember = GroupMember
   { groupMemberId :: GroupMemberId,
     groupId :: GroupId,
+    indexInGroup :: Int64,
     memberId :: MemberId,
     memberRole :: GroupMemberRole,
     memberCategory :: GroupMemberCategory,
@@ -1410,7 +1412,7 @@ instance ToField AgentConnId where toField (AgentConnId m) = toField $ Binary m
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
   strDecode s = AgentConnId <$> strDecode s
-  strP = AgentConnId <$> strP
+  strP = AgentConnId <$> (strP <|> pure B.empty)
 
 instance FromJSON AgentConnId where
   parseJSON = strParseJSON "AgentConnId"

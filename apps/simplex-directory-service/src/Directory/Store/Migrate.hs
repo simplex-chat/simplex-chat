@@ -46,7 +46,7 @@ runDirectoryMigrations :: DirectoryOpts -> ChatConfig -> DBStore -> IO ()
 runDirectoryMigrations opts ChatConfig {confirmMigrations} chatStore =
   migrateDBSchema
     chatStore
-    (toDBOpts dbOptions chatSuffix False)
+    (toDBOpts dbOptions chatSuffix False [])
     (Just "sx_directory_migrations")
     directorySchemaMigrations
     MigrationConfig {confirm, backupPath = Nothing}
