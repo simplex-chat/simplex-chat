@@ -882,7 +882,7 @@ Query:
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
-   WHERE  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ?
+   WHERE  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ?
 Plan:
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 SEARCH q USING PRIMARY KEY (host=? AND port=?)
@@ -894,7 +894,7 @@ Query:
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
-   WHERE q.to_subscribe = 1 AND  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ?
+   WHERE q.to_subscribe = 1 AND  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ?
 Plan:
 SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)

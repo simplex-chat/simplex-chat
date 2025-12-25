@@ -41,7 +41,7 @@ for ORIG_NAME in "${ORIG_NAMES[@]}"; do
 
     if [ $case_insensitive -eq 1 ]; then
         # For case-insensitive file systems
-        list_of_files=$(unzip -l "$ORIG_NAME_COPY" | grep res/ | sed -e "s|.*res/|res/|" | sort -z)
+        list_of_files=$(unzip -l "$ORIG_NAME_COPY" | grep res/ | sed -e "s|.*res/|res/|" | sort)
         for file in $list_of_files; do
             unzip -o -q -d apk "$ORIG_NAME_COPY" "$file"
             (
