@@ -2953,6 +2953,7 @@ export namespace NetworkError {
 export interface NewUser {
   profile?: Profile
   pastTimestamp: boolean
+  clientService: boolean
 }
 
 export interface NoteFolder {
@@ -4408,6 +4409,7 @@ export interface User {
   sendRcptsSmallGroups: boolean
   autoAcceptMemberContacts: boolean
   userMemberProfileUpdatedAt?: string // ISO-8601 timestamp
+  clientService: boolean
   uiThemes?: UIThemeEntityOverrides
 }
 

@@ -132,15 +132,17 @@ data User = User
     showNtfs :: Bool,
     sendRcptsContacts :: Bool,
     sendRcptsSmallGroups :: Bool,
-    autoAcceptMemberContacts :: BoolDef,
+    autoAcceptMemberContacts :: Bool,
     userMemberProfileUpdatedAt :: Maybe UTCTime,
+    clientService :: BoolDef,
     uiThemes :: Maybe UIThemeEntityOverrides
   }
   deriving (Show)
 
 data NewUser = NewUser
   { profile :: Maybe Profile,
-    pastTimestamp :: Bool
+    pastTimestamp :: Bool,
+    clientService :: BoolDef
   }
   deriving (Show)
 

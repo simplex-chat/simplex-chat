@@ -1378,7 +1378,7 @@ groupInvitation' g@GroupInfo {localDisplayName = ldn, groupProfile = GroupProfil
 
 viewNewMemberContactReceivedInv :: User -> Contact -> GroupInfo -> GroupMember -> [StyledString]
 viewNewMemberContactReceivedInv user ct@Contact {localDisplayName = c} g m
-  | isTrue (autoAcceptMemberContacts user) =
+  | autoAcceptMemberContacts user =
       [ttyGroup' g <> " " <> ttyMember m <> " is creating direct contact " <> ttyContact' ct <> " with you"]
   | otherwise =
       [ ttyGroup' g <> " " <> ttyMember m <> " requests to create direct contact with you",

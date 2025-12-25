@@ -1336,6 +1336,9 @@ data SQLiteError = SQLiteErrorNotADatabase | SQLiteError {dbError :: String}
 throwDBError :: DatabaseError -> CM ()
 throwDBError = throwError . ChatErrorDatabase
 
+chatErrorAgent :: AgentErrorType -> ChatError
+chatErrorAgent e = ChatErrorAgent e (AgentConnId B.empty) Nothing
+
 -- TODO review errors, some of it can be covered by HTTP2 errors
 data RemoteHostError
   = RHEMissing -- No remote session matches this identifier
@@ -1565,7 +1568,7 @@ withAgent :: (AgentClient -> ExceptT AgentErrorType IO a) -> CM a
 withAgent action =
   asks smpAgent
     >>= liftIO . runExceptT . action
-    >>= liftEither . first (\e -> ChatErrorAgent e (AgentConnId "") Nothing)
+    >>= liftEither . first chatErrorAgent
 
 withAgent' :: (AgentClient -> IO a) -> CM' a
 withAgent' action = asks smpAgent >>= liftIO . action
