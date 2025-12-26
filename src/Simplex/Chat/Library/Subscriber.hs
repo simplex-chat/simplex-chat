@@ -2620,14 +2620,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         GCInviteeMember ->
           withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
             Left _ -> messageError "x.grp.mem.inv error: referenced member does not exist"
-            Right reMember -> do
-              intro_ <- withStore' $ \db -> getIntroduction db reMember m
-              update intro_ GMIntroInvReceived
-              sendGroupMemberMessage gInfo reMember (XGrpMemFwd (memberInfo gInfo m) introInv) intro_ $
-                update intro_ GMIntroInvForwarded
-              where
-                update (Just GroupMemberIntro {introId}) status = withStore' $ \db -> updateIntroStatus db introId status
-                update Nothing _ = pure ()
+            Right reMember -> sendGroupMemberMessage gInfo reMember $ XGrpMemFwd (memberInfo gInfo m) introInv
         _ -> messageError "x.grp.mem.inv can be only sent by invitee member"
 
     xGrpMemFwd :: GroupInfo -> GroupMember -> MemberInfo -> IntroInvitation -> CM ()
@@ -2723,8 +2716,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMemCon :: GroupInfo -> GroupMember -> MemberId -> CM ()
     xGrpMemCon gInfo sendingMem memId = do
       refMem <- withStore $ \db -> getGroupMemberByMemberId db vr user gInfo memId
-      withStore' (`migrateMemberRelationsVector` sendingMem)
-      withStore' (`migrateMemberRelationsVector` refMem)
       -- Updating vectors in separate transactions to avoid deadlocks.
       withStore $ \db -> setMemberVectorRelationConnected db sendingMem refMem MRSubjectConnected
       withStore $ \db -> setMemberVectorRelationConnected db refMem sendingMem MRReferencedConnected
@@ -2788,7 +2779,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let GroupMember {memberId} = m
               memberName = Just $ memberShortenedName m
               event = XGrpMsgForward memberId memberName chatMsg brokerTs
-          sendGroupMemberMessage gInfo member event Nothing (pure ())
+          sendGroupMemberMessage gInfo member event
 
     -- TODO [channels fwd] base on differentiation between groups and channels
     isUserGrpFwdRelay :: GroupInfo -> Bool
@@ -3233,7 +3224,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                       unless (null ms) $ deliver body ms
                       where
                         buildMemberList sender = do
-                          vec <- withStore $ \db -> migrateGetMemberRelationsVector db sender
+                          vec <- withStore (`getMemberRelationsVector` sender)
                           -- this excludes the sender
                           let introducedMemsIdxs = getRelationsIndexes MRIntroduced vec
                           case jobScope of

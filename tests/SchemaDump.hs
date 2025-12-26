@@ -132,7 +132,9 @@ skipComparisonForDownMigrations =
     -- index moves down to the end of the file
     "20250721_indexes",
     -- indexes move down to the end of the file
-    "20250922_remove_unused_connections"
+    "20250922_remove_unused_connections",
+    -- group_member_intros table moves down to the end of the file
+    "20251128_migrate_member_relations"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String

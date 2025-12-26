@@ -167,9 +167,6 @@ startChatController mainApp enableSndFiles = do
   runExceptT (syncConnections' users) >>= \case
     Left e -> liftIO $ putStrLn $ "Error synchronizing connections: " <> show e
     Right _ -> pure ()
-  runExceptT migrateMemberRelations >>= \case
-    Left e -> liftIO $ putStrLn $ "Error migrating member relations: " <> show e
-    Right _ -> pure ()
   restoreCalls
   s <- asks agentAsync
   readTVarIO s >>= maybe (start s users) (pure . fst)
@@ -181,10 +178,6 @@ startChatController mainApp enableSndFiles = do
         (userDiff, connDiff) <- withAgent (\a -> syncConnections a aUserIds connIds)
         withFastStore' setConnectionsSyncTs
         toView $ CEvtConnectionsDiff (AgentUserId <$> userDiff) (AgentConnId <$> connDiff)
-    migrateMemberRelations =
-      when mainApp $
-        whenM (withStore' hasMembersWithoutVector) $
-          void $ forkIO runRelationsVectorMigration
     start s users = do
       a1 <- async agentSubscriber
       a2 <-
@@ -343,10 +336,11 @@ processChatCommand vr nm = \case
       when (n == displayName) . throwChatError $
         if activeUser || isNothing viewPwdHash then CEUserExists displayName else CEInvalidDisplayName {displayName, validName = ""}
     (uss, (smp', xftp')) <- chooseServers =<< readTVarIO u
-    auId <- withAgent $ \a -> createUser a clientService smp' xftp'
+    let service = isTrue clientService
+    auId <- withAgent $ \a -> createUser a service smp' xftp'
     ts <- liftIO $ getCurrentTime >>= if pastTimestamp then coupleDaysAgo else pure
     user <- withFastStore $ \db -> do
-      user <- createUserRecordAt db (AgentUserId auId) (isTrue clientService) p True ts
+      user <- createUserRecordAt db (AgentUserId auId) service p True ts
       mapM_ (setUserServers db user ts) uss
       createPresetContactCards db user `catchAllErrors` \_ -> pure ()
       createNoteFolder db user
@@ -4175,21 +4169,6 @@ agentSubscriber = do
         run action = action `catchAllErrors'` (eToView')
 
 type AgentSubResult = Map ConnId (Either AgentErrorType ())
-
-runRelationsVectorMigration :: CM ()
-runRelationsVectorMigration = do
-  liftIO $ threadDelay' 5000000 -- 5 seconds (initial delay)
-  migrateMembers
-  where
-    stepDelay = 1000000 -- 1 second
-    migrateMembers = flip catchAllErrors eToView $ do
-      lift waitChatStartedAndActivated
-      gmIds <- withStore' getGMsWithoutVectorIds
-      forM_ gmIds $ \gmId -> do
-        lift waitChatStartedAndActivated
-        withStore' (`migrateMemberRelationsVector'` gmId) `catchAllErrors` eToView
-        liftIO $ threadDelay' stepDelay
-      unless (null gmIds) migrateMembers
 
 cleanupManager :: CM ()
 cleanupManager = do

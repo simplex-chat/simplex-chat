@@ -123,7 +123,7 @@ library
           Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
           Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
-          Simplex.Chat.Store.Postgres.Migrations.M20251128_member_relations_vector_stage_2
+          Simplex.Chat.Store.Postgres.Migrations.M20251128_migrate_member_relations
           Simplex.Chat.Store.Postgres.Migrations.M20251225_client_services
   else
       exposed-modules:
@@ -271,7 +271,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
           Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
           Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
-          Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2
+          Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations
           Simplex.Chat.Store.SQLite.Migrations.M20251225_client_services
   other-modules:
       Paths_simplex_chat
