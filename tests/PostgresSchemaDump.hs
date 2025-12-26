@@ -76,5 +76,7 @@ postgresSchemaDumpTest migrations testDBOpts@DBOpts {connstr, schema = testDBSch
 skipComparisonForDownMigrations :: [String]
 skipComparisonForDownMigrations =
   [ -- via_group field moves
-    "20250922_remove_unused_connections"
+    "20250922_remove_unused_connections",
+    -- group_member_intro_id field moves
+    "20251128_migrate_member_relations"
   ]
