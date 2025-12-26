@@ -725,6 +725,31 @@ ALTER TABLE test_chat_schema.files ALTER COLUMN file_id ADD GENERATED ALWAYS AS 
 
 
 
+CREATE TABLE test_chat_schema.group_member_intros (
+    group_member_intro_id bigint NOT NULL,
+    re_group_member_id bigint NOT NULL,
+    to_group_member_id bigint NOT NULL,
+    group_queue_info bytea,
+    direct_queue_info bytea,
+    intro_status text NOT NULL,
+    created_at timestamp with time zone NOT NULL,
+    updated_at timestamp with time zone NOT NULL,
+    intro_chat_protocol_version integer DEFAULT 3 NOT NULL
+);
+
+
+
+ALTER TABLE test_chat_schema.group_member_intros ALTER COLUMN group_member_intro_id ADD GENERATED ALWAYS AS IDENTITY (
+    SEQUENCE NAME test_chat_schema.group_member_intros_group_member_intro_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1
+);
+
+
+
 CREATE TABLE test_chat_schema.group_members (
     group_member_id bigint NOT NULL,
     group_id bigint NOT NULL,
@@ -1498,6 +1523,16 @@ ALTER TABLE ONLY test_chat_schema.files
 
 
 
+ALTER TABLE ONLY test_chat_schema.group_member_intros
+    ADD CONSTRAINT group_member_intros_pkey PRIMARY KEY (group_member_intro_id);
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_member_intros
+    ADD CONSTRAINT group_member_intros_re_group_member_id_to_group_member_id_key UNIQUE (re_group_member_id, to_group_member_id);
+
+
+
 ALTER TABLE ONLY test_chat_schema.group_members
     ADD CONSTRAINT group_members_group_id_member_id_key UNIQUE (group_id, member_id);
 
@@ -2099,6 +2134,14 @@ CREATE INDEX idx_files_redirect_file_id ON test_chat_schema.files USING btree (r
 
 
 CREATE INDEX idx_files_user_id ON test_chat_schema.files USING btree (user_id);
+
+
+
+CREATE INDEX idx_group_member_intros_re_group_member_id ON test_chat_schema.group_member_intros USING btree (re_group_member_id);
+
+
+
+CREATE INDEX idx_group_member_intros_to_group_member_id ON test_chat_schema.group_member_intros USING btree (to_group_member_id);
 
 
 
@@ -2758,6 +2801,16 @@ ALTER TABLE ONLY test_chat_schema.users
 
 ALTER TABLE ONLY test_chat_schema.users
     ADD CONSTRAINT fk_users_display_names FOREIGN KEY (user_id, local_display_name) REFERENCES test_chat_schema.display_names(user_id, local_display_name) ON UPDATE CASCADE ON DELETE RESTRICT DEFERRABLE INITIALLY DEFERRED;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_member_intros
+    ADD CONSTRAINT group_member_intros_re_group_member_id_fkey FOREIGN KEY (re_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
+
+
+
+ALTER TABLE ONLY test_chat_schema.group_member_intros
+    ADD CONSTRAINT group_member_intros_to_group_member_id_fkey FOREIGN KEY (to_group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
 
 
 
