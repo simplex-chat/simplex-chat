@@ -421,6 +421,16 @@ SCAN ntf_tokens_to_delete
 USE TEMP B-TREE FOR DISTINCT
 
 Query: 
+        SELECT c.service_id, c.service_queue_count, c.service_queue_ids_hash
+        FROM client_services c
+        JOIN servers s ON s.host = c.host AND s.port = c.port
+        WHERE c.user_id = ? AND c.host = ? AND c.port = ? AND COALESCE(c.server_key_hash, s.key_hash) = ? AND service_id IS NOT NULL
+      
+Plan:
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH c USING INDEX idx_server_certs_user_id_host_port (user_id=? AND host=? AND port=?)
+
+Query: 
         SELECT confirmation_id, ratchet_state, own_conn_info, sender_key, e2e_snd_pub_key, sender_conn_info, smp_reply_queues, smp_client_version
         FROM conn_confirmations
         WHERE conn_id = ? AND accepted = 1;
@@ -590,11 +600,11 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id_internal_rcv_id (conn_
 
 Query: 
       INSERT INTO rcv_queues
-        ( host, port, rcv_id, conn_id, rcv_private_key, rcv_dh_secret, e2e_priv_key, e2e_dh_secret,
+        ( host, port, rcv_id, rcv_service_assoc, conn_id, rcv_private_key, rcv_dh_secret, e2e_priv_key, e2e_dh_secret,
           snd_id, queue_mode, status, to_subscribe, rcv_queue_id, rcv_primary, replace_rcv_queue_id, smp_client_version, server_key_hash,
           link_id, link_key, link_priv_sig_key, link_enc_fixed_data,
           ntf_public_key, ntf_private_key, ntf_id, rcv_ntf_dh_secret
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
     
 Plan:
 
@@ -804,7 +814,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
       q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
-      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors, q.rcv_service_assoc,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
@@ -819,7 +829,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
       q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
-      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors, q.rcv_service_assoc,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
@@ -834,7 +844,7 @@ SEARCH c USING PRIMARY KEY (conn_id=?)
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
       q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
-      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors, q.rcv_service_assoc,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
@@ -849,7 +859,7 @@ SEARCH c USING PRIMARY KEY (conn_id=?)
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
       q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
-      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors, q.rcv_service_assoc,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
@@ -864,7 +874,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
       q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
-      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors, q.rcv_service_assoc,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
     FROM rcv_queues q
@@ -990,6 +1000,7 @@ SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=? AND snd_queue
 Query: DELETE FROM users WHERE user_id = 2
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
 SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_user_id (user_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_user_id (user_id=?)
 SEARCH rcv_files USING COVERING INDEX idx_rcv_files_user_id (user_id=?)
@@ -998,6 +1009,7 @@ SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
 SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_user_id (user_id=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_user_id (user_id=?)
 SEARCH rcv_files USING COVERING INDEX idx_rcv_files_user_id (user_id=?)

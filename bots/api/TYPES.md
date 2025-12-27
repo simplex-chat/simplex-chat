@@ -2665,6 +2665,7 @@ SubscribeError:
 **Record type**:
 - profile: [Profile](#profile)?
 - pastTimestamp: bool
+- clientService: bool
 
 
 ---
@@ -3723,6 +3724,7 @@ Handshake:
 - sendRcptsSmallGroups: bool
 - autoAcceptMemberContacts: bool
 - userMemberProfileUpdatedAt: UTCTime?
+- clientService: bool
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
 
 

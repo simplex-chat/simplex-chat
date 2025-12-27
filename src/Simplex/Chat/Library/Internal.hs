@@ -888,8 +888,7 @@ acceptContactRequest nm user@User {userId} UserContactRequest {agentInvitationId
           pure (ct, conn, ExistingIncognito <$> incognitoProfile)
   let profileToSend = userProfileDirect user (fromIncognitoProfile <$> incognitoProfile) (Just ct) True
   dm <- encodeConnInfoPQ pqSup' chatV $ XInfo profileToSend
-  -- TODO [certs rcv]
-  (ct,conn,) . fst <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
+  (ct,conn,) <$> withAgent (\a -> acceptContact a nm (aUserId user) (aConnId conn) True invId dm pqSup' subMode)
 
 acceptContactRequestAsync :: User -> Int64 -> Contact -> UserContactRequest -> Maybe IncognitoProfile -> CM Contact
 acceptContactRequestAsync
@@ -1874,7 +1873,7 @@ deliverMessagesB msgReqs = do
       Left _ce -> (prev, Left (AP.INTERNAL "ChatError, skip")) -- as long as it is Left, the agent batchers should just step over it
     prepareBatch (Right req) (Right ar) = Right (req, ar)
     prepareBatch (Left ce) _ = Left ce -- restore original ChatError
-    prepareBatch _ (Left ae) = Left $ ChatErrorAgent ae (AgentConnId "") Nothing
+    prepareBatch _ (Left ae) = Left $ chatErrorAgent ae
     createDelivery :: DB.Connection -> (ChatMsgReq, (AgentMsgId, PQEncryption)) -> IO (Either ChatError ([Int64], PQEncryption))
     createDelivery db ((Connection {connId}, _, (_, msgIds)), (agentMsgId, pqEnc')) = do
       Right . (,pqEnc') <$> mapM (createSndMsgDelivery db (SndMsgDelivery {connId, agentMsgId})) msgIds
