@@ -454,7 +454,8 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionEnd u acEntity ->
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
-  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> tshow (length conns) <> " connections on server " <> showSMPServer srv]
+  CEvtServiceSubStatus srv event -> viewServiceSubEvent srv event
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -597,8 +598,8 @@ viewUsersList us =
           Just CPTBot -> " (bot)"
           _ -> ""
 
-showSMPServer :: SMPServer -> String
-showSMPServer ProtocolServer {host} = B.unpack $ strEncode host
+showSMPServer :: SMPServer -> Text
+showSMPServer ProtocolServer {host} = safeDecodeUtf8 $ strEncode host
 
 viewHostEvent :: AProtocolType -> TransportHost -> String
 viewHostEvent p h = map toUpper (B.unpack $ strEncode p) <> " host " <> B.unpack (strEncode h)
@@ -1464,12 +1465,22 @@ viewConnDiffIds userDiff connDiff
       where
         showIds = plain . T.intercalate ", " . map (tshow . unwrapId)
 
-subStatusStr :: SubscriptionStatus -> String
+subStatusStr :: SubscriptionStatus -> Text
 subStatusStr = \case
   SSActive -> "subscribed"
   SSPending -> "disconnected"
-  SSRemoved e -> "removed: " <> e
+  SSRemoved e -> "removed: " <> T.pack e
   SSNoSub -> "no subscription"
+
+viewServiceSubEvent :: SMPServer -> ServiceSubEvent -> [StyledString]
+viewServiceSubEvent srv event = [plain $ eventStr <> " on server " <> showSMPServer srv]
+  where
+    eventStr = case event of
+      ServiceSubUp e_ n -> "subscribed service " <> conns n <> ": " <> fromMaybe "ok" e_
+      ServiceSubDown n -> "disconnected service " <> conns n
+      ServiceSubAll -> "received messages from service" -- "(" <> n <> "connections)"
+      ServiceSubEnd n -> "service subscription ended " <> conns n
+    conns n = "(" <> tshow n <> "connections)"
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []
@@ -1669,7 +1680,7 @@ viewConnectionStats ConnectionStats {rcvQueuesInfo, sndQueuesInfo} =
     <> ["sending messages via: " <> viewSndQueuesInfo sndQueuesInfo | not $ null sndQueuesInfo]
 
 viewRcvQueuesInfo :: [RcvQueueInfo] -> StyledString
-viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
+viewRcvQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
   where
     showQueueInfo RcvQueueInfo {rcvServer, rcvSwitchStatus, canAbortSwitch} =
       let switchCanBeAborted = if canAbortSwitch then ", can be aborted" else ""
@@ -1682,7 +1693,7 @@ viewRcvQueuesInfo = plain . intercalate ", " . map showQueueInfo
       RSReceivedMessage -> "switch secured"
 
 viewSndQueuesInfo :: [SndQueueInfo] -> StyledString
-viewSndQueuesInfo = plain . intercalate ", " . map showQueueInfo
+viewSndQueuesInfo = plain . T.intercalate ", " . map showQueueInfo
   where
     showQueueInfo SndQueueInfo {sndServer, sndSwitchStatus} =
       showSMPServer sndServer
@@ -2414,7 +2425,6 @@ viewChatError isCmd logLevel testView = \case
     CENoConnectionUser agentConnId -> ["error: message user not found, conn id: " <> sShow agentConnId | logLevel <= CLLError]
     CENoSndFileUser aFileId -> ["error: snd file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
     CENoRcvFileUser aFileId -> ["error: rcv file user not found, file id: " <> sShow aFileId | logLevel <= CLLError]
-    CEActiveUserExists -> ["error: active user already exists"]
     CEUserExists name -> ["user with the name " <> ttyContact name <> " already exists"]
     CEUserUnknown -> ["user does not exist or incorrect password"]
     CEDifferentActiveUser commandUserId activeUserId -> ["error: different active user, command user id: " <> sShow commandUserId <> ", active user id: " <> sShow activeUserId]

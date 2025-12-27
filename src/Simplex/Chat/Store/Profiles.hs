@@ -37,6 +37,7 @@ module Simplex.Chat.Store.Profiles
     getUserFileInfo,
     deleteUserRecord,
     updateUserPrivacy,
+    updateClientService,
     updateAllContactReceipts,
     updateUserContactReceipts,
     updateUserGroupReceipts,
@@ -274,6 +275,17 @@ updateUserPrivacy db User {userId, showNtfs, viewPwdHash} =
     (hashSalt viewPwdHash :. (BI showNtfs, userId))
   where
     hashSalt = L.unzip . fmap (\UserPwdHash {hash, salt} -> (hash, salt))
+
+updateClientService :: DB.Connection -> UserId -> Bool -> IO ()
+updateClientService db userId enable =
+  DB.execute
+    db
+    [sql|
+      UPDATE users
+      SET client_service = ?
+      WHERE user_id = ?
+    |]
+    (BI enable, userId)
 
 updateAllContactReceipts :: DB.Connection -> Bool -> IO ()
 updateAllContactReceipts db onOff =

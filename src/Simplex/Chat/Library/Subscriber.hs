@@ -82,7 +82,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..))
+import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..), ServiceSub (..), ServiceSubError (..), ServiceSubResult (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
@@ -136,17 +136,23 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv SSActive conns
   SUSPENDED -> toView CEvtChatSuspended
   DEL_USER agentUserId -> toView $ CEvtAgentUserDeleted agentUserId
-  -- TODO [certs rcv] chat events
-  SERVICE_ALL _ -> pure ()
-  SERVICE_DOWN _ _ -> pure ()
-  SERVICE_UP _ _ -> pure ()
-  SERVICE_END _ _ -> pure ()
+  SERVICE_UP srv (ServiceSubResult e_ ss) -> serviceEvent srv $ ServiceSubUp (errText <$> e_) (smpQueueCount ss)
+    where
+      errText = \case
+        SSErrorServiceId {} -> "unexpected service ID"
+        SSErrorQueueCount {expectedQueueCount = n} -> "expected " <> tshow n <> " connections"
+        SSErrorQueueIdsHash {} -> "different IDs hash"
+  SERVICE_DOWN srv ss -> serviceEvent srv $ ServiceSubDown $ smpQueueCount ss
+  SERVICE_ALL srv -> serviceEvent srv ServiceSubAll
+  SERVICE_END srv ss -> serviceEvent srv $ ServiceSubEnd $ smpQueueCount ss
   ERRS cErrs -> errsEvent $ L.toList cErrs
   where
     hostEvent :: ChatEvent -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
     serverEvent :: SMPServer -> SubscriptionStatus -> [ConnId] -> CM ()
     serverEvent srv nsStatus conns = toView $ CEvtSubscriptionStatus srv nsStatus $ map AgentConnId conns
+    serviceEvent :: SMPServer -> ServiceSubEvent -> CM ()
+    serviceEvent srv = toView . CEvtServiceSubStatus srv
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 

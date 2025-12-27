@@ -432,6 +432,17 @@ processChatCommand vr nm = \case
   UnhideUser viewPwd -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUnhideUser userId viewPwd
   MuteUser -> withUser $ \User {userId} -> processChatCommand vr nm $ APIMuteUser userId
   UnmuteUser -> withUser $ \User {userId} -> processChatCommand vr nm $ APIUnmuteUser userId
+  SetClientService userId' name enable -> checkChatStopped $ withUser $ \currUser@User {userId} -> do
+    user@User {clientService, profile = LocalProfile {displayName}} <-
+      if userId == userId' then pure currUser else privateGetUser userId'
+    unless (name == displayName) $ throwChatError CEUserUnknown
+    if enable == isTrue clientService
+      then ok user
+      else do
+        withStore' $ \db -> updateClientService db userId' enable
+        let user' = user' {clientService = BoolDef enable} :: User
+        when (userId == userId') $ chatWriteVar currentUser $ Just user'
+        ok user'
   APIDeleteUser userId' delSMPQueues viewPwd_ -> withUser $ \user -> do
     user' <- privateGetUser userId'
     validateUserPassword user user' viewPwd_
@@ -4314,6 +4325,7 @@ chatCommandP =
       "/unhide user " *> (UnhideUser <$> pwdP),
       "/mute user" $> MuteUser,
       "/unmute user" $> UnmuteUser,
+      "/set client service " *> (SetClientService <$> A.decimal <* A.char ':' <*> displayNameP <*> onOffP),
       "/_delete user " *> (APIDeleteUser <$> A.decimal <* " del_smp=" <*> onOffP <*> optional (A.space *> jsonP)),
       "/delete user " *> (DeleteUser <$> displayNameP <*> pure True <*> optional (A.space *> pwdP)),
       ("/user" <|> "/u") $> ShowActiveUser,
