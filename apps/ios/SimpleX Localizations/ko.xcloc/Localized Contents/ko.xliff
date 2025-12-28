@@ -36,7 +36,7 @@
       </trans-unit>
       <trans-unit id="!1 colored!" xml:space="preserve" approved="no">
         <source>!1 colored!</source>
-        <target state="needs-translation">!1 색상!</target>
+        <target state="translated">!1 색상 적용됨!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="#secret#" xml:space="preserve" approved="no">
@@ -166,6 +166,7 @@
       </trans-unit>
       <trans-unit id="%llds" xml:space="preserve">
         <source>%llds</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="%lldw" xml:space="preserve">
@@ -188,7 +189,7 @@
       </trans-unit>
       <trans-unit id="**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata." xml:space="preserve" approved="no">
         <source>**More private**: check new messages every 20 minutes. Only device token is shared with our push server. It doesn't see how many contacts you have, or any message metadata.</source>
-        <target state="needs-translation">**비공개**: 매 20분마다 새 메시지를 확인합니다. 푸시 서버에는 장치 토큰만 공유됩니다. 연락처 수나 메세지 메타데이터가 표시되지 않습니다.</target>
+        <target state="translated">**비공개**: 20분마다 새로운 메시지를 확인합니다. 푸시 서버에는 장치 토큰만 공유됩니다. 연락처 수나 메세지 메타데이터가 표시되지 않습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="**Most private**: do not use SimpleX Chat push server. The app will check messages in background, when the system allows it, depending on how often you use the app." xml:space="preserve" approved="no">
@@ -231,6 +232,7 @@
       </trans-unit>
       <trans-unit id="*bold*" xml:space="preserve">
         <source>\*bold*</source>
+        <target></target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id=", " xml:space="preserve" approved="no">
@@ -923,46 +925,58 @@
         <target state="translated">현재 지원되는 최대 파일 크기는 %@입니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Dark" xml:space="preserve">
+      <trans-unit id="Dark" xml:space="preserve" approved="no">
         <source>Dark</source>
+        <target state="translated">다크</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database ID" xml:space="preserve">
+      <trans-unit id="Database ID" xml:space="preserve" approved="no">
         <source>Database ID</source>
+        <target state="translated">데이터베이스 아이디</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encrypted!" xml:space="preserve">
+      <trans-unit id="Database encrypted!" xml:space="preserve" approved="no">
         <source>Database encrypted!</source>
+        <target state="translated">데이터베이스 암호화됨!</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated and stored in the keychain.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated and stored in the keychain.
 </source>
+        <target state="translated">데이터베이스 암호화 키가 키체인에 저장됩니다.
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve">
+      <trans-unit id="Database encryption passphrase will be updated.&#10;" xml:space="preserve" approved="no">
         <source>Database encryption passphrase will be updated.
 </source>
+        <target state="translated">데이터베이스 암호화 키가 업데이트됩니다.
+</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database error" xml:space="preserve">
+      <trans-unit id="Database error" xml:space="preserve" approved="no">
         <source>Database error</source>
+        <target state="translated">데이터베이스 오류</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase, you can change it." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase, you can change it.</source>
+        <target state="translated">데이터베이스는 임의의 암호를 사용하여 암호화되므로 변경할 수 있습니다.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve">
+      <trans-unit id="Database is encrypted using a random passphrase. Please change it before exporting." xml:space="preserve" approved="no">
         <source>Database is encrypted using a random passphrase. Please change it before exporting.</source>
+        <target state="translated">데이터베이스는 임의의 암호를 사용하여 암호화됩니다. 내보내기 전에 변경하십시오.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase" xml:space="preserve">
+      <trans-unit id="Database passphrase" xml:space="preserve" approved="no">
         <source>Database passphrase</source>
+        <target state="translated">데이터베이스 암호화 키</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Database passphrase &amp; export" xml:space="preserve">
+      <trans-unit id="Database passphrase &amp; export" xml:space="preserve" approved="no">
         <source>Database passphrase &amp; export</source>
+        <target state="translated">데이터베이스 암호화 키 &amp; 내보내기</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Database passphrase is different from saved in the keychain." xml:space="preserve">
@@ -2236,8 +2250,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Please store passphrase securely, you will NOT be able to change it if you lose it.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -2589,8 +2603,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>Sent messages will be deleted after set time.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -2853,8 +2867,8 @@ We will be adding server redundancy to prevent lost messages.</source>
         <source>The old database was not removed during the migration, it can be deleted.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
-        <source>The profile is only shared with your contacts.</source>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -3682,7 +3696,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -3859,8 +3873,8 @@ SimpleX servers cannot see your profile.</source>
         <source>yes</source>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
@@ -4627,8 +4641,8 @@ This is your own one-time link!</source>
         <source>All new messages from %@ will be hidden!</source>
         <target state="translated">%@로부터의 모든 새 메세지가 숨겨집니다!</target>
       </trans-unit>
-      <trans-unit id="Auto-accept settings" xml:space="preserve" approved="no">
-        <source>Auto-accept settings</source>
+      <trans-unit id="SimpleX address settings" xml:space="preserve" approved="no">
+        <source>SimpleX address settings</source>
         <target state="translated">자동-수락 설정</target>
       </trans-unit>
       <trans-unit id="Archive contacts to chat later." xml:space="preserve" approved="no">
@@ -4940,6 +4954,172 @@ This is your own SimpleX address!</source>
       <trans-unit id="Customizable message shape." xml:space="preserve" approved="no">
         <source>Customizable message shape.</source>
         <target state="translated">사용자 지정 가능한 메세지 형태.</target>
+      </trans-unit>
+      <trans-unit id="%d seconds(s)" xml:space="preserve" approved="no">
+        <source>%d seconds(s)</source>
+        <target state="translated">%d 초</target>
+      </trans-unit>
+      <trans-unit id="1 year" xml:space="preserve" approved="no">
+        <source>1 year</source>
+        <target state="translated">1년</target>
+      </trans-unit>
+      <trans-unit id="Add list" xml:space="preserve" approved="no">
+        <source>Add list</source>
+        <target state="translated">리스트 추가</target>
+      </trans-unit>
+      <trans-unit id="Add to list" xml:space="preserve" approved="no">
+        <source>Add to list</source>
+        <target state="translated">리스트에 추가</target>
+      </trans-unit>
+      <trans-unit id="All" xml:space="preserve" approved="no">
+        <source>All</source>
+        <target state="translated">모두</target>
+      </trans-unit>
+      <trans-unit id="Allow to report messsages to moderators." xml:space="preserve" approved="no">
+        <source>Allow to report messsages to moderators.</source>
+        <target state="translated">메시지를 신고하는것을 허용합니다.</target>
+      </trans-unit>
+      <trans-unit id="Another reason" xml:space="preserve" approved="no">
+        <source>Another reason</source>
+        <target state="translated">다른 이유</target>
+      </trans-unit>
+      <trans-unit id="App group:" xml:space="preserve" approved="no">
+        <source>App group:</source>
+        <target state="translated">앱 그룹:</target>
+      </trans-unit>
+      <trans-unit id="Archive" xml:space="preserve" approved="no">
+        <source>Archive</source>
+        <target state="translated">아카이브</target>
+      </trans-unit>
+      <trans-unit id="Archive report" xml:space="preserve" approved="no">
+        <source>Archive report</source>
+        <target state="translated">신고 아카이브</target>
+      </trans-unit>
+      <trans-unit id="Archive report?" xml:space="preserve" approved="no">
+        <source>Archive report?</source>
+        <target state="translated">신고를 아카이브할까요?</target>
+      </trans-unit>
+      <trans-unit id="Archive reports" xml:space="preserve" approved="no">
+        <source>Archive reports</source>
+        <target state="translated">신고 아카이브</target>
+      </trans-unit>
+      <trans-unit id="Ask" xml:space="preserve" approved="no">
+        <source>Ask</source>
+        <target state="translated">묻기</target>
+      </trans-unit>
+      <trans-unit id="Clear group?" xml:space="preserve" approved="no">
+        <source>Clear group?</source>
+        <target state="translated">그룹을 비울까요?</target>
+      </trans-unit>
+      <trans-unit id="Clear or delete group?" xml:space="preserve" approved="no">
+        <source>Clear or delete group?</source>
+        <target state="translated">그룹을 비우거나 삭제할까요?</target>
+      </trans-unit>
+      <trans-unit id="Community guidelines violation" xml:space="preserve" approved="no">
+        <source>Community guidelines violation</source>
+        <target state="translated">커뮤니티 지침 위반</target>
+      </trans-unit>
+      <trans-unit id="Connection blocked" xml:space="preserve" approved="no">
+        <source>Connection blocked</source>
+        <target state="translated">연결 차단됨</target>
+      </trans-unit>
+      <trans-unit id="Connection is blocked by server operator:&#10;%@" xml:space="preserve" approved="no">
+        <source>Connection is blocked by server operator:
+%@</source>
+        <target state="translated">서버 관리자에 의해 연결이 차단되었습니다:
+%@</target>
+      </trans-unit>
+      <trans-unit id="Connection not ready." xml:space="preserve" approved="no">
+        <source>Connection not ready.</source>
+        <target state="translated">연결 준비되지 않음.</target>
+      </trans-unit>
+      <trans-unit id="Connection requires encryption renegotiation." xml:space="preserve" approved="no">
+        <source>Connection requires encryption renegotiation.</source>
+        <target state="translated">연결에는 암호화 재협상이 필요합니다.</target>
+      </trans-unit>
+      <trans-unit id="Content violates conditions of use" xml:space="preserve" approved="no">
+        <source>Content violates conditions of use</source>
+        <target state="translated">내용은 사용 규정을 위반합니다</target>
+      </trans-unit>
+      <trans-unit id="Create list" xml:space="preserve" approved="no">
+        <source>Create list</source>
+        <target state="translated">리스트 추가</target>
+      </trans-unit>
+      <trans-unit id="Database ID: %d" xml:space="preserve" approved="no">
+        <source>Database ID: %d</source>
+        <target state="translated">데이터베이스 아이디: %d</target>
+      </trans-unit>
+      <trans-unit id="Database IDs and Transport isolation option." xml:space="preserve" approved="no">
+        <source>Database IDs and Transport isolation option.</source>
+        <target state="translated">데이터베이스 ID 및 전송 격리 옵션.</target>
+      </trans-unit>
+      <trans-unit id="Database downgrade" xml:space="preserve" approved="no">
+        <source>Database downgrade</source>
+        <target state="translated">데이터베이스 다운그레이드</target>
+      </trans-unit>
+      <trans-unit id="Better groups performance" xml:space="preserve" approved="no">
+        <source>Better groups performance</source>
+        <target state="translated">더 나은 그룹 성능</target>
+      </trans-unit>
+      <trans-unit id="Confirmed" xml:space="preserve" approved="no">
+        <source>Confirmed</source>
+        <target state="translated">확인함</target>
+      </trans-unit>
+      <trans-unit id="Active" xml:space="preserve" approved="no">
+        <source>Active</source>
+        <target state="translated">활성화됨</target>
+      </trans-unit>
+      <trans-unit id="Archive all reports?" xml:space="preserve" approved="no">
+        <source>Archive all reports?</source>
+        <target state="translated">모든 신고를 아카이브할까요?</target>
+      </trans-unit>
+      <trans-unit id="Businesses" xml:space="preserve" approved="no">
+        <source>Businesses</source>
+        <target state="translated">비즈니스</target>
+      </trans-unit>
+      <trans-unit id="Better privacy and security" xml:space="preserve" approved="no">
+        <source>Better privacy and security</source>
+        <target state="translated">더 나은 프라이버시 및 보안</target>
+      </trans-unit>
+      <trans-unit id="Change automatic message deletion?" xml:space="preserve" approved="no">
+        <source>Change automatic message deletion?</source>
+        <target state="translated">자동 메시지 삭제를 변경할까요?</target>
+      </trans-unit>
+      <trans-unit id="All chats will be removed from the list %@, and the list deleted." xml:space="preserve" approved="no">
+        <source>All chats will be removed from the list %@, and the list deleted.</source>
+        <target state="translated">모든 채팅은 %@ 리스트에서 제거되고 리스트는 삭제됩니다.</target>
+      </trans-unit>
+      <trans-unit id="All reports will be archived for you." xml:space="preserve" approved="no">
+        <source>All reports will be archived for you.</source>
+        <target state="translated">모든 보고서는 사용자를 위해 보관됩니다.</target>
+      </trans-unit>
+      <trans-unit id="Accent" xml:space="preserve" approved="no">
+        <source>Accent</source>
+        <target state="translated">강조</target>
+      </trans-unit>
+      <trans-unit id="Archive %lld reports?" xml:space="preserve" approved="no">
+        <source>Archive %lld reports?</source>
+        <target state="translated">%lld 신고를 아카이브할까요?</target>
+      </trans-unit>
+      <trans-unit id="- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!&#10;- delivery receipts (up to 20 members).&#10;- faster and more stable." xml:space="preserve" approved="no">
+        <source>- connect to [directory service](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA)!
+- delivery receipts (up to 20 members).
+- faster and more stable.</source>
+        <target state="translated">- [경로 서비스](simplex:/contact#/?v=1-4&amp;smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) (BETA) 에 연결중!
+- 전달 확인 (최대 20 명의 멤버).
+- 더 빠르고 안정적입니다.</target>
+      </trans-unit>
+      <trans-unit id="All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages." xml:space="preserve" approved="no">
+        <source>All messages and files are sent **end-to-end encrypted**, with post-quantum security in direct messages.</source>
+        <target state="translated">모든 메시지와 파일은 **종간단 암호화 (E2EE)**되며, 개인 메시지는 양자 보안이 적용됩니다.</target>
+      </trans-unit>
+      <trans-unit id="Customize theme" xml:space="preserve" approved="no">
+        <source>Customize theme</source>
+        <target state="translated">테마 사용자 지정</target>
+      </trans-unit>
+      <trans-unit id="Dark mode colors" xml:space="preserve" approved="no">
+        <source>Dark mode colors</source>
+        <target state="translated">다크 모드 색상들</target>
       </trans-unit>
     </body>
   </file>

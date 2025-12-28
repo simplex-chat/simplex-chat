@@ -2876,8 +2876,8 @@ Available in v5.1</source>
         <source>Polish interface</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
@@ -3252,12 +3252,12 @@ Available in v5.1</source>
         <source>Sent messages will be deleted after set time.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
-        <source>Server requires authorization to upload, check password</source>
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+        <source>Server requires authorization to upload, check password.</source>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -3569,8 +3569,8 @@ It can happen because of some bug or when the connection is compromised.</source
         <source>The old database was not removed during the migration, it can be deleted.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="The profile is only shared with your contacts." xml:space="preserve">
-        <source>The profile is only shared with your contacts.</source>
+      <trans-unit id="Your profile is stored on your device and only shared with your contacts." xml:space="preserve">
+        <source>Your profile is stored on your device and only shared with your contacts.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="The sender will NOT be notified" xml:space="preserve">
@@ -4466,7 +4466,7 @@ SimpleX servers cannot see your profile.</source>
         <source>italic</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="join as %@" xml:space="preserve">
+      <trans-unit id="Join as %@" xml:space="preserve">
         <source>join as %@</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
@@ -4643,8 +4643,8 @@ SimpleX servers cannot see your profile.</source>
         <source>yes</source>
         <note>pref value</note>
       </trans-unit>
-      <trans-unit id="you are invited to group" xml:space="preserve">
-        <source>you are invited to group</source>
+      <trans-unit id="You are invited to group" xml:space="preserve">
+        <source>You are invited to group</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="you are observer" xml:space="preserve">
@@ -5405,7 +5405,7 @@ SimpleX servers cannot see your profile.</source>
       </trans-unit>
       <trans-unit id="Apply to" xml:space="preserve" approved="no">
         <source>Apply to</source>
-        <target state="translated">החל ל</target>
+        <target state="translated">החל על</target>
       </trans-unit>
       <trans-unit id="Background" xml:space="preserve" approved="no">
         <source>Background</source>
@@ -5579,6 +5579,112 @@ This is your own one-time link!</source>
         <source>File error</source>
         <target state="translated">שגיאה בקובץ</target>
       </trans-unit>
+      <trans-unit id="Corner" xml:space="preserve" approved="no">
+        <source>Corner</source>
+        <target state="translated">קצוות</target>
+      </trans-unit>
+      <trans-unit id="Use for messages" xml:space="preserve" approved="no">
+        <source>Use for messages</source>
+        <target state="translated">שימוש בהודעות</target>
+      </trans-unit>
+      <trans-unit id="Pending" xml:space="preserve" approved="no">
+        <source>Pending</source>
+        <target state="translated">ממתין</target>
+      </trans-unit>
+      <trans-unit id="Protect your IP address from the messaging relays chosen by your contacts.&#10;Enable in *Network &amp; servers* settings." xml:space="preserve" approved="no">
+        <source>Protect your IP address from the messaging relays chosen by your contacts.
+Enable in *Network &amp; servers* settings.</source>
+        <target state="translated">הגן על כתובת ה-IP שלך מפני ממסרי הודעות שנבחרו על ידי אנשי הקשר שלך.
+הפעל בהגדרות *רשת ושרתים*.</target>
+      </trans-unit>
+      <trans-unit id="To send" xml:space="preserve" approved="no">
+        <source>To send</source>
+        <target state="translated">לשליחה</target>
+      </trans-unit>
+      <trans-unit id="Do NOT send messages directly, even if your or destination server does not support private routing." xml:space="preserve" approved="no">
+        <source>Do NOT send messages directly, even if your or destination server does not support private routing.</source>
+        <target state="translated">אל תשלח הודעות ישירות, גם אם שרת היעד שלך או שרת היעד אינו תומך בניתוב פרטי.</target>
+      </trans-unit>
+      <trans-unit id="Servers statistics will be reset - this cannot be undone!" xml:space="preserve" approved="no">
+        <source>Servers statistics will be reset - this cannot be undone!</source>
+        <target state="translated">סטטיסטיקות השרתים יאופסו - לא ניתן לבטל פעולה זו!</target>
+      </trans-unit>
+      <trans-unit id="Detailed statistics" xml:space="preserve" approved="no">
+        <source>Detailed statistics</source>
+        <target state="translated">סטטיסטיקות מפורטות</target>
+      </trans-unit>
+      <trans-unit id="Reachable chat toolbar" xml:space="preserve" approved="no">
+        <source>Reachable chat toolbar</source>
+        <target state="translated">סרגל כלים נגיש לצ'אט</target>
+      </trans-unit>
+      <trans-unit id="Configure server operators" xml:space="preserve" approved="no">
+        <source>Configure server operators</source>
+        <target state="translated">הגדרת מפעילי שרת</target>
+      </trans-unit>
+      <trans-unit id="Private chats, groups and your contacts are not accessible to server operators." xml:space="preserve" approved="no">
+        <source>Private chats, groups and your contacts are not accessible to server operators.</source>
+        <target state="translated">צ'אטים פרטיים, קבוצות ואנשי הקשר שלך אינם נגישים למפעילי השרת.</target>
+      </trans-unit>
+      <trans-unit id="pending" xml:space="preserve" approved="no">
+        <source>pending</source>
+        <target state="translated">ממתין</target>
+      </trans-unit>
+      <trans-unit id="Save and reconnect" xml:space="preserve" approved="no">
+        <source>Save and reconnect</source>
+        <target state="translated">שמור וחבר מחדש</target>
+      </trans-unit>
+      <trans-unit id="Customizable message shape." xml:space="preserve" approved="no">
+        <source>Customizable message shape.</source>
+        <target state="translated">צורת הודעה הניתנת להתאמה אישית.</target>
+      </trans-unit>
+      <trans-unit id="All data is kept private on your device." xml:space="preserve" approved="no">
+        <source>All data is kept private on your device.</source>
+        <target state="translated">כל הנתונים נשמרים פרטיים במכשיר שלך.</target>
+      </trans-unit>
+      <trans-unit id="Downloading link details" xml:space="preserve" approved="no">
+        <source>Downloading link details</source>
+        <target state="translated">הורדת פרטי קישור</target>
+      </trans-unit>
+      <trans-unit id="Message shape" xml:space="preserve" approved="no">
+        <source>Message shape</source>
+        <target state="translated">צורת ההודעה</target>
+      </trans-unit>
+      <trans-unit id="No chats in list %@" xml:space="preserve" approved="no">
+        <source>No chats in list %@</source>
+        <target state="translated">אין צ'אטים ברשימה %@</target>
+      </trans-unit>
+      <trans-unit id="Privacy policy and conditions of use." xml:space="preserve" approved="no">
+        <source>Privacy policy and conditions of use.</source>
+        <target state="translated">מדיניות פרטיות ותנאי שימוש.</target>
+      </trans-unit>
+      <trans-unit id="pending review" xml:space="preserve" approved="no">
+        <source>pending review</source>
+        <target state="translated">ממתין לסקירה</target>
+      </trans-unit>
+      <trans-unit id="Save list" xml:space="preserve" approved="no">
+        <source>Save list</source>
+        <target state="translated">שמור רשימה</target>
+      </trans-unit>
+      <trans-unit id="pending approval" xml:space="preserve" approved="no">
+        <source>pending approval</source>
+        <target state="translated">ממתין לאישור</target>
+      </trans-unit>
+      <trans-unit id="%@ downloaded" xml:space="preserve" approved="no">
+        <source>%@ downloaded</source>
+        <target state="translated">%@ יורד</target>
+      </trans-unit>
+      <trans-unit id="%@ server" xml:space="preserve" approved="no">
+        <source>%@ server</source>
+        <target state="translated">%@ שרת</target>
+      </trans-unit>
+      <trans-unit id="%@ connected" xml:space="preserve" approved="no">
+        <source>%@ connected</source>
+        <target state="translated">%@ מחובר</target>
+      </trans-unit>
+      <trans-unit id="%@ uploaded" xml:space="preserve" approved="no">
+        <source>%@ uploaded</source>
+        <target state="translated">%@ הועלה</target>
+      </trans-unit>
     </body>
   </file>
   <file original="en.lproj/SimpleX--iOS--InfoPlist.strings" source-language="en" target-language="he" datatype="plaintext">
@@ -5624,6 +5730,14 @@ This is your own one-time link!</source>
       <trans-unit id="NSHumanReadableCopyright" xml:space="preserve">
         <source>Copyright © 2022 SimpleX Chat. All rights reserved.</source>
         <note>Copyright (human-readable)</note>
+      </trans-unit>
+    </body>
+  </file>
+  <file original="SimpleX NSE/en.lproj/Localizable.strings" source-language="en" target-language="he" datatype="plaintext">
+    <body>
+      <trans-unit id="New messages" xml:space="preserve" approved="no">
+        <source>New messages</source>
+        <target state="translated">הודעות חדשות</target>
       </trans-unit>
     </body>
   </file>

@@ -16,7 +16,7 @@ import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Core
 import Simplex.Chat.Options (CoreChatOpts (..))
 import Simplex.Chat.Options.DB
-import Simplex.Chat.Types (Profile (..))
+import Simplex.Chat.Types (ChatPeerType (..), Profile (..))
 import Test.Hspec hiding (it)
 #if !defined(dbPostgres)
 import System.FilePath ((</>))
@@ -33,7 +33,7 @@ withBroadcastBot opts test =
     bot = simplexChatCore testCfg (mkChatOpts opts) $ broadcastBot opts
 
 broadcastBotProfile :: Profile
-broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", image = Nothing, contactLink = Nothing, preferences = Nothing}
+broadcastBotProfile = Profile {displayName = "broadcast_bot", fullName = "Broadcast Bot", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Just CPTBot, preferences = Nothing}
 
 mkBotOpts :: TestParams -> [KnownContact] -> BroadcastBotOpts
 mkBotOpts ps publishers =
@@ -49,6 +49,7 @@ mkBotOpts ps publishers =
 #endif
 
           },
+      botDisplayName = "broadcast_bot",
       publishers,
       welcomeMessage = defaultWelcomeMessage publishers,
       prohibitedMessage = defaultWelcomeMessage publishers
@@ -70,7 +71,7 @@ testBroadcastMessages ps = do
     withTestChat ps "alice" $ \alice ->
       withNewTestChat ps "bob" bobProfile $ \bob ->
         withNewTestChat ps "cath" cathProfile $ \cath -> do
-          alice <## "1 contacts connected (use /cs for the list)"
+          alice <## "subscribed 1 connections on server localhost"
           bob `connectVia` botLink
           bob #> "@broadcast_bot hello"
           bob <# "broadcast_bot> > hello"
@@ -78,10 +79,11 @@ testBroadcastMessages ps = do
           bob <## "I broadcast messages to all connected users from @alice."
           cath `connectVia` botLink
           alice #> "@broadcast_bot hello all!"
+          alice <# "broadcast_bot> hello all!" -- we broadcast to the sender too, /feed is used by bot
           bob <# "broadcast_bot> hello all!"
           cath <# "broadcast_bot> hello all!"
           alice <# "broadcast_bot> > hello all!"
-          alice <## "      Forwarded to 2 contact(s)"
+          alice <## "      Forwarded to 3 contact(s), 0 errors"
   where
     cc `connectVia` botLink = do
       cc ##> ("/c " <> botLink)

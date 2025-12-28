@@ -2,12 +2,14 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# OPTIONS_GHC -fno-warn-ambiguous-fields #-}
 
 module Simplex.Chat.Core
   ( simplexChatCore,
     runSimplexChat,
     sendChatCmdStr,
     sendChatCmd,
+    printResponseEvent,
   )
 where
 
@@ -22,11 +24,13 @@ import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat
 import Simplex.Chat.Controller
 import Simplex.Chat.Library.Commands
-import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..))
+import Simplex.Chat.Options (ChatOpts (..), CoreChatOpts (..), CreateBotOpts (..))
+import Simplex.Chat.Remote.Types (RemoteHostId)
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
-import Simplex.Chat.View (serializeChatResponse)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..))
+import Simplex.Chat.Types.Preferences (FeatureAllowed (..), FilesPreference (..), Preferences (..), emptyChatPrefs)
+import Simplex.Chat.View (ChatResponseEvent, serializeChatError, serializeChatResponse)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
@@ -34,38 +38,41 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations}} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath}, createBot, maintenance} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
       withGlobalLogging logCfg initRun
     _ -> initRun
   where
-    initRun = createChatDatabase dbOptions confirm' >>= either exit run
-    confirm' = if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations
+    initRun = createChatDatabase dbOptions migrationConfig >>= either exit run
+    migrationConfig = MigrationConfig (if confirmMigrations == MCConsole && yesToUpMigrations then MCYesUp else confirmMigrations) migrationBackupPath
     exit e = do
       putStrLn $ "Error opening database: " <> show e
       exitFailure
     run db@ChatDatabase {chatStore} = do
       u_ <- getSelectActiveUser chatStore
-      cc <- newChatController db u_ cfg opts False
-      u <- maybe (createActiveUser cc) pure u_
+      let backgroundMode = not maintenance
+      cc <- newChatController db u_ cfg opts backgroundMode
+      u <- maybe (createActiveUser cc createBot) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
+      unless maintenance $ forM_ (preStartHook chatHooks) ($ cc)
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatOpts {maintenance} u cc chat
+runSimplexChat ChatOpts {maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
+      forM_ (postStartHook chatHooks) ($ cc)
       a2 <- async $ chat u cc
       waitEither_ a1 a2
 
-sendChatCmdStr :: ChatController -> String -> IO ChatResponse
-sendChatCmdStr cc s = runReaderT (execChatCommand Nothing . encodeUtf8 $ T.pack s) cc
+sendChatCmdStr :: ChatController -> String -> IO (Either ChatError ChatResponse)
+sendChatCmdStr cc s = runReaderT (execChatCommand Nothing (encodeUtf8 $ T.pack s) 0) cc
 
-sendChatCmd :: ChatController -> ChatCommand -> IO ChatResponse
-sendChatCmd cc cmd = runReaderT (execChatCommand' cmd) cc
+sendChatCmd :: ChatController -> ChatCommand -> IO (Either ChatError ChatResponse)
+sendChatCmd cc cmd = runReaderT (execChatCommand' cmd 0) cc
 
 getSelectActiveUser :: DBStore -> IO (Maybe User)
 getSelectActiveUser st = do
@@ -93,25 +100,36 @@ getSelectActiveUser st = do
                     let user = users !! (n - 1)
                      in Just <$> withTransaction st (`setActiveUser` user)
 
-createActiveUser :: ChatController -> IO User
-createActiveUser cc = do
-  putStrLn
-    "No user profiles found, it will be created now.\n\
-    \Please choose your display name.\n\
-    \It will be sent to your contacts when you connect.\n\
-    \It is only stored on your device and you can change it later."
-  loop
+createActiveUser :: ChatController -> Maybe CreateBotOpts -> IO User
+createActiveUser cc = \case
+  Just CreateBotOpts {botDisplayName, allowFiles} -> do
+    let preferences = if allowFiles then Nothing else Just emptyChatPrefs {files = Just FilesPreference {allow = FANo}}
+    createUser exitFailure $ (mkProfile botDisplayName) {peerType = Just CPTBot, preferences}
+  Nothing -> do
+    putStrLn
+      "No user profiles found, it will be created now.\n\
+      \Please choose your display name.\n\
+      \It will be sent to your contacts when you connect.\n\
+      \It is only stored on your device and you can change it later."
+    loop
   where
     loop = do
       displayName <- T.pack <$> getWithPrompt "display name"
-      let profile = Just Profile {displayName, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
-      execChatCommand' (CreateActiveUser NewUser {profile, pastTimestamp = False}) `runReaderT` cc >>= \case
-        CRActiveUser user -> pure user
-        r -> do
-          ts <- getCurrentTime
-          tz <- getCurrentTimeZone
-          putStrLn $ serializeChatResponse (Nothing, Nothing) ts tz Nothing r
-          loop
+      createUser loop $ mkProfile displayName
+    mkProfile displayName = Profile {displayName, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
+    createUser onError p =
+      execChatCommand' (CreateActiveUser NewUser {profile = Just p, pastTimestamp = False}) 0 `runReaderT` cc >>= \case
+        Right (CRActiveUser user) -> pure user
+        r -> printResponseEvent (Nothing, Nothing) (config cc) r >> onError
+
+printResponseEvent :: ChatResponseEvent r => (Maybe RemoteHostId, Maybe User) -> ChatConfig -> Either ChatError r -> IO ()
+printResponseEvent hu cfg = \case
+  Right r -> do
+    ts <- getCurrentTime
+    tz <- getCurrentTimeZone
+    putStrLn $ serializeChatResponse hu cfg ts tz (fst hu) r
+  Left e -> do
+    putStrLn $ serializeChatError True cfg e
 
 getWithPrompt :: String -> IO String
 getWithPrompt s = putStr (s <> ": ") >> hFlush stdout >> getLine

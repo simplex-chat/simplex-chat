@@ -594,7 +594,7 @@ fun UseOnionHosts(
         onSelected = {}
       )
     }
-    SectionTextFooter(values.first { it.value == onionHosts.value }.description)
+    SectionTextFooter(values.firstOrNull { it.value == onionHosts.value }?.description ?: AnnotatedString(""))
   }
 }
 

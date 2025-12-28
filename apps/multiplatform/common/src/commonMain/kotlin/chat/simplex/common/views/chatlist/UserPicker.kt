@@ -131,7 +131,7 @@ fun UserPicker(
   }
   LaunchedEffect(Unit) {
     // Controller.ctrl can be null when self-destructing activates
-    if (controller.ctrl != null && controller.ctrl != -1L) {
+    if (controller.hasChatCtrl()) {
       withBGApi {
         controller.reloadRemoteHosts()
       }
@@ -634,7 +634,7 @@ fun HostDisconnectButton(onClick: (() -> Unit)?) {
 }
 
 @Composable
-fun BoxScope.unreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boolean) {
+fun BoxScope.userUnreadBadge(unreadCount: Int, userMuted: Boolean, hasPadding: Boolean) {
   Text(
     if (unreadCount > 0) unreadCountStr(unreadCount) else "",
     color = Color.White,

@@ -48,7 +48,7 @@ private fun sendCommand(chatModel: ChatModel, composeState: MutableState<Compose
   val prefPerformLA = chatModel.controller.appPrefs.performLA.get()
   val s = composeState.value.message
   if (s.text.startsWith("/sql") && (!prefPerformLA || !developerTools)) {
-    val resp = CR.ChatCmdError(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
+    val resp = API.Error(null, ChatError.ChatErrorChat(ChatErrorType.CommandError("Failed reading: empty")))
     chatModel.addTerminalItem(TerminalItem.cmd(null, CC.Console(s.text)))
     chatModel.addTerminalItem(TerminalItem.resp(null, resp))
     composeState.value = ComposeState(useLinkPreviews = false)
@@ -99,12 +99,11 @@ fun TerminalLayout(
             isDirectChat = false,
             liveMessageAlertShown = SharedPreference(get = { false }, set = {}),
             sendMsgEnabled = true,
+            userCantSendReason = null,
             sendButtonEnabled = true,
-            nextSendGrpInv = false,
+            nextConnect = false,
             needToAllowVoiceToContact = false,
             allowedVoiceByPrefs = false,
-            userIsObserver = false,
-            userCanSend = true,
             allowVoiceToContact = {},
             placeholder = "",
             sendMessage = { sendCommand() },

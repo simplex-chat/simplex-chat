@@ -13,6 +13,7 @@ import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
 import MarkdownTests
+import MemberRelationsTests
 import MessageBatching
 import ProtocolTests
 import OperatorTests
@@ -23,8 +24,13 @@ import UnliftIO.Temporary (withTempDirectory)
 import ValidNames
 import ViewTests
 #if defined(dbPostgres)
-import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropAllSchemasExceptSystem, dropDatabaseAndUser)
+import Control.Exception (bracket_)
+import PostgresSchemaDump
+import Simplex.Chat.Store.Postgres.Migrations (migrations)
+import Simplex.Messaging.Agent.Store.Postgres.Util (createDBAndUserIfNotExists, dropDatabaseAndUser)
+import System.Directory (createDirectoryIfMissing, removePathForcibly)
 #else
+import APIDocs
 import qualified Simplex.Messaging.TMap as TM
 import MobileTests
 import SchemaDump
@@ -39,18 +45,22 @@ main = do
   agentQueryStats <- TM.emptyIO
 #endif
   withGlobalLogging logCfg . hspec
-#if defined(dbPostgres)
-    . beforeAll_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
-    . afterAll_ (dropDatabaseAndUser testDBConnectInfo)
-#endif
     $ do
--- TODO [postgres] schema dump for postgres
-#if !defined(dbPostgres)
+#if defined(dbPostgres)
+      createdDropDb . around_ (bracket_ (createDirectoryIfMissing False "tests/tmp") (removePathForcibly "tests/tmp")) $
+        describe "Postgres schema dump" $
+          postgresSchemaDumpTest
+            migrations
+            schemaDumpDBOpts
+            "src/Simplex/Chat/Store/Postgres/Migrations/chat_schema.sql"
+#else
       describe "Schema dump" schemaDumpTest
+      describe "Bot API docs" apiDocsTest
       around tmpBracket $ describe "WebRTC encryption" webRTCTests
 #endif
       describe "SimpleX chat markdown" markdownTests
       describe "JSON Tests" jsonTests
+      describe "Member relations" memberRelationsTests
       describe "SimpleX chat view" viewTests
       describe "SimpleX chat protocol" protocolTests
       describe "Valid names" validNameTests
@@ -58,8 +68,7 @@ main = do
       describe "Operators" operatorTests
       describe "Random servers" randomServersTests
 #if defined(dbPostgres)
-      around testBracket
-        . after_ (dropAllSchemasExceptSystem testDBConnectInfo)
+      createdDropDb . around testBracket
 #else
       around (testBracket chatQueryStats agentQueryStats)
 #endif
@@ -76,6 +85,9 @@ main = do
 #endif
   where
 #if defined(dbPostgres)
+    createdDropDb =
+      before_ (dropDatabaseAndUser testDBConnectInfo >> createDBAndUserIfNotExists testDBConnectInfo)
+        . after_ (dropDatabaseAndUser testDBConnectInfo)
     testBracket test = withSmpServer $ tmpBracket $ \tmpPath -> test TestParams {tmpPath, printOutput = False}
 #else
     testBracket chatQueryStats agentQueryStats test =

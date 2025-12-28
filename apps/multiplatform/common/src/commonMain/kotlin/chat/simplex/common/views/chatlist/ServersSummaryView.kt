@@ -64,7 +64,7 @@ enum class SubscriptionColorType {
   ACTIVE, ACTIVE_SOCKS_PROXY, DISCONNECTED, ACTIVE_DISCONNECTED
 }
 
-data class SubscriptionStatus(
+data class AppSubscriptionStatus(
   val color: SubscriptionColorType,
   val variableValue: Float,
   val statusPercent: Float
@@ -75,7 +75,7 @@ fun subscriptionStatusColorAndPercentage(
   socksProxy: String?,
   subs: SMPServerSubs,
   hasSess: Boolean
-): SubscriptionStatus {
+): AppSubscriptionStatus {
   fun roundedToQuarter(n: Float): Float = when {
     n >= 1 -> 1f
     n <= 0 -> 0f
@@ -83,25 +83,25 @@ fun subscriptionStatusColorAndPercentage(
   }
 
   val activeColor: SubscriptionColorType = if (socksProxy != null) SubscriptionColorType.ACTIVE_SOCKS_PROXY else SubscriptionColorType.ACTIVE
-  val noConnColorAndPercent = SubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 0f)
+  val noConnColorAndPercent = AppSubscriptionStatus(SubscriptionColorType.DISCONNECTED, 1f, 0f)
   val activeSubsRounded = roundedToQuarter(subs.shareOfActive)
 
   return if (!online)
     noConnColorAndPercent
   else if (subs.total == 0 && !hasSess)
     // On freshly installed app (without chats) and on app start
-    SubscriptionStatus(activeColor, 0f, 0f)
+    AppSubscriptionStatus(activeColor, 0f, 0f)
   else if (subs.ssActive == 0) {
     if (hasSess)
-      SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive)
+      AppSubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive)
     else
       noConnColorAndPercent
   } else { // ssActive > 0
     if (hasSess)
-      SubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive)
+      AppSubscriptionStatus(activeColor, activeSubsRounded, subs.shareOfActive)
     else
       // This would mean implementation error
-      SubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive)
+      AppSubscriptionStatus(SubscriptionColorType.ACTIVE_DISCONNECTED, activeSubsRounded, subs.shareOfActive)
   }
 }
 
@@ -120,7 +120,7 @@ fun SubscriptionStatusIndicatorView(subs: SMPServerSubs, hasSess: Boolean, leadi
   val netCfg = rememberUpdatedState(chatModel.controller.getNetCfg())
   val statusColorAndPercentage = subscriptionStatusColorAndPercentage(chatModel.networkInfo.value.online, netCfg.value.socksProxy, subs, hasSess)
   val pref = remember { chatModel.controller.appPrefs.networkShowSubscriptionPercentage }
-  val percentageText = "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%"
+  val percentageText = if (subs.total > 0 || hasSess) "${(floor(statusColorAndPercentage.statusPercent * 100)).toInt()}%" else "%"
 
   Row(
     verticalAlignment = Alignment.CenterVertically,

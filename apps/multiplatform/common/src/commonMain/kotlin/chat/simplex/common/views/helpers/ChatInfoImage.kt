@@ -12,12 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.*
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.InspectableValue
 import androidx.compose.ui.unit.*
-import chat.simplex.common.model.BusinessChatType
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import chat.simplex.common.model.ChatInfo
@@ -31,13 +28,9 @@ import kotlin.math.max
 fun ChatInfoImage(chatInfo: ChatInfo, size: Dp, iconColor: Color = MaterialTheme.colors.secondaryVariant, shadow: Boolean = false) {
   val icon =
     when (chatInfo) {
-      is ChatInfo.Group ->
-        when (chatInfo.groupInfo.businessChat?.chatType) {
-          BusinessChatType.Business -> MR.images.ic_work_filled_padded
-          BusinessChatType.Customer -> MR.images.ic_account_circle_filled
-          null -> MR.images.ic_supervised_user_circle_filled
-        }
+      is ChatInfo.Group -> chatInfo.groupInfo.chatIconName
       is ChatInfo.Local -> MR.images.ic_folder_filled
+      is ChatInfo.Direct -> chatInfo.contact.chatIconName
       else -> MR.images.ic_account_circle_filled
     }
   ProfileImage(size, chatInfo.image, icon, if (chatInfo is ChatInfo.Local) NoteFolderIconColor else iconColor)
@@ -61,7 +54,8 @@ fun ProfileImage(
   icon: ImageResource = MR.images.ic_account_circle_filled,
   color: Color = MaterialTheme.colors.secondaryVariant,
   backgroundColor: Color? = null,
-  blurred: Boolean = false
+  blurred: Boolean = false,
+  async: Boolean = false
 ) {
   Box(Modifier.size(size)) {
     if (image == null) {
@@ -89,13 +83,22 @@ fun ProfileImage(
         )
       }
     } else {
-      val imageBitmap = base64ToBitmap(image)
-      Image(
-        imageBitmap,
-        stringResource(MR.strings.image_descr_profile_image),
-        contentScale = ContentScale.Crop,
-        modifier = ProfileIconModifier(size, blurred = blurred)
-      )
+      if (async) {
+        Base64AsyncImage(
+          base64ImageString = image,
+          contentDescription = stringResource(MR.strings.image_descr_profile_image),
+          contentScale = ContentScale.Crop,
+          modifier = ProfileIconModifier(size, blurred = blurred)
+        )
+      } else {
+        val imageBitmap = base64ToBitmap(image)
+        Image(
+          bitmap = imageBitmap,
+          contentDescription = stringResource(MR.strings.image_descr_profile_image),
+          contentScale = ContentScale.Crop,
+          modifier = ProfileIconModifier(size, blurred = blurred)
+        )
+      }
     }
   }
 }

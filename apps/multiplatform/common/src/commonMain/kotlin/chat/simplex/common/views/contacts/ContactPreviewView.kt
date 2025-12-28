@@ -31,18 +31,23 @@ fun ContactPreviewView(
         Icon(painterResource(MR.images.ic_verified_user), null, Modifier.size(19.dp).padding(end = 3.dp, top = 1.dp), tint = MaterialTheme.colors.secondary)
     }
 
+    val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
+
+    val textColor = when {
+        deleting -> MaterialTheme.colors.secondary
+        contactType == ContactType.CARD -> MaterialTheme.colors.primary
+        contactType == ContactType.CONTACT_WITH_REQUEST ->
+            if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.groupDirectInv?.memberRemoved == true)
+                MaterialTheme.colors.secondary
+            else
+                MaterialTheme.colors.primary
+        contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
+        contactType == ContactType.RECENT -> if (chat.chatInfo.nextConnect) MaterialTheme.colors.primary else Color.Unspecified
+        else -> Color.Unspecified
+    }
+
     @Composable
     fun chatPreviewTitle() {
-        val deleting by remember(disabled, chat.id) { mutableStateOf(chatModel.deletedChats.value.contains(chat.remoteHostId to chat.chatInfo.id)) }
-
-        val textColor = when {
-            deleting -> MaterialTheme.colors.secondary
-            contactType == ContactType.CARD -> MaterialTheme.colors.primary
-            contactType == ContactType.REQUEST -> MaterialTheme.colors.primary
-            contactType == ContactType.RECENT && chat.chatInfo.incognito -> Indigo
-            else -> Color.Unspecified
-        }
-
         when (cInfo) {
             is ChatInfo.Direct ->
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -85,11 +90,11 @@ fun ContactPreviewView(
 
         Spacer(Modifier.fillMaxWidth().weight(1f))
 
-        if (chat.chatInfo is ChatInfo.ContactRequest) {
+        if (chat.chatInfo is ChatInfo.ContactRequest || contactType == ContactType.CONTACT_WITH_REQUEST) {
             Icon(
                 painterResource(MR.images.ic_check),
                 contentDescription = null,
-                tint = MaterialTheme.colors.primary,
+                tint = textColor,
                 modifier = Modifier
                     .size(23.dp)
             )
@@ -103,6 +108,9 @@ fun ContactPreviewView(
                 modifier = Modifier
                     .size(21.dp)
             )
+            if (chat.chatInfo.incognito) {
+                Spacer(Modifier.width(DEFAULT_SPACE_AFTER_ICON))
+            }
         }
 
         if (showDeletedChatIcon && chat.chatInfo.chatDeleted) {

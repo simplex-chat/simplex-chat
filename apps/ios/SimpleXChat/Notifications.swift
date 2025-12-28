@@ -62,7 +62,7 @@ public func createContactConnectedNtf(_ user: any UserLike, _ contact: Contact, 
 public func createMessageReceivedNtf(_ user: any UserLike, _ cInfo: ChatInfo, _ cItem: ChatItem, _ badgeCount: Int) -> UNMutableNotificationContent {
     let previewMode = ntfPreviewModeGroupDefault.get()
     var title: String
-    if case let .group(groupInfo) = cInfo, case let .groupRcv(groupMember) = cItem.chatDir {
+    if case let .group(groupInfo, _) = cInfo, case let .groupRcv(groupMember) = cItem.chatDir {
         title = groupMsgNtfTitle(groupInfo, groupMember, hideContent: previewMode == .hidden)
     } else {
         title = previewMode == .hidden ? contactHidden : "\(cInfo.chatViewName):"
@@ -111,10 +111,6 @@ public func createConnectionEventNtf(_ user: User, _ connEntity: ConnectionEntit
         title = groupMsgNtfTitle(groupInfo, groupMember, hideContent: hideContent)
         body = NSLocalizedString("message received", comment: "notification")
         targetContentIdentifier = groupInfo.id
-    case .sndFileConnection:
-        title = NSLocalizedString("Sent file event", comment: "notification")
-    case .rcvFileConnection:
-        title = NSLocalizedString("Received file event", comment: "notification")
     case .userContactConnection:
         title = NSLocalizedString("New contact request", comment: "notification")
     }

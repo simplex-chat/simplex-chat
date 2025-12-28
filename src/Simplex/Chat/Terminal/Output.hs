@@ -7,6 +7,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Simplex.Chat.Terminal.Output where
 
@@ -14,7 +15,6 @@ import Control.Concurrent (ThreadId)
 import Control.Logger.Simple
 import Control.Monad
 import Control.Monad.Catch (MonadMask)
-import Control.Monad.Except
 import Control.Monad.Reader
 import Data.List (intercalate)
 import Data.Text (Text)
@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import Data.Time.Clock (getCurrentTime)
 import Data.Time.LocalTime (getCurrentTimeZone)
 import Simplex.Chat.Controller
-import Simplex.Chat.Library.Commands (execChatCommand, processChatCommand)
+import Simplex.Chat.Library.Commands (execChatCommand, execChatCommand')
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent (CIContent (..), SMsgDirection (..))
@@ -33,11 +33,9 @@ import Simplex.Chat.Styled
 import Simplex.Chat.Terminal.Notification (Notification (..), initializeNotifications)
 import Simplex.Chat.Types
 import Simplex.Chat.View
-import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.TMap (TMap)
 import qualified Simplex.Messaging.TMap as TM
-import Simplex.Messaging.Util (safeDecodeUtf8, tshow)
+import Simplex.Messaging.Util (tshow)
 import System.Console.ANSI.Types
 import System.IO (IOMode (..), hPutStrLn, withFile)
 import System.Mem.Weak (Weak)
@@ -146,74 +144,73 @@ withTermLock ChatTerminal {termLock} action = do
 runTerminalOutput :: ChatTerminal -> ChatController -> ChatOpts -> IO ()
 runTerminalOutput ct cc@ChatController {outputQ, showLiveItems, logFilePath} ChatOpts {markRead} = do
   forever $ do
-    (_, outputRH, r) <- atomically $ readTBQueue outputQ
-    case r of
-      CRNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
-      CRChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
-      CRRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
-      CRRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
+    (outputRH, r_) <- atomically $ readTBQueue outputQ
+    forM_ r_ $ \case
+      CEvtNewChatItems u (ci : _) -> when markRead $ markChatItemRead u ci -- At the moment of writing received items are created one at a time
+      CEvtChatItemUpdated u ci -> when markRead $ markChatItemRead u ci
+      CEvtRemoteHostConnected {remoteHost = RemoteHostInfo {remoteHostId}} -> getRemoteUser remoteHostId
+      CEvtRemoteHostStopped {remoteHostId_} -> mapM_ removeRemoteUser remoteHostId_
       _ -> pure ()
-    let printResp = case logFilePath of
-          Just path -> if logResponseToFile r then logResponse path else printToTerminal ct
+    let printEvent = case logFilePath of
+          Just path -> if either (const True) logEventToFile r_ then logResponse path else printToTerminal ct
           _ -> printToTerminal ct
     liveItems <- readTVarIO showLiveItems
-    responseString ct cc liveItems outputRH r >>= printResp
-    responseNotification ct cc r
+    responseString ct cc liveItems outputRH r_ >>= printEvent
+    mapM_ (chatEventNotification ct cc) r_
   where
     markChatItemRead u (AChatItem _ _ chat ci@ChatItem {chatDir, meta = CIMeta {itemStatus}}) =
       case (chatDirNtf u chat chatDir (isUserMention ci), itemStatus) of
         (True, CISRcvNew) -> do
           let itemId = chatItemId' ci
-              chatRef = chatInfoToRef chat
-          void $ runReaderT (runExceptT $ processChatCommand (APIChatItemsRead chatRef [itemId])) cc
+              chatRef_ = chatInfoToRef chat
+          forM_ chatRef_ $ \chatRef -> runReaderT (execChatCommand' (APIChatItemsRead chatRef [itemId]) 0) cc
         _ -> pure ()
     logResponse path s = withFile path AppendMode $ \h -> mapM_ (hPutStrLn h . unStyle) s
     getRemoteUser rhId =
-      runReaderT (execChatCommand (Just rhId) "/user") cc >>= \case
-        CRActiveUser {user} -> updateRemoteUser ct user rhId
+      runReaderT (execChatCommand (Just rhId) "/user" 0) cc >>= \case
+        Right CRActiveUser {user} -> updateRemoteUser ct user rhId
         cr -> logError $ "Unexpected reply while getting remote user: " <> tshow cr
     removeRemoteUser rhId = atomically $ TM.delete rhId (currentRemoteUsers ct)
 
-responseNotification :: ChatTerminal -> ChatController -> ChatResponse -> IO ()
-responseNotification t@ChatTerminal {sendNotification} cc = \case
+chatEventNotification :: ChatTerminal -> ChatController -> ChatEvent -> IO ()
+chatEventNotification t@ChatTerminal {sendNotification} cc = \case
   -- At the moment of writing received items are created one at a time
-  CRNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
+  CEvtNewChatItems u ((AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent mc, formattedText}) : _) ->
     when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ do
       whenCurrUser cc u $ setActiveChat t cInfo
       case (cInfo, chatDir) of
         (DirectChat ct, _) -> sendNtf (viewContactName ct <> "> ", text)
-        (GroupChat g, CIGroupRcv m) -> sendNtf (fromGroup_ g m, text)
+        (GroupChat g scopeInfo, CIGroupRcv m) -> sendNtf (fromGroup_ g scopeInfo m, text)
         _ -> pure ()
     where
       text = msgText mc formattedText
-  CRChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
+  CEvtChatItemUpdated u (AChatItem _ SMDRcv cInfo ci@ChatItem {chatDir, content = CIRcvMsgContent _}) ->
     whenCurrUser cc u $ when (chatDirNtf u cInfo chatDir $ isUserMention ci) $ setActiveChat t cInfo
-  CRContactConnected u ct _ -> when (contactNtf u ct False) $ do
+  CEvtContactConnected u ct _ -> when (contactNtf u ct False) $ do
     whenCurrUser cc u $ setActiveContact t ct
     sendNtf (viewContactName ct <> "> ", "connected")
-  CRContactSndReady u ct ->
+  CEvtContactSndReady u ct ->
     whenCurrUser cc u $ setActiveContact t ct
-  CRContactAnotherClient u ct -> do
+  CEvtContactAnotherClient u ct -> do
     whenCurrUser cc u $ unsetActiveContact t ct
     when (contactNtf u ct False) $ sendNtf (viewContactName ct <> "> ", "connected to another client")
-  CRContactsDisconnected srv _ -> serverNtf srv "disconnected"
-  CRContactsSubscribed srv _ -> serverNtf srv "connected"
-  CRReceivedGroupInvitation u g ct _ _ ->
+  CEvtReceivedGroupInvitation u g ct _ _ ->
     when (contactNtf u ct False) $
       sendNtf ("#" <> viewGroupName g <> " " <> viewContactName ct <> "> ", "invited you to join the group")
-  CRUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
+  CEvtUserJoinedGroup u g _ -> when (groupNtf u g False) $ do
     whenCurrUser cc u $ setActiveGroup t g
     sendNtf ("#" <> viewGroupName g, "you are connected to group")
-  CRJoinedGroupMember u g m ->
+  CEvtJoinedGroupMember u g m ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
-  CRConnectedToGroupMember u g m _ ->
+  CEvtJoinedGroupMemberConnecting u g _ m | memberStatus m == GSMemPendingReview ->
+    when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is pending review")
+  CEvtConnectedToGroupMember u g m _ ->
     when (groupNtf u g False) $ sendNtf ("#" <> viewGroupName g, "member " <> viewMemberName m <> " is connected")
-  CRReceivedContactRequest u UserContactRequest {localDisplayName = n} ->
+  CEvtReceivedContactRequest u UserContactRequest {localDisplayName = n} _ ->
     when (userNtf u) $ sendNtf (viewName n <> ">", "wants to connect to you")
   _ -> pure ()
   where
     sendNtf = maybe (\_ -> pure ()) (. uncurry Notification) sendNotification
-    serverNtf (SMPServer host _ _) str = sendNtf ("server " <> str, safeDecodeUtf8 $ strEncode host)
 
 msgText :: MsgContent -> Maybe MarkdownList -> Text
 msgText (MCFile _) _ = "wants to send a file"
@@ -232,7 +229,7 @@ chatActiveTo (ChatName cType name) = case cType of
 chatInfoActiveTo :: ChatInfo c -> String
 chatInfoActiveTo = \case
   DirectChat c -> contactActiveTo c
-  GroupChat g -> groupActiveTo g
+  GroupChat g _scopeInfo -> groupActiveTo g
   _ -> ""
 
 contactActiveTo :: Contact -> String
@@ -271,15 +268,17 @@ whenCurrUser cc u a = do
   where
     sameUser User {userId = uId} = maybe False $ \User {userId} -> userId == uId
 
-printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO ()
+printRespToTerminal :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> Either ChatError ChatResponse -> IO ()
 printRespToTerminal ct cc liveItems outputRH r = responseString ct cc liveItems outputRH r >>= printToTerminal ct
 
-responseString :: ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> ChatResponse -> IO [StyledString]
-responseString ct cc liveItems outputRH r = do
-  cu <- getCurrentUser ct cc
-  ts <- getCurrentTime
-  tz <- getCurrentTimeZone
-  pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+responseString :: forall r. ChatResponseEvent r => ChatTerminal -> ChatController -> Bool -> Maybe RemoteHostId -> Either ChatError r -> IO [StyledString]
+responseString ct cc liveItems outputRH = \case
+  Right r -> do
+    cu <- getCurrentUser ct cc
+    ts <- getCurrentTime
+    tz <- getCurrentTimeZone
+    pure $ responseToView cu (config cc) liveItems ts tz outputRH r
+  Left e -> pure $ chatErrorToView (isCommandResponse @r) (config cc) e
 
 updateRemoteUser :: ChatTerminal -> User -> RemoteHostId -> IO ()
 updateRemoteUser ct user rhId = atomically $ TM.insert rhId user (currentRemoteUsers ct)

@@ -9,12 +9,13 @@ module Simplex.Chat.Terminal where
 
 import Control.Monad
 import qualified Data.List.NonEmpty as L
-import Simplex.Chat (defaultChatConfig, operatorSimpleXChat)
+import Simplex.Chat (defaultChatConfig)
 import Simplex.Chat.Controller
 import Simplex.Chat.Core
 import Simplex.Chat.Help (chatWelcome)
 import Simplex.Chat.Library.Commands (_defaultNtfServers)
 import Simplex.Chat.Operators
+import Simplex.Chat.Operators.Presets (operatorSimpleXChat)
 import Simplex.Chat.Options
 import Simplex.Chat.Terminal.Input
 import Simplex.Chat.Terminal.Output

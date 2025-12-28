@@ -221,11 +221,11 @@ struct UserProfilesView: View {
         !user.hidden ? nil : trimmedSearchTextOrPassword
     }
 
-    @ViewBuilder private func profileActionView(_ action: UserProfileAction) -> some View {
+    private func profileActionView(_ action: UserProfileAction) -> some View {
         let passwordValid = actionPassword == actionPassword.trimmingCharacters(in: .whitespaces)
         let passwordField = PassphraseField(key: $actionPassword, placeholder: "Profile password", valid: passwordValid)
         let actionEnabled: (User) -> Bool = { user in actionPassword != "" && passwordValid && correctPassword(user, actionPassword) }
-        List {
+        return List {
             switch action {
             case let .deleteUser(user, delSMPQueues):
                 actionHeader("Delete profile", user)
@@ -350,7 +350,7 @@ struct UserProfilesView: View {
                     Image(systemName: "checkmark").foregroundColor(theme.colors.onBackground)
                 } else {
                     if userInfo.unreadCount > 0 {
-                        UnreadBadge(userInfo: userInfo)
+                        userUnreadBadge(userInfo, theme: theme)
                     }
                     if user.hidden {
                         Image(systemName: "lock").foregroundColor(theme.colors.secondary)

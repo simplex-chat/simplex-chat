@@ -10,7 +10,7 @@ generateRandomProfile :: IO Profile
 generateRandomProfile = do
   adjective <- pick adjectives
   noun <- pickNoun adjective 2
-  pure $ Profile {displayName = adjective <> noun, fullName = "", image = Nothing, contactLink = Nothing, preferences = Nothing}
+  pure $ Profile {displayName = adjective <> noun, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Nothing}
   where
     pick :: [a] -> IO a
     pick xs = (xs !!) <$> randomRIO (0, length xs - 1)

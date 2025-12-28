@@ -32,7 +32,7 @@ val databaseBackend: String = if (appPlatform == AppPlatform.ANDROID) "sqlite" e
 
 class FifoQueue<E>(private var capacity: Int) : LinkedList<E>() {
   override fun add(element: E): Boolean {
-    if(size > capacity) removeFirst()
+    if (size > capacity) removeFirstOrNull()
     return super.add(element)
   }
 }

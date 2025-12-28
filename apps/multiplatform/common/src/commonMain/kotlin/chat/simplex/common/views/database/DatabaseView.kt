@@ -21,8 +21,6 @@ import androidx.compose.ui.unit.dp
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.model.ChatModel.controller
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.*
@@ -36,6 +34,7 @@ import java.nio.file.StandardCopyOption
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlinx.coroutines.*
 
 @Composable
 fun DatabaseView() {
@@ -367,6 +366,7 @@ fun startChat(
   chatDbChanged: MutableState<Boolean>,
   progressIndicator: MutableState<Boolean>? = null
 ) {
+  Log.d(TAG, "startChat")
   withLongRunningApi {
     try {
       progressIndicator?.value = true
@@ -533,20 +533,20 @@ fun deleteChatDatabaseFilesAndState() {
   appPrefs.newDatabaseInitialized.set(false)
   chatModel.desktopOnboardingRandomPassword.value = false
   controller.appPrefs.storeDBPassphrase.set(true)
-  controller.ctrl = null
+  controller.setChatCtrl(null)
 
   // Clear sensitive data on screen just in case ModalManager will fail to prevent hiding its modals while database encrypts itself
   chatModel.chatId.value = null
   withLongRunningApi {
-    withChats {
-      chatItems.clearAndNotify()
-      chats.clear()
-      popChatCollector.clear()
+    withContext(Dispatchers.Main) {
+      chatModel.chatsContext.chatItems.clearAndNotify()
+      chatModel.chatsContext.chats.clear()
+      chatModel.chatsContext.popChatCollector.clear()
     }
-    withReportsChatsIfOpen {
-      chatItems.clearAndNotify()
-      chats.clear()
-      popChatCollector.clear()
+    withContext(Dispatchers.Main) {
+      chatModel.secondaryChatsContext.value?.chatItems?.clearAndNotify()
+      chatModel.secondaryChatsContext.value?.chats?.clear()
+      chatModel.secondaryChatsContext.value?.popChatCollector?.clear()
     }
   }
   chatModel.users.clear()
@@ -785,10 +785,10 @@ private fun afterSetCiTTL(
   appFilesCountAndSize.value = directoryFileCountAndSize(appFilesDir.absolutePath)
   withApi {
     try {
-      withChats {
+      withContext(Dispatchers.Main) {
         // this is using current remote host on purpose - if it changes during update, it will load correct chats
         val chats = m.controller.apiGetChats(m.remoteHostId())
-        updateChats(chats)
+        chatModel.chatsContext.updateChats(chats)
       }
     } catch (e: Exception) {
       Log.e(TAG, "apiGetChats error: ${e.message}")

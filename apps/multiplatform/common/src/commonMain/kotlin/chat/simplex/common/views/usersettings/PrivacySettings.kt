@@ -30,8 +30,8 @@ import chat.simplex.common.views.isValidDisplayName
 import chat.simplex.common.views.localauth.SetAppPasscodeView
 import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.model.ChatModel
-import chat.simplex.common.model.ChatModel.withChats
 import chat.simplex.common.platform.*
+import kotlinx.coroutines.*
 
 enum class LAMode {
   SYSTEM,
@@ -56,16 +56,22 @@ fun PrivacySettingsView(
   setPerformLA: (Boolean) -> Unit
 ) {
   ColumnWithScrollBar {
-    val simplexLinkMode = chatModel.controller.appPrefs.simplexLinkMode
     AppBarTitle(stringResource(MR.strings.your_privacy))
     PrivacyDeviceSection(showSettingsModal, setPerformLA)
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_chats)) {
-      SettingsPreferenceItem(painterResource(MR.images.ic_travel_explore), stringResource(MR.strings.send_link_previews), chatModel.controller.appPrefs.privacyLinkPreviews)
-      ChatListLinksOptions(appPrefs.privacyChatListOpenLinks.state, onSelected = {
-        appPrefs.privacyChatListOpenLinks.set(it)
-      })
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_travel_explore),
+        stringResource(MR.strings.send_link_previews),
+        chatModel.controller.appPrefs.privacyLinkPreviews,
+        onChange = { _ -> chatModel.controller.appPrefs.privacyLinkPreviewsShowAlert.set(false) } // to avoid showing alert to current users, show alert in v6.5
+      )
+      SettingsPreferenceItem(
+        painterResource(MR.images.ic_link),
+        stringResource(MR.strings.sanitize_links_toggle),
+        chatModel.controller.appPrefs.privacySanitizeLinks
+      )
       SettingsPreferenceItem(
         painterResource(MR.images.ic_chat_bubble),
         stringResource(MR.strings.privacy_show_last_messages),
@@ -84,10 +90,6 @@ fun PrivacySettingsView(
             chatModel.draftChatId.value = null
           }
         })
-      SimpleXLinkOptions(chatModel.simplexLinkMode, onSelected = {
-        simplexLinkMode.set(it)
-        chatModel.simplexLinkMode.value = it
-      })
     }
     SectionDividerSpaced()
 
@@ -119,15 +121,15 @@ fun PrivacySettingsView(
           chatModel.currentUser.value = currentUser.copy(sendRcptsContacts = enable)
           if (clearOverrides) {
             // For loop here is to prevent ConcurrentModificationException that happens with forEach
-            withChats {
-              for (i in 0 until chats.size) {
-                val chat = chats[i]
+            withContext(Dispatchers.Main) {
+              for (i in 0 until chatModel.chatsContext.chats.size) {
+                val chat = chatModel.chatsContext.chats[i]
                 if (chat.chatInfo is ChatInfo.Direct) {
                   var contact = chat.chatInfo.contact
                   val sendRcpts = contact.chatSettings.sendRcpts
                   if (sendRcpts != null && sendRcpts != enable) {
                     contact = contact.copy(chatSettings = contact.chatSettings.copy(sendRcpts = null))
-                    updateContact(currentUser.remoteHostId, contact)
+                    chatModel.chatsContext.updateContact(currentUser.remoteHostId, contact)
                   }
                 }
               }
@@ -143,16 +145,16 @@ fun PrivacySettingsView(
           chatModel.controller.appPrefs.privacyDeliveryReceiptsSet.set(true)
           chatModel.currentUser.value = currentUser.copy(sendRcptsSmallGroups = enable)
           if (clearOverrides) {
-            withChats {
+            withContext(Dispatchers.Main) {
               // For loop here is to prevent ConcurrentModificationException that happens with forEach
-              for (i in 0 until chats.size) {
-                val chat = chats[i]
+              for (i in 0 until chatModel.chatsContext.chats.size) {
+                val chat = chatModel.chatsContext.chats[i]
                 if (chat.chatInfo is ChatInfo.Group) {
                   var groupInfo = chat.chatInfo.groupInfo
                   val sendRcpts = groupInfo.chatSettings.sendRcpts
                   if (sendRcpts != null && sendRcpts != enable) {
                     groupInfo = groupInfo.copy(chatSettings = groupInfo.chatSettings.copy(sendRcpts = null))
-                    updateGroup(currentUser.remoteHostId, groupInfo)
+                    chatModel.chatsContext.updateGroup(currentUser.remoteHostId, groupInfo)
                   }
                 }
               }
@@ -161,7 +163,22 @@ fun PrivacySettingsView(
         }
       }
 
+      fun setAutoAcceptGrpDirectInvs(enable: Boolean) {
+        withApi {
+          chatModel.controller.apiSetUserAutoAcceptMemberContacts(currentUser, enable)
+          chatModel.currentUser.value = currentUser.copy(autoAcceptMemberContacts = enable)
+        }
+      }
+
       if (!chatModel.desktopNoUserNoRemote) {
+        SectionDividerSpaced(maxTopPadding = true)
+        ContacRequestsFromGroupsSection(
+          currentUser = currentUser,
+          setAutoAcceptGrpDirectInvs = { enable ->
+            setAutoAcceptGrpDirectInvs(enable)
+          }
+        )
+
         SectionDividerSpaced(maxTopPadding = true)
         DeliveryReceiptsSection(
           currentUser = currentUser,
@@ -203,27 +220,7 @@ fun PrivacySettingsView(
 }
 
 @Composable
-private fun ChatListLinksOptions(state: State<PrivacyChatListOpenLinksMode>, onSelected: (PrivacyChatListOpenLinksMode) -> Unit) {
-  val values = remember {
-    PrivacyChatListOpenLinksMode.entries.map {
-      when (it) {
-        PrivacyChatListOpenLinksMode.YES -> it to generalGetString(MR.strings.privacy_chat_list_open_links_yes)
-        PrivacyChatListOpenLinksMode.NO -> it to generalGetString(MR.strings.privacy_chat_list_open_links_no)
-        PrivacyChatListOpenLinksMode.ASK -> it to generalGetString(MR.strings.privacy_chat_list_open_links_ask)
-      }
-    }
-  }
-  ExposedDropDownSettingRow(
-    generalGetString(MR.strings.privacy_chat_list_open_links),
-    values,
-    state,
-    icon = painterResource(MR.images.ic_open_in_new),
-    onSelected = onSelected
-  )
-}
-
-@Composable
-private fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
+fun SimpleXLinkOptions(simplexLinkModeState: State<SimplexLinkMode>, onSelected: (SimplexLinkMode) -> Unit) {
   val modeValues = listOf(SimplexLinkMode.DESCRIPTION, SimplexLinkMode.FULL)
   val pickerValues = modeValues + if (modeValues.contains(simplexLinkModeState.value)) emptyList() else listOf(simplexLinkModeState.value)
   val values = remember {
@@ -276,6 +273,34 @@ expect fun PrivacyDeviceSection(
 )
 
 @Composable
+private fun ContacRequestsFromGroupsSection(
+  currentUser: User,
+  setAutoAcceptGrpDirectInvs: (Boolean) -> Unit
+) {
+  SectionView(stringResource(MR.strings.settings_section_title_contact_requests_from_groups)) {
+    SettingsActionItemWithContent(painterResource(MR.images.ic_check), stringResource(MR.strings.auto_accept_contact)) {
+      DefaultSwitch(
+        checked = currentUser.autoAcceptMemberContacts,
+        onCheckedChange = { enable ->
+          setAutoAcceptGrpDirectInvs(enable)
+        }
+      )
+    }
+  }
+  SectionTextFooter(
+    remember(currentUser.displayName) {
+      buildAnnotatedString {
+        append(generalGetString(MR.strings.this_setting_is_for_your_current_profile) + " ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+          append(currentUser.displayName)
+        }
+        append(".")
+      }
+    }
+  )
+}
+
+@Composable
 private fun DeliveryReceiptsSection(
   currentUser: User,
   setOrAskSendReceiptsContacts: (Boolean) -> Unit,
@@ -284,7 +309,7 @@ private fun DeliveryReceiptsSection(
   SectionView(stringResource(MR.strings.settings_section_title_delivery_receipts)) {
     SettingsActionItemWithContent(painterResource(MR.images.ic_person), stringResource(MR.strings.receipts_section_contacts)) {
       DefaultSwitch(
-        checked = currentUser.sendRcptsContacts ?: false,
+        checked = currentUser.sendRcptsContacts,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsContacts(enable)
         }
@@ -292,7 +317,7 @@ private fun DeliveryReceiptsSection(
     }
     SettingsActionItemWithContent(painterResource(MR.images.ic_group), stringResource(MR.strings.receipts_section_groups)) {
       DefaultSwitch(
-        checked = currentUser.sendRcptsSmallGroups ?: false,
+        checked = currentUser.sendRcptsSmallGroups,
         onCheckedChange = { enable ->
           setOrAskSendReceiptsGroups(enable)
         }

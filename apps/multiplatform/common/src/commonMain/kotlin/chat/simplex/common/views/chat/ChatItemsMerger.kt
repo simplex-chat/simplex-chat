@@ -237,24 +237,8 @@ data class ActiveChatState (
     unreadAfter.value = 0
     unreadAfterNewestLoaded.value = 0
   }
-}
 
-fun visibleItemIndexesNonReversed(mergedItems: State<MergedItems>, reversedItemsSize: Int, listState: LazyListState): IntRange {
-  val zero = 0 .. 0
-  if (listState.layoutInfo.totalItemsCount == 0) return zero
-  val newest = mergedItems.value.items.getOrNull(listState.firstVisibleItemIndex)?.startIndexInReversedItems
-  val oldest = mergedItems.value.items.getOrNull(listState.layoutInfo.visibleItemsInfo.last().index)?.lastIndexInReversed()
-  if (newest == null || oldest == null) return zero
-  val range = reversedItemsSize - oldest .. reversedItemsSize - newest
-  if (range.first < 0 || range.last < 0) return zero
-
-  // visible items mapped to their underlying data structure which is chatModel.chatItems
-  return range
-}
-
-fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItemsChangesListener {
-  override fun read(itemIds: Set<Long>?, newItems: List<ChatItem>) {
-    val (_, unreadAfterItemId, _, unreadTotal, unreadAfter) = chatState
+  fun itemsRead(itemIds: Set<Long>?, newItems: List<ChatItem>) {
     if (itemIds == null) {
       // special case when the whole chat became read
       unreadTotal.value = 0
@@ -287,14 +271,15 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
     unreadTotal.value = newUnreadTotal
     unreadAfter.value = newUnreadAfter
   }
-  override fun added(item: Pair<Long, Boolean>, index: Int) {
+
+  fun itemAdded(item: Pair<Long, Boolean>) {
     if (item.second) {
-      chatState.unreadAfter.value++
-      chatState.unreadTotal.value++
+      unreadAfter.value++
+      unreadTotal.value++
     }
   }
-  override fun removed(itemIds: List<Triple<Long, Int, Boolean>>, newItems: List<ChatItem>) {
-    val (splits, unreadAfterItemId, totalAfter, unreadTotal, unreadAfter) = chatState
+
+  fun itemsRemoved(itemIds: List<Triple<Long, Int, Boolean>>, newItems: List<ChatItem>) {
     val newSplits = ArrayList<Long>()
     for (split in splits.value) {
       val index = itemIds.indexOfFirst { it.first == split }
@@ -343,7 +328,19 @@ fun recalculateChatStatePositions(chatState: ActiveChatState) = object: ChatItem
       totalAfter.value -= itemIds.size
     }
   }
-  override fun cleared() { chatState.clear() }
+}
+
+fun visibleItemIndexesNonReversed(mergedItems: State<MergedItems>, reversedItemsSize: Int, listState: LazyListState): IntRange {
+  val zero = 0 .. 0
+  if (listState.layoutInfo.totalItemsCount == 0) return zero
+  val newest = mergedItems.value.items.getOrNull(listState.firstVisibleItemIndex)?.startIndexInReversedItems
+  val oldest = mergedItems.value.items.getOrNull(listState.layoutInfo.visibleItemsInfo.last().index)?.lastIndexInReversed()
+  if (newest == null || oldest == null) return zero
+  val range = reversedItemsSize - oldest .. reversedItemsSize - newest
+  if (range.first < 0 || range.last < 0) return zero
+
+  // visible items mapped to their underlying data structure which is chatModel.chatItems
+  return range
 }
 
 /** Helps in debugging */

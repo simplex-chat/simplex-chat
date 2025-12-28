@@ -20,11 +20,11 @@ struct CIMemberCreatedContactView: View {
             case let .groupRcv(groupMember):
                 if let contactId = groupMember.memberContactId {
                     memberCreatedContactView(openText: "Open")
-                        .onTapGesture {
+                        .simultaneousGesture(TapGesture().onEnded {
                             ItemsModel.shared.loadOpenChat("@\(contactId)") {
                                 dismissAllSheets(animated: true)
                             }
-                        }
+                        })
                 } else {
                     memberCreatedContactView()
                 }

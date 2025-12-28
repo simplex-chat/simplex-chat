@@ -23,12 +23,19 @@ import chat.simplex.common.views.chatlist.setGroupMembers
 import chat.simplex.common.views.helpers.*
 import chat.simplex.res.MR
 import kotlinx.coroutines.launch
+import kotlin.text.CharCategory.*
+
+val punctuation = setOf(
+  DASH_PUNCTUATION, START_PUNCTUATION, END_PUNCTUATION,
+  CONNECTOR_PUNCTUATION, OTHER_PUNCTUATION
+)
 
 private val PICKER_ROW_SIZE = MEMBER_ROW_AVATAR_SIZE + (MEMBER_ROW_VERTICAL_PADDING * 2f)
 private val MAX_PICKER_HEIGHT = (PICKER_ROW_SIZE * 4) + (MEMBER_ROW_AVATAR_SIZE + MEMBER_ROW_VERTICAL_PADDING - 4.dp)
 
 @Composable
 fun GroupMentions(
+  chatsCtx: ChatModel.ChatsContext,
   rhId: Long?,
   composeState: MutableState<ComposeState>,
   composeViewFocusRequester: FocusRequester?,
@@ -42,12 +49,31 @@ fun GroupMentions(
   val mentionName = remember { mutableStateOf("") }
   val mentionRange = remember { mutableStateOf<TextRange?>(null) }
   val mentionMemberId = remember { mutableStateOf<String?>(null) }
+
+  fun contextMemberFilter(member: GroupMember): Boolean =
+    when (chatsCtx.secondaryContextFilter) {
+      null -> true
+      is SecondaryContextFilter.GroupChatScopeContext ->
+        when (chatsCtx.secondaryContextFilter.groupScopeInfo) {
+          is GroupChatScopeInfo.MemberSupport -> {
+            val scopeMember = chatsCtx.secondaryContextFilter.groupScopeInfo.groupMember_
+            if (scopeMember != null) {
+              member.memberRole >= GroupMemberRole.Moderator || member.groupMemberId == scopeMember.groupMemberId
+            } else {
+              member.memberRole >= GroupMemberRole.Moderator
+            }
+          }
+        }
+      is SecondaryContextFilter.MsgContentTagContext -> false
+    }
+
   val filteredMembers = remember {
     derivedStateOf {
       val members = chatModel.groupMembers.value
         .filter {
           val status = it.memberStatus
           status != GroupMemberStatus.MemLeft && status != GroupMemberStatus.MemRemoved && status != GroupMemberStatus.MemInvited
+              && contextMemberFilter(it)
         }
         .sortedByDescending { it.memberRole }
 
@@ -126,7 +152,9 @@ fun GroupMentions(
     }
     val newName = existingMention?.key ?: composeState.value.mentionMemberName(member.memberProfile.displayName)
     mentions[newName] = CIMention(member)
-    var msgMention = "@" + if (newName.contains(" ")) "'$newName'" else newName
+    var msgMention = if (newName.contains(" ") || (newName.lastOrNull()?.category in punctuation))
+                      "@'$newName'"
+                      else "@$newName"
     var newPos = range.start + msgMention.length
     val newMsgLength = composeState.value.message.text.length + msgMention.length - range.length
     if (newPos == newMsgLength) {

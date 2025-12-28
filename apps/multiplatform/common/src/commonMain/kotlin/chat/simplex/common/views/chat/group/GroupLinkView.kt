@@ -1,7 +1,8 @@
 package chat.simplex.common.views.chat.group
 
 import SectionBottomSpacer
-import androidx.compose.foundation.*
+import SectionItemView
+import SectionViewWithButton
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
@@ -10,16 +11,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.style.TextAlign
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.platform.ColumnWithScrollBar
-import chat.simplex.common.platform.shareText
+import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.newchat.*
+import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.res.MR
 
 @Composable
@@ -27,26 +29,88 @@ fun GroupLinkView(
   chatModel: ChatModel,
   rhId: Long?,
   groupInfo: GroupInfo,
-  connReqContact: String?,
-  memberRole: GroupMemberRole?,
-  onGroupLinkUpdated: ((Pair<String, GroupMemberRole>?) -> Unit)?,
+  groupLink: GroupLink?,
+  onGroupLinkUpdated: ((GroupLink?) -> Unit)?,
   creatingGroup: Boolean = false,
   close: (() -> Unit)? = null
 ) {
-  var groupLink by rememberSaveable { mutableStateOf(connReqContact) }
-  val groupLinkMemberRole = rememberSaveable { mutableStateOf(memberRole) }
+  var groupLinkVar by rememberSaveable(stateSaver = GroupLink.nullableStateSaver) { mutableStateOf(groupLink) }
+  val groupLinkMemberRole = rememberSaveable { mutableStateOf(groupLink?.acceptMemberRole) }
   var creatingLink by rememberSaveable { mutableStateOf(false) }
+  val clipboard = LocalClipboardManager.current
   fun createLink() {
     creatingLink = true
     withBGApi {
       val link = chatModel.controller.apiCreateGroupLink(rhId, groupInfo.groupId)
       if (link != null) {
-        groupLink = link.first
-        groupLinkMemberRole.value = link.second
+        groupLinkVar = link
+        groupLinkMemberRole.value = link.acceptMemberRole
         onGroupLinkUpdated?.invoke(link)
       }
       creatingLink = false
     }
+  }
+  fun addShortLink(shareOnCompletion: Boolean = false) {
+    creatingLink = true
+    withBGApi {
+      val link = chatModel.controller.apiAddGroupShortLink(rhId, groupInfo.groupId)
+      if (link != null) {
+        groupLinkVar = link
+        groupLinkMemberRole.value = link.acceptMemberRole
+        onGroupLinkUpdated?.invoke(link)
+        if (shareOnCompletion) {
+          clipboard.shareText(link.connLinkContact.simplexChatUri(short = true))
+        }
+      }
+      creatingLink = false
+    }
+  }
+  fun showAddShortLinkAlert(shareAddress: (() -> Unit)? = null) {
+    AlertManager.shared.showAlertDialogButtonsColumn(
+      title = generalGetString(MR.strings.share_group_profile_via_link),
+      text = generalGetString(MR.strings.share_group_profile_via_link_alert_text),
+      buttons = {
+        Column {
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+            addShortLink(shareOnCompletion = shareAddress != null)
+          }) {
+            Text(
+              generalGetString(MR.strings.share_profile_via_link_alert_confirm),
+              Modifier.fillMaxWidth(),
+              textAlign = TextAlign.Center,
+              color = MaterialTheme.colors.primary
+            )
+          }
+
+          if (shareAddress != null) {
+            // Delete without notification
+            SectionItemView({
+              AlertManager.shared.hideAlert()
+              shareAddress()
+            }) {
+              Text(
+                generalGetString(MR.strings.share_old_link_alert_button),
+                Modifier.fillMaxWidth(),
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colors.primary
+              )
+            }
+          }
+          // Cancel
+          SectionItemView({
+            AlertManager.shared.hideAlert()
+          }) {
+            Text(
+              stringResource(MR.strings.cancel_verb),
+              Modifier.fillMaxWidth(),
+              textAlign = TextAlign.Center,
+              color = MaterialTheme.colors.primary
+            )
+          }
+        }
+      }
+    )
   }
   LaunchedEffect(Unit) {
     if (groupLink == null && !creatingLink) {
@@ -54,19 +118,20 @@ fun GroupLinkView(
     }
   }
   GroupLinkLayout(
-    groupLink = groupLink,
+    groupLink = groupLinkVar,
     groupInfo,
     groupLinkMemberRole,
     creatingLink,
     createLink = ::createLink,
+    showAddShortLinkAlert = ::showAddShortLinkAlert,
     updateLink = {
       val role = groupLinkMemberRole.value
       if (role != null) {
         withBGApi {
           val link = chatModel.controller.apiGroupLinkMemberRole(rhId, groupInfo.groupId, role)
           if (link != null) {
-            groupLink = link.first
-            groupLinkMemberRole.value = link.second
+            groupLinkVar = link
+            groupLinkMemberRole.value = link.acceptMemberRole
             onGroupLinkUpdated?.invoke(link)
           }
         }
@@ -81,7 +146,7 @@ fun GroupLinkView(
           withBGApi {
             val r = chatModel.controller.apiDeleteGroupLink(rhId, groupInfo.groupId)
             if (r) {
-              groupLink = null
+              groupLinkVar = null
               onGroupLinkUpdated?.invoke(null)
             }
           }
@@ -99,11 +164,12 @@ fun GroupLinkView(
 
 @Composable
 fun GroupLinkLayout(
-  groupLink: String?,
+  groupLink: GroupLink?,
   groupInfo: GroupInfo,
   groupLinkMemberRole: MutableState<GroupMemberRole?>,
   creatingLink: Boolean,
   createLink: () -> Unit,
+  showAddShortLinkAlert: ((() -> Unit)?) -> Unit,
   updateLink: () -> Unit,
   deleteLink: () -> Unit,
   creatingGroup: Boolean = false,
@@ -150,7 +216,15 @@ fun GroupLinkLayout(
           }
           initialLaunch = false
         }
-        SimpleXLinkQRCode(groupLink)
+        val showShortLink = remember { mutableStateOf(true) }
+        Spacer(Modifier.height(DEFAULT_PADDING_HALF))
+        if (groupLink.connLinkContact.connShortLink == null) {
+          SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = false)
+        } else {
+          SectionViewWithButton(titleButton = { ToggleShortLinkButton(showShortLink) }) {
+            SimpleXCreatedLinkQRCode(groupLink.connLinkContact, short = showShortLink.value)
+          }
+        }
         Row(
           horizontalArrangement = Arrangement.spacedBy(10.dp),
           verticalAlignment = Alignment.CenterVertically,
@@ -160,7 +234,15 @@ fun GroupLinkLayout(
           SimpleButton(
             stringResource(MR.strings.share_link),
             icon = painterResource(MR.images.ic_share),
-            click = { clipboard.shareText(simplexChatLink(groupLink)) }
+            click = {
+              if (groupLink.shouldBeUpgraded) {
+                showAddShortLinkAlert {
+                  clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
+                }
+              } else {
+                clipboard.shareText(groupLink.connLinkContact.simplexChatUri(short = showShortLink.value))
+              }
+            }
           )
           if (creatingGroup && close != null) {
             ContinueButton(close)
@@ -173,10 +255,26 @@ fun GroupLinkLayout(
             )
           }
         }
+        if (groupLink.shouldBeUpgraded) {
+          AddShortLinkButton(text = stringResource(MR.strings.upgrade_group_link)) {
+            showAddShortLinkAlert(null)
+          }
+        }
       }
     }
     SectionBottomSpacer()
   }
+}
+
+@Composable
+private fun AddShortLinkButton(text: String, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_add),
+    text,
+    onClick,
+    iconColor = MaterialTheme.colors.primary,
+    textColor = MaterialTheme.colors.primary,
+  )
 }
 
 @Composable

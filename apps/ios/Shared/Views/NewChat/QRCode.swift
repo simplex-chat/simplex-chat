@@ -8,15 +8,27 @@
 
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import SimpleXChat
 
 struct MutableQRCode: View {
     @Binding var uri: String
+    var small: Bool = false
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
 
     var body: some View {
-        QRCode(uri: uri, withLogo: withLogo, tintColor: tintColor)
+        QRCode(uri: uri, small: small, withLogo: withLogo, tintColor: tintColor)
             .id("simplex-qrcode-view-for-\(uri)")
+    }
+}
+
+struct SimpleXCreatedLinkQRCode: View {
+    let link: CreatedConnLink
+    @Binding var short: Bool
+    var onShare: (() -> Void)? = nil
+
+    var body: some View {
+        QRCode(uri: link.simplexChatUri(short: short), small: short && link.connShortLink != nil, onShare: onShare)
     }
 }
 
@@ -27,56 +39,57 @@ struct SimpleXLinkQRCode: View {
     var onShare: (() -> Void)? = nil
 
     var body: some View {
-        QRCode(uri: simplexChatLink(uri), withLogo: withLogo, tintColor: tintColor, onShare: onShare)
+        QRCode(uri: simplexChatLink(uri), small: uri.count < 200, withLogo: withLogo, tintColor: tintColor, onShare: onShare)
     }
 }
 
-func simplexChatLink(_ uri: String) -> String {
-    uri.starts(with: "simplex:/")
-    ? uri.replacingOccurrences(of: "simplex:/", with: "https://simplex.chat/")
-    : uri
-}
+private let smallQRRatio: CGFloat = 0.63
 
 struct QRCode: View {
     let uri: String
+    var small: Bool = false
     var withLogo: Bool = true
     var tintColor = UIColor(red: 0.023, green: 0.176, blue: 0.337, alpha: 1)
     var onShare: (() -> Void)? = nil
     @State private var image: UIImage? = nil
     @State private var makeScreenshotFunc: () -> Void = {}
+    @State private var width: CGFloat = .infinity
 
     var body: some View {
         ZStack {
             if let image = image {
-                qrCodeImage(image)
-                GeometryReader { geo in
+                qrCodeImage(image).frame(width: width, height: width)
+                GeometryReader { g in
+                    let w = g.size.width * (small ? smallQRRatio : 1)
+                    let l = w * (small ? 0.195 : 0.16)
+                    let m = w * 0.005
                     ZStack {
                         if withLogo {
-                            let w = geo.size.width
                             Image("icon-light")
                             .resizable()
                             .scaledToFit()
-                            .frame(width: w * 0.16, height: w * 0.16)
-                            .frame(width: w * 0.165, height: w * 0.165)
+                            .frame(width: l, height: l)
+                            .frame(width: l + m, height: l + m)
                             .background(.white)
                             .clipShape(Circle())
                         }
                     }
                     .onAppear {
+                        width = w
                         makeScreenshotFunc = {
                             let size = CGSizeMake(1024 / UIScreen.main.scale, 1024 / UIScreen.main.scale)
-                            showShareSheet(items: [makeScreenshot(geo.frame(in: .local).origin, size)])
+                            showShareSheet(items: [makeScreenshot(g.frame(in: .local).origin, size)])
                             onShare?()
                         }
                     }
-                    .frame(width: geo.size.width, height: geo.size.height)
+                    .frame(width: g.size.width, height: g.size.height)
                 }
             } else {
-                Color.clear.aspectRatio(1, contentMode: .fit)
+                Color.clear.aspectRatio(small ? 1 / smallQRRatio : 1, contentMode: .fit)
             }
         }
         .onTapGesture(perform: makeScreenshotFunc)
-        .task { image = await generateImage(uri, tintColor: tintColor) }
+        .task { image = await generateImage(uri, tintColor: tintColor, errorLevel: small ? "M" : "L") }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -89,10 +102,11 @@ private func qrCodeImage(_ image: UIImage) -> some View {
         .textSelection(.enabled)
 }
 
-private func generateImage(_ uri: String, tintColor: UIColor) async -> UIImage? {
+private func generateImage(_ uri: String, tintColor: UIColor, errorLevel: String) async -> UIImage? {
     let context = CIContext()
     let filter = CIFilter.qrCodeGenerator()
     filter.message = Data(uri.utf8)
+    filter.correctionLevel = errorLevel
     if let outputImage = filter.outputImage,
        let cgImage = context.createCGImage(outputImage, from: outputImage.extent) {
         return UIImage(cgImage: cgImage).replaceColor(UIColor.black, tintColor)

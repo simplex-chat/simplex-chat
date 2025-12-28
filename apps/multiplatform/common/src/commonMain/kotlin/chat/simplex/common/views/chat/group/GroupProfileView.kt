@@ -17,8 +17,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
 import chat.simplex.common.views.*
@@ -27,8 +25,7 @@ import chat.simplex.common.views.onboarding.ReadableText
 import chat.simplex.common.views.usersettings.*
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.compose.painterResource
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import java.net.URI
 
 @Composable
@@ -40,8 +37,8 @@ fun GroupProfileView(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
       withBGApi {
         val gInfo = chatModel.controller.apiUpdateGroup(rhId, groupInfo.groupId, p)
         if (gInfo != null) {
-          withChats {
-            updateGroup(rhId, gInfo)
+          withContext(Dispatchers.Main) {
+            chatModel.chatsContext.updateGroup(rhId, gInfo)
           }
           close.invoke()
         }
@@ -59,24 +56,27 @@ fun GroupProfileLayout(
   val bottomSheetModalState = rememberModalBottomSheetState(initialValue = ModalBottomSheetValue.Hidden)
   val displayName = rememberSaveable { mutableStateOf(groupProfile.displayName) }
   val fullName = rememberSaveable { mutableStateOf(groupProfile.fullName) }
+  val shortDescr = rememberSaveable { mutableStateOf(groupProfile.shortDescr ?: "") }
   val chosenImage = rememberSaveable { mutableStateOf<URI?>(null) }
   val profileImage = rememberSaveable { mutableStateOf(groupProfile.image) }
   val scope = rememberCoroutineScope()
   val scrollState = rememberScrollState()
   val focusRequester = remember { FocusRequester() }
   val dataUnchanged =
-    displayName.value == groupProfile.displayName &&
-        fullName.value == groupProfile.fullName &&
+    displayName.value.trim() == groupProfile.displayName &&
+        fullName.value.trim() == groupProfile.fullName &&
+        shortDescr.value.trim() == (groupProfile.shortDescr ?: "") &&
         groupProfile.image == profileImage.value
   val closeWithAlert = {
-    if (dataUnchanged || !canUpdateProfile(displayName.value, groupProfile)) {
+    if (dataUnchanged || !canUpdateProfile(displayName.value, shortDescr.value, groupProfile)) {
       close()
     } else {
       showUnsavedChangesAlert({
         saveProfile(
           groupProfile.copy(
             displayName = displayName.value.trim(),
-            fullName = fullName.value,
+            fullName = fullName.value.trim(),
+            shortDescr = shortDescr.value.trim().ifEmpty { null },
             image = profileImage.value
           )
         )
@@ -133,7 +133,7 @@ fun GroupProfileLayout(
               }
             }
             ProfileNameField(displayName, "", { isValidNewProfileName(it, groupProfile) }, focusRequester)
-            if (groupProfile.fullName.isNotEmpty() && groupProfile.fullName != groupProfile.displayName) {
+            if (groupProfile.fullName.trim().isNotEmpty() && groupProfile.fullName.trim() != groupProfile.displayName.trim()) {
               Spacer(Modifier.height(DEFAULT_PADDING))
               Text(
                 stringResource(MR.strings.group_full_name_field),
@@ -142,8 +142,28 @@ fun GroupProfileLayout(
               )
               ProfileNameField(fullName)
             }
+
             Spacer(Modifier.height(DEFAULT_PADDING))
-            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, groupProfile)
+
+            Row(Modifier.padding(bottom = DEFAULT_PADDING_HALF).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+              Text(
+                stringResource(MR.strings.group_short_descr_field),
+                fontSize = 16.sp,
+              )
+              if (!bioFitsLimit(shortDescr.value)) {
+                Spacer(Modifier.size(DEFAULT_PADDING_HALF))
+                IconButton(
+                  onClick = { AlertManager.shared.showAlertMsg(title = generalGetString(MR.strings.group_descr_too_large)) },
+                  Modifier.size(20.dp)
+                ) {
+                  Icon(painterResource(MR.images.ic_info), null, tint = MaterialTheme.colors.error)
+                }
+              }
+            }
+            ProfileNameField(shortDescr, "", isValid = { bioFitsLimit(it) })
+
+            Spacer(Modifier.height(DEFAULT_PADDING))
+            val enabled = !dataUnchanged && canUpdateProfile(displayName.value, shortDescr.value, groupProfile)
             if (enabled) {
               Text(
                 stringResource(MR.strings.save_group_profile),
@@ -151,7 +171,8 @@ fun GroupProfileLayout(
                   saveProfile(
                     groupProfile.copy(
                       displayName = displayName.value.trim(),
-                      fullName = fullName.value,
+                      fullName = fullName.value.trim(),
+                      shortDescr = shortDescr.value.trim().ifEmpty { null },
                       image = profileImage.value
                     )
                   )
@@ -177,8 +198,8 @@ fun GroupProfileLayout(
     }
 }
 
-private fun canUpdateProfile(displayName: String, groupProfile: GroupProfile): Boolean =
-  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile)
+private fun canUpdateProfile(displayName: String, shortDescr: String, groupProfile: GroupProfile): Boolean =
+  displayName.trim().isNotEmpty() && isValidNewProfileName(displayName, groupProfile) && bioFitsLimit(shortDescr)
 
 private fun isValidNewProfileName(displayName: String, groupProfile: GroupProfile): Boolean =
   displayName == groupProfile.displayName || isValidDisplayName(displayName.trim())

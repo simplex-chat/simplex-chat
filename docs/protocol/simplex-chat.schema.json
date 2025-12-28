@@ -20,11 +20,21 @@
             "format": "data URI format for base64 encoded image"
           }
         },
-        "contactLink": {"ref": "connReqUri"},
-        "preferences": {
+        "shortDescr": {
           "type": "string",
+          "metadata": {"comment": "profile bio (160 characters)"}
+        },
+        "contactLink": {"ref": "connReqUri"},
+        "peerType": {"enum": ["human", "bot"]},
+        "preferences": {
+          "optionalProperties": {
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          },
+          "additionalProperties": true,
           "metadata": {
-            "format": "JSON encoded user preferences"
+            "format": "an object with user or contact preferences"
           }
         }
       },
@@ -47,14 +57,58 @@
             "format": "data URI format for base64 encoded image"
           }
         },
-        "groupPreferences": {
+        "shortDescr": {
           "type": "string",
+          "metadata": {"comment": "group purpose / short description (160 characters)"}
+        },
+        "groupPreferences": {
+          "optionalProperties": {
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          },
+          "additionalProperties": "true",
           "metadata": {
-            "format": "JSON encoded user preferences"
+            "format": "an object with group preferences"
           }
         }
       },
       "additionalProperties": true
+    },
+    "command": {
+      "discriminator": "type",
+      "mapping": {
+        "command": {
+          "properties": {
+            "keyword": {
+              "type": "string",
+              "metadata": {"format": "Must start from / and consist from letters, digits and underscores only, no punctuation or spaces"}
+            },
+            "label": {
+              "type": "string",
+              "metadata": {"comment": "shown to the user after command keyword in menus"}
+            }
+          },
+          "optionalProperties": {
+            "params": {
+              "type": "string",
+              "metadata": {"comment": "Params that can follow after keyword using command-line syntax. If params property is not present, command will be sent on selection"}}
+            },
+            "hidden": {
+              "type": "bool",
+              "metadata": {"comment": "Won't be shown in menu when true"}
+            }
+          }
+        },
+        "menu": {
+          "properties": {
+            "label": {"type": "string"},
+            "commands": {
+              "elements": {"ref": "command"}
+            }
+          }
+        }
+      }
     },
     "msgContainer": {
       "properties": {
@@ -654,6 +708,16 @@
         "params": {
           "properties": {
             "groupProfile": {"ref": "groupProfile"}
+          }
+        }
+      }
+    },
+    "x.grp.prefs": {
+      "properties": {
+        "msgId": {"ref": "base64url"},
+        "params": {
+          "properties": {
+            "groupPreferences": {"ref": "groupPreferences"}
           }
         }
       }

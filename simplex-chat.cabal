@@ -5,7 +5,7 @@ cabal-version: 1.12
 -- see: https://github.com/sol/hpack
 
 name:           simplex-chat
-version:        6.3.0.8
+version:        6.5.0.7
 category:       Web, System, Services, Cryptography
 homepage:       https://github.com/simplex-chat/simplex-chat#readme
 author:         simplex.chat
@@ -40,6 +40,7 @@ library
       Simplex.Chat.AppSettings
       Simplex.Chat.Call
       Simplex.Chat.Controller
+      Simplex.Chat.Delivery
       Simplex.Chat.Files
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
@@ -55,6 +56,7 @@ library
       Simplex.Chat.Mobile.WebRTC
       Simplex.Chat.Operators
       Simplex.Chat.Operators.Conditions
+      Simplex.Chat.Operators.Presets
       Simplex.Chat.Options
       Simplex.Chat.Options.DB
       Simplex.Chat.ProfileGenerator
@@ -70,6 +72,8 @@ library
       Simplex.Chat.Store
       Simplex.Chat.Store.AppSettings
       Simplex.Chat.Store.Connections
+      Simplex.Chat.Store.ContactRequest
+      Simplex.Chat.Store.Delivery
       Simplex.Chat.Store.Direct
       Simplex.Chat.Store.Files
       Simplex.Chat.Store.Groups
@@ -80,10 +84,10 @@ library
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled
       Simplex.Chat.Types
+      Simplex.Chat.Types.MemberRelations
       Simplex.Chat.Types.Preferences
       Simplex.Chat.Types.Shared
       Simplex.Chat.Types.UITheme
-      Simplex.Chat.Types.Util
       Simplex.Chat.Util
   if !flag(client_library)
       exposed-modules:
@@ -102,6 +106,24 @@ library
           Simplex.Chat.Options.Postgres
           Simplex.Chat.Store.Postgres.Migrations
           Simplex.Chat.Store.Postgres.Migrations.M20241220_initial
+          Simplex.Chat.Store.Postgres.Migrations.M20250402_short_links
+          Simplex.Chat.Store.Postgres.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.Postgres.Migrations.M20250513_group_scope
+          Simplex.Chat.Store.Postgres.Migrations.M20250526_short_links
+          Simplex.Chat.Store.Postgres.Migrations.M20250702_contact_requests_remove_cascade_delete
+          Simplex.Chat.Store.Postgres.Migrations.M20250704_groups_conn_link_prepared_connection
+          Simplex.Chat.Store.Postgres.Migrations.M20250709_profile_short_descr
+          Simplex.Chat.Store.Postgres.Migrations.M20250721_indexes
+          Simplex.Chat.Store.Postgres.Migrations.M20250729_member_contact_requests
+          Simplex.Chat.Store.Postgres.Migrations.M20250801_via_group_link_uri
+          Simplex.Chat.Store.Postgres.Migrations.M20250802_chat_peer_type
+          Simplex.Chat.Store.Postgres.Migrations.M20250813_delivery_tasks
+          Simplex.Chat.Store.Postgres.Migrations.M20250919_group_summary
+          Simplex.Chat.Store.Postgres.Migrations.M20250922_remove_unused_connections
+          Simplex.Chat.Store.Postgres.Migrations.M20251007_connections_sync
+          Simplex.Chat.Store.Postgres.Migrations.M20251017_chat_tags_cascade
+          Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
+          Simplex.Chat.Store.Postgres.Migrations.M20251128_migrate_member_relations
   else
       exposed-modules:
           Simplex.Chat.Archive
@@ -231,6 +253,24 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20250126_mentions
           Simplex.Chat.Store.SQLite.Migrations.M20250129_delete_unused_contacts
           Simplex.Chat.Store.SQLite.Migrations.M20250130_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250402_short_links
+          Simplex.Chat.Store.SQLite.Migrations.M20250512_member_admission
+          Simplex.Chat.Store.SQLite.Migrations.M20250513_group_scope
+          Simplex.Chat.Store.SQLite.Migrations.M20250526_short_links
+          Simplex.Chat.Store.SQLite.Migrations.M20250702_contact_requests_remove_cascade_delete
+          Simplex.Chat.Store.SQLite.Migrations.M20250704_groups_conn_link_prepared_connection
+          Simplex.Chat.Store.SQLite.Migrations.M20250709_profile_short_descr
+          Simplex.Chat.Store.SQLite.Migrations.M20250721_indexes
+          Simplex.Chat.Store.SQLite.Migrations.M20250729_member_contact_requests
+          Simplex.Chat.Store.SQLite.Migrations.M20250801_via_group_link_uri
+          Simplex.Chat.Store.SQLite.Migrations.M20250802_chat_peer_type
+          Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks
+          Simplex.Chat.Store.SQLite.Migrations.M20250919_group_summary
+          Simplex.Chat.Store.SQLite.Migrations.M20250922_remove_unused_connections
+          Simplex.Chat.Store.SQLite.Migrations.M20251007_connections_sync
+          Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
+          Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
+          Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:
@@ -249,6 +289,7 @@ library
     , constraints >=0.12 && <0.14
     , containers ==0.6.*
     , crypton ==0.34.*
+    , crypton-x509 ==1.7.*
     , data-default ==0.7.*
     , directory ==1.3.*
     , email-validate ==2.3.*
@@ -264,7 +305,6 @@ library
     , optparse-applicative >=0.15 && <0.17
     , random >=1.1 && <1.3
     , record-hasfield ==1.0.*
-    , scientific ==0.3.7.*
     , simple-logger ==0.1.*
     , simplexmq >=6.3
     , socks ==0.6.*
@@ -274,8 +314,9 @@ library
     , tls >=1.9.0 && <1.10
     , unliftio ==0.2.*
     , unliftio-core ==0.2.*
+    , uri-bytestring >=0.3.3.1 && <0.4
     , uuid ==1.3.*
-    , zip ==2.0.*
+    , zip ==2.2.*
     , zstd ==0.1.3.*
   default-language: Haskell2010
   if flag(swift)
@@ -428,10 +469,13 @@ executable simplex-directory-service
       Directory.BlockedWords
       Directory.Captcha
       Directory.Events
+      Directory.Listing
       Directory.Options
       Directory.Search
       Directory.Service
       Directory.Store
+      Directory.Store.Migrate
+      Directory.Util
       Paths_simplex_chat
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
@@ -439,9 +483,13 @@ executable simplex-directory-service
     , async ==2.2.*
     , attoparsec ==0.14.*
     , base >=4.7 && <5
+    , base64-bytestring >=1.0 && <1.3
     , composition ==1.0.*
     , containers ==0.6.*
+    , crypton ==0.34.*
     , directory ==1.3.*
+    , filepath ==1.4.*
+    , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , optparse-applicative >=0.15 && <0.17
     , process >=1.6 && <1.6.18
@@ -454,7 +502,17 @@ executable simplex-directory-service
     , unicode-transforms ==0.4.*
   default-language: Haskell2010
   if flag(client_postgres)
+    other-modules:
+        Directory.Store.Postgres.Migrations
+    build-depends:
+        postgresql-simple ==0.7.*
+        , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
+  else
+    other-modules:
+        Directory.Store.SQLite.Migrations
+    build-depends:
+        sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)
     build-depends:
         bytestring ==0.11.*
@@ -465,11 +523,14 @@ executable simplex-directory-service
       , text >=1.2.4.0 && <1.3
 
 test-suite simplex-chat-test
+  if flag(swift)
+    cpp-options: -DswiftJSON
   if flag(client_library)
       buildable: False
   type: exitcode-stdio-1.0
   main-is: Test.hs
   other-modules:
+      APIDocs
       Bots.BroadcastTests
       Bots.DirectoryTests
       ChatClient
@@ -486,6 +547,7 @@ test-suite simplex-chat-test
       JSONFixtures
       JSONTests
       MarkdownTests
+      MemberRelationsTests
       MessageBatching
       OperatorTests
       ProtocolTests
@@ -493,19 +555,32 @@ test-suite simplex-chat-test
       RemoteTests
       ValidNames
       ViewTests
+      API.Docs.Commands
+      API.Docs.Events
+      API.Docs.Generate
+      API.Docs.Generate.TypeScript
+      API.Docs.Responses
+      API.Docs.Syntax
+      API.Docs.Syntax.Types
+      API.Docs.Types
+      API.TypeInfo
       Broadcast.Bot
       Broadcast.Options
       Directory.BlockedWords
       Directory.Captcha
       Directory.Events
+      Directory.Listing
       Directory.Options
       Directory.Search
       Directory.Service
       Directory.Store
+      Directory.Store.Migrate
+      Directory.Util
       Paths_simplex_chat
   if flag(client_postgres)
       other-modules:
           ChatTests.DBUtils.Postgres
+          PostgresSchemaDump
   else
       other-modules:
           ChatTests.DBUtils.SQLite
@@ -513,6 +588,7 @@ test-suite simplex-chat-test
           SchemaDump
           WebRTCTests
   hs-source-dirs:
+      bots/src
       tests
       apps/simplex-broadcast-bot/src
       apps/simplex-directory-service/src
@@ -549,12 +625,18 @@ test-suite simplex-chat-test
     , time ==1.12.*
     , unicode-transforms ==0.4.*
     , unliftio ==0.2.*
+    , uri-bytestring >=0.3.3.1 && <0.4
   default-language: Haskell2010
   if flag(client_postgres)
+    other-modules:
+        Directory.Store.Postgres.Migrations
     build-depends:
         postgresql-simple ==0.7.*
+        , raw-strings-qq ==1.1.*
     cpp-options: -DdbPostgres
   else
+    other-modules:
+        Directory.Store.SQLite.Migrations
     build-depends:
         sqlcipher-simple ==0.4.*
   if impl(ghc >= 9.6.2)

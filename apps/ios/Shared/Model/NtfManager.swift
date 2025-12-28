@@ -12,7 +12,6 @@ import UIKit
 import SimpleXChat
 
 let ntfActionAcceptContact = "NTF_ACT_ACCEPT_CONTACT"
-let ntfActionAcceptContactIncognito = "NTF_ACT_ACCEPT_CONTACT_INCOGNITO"
 let ntfActionAcceptCall = "NTF_ACT_ACCEPT_CALL"
 let ntfActionRejectCall = "NTF_ACT_REJECT_CALL"
 
@@ -59,13 +58,12 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
             logger.debug("NtfManager.processNotificationResponse changeActiveUser")
             changeActiveUser(userId, viewPwd: nil)
         }
-        if content.categoryIdentifier == ntfCategoryContactRequest && (action == ntfActionAcceptContact || action == ntfActionAcceptContactIncognito),
+        if content.categoryIdentifier == ntfCategoryContactRequest && action == ntfActionAcceptContact,
            let chatId = content.userInfo["chatId"] as? String {
-            let incognito = action == ntfActionAcceptContactIncognito
             if case let .contactRequest(contactRequest) = chatModel.getChat(chatId)?.chatInfo {
-                Task { await acceptContactRequest(incognito: incognito, contactRequest: contactRequest) }
+                Task { await acceptContactRequest(incognito: false, contactRequestId: contactRequest.apiId) }
             } else {
-                chatModel.ntfContactRequest = NTFContactRequest(incognito: incognito, chatId: chatId)
+                chatModel.ntfContactRequest = NTFContactRequest(chatId: chatId)
             }
         } else if let (chatId, ntfAction) = ntfCallAction(content, action) {
             if let invitation = chatModel.callInvitations.removeValue(forKey: chatId) {
@@ -160,10 +158,6 @@ class NtfManager: NSObject, UNUserNotificationCenterDelegate, ObservableObject {
                     UNNotificationAction(
                         identifier: ntfActionAcceptContact,
                         title: NSLocalizedString("Accept", comment: "accept contact request via notification"),
-                        options: .foreground
-                    ), UNNotificationAction(
-                        identifier: ntfActionAcceptContactIncognito,
-                        title: NSLocalizedString("Accept incognito", comment: "accept contact request via notification"),
                         options: .foreground
                     )
                 ],

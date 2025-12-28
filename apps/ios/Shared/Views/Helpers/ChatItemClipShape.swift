@@ -76,7 +76,7 @@ struct ChatTailPadding: ViewModifier {
     }
 }
 
-private let msgRectMaxRadius: Double = 18
+let msgRectMaxRadius: Double = 18
 private let msgBubbleMaxRadius: Double = msgRectMaxRadius * 1.2
 private let msgTailWidth: Double = 9
 private let msgTailMinHeight: Double = msgTailWidth * 1.254 // ~56deg

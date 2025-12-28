@@ -68,7 +68,7 @@ private fun VerifyCodeLayout(
       }
     }
 
-    QRCode(connectionCode, padding = PaddingValues(vertical = DEFAULT_PADDING_HALF))
+    QRCode(connectionCode, small = true, padding = PaddingValues(vertical = DEFAULT_PADDING_HALF))
 
     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
       Spacer(Modifier.weight(2f))

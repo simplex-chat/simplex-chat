@@ -209,7 +209,7 @@ fun ChatItemInfoView(chatRh: Long?, ci: ChatItem, ciInfo: ChatItemInfo, devTools
       SectionItemView(
         click = {
           withBGApi {
-            openChat(chatRh, forwardedFromItem.chatInfo)
+            openChat(secondaryChatsCtx = null, chatRh, forwardedFromItem.chatInfo)
             ModalManager.end.closeModals()
           }
         },

@@ -29,6 +29,7 @@ import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.*
+import chat.simplex.common.views.chat.item.CIFileViewScope
 import chat.simplex.common.views.chat.topPaddingToContent
 import chat.simplex.common.views.chatlist.*
 import chat.simplex.common.views.contacts.*
@@ -40,6 +41,12 @@ import kotlinx.coroutines.flow.filter
 
 @Composable
 fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
+  DisposableEffect(Unit) {
+    onDispose {
+      connectProgressManager.cancelConnectProgress()
+    }
+  }
+
   val oneHandUI = remember { appPrefs.oneHandUI.state }
 
   Box {
@@ -73,7 +80,7 @@ fun ModalData.NewChatSheet(rh: RemoteHostInfo?, close: () -> Unit) {
 }
 
 enum class ContactType {
-  CARD, REQUEST, RECENT, CHAT_DELETED, UNLISTED
+  CARD, CONTACT_WITH_REQUEST, REQUEST, RECENT, CHAT_DELETED, UNLISTED
 }
 
 fun chatContactType(chat: Chat): ContactType {
@@ -81,9 +88,9 @@ fun chatContactType(chat: Chat): ContactType {
     is ChatInfo.ContactRequest -> ContactType.REQUEST
     is ChatInfo.Direct -> {
       val contact = cInfo.contact
-
       when {
-        contact.activeConn == null && contact.profile.contactLink != null && contact.active -> ContactType.CARD
+        contact.nextAcceptContactRequest -> ContactType.CONTACT_WITH_REQUEST
+        contact.isContactCard -> ContactType.CARD
         contact.chatDeleted -> ContactType.CHAT_DELETED
         contact.contactStatus == ContactStatus.Active -> ContactType.RECENT
         else -> ContactType.UNLISTED
@@ -127,7 +134,7 @@ private fun ModalData.NewChatSheetLayout(
   val searchShowingSimplexLink = remember { mutableStateOf(false) }
   val searchChatFilteredBySimplexLink = remember { mutableStateOf<String?>(null) }
   val showUnreadAndFavorites = remember { ChatController.appPrefs.showUnreadAndFavorites.state }.value
-  val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.RECENT, ContactType.REQUEST) }
+  val baseContactTypes = remember { listOf(ContactType.CARD, ContactType.CONTACT_WITH_REQUEST, ContactType.REQUEST, ContactType.RECENT) }
   val contactTypes by remember(searchText.value.text.isEmpty()) {
     derivedStateOf { contactTypesSearchTargets(baseContactTypes, searchText.value.text.isEmpty()) }
   }
@@ -472,6 +479,13 @@ private fun ContactsSearchBar(
     ) {
       searchText.value = searchText.value.copy(it)
     }
+
+    if (connectProgressManager.showConnectProgress != null) {
+      Box(Modifier.padding(end = DEFAULT_PADDING_HALF)) {
+        CIFileViewScope.progressIndicator(sizeMultiplier = 0.75f)
+      }
+    }
+
     val hasText = remember { derivedStateOf { searchText.value.text.isNotEmpty() } }
     if (hasText.value) {
       val hideSearchOnBack: () -> Unit = { searchText.value = TextFieldValue() }
@@ -505,10 +519,8 @@ private fun ContactsSearchBar(
             // if SimpleX link is pasted, show connection dialogue
             hideKeyboard(view)
             if (link.format is Format.SimplexLink) {
-              val linkText =
-                link.simplexLinkText(link.format.linkType, link.format.smpHosts)
-              searchText.value =
-                searchText.value.copy(linkText, selection = TextRange.Zero)
+              val linkText = link.format.simplexLinkText
+              searchText.value = searchText.value.copy(linkText, selection = TextRange.Zero)
             }
             searchShowingSimplexLink.value = true
             searchChatFilteredBySimplexLink.value = null
@@ -522,8 +534,11 @@ private fun ContactsSearchBar(
             if (it.isNotEmpty()) {
               // if some other text is pasted, enter search mode
               focusRequester.requestFocus()
-            } else if (listState.layoutInfo.totalItemsCount > 0) {
-              listState.scrollToItem(0)
+            } else {
+              connectProgressManager.cancelConnectProgress()
+              if (listState.layoutInfo.totalItemsCount > 0) {
+                listState.scrollToItem(0)
+              }
             }
             searchShowingSimplexLink.value = false
             searchChatFilteredBySimplexLink.value = null
@@ -557,7 +572,6 @@ private fun connect(link: String, searchChatFilteredBySimplexLink: MutableState<
     planAndConnect(
       chatModel.remoteHostId(),
       link,
-      incognito = null,
       filterKnownContact = { searchChatFilteredBySimplexLink.value = it.id },
       close = close,
       cleanup = cleanup,

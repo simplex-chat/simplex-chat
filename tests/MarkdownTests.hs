@@ -8,9 +8,13 @@ module MarkdownTests where
 import Data.List.NonEmpty (NonEmpty)
 import Data.Text (Text)
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Simplex.Chat.Markdown
+import Simplex.Messaging.Encoding.String
+import Simplex.Messaging.Util ((<$$>))
 import System.Console.ANSI.Types
 import Test.Hspec
+import qualified URI.ByteString as U
 
 markdownTests :: Spec
 markdownTests = do
@@ -18,10 +22,13 @@ markdownTests = do
   secretText
   textColor
   textWithUri
+  textWithHyperlink
   textWithEmail
   textWithPhone
   textWithMentions
+  textWithCommands
   multilineMarkdownList
+  testSanitizeUri
 
 infixr 1 ==>, <==, <==>, ==>>, <<==, <<==>>
 
@@ -169,7 +176,12 @@ uri :: Text -> Markdown
 uri = Markdown $ Just Uri
 
 simplexLink :: SimplexLinkType -> Text -> NonEmpty Text -> Text -> Markdown
-simplexLink linkType simplexUri smpHosts = Markdown $ Just SimplexLink {linkType, simplexUri, smpHosts}
+simplexLink linkType uriText smpHosts t = Markdown (simplexLinkFormat linkType uriText smpHosts Nothing) t
+
+simplexLinkFormat :: SimplexLinkType -> Text -> NonEmpty Text -> Maybe Text -> Maybe Format
+simplexLinkFormat linkType uriText smpHosts showText = case strDecode $ encodeUtf8 uriText of
+  Right simplexUri -> Just SimplexLink {linkType, simplexUri, smpHosts, showText}
+  Left e -> error e
 
 textWithUri :: Spec
 textWithUri = describe "text with Uri" do
@@ -185,10 +197,24 @@ textWithUri = describe "text with Uri" do
     "https://github.com/simplex-chat/ - SimpleX on GitHub" <==> uri "https://github.com/simplex-chat/" <> " - SimpleX on GitHub"
     -- "SimpleX on GitHub (https://github.com/simplex-chat/)" <==> "SimpleX on GitHub (" <> uri "https://github.com/simplex-chat/" <> ")"
     "https://en.m.wikipedia.org/wiki/Servo_(software)" <==> uri "https://en.m.wikipedia.org/wiki/Servo_(software)"
+    "example.com" <==> uri "example.com"
+    "example.com." <==> uri "example.com" <> "."
+    "example.com..." <==> uri "example.com" <> "..."
+    "www.example.com" <==> uri "www.example.com"
+    "example.academy" <==> uri "example.academy"
+    "this is example.com" <==> "this is " <> uri "example.com"
+    "x.com" <==> uri "x.com"
   it "ignored as markdown" do
     "_https://simplex.chat" <==> "_https://simplex.chat"
     "this is _https://simplex.chat" <==> "this is _https://simplex.chat"
     "this is https://" <==> "this is https://"
+    "example.c" <==> "example.c"
+    "www.www.example.com" <==> "www.www.example.com"
+    "www.example1.com" <==> "www.example1.com"
+    "www." <==> "www."
+    ".com" <==> ".com"
+    "example.academytoolong" <==> "example.academytoolong"
+    "simplex:/example" <==> "simplex:/example"
   it "SimpleX links" do
     let inv = "/invitation#/?v=1&smp=smp%3A%2F%2F1234-w%3D%3D%40smp.simplex.im%3A5223%2F3456-w%3D%3D%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAjiswwI3O_NlS8Fk3HJUW870EY2bAwmttMBsvRB9eV3o%253D&e2e=v%3D2%26x3dh%3DMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D%2CMEIwBQYDK2VvAzkAmKuSYeQ_m0SixPDS8Wq8VBaTS1cW-Lp0n0h4Diu-kUpR-qXx4SDJ32YGEFoGFGSbGPry5Ychr6U%3D"
     ("https://simplex.chat" <> inv) <==> simplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] ("https://simplex.chat" <> inv)
@@ -200,6 +226,27 @@ textWithUri = describe "text with Uri" do
     let gr = "/contact#/?v=2&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FWHV0YU1sYlU7NqiEHkHDB6gxO1ofTync%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAWbebOqVYuBXaiqHcXYjEHCpYi6VzDlu6CVaijDTmsQU%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion&data=%7B%22type%22%3A%22group%22%2C%22groupLinkId%22%3A%22mL-7Divb94GGmGmRBef5Dg%3D%3D%22%7D"
     ("https://simplex.chat" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("https://simplex.chat" <> gr)
     ("simplex:" <> gr) <==> simplexLink XLGroup ("simplex:" <> gr) ["smp4.simplex.im", "o5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion"] ("simplex:" <> gr)
+
+web :: Text -> Text -> Text -> Markdown
+web t u = Markdown $ Just HyperLink {showText = Just t, linkUri = u}
+
+textWithHyperlink :: Spec
+textWithHyperlink = describe "text with HyperLink without link text" do
+  let addr = "https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw"
+      addr' = "simplex:/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw?h=smp6.simplex.im"
+  it "correct markdown" do
+    "[click here](https://example.com)" <==> web "click here" "https://example.com" "[click here](https://example.com)"
+    "For details [click here](https://example.com)" <==> "For details " <> web "click here" "https://example.com" "[click here](https://example.com)"
+    "[example.com](https://example.com)" <==> web "example.com" "https://example.com" "[example.com](https://example.com)"
+    "[example.com/page](https://example.com/page)" <==> web "example.com/page" "https://example.com/page" "[example.com/page](https://example.com/page)"
+    ("[Connect to me](" <> addr <> ")") <==> Markdown (simplexLinkFormat XLContact addr' ["smp6.simplex.im"] (Just "Connect to me")) ("[Connect to me](" <> addr <> ")")
+  it "potentially spoofed link" do
+    "[https://example.com](https://another.com)" <==> "[https://example.com](https://another.com)"
+    "[example.com/page](https://another.com/page)" <==> "[example.com/page](https://another.com/page)"
+    ("[Connect.to.me](" <> addr <> ")") <==> Markdown Nothing ("[Connect.to.me](" <> addr <> ")")
+  it "ignored as markdown" do
+    "[click here](example.com)" <==> "[click here](example.com)"
+    "[click here](https://example.com )" <==> "[click here](https://example.com )"
 
 email :: Text -> Markdown
 email = Markdown $ Just Email
@@ -213,12 +260,14 @@ textWithEmail = describe "text with Email" do
     "test chat.chat+123@simplex.chat" <==> "test " <> email "chat.chat+123@simplex.chat"
     "chat@simplex.chat test" <==> email "chat@simplex.chat" <> " test"
     "test1 chat@simplex.chat test2" <==> "test1 " <> email "chat@simplex.chat" <> " test2"
-  it "ignored as markdown" do
+    "test chat@simplex.chat." <==> "test " <> email "chat@simplex.chat" <> "."
+    "test chat@simplex.chat..." <==> "test " <> email "chat@simplex.chat" <> "..."
+  it "ignored as email markdown" do
     "chat @simplex.chat" <==> "chat " <> mention "simplex.chat" "@simplex.chat"
     "this is chat @simplex.chat" <==> "this is chat " <> mention "simplex.chat" "@simplex.chat"
-    "this is chat@ simplex.chat" <==> "this is chat@ simplex.chat"
-    "this is chat @ simplex.chat" <==> "this is chat @ simplex.chat"
-    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ simplex.chat"
+    "this is chat@ simplex.chat" <==> "this is chat@ " <> uri "simplex.chat"
+    "this is chat @ simplex.chat" <==> "this is chat @ " <> uri "simplex.chat"
+    "*this* is chat @ simplex.chat" <==> bold "this" <> " is chat @ " <> uri "simplex.chat"
 
 phone :: Text -> Markdown
 phone = Markdown $ Just Phone
@@ -251,8 +300,13 @@ textWithMentions = describe "text with mentions" do
     "@alice" <==> mention "alice" "@alice"
     "hello @alice" <==> "hello " <> mention "alice" "@alice"
     "hello @alice !" <==> "hello " <> mention "alice" "@alice" <> " !"
+    "hello @alice!" <==> "hello " <> mention "alice" "@alice" <> "!"
+    "hello @alice..." <==> "hello " <> mention "alice" "@alice" <> "..."
+    "hello @alice@example.com" <==> "hello " <> mention "alice@example.com" "@alice@example.com"
+    "hello @'alice @ example.com'" <==> "hello " <> mention "alice @ example.com" "@'alice @ example.com'"
     "@'alice jones'" <==> mention "alice jones" "@'alice jones'"
     "hello @'alice jones'!" <==> "hello " <> mention "alice jones" "@'alice jones'" <> "!"
+    "hello @'a.j.'!" <==> "hello " <> mention "a.j." "@'a.j.'" <> "!"
   it "ignored as markdown" $ do
     "hello @'alice jones!" <==> "hello @'alice jones!"
     "hello @bob @'alice jones!" <==> "hello " <> mention "bob" "@bob" <> " @'alice jones!"
@@ -260,8 +314,35 @@ textWithMentions = describe "text with mentions" do
     "hello @bob @ alice!" <==> "hello " <> mention "bob" "@bob" <> " @ alice!"
     "hello @bob @" <==> "hello " <> mention "bob" "@bob" <> " @"
 
+command :: Text -> Text -> Markdown
+command = Markdown . Just . Command
+
+textWithCommands :: Spec
+textWithCommands = describe "text with commands" do
+  it "correct markdown" do
+    "/start" <==> command "start" "/start"
+    "send /help" <==> "send " <> command "help" "/help"
+    "send /help !" <==> "send " <> command "help" "/help" <> " !"
+    "send /help!" <==> "send " <> command "help" "/help" <> "!"
+    "send /help..." <==> "send " <> command "help" "/help" <> "..."
+    "send /'filter 1'" <==> "send " <> command "filter 1" "/'filter 1'"
+    "/'filter 1'" <==> command "filter 1" "/'filter 1'"
+    "/filter 1" <==> command "filter" "/filter" <> " 1" -- this is parsed as full command by parseMaybeMarkdownList
+    "send /'filter 1'." <==> "send " <> command "filter 1" "/'filter 1'" <> "."
+    "send /'filter 1.'!" <==> "send " <> command "filter 1." "/'filter 1.'" <> "!"
+  it "ignored as markdown" $ do
+    "send /'filter 1" <==> "send /'filter 1"
+    "send /help /'filter 1" <==> "send " <> command "help" "/help" <> " /'filter 1"
+    "send / help!" <==> "send / help!"
+    "send /help / filter" <==> "send " <> command "help" "/help" <> " / filter"
+    "send /help /" <==> "send " <> command "help" "/help" <> " /"
+    "send /he?lp" <==> "send /he?lp"
+
 uri' :: Text -> FormattedText
 uri' = FormattedText $ Just Uri
+
+command' :: Text -> Text -> FormattedText
+command' = FormattedText . Just . Command
 
 multilineMarkdownList :: Spec
 multilineMarkdownList = describe "multiline markdown" do
@@ -275,6 +356,40 @@ multilineMarkdownList = describe "multiline markdown" do
   it "multiline with simplex link" do
     ("https://simplex.chat" <> inv <> "\ntext")
       <<==>>
-        [ FormattedText (Just $ SimplexLink XLInvitation ("simplex:" <> inv) ["smp.simplex.im"]) ("https://simplex.chat" <> inv),
+        [ FormattedText (simplexLinkFormat XLInvitation ("simplex:" <> inv) ["smp.simplex.im"] Nothing) ("https://simplex.chat" <> inv),
           "\ntext"
         ]
+  it "command markdown" do
+    "/link 1" <<==>> [command' "link 1" "/link 1"]
+    " /link 1" <<==>> [command' "link 1" " /link 1"]
+
+testSanitizeUri :: Spec
+testSanitizeUri = describe "sanitizeUri" $ do
+  it "should allow the first parameter and whitelisted parameters on pages without IDs" $ do
+    "https://example.com/page?ref=123" `sanitized` Just "https://example.com/page"
+    "https://example.com/page?name" `sanitized` Nothing
+    "https://example.com/page?name=abc" `sanitized` Nothing
+    "https://example.com/page?name=abc&ref=123" `sanitized` Just "https://example.com/page?name=abc"
+    "https://example.com/page?search=query" `sanitized` Nothing
+    "https://example.com/page?q=query" `sanitized` Nothing
+    "https://example.com/page?ref=123&q=query" `sanitized` Just "https://example.com/page?q=query"
+    "https://youtube.com/watch?v=abc&t=123" `sanitized` Nothing
+    "https://www.youtube.com/watch?v=abc" `sanitized` Nothing
+    "https://www.youtube.com/watch?v=abc&t=123" `sanitized` Nothing
+    "https://www.youtube.com/watch?ref=456&v=abc&t=123" `sanitized` Just "https://www.youtube.com/watch?v=abc&t=123"
+  it "should only allow whitelisted parameters if path contains IDs" $ do
+    "https://youtu.be/a123?si=456" `sanitized` Just "https://youtu.be/a123"
+    "https://youtu.be/a123?t=456" `sanitized` Nothing
+    "https://youtu.be/a123?si=456&t=789" `sanitized` Just "https://youtu.be/a123?t=789"
+  it "should allow some parameters in safe mode, but sanitize in unsafe" $ do
+    "https://example.com/page/a123?source=abc" `eagerSanitized` Just "https://example.com/page/a123"
+    "https://example.com/page/a123?source=abc" `safeSanitized` Nothing -- source is in unsafe blacklist
+    "https://example.com/page/a123?name=abc" `eagerSanitized` Just "https://example.com/page/a123"
+    "https://example.com/page/a123?name=abc" `safeSanitized` Nothing -- name is not in a whitelist
+  where
+    s `eagerSanitized` res = sanitized_ False s res
+    s `safeSanitized` res = sanitized_ True s res
+    s `sanitized` res = do
+      s `eagerSanitized` res
+      s `safeSanitized` res
+    sanitized_ safe s res = (U.serializeURIRef' <$$> (sanitizeUri safe <$> parseUri s)) `shouldBe` Right res

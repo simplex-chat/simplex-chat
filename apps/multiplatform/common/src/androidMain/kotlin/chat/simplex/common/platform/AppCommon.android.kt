@@ -13,7 +13,6 @@ import java.lang.ref.WeakReference
 import java.util.*
 import java.util.concurrent.Semaphore
 import kotlin.concurrent.thread
-import kotlin.random.Random
 
 actual val appPlatform = AppPlatform.ANDROID
 

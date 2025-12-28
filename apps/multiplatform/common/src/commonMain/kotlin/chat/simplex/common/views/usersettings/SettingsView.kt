@@ -21,6 +21,7 @@ import dev.icerock.moko.resources.compose.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.*
+import chat.simplex.common.BuildConfigCommon
 import chat.simplex.common.model.*
 import chat.simplex.common.model.ChatController.appPrefs
 import chat.simplex.common.platform.*
@@ -127,7 +128,9 @@ fun SettingsLayout(
     SectionDividerSpaced()
 
     SectionView(stringResource(MR.strings.settings_section_title_support)) {
-      ContributeItem(uriHandler)
+      if (!BuildConfigCommon.ANDROID_BUNDLE) {
+        ContributeItem(uriHandler)
+      }
       RateAppItem(uriHandler)
       StarOnGithubItem(uriHandler)
     }

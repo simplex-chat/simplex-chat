@@ -804,7 +804,8 @@ fun SimpleXTheme(darkTheme: Boolean? = null, content: @Composable () -> Unit) {
         LocalAppColors provides rememberedAppColors,
         LocalAppWallpaper provides rememberedWallpaper,
         LocalDensity provides density,
-        content = content)
+        content = content
+      )
     }
   )
 }

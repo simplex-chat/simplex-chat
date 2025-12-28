@@ -38,6 +38,342 @@
   </description>
 
   <releases>
+    <release version="6.4.8" date="2025-12-11">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.8:</p>
+        <ul>
+          <li>fix stuck message reception and other events after passphrase change (e.g., during desktop app initial start)</li>
+        </ul>
+        <p>New in v6.4-6.4.7:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+          <li>better information about network errors.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.7" date="2025-11-03">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.7:</p>
+        <ul>
+          <li>fix exporting database larger than 4gb.</li>
+        </ul>
+        <p>New in v6.4-6.4.6:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+          <li>better information about network errors.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.6" date="2025-10-05">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.6:</p>
+        <ul>
+          <li>fixed opening SimpleX links from outside of the app.</li>
+        </ul>
+        <p>New in v6.4-6.4.5:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+          <li>better information about network errors.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.5" date="2025-09-08">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.5:</p>
+        <ul>
+          <li>fixes for chats with admins.</li>
+          <li>better information about network errors.</li>
+        </ul>
+        <p>New in v6.4-6.4.4:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.4" date="2025-08-28">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.4:</p>
+        <ul>
+          <li>reduced battery usage.</li>
+          <li>fixes.</li>
+        </ul>
+        <p>New in v6.4-6.4.3.1:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.3.1" date="2025-08-10">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.3.1:</p>
+        <ul>
+          <li>UI support for bot commands.</li>
+          <li>support markdown hyperlinks, such as [click here](https://example.com).</li>
+          <li>option to remove tracking parameters from the links.</li>
+        </ul>
+        <p>New in v6.4-6.4.2:</p>
+        <ul>
+          <li>new UX to connect.</li>
+          <li>review new group members.</li>
+          <li>chat with group admins.</li>
+          <li>new UI languages: Catalan, Indonesian, Romanian and Vietnamese.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.2" date="2025-08-02">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.2:</p>
+        <ul>
+          <li>manually accept member contact requests, with option to auto-accept.</li>
+          <li>ignore contact requests from blocked group members.</li>
+          <li>markdown (links etc.) in profile bio/group purpose.</li>
+          <li>Linux app builds for aarch64 CPUs</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.1" date="2025-07-29">
+      <url type="details">https://simplex.chat/blog/20250729-simplex-chat-v6-4-1-welcome-contacts-protect-groups-app-security.html</url>
+      <description>
+        <p>New in v6.4.1:</p>
+        <ul>
+          <li>welcome your contacts: set profile bio and welcome message.</li>
+          <li>enable disappearing messages by default for new contacts.</li>
+          <li>short SimpleX addresses and group links now include profile images and welcome messages.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.4.0" date="2025-07-16">
+      <url type="details">https://simplex.chat/blog/20250703-simplex-network-protocol-extension-for-securely-connecting-people.html</url>
+      <description>
+        <p>New in v6.4.0:</p>
+        <ul>
+          <li>Connect faster: message instantly once you tap Connect.</li>
+          <li>Review group members: chat with new members before they join.</li>
+          <li>Chat with admins: send your private feedback to group owners.</li>
+          <li>New group role: Moderator - can remove messages and block members.</li>
+          <li>Improved message delivery - less traffic on mobile networks.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.7" date="2025-07-01">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1-7:</p>
+        <ul>
+          <li>fix changing the user profile of the invitation link.</li>
+          <li>forward compatibility with short link data.</li>
+          <li>fixes</li>
+          <li>fixes mentions with trailing punctuation (e.g., hello @name!).</li>
+          <li>recognizes domain names as links (e.g., simplex.chat).</li>
+          <li>forward compatibility with "knocking" (a feature for group admins to review and to chat with the new members prior to admitting them to groups, it will be released in 6.4)</li>
+          <li>support for connecting via short connection links.</li>
+          <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.6" date="2025-06-14">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1-6:</p>
+        <ul>
+          <li>forward compatibility with short link data.</li>
+          <li>fixes</li>
+          <li>fixes mentions with trailing punctuation (e.g., hello @name!).</li>
+          <li>recognizes domain names as links (e.g., simplex.chat).</li>
+          <li>forward compatibility with "knocking" (a feature for group admins to review and to chat with the new members prior to admitting them to groups, it will be released in 6.4)</li>
+          <li>support for connecting via short connection links.</li>
+          <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.5" date="2025-06-09">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1-5:</p>
+        <ul>
+          <li>fixes</li>
+          <li>fixes mentions with trailing punctuation (e.g., hello @name!).</li>
+          <li>recognizes domain names as links (e.g., simplex.chat).</li>
+          <li>forward compatibility with "knocking" (a feature for group admins to review and to chat with the new members prior to admitting them to groups, it will be released in 6.4)</li>
+          <li>support for connecting via short connection links.</li>
+          <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.4" date="2025-05-12">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1-4:</p>
+        <ul>
+          <li>fixes mentions with trailing punctuation (e.g., hello @name!).</li>
+          <li>recognizes domain names as links (e.g., simplex.chat).</li>
+          <li>forward compatibility with "knocking" (a feature for group admins to review and to chat with the new members prior to admitting them to groups, it will be released in 6.4)</li>
+          <li>support for connecting via short connection links.</li>
+          <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.3" date="2025-04-24">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1-3:</p>
+        <ul>
+          <li>support for connecting via short connection links.</li>
+          <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.2" date="2025-04-13">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1-2:</p>
+        <ul>
+          <li>fix related to backward/forward compatibility of the app in some rare cases.</li>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
+    <release version="6.3.1" date="2025-03-31">
+      <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
+      <description>
+        <p>New in v6.3.1:</p>
+        <ul>
+          <li>scrolling/navigation improvements.</li>
+          <li>faster onboarding (conditions and operators are combined to one screen).</li>
+        </ul>
+        <p>New in v6.3.0:</p>
+        <ul>
+          <li>Mention members and get notified when mentioned.</li>
+          <li>Send private reports to moderators.</li>
+          <li>Delete, block and change role for multiple members at once</li>
+          <li>Faster sending messages and faster deletion.</li>
+          <li>Organize chats into lists to keep track of what's important.</li>
+          <li>Jump to found and forwarded messages.</li>
+          <li>Private media file names.</li>
+          <li>Message expiration in chats.</li>
+        </ul>
+      </description>
+    </release>
     <release version="6.3.0" date="2025-03-08">
       <url type="details">https://simplex.chat/blog/20250308-simplex-chat-v6-3-new-user-experience-safety-in-public-groups.html</url>
       <description>

@@ -41,7 +41,7 @@ struct ChatItemForwardingView: View {
         .alert(item: $alert) { $0.alert }
     }
 
-    @ViewBuilder private func forwardListView() -> some View {
+    private func forwardListView() -> some View {
         VStack(alignment: .leading) {
             if !chatsToForwardTo.isEmpty {
                 List {

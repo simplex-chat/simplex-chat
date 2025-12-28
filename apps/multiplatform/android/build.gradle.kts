@@ -5,17 +5,17 @@ plugins {
     id("org.jetbrains.compose")
     kotlin("android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "chat.simplex.app"
         namespace = "chat.simplex.app"
         minSdk = 26
-        //noinspection OldTargetApi
-        targetSdk = 34
+        targetSdk = 35
         // !!!
         // skip version code after release to F-Droid, as it uses two version codes
         versionCode = (extra["android.version_code"] as String).toInt()
@@ -93,6 +93,7 @@ android {
         "fi",
         "fr",
         "hu",
+        "in",
         "it",
         "iw",
         "ja",
@@ -100,10 +101,12 @@ android {
         "nl",
         "pl",
         "pt-rBR",
+        "ro",
         "ru",
         "th",
         "tr",
         "uk",
+        "vi",
         "zh-rCN"
     )
     ndkVersion = "23.1.7779620"
@@ -188,8 +191,11 @@ tasks {
                 outputDir = outputs.files.files.last()
             }
             exec {
-                workingDir("../../../scripts/android")
-                environment = mapOf("JAVA_HOME" to "$javaHome")
+                workingDir("../../scripts/android")
+                environment = mapOf(
+                  "JAVA_HOME" to "$javaHome",
+                  "PATH" to "${System.getenv("PATH")}:$javaHome/bin"
+                )
                 commandLine = listOf(
                     "./compress-and-sign-apk.sh",
                     "${rootProject.extra["compression.level"]}",

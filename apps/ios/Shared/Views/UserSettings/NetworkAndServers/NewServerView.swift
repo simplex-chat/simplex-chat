@@ -65,7 +65,7 @@ struct NewServerView: View {
                 useServerSection(valid)
                 if valid {
                     Section(header: Text("Add to another device").foregroundColor(theme.colors.secondary)) {
-                        MutableQRCode(uri: $serverToEdit.server)
+                        MutableQRCode(uri: $serverToEdit.server, small: true)
                             .listRowInsets(EdgeInsets(top: 12, leading: 12, bottom: 12, trailing: 12))
                     }
                 }

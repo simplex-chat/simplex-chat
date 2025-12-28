@@ -1,15 +1,17 @@
 ---
-title: SimpleX Directory Service
+title: SimpleX Directory
 revision: 18.08.2023
 ---
 
-# SimpleX Directory Service
+# SimpleX Directory
 
-You can use an experimental directory service to discover the groups created and registered by other users.
+You can use SimpleX Directory to discover the groups created and registered by other users.
 
 ## Searching for groups
 
-Connect to the directory service via [this address](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) and send the message containing the words you want to find in the group name or welcome message. You will receive up to 10 groups with the largest number of members in the response, together with the links to join these groups.
+SimpleX Directory is available at [simplex.chat/directory](https://simplex.chat/directory/) or via this [onion link](http://isdb4l77sjqoy2qq7ipum6x3at6hyn3jmxfx4zdhc72ufbmuq4ilwkqd.onion/directory/).
+
+You can also connect to SimpleX Directory via [this address](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) and send the message containing the words you want to find in the group name or welcome message. You will receive up to 10 groups with the largest number of members in the response, together with the links to join these groups.
 
 Please note that your search queries can be kept by the bot as the conversation history, but you can use incognito mode when connecting to the bot, to avoid correlation with any other communications. See [Privacy policy](../PRIVACY.md) for more details.
 
@@ -94,7 +96,7 @@ Group owners are expected to moderate the content in the groups, if members post
 
 We reserve the right to not accept the group listing in the directory or cancel its listing, and there may be cases when we can't provide an explanation. We will certainly try to avoid it by communicating with the group owners first.
 
-The combination of display name and full name has to be unique for the listed groups.
+The combination of display name and full name has to be unique for the listed groups. If a group uses the name or logo of SimpleX, SimpleX network or SimpleX Chat it must be consistent with [Permitted Uses or SimpleX trademark](./TRADEMARK.md).
 
 Once the group is listed in the directory, the bot will invite you to join the group of the group owners, where you can send any ideas or suggestions for how the groups functionality should evolve, and help steer both the product and the policies.
 

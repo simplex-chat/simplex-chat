@@ -78,6 +78,12 @@ struct AddGroupMembersViewCommon: View {
                     let count = selectedContacts.count
                     Section {
                         if creatingGroup {
+                            MemberAdmissionButton(
+                                groupInfo: $groupInfo,
+                                admission: groupInfo.groupProfile.memberAdmission_,
+                                currentAdmission: groupInfo.groupProfile.memberAdmission_,
+                                creatingGroup: true
+                            )
                             GroupPreferencesButton(
                                 groupInfo: $groupInfo,
                                 preferences: groupInfo.fullGroupPreferences,
@@ -145,9 +151,9 @@ struct AddGroupMembersViewCommon: View {
         return dummy
     }()
 
-    @ViewBuilder private func inviteMembersButton() -> some View {
+    private func inviteMembersButton() -> some View {
         let label: LocalizedStringKey = groupInfo.businessChat == nil ? "Invite to group" : "Invite to chat"
-        Button {
+        return Button {
             inviteMembers()
         } label: {
             HStack {

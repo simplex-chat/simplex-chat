@@ -44,10 +44,10 @@ import kotlin.text.substring
 actual fun PlatformTextField(
   composeState: MutableState<ComposeState>,
   sendMsgEnabled: Boolean,
+  disabledText: String?,
   sendMsgButtonDisabled: Boolean,
   textStyle: MutableState<TextStyle>,
   showDeleteTextButton: MutableState<Boolean>,
-  userIsObserver: Boolean,
   placeholder: String,
   showVoiceButton: Boolean,
   onMessageChange: (ComposeMessage) -> Unit,
@@ -203,16 +203,16 @@ actual fun PlatformTextField(
   )
   showDeleteTextButton.value = cs.message.text.split("\n").size >= 4 && !cs.inProgress
   if (composeState.value.preview is ComposePreview.VoicePreview) {
-    ComposeOverlay(MR.strings.voice_message_send_text, textStyle, padding)
-  } else if (userIsObserver) {
-    ComposeOverlay(MR.strings.you_are_observer, textStyle, padding)
+    ComposeOverlay(generalGetString(MR.strings.voice_message_send_text), textStyle, padding)
+  } else if (disabledText != null) {
+    ComposeOverlay(disabledText, textStyle, padding)
   }
 }
 
 @Composable
-private fun ComposeOverlay(textId: StringResource, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
+private fun ComposeOverlay(text: String, textStyle: MutableState<TextStyle>, padding: PaddingValues) {
   Text(
-    generalGetString(textId),
+    text,
     Modifier.padding(padding),
     color = MaterialTheme.colors.secondary,
     style = textStyle.value.copy(fontStyle = FontStyle.Italic)

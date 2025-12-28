@@ -18,6 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import Database.SQLite.Simple (Query (..))
+import Simplex.Chat.Options.SQLite (chatDBFunctions)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
@@ -26,7 +27,7 @@ import Simplex.Messaging.Agent.Store.DB (TrackQueries (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.Interface
 import qualified Simplex.Messaging.Agent.Store.SQLite.Migrations as Migrations
-import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
+import Simplex.Messaging.Agent.Store.Shared (Migration (..), MigrationConfig (..), MigrationConfirmation (..), MigrationsToRun (..), toDownMigration)
 import Simplex.Messaging.Util (ifM, tshow, whenM)
 import System.Directory (doesFileExist, removeFile)
 import System.Process (readCreateProcess, shell)
@@ -63,7 +64,7 @@ testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
   savedSchema <- ifM (doesFileExist appSchema) (readFile appSchema) (pure "")
   savedSchema `deepseq` pure ()
-  void $ createChatStore (DBOpts testDB "" False True TQOff) MCError
+  void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
   getSchema testDB appSchema `shouldReturn` savedSchema
   removeFile testDB
 
@@ -71,14 +72,14 @@ testVerifyLintFKeyIndexes :: IO ()
 testVerifyLintFKeyIndexes = withTmpFiles $ do
   savedLint <- ifM (doesFileExist appLint) (readFile appLint) (pure "")
   savedLint `deepseq` pure ()
-  void $ createChatStore (DBOpts testDB "" False True TQOff) MCError
+  void $ createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing)
   getLintFKeyIndexes testDB "tests/tmp/chat_lint.sql" `shouldReturn` savedLint
   removeFile testDB
 
 testSchemaMigrations :: IO ()
 testSchemaMigrations = withTmpFiles $ do
   let noDownMigrations = dropWhileEnd (\Migration {down} -> isJust down) Store.migrations
-  Right st <- createDBStore (DBOpts testDB "" False True TQOff) noDownMigrations MCError
+  Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) noDownMigrations (MigrationConfig MCError Nothing)
   mapM_ (testDownMigration st) $ drop (length noDownMigrations) Store.migrations
   closeDBStore st
   removeFile testDB
@@ -88,15 +89,15 @@ testSchemaMigrations = withTmpFiles $ do
       putStrLn $ "down migration " <> name m
       let downMigr = fromJust $ toDownMigration m
       schema <- getSchema testDB testSchema
-      Migrations.run st True $ MTRUp [m]
+      Migrations.run st Nothing True $ MTRUp [m]
       schema' <- getSchema testDB testSchema
       unless (name m `elem` skipComparisonForUpMigrations) $
         schema' `shouldNotBe` schema
-      Migrations.run st True $ MTRDown [downMigr]
+      Migrations.run st Nothing True $ MTRDown [downMigr]
       unless (name m `elem` skipComparisonForDownMigrations) $ do
         schema'' <- getSchema testDB testSchema
         schema'' `shouldBe` schema
-      Migrations.run st True $ MTRUp [m]
+      Migrations.run st Nothing True $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
 
@@ -127,7 +128,13 @@ skipComparisonForDownMigrations =
     -- indexes move down to the end of the file
     "20250130_indexes",
     -- index moves down to the end of the file
-    "20250227_member_acceptance"
+    "20250227_member_acceptance",
+    -- index moves down to the end of the file
+    "20250721_indexes",
+    -- indexes move down to the end of the file
+    "20250922_remove_unused_connections",
+    -- group_member_intros table moves down to the end of the file
+    "20251128_migrate_member_relations"
   ]
 
 getSchema :: FilePath -> FilePath -> IO String
@@ -148,7 +155,7 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
     updatePlans
       appChatQueryPlans
       chatQueryStats
-      (createChatStore (DBOpts testDB "" False True TQOff) MCError)
+      (createChatStore (DBOpts testDB chatDBFunctions "" False True TQOff) (MigrationConfig MCError Nothing))
       (\db -> do
         DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_conn_ids (conn_id BLOB)"
         DB.execute_ db "CREATE TABLE IF NOT EXISTS temp_delete_members (contact_profile_id INTEGER, member_profile_id INTEGER, local_display_name TEXT)"
@@ -157,7 +164,7 @@ saveQueryPlans = it "verify and overwrite query plans" $ \TestParams {chatQueryS
     updatePlans
       appAgentQueryPlans
       agentQueryStats
-      (createAgentStore (DBOpts testAgentDB "" False True TQOff) MCError)
+      (createAgentStore (DBOpts testAgentDB [] "" False True TQOff) (MigrationConfig MCError Nothing))
       (const $ pure ())
   chatSavedPlans' == chatSavedPlans `shouldBe` True
   agentSavedPlans' == agentSavedPlans `shouldBe` True

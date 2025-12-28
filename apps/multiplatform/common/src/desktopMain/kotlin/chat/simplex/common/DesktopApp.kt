@@ -14,8 +14,6 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.*
 import chat.simplex.common.model.*
-import chat.simplex.common.model.ChatModel.withChats
-import chat.simplex.common.model.ChatModel.withReportsChatsIfOpen
 import chat.simplex.common.platform.*
 import chat.simplex.common.ui.theme.DEFAULT_START_MODAL_WIDTH
 import chat.simplex.common.ui.theme.SimpleXTheme
@@ -58,12 +56,12 @@ fun showApp() {
             } else {
               // The last possible cause that can be closed
               withApi {
-                withChats {
+                withContext(Dispatchers.Main) {
                   chatModel.chatId.value = null
-                  chatItems.clearAndNotify()
+                  chatModel.chatsContext.chatItems.clearAndNotify()
                 }
-                withReportsChatsIfOpen {
-                  chatItems.clearAndNotify()
+                withContext(Dispatchers.Main) {
+                  chatModel.secondaryChatsContext.value = null
                 }
               }
             }
@@ -173,7 +171,7 @@ private fun ApplicationScope.AppWindow(closedByError: MutableState<Boolean>) {
         // Shows toast in insertion order with preferred delay per toast. New one will be shown once previous one expires
         LaunchedEffect(toast, toasts.size) {
           delay(toast.second)
-          simplexWindowState.toasts.removeFirst()
+          simplexWindowState.toasts.removeFirstOrNull()
         }
       }
       var windowFocused by remember { simplexWindowState.windowFocused }

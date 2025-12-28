@@ -66,8 +66,7 @@ testUserNotes ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
 
   alice ##> "/create user secret"
   alice <## "user profile: secret"
-  alice <## "use /p <display name> to change it"
-  alice <## "(the updated profile will be sent to all your contacts)"
+  alice <## "use /p <name> [<bio>] to change it"
 
   alice ##> "/tail"
 

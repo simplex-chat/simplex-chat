@@ -14,5 +14,5 @@
 "NSMicrophoneUsageDescription" = "SimpleX benötigt Zugriff auf das Mikrofon, um Audio- und Videoanrufe und die Aufnahme von Sprachnachrichten zu ermöglichen.";
 
 /* Privacy - Photo Library Additions Usage Description */
-"NSPhotoLibraryAddUsageDescription" = "SimpleX benötigt Zugriff auf das Fotoalbum, um selbst gemachte oder empfangene Bilder zu speichern";
+"NSPhotoLibraryAddUsageDescription" = "SimpleX benötigt Zugriff auf das Fotoalbum, um selbst gemachte oder heruntergeladene Bilder zu speichern";
 

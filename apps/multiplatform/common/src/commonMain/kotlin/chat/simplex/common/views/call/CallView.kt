@@ -10,13 +10,13 @@ import kotlinx.coroutines.*
 expect fun ActiveCallView()
 
 fun activeCallWaitDeliveryReceipt(scope: CoroutineScope) = scope.launch(Dispatchers.Default) {
-  for (apiResp in controller.messagesChannel) {
+  for (msg in controller.messagesChannel) {
     val call = chatModel.activeCall.value
     if (call == null || call.callState > CallState.InvitationSent) break
-    val msg = apiResp.resp
-    if (apiResp.remoteHostId == call.remoteHostId &&
-      msg is CR.ChatItemsStatusesUpdated &&
-      msg.chatItems.any {
+    if (msg.rhId == call.remoteHostId &&
+      msg is API.Result &&
+      msg.res is CR.ChatItemsStatusesUpdated &&
+      msg.res.chatItems.any {
         it.chatInfo.id == call.contact.id && it.chatItem.content is CIContent.SndCall && it.chatItem.meta.itemStatus is CIStatus.SndRcvd
       }
     ) {

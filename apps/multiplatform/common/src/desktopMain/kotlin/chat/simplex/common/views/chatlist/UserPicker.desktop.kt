@@ -63,7 +63,7 @@ actual fun UserPickerUsersSection(
                   ProfileImage(size = 55.dp, image = user.profile.image, color = iconColor)
 
                   if (u.unreadCount > 0 && !user.activeUser) {
-                    unreadBadge(u.unreadCount, user.showNtfs, true)
+                    userUnreadBadge(u.unreadCount, user.showNtfs, true)
                   }
                 }
 
