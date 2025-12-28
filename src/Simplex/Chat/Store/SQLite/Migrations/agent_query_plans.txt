@@ -421,6 +421,17 @@ SCAN ntf_tokens_to_delete
 USE TEMP B-TREE FOR DISTINCT
 
 Query: 
+        SELECT c.service_cert_hash, c.service_cert, c.service_priv_key, c.service_id
+        FROM client_services c
+        JOIN servers s ON c.host = s.host AND c.port = s.port
+        WHERE c.user_id = ? AND c.host = ? AND c.port = ?
+          AND COALESCE(c.server_key_hash, s.key_hash) = ?
+      
+Plan:
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH c USING INDEX idx_server_certs_user_id_host_port (user_id=? AND host=? AND port=?)
+
+Query: 
         SELECT c.service_id, c.service_queue_count, c.service_queue_ids_hash
         FROM client_services c
         JOIN servers s ON s.host = c.host AND s.port = c.port
@@ -522,6 +533,19 @@ Query:
     
 Plan:
 SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
+
+Query: 
+      INSERT INTO client_services
+        (user_id, host, port, server_key_hash, service_cert_hash, service_cert, service_priv_key)
+      VALUES (?,?,?,?,?,?,?)
+      ON CONFLICT (user_id, host, port, server_key_hash)
+      DO UPDATE SET
+        service_cert_hash = EXCLUDED.service_cert_hash,
+        service_cert = EXCLUDED.service_cert,
+        service_priv_key = EXCLUDED.service_priv_key,
+        service_id = NULL
+    
+Plan:
 
 Query: 
       INSERT INTO connections
@@ -656,6 +680,21 @@ Plan:
 SEARCH snd_file_chunk_replica_recipients USING INDEX idx_snd_file_chunk_replica_recipients_snd_file_chunk_replica_id (snd_file_chunk_replica_id=?)
 
 Query: 
+      UPDATE client_services
+      SET service_id = ?
+      FROM servers s
+      WHERE client_services.user_id = ?
+        AND client_services.host = ?
+        AND client_services.port = ?
+        AND s.host = client_services.host
+        AND s.port = client_services.port
+        AND COALESCE(client_services.server_key_hash, s.key_hash) = ?
+    
+Plan:
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=? AND host=? AND port=?)
+
+Query: 
       UPDATE conn_confirmations
       SET accepted = 1,
           own_conn_info = ?
@@ -743,6 +782,16 @@ Query:
     
 Plan:
 SEARCH rcv_queues USING PRIMARY KEY (host=? AND port=? AND rcv_id=?)
+
+Query: 
+      UPDATE rcv_queues
+      SET rcv_service_assoc = 0
+      FROM connections c
+      WHERE c.conn_id = rcv_queues.conn_id AND c.user_id = ?
+    
+Plan:
+SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 
 Query: 
       UPDATE rcv_queues
@@ -904,11 +953,27 @@ Query:
     FROM rcv_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
     JOIN connections c ON q.conn_id = c.conn_id
+   WHERE  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ? AND q.rcv_service_assoc = 0
+Plan:
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH q USING PRIMARY KEY (host=? AND port=?)
+SEARCH c USING PRIMARY KEY (conn_id=?)
+
+Query: 
+    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
+    FROM rcv_queues q
+    JOIN servers s ON q.host = s.host AND q.port = s.port
+    JOIN connections c ON q.conn_id = c.conn_id
    WHERE q.to_subscribe = 1 AND  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ?
 Plan:
 SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
+
+Query: DELETE FROM client_services WHERE user_id = ?
+Plan:
+SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=?)
 
 Query: DELETE FROM commands WHERE command_id = ?
 Plan:
@@ -1254,6 +1319,10 @@ SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
 Query: UPDATE rcv_queues SET rcv_primary = ?, replace_rcv_queue_id = ? WHERE conn_id = ? AND rcv_queue_id = ?
 Plan:
 SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=? AND rcv_queue_id=?)
+
+Query: UPDATE rcv_queues SET rcv_service_assoc = 1 WHERE rcv_id = ?
+Plan:
+SCAN rcv_queues USING COVERING INDEX idx_rcv_queues_client_notice_id
 
 Query: UPDATE rcv_queues SET to_subscribe = 0 WHERE to_subscribe = 1
 Plan:

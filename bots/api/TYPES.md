@@ -951,9 +951,6 @@ NoRcvFileUser:
 UserUnknown:
 - type: "userUnknown"
 
-ActiveUserExists:
-- type: "activeUserExists"
-
 UserExists:
 - type: "userExists"
 - contactName: string

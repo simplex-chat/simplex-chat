@@ -4868,6 +4868,14 @@ SEARCH user_contact_links USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
       UPDATE users
+      SET client_service = ?
+      WHERE user_id = ?
+    
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
+      UPDATE users
       SET view_pwd_hash = ?, view_pwd_salt = ?, show_ntfs = ?
       WHERE user_id = ?
     

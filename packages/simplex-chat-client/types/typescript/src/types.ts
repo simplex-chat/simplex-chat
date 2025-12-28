@@ -967,7 +967,6 @@ export type ChatErrorType =
   | ChatErrorType.NoSndFileUser
   | ChatErrorType.NoRcvFileUser
   | ChatErrorType.UserUnknown
-  | ChatErrorType.ActiveUserExists
   | ChatErrorType.UserExists
   | ChatErrorType.DifferentActiveUser
   | ChatErrorType.CantDeleteActiveUser
@@ -1043,7 +1042,6 @@ export namespace ChatErrorType {
     | "noSndFileUser"
     | "noRcvFileUser"
     | "userUnknown"
-    | "activeUserExists"
     | "userExists"
     | "differentActiveUser"
     | "cantDeleteActiveUser"
@@ -1137,10 +1135,6 @@ export namespace ChatErrorType {
 
   export interface UserUnknown extends Interface {
     type: "userUnknown"
-  }
-
-  export interface ActiveUserExists extends Interface {
-    type: "activeUserExists"
   }
 
   export interface UserExists extends Interface {
