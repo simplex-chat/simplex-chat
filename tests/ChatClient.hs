@@ -532,13 +532,13 @@ smpServerCfg :: ServerConfig STMMsgStore
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
-      tbqSize = 1,
+      tbqSize = 4,
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,
       queueIdBytes = 24,
       msgIdBytes = 6,
-      serverStoreCfg = SSCMemory Nothing,
+      serverStoreCfg = SSCMemory Nothing, -- $ Just StorePaths {storeLogFile = "tmp/smp-server-store.log", storeMsgsFile = Just "tmp/smp-server-messages.log"},
       storeNtfsFile = Nothing,
       allowNewQueues = True,
       -- server password is disabled as otherwise v1 tests fail

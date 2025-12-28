@@ -117,7 +117,7 @@ skip = before_ . pendingWith
 versionTestMatrix2 :: (HasCallStack => Bool -> Bool -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix2 runTest = do
   it "current" $ testChat2 aliceProfile bobProfile (runTest True True)
-  it "prev" $ testChatCfg2 testCfgVPrev aliceProfile bobProfile (runTest False True)
+  it "prev" $ runTestCfg2 testCfgVPrev testCfgVPrev (runTest False True)
   it "prev to curr" $ runTestCfg2 testCfg testCfgVPrev (runTest False True)
   it "curr to prev" $ runTestCfg2 testCfgVPrev testCfg (runTest False True)
   it "old (1st supported)" $ testChatCfg2 testCfgV1 aliceProfile bobProfile (runTest False False)
@@ -127,7 +127,7 @@ versionTestMatrix2 runTest = do
 versionTestMatrix3 :: (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> SpecWith TestParams
 versionTestMatrix3 runTest = do
   it "current" $ testChat3 aliceProfile bobProfile cathProfile runTest
-  it "prev" $ testChatCfg3 testCfgVPrev aliceProfile bobProfile cathProfile runTest
+  it "prev" $ runTestCfg3 testCfgVPrev testCfgVPrev testCfgVPrev runTest
   it "prev to curr" $ runTestCfg3 testCfg testCfgVPrev testCfgVPrev runTest
   it "curr+prev to curr" $ runTestCfg3 testCfg testCfg testCfgVPrev runTest
   it "curr to prev" $ runTestCfg3 testCfgVPrev testCfg testCfg runTest
