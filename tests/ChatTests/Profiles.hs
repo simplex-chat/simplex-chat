@@ -324,27 +324,27 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
       cLink <- withSmpServer' serverCfg' $ do
         alice ##> "/ad"
         getContactLink alice True
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (1 connections) on server localhost"
       bob ##> ("/_connect plan 1 " <> cLink)
       bob <## "contact address: ok to connect"
       _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> cLink)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <### ["subscribed service (1 connections) on server localhost: ok", "received messages from service on server localhost"]
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> cLink)
         bob <## "contact address: ok to connect"
         _sLinkData <- getTermLine bob
         bob ##> ("/_connect 1 " <> cLink)
         alice <#? bob
-      alice <## "disconnected 1 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (1 connections) on server localhost"
+      bob <## "disconnected service (1 connections) on server localhost"
       alice ##> "/ac bob"
       alice <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
-        bob <## "subscribed 1 connections on server localhost"
+        alice <### ["subscribed service (1 connections) on server localhost: ok", "received messages from service on server localhost"]
+        bob <### ["subscribed service (1 connections) on server localhost: ok", "received messages from service on server localhost"]
         alice ##> "/ac bob"
         alice <## "bob (Bob): accepting contact request, you can send messages to contact"
         concurrently_
@@ -354,8 +354,8 @@ testRetryConnectingViaContactLink ps = testChatCfgOpts2 cfg' opts' aliceProfile 
         bob <# "alice> message 1"
         bob #> "@alice message 2"
         alice <# "bob> message 2"
-      alice <## "disconnected 2 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (2 connections) on server localhost"
+      bob <## "disconnected service (1 connections) on server localhost"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],
@@ -3038,11 +3038,14 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
         bob ##> ("/_prepare contact 1 " <> fullLink <> " " <> shortLink <> " " <> contactSLinkData)
         bob <## "alice: contact is prepared"
         pure shortLink
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (1 connections) on server localhost"
       bob ##> "/_connect contact @2 text hello"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <###
+          [ "subscribed service (1 connections) on server localhost: ok",
+            "received messages from service on server localhost"
+          ]
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "invitation link: known prepared contact alice"
@@ -3056,8 +3059,8 @@ testShortLinkInvitationConnectRetry ps = testChatOpts2 opts' aliceProfile bobPro
           (bob <## "alice (Alice): contact is connected")
           (alice <## "bob (Bob): contact is connected")
         alice <##> bob
-      alice <## "disconnected 1 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (1 connections) on server localhost"
+      bob <## "disconnected service (1 connections) on server localhost"
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
@@ -3547,15 +3550,17 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
         bob <## "#team: group is prepared"
         pure shortLink
-      alice <## "disconnected 2 connections on server localhost"
-      bob <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (2 connections) on server localhost"
+      bob <## "disconnected service (1 connections) on server localhost"
       bob ##> "/_connect group #1"
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
         bob ##> ("/_connect plan 1 " <> shortLink)
         bob <## "group link: known prepared group #team"
-        alice <## "subscribed 2 connections on server localhost"
-        bob <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed service (2 connections) on server localhost: ok"
+        alice <## "received messages from service on server localhost"
+        bob <## "subscribed service (1 connections) on server localhost: ok"
+        bob <## "received messages from service on server localhost"
         threadDelay 250000
         bob ##> "/_connect group #1"
         bob <## "#team: connection started"
@@ -3574,8 +3579,8 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         bob <# "#team alice> 1"
         bob #> "#team 2"
         alice <# "#team bob> 2"
-      alice <## "disconnected 3 connections on server localhost"
-      bob <## "disconnected 2 connections on server localhost"
+      alice <## "disconnected service (3 connections) on server localhost"
+      bob <## "disconnected service (2 connections) on server localhost"
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
