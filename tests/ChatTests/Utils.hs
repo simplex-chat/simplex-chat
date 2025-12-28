@@ -78,6 +78,9 @@ eveProfile = mkProfile "eve" "Eve" Nothing
 businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
+serviceProfile :: Profile
+serviceProfile = mkProfile "service_user" "Service user" Nothing
+
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
 mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 

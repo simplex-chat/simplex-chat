@@ -112,6 +112,9 @@ chatProfileTests = do
     it "should connect via contact address" testShortLinkContactAddress
     it "should join group" testShortLinkJoinGroup
   describe "short links with attached data" shortLinkTests
+  describe "client services" $ do
+    it "should create user as a service, disable and re-enable" testClientService
+    it "should create user without a service, enable and disable" testSwitchClientService
 
 shortLinkTests :: SpecWith TestParams
 shortLinkTests = do
@@ -4187,3 +4190,81 @@ testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cath
       [alice, cath] *<# "#club bob> 2"
       cath #> "#club 3"
       [alice, bob] *<# "#club cath> 3"
+
+testClientService :: HasCallStack => TestParams -> IO ()
+testClientService ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      -- create user as service
+      withNewTestChat_ ps "service" True serviceProfile $ \service -> do
+        connectUsers alice service
+        alice <##> service
+        service ##> "/set client service 1:service_user off"
+        service <## "error: chat not stopped"
+      -- connect as service
+      withTestChat ps "service" $ \service -> do
+        subscribeClientService service 1
+        alice <##> service
+      setClientService ps "off"
+      -- connect without service
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 1 connections on server localhost"
+        alice <##> service
+        connectUsers bob service
+        bob <##> service
+      setClientService ps "on"
+      -- connect as service, queue associated
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 2 connections on server localhost"
+        alice <##> service
+        bob <##> service
+      -- connect as service
+      withTestChat ps "service" $ \service -> do
+        subscribeClientService service 2
+        alice <##> service
+        bob <##> service
+
+testSwitchClientService :: HasCallStack => TestParams -> IO ()
+testSwitchClientService ps =
+  withNewTestChat ps "user" aliceProfile $ \alice ->
+    withNewTestChat ps "bob" bobProfile $ \bob -> do
+      -- create user without service
+      withNewTestChat_ ps "service" False serviceProfile $ \service -> do
+        connectUsers alice service
+        alice <##> service
+      -- connect without service
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 1 connections on server localhost"
+        alice <##> service
+      setClientService ps "on"
+      -- connect as service, queue associated
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 1 connections on server localhost"
+        alice <##> service
+        connectUsers bob service
+        bob <##> service
+      -- connect as service
+      withTestChat ps "service" $ \service -> do
+        subscribeClientService service 2
+        alice <##> service
+        bob <##> service
+      -- connect without service
+      setClientService ps "off"
+      withTestChat ps "service" $ \service -> do
+        service <## "subscribed 2 connections on server localhost"
+        alice <##> service
+        bob <##> service
+
+setClientService :: TestParams -> String -> IO ()
+setClientService ps onOff =
+  withTestChatCfgOpts ps testCfg testOpts {maintenance = True} "service" $ \service -> do
+    service ##> ("/set client service 1:service_user " <> onOff)
+    service <## "ok"
+    
+subscribeClientService :: TestCC -> Int -> IO ()
+subscribeClientService service n =
+  service
+    <###
+      [ ConsoleString $ "subscribed service (" <> show n <> " connections) on server localhost: ok",
+        "received messages from service on server localhost"
+      ]

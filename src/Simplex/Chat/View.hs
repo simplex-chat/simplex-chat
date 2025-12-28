@@ -455,7 +455,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
     let Connection {connId} = entityConnection acEntity
      in ttyUser u [sShow connId <> ": END"]
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> tshow (length conns) <> " connections on server " <> showSMPServer srv]
-  CEvtServiceSubStatus srv event -> viewServiceSubEvent srv event
+  CEvtServiceSubStatus srv event -> [plain $ serviceSubEventStr srv event]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g _ -> ttyUser u $ viewUserJoinedGroup g
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
@@ -1472,15 +1472,15 @@ subStatusStr = \case
   SSRemoved e -> "removed: " <> T.pack e
   SSNoSub -> "no subscription"
 
-viewServiceSubEvent :: SMPServer -> ServiceSubEvent -> [StyledString]
-viewServiceSubEvent srv event = [plain $ eventStr <> " on server " <> showSMPServer srv]
+serviceSubEventStr :: SMPServer -> ServiceSubEvent -> Text
+serviceSubEventStr srv = \case
+  ServiceSubUp e_ n -> "subscribed service " <> conns n <> srvStr <> ": " <> fromMaybe "ok" e_
+  ServiceSubDown n -> "disconnected service " <> conns n <> srvStr
+  ServiceSubAll -> "received messages from service" <> srvStr -- "(" <> n <> "connections)"
+  ServiceSubEnd n -> "service subscription ended " <> conns n <> srvStr
   where
-    eventStr = case event of
-      ServiceSubUp e_ n -> "subscribed service " <> conns n <> ": " <> fromMaybe "ok" e_
-      ServiceSubDown n -> "disconnected service " <> conns n
-      ServiceSubAll -> "received messages from service" -- "(" <> n <> "connections)"
-      ServiceSubEnd n -> "service subscription ended " <> conns n
-    conns n = "(" <> tshow n <> "connections)"
+    conns n = "(" <> tshow n <> " connections)"
+    srvStr = " on server " <> showSMPServer srv
 
 viewUserServers :: UserOperatorServers -> [StyledString]
 viewUserServers (UserOperatorServers _ [] []) = []

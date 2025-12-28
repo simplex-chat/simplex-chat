@@ -25,6 +25,7 @@ import Data.Functor (($>))
 import Data.List (dropWhileEnd, find)
 import Data.Maybe (isNothing)
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime)
 import Network.Socket
 import Simplex.Chat
 import Simplex.Chat.Controller (ChatCommand (..), ChatConfig (..), ChatController (..), ChatDatabase (..), ChatLogLevel (..), defaultSimpleNetCfg)
@@ -282,11 +283,12 @@ prevVersion (Version v) = Version (v - 1)
 nextVersion :: Version v -> Version v
 nextVersion (Version v) = Version (v + 1)
 
-createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> IO TestCC
-createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix profile = do
+createTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> Bool -> Profile -> IO TestCC
+createTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix clientService profile = do
   Right db@ChatDatabase {chatStore, agentStore} <- createDatabase ps coreOptions dbPrefix
   insertUser agentStore
-  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecord db' (AgentUserId 1) profile True
+  ts <- getCurrentTime
+  Right user <- withTransaction chatStore $ \db' -> runExceptT $ createUserRecordAt db' (AgentUserId 1) clientService profile True ts
   startTestChat_ ps db cfg opts user
 
 startTestChat :: TestParams -> ChatConfig -> ChatOpts -> String -> IO TestCC
@@ -352,6 +354,9 @@ stopTestChat ps TestCC {chatController = cc@ChatController {smpAgent, chatStore}
 withNewTestChat :: HasCallStack => TestParams -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChat ps = withNewTestChatCfgOpts ps testCfg testOpts
 
+withNewTestChat_ :: HasCallStack => TestParams -> String -> Bool -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChat_ ps = withNewTestChatCfgOpts_ ps testCfg testOpts
+
 withNewTestChatV1 :: HasCallStack => TestParams -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
 withNewTestChatV1 ps = withNewTestChatCfg ps testCfgV1
 
@@ -362,9 +367,12 @@ withNewTestChatOpts :: HasCallStack => TestParams -> ChatOpts -> String -> Profi
 withNewTestChatOpts ps = withNewTestChatCfgOpts ps testCfg
 
 withNewTestChatCfgOpts :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
-withNewTestChatCfgOpts ps cfg opts dbPrefix profile runTest =
+withNewTestChatCfgOpts ps cfg opts dbPrefix = withNewTestChatCfgOpts_ ps cfg opts dbPrefix False
+
+withNewTestChatCfgOpts_ :: HasCallStack => TestParams -> ChatConfig -> ChatOpts -> String -> Bool -> Profile -> (HasCallStack => TestCC -> IO a) -> IO a
+withNewTestChatCfgOpts_ ps cfg opts dbPrefix clientService profile runTest =
   bracket
-    (createTestChat ps cfg opts dbPrefix profile)
+    (createTestChat ps cfg opts dbPrefix clientService profile)
     (stopTestChat ps)
     (\cc -> runTest cc >>= ((cc <// 100000) $>))
 
@@ -423,7 +431,7 @@ testChatN cfg opts ps test params =
   where
     getTestCCs :: [(Profile, Int)] -> IO [TestCC]
     getTestCCs [] = pure []
-    getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) p <*> getTestCCs envs'
+    getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) False p <*> getTestCCs envs'
     endTests tcs = do
       mapConcurrently_ (<// 100000) tcs
       mapConcurrently_ (stopTestChat params) tcs

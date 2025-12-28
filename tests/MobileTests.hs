@@ -22,6 +22,7 @@ import qualified Data.ByteString as B
 import qualified Data.ByteString.Char8 as BS
 import Data.ByteString.Internal (create)
 import qualified Data.ByteString.Lazy.Char8 as LB
+import Data.Time.Clock (getCurrentTime)
 import Data.Word (Word8, Word32)
 import Foreign.C
 import Foreign.Marshal.Alloc (mallocBytes)
@@ -147,7 +148,8 @@ testChatApi ps = do
       dbPrefix = tmp </> "1"
   Right ChatDatabase {chatStore, agentStore} <- createChatDatabase (ChatDbOpts dbPrefix "myKey" DB.TQOff True) (MigrationConfig MCYesUp Nothing)
   insertUser agentStore
-  Right _ <- withTransaction chatStore $ \db -> runExceptT $ createUserRecord db (AgentUserId 1) aliceProfile {preferences = Nothing} True
+  ts <- getCurrentTime
+  Right _ <- withTransaction chatStore $ \db -> runExceptT $ createUserRecordAt db (AgentUserId 1) False aliceProfile {preferences = Nothing} True ts
   Right cc <- chatMigrateInit dbPrefix "myKey" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "" "yesUp"
   Left (DBMErrorNotADatabase _) <- chatMigrateInit dbPrefix "anotherKey" "yesUp"

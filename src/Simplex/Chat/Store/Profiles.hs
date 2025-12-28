@@ -20,7 +20,6 @@ module Simplex.Chat.Store.Profiles
     UserMsgReceiptSettings (..),
     UserContactLink (..),
     GroupLinkInfo (..),
-    createUserRecord,
     createUserRecordAt,
     getUsersInfo,
     getUsers,
@@ -125,9 +124,6 @@ import Database.PostgreSQL.Simple.SqlQQ (sql)
 import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
-
-createUserRecord :: DB.Connection -> AgentUserId -> Profile -> Bool -> ExceptT StoreError IO User
-createUserRecord db auId p activeUser = createUserRecordAt db auId False p activeUser =<< liftIO getCurrentTime
 
 createUserRecordAt :: DB.Connection -> AgentUserId -> Bool -> Profile -> Bool -> UTCTime -> ExceptT StoreError IO User
 createUserRecordAt db (AgentUserId auId) clientService Profile {displayName, fullName, shortDescr, image, peerType, preferences = userPreferences} activeUser currentTs =
