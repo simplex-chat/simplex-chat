@@ -247,14 +247,15 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
       inv <- withSmpServer' serverCfg' $ do
         alice ##> "/_connect 1"
         getInvitation alice
-      alice <## "disconnected 1 connections on server localhost"
+      alice <## "disconnected service (1 connections) on server localhost"
       bob ##> ("/_connect plan 1 " <> inv)
       bob <## "invitation link: ok to connect"
       _sLinkData <- getTermLine bob
       bob ##> ("/_connect 1 " <> inv)
       bob <##. "smp agent error: BROKER"
       withSmpServer' serverCfg' $ do
-        alice <## "subscribed 1 connections on server localhost"
+        alice <## "subscribed service (1 connections) on server localhost: ok"
+        alice <## "received messages from service on server localhost"
         threadDelay 250000
         bob ##> ("/_connect plan 1 " <> inv)
         bob <## "invitation link: ok to connect"
@@ -268,8 +269,8 @@ testRetryConnecting ps = testChatCfgOpts2 cfg' opts' aliceProfile bobProfile tes
         bob <# "alice> message 1"
         bob #> "@alice message 2"
         alice <# "bob> message 2"
-      bob <## "disconnected 1 connections on server localhost"
-      alice <## "disconnected 1 connections on server localhost"
+      bob <## "disconnected service (1 connections) on server localhost"
+      alice <## "disconnected service (1 connections) on server localhost"
     serverCfg' =
       smpServerCfg
         { transports = [("7003", transport @TLS, False)],

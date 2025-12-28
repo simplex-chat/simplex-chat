@@ -429,8 +429,8 @@ testChatN :: HasCallStack => ChatConfig -> ChatOpts -> [Profile] -> (HasCallStac
 testChatN cfg opts ps test params =
   bracket (getTestCCs $ zip ps [1 ..]) endTests test
   where
-    useClientServices = False
-    -- useClientServices = True
+    -- useClientServices = False
+    useClientServices = True
     getTestCCs :: [(Profile, Int)] -> IO [TestCC]
     getTestCCs [] = pure []
     getTestCCs ((p, db) : envs') = (:) <$> createTestChat params cfg opts (show db) useClientServices p <*> getTestCCs envs'

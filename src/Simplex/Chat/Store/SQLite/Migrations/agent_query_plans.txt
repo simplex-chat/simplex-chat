@@ -528,6 +528,21 @@ Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
+      DELETE FROM client_services
+      WHERE user_id = ? AND host = ? AND port = ?
+        AND EXISTS (
+          SELECT 1 FROM servers s
+          WHERE s.host = client_services.host
+            AND s.port = client_services.port
+            AND COALESCE(client_services.server_key_hash, s.key_hash) = ?
+        );
+    
+Plan:
+SEARCH client_services USING COVERING INDEX idx_server_certs_user_id_host_port (user_id=? AND host=? AND port=?)
+CORRELATED SCALAR SUBQUERY 1
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+
+Query: 
       DELETE FROM conn_confirmations
       WHERE conn_id = ?
     
