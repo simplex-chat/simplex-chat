@@ -1,13 +1,14 @@
 {
   "targets": [
     {
-      "target_name": "addon",
+      "target_name": "simplex-shim",
       "sources": [ "cpp/simplex.cc" ],
       "libraries": [
-        "-Wl,-rpath,libs",
-        "-L<(module_root_dir)/build/Release/",
         "-L<(module_root_dir)/libs",
         "-lsimplex"
+      ],
+      "ldflags": [
+        "-Wl,-rpath,'$$ORIGIN'/../../libs"
       ]
     }
   ]
