@@ -85,3 +85,4 @@ apps/multiplatform/.kotlin/sessions
 packages/simplex-chat-nodejs/build
 packages/simplex-chat-nodejs/.vscode
 packages/simplex-chat-nodejs/libs
+packages/simplex-chat-nodejs/node_modules
