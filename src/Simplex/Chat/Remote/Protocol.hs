@@ -108,8 +108,7 @@ mkRemoteHostClient :: HTTP2Client -> HostSessKeys -> SessionCode -> FilePath -> 
 mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {encoding, deviceName, encryptFiles, compression} = do
   let HostSessKeys {chainKeys, idPrivKey, sessPrivKey} = sessionKeys
       signatures = RSSign {idPrivKey, sessPrivKey}
-  useCompression <- asks $ remoteCompression . config
-  encryption <- liftIO $ mkRemoteCrypto sessionCode chainKeys signatures $ useCompression && isTrue compression
+  encryption <- mkRemoteCrypto sessionCode chainKeys signatures $ isTrue compression
   pure
     RemoteHostClient
       { hostEncoding = encoding,
@@ -122,17 +121,17 @@ mkRemoteHostClient httpClient sessionKeys sessionCode storePath HostAppInfo {enc
 
 mkCtrlRemoteCrypto :: CtrlSessKeys -> SessionCode -> Maybe CtrlAppInfo -> CM RemoteCrypto
 mkCtrlRemoteCrypto CtrlSessKeys {chainKeys, idPubKey, sessPubKey} sessionCode ctrlAppInfo_ = do
-  useCompression <- asks $ remoteCompression . config
   let signatures = RSVerify {idPubKey, sessPubKey}
-      compression' = useCompression && maybe False (\CtrlAppInfo {compression} -> isTrue compression) ctrlAppInfo_
-  liftIO $ mkRemoteCrypto sessionCode chainKeys signatures compression'
+      peerCompression = maybe False (\CtrlAppInfo {compression} -> isTrue compression) ctrlAppInfo_
+  mkRemoteCrypto sessionCode chainKeys signatures peerCompression
 
-mkRemoteCrypto :: SessionCode -> TSbChainKeys -> RemoteSignatures -> Bool -> IO RemoteCrypto
-mkRemoteCrypto sessionCode chainKeys signatures compression = do
+mkRemoteCrypto :: SessionCode -> TSbChainKeys -> RemoteSignatures -> Bool -> CM RemoteCrypto
+mkRemoteCrypto sessionCode chainKeys signatures peerCompression = do
   sndCounter <- newTVarIO 0
   rcvCounter <- newTVarIO 0
   skippedKeys <- liftIO TM.emptyIO
-  pure RemoteCrypto {sessionCode, sndCounter, rcvCounter, chainKeys, skippedKeys, signatures, compression}
+  useCompression <- asks $ remoteCompression . config
+  pure RemoteCrypto {sessionCode, sndCounter, rcvCounter, chainKeys, skippedKeys, signatures, compression = peerCompression && useCompression}
 
 closeRemoteHostClient :: RemoteHostClient -> IO ()
 closeRemoteHostClient RemoteHostClient {httpClient} = closeHTTP2Client httpClient
