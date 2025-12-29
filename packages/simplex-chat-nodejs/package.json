@@ -1,8 +1,10 @@
 {
   "name": "simplexjs",
-  "version": "1.0.0",
+  "version": "6.5.3",
   "main": "src/index.js",
   "scripts": {
+    "preinstall": "node src/download-libs.js",
+    "install": "node-gyp configure; node-gyp rebuild --release",
     "install-tools": "npm install -g node-gyp",
     "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
     "rebuild": "node-gyp rebuild",
@@ -10,6 +12,9 @@
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "extract-zip": "^2.0.1"
   },
   "repository": {
     "type": "git",
