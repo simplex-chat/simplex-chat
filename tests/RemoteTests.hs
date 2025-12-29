@@ -32,10 +32,10 @@ import UnliftIO.Directory
 
 remoteTests :: SpecWith TestParams
 remoteTests = describe "Remote" $ do
-  xdescribe "No compression" $ mapSubject ((False, False),) runRemoteTests
-  xdescribe "Mobile offers compression" $ mapSubject ((True, False),) runRemoteTests
-  xdescribe "Desktop offers compression" $ mapSubject ((False, True),) runRemoteTests
-  describe "With compression" $ mapSubject ((True, True),) runRemoteTests
+  xdescribe "No compression" $ aroundWith (. ((False, False),)) runRemoteTests
+  xdescribe "Mobile offers compression" $ aroundWith (. ((True, False),)) runRemoteTests
+  xdescribe "Desktop offers compression" $ aroundWith (. ((False, True),)) runRemoteTests
+  describe "With compression" $ aroundWith (. ((True, True),)) runRemoteTests
 
 runRemoteTests :: SpecWith ((Bool, Bool), TestParams)
 runRemoteTests = do
