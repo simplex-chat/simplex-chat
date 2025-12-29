@@ -159,6 +159,7 @@ data ChatConfig = ChatConfig
     deliveryBucketSize :: Int,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
+    remoteCompression :: Bool,
     chatHooks :: ChatHooks
   }
 
@@ -1397,7 +1398,8 @@ data RemoteCtrlSession
   | RCSessionConnecting
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
         rcsClient :: RCCtrlClient,
-        rcsWaitSession :: Async ()
+        rcsWaitSession :: Async (),
+        ctrlAppInfo :: CtrlAppInfo
       }
   | RCSessionPendingConfirmation
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
@@ -1406,7 +1408,8 @@ data RemoteCtrlSession
         tls :: TLS 'TClient,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
-        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
+        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing)),
+        ctrlAppInfo :: CtrlAppInfo
       }
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
@@ -1414,7 +1417,8 @@ data RemoteCtrlSession
         tls :: TLS 'TClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
-        remoteOutputQ :: TBQueue (Either ChatError ChatEvent)
+        remoteOutputQ :: TBQueue (Either ChatError ChatEvent),
+        ctrlAppInfo :: CtrlAppInfo
       }
 
 data RemoteCtrlSessionState

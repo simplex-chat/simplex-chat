@@ -165,7 +165,8 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
   where
     mkCtrlAppInfo = do
       deviceName <- chatReadVar localDeviceName
-      pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName}
+      useCompression <- asks $ remoteCompression . config
+      pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName, compression = BoolDef useCompression}
     parseHostAppInfo :: RCHostHello -> ExceptT RemoteHostError IO HostAppInfo
     parseHostAppInfo RCHostHello {app = hostAppInfo} = do
       hostInfo@HostAppInfo {appVersion, encoding} <-
@@ -459,7 +460,7 @@ startRemoteCtrlSession = do
 
 connectRemoteCtrl :: RCVerifiedInvitation -> SessionSeq -> CM (Maybe RemoteCtrlInfo, CtrlAppInfo)
 connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) sseq = handleCtrlError sseq RCSRConnectionFailed "connectRemoteCtrl" $ do
-  ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName} <- parseCtrlAppInfo app
+  ctrlInfo <- parseCtrlAppInfo app
   v <- checkAppVersion ctrlInfo
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   mapM_ (validateRemoteCtrl inv) rc_
@@ -469,23 +470,23 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
   cmdOk <- newEmptyTMVarIO
   rcsWaitSession <- async $ do
     atomically $ takeTMVar cmdOk
-    handleCtrlError sseq RCSRConnectionFailed "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlDeviceName rcsClient vars
+    handleCtrlError sseq RCSRConnectionFailed "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlInfo rcsClient vars
   updateRemoteCtrlSession sseq $ \case
-    RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession}
+    RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession, ctrlAppInfo = ctrlInfo}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
   pure ((`remoteCtrlInfo` Just RCSConnecting) <$> rc_, ctrlInfo)
   where
     validateRemoteCtrl RCInvitation {idkey} RemoteCtrl {ctrlPairing = RCCtrlPairing {idPubKey}} =
       unless (idkey == idPubKey) $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError $ PRERemoteControl RCEIdentity
-    waitForCtrlSession :: Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, TLS 'TClient, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> CM ()
-    waitForCtrlSession rc_ ctrlName rcsClient vars = do
+    waitForCtrlSession :: Maybe RemoteCtrl -> CtrlAppInfo -> RCCtrlClient -> RCStepTMVar (ByteString, TLS 'TClient, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> CM ()
+    waitForCtrlSession rc_ ctrlAppInfo@CtrlAppInfo {deviceName = ctrlName} rcsClient vars = do
       (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
       let sessionCode = verificationCode uniq
       updateRemoteCtrlSession sseq $ \case
         RCSessionConnecting {rcsWaitSession} ->
           let remoteCtrlId_ = remoteCtrlId' <$> rc_
-           in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
+           in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation, ctrlAppInfo}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
       toView CEvtRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
     checkAppVersion CtrlAppInfo {appVersionRange} =
@@ -495,7 +496,8 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
     getHostAppInfo appVersion = do
       hostDeviceName <- chatReadVar localDeviceName
       encryptFiles <- chatReadVar encryptLocalFiles
-      pure HostAppInfo {appVersion, deviceName = hostDeviceName, encoding = localEncoding, encryptFiles}
+      useCompression <- asks $ remoteCompression . config
+      pure HostAppInfo {appVersion, deviceName = hostDeviceName, encoding = localEncoding, encryptFiles, compression = BoolDef useCompression}
 
 parseCtrlAppInfo :: JT.Value -> CM CtrlAppInfo
 parseCtrlAppInfo ctrlAppInfo = do
@@ -625,12 +627,12 @@ verifyRemoteCtrlSession execCC sessCode' = do
     (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
     rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
     remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-    encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
+    encryption <- mkCtrlRemoteCrypto sessionKeys (tlsUniq tls) =<< getRemoteCtrlAppInfo sseq
     cc <- ask
     http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> handleRemoteCommand execCC encryption remoteOutputQ req `runReaderT` cc
     void . forkIO $ monitor sseq http2Server
     updateRemoteCtrlSession sseq $ \case
-      RCSessionPendingConfirmation {} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ}
+      RCSessionPendingConfirmation {ctrlAppInfo} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ, ctrlAppInfo}
       _ -> Left $ ChatErrorRemoteCtrl RCEBadState
     pure $ remoteCtrlInfo rc $ Just RCSConnected {sessionCode = tlsSessionCode tls}
   where
@@ -716,6 +718,18 @@ updateRemoteCtrlSession sseq state = do
             Left ce -> pure $ Left ce
             Right st' -> Right () <$ writeTVar session (Just (sseq, st'))
   liftEither r
+
+getRemoteCtrlAppInfo :: SessionSeq -> CM (Maybe CtrlAppInfo)
+getRemoteCtrlAppInfo sseq = chatReadVar remoteCtrlSession $>>= pure . appInfo
+  where
+    appInfo (currSseq, sess)
+      | sseq == currSseq = case sess of
+          RCSessionStarting -> Nothing
+          RCSessionSearching {} -> Nothing
+          RCSessionConnecting {ctrlAppInfo} -> Just ctrlAppInfo
+          RCSessionPendingConfirmation {ctrlAppInfo} -> Just ctrlAppInfo
+          RCSessionConnected {ctrlAppInfo} -> Just ctrlAppInfo
+      | otherwise = Nothing
 
 utf8String :: [Char] -> ByteString
 utf8String = encodeUtf8 . T.pack
