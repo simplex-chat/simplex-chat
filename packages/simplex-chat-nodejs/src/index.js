@@ -1,4 +1,4 @@
-const addon = require('../build/Release/addon');
+const addon = require('../build/Release/simplex-shum');
 const fs = require('fs');
 
 const ctrlAndRes = addon.chat_migrate_init("db", "a", "yesUp")
