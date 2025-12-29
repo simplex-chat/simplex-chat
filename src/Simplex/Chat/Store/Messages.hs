@@ -335,24 +335,24 @@ updateSndMsgDeliveryStatus db connId agentMsgId sndMsgDeliveryStatus = do
     |]
     (sndMsgDeliveryStatus, currentTs, connId, agentMsgId)
 
-createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> Maybe Int64 -> IO ()
-createPendingGroupMessage db groupMemberId messageId introId_ = do
+createPendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
+createPendingGroupMessage db groupMemberId messageId = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       INSERT INTO pending_group_messages
-        (group_member_id, message_id, group_member_intro_id, created_at, updated_at) VALUES (?,?,?,?,?)
+        (group_member_id, message_id, created_at, updated_at) VALUES (?,?,?,?)
     |]
-    (groupMemberId, messageId, introId_, currentTs, currentTs)
+    (groupMemberId, messageId, currentTs, currentTs)
 
-getPendingGroupMessages :: DB.Connection -> Int64 -> IO [(SndMessage, ACMEventTag, Maybe Int64)]
+getPendingGroupMessages :: DB.Connection -> Int64 -> IO [SndMessage]
 getPendingGroupMessages db groupMemberId =
   map pendingGroupMessage
     <$> DB.query
       db
       [sql|
-        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.chat_msg_event, pgm.group_member_intro_id
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
@@ -360,8 +360,8 @@ getPendingGroupMessages db groupMemberId =
       |]
       (Only groupMemberId)
   where
-    pendingGroupMessage (msgId, sharedMsgId, msgBody, cmEventTag, introId_) =
-      (SndMessage {msgId, sharedMsgId, msgBody}, cmEventTag, introId_)
+    pendingGroupMessage (msgId, sharedMsgId, msgBody) =
+      SndMessage {msgId, sharedMsgId, msgBody}
 
 deletePendingGroupMessage :: DB.Connection -> Int64 -> MessageId -> IO ()
 deletePendingGroupMessage db groupMemberId messageId =
@@ -1645,7 +1645,7 @@ getGroupUnreadCount_ :: DB.Connection -> User -> GroupInfo -> Maybe GroupChatSco
 getGroupUnreadCount_ db user g scopeInfo_ contentFilter =
   head <$> queryUnreadGroupItems db user g scopeInfo_ contentFilter baseQuery ""
   where
-    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL "
+    baseQuery = "SELECT COUNT(1), COALESCE(SUM(user_mention), 0) FROM chat_items WHERE user_id = ? AND group_id = ? "
 
 getGroupReportsCount_ :: DB.Connection -> User -> GroupInfo -> Bool -> IO Int
 getGroupReportsCount_ db User {userId} GroupInfo {groupId} archived =

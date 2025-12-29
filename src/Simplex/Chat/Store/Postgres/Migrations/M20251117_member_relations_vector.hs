@@ -7,7 +7,7 @@ import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
 -- This migration creates custom aggregate function migrate_relations_vector(idx, direction, intro_status).
--- Used in live migration and stage 2 migration (M20251128_member_relations_vector_stage_2).
+-- Used in live migration and stage 2 migration (M20251128_migrate_member_relations).
 --
 -- Vector byte encoding: 4 reserved | 1 direction | 3 status
 -- Direction: 0 = IDSubjectIntroduced, 1 = IDReferencedIntroduced

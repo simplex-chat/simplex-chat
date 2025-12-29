@@ -36,6 +36,7 @@ import qualified Data.Aeson.TH as JQ
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Base64 as B64
 import Data.ByteString.Char8 (ByteString, pack, unpack)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as LB
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -1411,7 +1412,7 @@ instance ToField AgentConnId where toField (AgentConnId m) = toField $ Binary m
 instance StrEncoding AgentConnId where
   strEncode (AgentConnId connId) = strEncode connId
   strDecode s = AgentConnId <$> strDecode s
-  strP = AgentConnId <$> strP
+  strP = AgentConnId <$> (strP <|> pure B.empty)
 
 instance FromJSON AgentConnId where
   parseJSON = strParseJSON "AgentConnId"
@@ -1745,49 +1746,6 @@ instance TextEncoding ConnType where
     ConnContact -> "contact"
     ConnMember -> "member"
     ConnUserContact -> "user_contact"
-
-data GroupMemberIntro = GroupMemberIntro
-  { introId :: Int64,
-    reMember :: GroupMember,
-    toMember :: GroupMember,
-    introStatus :: GroupMemberIntroStatus
-  }
-  deriving (Show)
-
-data GroupMemberIntroStatus
-  = GMIntroPending
-  | GMIntroSent
-  | GMIntroInvReceived
-  | GMIntroInvForwarded
-  | GMIntroReConnected
-  | GMIntroToConnected
-  | GMIntroConnected
-  deriving (Eq, Show)
-
-instance FromField GroupMemberIntroStatus where fromField = fromTextField_ introStatusT
-
-instance ToField GroupMemberIntroStatus where toField = toField . serializeIntroStatus
-
-introStatusT :: Text -> Maybe GroupMemberIntroStatus
-introStatusT = \case
-  "new" -> Just GMIntroPending
-  "sent" -> Just GMIntroSent
-  "rcv" -> Just GMIntroInvReceived
-  "fwd" -> Just GMIntroInvForwarded
-  "re-con" -> Just GMIntroReConnected
-  "to-con" -> Just GMIntroToConnected
-  "con" -> Just GMIntroConnected
-  _ -> Nothing
-
-serializeIntroStatus :: GroupMemberIntroStatus -> Text
-serializeIntroStatus = \case
-  GMIntroPending -> "new"
-  GMIntroSent -> "sent"
-  GMIntroInvReceived -> "rcv"
-  GMIntroInvForwarded -> "fwd"
-  GMIntroReConnected -> "re-con"
-  GMIntroToConnected -> "to-con"
-  GMIntroConnected -> "con"
 
 type CommandId = Int64
 

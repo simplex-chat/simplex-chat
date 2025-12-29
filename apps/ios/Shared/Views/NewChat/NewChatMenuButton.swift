@@ -12,7 +12,7 @@ import SimpleXChat
 struct NewChatMenuButton: View {
     // do not use chatModel here because it prevents showing AddGroupMembersView after group creation and QR code after link creation on iOS 16
 //    @EnvironmentObject var chatModel: ChatModel
-    @State private var showNewChatSheet = false
+    @Binding var showNewChatSheet: Bool
     @State private var alert: SomeAlert? = nil
 
     var body: some View {
@@ -24,10 +24,6 @@ struct NewChatMenuButton: View {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 24, height: 24)
-        }
-        .appSheet(isPresented: $showNewChatSheet) {
-            NewChatSheet()
-                .environment(\EnvironmentValues.refresh as! WritableKeyPath<EnvironmentValues, RefreshAction?>, nil)
         }
         .alert(item: $alert) { a in
             return a.alert
@@ -471,5 +467,5 @@ struct DeletedChats: View {
 }
 
 #Preview {
-    NewChatMenuButton()
+    NewChatMenuButton(showNewChatSheet: Binding.constant(false))
 }
