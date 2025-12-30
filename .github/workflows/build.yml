@@ -23,7 +23,7 @@ on:
       - "PRIVACY.md"
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
-# 
+#
 # .github/actions/
 # ├── prepare-build
 # │   └── action.yml
@@ -211,6 +211,9 @@ jobs:
           echo "ignore-project: False"    >> cabal.project.local
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
+          echo ""                         >> cabal.project.local
+          echo "package jpeg-turbo"       >> cabal.project.local
+          echo "    flags: +static-gcc"   >> cabal.project.local
 
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
@@ -412,6 +415,11 @@ jobs:
           echo "    extra-include-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/include"    >> cabal.project.local
           echo "    extra-lib-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                                      >> cabal.project.local
+          echo ""                                                                         >> cabal.project.local
+          echo "package jpeg-turbo"                                                       >> cabal.project.local
+          echo "    extra-include-dirs: /opt/homebrew/opt/libjpeg-turbo/include"          >> cabal.project.local
+          echo "    extra-lib-dirs: /opt/homebrew/opt/libjpeg-turbo/lib"                  >> cabal.project.local
+          echo "    flags: +static"                                                       >> cabal.project.local
 
       - name: Build CLI
         id: mac_cli_build
@@ -512,7 +520,7 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
-  
+
       - name: 'Setup MSYS2'
         uses: simplex-chat/setup-msys2@v2
         with:
@@ -522,6 +530,7 @@ jobs:
             git
             perl
             make
+            mingw-w64-x86_64-libjpeg-turbo
           pacboy: >-
             toolchain:p
             cmake:p
@@ -540,6 +549,8 @@ jobs:
           echo "    flags: +openssl" >> cabal.project.local
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+          echo "package jpeg-turbo" >> cabal.project.local
+          echo "    flags: +pkgconfig" >> cabal.project.local
 
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal

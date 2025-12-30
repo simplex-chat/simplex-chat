@@ -1,5 +1,6 @@
 package chat.simplex.common.model
 
+import androidx.compose.ui.graphics.ImageBitmap
 import chat.simplex.common.platform.*
 import kotlinx.serialization.*
 import java.nio.ByteBuffer
@@ -26,6 +27,19 @@ fun writeCryptoFile(path: String, data: ByteArray): CryptoFileArgs {
   buffer.put(data)
   buffer.rewind()
   val str = chatWriteFile(ctrl, path, buffer)
+  return when (val d = json.decodeFromString(WriteFileResult.serializer(), str)) {
+    is WriteFileResult.Result -> d.cryptoArgs
+    is WriteFileResult.Error -> throw Exception(d.writeError)
+  }
+}
+
+fun writeCryptoImage(maxSize: Long, image: ImageBitmap, path: String, encrypt: Boolean): CryptoFileArgs {
+  val ctrl = ChatController.ctrl ?: throw Exception("Controller is not initialized")
+  val data = compressImageData(image, image.hasAlpha).toByteArray()
+  val buffer = ByteBuffer.allocateDirect(data.size)
+  buffer.put(data)
+  buffer.rewind()
+  val str = chatWriteImage(ctrl, maxSize, path, buffer, encrypt)
   return when (val d = json.decodeFromString(WriteFileResult.serializer(), str)) {
     is WriteFileResult.Result -> d.cryptoArgs
     is WriteFileResult.Error -> throw Exception(d.writeError)

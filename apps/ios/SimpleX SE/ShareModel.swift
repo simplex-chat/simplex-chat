@@ -12,7 +12,7 @@ import SwiftUI
 import SimpleXChat
 
 /// Maximum size of hex encoded media previews
-private let MAX_DATA_SIZE: Int64 = 14000
+private let MAX_DATA_SIZE: Int = 14000
 
 /// Maximum dimension (width or height) of an image, before passed for processing
 private let MAX_DOWNSAMPLE_SIZE: Int64 = 2000
