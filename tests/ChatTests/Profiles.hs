@@ -4201,6 +4201,8 @@ testClientService ps =
         alice <##> service
         service ##> "/set client service 1:service_user off"
         service <## "error: chat not stopped"
+        service ##> "/users"
+        service <## "service_user (Service user) (active, service)"
       -- connect as service
       withTestChat ps "service" $ \service -> do
         subscribeClientService service 1
