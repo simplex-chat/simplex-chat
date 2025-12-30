@@ -81,19 +81,19 @@ businessProfile = mkProfile "biz" "Biz Inc" Nothing
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
 mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
-it :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
     t = 90 * 1000000
 
-xit' :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit'' = ifCI xit Hspec.it
 
-xitMacCI :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a

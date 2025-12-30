@@ -2959,7 +2959,7 @@ processChatCommand vr nm = \case
   ConfirmRemoteCtrl rcId -> withUser_ $ do
     (rc, ctrlAppInfo) <- confirmRemoteCtrl rcId
     pure CRRemoteCtrlConnecting {remoteCtrl_ = Just rc, ctrlAppInfo, appVersion = currentAppVersion}
-  VerifyRemoteCtrlSession sessId -> withUser_ $ CRRemoteCtrlConnected <$> verifyRemoteCtrlSession (execChatCommand Nothing) sessId
+  VerifyRemoteCtrlSession sessId -> withUser_ $ verifyRemoteCtrlSession (execChatCommand Nothing) sessId
   StopRemoteCtrl -> withUser_ $ stopRemoteCtrl >> ok_
   ListRemoteCtrls -> withUser_ $ CRRemoteCtrlList <$> listRemoteCtrls
   DeleteRemoteCtrl rc -> withUser_ $ deleteRemoteCtrl rc >> ok_
