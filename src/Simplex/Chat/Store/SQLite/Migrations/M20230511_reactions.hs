@@ -21,7 +21,7 @@ CREATE TABLE chat_item_reactions (
   reaction_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 
 CREATE INDEX idx_chat_item_reactions_shared_msg_id ON chat_item_reactions(shared_msg_id);
 CREATE INDEX idx_chat_item_reactions_contact_id ON chat_item_reactions(contact_id);

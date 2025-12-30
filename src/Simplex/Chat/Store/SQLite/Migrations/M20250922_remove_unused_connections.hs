@@ -75,7 +75,7 @@ CREATE TABLE snd_file_chunks(
   updated_at TEXT CHECK(updated_at NOT NULL),
   FOREIGN KEY(file_id, connection_id) REFERENCES snd_files ON DELETE CASCADE,
   PRIMARY KEY(file_id, connection_id, chunk_number)
-) WITHOUT ROWID;
+) STRICT, WITHOUT ROWID;
 
 CREATE INDEX idx_snd_file_chunks_file_id_connection_id ON snd_file_chunks(file_id, connection_id);
 

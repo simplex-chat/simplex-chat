@@ -15,7 +15,7 @@ CREATE TABLE extra_xftp_file_descriptions (
   file_descr_text TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 
 CREATE INDEX idx_extra_xftp_file_descriptions_file_id ON extra_xftp_file_descriptions(file_id);
 CREATE INDEX idx_extra_xftp_file_descriptions_user_id ON extra_xftp_file_descriptions(user_id);

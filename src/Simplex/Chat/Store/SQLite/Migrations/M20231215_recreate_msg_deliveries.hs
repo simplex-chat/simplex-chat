@@ -32,7 +32,7 @@ CREATE TABLE new_msg_deliveries(
   updated_at TEXT CHECK(updated_at NOT NULL),
   agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   delivery_status TEXT -- MsgDeliveryStatus
-);
+) STRICT;
 
 INSERT INTO new_msg_deliveries (
   msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
@@ -69,7 +69,7 @@ CREATE TABLE old_msg_deliveries(
   updated_at TEXT CHECK(updated_at NOT NULL),
   agent_ack_cmd_id INTEGER, -- broker_ts for received, created_at for sent
   UNIQUE(connection_id, agent_msg_id)
-);
+) STRICT;
 
 INSERT INTO old_msg_deliveries (
   msg_delivery_id, message_id, connection_id, agent_msg_id, agent_msg_meta,
@@ -102,6 +102,6 @@ CREATE TABLE msg_delivery_events (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
-);
+) STRICT;
 CREATE INDEX msg_delivery_events_msg_delivery_id ON msg_delivery_events(msg_delivery_id);
 |]

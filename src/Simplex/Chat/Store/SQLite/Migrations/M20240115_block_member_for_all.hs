@@ -8,7 +8,7 @@ import Database.SQLite.Simple.QQ (sql)
 m20240115_block_member_for_all :: Query
 m20240115_block_member_for_all =
   [sql|
-ALTER TABLE group_members ADD COLUMN member_restriction TEXT;
+ALTER TABLE group_members ADD COLUMN member_restriction BLOB;
 |]
 
 down_m20240115_block_member_for_all :: Query

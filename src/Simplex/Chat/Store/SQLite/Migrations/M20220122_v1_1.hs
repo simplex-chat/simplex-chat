@@ -18,7 +18,7 @@ CREATE TABLE pending_group_messages (
   group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+) STRICT;
 
 -- * chat items
 
@@ -38,7 +38,7 @@ CREATE TABLE chat_items (
   item_text TEXT NOT NULL, -- textual representation
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+) STRICT;
 
 CREATE TABLE chat_item_messages (
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -46,7 +46,7 @@ CREATE TABLE chat_item_messages (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (chat_item_id, message_id)
-);
+) STRICT;
 
 ALTER TABLE files ADD COLUMN chat_item_id INTEGER DEFAULT NULL REFERENCES chat_items ON DELETE CASCADE;
 

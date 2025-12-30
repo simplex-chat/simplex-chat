@@ -15,7 +15,7 @@ CREATE TABLE chat_item_versions ( -- contains versions only for edited chat item
   item_version_ts TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 
 CREATE INDEX idx_chat_item_versions_chat_item_id ON chat_item_versions(chat_item_id);
 |]

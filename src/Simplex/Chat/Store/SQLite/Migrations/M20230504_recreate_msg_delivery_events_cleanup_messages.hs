@@ -16,7 +16,7 @@ CREATE TABLE msg_delivery_events (
   delivery_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-);
+) STRICT;
 
 DELETE FROM messages WHERE created_at < datetime('now', '-30 days');
 |]
@@ -33,5 +33,5 @@ CREATE TABLE msg_delivery_events (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (msg_delivery_id, delivery_status)
-);
+) STRICT;
 |]

@@ -157,7 +157,7 @@ CREATE TABLE group_members(
   group_member_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   group_id BIGINT NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BYTEA NOT NULL,
-  member_role TEXT NOT NULL,
+  member_role BYTEA NOT NULL,
   member_category TEXT NOT NULL,
   member_status TEXT NOT NULL,
   invited_by BIGINT REFERENCES contacts(contact_id) ON DELETE SET NULL,
@@ -176,7 +176,7 @@ CREATE TABLE group_members(
   invited_by_group_member_id BIGINT REFERENCES group_members ON DELETE SET NULL,
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
-  member_restriction TEXT,
+  member_restriction BYTEA,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -327,7 +327,7 @@ CREATE TABLE user_contact_links(
   group_id BIGINT REFERENCES groups ON DELETE CASCADE,
   auto_accept_incognito SMALLINT NOT NULL DEFAULT 0,
   group_link_id BYTEA,
-  group_link_member_role TEXT NULL,
+  group_link_member_role BYTEA NULL,
   business_address SMALLINT DEFAULT 0,
   UNIQUE(user_id, local_display_name)
 );
@@ -633,7 +633,7 @@ ALTER TABLE chat_items
 ADD CONSTRAINT fk_chat_items_note_folders
   FOREIGN KEY(note_folder_id)
   REFERENCES note_folders(note_folder_id) ON DELETE CASCADE;
-CREATE TABLE app_settings(app_settings TEXT NOT NULL);
+CREATE TABLE app_settings(app_settings BYTEA NOT NULL);
 CREATE TABLE server_operators(
   server_operator_id BIGINT PRIMARY KEY GENERATED ALWAYS AS IDENTITY,
   server_operator_tag TEXT,

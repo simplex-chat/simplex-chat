@@ -14,7 +14,7 @@ CREATE INDEX idx_groups_summary_current_members_count ON groups(summary_current_
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
   current_member INTEGER NOT NULL DEFAULT 0
-);
+) STRICT;
 
 INSERT INTO group_member_status_predicates(member_status, current_member)
 VALUES

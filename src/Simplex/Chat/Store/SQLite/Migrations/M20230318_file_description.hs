@@ -19,7 +19,7 @@ CREATE TABLE xftp_file_descriptions (
   file_descr_complete INTEGER NOT NULL DEFAULT(0),
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 
 ALTER TABLE files ADD COLUMN agent_snd_file_id BLOB NULL;
 

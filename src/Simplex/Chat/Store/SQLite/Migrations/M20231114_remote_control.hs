@@ -17,7 +17,7 @@ CREATE TABLE remote_hosts ( -- e.g., mobiles known to a desktop app
   id_key BLOB NOT NULL, -- long-term/identity signing key
   host_fingerprint BLOB NOT NULL, -- remote host CA cert fingerprint, set when connected
   host_dh_pub BLOB NOT NULL -- last session DH key
-);
+) STRICT;
 
 CREATE UNIQUE INDEX idx_remote_hosts_host_fingerprint ON remote_hosts(host_fingerprint);
 
@@ -30,7 +30,7 @@ CREATE TABLE remote_controllers ( -- e.g., desktops known to a mobile app
   id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
   dh_priv_key BLOB NOT NULL, -- last session DH key
   prev_dh_priv_key BLOB -- previous session DH key
-);
+) STRICT;
 
 CREATE UNIQUE INDEX idx_remote_controllers_ctrl_fingerprint ON remote_controllers(ctrl_fingerprint);
 |]
