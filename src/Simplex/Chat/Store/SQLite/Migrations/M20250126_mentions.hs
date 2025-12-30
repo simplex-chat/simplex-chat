@@ -16,7 +16,7 @@ CREATE TABLE chat_item_mentions (
   member_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
-) STRICT;
+);
 
 CREATE INDEX idx_chat_item_mentions_group_id ON chat_item_mentions(group_id);
 CREATE INDEX idx_chat_item_mentions_chat_item_id ON chat_item_mentions(chat_item_id);

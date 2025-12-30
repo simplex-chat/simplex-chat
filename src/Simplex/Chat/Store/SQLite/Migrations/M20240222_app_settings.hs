@@ -9,8 +9,8 @@ m20240222_app_settings :: Query
 m20240222_app_settings =
   [sql|
 CREATE TABLE app_settings (
-  app_settings BLOB NOT NULL
-) STRICT;
+  app_settings TEXT NOT NULL
+);
 |]
 
 down_m20240222_app_settings :: Query

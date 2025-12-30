@@ -17,5 +17,5 @@ CREATE TABLE smp_servers (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (host, port)
-) STRICT;
+);
 |]

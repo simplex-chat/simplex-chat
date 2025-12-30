@@ -271,6 +271,7 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20251017_chat_tags_cascade
           Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
           Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations
+          Simplex.Chat.Store.SQLite.Migrations.M20251230_strict_tables
   other-modules:
       Paths_simplex_chat
   hs-source-dirs:

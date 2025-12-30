@@ -2,7 +2,7 @@ CREATE TABLE migrations(
   name TEXT NOT NULL PRIMARY KEY,
   ts TEXT NOT NULL,
   down TEXT
-);
+) STRICT;
 CREATE TABLE contact_profiles(
   -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
@@ -54,7 +54,7 @@ CREATE TABLE display_names(
   updated_at TEXT CHECK(updated_at NOT NULL),
   PRIMARY KEY(user_id, local_display_name) ON CONFLICT FAIL,
   UNIQUE(user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
-) STRICT, WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE contacts(
   contact_id INTEGER PRIMARY KEY,
   contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
@@ -106,7 +106,7 @@ CREATE TABLE known_servers(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, host, port)
-) STRICT, WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE group_profiles(
   -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
@@ -169,7 +169,7 @@ CREATE TABLE group_members(
   group_member_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BLOB NOT NULL, -- shared member ID, unique per group
-  member_role BLOB NOT NULL, -- owner, admin, member
+  member_role TEXT NOT NULL, -- owner, admin, member
   member_category TEXT NOT NULL, -- see GroupMemberCategory
   member_status TEXT NOT NULL, -- see GroupMemberStatus
   invited_by INTEGER REFERENCES contacts(contact_id) ON DELETE SET NULL, -- NULL for the members who joined before the current user and for the group creator
@@ -188,7 +188,7 @@ CREATE TABLE group_members(
   invited_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   peer_chat_min_version INTEGER NOT NULL DEFAULT 1,
   peer_chat_max_version INTEGER NOT NULL DEFAULT 1,
-  member_restriction BLOB,
+  member_restriction TEXT,
   support_chat_ts TEXT,
   support_chat_items_unread INTEGER NOT NULL DEFAULT 0,
   support_chat_items_member_attention INTEGER NOT NULL DEFAULT 0,
@@ -253,7 +253,7 @@ CREATE TABLE snd_files(
   file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   PRIMARY KEY(file_id, connection_id)
-) STRICT, WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE rcv_files(
   file_id INTEGER PRIMARY KEY REFERENCES files ON DELETE CASCADE,
   file_status TEXT NOT NULL, -- new, accepted, connected, completed
@@ -279,7 +279,7 @@ CREATE TABLE rcv_file_chunks(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL), -- 0(received), 1(appended to file)
   PRIMARY KEY(file_id, chunk_number)
-) STRICT, WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE connections(
   -- all SMP agent connections
   connection_id INTEGER PRIMARY KEY,
@@ -338,7 +338,7 @@ CREATE TABLE user_contact_links(
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   auto_accept_incognito INTEGER DEFAULT 0 CHECK(auto_accept_incognito NOT NULL),
   group_link_id BLOB,
-  group_link_member_role BLOB NULL,
+  group_link_member_role TEXT NULL,
   business_address INTEGER DEFAULT 0,
   short_link_contact BLOB,
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
@@ -456,7 +456,7 @@ CREATE TABLE calls(
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  call_state TEXT NOT NULL,
+  call_state BLOB NOT NULL,
   call_ts TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
@@ -631,7 +631,7 @@ CREATE TABLE note_folders(
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
 ) STRICT;
-CREATE TABLE app_settings(app_settings BLOB NOT NULL) STRICT;
+CREATE TABLE app_settings(app_settings TEXT NOT NULL) STRICT;
 CREATE TABLE server_operators(
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_tag TEXT,

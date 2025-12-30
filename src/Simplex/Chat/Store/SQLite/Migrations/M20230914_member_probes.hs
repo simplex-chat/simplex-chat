@@ -17,7 +17,7 @@ CREATE TABLE new__sent_probes(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, probe)
-) STRICT;
+);
 
 CREATE TABLE new__sent_probe_hashes(
   sent_probe_hash_id INTEGER PRIMARY KEY,
@@ -27,7 +27,7 @@ CREATE TABLE new__sent_probe_hashes(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-) STRICT;
+);
 
 CREATE TABLE new__received_probes(
   received_probe_id INTEGER PRIMARY KEY,
@@ -38,7 +38,7 @@ CREATE TABLE new__received_probes(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-) STRICT;
+);
 
 INSERT INTO new__sent_probes
   (sent_probe_id, contact_id, probe, user_id, created_at, updated_at)
@@ -97,7 +97,7 @@ CREATE TABLE old__sent_probes(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, probe)
-) STRICT;
+);
 
 CREATE TABLE old__sent_probe_hashes(
   sent_probe_hash_id INTEGER PRIMARY KEY,
@@ -106,7 +106,7 @@ CREATE TABLE old__sent_probe_hashes(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-) STRICT;
+);
 
 CREATE TABLE old__received_probes(
   received_probe_id INTEGER PRIMARY KEY,
@@ -116,7 +116,7 @@ CREATE TABLE old__received_probes(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-) STRICT;
+);
 
 DELETE FROM sent_probes WHERE contact_id IS NULL;
 DELETE FROM sent_probe_hashes WHERE contact_id IS NULL;

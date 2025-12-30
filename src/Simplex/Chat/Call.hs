@@ -15,6 +15,7 @@
 module Simplex.Chat.Call where
 
 import Data.Aeson (FromJSON (..), ToJSON (..))
+import qualified Data.Aeson as J
 import qualified Data.Aeson.TH as J
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import Data.ByteString.Char8 (ByteString)
@@ -23,11 +24,10 @@ import Data.Text (Text)
 import Data.Time.Clock (UTCTime)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Types (Contact, ContactId, User)
-import Simplex.Messaging.Agent.Store.DB (Binary (..), fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, fstToLower, singleFieldJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON)
 
 data Call = Call
   { contactId :: ContactId,
@@ -223,9 +223,9 @@ $(J.deriveJSON defaultJSON ''CallExtraInfo)
 $(J.deriveJSON (singleFieldJSON fstToLower) ''CallState)
 
 instance ToField CallState where
-  toField = toField . encodeJSON
+  toField = toField . J.encode
 
 instance FromField CallState where
-  fromField = fromTextField_ decodeJSON
+  fromField = blobFieldDecoder J.eitherDecodeStrict'
 
 $(J.deriveJSON defaultJSON ''RcvCallInvitation)

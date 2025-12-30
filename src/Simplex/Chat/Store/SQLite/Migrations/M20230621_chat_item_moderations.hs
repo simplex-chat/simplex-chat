@@ -19,7 +19,7 @@ CREATE TABLE chat_item_moderations (
   moderated_at TEXT NOT NULL, -- broker_ts of creating message
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-) STRICT;
+);
 
 CREATE INDEX idx_chat_item_moderations_group_id ON chat_item_moderations(group_id);
 CREATE INDEX idx_chat_item_moderations_moderator_member_id ON chat_item_moderations(moderator_member_id);

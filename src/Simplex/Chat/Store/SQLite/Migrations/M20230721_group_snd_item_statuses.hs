@@ -15,7 +15,7 @@ CREATE TABLE group_snd_item_statuses (
   group_snd_item_status TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-) STRICT;
+);
 
 CREATE INDEX idx_group_snd_item_statuses_chat_item_id ON group_snd_item_statuses(chat_item_id);
 CREATE INDEX idx_group_snd_item_statuses_group_member_id ON group_snd_item_statuses(group_member_id);

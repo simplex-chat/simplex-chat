@@ -58,7 +58,7 @@ import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
-import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8, (<$?>))
+import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
 import Simplex.Messaging.Version
 import Simplex.Messaging.Version.Internal
 #if defined(dbPostgres)
@@ -871,27 +871,26 @@ data MemberRestrictionStatus
   | MRSUnknown Text
   deriving (Eq, Show)
 
-instance FromField MemberRestrictionStatus where fromField = blobFieldDecoder strDecode
+instance FromField MemberRestrictionStatus where fromField = fromTextField_ textDecode
 
-instance ToField MemberRestrictionStatus where toField = toField . strEncode
+instance ToField MemberRestrictionStatus where toField = toField . textEncode
 
-instance StrEncoding MemberRestrictionStatus where
-  strEncode = \case
+instance TextEncoding MemberRestrictionStatus where
+  textEncode = \case
     MRSBlocked -> "blocked"
     MRSUnrestricted -> "unrestricted"
-    MRSUnknown tag -> encodeUtf8 tag
-  strDecode s = Right $ case s of
+    MRSUnknown tag -> tag
+  textDecode s = Just $ case s of
     "blocked" -> MRSBlocked
     "unrestricted" -> MRSUnrestricted
-    tag -> MRSUnknown $ safeDecodeUtf8 tag
-  strP = strDecode <$?> A.takeByteString
+    tag -> MRSUnknown tag
 
 instance FromJSON MemberRestrictionStatus where
-  parseJSON = strParseJSON "MemberRestrictionStatus"
+  parseJSON = textParseJSON "MemberRestrictionStatus"
 
 instance ToJSON MemberRestrictionStatus where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+  toJSON = textToJSON
+  toEncoding = textToEncoding
 
 mrsBlocked :: MemberRestrictionStatus -> Bool
 mrsBlocked = \case

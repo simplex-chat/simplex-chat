@@ -24,7 +24,7 @@ CREATE TABLE new_smp_servers (
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now')),
   UNIQUE (user_id, host, port)
-) STRICT;
+);
 
 INSERT INTO new_smp_servers
   (smp_server_id, host, port, key_hash, basic_auth, preset, tested, enabled, user_id, created_at, updated_at)

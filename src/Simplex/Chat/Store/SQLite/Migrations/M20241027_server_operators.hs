@@ -21,7 +21,7 @@ CREATE TABLE server_operators (
   xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-) STRICT;
+);
 
 CREATE TABLE usage_conditions (
   usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,7 +29,7 @@ CREATE TABLE usage_conditions (
   notified_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-) STRICT;
+);
 
 CREATE TABLE operator_usage_conditions (
   operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +38,7 @@ CREATE TABLE operator_usage_conditions (
   conditions_commit TEXT NOT NULL,
   accepted_at TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))
-) STRICT;
+);
 
 CREATE INDEX idx_operator_usage_conditions_server_operator_id ON operator_usage_conditions(server_operator_id);
 CREATE UNIQUE INDEX idx_operator_usage_conditions_conditions_commit ON operator_usage_conditions(conditions_commit, server_operator_id);

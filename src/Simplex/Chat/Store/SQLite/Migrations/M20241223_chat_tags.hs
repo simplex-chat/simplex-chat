@@ -14,13 +14,13 @@ CREATE TABLE chat_tags (
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
   tag_order INTEGER NOT NULL
-) STRICT;
+);
 
 CREATE TABLE chat_tags_chats (
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
-) STRICT;
+);
 
 CREATE INDEX idx_chat_tags_user_id ON chat_tags(user_id);
 CREATE UNIQUE INDEX idx_chat_tags_user_id_chat_tag_text ON chat_tags(user_id, chat_tag_text);

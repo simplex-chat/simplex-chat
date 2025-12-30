@@ -16,7 +16,7 @@ CREATE TABLE note_folders (
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
-) STRICT;
+);
 
 ALTER TABLE chat_items ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;
 ALTER TABLE files ADD COLUMN note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE;

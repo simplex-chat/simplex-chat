@@ -70,7 +70,7 @@ CREATE TABLE delivery_tasks (
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-) STRICT;
+);
 
 CREATE INDEX idx_delivery_tasks_group_id ON delivery_tasks(group_id);
 CREATE INDEX idx_delivery_tasks_job_scope_support_gm_id ON delivery_tasks(job_scope_support_gm_id);
@@ -119,7 +119,7 @@ CREATE TABLE delivery_jobs (
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
-) STRICT;
+);
 
 CREATE INDEX idx_delivery_jobs_group_id ON delivery_jobs(group_id);
 CREATE INDEX idx_delivery_jobs_job_scope_support_gm_id ON delivery_jobs(job_scope_support_gm_id);

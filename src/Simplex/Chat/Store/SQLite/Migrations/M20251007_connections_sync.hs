@@ -13,7 +13,7 @@ CREATE TABLE connections_sync(
   connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
   should_sync INTEGER NOT NULL DEFAULT 0,
   last_sync_ts TEXT
-) STRICT;
+);
 
 INSERT INTO connections_sync (connections_sync_id, should_sync, last_sync_ts) VALUES (1, 1, NULL);
 |]
