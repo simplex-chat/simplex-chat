@@ -38,7 +38,8 @@ CREATE TABLE users(
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
   active_order INTEGER NOT NULL DEFAULT 0,
-  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
+  client_service INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT

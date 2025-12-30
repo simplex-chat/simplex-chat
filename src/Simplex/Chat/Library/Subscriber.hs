@@ -82,7 +82,7 @@ import Simplex.Messaging.Crypto.File (CryptoFile (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), pattern PQEncOff, pattern PQEncOn, pattern PQSupportOff, pattern PQSupportOn)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
-import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..))
+import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..), ServiceSub (..), ServiceSubError (..), ServiceSubResult (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
@@ -105,7 +105,7 @@ processAgentMessage _ _ (DEL_RCVQS delQs) =
 processAgentMessage _ _ (DEL_CONNS connIds) =
   toView $ CEvtAgentConnsDeleted $ L.map AgentConnId connIds
 processAgentMessage _ "" (ERR e) =
-  eToView $ ChatErrorAgent e (AgentConnId "") Nothing
+  eToView $ chatErrorAgent e
 processAgentMessage corrId connId msg = do
   lockEntity <- critical connId (withStore (`getChatLockEntity` AgentConnId connId))
   withEntityLock "processAgentMessage" lockEntity $ do
@@ -136,12 +136,23 @@ processAgentMessageNoConn = \case
   UP srv conns -> serverEvent srv SSActive conns
   SUSPENDED -> toView CEvtChatSuspended
   DEL_USER agentUserId -> toView $ CEvtAgentUserDeleted agentUserId
+  SERVICE_UP srv (ServiceSubResult e_ ss) -> serviceEvent srv $ ServiceSubUp (errText <$> e_) (smpQueueCount ss)
+    where
+      errText = \case
+        SSErrorServiceId {} -> "unexpected service ID"
+        SSErrorQueueCount {expectedQueueCount = n} -> "expected " <> tshow n <> " connections"
+        SSErrorQueueIdsHash {} -> "different IDs hash"
+  SERVICE_DOWN srv ss -> serviceEvent srv $ ServiceSubDown $ smpQueueCount ss
+  SERVICE_ALL srv -> serviceEvent srv ServiceSubAll
+  SERVICE_END srv ss -> serviceEvent srv $ ServiceSubEnd $ smpQueueCount ss
   ERRS cErrs -> errsEvent $ L.toList cErrs
   where
     hostEvent :: ChatEvent -> CM ()
     hostEvent = whenM (asks $ hostEvents . config) . toView
     serverEvent :: SMPServer -> SubscriptionStatus -> [ConnId] -> CM ()
     serverEvent srv nsStatus conns = toView $ CEvtSubscriptionStatus srv nsStatus $ map AgentConnId conns
+    serviceEvent :: SMPServer -> ServiceSubEvent -> CM ()
+    serviceEvent srv = toView . CEvtServiceSubStatus srv
     errsEvent :: [(ConnId, AgentErrorType)] -> CM ()
     errsEvent = toView . CEvtChatErrors . map (\(cId, e) -> ChatErrorAgent e (AgentConnId cId) Nothing)
 
@@ -375,7 +386,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     agentMsgConnStatus :: AEvent e -> Maybe ConnStatus
     agentMsgConnStatus = \case
-      JOINED True _ -> Just ConnSndReady
+      JOINED True -> Just ConnSndReady
       CONF {} -> Just ConnRequested
       INFO {} -> Just ConnSndReady
       CON _ -> Just ConnReady
@@ -422,8 +433,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        -- TODO [certs rcv]
-        JOINED _ _serviceId ->
+        JOINED _ ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
         QCONT ->
@@ -442,8 +452,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         -- TODO add debugging output
         _ -> pure ()
       Just ct@Contact {contactId} -> case agentMsg of
-        -- TODO [certs rcv]
-        INV (ACR _ cReq) _serviceId ->
+        INV (ACR _ cReq) ->
           -- [async agent commands] XGrpMemIntro continuation on receiving INV
           withCompletedCommand conn agentMsg $ \_ ->
             case cReq of
@@ -632,8 +641,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         OK ->
           -- [async agent commands] continuation on receiving OK
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-        -- TODO [certs rcv]
-        JOINED sqSecured _serviceId ->
+        JOINED sqSecured ->
           -- [async agent commands] continuation on receiving JOINED
           when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
             when (directOrUsed ct && sqSecured) $ do
@@ -672,8 +680,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     processGroupMessage :: AEvent e -> ConnectionEntity -> Connection -> GroupInfo -> GroupMember -> CM ()
     processGroupMessage agentMsg connEntity conn@Connection {connId, connChatVersion, customUserProfileId, connectionCode} gInfo@GroupInfo {groupId, groupProfile, membership, chatSettings} m = case agentMsg of
-      -- TODO [certs rcv]
-      INV (ACR _ cReq) _serviceId ->
+      INV (ACR _ cReq) ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cReq of
             groupConnReq@(CRInvitationUri _ _) -> case cmdFunction of
@@ -1024,8 +1031,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       OK ->
         -- [async agent commands] continuation on receiving OK
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData -> pure ()
-      -- TODO [certs rcv]
-      JOINED sqSecured _serviceId ->
+      JOINED sqSecured ->
         -- [async agent commands] continuation on receiving JOINED
         when (corrId /= "") $ withCompletedCommand conn agentMsg $ \_cmdData ->
           when (sqSecured && connChatVersion >= batchSend2Version) $ do
@@ -1393,7 +1399,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           unless shouldDelConns $ withLog (eInfo <> " ok") $ ackMsg msgMeta $ if withRcpt then Just "" else Nothing
         -- If showCritical is True, then these errors don't result in ACK and show user visible alert
         -- This prevents losing the message that failed to be processed.
-        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ ChatErrorAgent (CRITICAL True message) (AgentConnId "") Nothing
+        Left (ChatErrorStore SEDBBusyError {message}) | showCritical -> throwError $ chatErrorAgent $ CRITICAL True message
         Left e -> do
           withLog (eInfo <> " error: " <> tshow e) $ ackMsg msgMeta Nothing
           throwError e
@@ -2865,10 +2871,10 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             fromGroupId_ = Just groupId,
             fromGroupMemberId_ = Just (groupMemberId' m),
             fromGroupMemberConnId_ = Just mConnId,
-            groupDirectInvStartedConnection = isTrue $ autoAcceptMemberContacts user
+            groupDirectInvStartedConnection = autoAcceptMemberContacts user
           }
         joinExistingContact subMode mCt@Contact {contactId = mContactId}
-          | isTrue (autoAcceptMemberContacts user) = do
+          | autoAcceptMemberContacts user = do
               (cmdId, acId) <- joinConn subMode
               mCt' <- withStore $ \db -> do
                 updateMemberContactInvited db user mCt groupDirectInv
@@ -2886,7 +2892,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               createInternalChatItem user (CDDirectRcv mCt') (CIRcvDirectEvent $ RDEGroupInvLinkReceived gp) Nothing
               createItems mCt' m
         createNewContact subMode
-          | isTrue (autoAcceptMemberContacts user) = do
+          | autoAcceptMemberContacts user = do
               (cmdId, acId) <- joinConn subMode
               -- [incognito] reuse membership incognito profile
               (mCt, m') <- withStore $ \db -> do

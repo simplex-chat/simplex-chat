@@ -104,6 +104,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       directoryLog = Just $ ps </> "directory_service.log",
       migrateDirectoryLog = Nothing,
       serviceName = "SimpleX Directory",
+      clientService = True,
       runCLI = False,
       searchResults = 3,
       webFolder,

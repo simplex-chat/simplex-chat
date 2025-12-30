@@ -36,6 +36,7 @@ data DirectoryOpts = DirectoryOpts
     directoryLog :: Maybe FilePath,
     migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
+    clientService :: Bool,
     runCLI :: Bool,
     searchResults :: Int,
     webFolder :: Maybe FilePath,
@@ -135,6 +136,11 @@ directoryOpts appDir defaultDbName = do
           <> help "The display name of the directory service bot, without *'s and spaces (SimpleX Directory)"
           <> value "SimpleX Directory"
       )
+  clientService <-
+    switch
+      ( long "client-service"
+          <> help "Use client service certificate"
+      )
   runCLI <-
     switch
       ( long "run-cli"
@@ -162,6 +168,7 @@ directoryOpts appDir defaultDbName = do
         directoryLog,
         migrateDirectoryLog,
         serviceName = T.pack serviceName,
+        clientService,
         runCLI,
         searchResults = 10,
         webFolder,
@@ -180,7 +187,7 @@ getDirectoryOpts appDir defaultDbName =
     versionAndUpdate = versionStr <> "\n" <> updateStr
 
 mkChatOpts :: DirectoryOpts -> ChatOpts
-mkChatOpts DirectoryOpts {coreOptions, serviceName} =
+mkChatOpts DirectoryOpts {coreOptions, serviceName, clientService} =
   ChatOpts
     { coreOptions,
       chatCmd = "",
@@ -194,7 +201,7 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName} =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = False,
-      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False},
+      createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False, clientService},
       maintenance = False
     }
 
