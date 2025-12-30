@@ -13,7 +13,7 @@ CREATE TABLE calls ( -- stores call invitations state for communicating state be
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  call_state BLOB NOT NULL,
+  call_state TEXT NOT NULL,
   call_ts TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT (datetime('now')),

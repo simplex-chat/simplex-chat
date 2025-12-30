@@ -448,7 +448,7 @@ CREATE TABLE calls(
   contact_id BIGINT NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BYTEA NOT NULL,
   chat_item_id BIGINT NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  call_state BYTEA NOT NULL,
+  call_state TEXT NOT NULL,
   call_ts TIMESTAMPTZ NOT NULL,
   user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TIMESTAMPTZ NOT NULL DEFAULT (now()),
