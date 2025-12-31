@@ -347,7 +347,7 @@
     <string name="database_passphrase">データベースパスフレーズ</string>
     <string name="export_database">データベースをエクスポート</string>
     <string name="delete_database">データベースを削除</string>
-    <string name="import_database">データベースを読み込みますか？</string>
+    <string name="import_database">データベースのインポート</string>
     <string name="new_database_archive">新しいデータベースのアーカイブ</string>
     <string name="old_database_archive">過去のデータベースアーカイブ</string>
     <string name="delete_files_and_media_all">ファイルを全て削除</string>
