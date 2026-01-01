@@ -184,16 +184,11 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
+      messageRetryInterval = RetryInterval2 {riFast = riFast {initialInterval = 50000}, riSlow = riSlow {initialInterval = 50000}}
     }
-
-testAgentCfgSlow :: AgentConfig
-testAgentCfgSlow =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) srvHostnamesSMPClientVersion, -- v2
-      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion, -- v5
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
-    }
+  where
+    RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
 testAgentCfgNoShortLinks :: AgentConfig
 testAgentCfgNoShortLinks =
@@ -212,9 +207,6 @@ testCfg =
       tbqSize = 16,
       confirmMigrations = MCYesUp
     }
-
-testCfgSlow :: ChatConfig
-testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
 
 testCfgNoShortLinks :: ChatConfig
 testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
