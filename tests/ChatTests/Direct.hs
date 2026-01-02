@@ -2654,7 +2654,7 @@ testUserPrivacy =
 testSetChatItemTTL :: HasCallStack => TestParams -> IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+    \alice bob -> withXFTPServer $ do
       connectUsers alice bob
       alice #> "@bob 1"
       bob <# "alice> 1"
@@ -2668,6 +2668,7 @@ testSetChatItemTTL =
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.jpg) for bob"
       -- above items should be deleted after we set ttl
       threadDelay 3000000
       alice #> "@bob 3"
