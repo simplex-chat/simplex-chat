@@ -351,11 +351,11 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           pure (gs, n)
         Just gId -> do
           gs <- groups $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, gId, pageSize)
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> orderBy) (GRSActive, gId)
+          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ?") (GRSActive, gId)
           pure (gs, n)
         where
           countQuery' = countQuery <> " WHERE r.group_reg_status = ? "
-          orderBy = " ORDER BY g.summary_current_members_count DESC "
+          orderBy = " ORDER BY g.summary_current_members_count DESC, r.group_reg_id ASC "
       STRecent -> case lastGroup_ of
         Nothing -> do
           gs <- groups $ DB.query db (listedGroupQuery <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, pageSize)
@@ -363,11 +363,11 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           pure (gs, n)
         Just gId -> do
           gs <- groups $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, gId, pageSize)
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> orderBy) (GRSActive, gId)
+          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ?") (GRSActive, gId)
           pure (gs, n)
         where
           countQuery' = countQuery <> " WHERE r.group_reg_status = ? "
-          orderBy = " ORDER BY r.created_at DESC "
+          orderBy = " ORDER BY r.created_at DESC, r.group_reg_id ASC "
       STSearch search -> case lastGroup_ of
         Nothing -> do
           gs <- groups $ DB.query db (listedGroupQuery <> searchCond <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, s, s, s, s, pageSize)
@@ -375,12 +375,12 @@ searchListedGroups cc user@User {userId, userContactId} searchType lastGroup_ pa
           pure (gs, n)
         Just gId -> do
           gs <- groups $ DB.query db (listedGroupQuery <> " AND r.group_id > ? " <> searchCond <> orderBy <> " LIMIT ?") (userId, userContactId, GRSActive, gId, s, s, s, s, pageSize)
-          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond <> orderBy) (GRSActive, gId, s, s, s, s)
+          n <- count $ DB.query db (countQuery' <> " AND r.group_id > ? " <> searchCond) (GRSActive, gId, s, s, s, s)
           pure (gs, n)
         where
           s = T.toLower search
           countQuery' = countQuery <> " JOIN group_profiles gp ON gp.group_profile_id = g.group_profile_id WHERE r.group_reg_status = ? "
-          orderBy = " ORDER BY g.summary_current_members_count DESC "
+          orderBy = " ORDER BY g.summary_current_members_count DESC, r.group_reg_id ASC "
   where
     groups = (map (toGroupInfoReg (vr cc) user) <$>)
     count = maybeFirstRow' 0 fromOnly

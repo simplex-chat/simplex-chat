@@ -94,22 +94,9 @@ chatDirectTests = do
   describe "operators and usage conditions" $ do
     it "get and enable operators, accept conditions" testOperators
   describe "async connection handshake" $ do
-    describe "connect when initiating client goes offline" $ do
-      it "curr" $ testAsyncInitiatingOffline True testCfg testCfg
-      it "v5" $ testAsyncInitiatingOffline False testCfgSlow testCfgSlow
-      it "v5/curr" $ testAsyncInitiatingOffline False testCfgSlow testCfg
-      it "curr/v5" $ testAsyncInitiatingOffline True testCfg testCfgSlow
-    describe "connect when accepting client goes offline" $ do
-      it "curr" $ testAsyncAcceptingOffline True testCfg testCfg
-      it "v5" $ testAsyncAcceptingOffline False testCfgSlow testCfgSlow
-      it "v5/curr" $ testAsyncAcceptingOffline False testCfgSlow testCfg
-      it "curr/v5" $ testAsyncAcceptingOffline True testCfg testCfgSlow
-    describe "connect, fully asynchronous (when clients are never simultaneously online)" $ do
-      it "curr" testFullAsyncFast
-      -- fails in CI
-      xit'' "v5" $ testFullAsyncSlow False testCfgSlow testCfgSlow
-      xit'' "v5/curr" $ testFullAsyncSlow False testCfgSlow testCfg
-      xit'' "curr/v5" $ testFullAsyncSlow True testCfg testCfgSlow
+    it "connect when initiating client goes offline" $ testAsyncInitiatingOffline True
+    it "connect when accepting client goes offline" $ testAsyncAcceptingOffline True
+    it "connect, fully asynchronous (when clients are never simultaneously online)" $ testFullAsyncFast
   describe "webrtc calls api" $ do
     it "negotiate call" testNegotiateCall
 #if !defined(dbPostgres)
@@ -1241,33 +1228,33 @@ testOperators =
   where
     opts' = testOpts {coreOptions = testCoreOpts {smpServers = [], xftpServers = []}}
 
-testAsyncInitiatingOffline :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
-testAsyncInitiatingOffline withShortLink aliceCfg bobCfg ps = do
-  inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
+testAsyncInitiatingOffline :: HasCallStack => Bool -> TestParams -> IO ()
+testAsyncInitiatingOffline withShortLink ps = do
+  inv <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     threadDelay 250000
     alice ##> "/c"
     (if withShortLink then getInvitation else getInvitationNoShortLink) alice
-  withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-    withTestChatCfg ps aliceCfg "alice" $ \alice -> do
+    withTestChat ps "alice" $ \alice -> do
       alice <## "subscribed 1 connections on server localhost"
       concurrently_
         (bob <## "alice (Alice): contact is connected")
         (alice <## "bob (Bob): contact is connected")
 
-testAsyncAcceptingOffline :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
-testAsyncAcceptingOffline withShortLink aliceCfg bobCfg ps = do
-  inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
+testAsyncAcceptingOffline :: HasCallStack => Bool -> TestParams -> IO ()
+testAsyncAcceptingOffline withShortLink ps = do
+  inv <- withNewTestChat ps "alice" aliceProfile $ \alice -> do
     alice ##> "/c"
     (if withShortLink then getInvitation else getInvitationNoShortLink) alice
-  withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
+  withNewTestChat ps "bob" bobProfile $ \bob -> do
     threadDelay 250000
     bob ##> ("/c " <> inv)
     bob <## "confirmation sent!"
-  withTestChatCfg ps aliceCfg "alice" $ \alice -> do
-    withTestChatCfg ps bobCfg "bob" $ \bob -> do
+  withTestChat ps "alice" $ \alice -> do
+    withTestChat ps "bob" $ \bob -> do
       alice <## "subscribed 1 connections on server localhost"
       bob <## "subscribed 1 connections on server localhost"
       concurrently_
@@ -1291,30 +1278,6 @@ testFullAsyncFast ps = do
   withTestChat ps "bob" $ \bob -> do
     bob <## "subscribed 1 connections on server localhost"
     bob <## "alice (Alice): contact is connected"
-
-testFullAsyncSlow :: HasCallStack => Bool -> ChatConfig -> ChatConfig -> TestParams -> IO ()
-testFullAsyncSlow withShortLink aliceCfg bobCfg ps = do
-  inv <- withNewTestChatCfg ps aliceCfg "alice" aliceProfile $ \alice -> do
-    threadDelay 250000
-    alice ##> "/c"
-    (if withShortLink then getInvitation else getInvitationNoShortLink) alice
-  withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob -> do
-    threadDelay 250000
-    bob ##> ("/c " <> inv)
-    bob <## "confirmation sent!"
-  withAlice $ \alice ->
-    alice <## "subscribed 1 connections on server localhost"
-  withBob $ \bob ->
-    bob <## "subscribed 1 connections on server localhost"
-  withAlice $ \alice -> do
-    alice <## "subscribed 1 connections on server localhost"
-    alice <## "bob (Bob): contact is connected"
-  withBob $ \bob -> do
-    bob <## "subscribed 1 connections on server localhost"
-    bob <## "alice (Alice): contact is connected"
-  where
-    withAlice = withTestChatCfg ps aliceCfg "alice"
-    withBob = withTestChatCfg ps aliceCfg "bob"
 
 testCallType :: CallType
 testCallType = CallType {media = CMVideo, capabilities = CallCapabilities {encryption = True}}
@@ -2200,7 +2163,7 @@ testUsersDifferentCIExpirationTTL ps = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @6 count=100", chat, chatFeatures <> [(1, "alisa 1"), (0, "alisa 2"), (1, "alisa 3"), (0, "alisa 4")])
 
-      threadDelay 2000000
+      threadDelay 2100000
 
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
@@ -2462,10 +2425,8 @@ testUsersTimedMessages ps = do
 
       threadDelay 1000000
 
-      alice <## "[user: alice] timed message deleted: alice 1"
-      alice <## "[user: alice] timed message deleted: alice 2"
-      bob <## "timed message deleted: alice 1"
-      bob <## "timed message deleted: alice 2"
+      alice <### ["[user: alice] timed message deleted: alice 1", "[user: alice] timed message deleted: alice 2"]
+      bob <### ["timed message deleted: alice 1", "timed message deleted: alice 2"]
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2477,10 +2438,8 @@ testUsersTimedMessages ps = do
 
       threadDelay 1000000
 
-      alice <## "timed message deleted: alisa 1"
-      alice <## "timed message deleted: alisa 2"
-      bob <## "timed message deleted: alisa 1"
-      bob <## "timed message deleted: alisa 2"
+      alice <### ["timed message deleted: alisa 1", "timed message deleted: alisa 2"]
+      bob <### ["timed message deleted: alisa 1", "timed message deleted: alisa 2"]
 
       alice ##> "/user"
       showActiveUser alice "alisa"
@@ -2519,10 +2478,8 @@ testUsersTimedMessages ps = do
       -- messages are deleted after restart
       threadDelay 1000000
 
-      alice <## "[user: alice] timed message deleted: alice 3"
-      alice <## "[user: alice] timed message deleted: alice 4"
-      bob <## "timed message deleted: alice 3"
-      bob <## "timed message deleted: alice 4"
+      alice <### ["[user: alice] timed message deleted: alice 3", "[user: alice] timed message deleted: alice 4"]
+      bob <### ["timed message deleted: alice 3", "timed message deleted: alice 4"]
 
       alice ##> "/user alice"
       showActiveUser alice "alice (Alice)"
@@ -2534,10 +2491,8 @@ testUsersTimedMessages ps = do
 
       threadDelay 1000000
 
-      alice <## "timed message deleted: alisa 3"
-      alice <## "timed message deleted: alisa 4"
-      bob <## "timed message deleted: alisa 3"
-      bob <## "timed message deleted: alisa 4"
+      alice <### ["timed message deleted: alisa 3", "timed message deleted: alisa 4"]
+      bob <### ["timed message deleted: alisa 3", "timed message deleted: alisa 4"]
 
       alice ##> "/user"
       showActiveUser alice "alisa"
