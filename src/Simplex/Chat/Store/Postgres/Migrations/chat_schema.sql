@@ -173,7 +173,7 @@ CREATE TABLE test_chat_schema.calls (
     contact_id bigint NOT NULL,
     shared_call_id bytea NOT NULL,
     chat_item_id bigint NOT NULL,
-    call_state bytea NOT NULL,
+    call_state text NOT NULL,
     call_ts timestamp with time zone NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,

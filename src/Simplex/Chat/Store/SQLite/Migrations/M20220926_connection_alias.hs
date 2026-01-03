@@ -10,7 +10,7 @@ m20220926_connection_alias =
   [sql|
 PRAGMA ignore_check_constraints=ON;
 
-ALTER TABLE connections ADD COLUMN local_alias DEFAULT '' CHECK (local_alias NOT NULL);
+ALTER TABLE connections ADD COLUMN local_alias TEXT DEFAULT '' CHECK (local_alias NOT NULL);
 UPDATE connections SET local_alias = '';
 
 PRAGMA ignore_check_constraints=OFF;
