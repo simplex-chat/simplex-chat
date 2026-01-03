@@ -76,7 +76,6 @@ import Simplex.Messaging.Agent.Lock
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction, withTransactionPriority)
 import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation, UpMigration)
-import Simplex.Messaging.Agent.Store.DB (SQLError)
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Client (HostMode (..), SMPProxyFallback (..), SMPProxyMode (..), SMPWebPortServers (..), SocksMode (..))
 import qualified Simplex.Messaging.Crypto as C
@@ -97,7 +96,13 @@ import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
-#if !defined(dbPostgres)
+
+#if defined(dbPostgres)
+import qualified Database.PostgreSQL.Simple as PSQL
+
+type SQLError = PSQL.SqlError
+#else
+import Database.SQLite.Simple (SQLError)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif

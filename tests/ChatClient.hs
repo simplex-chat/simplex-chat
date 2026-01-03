@@ -522,7 +522,7 @@ smpServerCfg :: ServerConfig STMMsgStore
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
-      tbqSize = 1,
+      tbqSize = 4,
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,
