@@ -398,7 +398,7 @@
     <string name="conn_level_desc_direct">közvetlen</string>
     <string name="desktop_device">Számítógép</string>
     <string name="la_minutes">%d perc</string>
-    <string name="num_contacts_selected">%d partner kijelölve</string>
+    <string name="num_contacts_selected">%d partner kiválasztva</string>
     <string name="enable_receipts_all">Engedélyezés</string>
     <string name="ttl_mth">%dhónap</string>
     <string name="direct_messages_are_prohibited_in_group">A közvetlen üzenetek küldése a tagok között le van tiltva ebben a csoportban.</string>
@@ -695,7 +695,7 @@
     <string name="moderated_description">moderált</string>
     <string name="member_will_be_removed_from_group_cannot_be_undone">A tag el lesz távolítva a csoportból – ez a művelet nem vonható vissza!</string>
     <string name="ensure_xftp_server_address_are_correct_format_and_unique">Győződjön meg arról, hogy a megadott XFTP-kiszolgálók címei megfelelő formátumúak, soronként elkülönítettek, és nincsenek duplikálva.</string>
-    <string name="no_contacts_selected">Nincs partner kijelölve</string>
+    <string name="no_contacts_selected">Nincs partner kiválasztva</string>
     <string name="no_received_app_files">Nincsenek fogadott vagy küldött fájlok</string>
     <string name="mobile_tap_open_in_mobile_app_then_tap_connect_in_app"><![CDATA[📱 hordozható eszköz: koppintson a <b>Megnyitás hordozható eszköz-alkalmazásban</b>, majd koppintson a <b>Kapcsolódás</b> gombra az alkalmazásban.]]></string>
     <string name="markdown_in_messages">Markdown az üzenetekben</string>
@@ -818,7 +818,7 @@
     <string name="color_surface">Menük és figyelmeztetések</string>
     <string name="icon_descr_add_members">Tagok meghívása</string>
     <string name="group_preview_join_as">Csatlakozás mint: %s</string>
-    <string name="no_selected_chat">Nincs csevegés kijelölve</string>
+    <string name="no_selected_chat">Nincs csevegés kiválasztva</string>
     <string name="users_delete_data_only">Csak helyi profiladatok</string>
     <string name="description_via_one_time_link_incognito">inkognitó egy egyszer használható meghívón keresztül</string>
     <string name="share_text_moderated_at">Moderálva: %s</string>
@@ -902,7 +902,7 @@
     <string name="turn_off_system_restriction_button">Alkalmazásbeállítások megnyitása</string>
     <string name="passcode_not_changed">A jelkód nem módosult!</string>
     <string name="refresh_qr_code">Frissítés</string>
-    <string name="custom_time_picker_select">Kijelölés</string>
+    <string name="custom_time_picker_select">Kiválasztás</string>
     <string name="only_you_can_make_calls">Csak Ön kezdeményezhet hívásokat.</string>
     <string name="smp_server_test_secure_queue">Biztonságos várólista</string>
     <string name="rate_the_app">Alkalmazás értékelése</string>
@@ -1033,7 +1033,7 @@
     <string name="button_remove_member">Eltávolítás</string>
     <string name="passcode_set">A jelkód beállítva!</string>
     <string name="sent_message">Elküldött üzenet</string>
-    <string name="select_contacts">Partnerek kijelölése</string>
+    <string name="select_contacts">Partnerek kiválasztása</string>
     <string name="unknown_message_format">ismeretlen üzenetformátum</string>
     <string name="smp_servers_save">Kiszolgálók mentése</string>
     <string name="group_welcome_title">Üdvözlőüzenet</string>
@@ -1414,7 +1414,7 @@
     <string name="sending_delivery_receipts_will_be_enabled">A kézbesítési jelentések küldése az összes partnere számára engedélyezve lesz.</string>
     <string name="network_option_protocol_timeout_per_kb">Protokoll időtúllépése kB-onként</string>
     <string name="database_backup_can_be_restored">Az adatbázis jelmondatának módosítására tett kísérlet nem fejeződött be.</string>
-    <string name="enable_automatic_deletion_message">Ez a művelet nem vonható vissza – a kijelöltnél korábban küldött és fogadott üzenetek törölve lesznek. Ez több percet is igénybe vehet.</string>
+    <string name="enable_automatic_deletion_message">Ez a művelet nem vonható vissza – a kiválasztott üzenettől korábban küldött és fogadott üzenetek törölve lesznek. Ez több percet is igénybe vehet.</string>
     <string name="profile_is_only_shared_with_your_contacts">A profilja csak a partnereivel van megosztva.</string>
     <string name="smp_servers_test_some_failed">Néhány kiszolgáló megbukott a teszten:</string>
     <string name="group_invitation_tap_to_join">Koppintson ide a csatlakozáshoz</string>
@@ -1816,7 +1816,7 @@
     <string name="remote_ctrl_connection_stopped_identity_desc">Ezt a hivatkozást egy másik hordozható eszközön már használták, hozzon létre egy új hivatkozást a számítógépén.</string>
     <string name="remote_ctrl_connection_stopped_desc">Ellenőrizze, hogy a hordozható eszköz és a számítógép ugyanahhoz a helyi hálózathoz csatlakozik-e, valamint a számítógép tűzfalában engedélyezve van-e a kapcsolat.\nMinden további problémát osszon meg a fejlesztőkkel.</string>
     <string name="cannot_share_message_alert_title">Nem lehet üzenetet küldeni</string>
-    <string name="cannot_share_message_alert_text">A kijelölt csevegési beállítások tiltják ezt az üzenetet.</string>
+    <string name="cannot_share_message_alert_text">A kiválasztott csevegési beállítások tiltják ezt az üzenetet.</string>
     <string name="please_try_later">Próbálja meg később.</string>
     <string name="network_error_broker_host_desc">A kiszolgáló címe nem kompatibilis a hálózati beállításokkal: %1$s.</string>
     <string name="member_inactive_title">Inaktív tag</string>
@@ -1976,12 +1976,12 @@
     <string name="you_need_to_allow_calls">Engedélyeznie kell a hívásokat a partnere számára, hogy fel tudják hívni egymást.</string>
     <string name="you_can_still_view_conversation_with_contact">A(z) %1$s nevű partnerével folytatott beszélgetéseit továbbra is megtekintheti a csevegések listájában.</string>
     <string name="compose_message_placeholder">Üzenet…</string>
-    <string name="select_verb">Kijelölés</string>
+    <string name="select_verb">Kiválasztás</string>
     <string name="moderate_messages_will_be_marked_warning">Az üzenetek az összes tag számára moderáltként lesznek megjelölve.</string>
-    <string name="selected_chat_items_nothing_selected">Nincs semmi kijelölve</string>
+    <string name="selected_chat_items_nothing_selected">Nincs semmi kiválasztva</string>
     <string name="delete_messages_mark_deleted_warning">Az üzenetek törlésre lesznek jelölve. A címzett(ek) képes(ek) lesz(nek) felfedni ezt az üzenetet.</string>
     <string name="delete_members_messages__question">Törli a tagok %d üzenetét?</string>
-    <string name="selected_chat_items_selected_n">%d kijelölve</string>
+    <string name="selected_chat_items_selected_n">%d kiválasztva</string>
     <string name="moderate_messages_will_be_deleted_warning">Az üzenetek az összes tag számára törölve lesznek.</string>
     <string name="chat_database_exported_title">Csevegési adatbázis exportálva</string>
     <string name="v6_0_connection_servers_status_descr">Kapcsolatok- és kiszolgálók állapotának megjelenítése.</string>
@@ -2024,7 +2024,7 @@
     <string name="settings_section_title_chat_database">CSEVEGÉSI ADATBÁZIS</string>
     <string name="new_chat_share_profile">Profil megosztása</string>
     <string name="system_mode_toast">Rendszerbeállítások használata</string>
-    <string name="select_chat_profile">Csevegési profil kijelölése</string>
+    <string name="select_chat_profile">Csevegési profil kiválasztása</string>
     <string name="network_proxy_auth_mode_no_auth">Ne használja a hitelesítési adatokat proxyval.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_user">Különböző proxy-hitelesítési adatok használata az összes profilhoz.</string>
     <string name="network_proxy_auth_mode_isolate_by_auth_entity">Különböző proxy-hitelesítési adatok használata az összes kapcsolathoz.</string>
@@ -2048,7 +2048,7 @@
     <string name="forward_files_messages_deleted_after_selection_title">%1$s üzenet nem lett továbbítva</string>
     <string name="forward_alert_title_messages_to_forward">Továbbít %1$s üzenetet?</string>
     <string name="forward_alert_forward_messages_without_files">Továbbítja az üzeneteket fájlok nélkül?</string>
-    <string name="forward_files_messages_deleted_after_selection_desc">Az üzeneteket törölték miután kijelölte őket.</string>
+    <string name="forward_files_messages_deleted_after_selection_desc">Az üzeneteket törölték miután kiválasztotta őket.</string>
     <string name="compose_save_messages_n">%1$s üzenet mentése</string>
     <string name="error_forwarding_messages">Hiba történt az üzenetek továbbításakor</string>
     <string name="icon_descr_sound_muted">Hang elnémítva</string>
@@ -2293,7 +2293,7 @@
     <string name="chat_item_ttl_default">alapértelmezett (%s)</string>
     <string name="chat_ttl_options_footer">Csevegési üzenetek törlése az eszközről.</string>
     <string name="change_automatic_deletion_question">Módosítja az automatikus üzenettörlést?</string>
-    <string name="change_automatic_chat_deletion_message">Ez a művelet nem vonható vissza – a kijelölt üzenettől korábban küldött és fogadott üzenetek törölve lesznek a csevegésből.</string>
+    <string name="change_automatic_chat_deletion_message">Ez a művelet nem vonható vissza – a kiválasztott üzenettől korábban küldött és fogadott üzenetek törölve lesznek a csevegésből.</string>
     <string name="network_smp_web_port_footer">A következő TCP-port használata, amikor nincs port megadva: %1$s.</string>
     <string name="network_smp_web_port_section_title">TCP-port az üzenetváltáshoz</string>
     <string name="network_smp_web_port_toggle">Webport használata</string>
