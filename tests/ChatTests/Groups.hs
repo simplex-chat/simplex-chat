@@ -2071,11 +2071,8 @@ testSharedMessageBody ps' =
             ]
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
--- because of PostgreSQL concurrency deleteSndMsgDelivery fails to delete message body
-#if !defined(dbPostgres)
           threadDelay 500000
           checkMsgBodyCount alice 0
-#endif
 
     alice <## "disconnected 4 connections on server localhost"
   where
@@ -2130,10 +2127,7 @@ testSharedBatchBody ps =
             concurrently_
               (bob <# ("#team alice> message " <> show i))
               (cath <# ("#team alice> message " <> show i))
--- because of PostgreSQL concurrency deleteSndMsgDelivery fails to delete message body
-#if !defined(dbPostgres)          
           checkMsgBodyCount alice 0
-#endif
 
     alice <## "disconnected 4 connections on server localhost"
   where
