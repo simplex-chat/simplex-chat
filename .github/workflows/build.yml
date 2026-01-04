@@ -530,6 +530,7 @@ jobs:
             git
             perl
             make
+            pkgconf
             mingw-w64-x86_64-libjpeg-turbo
           pacboy: >-
             toolchain:p
