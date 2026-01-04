@@ -2050,7 +2050,7 @@ testSendMultiManyBatches =
       itemsCount `shouldBe` [[n]]
 
 testSharedMessageBody :: HasCallStack => TestParams -> IO ()
-testSharedMessageBody ps =
+testSharedMessageBody ps' =
   withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
     withSmpServer' serverCfg' $
       withNewTestChatOpts ps opts' "bob" bobProfile $ \bob ->
@@ -2078,6 +2078,7 @@ testSharedMessageBody ps =
 
     alice <## "disconnected 4 connections on server localhost"
   where
+    ps = ps' {printOutput = True} :: TestParams
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg

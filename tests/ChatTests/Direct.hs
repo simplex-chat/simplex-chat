@@ -1304,7 +1304,7 @@ repeatM_ n a = forM_ [1 .. n] $ const a
 
 testNegotiateCall :: HasCallStack => TestParams -> IO ()
 testNegotiateCall =
-  testChat2 aliceProfile bobProfile $ \alice bob -> do
+  withTestOutput $ testChat2 aliceProfile bobProfile $ \alice bob -> do
     connectUsers alice bob
     -- just for testing db query
     alice ##> "/_call get"
@@ -2382,7 +2382,7 @@ testDisableCIExpirationOnlyForOneUser ps = do
     cfg = testCfg {initialCleanupManagerDelay = 0, cleanupManagerStepDelay = 0, ciExpirationInterval = 500000}
 
 testUsersTimedMessages :: HasCallStack => TestParams -> IO ()
-testUsersTimedMessages ps = do
+testUsersTimedMessages ps' = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
       connectUsers alice bob
@@ -2498,6 +2498,7 @@ testUsersTimedMessages ps = do
       showActiveUser alice "alisa"
       alice #$> ("/_get chat @6 count=100", chat, [(1,"chat banner")])
   where
+    ps = ps' {printOutput = True} :: TestParams
     configureTimedMessages :: HasCallStack => TestCC -> TestCC -> String -> String -> IO ()
     configureTimedMessages alice bob bobId ttl = do
       aliceName <- userName alice
@@ -2654,7 +2655,7 @@ testUserPrivacy =
 testSetChatItemTTL :: HasCallStack => TestParams -> IO ()
 testSetChatItemTTL =
   testChat2 aliceProfile bobProfile $
-    \alice bob -> do
+    \alice bob -> withXFTPServer $ do
       connectUsers alice bob
       alice #> "@bob 1"
       bob <# "alice> 1"
@@ -2668,6 +2669,7 @@ testSetChatItemTTL =
       alice <## "use /fc 1 to cancel sending"
       bob <# "alice> sends file test.jpg (136.5 KiB / 139737 bytes)"
       bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+      alice <## "completed uploading file 1 (test.jpg) for bob"
       -- above items should be deleted after we set ttl
       threadDelay 3000000
       alice #> "@bob 3"
