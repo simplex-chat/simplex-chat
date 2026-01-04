@@ -866,7 +866,8 @@ testXFTPMarkToReceive = do
       bob <## "chat started"
 
       bob
-        <### [ "subscribed 1 connections on server localhost",
+        <### [ "subscribed service (1 connections) on server localhost: ok",
+               "received messages from service on server localhost",
                "started receiving file 1 (test.pdf) from alice",
                "saving file 1 from alice to test.pdf"
              ]
