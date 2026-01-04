@@ -212,8 +212,6 @@ jobs:
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
           echo ""                         >> cabal.project.local
-          echo "package jpeg-turbo"       >> cabal.project.local
-          echo "    flags: +static-gcc"   >> cabal.project.local
 
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
