@@ -2072,7 +2072,8 @@ testSharedMessageBody ps' =
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
 -- because of PostgreSQL concurrency deleteSndMsgDelivery fails to delete message body
-#if !defined(dbPostgres)          
+#if !defined(dbPostgres)
+          threadDelay 500000
           checkMsgBodyCount alice 0
 #endif
 
