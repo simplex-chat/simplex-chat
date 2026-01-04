@@ -48,7 +48,7 @@ RUN apt-get update && \
                        python3-venv \
                        xz-utils \
                        unzip \
-                       libturbojpeg \
+                       libturbojpeg-dev \
                        pkgconf &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
 
