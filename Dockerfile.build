@@ -47,7 +47,8 @@ RUN apt-get update && \
                        python3 \
                        python3-venv \
                        xz-utils \
-                       unzip &&\
+                       unzip \
+                       pkgconf &&\
     ln -s /bin/fusermount /bin/fusermount3 || :
 
 # Install Java Coretto
