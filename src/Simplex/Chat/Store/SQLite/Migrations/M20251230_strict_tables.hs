@@ -30,6 +30,10 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'call_state BLOB NOT NULL', 'call_state TEXT NOT NULL')
 WHERE type = 'table' AND name = 'calls';
 
+UPDATE sqlite_master
+SET sql = replace(sql, 'local_alias DEFAULT', 'local_alias TEXT DEFAULT')
+WHERE type = 'table' AND name = 'connections';
+
 PRAGMA writable_schema=0;
 |]
 
@@ -49,6 +53,10 @@ WHERE type = 'table' AND name != 'sqlite_sequence';
 UPDATE sqlite_master
 SET sql = replace(sql, 'call_state TEXT NOT NULL', 'call_state BLOB NOT NULL')
 WHERE type = 'table' AND name = 'calls';
+
+UPDATE sqlite_master
+SET sql = replace(sql, 'local_alias TEXT DEFAULT', 'local_alias DEFAULT')
+WHERE type = 'table' AND name = 'connections';
 
 PRAGMA writable_schema=0;
 
