@@ -417,8 +417,6 @@ jobs:
           echo "    flags: +openssl"                                                      >> cabal.project.local
           echo ""                                                                         >> cabal.project.local
           echo "package jpeg-turbo"                                                       >> cabal.project.local
-          echo "    extra-include-dirs: /opt/homebrew/opt/libjpeg-turbo/include"          >> cabal.project.local
-          echo "    extra-lib-dirs: /opt/homebrew/opt/libjpeg-turbo/lib"                  >> cabal.project.local
           echo "    flags: +static"                                                       >> cabal.project.local
 
       - name: Build CLI
