@@ -220,6 +220,8 @@ jobs:
         if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
+          pkg-config --list-all
+          pkg-config --list-all --debug
           cabal clean
           cabal update
           cabal build -j --enable-tests
