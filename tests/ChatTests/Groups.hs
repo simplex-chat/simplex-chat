@@ -2050,7 +2050,7 @@ testSendMultiManyBatches =
       itemsCount `shouldBe` [[n]]
 
 testSharedMessageBody :: HasCallStack => TestParams -> IO ()
-testSharedMessageBody ps =
+testSharedMessageBody ps' =
   withNewTestChatOpts ps opts' "alice" aliceProfile $ \alice -> do
     withSmpServer' serverCfg' $
       withNewTestChatOpts ps opts' "bob" bobProfile $ \bob ->
@@ -2072,12 +2072,14 @@ testSharedMessageBody ps =
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
 -- because of PostgreSQL concurrency deleteSndMsgDelivery fails to delete message body
-#if !defined(dbPostgres)          
+#if !defined(dbPostgres)
+          threadDelay 500000
           checkMsgBodyCount alice 0
 #endif
 
     alice <## "disconnected 4 connections on server localhost"
   where
+    ps = ps' {printOutput = True} :: TestParams
     tmp = tmpPath ps
     serverCfg' =
       smpServerCfg
