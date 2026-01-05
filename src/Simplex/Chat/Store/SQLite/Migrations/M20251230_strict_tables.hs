@@ -34,7 +34,7 @@ SET sql = CASE
 END
 WHERE type = 'table' AND name != 'sqlite_sequence';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 |]
 
 down_m20251230_strict_tables :: Query
@@ -58,7 +58,7 @@ UPDATE sqlite_master
 SET sql = replace(sql, 'local_alias TEXT DEFAULT', 'local_alias DEFAULT')
 WHERE type = 'table' AND name = 'connections';
 
-PRAGMA writable_schema=0;
+PRAGMA writable_schema=RESET;
 
 UPDATE group_members
 SET member_role = CAST(member_role as BLOB),
