@@ -46,8 +46,10 @@ echo "package direct-sqlcipher" >> cabal.project.local
 echo "    flags: +openssl" >> cabal.project.local
 echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
 echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+echo "package jpeg-turbo" >> cabal.project.local
+echo "    flags: +pkgconfig" >> cabal.project.local
 echo "package simplex-chat" >> cabal.project.local
-echo "    ghc-options: -shared -threaded -optl-L$openssl_windows_style_path -optl-lcrypto-3-x64 -o libsimplex.dll libsimplex.dll.def" >> cabal.project.local
+echo "    ghc-options: -shared -threaded -optl-L$openssl_windows_style_path -optl-lcrypto-3-x64 libsimplex.dll libsimplex.dll.def" >> cabal.project.local
 # Very important! Without it the build fails on linking step since the linker can't find exported symbols.
 # It looks like GHC bug because with such random path the build ends successfully
 sed -i "s/ld.lld.exe/abracadabra.exe/" `ghc --print-libdir`/settings
@@ -58,6 +60,7 @@ rm -rf apps/multiplatform/desktop/build/cmake
 
 mkdir -p apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp dist-newstyle/openssl-3.0.15/libcrypto-3-x64.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
+cp /mingw64/bin/libturbojpeg.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 cp libsimplex.dll apps/multiplatform/common/src/commonMain/cpp/desktop/libs/$OS-$ARCH/
 
 scripts/desktop/prepare-vlc-windows.sh

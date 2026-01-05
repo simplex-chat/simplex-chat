@@ -11,4 +11,9 @@ package direct-sqlcipher
     extra-lib-dirs: /opt/homebrew/opt/openssl@3.0/lib
     flags: +openssl
 
+package jpeg-turbo
+    extra-include-dirs: /opt/homebrew/opt/libjpeg-turbo/include
+    extra-lib-dirs: /opt/homebrew/opt/libjpeg-turbo/lib
+    flags: +static
+
 test-show-details: direct

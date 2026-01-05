@@ -208,6 +208,7 @@
                   packages.direct-sqlcipher.components.library.libs = pkgs.lib.mkForce [
                     pkgs.pkgsCross.mingwW64.openssl
                   ];
+                  packages.jpeg-turbo.flags.static = true;
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -348,6 +349,10 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
+                  packages.jpeg-turbo.flags.static-gcc = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (android32Pkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -406,6 +411,8 @@
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
+                  "chat_write_image"
+                  "chat_resize_image_to_str_size"
                 ];
                 postInstall = ''
                   set -x
@@ -471,6 +478,10 @@
                   packages.direct-sqlcipher.patches = [
                     ./scripts/nix/direct-sqlcipher-android-log.patch
                   ];
+                  packages.jpeg-turbo.flags.static-gcc = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (androidPkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -525,6 +536,8 @@
                   "chat_valid_name"
                   "chat_json_length"
                   "chat_write_file"
+                  "chat_write_image"
+                  "chat_resize_image_to_str_size"
                 ];
                 postInstall = ''
                   set -x
@@ -591,6 +604,10 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.jpeg-turbo.flags.static = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -607,6 +624,10 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.jpeg-turbo.flags.static = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -626,6 +647,10 @@
                   packages.simplexmq.flags.swift = true;
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.jpeg-turbo.flags.static = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [
@@ -641,6 +666,10 @@
                 extra-modules = [{
                   packages.direct-sqlcipher.flags.commoncrypto = true;
                   packages.entropy.flags.DoNotGetEntropy = true;
+                  packages.jpeg-turbo.flags.static = true;
+                  packages.jpeg-turbo.components.library.libs = pkgs.lib.mkForce [
+                    (pkgs.libjpeg_turbo.override { enableStatic = true; })
+                  ];
                   packages.simplex-chat.flags.client_library = true;
                   packages.simplexmq.flags.client_library = true;
                   packages.simplexmq.components.library.libs = pkgs.lib.mkForce [

@@ -23,7 +23,7 @@ on:
       - "PRIVACY.md"
 
 # This workflow uses custom actions (prepare-build and prepare-release) defined in:
-# 
+#
 # .github/actions/
 # ├── prepare-build
 # │   └── action.yml
@@ -211,12 +211,14 @@ jobs:
           echo "ignore-project: False"    >> cabal.project.local
           echo "package direct-sqlcipher" >> cabal.project.local
           echo "    flags: +openssl"      >> cabal.project.local
+          echo ""                         >> cabal.project.local
 
       # chmod/git commands are used to workaround permission issues when cache is restored
       - name: Build CLI
         if: matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
+          pkg-config --list-all
           cabal clean
           cabal update
           cabal build -j --enable-tests
@@ -412,6 +414,9 @@ jobs:
           echo "    extra-include-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/include"    >> cabal.project.local
           echo "    extra-lib-dirs: ${{ matrix.openssl_dir }}/openssl@3.0/lib"            >> cabal.project.local
           echo "    flags: +openssl"                                                      >> cabal.project.local
+          echo ""                                                                         >> cabal.project.local
+          echo "package jpeg-turbo"                                                       >> cabal.project.local
+          echo "    flags: +static"                                                       >> cabal.project.local
 
       - name: Build CLI
         id: mac_cli_build
@@ -512,7 +517,7 @@ jobs:
           minimum-size: 16GB
           maximum-size: 16GB
           disk-root: "C:"
-  
+
       - name: 'Setup MSYS2'
         uses: simplex-chat/setup-msys2@v2
         with:
@@ -522,6 +527,9 @@ jobs:
             git
             perl
             make
+            pkgconf
+            libjpeg-turbo
+            mingw-w64-x86_64-libjpeg-turbo
           pacboy: >-
             toolchain:p
             cmake:p
@@ -531,6 +539,10 @@ jobs:
         id: windows_cli_build
         shell: msys2 {0}
         run: |
+          pkg-config --list-all
+          pacman -Ql libjpeg-turbo
+          pacman -Ql mingw-w64-x86_64-libjpeg-turbo
+
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/prepare-openssl-windows.sh
           openssl_windows_style_path=$(echo `pwd`/dist-newstyle/openssl-3.0.15 | sed 's#/\([a-zA-Z]\)#\1:#' | sed 's#/#\\#g')
@@ -540,6 +552,8 @@ jobs:
           echo "    flags: +openssl" >> cabal.project.local
           echo "    extra-include-dirs: $openssl_windows_style_path\include" >> cabal.project.local
           echo "    extra-lib-dirs: $openssl_windows_style_path" >> cabal.project.local
+          echo "package jpeg-turbo" >> cabal.project.local
+          echo "    flags: +pkgconfig" >> cabal.project.local
 
           rm -rf dist-newstyle/src/direct-sq*
           sed -i "s/, unix /--, unix /" simplex-chat.cabal

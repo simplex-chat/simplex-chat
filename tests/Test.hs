@@ -12,6 +12,7 @@ import ChatTests.Utils (xdescribe'')
 import Control.Logger.Simple
 import Data.Time.Clock.System
 import JSONTests
+import LinkPreviewTests
 import MarkdownTests
 import MemberRelationsTests
 import MessageBatching

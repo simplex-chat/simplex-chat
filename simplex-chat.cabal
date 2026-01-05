@@ -42,6 +42,7 @@ library
       Simplex.Chat.Controller
       Simplex.Chat.Delivery
       Simplex.Chat.Files
+      Simplex.Chat.Image
       Simplex.Chat.Library.Commands
       Simplex.Chat.Library.Internal
       Simplex.Chat.Library.Subscriber
@@ -280,6 +281,7 @@ library
   default-extensions:
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns
+  pkgconfig-depends: libturbojpeg
   build-depends:
       aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
@@ -300,6 +302,9 @@ library
     , filepath ==1.4.*
     , http-types ==0.12.*
     , http2 >=4.2.2 && <4.3
+    , JuicyPixels >=3.3.8 && < 3.4
+    , JuicyPixels-jpeg-turbo ==0.1.0.0
+    , JuicyPixels-stbir ==0.1.0.0
     , memory ==0.18.*
     , mtl >=2.3.1 && <3.0
     , network >=3.1.2.7 && <3.2
@@ -360,6 +365,9 @@ executable simplex-bot
   build-depends:
       base >=4.7 && <5
     , directory ==1.3.*
+    , JuicyPixels ==3.3.*
+    , JuicyPixels-jpeg-turbo
+    , JuicyPixels-stbir
     , simplex-chat
   default-language: Haskell2010
   if flag(client_postgres)
@@ -380,6 +388,9 @@ executable simplex-bot-advanced
       async ==2.2.*
     , base >=4.7 && <5
     , directory ==1.3.*
+    , JuicyPixels ==3.3.*
+    , JuicyPixels-jpeg-turbo ==0.1.0.0
+    , JuicyPixels-stbir ==0.1.0.0
     , simplex-chat
     , simplexmq >=6.3
     , stm ==2.5.*
@@ -548,6 +559,7 @@ test-suite simplex-chat-test
       ChatTests.Utils
       JSONFixtures
       JSONTests
+      LinkPreviewTests
       MarkdownTests
       MemberRelationsTests
       MessageBatching
@@ -598,7 +610,10 @@ test-suite simplex-chat-test
       StrictData
   ghc-options: -O2 -Weverything -Wno-missing-exported-signatures -Wno-missing-import-lists -Wno-missed-specialisations -Wno-all-missed-specialisations -Wno-unsafe -Wno-safe -Wno-missing-local-signatures -Wno-missing-kind-signatures -Wno-missing-deriving-strategies -Wno-monomorphism-restriction -Wno-prepositive-qualified-module -Wno-unused-packages -Wno-implicit-prelude -Wno-missing-safe-haskell-mode -Wno-missing-export-lists -Wno-partial-fields -Wcompat -Werror=incomplete-record-updates -Werror=incomplete-patterns -Werror=missing-methods -Werror=incomplete-uni-patterns -Werror=tabs -Wredundant-constraints -Wincomplete-record-updates -Wunused-type-patterns -threaded
   build-depends:
-      QuickCheck ==2.14.*
+      JuicyPixels
+    , JuicyPixels-jpeg-turbo
+    , JuicyPixels-stbir
+    , QuickCheck ==2.14.*
     , aeson ==2.2.*
     , ansi-terminal >=0.10 && <0.12
     , async ==2.2.*

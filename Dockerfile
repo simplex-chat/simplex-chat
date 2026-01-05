@@ -5,7 +5,7 @@ FROM ubuntu:${TAG} AS build
 ### Build stage
 
 # Install curl and git and simplex-chat dependencies
-RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev llvm-12 llvm-12-dev libnuma-dev libssl-dev
+RUN apt-get update && apt-get install -y curl git build-essential libgmp3-dev zlib1g-dev llvm-12 llvm-12-dev libnuma-dev libssl-dev libturbojpeg-dev pkgconf
 
 # Specify bootstrap Haskell versions
 ENV BOOTSTRAP_HASKELL_GHC_VERSION=9.6.3
