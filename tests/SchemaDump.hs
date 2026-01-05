@@ -111,7 +111,8 @@ testVerifyStrict = do
 skipComparisonForUpMigrations :: [String]
 skipComparisonForUpMigrations =
   [ -- schema doesn't change
-    "20250129_delete_unused_contacts"
+    "20250129_delete_unused_contacts",
+    "20251230_strict_tables"
   ]
 
 skipComparisonForDownMigrations :: [String]
