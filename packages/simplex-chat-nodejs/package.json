@@ -11,7 +11,7 @@
     "build": "node-gyp build",
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node src/tests.js"
   },
   "dependencies": {
     "extract-zip": "^2.0.1"
