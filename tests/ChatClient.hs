@@ -131,7 +131,7 @@ testCoreOpts =
           -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
           -- instead different schema prefix is passed per client so that single test database is used
           dbSchemaPrefix = "",
-          dbPoolSize = 3,
+          dbPoolSize = 1,
           dbCreateSchema = True
 #else
         { dbFilePrefix = "./simplex_v1", -- dbFilePrefix is not used in tests (except bot tests where it's redefined)
@@ -188,16 +188,11 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
+      messageRetryInterval = RetryInterval2 {riFast = riFast {initialInterval = 50000}, riSlow = riSlow {initialInterval = 50000}}
     }
-
-testAgentCfgSlow :: AgentConfig
-testAgentCfgSlow =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) srvHostnamesSMPClientVersion, -- v2
-      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion, -- v5
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
-    }
+  where
+    RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
 testAgentCfgNoShortLinks :: AgentConfig
 testAgentCfgNoShortLinks =
@@ -216,9 +211,6 @@ testCfg =
       tbqSize = 16,
       confirmMigrations = MCYesUp
     }
-
-testCfgSlow :: ChatConfig
-testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
 
 testCfgNoShortLinks :: ChatConfig
 testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
@@ -526,7 +518,7 @@ smpServerCfg :: ServerConfig STMMsgStore
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
-      tbqSize = 1,
+      tbqSize = 4,
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,

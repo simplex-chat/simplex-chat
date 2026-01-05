@@ -21,7 +21,7 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Word (Word16, Word32)
 import Simplex.Chat.Remote.AppVersion
-import Simplex.Chat.Types (verificationCode)
+import Simplex.Chat.Types (BoolDef, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
@@ -47,7 +47,8 @@ data RemoteCrypto = RemoteCrypto
     rcvCounter :: TVar Word32,
     chainKeys :: TSbChainKeys,
     skippedKeys :: TM.TMap Word32 (C.SbKeyNonce, C.SbKeyNonce),
-    signatures :: RemoteSignatures
+    signatures :: RemoteSignatures,
+    compression :: Bool
   }
 
 getRemoteSndKeys :: RemoteCrypto -> STM (Word32, C.SbKeyNonce, C.SbKeyNonce)
@@ -220,7 +221,8 @@ data RemoteFile = RemoteFile
 
 data CtrlAppInfo = CtrlAppInfo
   { appVersionRange :: AppVersionRange,
-    deviceName :: Text
+    deviceName :: Text,
+    compression :: BoolDef
   }
   deriving (Show)
 
@@ -228,7 +230,8 @@ data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,
     deviceName :: Text,
     encoding :: PlatformEncoding,
-    encryptFiles :: Bool -- if the host encrypts files in app storage
+    encryptFiles :: Bool, -- if the host encrypts files in app storage
+    compression :: BoolDef
   }
 
 $(J.deriveJSON defaultJSON ''RemoteFile)

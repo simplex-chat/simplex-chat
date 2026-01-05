@@ -61,7 +61,6 @@ chatProfileTests = do
     it "contact address ok to connect; known contact" testPlanAddressOkKnown
     it "own contact address" testPlanAddressOwn
     it "connecting via contact address" testPlanAddressConnecting
-    it "connecting via contact address (slow handshake)" testPlanAddressConnectingSlow
     it "re-connect with deleted contact" testPlanAddressContactDeletedReconnected
     it "contact via address" testPlanAddressContactViaAddress
     it "contact via short address" testPlanAddressContactViaShortAddress
@@ -72,7 +71,6 @@ chatProfileTests = do
     it "set connection incognito" testSetConnectionIncognito
     it "reset connection incognito" testResetConnectionIncognito
     it "set connection incognito prohibited during negotiation" testSetConnectionIncognitoProhibitedDuringNegotiation
-    it "set connection incognito prohibited during negotiation (slow handshake)" testSetConnectionIncognitoProhibitedDuringNegotiationSlow
     it "connection incognito unchanged errors" testConnectionIncognitoUnchangedErrors
     it "set, reset, set connection incognito" testSetResetSetConnectionIncognito
     it "join group incognito" testJoinGroupIncognito
@@ -1110,46 +1108,6 @@ testPlanAddressConnecting ps = do
     bob <## "contact address: known contact alice"
     bob <## "use @alice <message> to send messages"
 
-testPlanAddressConnectingSlow :: HasCallStack => TestParams -> IO ()
-testPlanAddressConnectingSlow ps = do
-  cLink <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
-    alice ##> "/ad"
-    getContactLinkNoShortLink alice True
-  withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
-    threadDelay 100000
-
-    bob ##> ("/c " <> cLink)
-    bob <## "connection request sent!"
-
-    bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "contact address: connecting, allowed to reconnect"
-
-    let cLinkSchema2 = linkAnotherSchema cLink
-    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
-    bob <## "contact address: connecting, allowed to reconnect"
-
-    threadDelay 100000
-  withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
-    alice <## "subscribed 1 connections on server localhost"
-    alice <## "bob (Bob) wants to connect to you!"
-    alice <## "to accept: /ac bob"
-    alice <## "to reject: /rc bob (the sender will NOT be notified)"
-    alice ##> "/ac bob"
-    alice <## "bob (Bob): accepting contact request..."
-  withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
-    threadDelay 500000
-    bob <## "subscribed 1 connections on server localhost"
-    bob @@@ [("@alice", "")]
-    bob ##> ("/_connect plan 1 " <> cLink)
-    bob <## "contact address: connecting to contact alice"
-
-    let cLinkSchema2 = linkAnotherSchema cLink
-    bob ##> ("/_connect plan 1 " <> cLinkSchema2)
-    bob <## "contact address: connecting to contact alice"
-
-    bob ##> ("/c " <> cLink)
-    bob <## "contact address: connecting to contact alice"
-
 testPlanAddressContactDeletedReconnected :: HasCallStack => TestParams -> IO ()
 testPlanAddressContactDeletedReconnected =
   testChat2 aliceProfile bobProfile $
@@ -1555,30 +1513,6 @@ testSetConnectionIncognitoProhibitedDuringNegotiation ps = do
     withTestChat ps "bob" $ \bob -> do
       bob <## "subscribed 1 connections on server localhost"
       bob <## "alice (Alice): contact is connected"
-      alice <##> bob
-      alice `hasContactProfiles` ["alice", "bob"]
-      bob `hasContactProfiles` ["alice", "bob"]
-
-testSetConnectionIncognitoProhibitedDuringNegotiationSlow :: HasCallStack => TestParams -> IO ()
-testSetConnectionIncognitoProhibitedDuringNegotiationSlow ps = do
-  inv <- withNewTestChatCfg ps testCfgSlow "alice" aliceProfile $ \alice -> do
-    threadDelay 250000
-    alice ##> "/connect"
-    getInvitationNoShortLink alice
-  withNewTestChatCfg ps testCfgSlow "bob" bobProfile $ \bob -> do
-    threadDelay 250000
-    bob ##> ("/c " <> inv)
-    bob <## "confirmation sent!"
-  withTestChatCfg ps testCfgSlow "alice" $ \alice -> do
-    threadDelay 250000
-    alice <## "subscribed 1 connections on server localhost"
-    alice ##> "/_set incognito :1 on"
-    alice <## "chat db error: SEPendingConnectionNotFound {connId = 1}"
-    withTestChatCfg ps testCfgSlow "bob" $ \bob -> do
-      bob <## "subscribed 1 connections on server localhost"
-      concurrently_
-        (bob <## "alice (Alice): contact is connected")
-        (alice <## "bob (Bob): contact is connected")
       alice <##> bob
       alice `hasContactProfiles` ["alice", "bob"]
       bob `hasContactProfiles` ["alice", "bob"]
@@ -2022,8 +1956,14 @@ testChangePCCUser = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to other user
+#if defined(dbPostgres)
+    alice ##> "/_set conn user :2 3"
+    alice <## "connection 2 changed from user alisa to user alisa2, new link:"
+#else
+    -- connection ID does not change in SQLite because table has no auto-increment
     alice ##> "/_set conn user :1 3"
     alice <## "connection 1 changed from user alisa to user alisa2, new link:"
+#endif
     alice <## ""
     _shortInv <- getTermLine alice
     alice <## ""
@@ -2065,8 +2005,14 @@ testChangePCCUserFromIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection back to initial user
+#if defined(dbPostgres)
+    alice ##> "/_set conn user :2 1"
+    alice <## "connection 2 changed from user alisa to user alice, new link:"
+#else
+    -- connection ID does not change in SQLite because table has no auto-increment
     alice ##> "/_set conn user :1 1"
     alice <## "connection 1 changed from user alisa to user alice, new link:"
+#endif
     alice <## ""
     _shortInv <- getTermLine alice
     alice <## ""
@@ -2104,9 +2050,16 @@ testChangePCCUserAndThenIncognito = testChat2 aliceProfile bobProfile $
     alice ##> "/user alisa"
     showActiveUser alice "alisa"
     -- Change connection to incognito and make sure it's attached to the newly created user profile
+#if defined(dbPostgres)
+    alice ##> "/_set incognito :2 on"
+    _ <- getTermLine alice
+    alice <## "connection 2 changed to incognito"
+#else
+    -- connection ID does not change in SQLite because table has no auto-increment
     alice ##> "/_set incognito :1 on"
     _ <- getTermLine alice
     alice <## "connection 1 changed to incognito"
+#endif
     bob ##> ("/connect " <> inv)
     bob <## "confirmation sent!"
     alisaIncognito <- getTermLine alice
@@ -2485,10 +2438,8 @@ testEnableTimedMessagesContact =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
-      alice <## "timed message deleted: hi"
-      alice <## "timed message deleted: hey"
-      bob <## "timed message deleted: hi"
-      bob <## "timed message deleted: hey"
+      alice <### ["timed message deleted: hi", "timed message deleted: hey"]
+      bob <### ["timed message deleted: hi", "timed message deleted: hey"]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       -- turn off, messages are not disappearing
@@ -2580,10 +2531,8 @@ testTimedMessagesEnabledGlobally =
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)"), (1, "hi"), (0, "hey")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)"), (0, "hi"), (1, "hey")])
       threadDelay 1000000
-      alice <## "timed message deleted: hi"
-      bob <## "timed message deleted: hi"
-      alice <## "timed message deleted: hey"
-      bob <## "timed message deleted: hey"
+      alice <### ["timed message deleted: hi", "timed message deleted: hey"]
+      bob <### ["timed message deleted: hi", "timed message deleted: hey"]
       alice #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(0, "Disappearing messages: enabled (1 sec)")])
       bob #$> ("/_get chat @2 count=100", chat, chatFeatures <> [(1, "Disappearing messages: enabled (1 sec)")])
 

@@ -114,6 +114,7 @@ defaultChatConfig =
       deliveryWorkerDelay = 0,
       deliveryBucketSize = 10000,
       deviceNameForRemote = "",
+      remoteCompression = True,
       chatHooks = defaultChatHooks
     }
 
