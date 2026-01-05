@@ -219,7 +219,6 @@ jobs:
         shell: docker exec -t builder sh -eu {0}
         run: |
           pkg-config --list-all
-          pkg-config --list-all --debug
           cabal clean
           cabal update
           cabal build -j --enable-tests
@@ -529,6 +528,7 @@ jobs:
             perl
             make
             pkgconf
+            libjpeg-turbo
             mingw-w64-x86_64-libjpeg-turbo
           pacboy: >-
             toolchain:p
@@ -540,7 +540,8 @@ jobs:
         shell: msys2 {0}
         run: |
           pkg-config --list-all
-          pkg-config --list-all --debug
+          pacman -Ql libjpeg-turbo
+          pacman -Ql mingw-w64-x86_64-libjpeg-turbo
 
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
           scripts/desktop/prepare-openssl-windows.sh
