@@ -32,11 +32,11 @@
 &nbsp;
 [<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)
 
 - 🖲 Protects your messages and metadata - who you talk to and when.
 - 🔐 Double ratchet end-to-end encryption, with additional encryption layer.
-- 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
+- 📱 Mobile apps for Android ([Google Play](https://play.google.com/store/apps/details?id=chat.simplex.app), [APK](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)) and [iOS](https://apps.apple.com/us/app/simplex-chat/id1605771084).
 - 🚀 [TestFlight preview for iOS](https://testflight.apple.com/join/DWuT2LQu) with the new features 1-2 weeks earlier - **limited to 10,000 users**!
 - 🖥 Available as a terminal (console) [app / CLI](#zap-quick-installation-of-a-terminal-app) on Linux, MacOS, Windows.
 
@@ -145,9 +145,9 @@ It is possible to donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) (commission-free) or [OpenCollective](https://opencollective.com/simplex-chat) (~10% commission).
 - BTC: bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u
-- XMR: 8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt
+- XMR: 8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c
 - BCH: bitcoincash:qq6c8vfvxqrk6rhdysgvkhqc24sggkfsx5nqvdlqcg
-- ETH/USDT (Ethereum, Arbitrum One): 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a
+- ETH/USDT (Ethereum, Arbitrum One): 0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a (donate.simplexchat.eth)
 - ZEC: t1fwjQW5gpFhDqXNhxqDWyF9j9WeKvVS5Jg
 - ZEC shielded: u16rnvkflumf5uw9frngc2lymvmzgdr2mmc9unyu0l44unwfmdcpfm0axujd2w34ct3ye709azxsqge45705lpvvqu264ltzvfay55ygyq
 - DOGE: D99pV4n9TrPxBPCkQGx4w4SMSa6QjRBxPf
@@ -435,4 +435,4 @@ Graphic designs, artworks and layouts are not licensed for re-use. If you want t
 &nbsp;
 [<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/testflight.png" alt="iOS TestFlight" height="41">](https://testflight.apple.com/join/DWuT2LQu)
 &nbsp;
-[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex.apk)
+[<img src="https://raw.githubusercontent.com/simplex-chat/.github/refs/heads/master/profile/images/apk_icon.png" alt="APK" height="41">](https://github.com/simplex-chat/simplex-chat/releases/latest/download/simplex-aarch64.apk)

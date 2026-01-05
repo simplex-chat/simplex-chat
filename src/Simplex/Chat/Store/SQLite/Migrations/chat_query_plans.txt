@@ -3445,14 +3445,6 @@ Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
 Query: 
-        SELECT group_member_intro_id, intro_status
-        FROM group_member_intros
-        WHERE re_group_member_id = ? AND to_group_member_id = ?
-      
-Plan:
-SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
-
-Query: 
         SELECT group_scope_tag, group_scope_group_member_id
         FROM chat_items
         WHERE chat_item_id = ?
@@ -3501,7 +3493,7 @@ SEARCH m USING INDEX idx_group_members_user_id (user_id=?)
 SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
-        SELECT pgm.message_id, m.shared_msg_id, m.msg_body, m.chat_msg_event, pgm.group_member_intro_id
+        SELECT pgm.message_id, m.shared_msg_id, m.msg_body
         FROM pending_group_messages pgm
         JOIN messages m USING (message_id)
         WHERE pgm.group_member_id = ?
@@ -3731,52 +3723,6 @@ Plan:
 SEARCH connections USING INDEX idx_connections_group_member_id (group_member_id=?)
 LIST SUBQUERY 1
 SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
-
-Query: 
-        UPDATE group_member_intros SET intro_status='fwd'
-        WHERE re_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
-          AND to_group_member_id IN (SELECT group_member_id FROM group_members WHERE local_display_name = ?)
-      
-Plan:
-SEARCH group_member_intros USING INDEX sqlite_autoindex_group_member_intros_1 (re_group_member_id=? AND to_group_member_id=?)
-LIST SUBQUERY 1
-SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
-LIST SUBQUERY 2
-SCAN group_members USING COVERING INDEX idx_group_members_user_id_local_display_name
-
-Query: 
-        UPDATE group_members
-        SET
-          member_relations_vector = (
-            SELECT migrate_relations_vector(idx, direction, intro_status)
-            FROM (
-              SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
-              FROM group_member_intros i
-              JOIN group_members m ON m.group_member_id = i.to_group_member_id
-              WHERE i.re_group_member_id = group_members.group_member_id
-              UNION ALL
-              SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
-              FROM group_member_intros i
-              JOIN group_members m ON m.group_member_id = i.re_group_member_id
-              WHERE i.to_group_member_id = group_members.group_member_id
-            ) AS relations
-          ),
-          updated_at = ?
-        WHERE group_member_id = ?
-          AND member_relations_vector IS NULL
-      
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-CORRELATED SCALAR SUBQUERY 3
-CO-ROUTINE relations
-COMPOUND QUERY
-LEFT-MOST SUBQUERY
-SEARCH i USING INDEX idx_group_member_intros_re_group_member_id (re_group_member_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-UNION ALL
-SEARCH i USING INDEX idx_group_member_intros_to_group_member_id (to_group_member_id=?)
-SEARCH m USING INTEGER PRIMARY KEY (rowid=?)
-SCAN relations
 
 Query: 
         UPDATE group_members
@@ -4449,7 +4395,7 @@ Plan:
 
 Query: 
       INSERT INTO pending_group_messages
-        (group_member_id, message_id, group_member_intro_id, created_at, updated_at) VALUES (?,?,?,?,?)
+        (group_member_id, message_id, created_at, updated_at) VALUES (?,?,?,?)
     
 Plan:
 
@@ -6111,10 +6057,6 @@ Plan:
 Query: INSERT INTO xftp_file_descriptions (user_id, file_descr_text, file_descr_part_no, file_descr_complete, created_at, updated_at) VALUES (?,?,?,?,?,?)
 Plan:
 
-Query: SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL
-Plan:
-SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: SELECT 1 FROM settings WHERE user_id = ? LIMIT 1
 Plan:
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
@@ -6144,12 +6086,6 @@ Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-
-Query: SELECT EXISTS (SELECT 1 FROM group_members WHERE member_relations_vector IS NULL LIMIT 1)
-Plan:
-SCAN CONSTANT ROW
-SCALAR SUBQUERY 1
-SCAN group_members
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
@@ -6530,14 +6466,6 @@ SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE files SET private_snd_file_descr = ?, updated_at = ? WHERE user_id = ? AND file_id = ?
 Plan:
 SEARCH files USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE group_member_intros SET intro_status='con'
-Plan:
-SCAN group_member_intros
-
-Query: UPDATE group_member_intros SET intro_status='fwd'
-Plan:
-SCAN group_member_intros
 
 Query: UPDATE group_members SET contact_id = ?, updated_at = ? WHERE contact_profile_id = ?
 Plan:

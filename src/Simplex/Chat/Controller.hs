@@ -96,7 +96,12 @@ import Simplex.RemoteControl.Types
 import System.IO (Handle)
 import System.Mem.Weak (Weak)
 import UnliftIO.STM
-#if !defined(dbPostgres)
+
+#if defined(dbPostgres)
+import qualified Database.PostgreSQL.Simple as PSQL
+
+type SQLError = PSQL.SqlError
+#else
 import Database.SQLite.Simple (SQLError)
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
@@ -159,6 +164,7 @@ data ChatConfig = ChatConfig
     deliveryBucketSize :: Int,
     highlyAvailable :: Bool,
     deviceNameForRemote :: Text,
+    remoteCompression :: Bool,
     chatHooks :: ChatHooks
   }
 
@@ -759,7 +765,7 @@ data ChatResponse
   | CRRemoteFileStored {remoteHostId :: RemoteHostId, remoteFileSource :: CryptoFile}
   | CRRemoteCtrlList {remoteCtrls :: [RemoteCtrlInfo]}
   | CRRemoteCtrlConnecting {remoteCtrl_ :: Maybe RemoteCtrlInfo, ctrlAppInfo :: CtrlAppInfo, appVersion :: AppVersion}
-  | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo}
+  | CRRemoteCtrlConnected {remoteCtrl :: RemoteCtrlInfo, compression :: Bool}
   | CRSQLResult {rows :: [Text]}
 #if !defined(dbPostgres)
   | CRArchiveExported {archiveErrors :: [ArchiveError]}
@@ -862,7 +868,7 @@ data ChatEvent
   | CEvtNtfMessage {user :: User, connEntity :: ConnectionEntity, ntfMessage :: NtfMsgAckInfo}
   | CEvtRemoteHostSessionCode {remoteHost_ :: Maybe RemoteHostInfo, sessionCode :: Text}
   | CEvtNewRemoteHost {remoteHost :: RemoteHostInfo}
-  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo}
+  | CEvtRemoteHostConnected {remoteHost :: RemoteHostInfo, compression :: Bool}
   | CEvtRemoteHostStopped {remoteHostId_ :: Maybe RemoteHostId, rhsState :: RemoteHostSessionState, rhStopReason :: RemoteHostStopReason}
   | CEvtRemoteCtrlFound {remoteCtrl :: RemoteCtrlInfo, ctrlAppInfo_ :: Maybe CtrlAppInfo, appVersion :: AppVersion, compatible :: Bool}
   | CEvtRemoteCtrlSessionCode {remoteCtrl_ :: Maybe RemoteCtrlInfo, sessionCode :: Text}
@@ -902,7 +908,7 @@ allowRemoteEvent = \case
   CEvtChatSuspended -> False
   CEvtRemoteHostSessionCode {} -> False
   CEvtNewRemoteHost _ -> False
-  CEvtRemoteHostConnected _ -> False
+  CEvtRemoteHostConnected {} -> False
   CEvtRemoteHostStopped {} -> False
   CEvtRemoteCtrlFound {} -> False
   CEvtRemoteCtrlSessionCode {} -> False
@@ -1403,7 +1409,8 @@ data RemoteCtrlSession
   | RCSessionConnecting
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
         rcsClient :: RCCtrlClient,
-        rcsWaitSession :: Async ()
+        rcsWaitSession :: Async (),
+        ctrlAppInfo :: CtrlAppInfo
       }
   | RCSessionPendingConfirmation
       { remoteCtrlId_ :: Maybe RemoteCtrlId,
@@ -1412,7 +1419,8 @@ data RemoteCtrlSession
         tls :: TLS 'TClient,
         sessionCode :: Text,
         rcsWaitSession :: Async (),
-        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing))
+        rcsWaitConfirmation :: TMVar (Either RCErrorType (RCCtrlSession, RCCtrlPairing)),
+        ctrlAppInfo :: CtrlAppInfo
       }
   | RCSessionConnected
       { remoteCtrlId :: RemoteCtrlId,
@@ -1420,7 +1428,8 @@ data RemoteCtrlSession
         tls :: TLS 'TClient,
         rcsSession :: RCCtrlSession,
         http2Server :: Async (),
-        remoteOutputQ :: TBQueue (Either ChatError ChatEvent)
+        remoteOutputQ :: TBQueue (Either ChatError ChatEvent),
+        ctrlAppInfo :: CtrlAppInfo
       }
 
 data RemoteCtrlSessionState
@@ -1544,25 +1553,24 @@ withFastStore = withStorePriority True
 withStorePriority :: Bool -> (DB.Connection -> ExceptT StoreError IO a) -> CM a
 withStorePriority priority action = do
   ChatController {chatStore} <- ask
-  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catches` handleDBErrors
+  liftIOEither $ withTransactionPriority chatStore priority (runExceptT . withExceptT ChatErrorStore . action) `E.catch` handleDBErrors
 
 withStoreBatch :: Traversable t => (DB.Connection -> t (IO (Either ChatError a))) -> CM' (t (Either ChatError a))
 withStoreBatch actions = do
   ChatController {chatStore} <- ask
-  liftIO $ withTransaction chatStore $ mapM (`E.catches` handleDBErrors) . actions
+  liftIO $ withTransaction chatStore $ mapM (`E.catch` handleDBErrors) . actions
 
--- TODO [postgres] postgres specific error handling
-handleDBErrors :: [E.Handler (Either ChatError a)]
-handleDBErrors =
-#if !defined(dbPostgres)
-  ( E.Handler $ \(e :: SQLError) ->
-      let se = SQL.sqlError e
-          busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
-       in pure . Left . ChatErrorStore $ if busy then SEDBBusyError $ show se else SEDBException $ show e
-  ) :
+handleDBErrors :: E.SomeException -> IO (Either ChatError a)
+handleDBErrors e = pure $ Left $ ChatErrorStore $ case E.fromException e of
+  Just (e' :: SQLError) ->
+#if defined(dbPostgres)
+    SEDBException $ show e'
+#else
+    let se = SQL.sqlError e'
+        busy = se == SQL.ErrorBusy || se == SQL.ErrorLocked
+     in (if busy then SEDBBusyError else SEDBException) $ show e'
 #endif
-  [ E.Handler $ \(E.SomeException e) -> pure . Left . ChatErrorStore . SEDBException $ show e
-  ]
+  Nothing -> SEDBException $ show e
 
 withStoreBatch' :: Traversable t => (DB.Connection -> t (IO a)) -> CM' (t (Either ChatError a))
 withStoreBatch' actions = withStoreBatch $ fmap (fmap Right) . actions

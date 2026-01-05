@@ -395,7 +395,6 @@ CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
-  group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
 );
@@ -820,9 +819,6 @@ CREATE INDEX idx_group_profiles_user_id ON group_profiles(user_id);
 CREATE INDEX idx_groups_chat_item_id ON groups(chat_item_id);
 CREATE INDEX idx_groups_group_profile_id ON groups(group_profile_id);
 CREATE INDEX idx_messages_group_id ON messages(group_id);
-CREATE INDEX idx_pending_group_messages_group_member_intro_id ON pending_group_messages(
-  group_member_intro_id
-);
 CREATE INDEX idx_pending_group_messages_message_id ON pending_group_messages(
   message_id
 );

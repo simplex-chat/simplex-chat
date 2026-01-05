@@ -99,18 +99,10 @@ module Simplex.Chat.Store.Groups
     deleteGroupMember,
     deleteGroupMemberConnection,
     updateGroupMemberRole,
-    createIntroductions,
-    createIntrosOrUpdateVectors,
     setMemberVectorNewRelations,
     setMembersVectorsNewRelation,
     setMemberVectorRelationConnected,
-    migrateGetMemberRelationsVector,
-    migrateMemberRelationsVector,
-    migrateMemberRelationsVector',
-    getMemberRelationsVector_,
-    updateIntroStatus,
-    getIntroduction,
-    getIntroducedGroupMemberIds,
+    getMemberRelationsVector,
     createIntroReMember,
     createIntroToMemberContact,
     getMatchingContacts,
@@ -151,8 +143,6 @@ module Simplex.Chat.Store.Groups
     setGroupChatTTL,
     getGroupChatTTL,
     getUserGroupsToExpire,
-    hasMembersWithoutVector,
-    getGMsWithoutVectorIds,
     updateGroupAlias,
   )
 where
@@ -166,7 +156,6 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString as B
 import Data.Char (toLower)
 import Data.Either (rights)
-import Data.Foldable (foldrM)
 import Data.Int (Int64)
 import Data.List (partition, sortOn)
 import Data.Maybe (catMaybes, fromMaybe, isJust, isNothing)
@@ -1609,75 +1598,6 @@ updateGroupMemberRole :: DB.Connection -> User -> GroupMember -> GroupMemberRole
 updateGroupMemberRole db User {userId} GroupMember {groupMemberId} memRole =
   DB.execute db "UPDATE group_members SET member_role = ? WHERE user_id = ? AND group_member_id = ?" (memRole, userId, groupMemberId)
 
-createIntroductions :: DB.Connection -> VersionChat -> [GroupMember] -> GroupMember -> IO [GroupMember]
-createIntroductions db chatV reMembers toMember
-  | null reMembers = pure []
-  | otherwise = do
-      currentTs <- getCurrentTime
-      catMaybes <$> mapM (createIntro_ currentTs) reMembers
-  where
-    createIntro_ :: UTCTime -> GroupMember -> IO (Maybe GroupMember)
-    createIntro_ ts reMember =
-      -- when members connect concurrently, host would try to create introductions between them in both directions;
-      -- this check avoids creating second (redundant) introduction
-      checkInverseIntro >>= \case
-        Just _ -> pure Nothing
-        Nothing -> do
-          DB.execute
-            db
-            [sql|
-              INSERT INTO group_member_intros
-                (re_group_member_id, to_group_member_id, intro_status, intro_chat_protocol_version, created_at, updated_at)
-              VALUES (?,?,?,?,?,?)
-            |]
-            (groupMemberId' reMember, groupMemberId' toMember, GMIntroPending, chatV, ts, ts)
-          pure $ Just reMember
-      where
-        checkInverseIntro :: IO (Maybe Int64)
-        checkInverseIntro =
-          maybeFirstRow fromOnly $
-            DB.query
-              db
-              "SELECT 1 FROM group_member_intros WHERE re_group_member_id = ? AND to_group_member_id = ? LIMIT 1"
-              (groupMemberId' toMember, groupMemberId' reMember)
-
--- Create introductions for members without vectors and update vectors for members with vectors.
--- Partitioning and updates happen in same transaction to avoid race conditions.
-createIntrosOrUpdateVectors :: DB.Connection -> VersionRangeChat -> [GroupMember] -> GroupMember -> IO [GroupMember]
-createIntrosOrUpdateVectors db vr reMembers toMember
-  | null reMembers = pure []
-  | otherwise = do
-      (memsWithVec, memsWithoutVec) <- partitionByVector reMembers
-      let GroupMember {indexInGroup} = toMember
-      setMembersVectorsNewRelation db memsWithVec indexInGroup IDSubjectIntroduced MRIntroduced
-      memsWithoutVec' <- createIntroductions db (maxVersion vr) memsWithoutVec toMember
-      pure $ memsWithoutVec' <> memsWithVec
-  where
-    partitionByVector :: [GroupMember] -> IO ([GroupMember], [GroupMember])
-#if defined(dbPostgres)
-    partitionByVector members = do
-      let memberIds = map groupMemberId' members
-      -- Lock rows first to ensure partitioning doesn't change in case of concurrent updates
-      _ :: [Only Int] <-
-        DB.query
-          db
-          "SELECT 1 FROM group_members WHERE group_member_id IN ? FOR UPDATE"
-          (Only $ In memberIds)
-      memberIdsWithVec <- S.fromList . map fromOnly <$>
-        DB.query
-          db
-          "SELECT group_member_id FROM group_members WHERE group_member_id IN ? AND member_relations_vector IS NOT NULL"
-          (Only $ In memberIds)
-      pure $ partition (\m -> groupMemberId' m `S.member` memberIdsWithVec) members
-#else
-    partitionByVector = foldrM checkMember ([], [])
-      where
-        checkMember m (withVec, withoutVec) = do
-          hasVec <- isJust <$> maybeFirstRow fromOnly
-            (DB.query db "SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL" (Only $ groupMemberId' m) :: IO [Only Int64])
-          pure $ if hasVec then (m : withVec, withoutVec) else (withVec, m : withoutVec)
-#endif
-
 setMemberVectorNewRelations :: DB.Connection -> GroupMember -> [(Int64, (IntroductionDirection, MemberRelation))] -> IO ()
 setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
   v_ <- maybeFirstRow fromOnly $
@@ -1742,99 +1662,13 @@ setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {ind
     |]
     (Binary v', currentTs, groupMemberId)
 
-migrateGetMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO ByteString
-migrateGetMemberRelationsVector db m@GroupMember {groupMemberId} = do
-  liftIO $ migrateMemberRelationsVector db m
+getMemberRelationsVector :: DB.Connection -> GroupMember -> ExceptT StoreError IO ByteString
+getMemberRelationsVector db GroupMember {groupMemberId} =
   ExceptT . firstRow fromOnly (SEGroupMemberNotFound groupMemberId) $
     DB.query
       db
       "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
       (Only groupMemberId)
-
-migrateMemberRelationsVector :: DB.Connection -> GroupMember -> IO ()
-migrateMemberRelationsVector db GroupMember {groupMemberId} =
-  migrateMemberRelationsVector' db groupMemberId
-
-migrateMemberRelationsVector' :: DB.Connection -> GroupMemberId -> IO ()
-migrateMemberRelationsVector' db groupMemberId = do
-  currentTs <- liftIO getCurrentTime
-  liftIO $ do
-#if defined(dbPostgres)
-    -- Lock the row first to ensure computation runs only after lock is acquired
-    _ :: [Only Int] <-
-      DB.query
-        db
-        "SELECT 1 FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NULL FOR UPDATE"
-        (Only groupMemberId)
-#endif
-    DB.execute
-      db
-      [sql|
-        UPDATE group_members
-        SET
-          member_relations_vector = (
-            SELECT migrate_relations_vector(idx, direction, intro_status)
-            FROM (
-              SELECT m.index_in_group AS idx, 0 AS direction, i.intro_status
-              FROM group_member_intros i
-              JOIN group_members m ON m.group_member_id = i.to_group_member_id
-              WHERE i.re_group_member_id = group_members.group_member_id
-              UNION ALL
-              SELECT m.index_in_group AS idx, 1 AS direction, i.intro_status
-              FROM group_member_intros i
-              JOIN group_members m ON m.group_member_id = i.re_group_member_id
-              WHERE i.to_group_member_id = group_members.group_member_id
-            ) AS relations
-          ),
-          updated_at = ?
-        WHERE group_member_id = ?
-          AND member_relations_vector IS NULL
-      |]
-      (currentTs, groupMemberId)
-
-getMemberRelationsVector_ :: DB.Connection -> GroupMember -> IO (Maybe ByteString)
-getMemberRelationsVector_ db GroupMember {groupMemberId} =
-  maybeFirstRow fromOnly $
-    DB.query
-      db
-      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
-      (Only groupMemberId)
-
-updateIntroStatus :: DB.Connection -> Int64 -> GroupMemberIntroStatus -> IO ()
-updateIntroStatus db introId introStatus = do
-  currentTs <- getCurrentTime
-  DB.execute
-    db
-    [sql|
-      UPDATE group_member_intros
-      SET intro_status = ?, updated_at = ?
-      WHERE group_member_intro_id = ?
-    |]
-    (introStatus, currentTs, introId)
-
-getIntroduction :: DB.Connection -> GroupMember -> GroupMember -> IO (Maybe GroupMemberIntro)
-getIntroduction db reMember toMember =
-  maybeFirstRow toIntro $
-    DB.query
-      db
-      [sql|
-        SELECT group_member_intro_id, intro_status
-        FROM group_member_intros
-        WHERE re_group_member_id = ? AND to_group_member_id = ?
-      |]
-      (groupMemberId' reMember, groupMemberId' toMember)
-  where
-    toIntro :: (Int64, GroupMemberIntroStatus) -> GroupMemberIntro
-    toIntro (introId, introStatus) =
-      GroupMemberIntro {introId, reMember, toMember, introStatus}
-
-getIntroducedGroupMemberIds :: DB.Connection -> GroupMember -> IO [GroupMemberId]
-getIntroducedGroupMemberIds db invitee =
-  map fromOnly <$>
-    DB.query
-      db
-      "SELECT re_group_member_id FROM group_member_intros WHERE to_group_member_id = ?"
-      (Only $ groupMemberId' invitee)
 
 createIntroReMember :: DB.Connection -> User -> GroupInfo -> GroupMember -> VersionChat -> MemberInfo -> Maybe MemberRestrictions -> (CommandId, ConnId) -> SubscriptionMode -> ExceptT StoreError IO GroupMember
 createIntroReMember
@@ -2724,25 +2558,6 @@ getUserGroupsToExpire db User {userId} globalTTL =
   map fromOnly <$> DB.query db ("SELECT group_id FROM groups WHERE user_id = ? AND chat_item_ttl > 0" <> cond) (Only userId)
   where
     cond = if globalTTL == 0 then "" else " OR chat_item_ttl IS NULL"
-
-hasMembersWithoutVector :: DB.Connection -> IO Bool
-hasMembersWithoutVector db =
-  fromOnly . head
-    <$> DB.query_
-      db
-      "SELECT EXISTS (SELECT 1 FROM group_members WHERE member_relations_vector IS NULL LIMIT 1)"
-
-getGMsWithoutVectorIds :: DB.Connection -> IO [GroupMemberId]
-getGMsWithoutVectorIds db =
-  map fromOnly <$>
-    DB.query_
-      db
-      [sql|
-        SELECT group_member_id
-        FROM group_members
-        WHERE member_relations_vector IS NULL
-        LIMIT 1000
-      |]
 
 updateGroupAlias :: DB.Connection -> UserId -> GroupInfo -> LocalAlias -> IO GroupInfo
 updateGroupAlias db userId g@GroupInfo {groupId} localAlias = do
