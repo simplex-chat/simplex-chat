@@ -32,7 +32,7 @@ CREATE TABLE chat_relays(
   deleted INTEGER NOT NULL DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 CREATE UNIQUE INDEX idx_chat_relays_user_id_address ON chat_relays(user_id, address);
 CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
@@ -62,7 +62,7 @@ CREATE TABLE group_relays(
   relay_link BLOB,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_member_id);
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
