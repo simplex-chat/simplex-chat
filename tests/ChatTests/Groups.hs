@@ -8389,7 +8389,7 @@ testChannelsRelayDeliver =
 createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> GroupMemberRole -> IO ()
 createChannel5 alice bob cath dan eve mRole = do
   createGroup2 "team" alice bob
-  bob ##> ("/create link #team " <> B.unpack (strEncode mRole))
+  bob ##> ("/create link #team " <> T.unpack (textEncode mRole))
   gLink <- getGroupLink bob "team" mRole True
   cath ##> ("/c " <> gLink)
   cath <## "connection request sent!"

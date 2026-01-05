@@ -2,7 +2,7 @@ CREATE TABLE migrations(
   name TEXT NOT NULL PRIMARY KEY,
   ts TEXT NOT NULL,
   down TEXT
-);
+) STRICT;
 CREATE TABLE contact_profiles(
   -- remote user profile
   contact_profile_id INTEGER PRIMARY KEY,
@@ -20,7 +20,7 @@ CREATE TABLE contact_profiles(
   contact_link BLOB,
   short_descr TEXT,
   chat_peer_type TEXT
-);
+) STRICT;
 CREATE TABLE users(
   user_id INTEGER PRIMARY KEY,
   contact_id INTEGER NOT NULL UNIQUE REFERENCES contacts ON DELETE RESTRICT
@@ -44,7 +44,7 @@ CREATE TABLE users(
   ON DELETE RESTRICT
   ON UPDATE CASCADE
   DEFERRABLE INITIALLY DEFERRED
-);
+) STRICT;
 CREATE TABLE display_names(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   local_display_name TEXT NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE display_names(
   updated_at TEXT CHECK(updated_at NOT NULL),
   PRIMARY KEY(user_id, local_display_name) ON CONFLICT FAIL,
   UNIQUE(user_id, ldn_base, ldn_suffix) ON CONFLICT FAIL
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE contacts(
   contact_id INTEGER PRIMARY KEY,
   contact_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
@@ -96,7 +96,7 @@ CREATE TABLE contacts(
   ON UPDATE CASCADE,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
-);
+) STRICT;
 CREATE TABLE known_servers(
   server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
@@ -106,7 +106,7 @@ CREATE TABLE known_servers(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, host, port)
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE group_profiles(
   -- shared group profiles
   group_profile_id INTEGER PRIMARY KEY,
@@ -122,7 +122,7 @@ CREATE TABLE group_profiles(
   description TEXT NULL,
   member_admission TEXT,
   short_descr TEXT
-);
+) STRICT;
 CREATE TABLE groups(
   group_id INTEGER PRIMARY KEY, -- local group ID
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -163,7 +163,7 @@ CREATE TABLE groups(
   ON UPDATE CASCADE,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, group_profile_id)
-);
+) STRICT;
 CREATE TABLE group_members(
   -- group members, excluding the local user
   group_member_id INTEGER PRIMARY KEY,
@@ -203,7 +203,7 @@ CREATE TABLE group_members(
   ON DELETE CASCADE
   ON UPDATE CASCADE,
   UNIQUE(group_id, member_id)
-);
+) STRICT;
 CREATE TABLE group_member_intros(
   group_member_intro_id INTEGER PRIMARY KEY,
   re_group_member_id INTEGER NOT NULL REFERENCES group_members(group_member_id) ON DELETE CASCADE,
@@ -215,7 +215,7 @@ CREATE TABLE group_member_intros(
   updated_at TEXT CHECK(updated_at NOT NULL),
   intro_chat_protocol_version INTEGER NOT NULL DEFAULT 3, -- see GroupMemberIntroStatus
   UNIQUE(re_group_member_id, to_group_member_id)
-);
+) STRICT;
 CREATE TABLE files(
   file_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -240,7 +240,7 @@ CREATE TABLE files(
   file_crypto_nonce BLOB,
   note_folder_id INTEGER DEFAULT NULL REFERENCES note_folders ON DELETE CASCADE,
   redirect_file_id INTEGER REFERENCES files ON DELETE CASCADE
-);
+) STRICT;
 CREATE TABLE snd_files(
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
   connection_id INTEGER NOT NULL REFERENCES connections ON DELETE CASCADE,
@@ -253,7 +253,7 @@ CREATE TABLE snd_files(
   file_descr_id INTEGER NULL
   REFERENCES xftp_file_descriptions ON DELETE SET NULL,
   PRIMARY KEY(file_id, connection_id)
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE rcv_files(
   file_id INTEGER PRIMARY KEY REFERENCES files ON DELETE CASCADE,
   file_status TEXT NOT NULL, -- new, accepted, connected, completed
@@ -270,7 +270,7 @@ CREATE TABLE rcv_files(
   agent_rcv_file_deleted INTEGER DEFAULT 0 CHECK(agent_rcv_file_deleted NOT NULL),
   to_receive INTEGER,
   user_approved_relays INTEGER NOT NULL DEFAULT 0
-);
+) STRICT;
 CREATE TABLE rcv_file_chunks(
   file_id INTEGER NOT NULL REFERENCES rcv_files ON DELETE CASCADE,
   chunk_number INTEGER NOT NULL,
@@ -279,7 +279,7 @@ CREATE TABLE rcv_file_chunks(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL), -- 0(received), 1(appended to file)
   PRIMARY KEY(file_id, chunk_number)
-) WITHOUT ROWID;
+) WITHOUT ROWID, STRICT;
 CREATE TABLE connections(
   -- all SMP agent connections
   connection_id INTEGER PRIMARY KEY,
@@ -302,7 +302,7 @@ CREATE TABLE connections(
   REFERENCES user_contact_links(user_contact_link_id) ON DELETE SET NULL,
   custom_user_profile_id INTEGER REFERENCES contact_profiles ON DELETE SET NULL,
   conn_req_inv BLOB,
-  local_alias DEFAULT '' CHECK(local_alias NOT NULL),
+  local_alias TEXT DEFAULT '' CHECK(local_alias NOT NULL),
   via_group_link INTEGER DEFAULT 0 CHECK(via_group_link NOT NULL),
   group_link_id BLOB,
   security_code TEXT NULL,
@@ -325,7 +325,7 @@ CREATE TABLE connections(
   REFERENCES snd_files(file_id, connection_id)
   ON DELETE CASCADE
   DEFERRABLE INITIALLY DEFERRED
-);
+) STRICT;
 CREATE TABLE user_contact_links(
   user_contact_link_id INTEGER PRIMARY KEY,
   conn_req_contact BLOB NOT NULL,
@@ -344,7 +344,7 @@ CREATE TABLE user_contact_links(
   short_link_data_set INTEGER NOT NULL DEFAULT 0,
   short_link_large_data_set INTEGER NOT NULL DEFAULT 0,
   UNIQUE(user_id, local_display_name)
-);
+) STRICT;
 CREATE TABLE contact_requests(
   contact_request_id INTEGER PRIMARY KEY,
   user_contact_link_id INTEGER REFERENCES user_contact_links
@@ -372,7 +372,7 @@ CREATE TABLE contact_requests(
   DEFERRABLE INITIALLY DEFERRED,
   UNIQUE(user_id, local_display_name),
   UNIQUE(user_id, contact_profile_id)
-);
+) STRICT;
 CREATE TABLE messages(
   message_id INTEGER PRIMARY KEY,
   msg_sent INTEGER NOT NULL, -- 0 for received, 1 for sent
@@ -388,14 +388,14 @@ CREATE TABLE messages(
   author_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   forwarded_by_group_member_id INTEGER REFERENCES group_members ON DELETE SET NULL,
   broker_ts TEXT
-);
+) STRICT;
 CREATE TABLE pending_group_messages(
   pending_group_message_id INTEGER PRIMARY KEY,
   group_member_id INTEGER NOT NULL REFERENCES group_members ON DELETE CASCADE,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_items(
   chat_item_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -441,7 +441,7 @@ CREATE TABLE chat_items(
   group_scope_tag TEXT,
   group_scope_group_member_id INTEGER REFERENCES group_members(group_member_id) ON DELETE CASCADE,
   show_group_as_sender INTEGER NOT NULL DEFAULT 0
-);
+) STRICT;
 CREATE TABLE sqlite_sequence(name,seq);
 CREATE TABLE chat_item_messages(
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -449,21 +449,21 @@ CREATE TABLE chat_item_messages(
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   UNIQUE(chat_item_id, message_id)
-);
+) STRICT;
 CREATE TABLE calls(
   -- stores call invitations state for communicating state between NSE and app when call notification comes
   call_id INTEGER PRIMARY KEY,
   contact_id INTEGER NOT NULL REFERENCES contacts ON DELETE CASCADE,
   shared_call_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
-  call_state BLOB NOT NULL,
+  call_state TEXT NOT NULL,
   call_ts TEXT NOT NULL,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   call_uuid TEXT NOT NULL DEFAULT ""
-);
+) STRICT;
 CREATE TABLE commands(
   command_id INTEGER PRIMARY KEY AUTOINCREMENT, -- used as ACorrId
   connection_id INTEGER REFERENCES connections ON DELETE CASCADE,
@@ -472,14 +472,14 @@ CREATE TABLE commands(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE settings(
   settings_id INTEGER PRIMARY KEY,
   chat_item_ttl INTEGER,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "protocol_servers"(
   smp_server_id INTEGER PRIMARY KEY,
   host TEXT NOT NULL,
@@ -494,7 +494,7 @@ CREATE TABLE IF NOT EXISTS "protocol_servers"(
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   protocol TEXT NOT NULL DEFAULT 'smp',
   UNIQUE(user_id, host, port)
-);
+) STRICT;
 CREATE TABLE xftp_file_descriptions(
   file_descr_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -503,7 +503,7 @@ CREATE TABLE xftp_file_descriptions(
   file_descr_complete INTEGER NOT NULL DEFAULT(0),
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE extra_xftp_file_descriptions(
   extra_file_descr_id INTEGER PRIMARY KEY,
   file_id INTEGER NOT NULL REFERENCES files ON DELETE CASCADE,
@@ -511,7 +511,7 @@ CREATE TABLE extra_xftp_file_descriptions(
   file_descr_text TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_item_versions(
   -- contains versions only for edited chat items, including current version
   chat_item_version_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -520,7 +520,7 @@ CREATE TABLE chat_item_versions(
   item_version_ts TEXT NOT NULL,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_item_reactions(
   chat_item_reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
   item_member_id BLOB, -- member that created item, NULL for items in direct chats
@@ -534,7 +534,7 @@ CREATE TABLE chat_item_reactions(
   reaction_ts TEXT NOT NULL, -- broker_ts of creating message for received, created_at for sent
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE chat_item_moderations(
   chat_item_moderation_id INTEGER PRIMARY KEY,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -545,7 +545,7 @@ CREATE TABLE chat_item_moderations(
   moderated_at TEXT NOT NULL, -- broker_ts of creating message
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE group_snd_item_statuses(
   group_snd_item_status_id INTEGER PRIMARY KEY,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
@@ -555,7 +555,7 @@ CREATE TABLE group_snd_item_statuses(
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   via_proxy INTEGER
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "sent_probes"(
   sent_probe_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -565,7 +565,7 @@ CREATE TABLE IF NOT EXISTS "sent_probes"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   UNIQUE(user_id, probe)
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
   sent_probe_hash_id INTEGER PRIMARY KEY,
   sent_probe_id INTEGER NOT NULL REFERENCES "sent_probes" ON DELETE CASCADE,
@@ -574,7 +574,7 @@ CREATE TABLE IF NOT EXISTS "sent_probe_hashes"(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "received_probes"(
   received_probe_id INTEGER PRIMARY KEY,
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
@@ -584,7 +584,7 @@ CREATE TABLE IF NOT EXISTS "received_probes"(
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL)
-);
+) STRICT;
 CREATE TABLE remote_hosts(
   -- e.g., mobiles known to a desktop app
   remote_host_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -599,7 +599,7 @@ CREATE TABLE remote_hosts(
   bind_addr TEXT,
   bind_iface TEXT,
   bind_port INTEGER
-);
+) STRICT;
 CREATE TABLE remote_controllers(
   -- e.g., desktops known to a mobile app
   remote_ctrl_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -610,7 +610,7 @@ CREATE TABLE remote_controllers(
   id_pub BLOB NOT NULL, -- remote controller long-term/identity key to verify signatures
   dh_priv_key BLOB NOT NULL, -- last session DH key
   prev_dh_priv_key BLOB -- previous session DH key
-);
+) STRICT;
 CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   msg_delivery_id INTEGER PRIMARY KEY,
   message_id INTEGER NOT NULL REFERENCES messages ON DELETE CASCADE, -- non UNIQUE for group messages and for batched messages
@@ -621,7 +621,7 @@ CREATE TABLE IF NOT EXISTS "msg_deliveries"(
   created_at TEXT CHECK(created_at NOT NULL),
   updated_at TEXT CHECK(updated_at NOT NULL),
   delivery_status TEXT -- MsgDeliveryStatus
-);
+) STRICT;
 CREATE TABLE note_folders(
   note_folder_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
@@ -630,8 +630,8 @@ CREATE TABLE note_folders(
   chat_ts TEXT NOT NULL DEFAULT(datetime('now')),
   favorite INTEGER NOT NULL DEFAULT 0,
   unread_chat INTEGER NOT NULL DEFAULT 0
-);
-CREATE TABLE app_settings(app_settings TEXT NOT NULL);
+) STRICT;
+CREATE TABLE app_settings(app_settings TEXT NOT NULL) STRICT;
 CREATE TABLE server_operators(
   server_operator_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_tag TEXT,
@@ -645,14 +645,14 @@ CREATE TABLE server_operators(
   xftp_role_proxy INTEGER NOT NULL DEFAULT 1,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE usage_conditions(
   usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
   conditions_commit TEXT NOT NULL UNIQUE,
   notified_at TEXT,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE operator_usage_conditions(
   operator_usage_conditions_id INTEGER PRIMARY KEY AUTOINCREMENT,
   server_operator_id INTEGER REFERENCES server_operators(server_operator_id) ON DELETE SET NULL ON UPDATE CASCADE,
@@ -662,26 +662,26 @@ CREATE TABLE operator_usage_conditions(
   created_at TEXT NOT NULL DEFAULT(datetime('now'))
   ,
   auto_accepted INTEGER DEFAULT 0
-);
+) STRICT;
 CREATE TABLE chat_tags(
   chat_tag_id INTEGER PRIMARY KEY AUTOINCREMENT,
   user_id INTEGER REFERENCES users ON DELETE CASCADE,
   chat_tag_text TEXT NOT NULL,
   chat_tag_emoji TEXT,
   tag_order INTEGER NOT NULL
-);
+) STRICT;
 CREATE TABLE chat_tags_chats(
   contact_id INTEGER REFERENCES contacts ON DELETE CASCADE,
   group_id INTEGER REFERENCES groups ON DELETE CASCADE,
   chat_tag_id INTEGER NOT NULL REFERENCES chat_tags ON DELETE CASCADE
-);
+) STRICT;
 CREATE TABLE chat_item_mentions(
   chat_item_mention_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
   member_id BLOB NOT NULL,
   chat_item_id INTEGER NOT NULL REFERENCES chat_items ON DELETE CASCADE,
   display_name TEXT NOT NULL
-);
+) STRICT;
 CREATE TABLE delivery_tasks(
   delivery_task_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -697,7 +697,7 @@ CREATE TABLE delivery_tasks(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE delivery_jobs(
   delivery_job_id INTEGER PRIMARY KEY AUTOINCREMENT,
   group_id INTEGER NOT NULL REFERENCES groups ON DELETE CASCADE,
@@ -713,16 +713,16 @@ CREATE TABLE delivery_jobs(
   failed INTEGER DEFAULT 0,
   created_at TEXT NOT NULL DEFAULT(datetime('now')),
   updated_at TEXT NOT NULL DEFAULT(datetime('now'))
-);
+) STRICT;
 CREATE TABLE group_member_status_predicates(
   member_status TEXT NOT NULL PRIMARY KEY,
   current_member INTEGER NOT NULL DEFAULT 0
-);
+) STRICT;
 CREATE TABLE connections_sync(
   connections_sync_id INTEGER PRIMARY KEY AUTOINCREMENT,
   should_sync INTEGER NOT NULL DEFAULT 0,
   last_sync_ts TEXT
-);
+) STRICT;
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name

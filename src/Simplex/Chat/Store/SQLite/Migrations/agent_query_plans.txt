@@ -1255,10 +1255,6 @@ Query: UPDATE snd_file_chunk_replicas SET replica_status = ?, updated_at = ? WHE
 Plan:
 SEARCH snd_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: UPDATE snd_files SET deleted = 1, updated_at = ? WHERE snd_file_id = ?
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
-
 Query: UPDATE snd_files SET prefix_path = NULL, status = ?, updated_at = ? WHERE snd_file_id = ?
 Plan:
 SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
