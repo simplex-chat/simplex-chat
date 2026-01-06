@@ -142,8 +142,7 @@ testDirectoryService ps =
         bob <## ""
         bob <## "Please add it to the group welcome message."
         bob <## "For example, add:"
-        line <- getTermLine' (Just "welcome message with link") bob
-        let welcomeWithLink = dropStrPrefix "'SimpleX Directory'> " . dropTime $ line
+        welcomeWithLink <- dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine bob
         -- putStrLn "*** update profile without link"
         updateGroupProfile bob "Welcome!"
         bob <# "'SimpleX Directory'> The profile updated for ID 1 (PSA), but the group link is not added to the welcome message."
@@ -264,7 +263,7 @@ testSuspendResume ps =
       bob #> "@'SimpleX Directory' /link 1"
       bob <# "'SimpleX Directory'> > /link 1"
       bob <## "      The link to join the group ID 1 (privacy):"
-      gLink <- getTermLine' (Just "group link") bob
+      gLink <- getTermLine bob
       gLink `shouldStartWith` "https://localhost/g#"
       bob <## "New member role: member"
       bob ##> "/show welcome #privacy"
@@ -293,8 +292,7 @@ testSuspendResume ps =
       bob <## "If this is the only change, the group will remain listed in directory without re-approval."
       bob <## ""
       bob <## "The new link:"
-      line <- getTermLine' (Just "new group link") bob
-      let gLink' = dropStrPrefix "'SimpleX Directory'> " . dropTime $ line
+      gLink' <- dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine bob
       bob ##> ("/set welcome #privacy Link to join the group privacy: " <> gLink')
       bob <## "welcome message changed to:"
       bob <## ("Link to join the group privacy: " <> gLink')
@@ -367,7 +365,7 @@ testSetRole ps =
         bob <# "'SimpleX Directory'> > /role 1:privacy observer"
         bob <## "      The initial member role for the group privacy is set to observer"
         bob <## ""
-        note <- getTermLine' (Just "note with group link") bob
+        note <- getTermLine bob
         let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
         cath ##> ("/c " <> groupLink)
         cath <## "connection request sent!"
@@ -398,7 +396,7 @@ testJoinGroup ps =
           cath <## "      Found 1 group(s)."
           cath <# "'SimpleX Directory'> privacy (Privacy)"
           cath <## "Welcome message:"
-          welcomeMsg <- getTermLine' (Just "welcome message") cath
+          welcomeMsg <- getTermLine cath
           let groupLink = dropStrPrefix "Link to join the group privacy: " welcomeMsg
           cath <## "2 members"
           cath ##> ("/c " <> groupLink)
@@ -853,7 +851,7 @@ testRegOwnerRemovedLink ps =
         addCathAsOwner bob cath
         bob ##> "/show welcome #privacy"
         bob <## "Welcome message:"
-        welcomeWithLink <- getTermLine' (Just "welcome message with link") bob
+        welcomeWithLink <- getTermLine bob
         bob ##> "/set welcome #privacy Welcome!"
         bob <## "welcome message changed to:"
         bob <## "Welcome!"
@@ -893,7 +891,7 @@ testAnotherOwnerRemovedLink ps =
         cath <## "use @'SimpleX Directory' <message> to send messages"
         bob ##> "/show welcome #privacy"
         bob <## "Welcome message:"
-        welcomeWithLink <- getTermLine' (Just "welcome message with link") bob
+        welcomeWithLink <- getTermLine bob
         cath ##> "/set welcome #privacy Welcome!"
         cath <## "welcome message changed to:"
         cath <## "Welcome!"
@@ -928,7 +926,7 @@ testNotConnectedOwnerRemovedLink ps =
           addCathAsOwner bob cath
           bob ##> "/show welcome #privacy"
           bob <## "Welcome message:"
-          welcomeWithLink <- getTermLine' (Just "welcome message with link") bob
+          welcomeWithLink <- getTermLine bob
           cath ##> "/set welcome #privacy Welcome!"
           cath <## "welcome message changed to:"
           cath <## "Welcome!"
@@ -1155,7 +1153,7 @@ testCapthaScreening ps =
         bob <## "      The initial member role for the group privacy is set to member"
         bob <## "Send /'role 1 observer' to change it."
         bob <## ""
-        note <- getTermLine' (Just "note with group link") bob
+        note <- getTermLine bob
         let groupLink = dropStrPrefix "Please note: it applies only to members joining via this link: " note
         -- enable captcha
         bob #> "@'SimpleX Directory' /filter 1 captcha"
@@ -1173,8 +1171,7 @@ testCapthaScreening ps =
         cath <# "#privacy (support) 123"
         cath <# "#privacy (support) 'SimpleX Directory'!> > cath 123"
         cath <## "      Incorrect text, please try again."
-        line <- getTermLine' (Just "captcha message") cath
-        let captcha = dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime $ line
+        captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
         sendCaptcha cath captcha
         cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
         cath <## "#privacy: member bob (Bob) is connected"
@@ -1198,8 +1195,7 @@ testCapthaScreening ps =
         captcha' <- join cath groupLink
         sendCaptcha cath captcha'
         -- message from cath that left
-        memberLine <- getTermLine' (Just "unknown member record created") cath
-        let pastMember = dropStrPrefix "#privacy: 'SimpleX Directory' forwarded a message from an unknown member, creating unknown member record " memberLine
+        pastMember <- dropStrPrefix "#privacy: 'SimpleX Directory' forwarded a message from an unknown member, creating unknown member record " <$> getTermLine cath
         cath <# ("#privacy " <> pastMember <> "> hello [>>]")
         cath <#. "#privacy 'SimpleX Directory'> Link to join the group privacy: https://"
         cath <## "#privacy: member bob (Bob) is connected"
@@ -1222,8 +1218,7 @@ testCapthaScreening ps =
       cath <# "#privacy (support) 'SimpleX Directory'> Captcha is generated by SimpleX Directory service."
       cath <## ""
       cath <## "Send captcha text to join the group privacy."
-      captchaLine <- getTermLine' (Just "captcha message") cath
-      pure $ dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime $ captchaLine
+      dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
     sendCaptcha cath captcha = do
       cath ##> ("/_send #1(_support) text " <> captcha)
       cath <# ("#privacy (support) " <> captcha)
@@ -1423,8 +1418,7 @@ groupAccepted u n = do
   u <## ""
   u <## "Please add it to the group welcome message."
   u <## "For example, add:"
-  welcomeLine <- getTermLine' (Just "welcome message with link") u
-  pure $ dropStrPrefix "'SimpleX Directory'> " . dropTime $ welcomeLine
+  dropStrPrefix "'SimpleX Directory'> " . dropTime <$> getTermLine u -- welcome message with link
 
 completeRegistration :: TestCC -> TestCC -> String -> String -> String -> Int -> IO ()
 completeRegistration su u n fn welcomeWithLink gId =
