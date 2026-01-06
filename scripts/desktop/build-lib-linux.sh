@@ -8,7 +8,7 @@ function readlink() {
 
 OS=linux
 ARCH="$(uname -m)"
-GHC_VERSION=9.6.3
+GHC_VERSION="$(ghc --version | rev | cut -d ' ' -f 1 | rev)"
 
 if [ "$ARCH" == "aarch64" ]; then
     COMPOSE_ARCH=arm64
