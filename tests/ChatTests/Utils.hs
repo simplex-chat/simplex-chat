@@ -352,42 +352,39 @@ send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
 (<##) :: HasCallStack => TestCC -> String -> Expectation
-cc <## line = do
-  l <- getTermLine cc
-  when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
-  l `shouldBe` line
+cc <## line = getTermLine' (Just line) cc `shouldReturn` line
 
 (<##.) :: HasCallStack => TestCC -> String -> Expectation
 cc <##. line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "prefix: " <> line) cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
 (.<##) :: HasCallStack => TestCC -> String -> Expectation
 cc .<## line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
   suffix `shouldBe` True
 
 (<#.) :: HasCallStack => TestCC -> String -> Expectation
 cc <#. line = do
-  l <- dropTime <$> getTermLine cc
+  l <- dropTime <$> getTermLine' (Just $ "prefix: " <> line) cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
 (.<#) :: HasCallStack => TestCC -> String -> Expectation
 cc .<# line = do
-  l <- dropTime <$> getTermLine cc
+  l <- dropTime <$> getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
   suffix `shouldBe` True
 
 (<##..) :: HasCallStack => TestCC -> [String] -> Expectation
 cc <##.. ls = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "one of prefixes: " <> show ls) cc
   let prefix = any (`isPrefixOf` l) ls
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
@@ -395,7 +392,8 @@ cc <##.. ls = do
 (>*) :: HasCallStack => TestCC -> String -> IO ()
 cc >* note = do
   cc `send` ("/* " <> note)
-  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
+  let expected = "* " <> note
+  (dropTime <$> getTermLine' (Just expected) cc) `shouldReturn` expected
 
 data ConsoleResponse
   = ConsoleString String
@@ -436,25 +434,27 @@ getInAnyOrder f cc ls = do
 (<##?) = getInAnyOrder dropTime
 
 (<#) :: HasCallStack => TestCC -> String -> Expectation
-cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
+cc <# line = (dropTime <$> getTermLine' (Just line) cc) `shouldReturn` line
 
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
 ccs *<# line = mapConcurrently_ (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
-cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
+cc ?<# line = do
+  let expected = "i " <> line
+  (dropTime <$> getTermLine' (Just expected) cc) `shouldReturn` expected
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
-(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine' (Just $ "for user " <> uName <> ": " <> line) cc) `shouldReturn` line
 
 (^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
-(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine' (Just $ "without prefix " <> p <> ": " <> line) cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
-cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
+cc ⩗ line = (dropTime . dropReceipt <$> getTermLine' (Just $ "receipt: " <> line) cc) `shouldReturn` line
 
 (%) :: HasCallStack => TestCC -> String -> Expectation
-cc % line = (dropTime . dropPartialReceipt <$> getTermLine cc) `shouldReturn` line
+cc % line = (dropTime . dropPartialReceipt <$> getTermLine' (Just $ "partial receipt: " <> line) cc) `shouldReturn` line
 
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
