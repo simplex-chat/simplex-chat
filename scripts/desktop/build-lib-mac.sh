@@ -3,7 +3,7 @@
 set -e
 
 OS=mac
-ARCH="${1:-`uname -a | rev | cut -d' ' -f1 | rev`}"
+ARCH="$(uname -m)"
 COMPOSE_ARCH=$ARCH
 GHC_VERSION=9.6.3
 DATABASE_BACKEND="${2:-sqlite}"
