@@ -4,7 +4,7 @@ const path = require('path');
 const extract = require('extract-zip');
 
 const GITHUB_REPO = 'shumvgolove/sx-libs';
-const RELEASE_TAG = process.env.npm_package_version;
+const RELEASE_TAG = '6.5.5';
 const ROOT_DIR = process.cwd(); // Root of the package being installed
 const LIBS_DIR = path.join(ROOT_DIR, 'libs')
 const INSTALLED_FILE = path.join(LIBS_DIR, 'installed.txt');
