@@ -352,7 +352,10 @@ send :: TestCC -> String -> IO ()
 send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cmd
 
 (<##) :: HasCallStack => TestCC -> String -> Expectation
-cc <## line = getTermLine' (Just line) cc `shouldReturn` line
+cc <## line = do
+  l <- getTermLine' (Just line) cc
+  when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
+  l `shouldBe` line
 
 (<##.) :: HasCallStack => TestCC -> String -> Expectation
 cc <##. line = do
