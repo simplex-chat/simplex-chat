@@ -1231,7 +1231,7 @@ viewConnectedToGroupMember g@GroupInfo {groupId} m@GroupMember {groupMemberId, m
 
 viewReceivedGroupInvitation :: GroupInfo -> Contact -> GroupMemberRole -> [StyledString]
 viewReceivedGroupInvitation g c role =
-  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> plain (strEncode role)
+  ttyFullGroup g <> ": " <> ttyContact' c <> " invites you to join the group as " <> showRole role
     : case incognitoMembershipProfile g of
       Just mp -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to join incognito as " <> incognitoProfile' (fromLocalProfile mp)]
       Nothing -> ["use " <> highlight ("/j " <> viewGroupName g) <> " to accept"]
@@ -1270,15 +1270,15 @@ viewMembersBlockedForAllUser g members blocked = case members of
   mems' -> [ttyGroup' g <> ": you " <> (if blocked then "blocked" else "unblocked") <> " " <> sShow (length mems') <> " members"]
 
 showRole :: GroupMemberRole -> StyledString
-showRole = plain . strEncode
+showRole = plain . textEncode
 
 viewGroupMembers :: Group -> [StyledString]
 viewGroupMembers (Group GroupInfo {membership} members) = map groupMember . filter (not . removedOrLeft) $ membership : members
   where
     removedOrLeft m = let s = memberStatus m in s == GSMemRejected || s == GSMemRemoved || s == GSMemLeft
-    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (intercalate ", " $ [role m] <> category m <> status m <> muted m)
-    role :: GroupMember -> String
-    role GroupMember {memberRole} = B.unpack $ strEncode memberRole
+    groupMember m = memIncognito m <> ttyFullMember m <> ": " <> plain (T.intercalate ", " $ [role m] <> category m <> status m <> muted m)
+    role :: GroupMember -> Text
+    role GroupMember {memberRole} = textEncode memberRole
     category m = case memberCategory m of
       GCUserMember -> ["you"]
       GCInviteeMember -> ["invited"]
@@ -2470,8 +2470,8 @@ viewChatError isCmd logLevel testView = \case
     CEGroupUserRole g role ->
       (: []) . (ttyGroup' g <>) $ case role of
         GRAuthor -> ": you don't have permission to send messages"
-        _ -> ": you have insufficient permissions for this action, the required role is " <> plain (strEncode role)
-    CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> plain (strEncode role) <> ", use member or observer"]
+        _ -> ": you have insufficient permissions for this action, the required role is " <> showRole role
+    CEGroupMemberInitialRole g role -> [ttyGroup' g <> ": initial role for group member cannot be " <> showRole role <> ", use member or observer"]
     CEContactIncognitoCantInvite -> ["you're using your main profile for this group - prohibited to invite contacts to whom you are connected incognito"]
     CEGroupIncognitoCantInvite -> ["you are using an incognito profile for this group - prohibited to invite contacts"]
     CEGroupContactRole c -> ["contact " <> ttyContact c <> " has insufficient permissions for this group action"]

@@ -17,7 +17,7 @@ import Data.Maybe (fromJust, isJust)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
-import Database.SQLite.Simple (Query (..))
+import Database.SQLite.Simple (Only (..), Query (..))
 import Simplex.Chat.Options.SQLite (chatDBFunctions)
 import Simplex.Chat.Store (createChatStore)
 import qualified Simplex.Chat.Store as Store
@@ -59,6 +59,7 @@ schemaDumpTest = do
   it "verify and overwrite schema dump" testVerifySchemaDump
   it "verify .lint fkey-indexes" testVerifyLintFKeyIndexes
   it "verify schema down migrations" testSchemaMigrations
+  it "verify strict tables" testVerifyStrict
 
 testVerifySchemaDump :: IO ()
 testVerifySchemaDump = withTmpFiles $ do
@@ -100,6 +101,12 @@ testSchemaMigrations = withTmpFiles $ do
       Migrations.run st Nothing True $ MTRUp [m]
       schema''' <- getSchema testDB testSchema
       schema''' `shouldBe` schema'
+
+testVerifyStrict :: IO ()
+testVerifyStrict = do
+  Right st <- createDBStore (DBOpts testDB chatDBFunctions "" False True TQOff) Store.migrations (MigrationConfig MCConsole Nothing)
+  withConnection st (`DB.query_` "SELECT name FROM sqlite_master WHERE type = 'table' AND name != 'sqlite_sequence' AND sql NOT LIKE '% STRICT'")
+    `shouldReturn` ([] :: [Only Text])
 
 skipComparisonForUpMigrations :: [String]
 skipComparisonForUpMigrations =
