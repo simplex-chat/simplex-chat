@@ -5656,6 +5656,10 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_fwd_from_chat_item_id (fwd
 SEARCH files USING COVERING INDEX idx_files_chat_item_id (chat_item_id=?)
 SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
+Query: DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?
+Plan:
+SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: DELETE FROM commands WHERE user_id = ? AND command_id = ?
 Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)

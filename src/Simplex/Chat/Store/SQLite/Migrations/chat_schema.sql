@@ -738,7 +738,7 @@ CREATE TABLE chat_relays(
   updated_at TEXT NOT NULL DEFAULT(datetime('now')),
   UNIQUE(user_id, address),
   UNIQUE(user_id, name)
-) STRICT;
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
