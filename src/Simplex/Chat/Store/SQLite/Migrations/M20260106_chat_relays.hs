@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20251212_chat_relays where
+module Simplex.Chat.Store.SQLite.Migrations.M20260106_chat_relays where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
@@ -17,8 +17,8 @@ import Database.SQLite.Simple.QQ (sql)
 -- - group_members.is_relay - indicates that the member is a chat relay
 -- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (RelayStatus)
 -- - groups.relay_request_* - relay request "work item" fields
-m20251212_chat_relays :: Query
-m20251212_chat_relays =
+m20260106_chat_relays :: Query
+m20260106_chat_relays =
   [sql|
 CREATE TABLE chat_relays(
   chat_relay_id INTEGER PRIMARY KEY,
@@ -70,8 +70,8 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 ALTER TABLE group_members ADD COLUMN is_relay INTEGER NOT NULL DEFAULT 0;
 |]
 
-down_m20251212_chat_relays :: Query
-down_m20251212_chat_relays =
+down_m20260106_chat_relays :: Query
+down_m20260106_chat_relays =
   [sql|
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
