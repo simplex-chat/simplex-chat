@@ -1,6 +1,6 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.SQLite.Migrations.M20251128_member_relations_vector_stage_2 where
+module Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations where
 
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
@@ -12,9 +12,8 @@ import Database.SQLite.Simple.QQ (sql)
 -- - direction 0 (IDSubjectIntroduced): current member (subject) is re_group_member_id, was introduced to referenced member
 -- - direction 1 (IDReferencedIntroduced): current member (subject) is to_group_member_id, referenced member was introduced to it
 
--- TODO [relations vector] drop group_member_intros in the end of migration
-m20251128_member_relations_vector_stage_2 :: Query
-m20251128_member_relations_vector_stage_2 =
+m20251128_migrate_member_relations :: Query
+m20251128_migrate_member_relations =
   [sql|
 UPDATE group_members
 SET member_relations_vector = (
@@ -32,11 +31,14 @@ SET member_relations_vector = (
   )
 )
 WHERE member_relations_vector IS NULL;
+
+DROP INDEX idx_pending_group_messages_group_member_intro_id;
+ALTER TABLE pending_group_messages DROP COLUMN group_member_intro_id;
 |]
 
--- TODO [relations vector] re-create group_member_intros
-down_m20251128_member_relations_vector_stage_2 :: Query
-down_m20251128_member_relations_vector_stage_2 =
+down_m20251128_migrate_member_relations :: Query
+down_m20251128_migrate_member_relations =
   [sql|
-
+ALTER TABLE pending_group_messages ADD COLUMN group_member_intro_id INTEGER REFERENCES group_member_intros ON DELETE CASCADE;
+CREATE INDEX idx_pending_group_messages_group_member_intro_id ON pending_group_messages(group_member_intro_id);
 |]

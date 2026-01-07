@@ -761,7 +761,9 @@ testXFTPDeleteUploadedFileGroup =
 
       alice ##> "/fc 1"
       concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.pdf) to bob, cath",
+        [ do
+            recipients <- dropStrPrefix "cancelled sending file 1 (test.pdf) to " <$> getTermLine alice
+            recipients == "bob, cath" || recipients == "cath, bob" `shouldBe` True,
           cath <## "alice cancelled sending file 1 (test.pdf)"
         ]
 

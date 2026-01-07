@@ -173,7 +173,7 @@ CREATE TABLE test_chat_schema.calls (
     contact_id bigint NOT NULL,
     shared_call_id bytea NOT NULL,
     chat_item_id bigint NOT NULL,
-    call_state bytea NOT NULL,
+    call_state text NOT NULL,
     call_ts timestamp with time zone NOT NULL,
     user_id bigint NOT NULL,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
@@ -1033,7 +1033,6 @@ CREATE TABLE test_chat_schema.pending_group_messages (
     pending_group_message_id bigint NOT NULL,
     group_member_id bigint NOT NULL,
     message_id bigint NOT NULL,
-    group_member_intro_id bigint,
     created_at timestamp with time zone DEFAULT now() NOT NULL,
     updated_at timestamp with time zone DEFAULT now() NOT NULL
 );
@@ -2274,10 +2273,6 @@ CREATE INDEX idx_pending_group_messages_group_member_id ON test_chat_schema.pend
 
 
 
-CREATE INDEX idx_pending_group_messages_group_member_intro_id ON test_chat_schema.pending_group_messages USING btree (group_member_intro_id);
-
-
-
 CREATE INDEX idx_pending_group_messages_message_id ON test_chat_schema.pending_group_messages USING btree (message_id);
 
 
@@ -2936,11 +2931,6 @@ ALTER TABLE ONLY test_chat_schema.operator_usage_conditions
 
 ALTER TABLE ONLY test_chat_schema.pending_group_messages
     ADD CONSTRAINT pending_group_messages_group_member_id_fkey FOREIGN KEY (group_member_id) REFERENCES test_chat_schema.group_members(group_member_id) ON DELETE CASCADE;
-
-
-
-ALTER TABLE ONLY test_chat_schema.pending_group_messages
-    ADD CONSTRAINT pending_group_messages_group_member_intro_id_fkey FOREIGN KEY (group_member_intro_id) REFERENCES test_chat_schema.group_member_intros(group_member_intro_id) ON DELETE CASCADE;
 
 
 
