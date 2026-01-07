@@ -460,7 +460,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtSubscriptionStatus srv status conns -> [plain $ subStatusStr status <> " " <> show (length conns) <> " connections on server " <> showSMPServer srv]
   CEvtReceivedGroupInvitation {user = u, groupInfo = g, contact = c, memberRole = r} -> ttyUser u $ viewReceivedGroupInvitation g c r
   CEvtUserJoinedGroup u g m -> ttyUser u $ viewUserJoinedGroup g m
-  CEvtRelayJoined u g relayMem groupLink relays -> ttyUser u $ viewRelayJoined g relayMem groupLink relays
+  CEvtGroupLinkRelaysUpdated u g groupLink relays -> ttyUser u $ viewGroupLinkRelaysUpdated g groupLink relays
   CEvtJoinedGroupMember u g m -> ttyUser u $ viewJoinedGroupMember g m
   CEvtHostConnected p h -> [plain $ "connected to " <> viewHostEvent p h]
   CEvtHostDisconnected p h -> [plain $ "disconnected from " <> viewHostEvent p h]
@@ -1150,11 +1150,9 @@ viewReceivedContactRequest c Profile {fullName, shortDescr} =
     "to reject: " <> highlight ("/rc " <> viewName c) <> " (the sender will NOT be notified)"
   ]
 
-viewRelayJoined :: GroupInfo -> GroupMember -> GroupLink -> [GroupRelay] -> [StyledString]
-viewRelayJoined g relayMem groupLink relays =
-  [ ttyFullGroup g <> ": relay " <> ttyMember relayMem <> " joined and added to group link",
-    "current relays:"
-  ]
+viewGroupLinkRelaysUpdated :: GroupInfo -> GroupLink -> [GroupRelay] -> [StyledString]
+viewGroupLinkRelaysUpdated g groupLink relays =
+  [ttyFullGroup g <> ": group link relays updated, current relays:"]
     <> map showRelay relays
     <>
       [ "group link:",

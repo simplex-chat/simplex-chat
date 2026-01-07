@@ -1278,19 +1278,32 @@ setGroupLinkData' nm user gInfo =
       | shortLinkDataSet -> Just <$> setGroupLinkData nm user gInfo gLink
     _ -> pure Nothing
 
--- TODO [relays] owner: set owners on updating link data
 setGroupLinkData :: NetworkRequestMode -> User -> GroupInfo -> GroupLink -> CM GroupLink
-setGroupLinkData nm user gInfo@GroupInfo {groupProfile} gLink@GroupLink {groupLinkId} = do
+setGroupLinkData nm user gInfo gLink = do
   vr <- chatVersionRange
   (conn, groupRelays) <- withFastStore $ \db ->
     (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+  let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
+  sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
+  withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+
+setGroupLinkDataAsync :: User -> GroupInfo -> GroupLink -> CM ()
+setGroupLinkDataAsync user gInfo gLink = do
+  vr <- chatVersionRange
+  (conn, groupRelays) <- withStore $ \db ->
+    (,) <$> getGroupLinkConnection db vr user gInfo <*> liftIO (getGroupRelays db gInfo)
+  let (userLinkData, crClientData) = groupLinkData gInfo gLink groupRelays
+  setAgentConnShortLinkAsync user conn userLinkData (Just crClientData)
+
+-- TODO [relays] owner: set owners on updating link data
+groupLinkData :: GroupInfo -> GroupLink -> [GroupRelay] -> (UserConnLinkData 'CMContact, CRClientData)
+groupLinkData gInfo@GroupInfo {groupProfile} GroupLink {groupLinkId} groupRelays =
   let direct = not $ useRelays' gInfo
       relays = mapMaybe relayLink groupRelays
       userData = encodeShortLinkData $ GroupShortLinkData groupProfile
       userLinkData = UserContactLinkData UserContactData {direct, owners = [], relays, userData}
       crClientData = encodeJSON $ CRDataGroup groupLinkId
-  sLnk <- shortenShortLink' . toShortGroupLink =<< withAgent (\a -> setConnShortLink a nm (aConnId conn) SCMContact userLinkData (Just crClientData))
-  withFastStore' $ \db -> setGroupLinkShortLink db gLink sLnk
+   in (userLinkData, crClientData)
 
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
@@ -2355,6 +2368,11 @@ deleteAgentConnectionsAsync' :: [ConnId] -> Bool -> CM ()
 deleteAgentConnectionsAsync' [] _ = pure ()
 deleteAgentConnectionsAsync' acIds waitDelivery = do
   withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
+
+setAgentConnShortLinkAsync :: ConnectionModeI c => User -> Connection -> UserConnLinkData c -> Maybe CRClientData -> CM ()
+setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientData_ = do
+  cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetConnShortLink
+  withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) sConnectionMode userLinkData crClientData_
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do

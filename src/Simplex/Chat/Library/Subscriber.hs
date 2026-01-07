@@ -365,7 +365,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       RcvGroupMsgConnection conn gInfo m ->
         processGroupMessage agentMessage entity conn gInfo m
       UserContactConnection conn uc ->
-        processUserContactRequest agentMessage entity conn uc
+        processContactConnMessage agentMessage entity conn uc
   where
     updateConnStatus :: ConnectionEntity -> CM ConnectionEntity
     updateConnStatus acEntity = case agentMsgConnStatus agentMessage of
@@ -814,18 +814,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           GCInviteeMember
             | isRelay' m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
-                let m' = m {memberStatus = GSMemConnected}
-                -- TODO [relays] owner: agent async setConnShortLink api
-                setGroupLinkData' NRMBackground user gInfo >>= \case
-                  Just gLink -> do
-                    relays <- withStore $ \db -> do
-                      relay <- getGroupRelayByGMId db (groupMemberId' m)
-                      void $ liftIO $ updateRelayStatus db relay RSActive
-                      liftIO $ setGroupInProgressDone db gInfo
-                      liftIO $ getGroupRelays db gInfo
-                    -- TODO [relays] owner: relay added chat item?
-                    toView $ CEvtRelayJoined user gInfo m' gLink relays
-                  Nothing -> messageError "x.grp.relay.acpt: group link not updated"
+                gLink <- withStore $ \db -> getGroupLink db user gInfo
+                setGroupLinkDataAsync user gInfo gLink
             | otherwise -> do
                 (gInfo', mStatus) <-
                   if not (memberPending m)
@@ -1165,8 +1155,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           RcvChunkDuplicate -> withAckMessage' "file msg" agentConnId meta $ pure ()
           RcvChunkError -> badRcvFileChunk ft $ "incorrect chunk number " <> show chunkNo
 
-    processUserContactRequest :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
-    processUserContactRequest agentMsg connEntity conn UserContact {userContactLinkId = uclId} = case agentMsg of
+    processContactConnMessage :: AEvent e -> ConnectionEntity -> Connection -> UserContact -> CM ()
+    processContactConnMessage agentMsg connEntity conn UserContact {userContactLinkId = uclId, groupId = ucGroupId_} = case agentMsg of
       REQ invId pqSupport _ connInfo -> do
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
@@ -1175,6 +1165,33 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
           _ -> pure ()
+      LINK _link auData ->
+        withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+          case cmdFunction of
+            CFSetConnShortLink ->
+              case (ucGroupId_, auData) of
+                (Just groupId, AUCLD SCMContact (UserContactLinkData UserContactData {relays = relayLinks})) -> do
+                  (gInfo, gLink, relays) <- withStore $ \db -> do
+                    gInfo <- getGroupInfo db vr user groupId
+                    gLink <- getGroupLink db user gInfo
+                    relays <- liftIO $ getGroupRelays db gInfo
+                    relays' <- liftIO $ mapM (updateRelay db) relays
+                    liftIO $ setGroupInProgressDone db gInfo
+                    pure (gInfo, gLink, relays')
+                  -- TODO [relays] owner: "relays updated" chat item?
+                  toView $ CEvtGroupLinkRelaysUpdated user gInfo gLink relays
+                  where
+                    -- TODO [relays] owner: on relay deletion (link absent from relayLinks)
+                    -- TODO          move status RSActive to new "Removed" status / remove relay record
+                    updateRelay :: DB.Connection -> GroupRelay -> IO GroupRelay
+                    updateRelay db relay@GroupRelay {relayLink, relayStatus} =
+                      case relayLink of
+                        Just rLink
+                          | rLink `elem` relayLinks && relayStatus == RSAccepted ->
+                              updateRelayStatus db relay RSActive
+                        _ -> pure relay
+                _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
+            _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       MERR _ err -> do
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         processConnMERR connEntity conn err
@@ -1328,7 +1345,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               maybe (pure $ Right (GAAccepted, gLinkMemRole)) (\am -> liftIO $ am gInfo gli p) acceptMember_ >>= \case
                 Right (acceptance, useRole)
                   | v < groupFastLinkJoinVersion ->
-                      messageError "processUserContactRequest: chat version range incompatible for accepting group join request"
+                      messageError "processContactConnMessage: chat version range incompatible for accepting group join request"
                   | otherwise -> do
                       let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
                       mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ welcomeMsgId_ acceptance useRole profileMode
@@ -1337,7 +1354,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
                 Left rjctReason
                   | v < groupJoinRejectVersion ->
-                      messageWarning $ "processUserContactRequest (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
+                      messageWarning $ "processContactConnMessage (group " <> groupName' gInfo <> "): joining of " <> displayName <> " is blocked"
                   | otherwise -> do
                       mem <- acceptGroupJoinSendRejectAsync user uclId gInfo invId chatVRange p xContactId_ rjctReason
                       toViewTE $ TERejectingGroupJoinRequestMember user gInfo mem rjctReason

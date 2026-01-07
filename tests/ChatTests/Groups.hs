@@ -8410,8 +8410,7 @@ createChannel1Relay gName owner relay = do
 
   concurrentlyN_
     [ do
-        owner <## ("#" <> gName <> ": relay " <> rName <> " joined and added to group link")
-        owner <## "current relays:"
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner <## "  - relay id 1: active"
         owner <## "group link:"
         _ <- getTermLine owner
