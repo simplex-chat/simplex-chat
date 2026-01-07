@@ -1165,25 +1165,37 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
           _ -> pure ()
-      LINK _link ->
+      LINK _link auData ->
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
             CFSetConnShortLink ->
-              case ucGroupId_ of
-                Just groupId -> do
-                  (gInfo, gLink, relayMem, relays) <- withStore $ \db -> do
+              case (ucGroupId_, auData) of
+                (Just groupId, AUCLD SCMContact userLinkData) -> do
+                  (gInfo, gLink, relays) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo
-                    relayMem <- getGroupRelayMember -- TODO correlate relay member to LINK response
-                    relay <- getGroupRelayByGMId db (groupMemberId' relayMem)
-                    void $ liftIO $ updateRelayStatus db relay RSActive
+                    relays <- liftIO $ updateRelays db gInfo userLinkData
                     liftIO $ setGroupInProgressDone db gInfo
-                    relays <- liftIO $ getGroupRelays db gInfo
-                    pure (gInfo, gLink, relayMem, relays)
-                  -- TODO [relays] owner: relay added chat item?
-                  toView $ CEvtRelayJoined user gInfo relayMem gLink relays
-                Nothing -> throwChatError $ CECommandError "LINK event expected for a group link only"
+                    pure (gInfo, gLink, relays)
+                  -- TODO [relays] owner: "relays updated" chat item?
+                  toView $ CEvtGroupLinkRelaysUpdated user gInfo gLink relays
+                _ -> throwChatError $ CECommandError "LINK event expected for a group link only"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
+          where
+            -- TODO [relays] owner: on relay deletion (link absent from relayLinks)
+            -- TODO          move status RSActive to new "Removed" status / remove relay record
+            updateRelays :: DB.Connection -> GroupInfo -> UserConnLinkData 'CMContact -> IO [GroupRelay]
+            updateRelays db gInfo (UserContactLinkData UserContactData {relays = relayLinks}) = do
+              relays <- getGroupRelays db gInfo
+              mapM updateRelay relays
+              where
+                updateRelay :: GroupRelay -> IO GroupRelay
+                updateRelay relay@GroupRelay {relayLink, relayStatus} =
+                  case relayLink of
+                    Just rLink
+                      | rLink `elem` relayLinks && relayStatus == RSAccepted ->
+                          updateRelayStatus db relay RSActive
+                    _ -> pure relay
       MERR _ err -> do
         eToView $ ChatErrorAgent err (AgentConnId agentConnId) (Just connEntity)
         processConnMERR connEntity conn err

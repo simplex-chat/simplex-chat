@@ -232,7 +232,7 @@ chatGroupTests = do
   -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
-  fdescribe "channels" $ do
+  describe "channels" $ do
     describe "relay delivery" $ do
       it "should deliver messages to members" testChannelsRelayDeliver
       describe "should deliver messages in a loop over members" $ do
@@ -8410,8 +8410,7 @@ createChannel1Relay gName owner relay = do
 
   concurrentlyN_
     [ do
-        owner <## ("#" <> gName <> ": relay " <> rName <> " joined and added to group link")
-        owner <## "current relays:"
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
         owner <## "  - relay id 1: active"
         owner <## "group link:"
         _ <- getTermLine owner
