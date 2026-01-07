@@ -1851,6 +1851,7 @@ data CommandFunction
   | CFAcceptContact
   | CFAckMessage -- not used
   | CFDeleteConn -- not used
+  | CFSetConnShortLink
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1868,6 +1869,7 @@ instance TextEncoding CommandFunction where
     "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
+    "set_conn_short_link" -> Just CFSetConnShortLink
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1879,6 +1881,7 @@ instance TextEncoding CommandFunction where
     CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
+    CFSetConnShortLink -> "set_conn_short_link"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1891,6 +1894,7 @@ commandExpectedResponse = \case
   CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
+  CFSetConnShortLink -> t LINK_
   where
     t = AEvtTag SAEConn
 
