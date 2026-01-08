@@ -1596,11 +1596,11 @@ setMemberVectorNewRelations db GroupMember {groupMemberId} relations = do
   v_ <- maybeFirstRow fromOnly $
     DB.query
       db
+      ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
 #if defined(dbPostgres)
-      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? FOR UPDATE"
-#else
-      "SELECT member_relations_vector FROM group_members WHERE group_member_id = ?"
+          <> " FOR UPDATE"
 #endif
+      )
       (Only groupMemberId)
   let v' = setNewRelations relations $ fromMaybe B.empty v_
   currentTs <- getCurrentTime
@@ -1638,11 +1638,11 @@ setMemberVectorRelationConnected db GroupMember {groupMemberId} GroupMember {ind
     firstRow fromOnly (SEMemberRelationsVectorNotFound groupMemberId) $
       DB.query
         db
+        ( "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL"
 #if defined(dbPostgres)
-        "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL FOR UPDATE"
-#else
-        "SELECT member_relations_vector FROM group_members WHERE group_member_id = ? AND member_relations_vector IS NOT NULL"
+          <> " FOR UPDATE"
 #endif
+        )
         (Only groupMemberId)
   let v' = setRelationConnected indexInGroup newStatus v
   currentTs <- liftIO getCurrentTime

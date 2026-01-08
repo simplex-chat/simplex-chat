@@ -52,7 +52,6 @@ module Simplex.Chat.Store.Messages
     getDirectChatItemLast,
     getAllChatItems,
     getAChatItem,
-    getAChatItemBySharedMsgId,
     updateDirectChatItem,
     updateDirectChatItem',
     addInitialAndNewCIVersions,
@@ -1235,13 +1234,17 @@ getDirectChatItemLast db user@User {userId} contactId = do
     ExceptT . firstRow fromOnly (SEChatItemNotFoundByContactId contactId) $
       DB.query
         db
-        [sql|
-          SELECT chat_item_id
-          FROM chat_items
-          WHERE user_id = ? AND contact_id = ?
-          ORDER BY created_at DESC, chat_item_id DESC
-          LIMIT 1
-        |]
+        ( [sql|
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND contact_id = ?
+            ORDER BY created_at DESC, chat_item_id DESC
+            LIMIT 1
+          |]
+#if defined(dbPostgres)
+            <> " FOR UPDATE"
+#endif
+        )
         (userId, contactId)
   getDirectChatItem db user contactId chatItemId
 
@@ -1560,13 +1563,17 @@ getGroupMemberChatItemLast db user@User {userId} groupId groupMemberId = do
     ExceptT . firstRow fromOnly (SEChatItemNotFoundByGroupId groupId) $
       DB.query
         db
-        [sql|
-          SELECT chat_item_id
-          FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ?
-          ORDER BY item_ts DESC, chat_item_id DESC
-          LIMIT 1
-        |]
+        ( [sql|
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND group_id = ? AND group_member_id = ?
+            ORDER BY item_ts DESC, chat_item_id DESC
+            LIMIT 1
+          |]
+#if defined(dbPostgres)
+          <> " FOR UPDATE"
+#endif
+        )
         (userId, groupId, groupMemberId)
   getGroupChatItem db user groupId chatItemId
 
@@ -3242,15 +3249,6 @@ getAChatItem db vr user (ChatRef cType chatId scope) itemId = do
       pure $ AChatItem SCTLocal msgDir (LocalChat nf) ci
     _ -> throwError $ SEChatItemNotFound itemId
   liftIO $ getACIReactions db aci
-
-getAChatItemBySharedMsgId :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> SharedMsgId -> ExceptT StoreError IO AChatItem
-getAChatItemBySharedMsgId db user cd sharedMsgId = case cd of
-  CDDirectRcv ct@Contact {contactId} -> do
-    (CChatItem msgDir ci) <- getDirectChatItemBySharedMsgId db user contactId sharedMsgId
-    pure $ AChatItem SCTDirect msgDir (DirectChat ct) ci
-  CDGroupRcv g scopeInfo GroupMember {groupMemberId} -> do
-    (CChatItem msgDir ci) <- getGroupChatItemBySharedMsgId db user g groupMemberId sharedMsgId
-    pure $ AChatItem SCTGroup msgDir (GroupChat g scopeInfo) ci
 
 getChatItemVersions :: DB.Connection -> ChatItemId -> IO [ChatItemVersion]
 getChatItemVersions db itemId = do

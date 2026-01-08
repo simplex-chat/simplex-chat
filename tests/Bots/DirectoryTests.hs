@@ -1167,8 +1167,7 @@ testCapthaScreening ps =
         bob <## "/'filter 1 off' - disable filter"
         -- connect with captcha screen
         _ <- join cath groupLink
-        cath ##> "/_send #1(_support) text 123" -- sending incorrect captcha
-        cath <# "#privacy (support) 123"
+        cath #> "#privacy (support) 123" -- sending incorrect captcha
         cath <# "#privacy (support) 'SimpleX Directory'!> > cath 123"
         cath <## "      Incorrect text, please try again."
         captcha <- dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
@@ -1220,8 +1219,7 @@ testCapthaScreening ps =
       cath <## "Send captcha text to join the group privacy."
       dropStrPrefix "#privacy (support) 'SimpleX Directory'> " . dropTime <$> getTermLine cath
     sendCaptcha cath captcha = do
-      cath ##> ("/_send #1(_support) text " <> captcha)
-      cath <# ("#privacy (support) " <> captcha)
+      cath #> ("#privacy (support) " <> captcha)
       cath <# ("#privacy (support) 'SimpleX Directory'!> > cath " <> captcha)
       cath <## "      Correct, you joined the group privacy"
       cath <## "#privacy: you joined the group"
@@ -1411,8 +1409,10 @@ submitGroup u n fn = do
 
 groupAccepted :: TestCC -> String -> IO String
 groupAccepted u n = do
-  u <# ("'SimpleX Directory'> Joining the group " <> n <> "…")
-  u <## ("#" <> viewName n <> ": 'SimpleX Directory' joined the group")
+  u <###
+    [ WithTime ("'SimpleX Directory'> Joining the group " <> n <> "…"),
+      ConsoleString ("#" <> viewName n <> ": 'SimpleX Directory' joined the group")
+    ]
   u <# ("'SimpleX Directory'> Joined the group " <> n <> ", creating the link…")
   u <# "'SimpleX Directory'> Created the public link to join the group via this directory service that is always online."
   u <## ""
