@@ -42,7 +42,9 @@ Mixed (double) implementation - for "first" and remaining relays.
 
 In this case agent already handles connection reliability, downside is no immediate failure visible to user on temporary network errors for all relays (for example, client is offline).
 
-UI already handles "connecting..." state, so async path doesn't hurt UX much other than in mentioned case. UI stays in "connecting..." until at least one relay connection succeeds. If all relay connections permanently fail, update state for UI - requires permanent error handling for connection creation on continuation (agent responses in Subscriber).
+UI already handles "connecting..." state, so async path doesn't hurt UX much other than in mentioned case. UI stays in "connecting..." until at least one relay connection succeeds.
+
+If all relay connections permanently fail, update state for UI - requires permanent error handling for connection creation on continuation (agent responses in Subscriber). Track relay connection states to detect "all failed", possibly on connection status, TBC at implementation.
 
 Pros:
 - Simple flow: loop through relays, start async connections.
@@ -64,7 +66,7 @@ An additional state machine, possibly based on relay member records as work item
 
 To avoid adding background mechanisms for link fetching per relay, we could fetch all links data synchronously, and only then connect to relays asynchronously.
 
-In case any relay link fetch fails, user would be given option to retry.
+In case any relay link fetch fails, user would be given option to retry. (Whole operation fails and is retried)
 
 Group link fetch is also synchronous (retrieve list of relay links), and also leads to immediate user retry.
 
@@ -75,7 +77,7 @@ This should be addressed regardless of which approach to connection we choose. T
 1. Created once before starting any relay connections;
 2. Passed to all relays on connection attempts.
 
-In case of synchronous approach and re-use of existing logic, it means `connectViaContact` should accept and optional profile (not just flag).
+In case of synchronous approach and re-use of existing logic, it means `connectViaContact` should accept an optional profile (not just flag).
 
 ### Overall proposed connection flow
 
@@ -86,10 +88,12 @@ User clicks "Connect"
   -> Once all links are resolved, proceed - create incognito profile ONCE for all relays, if needed
   -> For each relay: Start async connection attempt (joinConnectionAsync)
   -> Agent handles connection retries internally
-  -> Subscriber handles `JOINED` events and errors for each relay
+  -> Subscriber handles JOINED events and errors for each relay
+     - At least one relay JOINED -> group becomes functional
+     - All relays permanently fail -> show failure to user
 ```
 
 Link fetches being synchronous in conjunction with asynchronous relay connections allows for similar UI reactivity to current single-connection flows:
-- Link fetches passing ensures client is not offline;
 - Network failures during link fetches require user retry;
-- Connection attempted are retried by agent on network failures.
+- Connection attempted are retried by agent on network failures;
+- Link fetches passing ensures client is not offline when starting async connection attempts (unless user goes offline in-between, but window is very small, and connections would be retried anyway).
