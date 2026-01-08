@@ -765,7 +765,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -776,7 +776,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1292,7 +1292,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -5141,7 +5141,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5471,7 +5471,7 @@ SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND 
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  AND msg_content_tag = ?  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_msg_content_tag_created_at (user_id=? AND contact_id=? AND msg_content_tag=?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
@@ -5499,7 +5499,7 @@ SEARCH chat_items USING INDEX idx_chat_items_notes_created_at (user_id=? AND not
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND msg_content_tag = ?  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=? AND note_folder_id=? AND msg_content_tag=?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
@@ -5903,7 +5903,7 @@ SEARCH protocol_servers USING COVERING INDEX idx_smp_servers_user_id (user_id=?)
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_user_id (user_id=?)
 SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_to_subscribe (user_id=?)
@@ -6053,8 +6053,7 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_stats_all (use
 
 Query: SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND  contact_id = ?  AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
-USE TEMP B-TREE FOR DISTINCT
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_msg_content_tag_created_at (user_id=? AND contact_id=? AND msg_content_tag>?)
 
 Query: SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND  group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL  AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag
 Plan:
@@ -6062,8 +6061,7 @@ SEARCH chat_items USING INDEX idx_chat_items_groups_msg_content_tag_deleted (use
 
 Query: SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND  note_folder_id = ?  AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
-USE TEMP B-TREE FOR DISTINCT
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=? AND note_folder_id=? AND msg_content_tag>?)
 
 Query: SELECT EXISTS (SELECT 1 FROM chat_items WHERE user_id = ? AND contact_id = ?)
 Plan:
