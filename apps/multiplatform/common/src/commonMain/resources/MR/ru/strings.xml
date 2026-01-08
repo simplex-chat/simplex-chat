@@ -2621,4 +2621,5 @@
     <string name="member_messages_will_be_deleted_cannot_be_undone">Сообщения участника будут удалены - это действие не обратимо!</string>
     <string name="server_no_sub">нет подписки</string>
     <string name="not_connected_to_server_to_receive_messages_no_sub">Вы не подключенны к серверу через который Вы получали сообщения от этого контакта (без подписки).</string>
+    <string name="remove_member_delete_messages_confirmation">Удалить члена группы и удалить сообщения</string>
 </resources>
