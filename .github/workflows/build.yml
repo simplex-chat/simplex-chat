@@ -434,7 +434,6 @@ jobs:
 
       - name: Build Desktop
         id: mac_desktop_build
-        if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
         env:
           APPLE_SIMPLEX_SIGNING_KEYCHAIN: ${{ secrets.APPLE_SIMPLEX_SIGNING_KEYCHAIN }}
@@ -445,6 +444,11 @@ jobs:
           path=$(echo $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg)
           echo "package_path=$path" >> $GITHUB_OUTPUT
           echo "package_hash=$(echo SHA2-256\(${{ matrix.desktop_asset_name }}\)= $(openssl sha256 $path | cut -d' ' -f 2))" >> $GITHUB_OUTPUT
+
+      - uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.desktop_asset_name }}
+          path: ${{ steps.mac_desktop_build.outputs.package_path }}
 
       - name: Upload Desktop
         if: startsWith(github.ref, 'refs/tags/v')
