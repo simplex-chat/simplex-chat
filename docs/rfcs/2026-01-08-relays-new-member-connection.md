@@ -64,7 +64,7 @@ An additional state machine, possibly based on relay member records as work item
 
 #### Option 3: Make all link fetches synchronously before proceeding
 
-To avoid adding background mechanisms for link fetching per relay, we could fetch all links data synchronously, and only then connect to relays asynchronously.
+To avoid adding background recovery mechanisms for link fetching per relay, we could fetch all links data synchronously, and only then connect to relays asynchronously.
 
 In case any relay link fetch fails, user would be given option to retry. (Whole operation fails and is retried)
 
