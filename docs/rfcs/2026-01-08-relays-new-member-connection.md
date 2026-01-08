@@ -95,5 +95,5 @@ User clicks "Connect"
 
 Link fetches being synchronous in conjunction with asynchronous relay connections allows for similar UI reactivity to current single-connection flows:
 - Network failures during link fetches require user retry;
-- Connection attempted are retried by agent on network failures;
+- Connection attempts are retried by agent on network failures;
 - Link fetches passing ensures client is not offline when starting async connection attempts (unless user goes offline in-between, but window is very small, and connections would be retried anyway).
