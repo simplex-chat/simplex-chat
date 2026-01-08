@@ -4,7 +4,7 @@ const path = require('path');
 const extract = require('extract-zip');
 
 const GITHUB_REPO = 'simplex-chat/simplex-chat-libs';
-const RELEASE_TAG = '6.5.5';
+const RELEASE_TAG = 'v6.5.5';
 const ROOT_DIR = process.cwd(); // Root of the package being installed
 const LIBS_DIR = path.join(ROOT_DIR, 'libs')
 const INSTALLED_FILE = path.join(LIBS_DIR, 'installed.txt');
@@ -69,7 +69,7 @@ async function install() {
     const { platformName, archName } = getPlatformInfo();
     const repoName = GITHUB_REPO.split('/')[1];
     const zipFilename = `${repoName}-${platformName}-${archName}.zip`;
-    const ZIP_URL = `https://github.com/${GITHUB_REPO}/releases/download/v${RELEASE_TAG}/${zipFilename}`;
+    const ZIP_URL = `https://github.com/${GITHUB_REPO}/releases/download/${RELEASE_TAG}/${zipFilename}`;
     const ZIP_PATH = path.join(ROOT_DIR, zipFilename);
     const TEMP_EXTRACT_DIR = path.join(ROOT_DIR, '.temp-extract');
 
@@ -164,7 +164,7 @@ function downloadFile(url, dest) {
         reject(new Error(
           `Release artifact not found (404). Check:\n` +
           `  - Repository exists: ${url.split('/releases')[0]}\n` +
-          `  - Release tag exists: v${RELEASE_TAG}\n` +
+          `  - Release tag exists: ${RELEASE_TAG}\n` +
           `  - Artifact filename is correct`
         ));
         return;
