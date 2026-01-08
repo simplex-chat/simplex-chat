@@ -568,6 +568,8 @@ processChatCommand vr nm = \case
               newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
                 groupMemberId' m == scopeGMId
               newFromMember _ = False
+  APIGetChatContentTypes chatRef -> withUser $ \user ->
+    CRChatContentTypes <$> withStore (\db -> getChatContentTypes db user chatRef)
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
@@ -4366,6 +4368,7 @@ chatCommandP =
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
+      "/_get content types " *> (APIGetChatContentTypes <$> chatRefP),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),

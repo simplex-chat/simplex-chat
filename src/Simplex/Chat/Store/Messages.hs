@@ -45,6 +45,7 @@ module Simplex.Chat.Store.Messages
     createNewChatItem_,
     getChatPreviews,
     checkContactHasItems,
+    getChatContentTypes,
     getDirectChat,
     getGroupChat,
     getGroupChatScopeInfoForItem,
@@ -1166,6 +1167,23 @@ checkContactHasItems db User {userId} Contact {contactId} =
       "SELECT EXISTS (SELECT 1 FROM chat_items WHERE user_id = ? AND contact_id = ?)"
       (userId, contactId)
 
+getChatContentTypes :: DB.Connection -> User -> ChatRef -> ExceptT StoreError IO [MsgContentTag]
+getChatContentTypes db User {userId} (ChatRef cType chatId chatScope_) = case cType of
+  CTDirect -> getTypes " contact_id = ? " ()
+  CTLocal -> getTypes " note_folder_id = ? " ()
+  CTGroup -> case chatScope_ of
+    Nothing -> getTypes " group_id = ? AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL " ()
+    Just (GCSMemberSupport mId_) -> getTypes " group_id = ? AND group_scope_tag = ? AND group_scope_group_member_id IS NOT DISTINCT FROM ? " (GCSTMemberSupport_, mId_)
+  _ -> throwError $ SEInternalError "unsupported chat type"
+  where
+    getTypes :: ToRow p => Query -> p -> ExceptT StoreError IO [MsgContentTag]
+    getTypes cond params =
+      liftIO $ map fromOnly
+        <$> DB.query
+          db
+          ("SELECT DISTINCT msg_content_tag FROM chat_items WHERE user_id = ? AND " <> cond <> " AND msg_content_tag IS NOT NULL ORDER BY msg_content_tag")
+          ((userId, chatId) :. params)
+
 getDirectChat :: DB.Connection -> VersionRangeChat -> User -> Int64 -> Maybe MsgContentTag -> ChatPagination -> Maybe Text -> ExceptT StoreError IO (Chat 'CTDirect, Maybe NavigationInfo)
 getDirectChat db vr user contactId contentFilter pagination search_ = do
   let search = fromMaybe "" search_
@@ -1480,20 +1498,26 @@ getChatItemIDs db User {userId} cInfo contentFilter range count search = case cI
   _ -> throwError $ SEInternalError "unsupported chat type"
   where
     baseQuery = " SELECT chat_item_id FROM chat_items WHERE "
+    -- parameterized by timestamp field `f` used to order chat items:
+    -- `item_ts` for groups, `created_at` for direct chats and notes.
     idsQuery :: ToRow p => Query -> p -> Query -> IO [ChatItemId]
     idsQuery c p f = case range of
       CRLast -> rangeQuery c p (" ORDER BY " <> f <> " DESC, chat_item_id DESC ")
       CRAfter ts itemId ->
         rangeQuery
-          ((" " <> f <> " > ? ") `orCond` (" " <> f <> " = ? AND chat_item_id > ? "))
+          ((f <> " > ?") `orCond` (f <> " = ? AND chat_item_id > ?"))
           (orParams ts itemId)
           (" ORDER BY " <> f <> " ASC, chat_item_id ASC ")
       CRBefore ts itemId ->
         rangeQuery
-          ((" " <> f <> " < ? ") `orCond` (" " <> f <> " = ? AND chat_item_id < ? "))
+          ((f <> " < ?") `orCond` (f <> " = ? AND chat_item_id < ?"))
           (orParams ts itemId)
           (" ORDER BY " <> f <> " DESC, chat_item_id DESC ")
       where
+        -- `orCond` creates this query: `(c AND c1) OR (c AND c2)`,
+        -- that is equivalent to `c AND (c1 OR c2)`.
+        -- OR has to be used on the top level for query planner to use indices
+        -- that include fields in c1 and c2.
         orCond c1 c2 = " ((" <> c <> " AND " <> c1 <> ") OR (" <> c <> " AND " <> c2 <> ")) "
         orParams ts itemId = (p :. (Only ts) :. p :. (ts, itemId))
     rangeQuery :: ToRow p => Query -> p -> Query -> IO [ChatItemId]
