@@ -1203,6 +1203,18 @@ CREATE UNIQUE INDEX idx_group_members_group_id_index_in_group ON group_members(
   group_id,
   index_in_group
 );
+CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON chat_items(
+  user_id,
+  contact_id,
+  msg_content_tag,
+  created_at
+);
+CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON chat_items(
+  user_id,
+  note_folder_id,
+  msg_content_tag,
+  created_at
+);
 CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members

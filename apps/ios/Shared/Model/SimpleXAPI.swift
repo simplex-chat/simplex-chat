@@ -444,6 +444,12 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
     throw r.unexpected
 }
 
+func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?) async throws -> [MsgContentTag] {
+    let r: ChatResponse0 = try await chatSendCmd(.apiGetChatContentTypes(chatId: chatId, scope: scope))
+    if case let .chatContentTypes(types) = r { return types }
+    throw r.unexpected
+}
+
 func loadChat(chat: Chat, im: ItemsModel, search: String = "", clearItems: Bool = true) async {
     await loadChat(chatId: chat.chatInfo.id, im: im, search: search, clearItems: clearItems)
 }

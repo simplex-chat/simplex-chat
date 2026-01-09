@@ -707,8 +707,8 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       if
         | inline -> do
             -- accepting inline
-            ci <- withStore $ \db -> acceptRcvInlineFT db vr user fileId filePath
-            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+            (ci, sharedMsgId) <- withStore $ \db ->
+              liftM2 (,) (acceptRcvInlineFT db vr user fileId filePath) (getSharedMsgIdByFileId db userId fileId)
             send $ XFileAcptInv sharedMsgId Nothing fName
             pure ci
         | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
@@ -925,9 +925,11 @@ acceptGroupJoinRequestAsync
   incognitoProfile = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
-    currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
+    ((groupMemberId, memberId), currentMemCount) <- withStore $ \db ->
+      liftM2
+        (,)
+        (createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus)
+        (liftIO $ getGroupCurrentMembersCount db user gInfo)
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
@@ -1041,15 +1043,13 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m = do
-  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  vector <- withStore (`getMemberRelationsVector` m)
+  (members, vector) <- withStore $ \db -> liftM2 (,) (liftIO $ getGroupMembers db vr user gInfo) (getMemberRelationsVector db m)
   let recipients = filter (shouldIntroduce m vector) members
   introduceMember user gInfo m recipients Nothing
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m = do
-  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  vector <- withStore (`getMemberRelationsVector` m)
+  (members, vector) <- withStore $ \db -> liftM2 (,) (liftIO $ getGroupMembers db vr user gInfo) (getMemberRelationsVector db m)
   let recipients = filter (shouldIntroduce m vector) members
   introduceMember user gInfo m recipients Nothing
 

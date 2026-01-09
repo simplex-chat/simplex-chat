@@ -41,6 +41,7 @@ enum ChatCommand: ChatCmdProtocol {
     case apiGetChatTags(userId: Int64)
     case apiGetChats(userId: Int64)
     case apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTag?, pagination: ChatPagination, search: String)
+    case apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?)
     case apiGetChatItemInfo(type: ChatType, id: Int64, scope: GroupChatScope?, itemId: Int64)
     case apiSendMessages(type: ChatType, id: Int64, scope: GroupChatScope?, live: Bool, ttl: Int?, composedMessages: [ComposedMessage])
     case apiCreateChatTag(tag: ChatTagData)
@@ -224,7 +225,8 @@ enum ChatCommand: ChatCmdProtocol {
             case let .apiGetChats(userId): return "/_get chats \(userId) pcc=on"
             case let .apiGetChat(chatId, scope, contentTag, pagination, search):
                 let tag = contentTag != nil ? " content=\(contentTag!.rawValue)" : ""
-                return "/_get chat \(chatId)\(scopeRef(scope: scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
+                return "/_get chat \(chatId)\(scopeRef(scope))\(tag) \(pagination.cmdString)" + (search == "" ? "" : " search=\(search)")
+            case let .apiGetChatContentTypes(chatId, scope): return "/_get content types \(chatId)\(scopeRef(scope))"
             case let .apiGetChatItemInfo(type, id, scope, itemId): return "/_get item info \(ref(type, id, scope: scope)) \(itemId)"
             case let .apiSendMessages(type, id, scope, live, ttl, composedMessages):
                 let msgs = encodeJSON(composedMessages)
@@ -417,6 +419,7 @@ enum ChatCommand: ChatCmdProtocol {
             case .apiGetChatTags: return "apiGetChatTags"
             case .apiGetChats: return "apiGetChats"
             case .apiGetChat: return "apiGetChat"
+            case .apiGetChatContentTypes: return "apiGetChatContentTypes"
             case .apiGetChatItemInfo: return "apiGetChatItemInfo"
             case .apiSendMessages: return "apiSendMessages"
             case .apiCreateChatTag: return "apiCreateChatTag"
@@ -559,10 +562,10 @@ enum ChatCommand: ChatCmdProtocol {
     }
 
     func ref(_ type: ChatType, _ id: Int64, scope: GroupChatScope?) -> String {
-        "\(type.rawValue)\(id)\(scopeRef(scope: scope))"
+        "\(type.rawValue)\(id)\(scopeRef(scope))"
     }
 
-    func scopeRef(scope: GroupChatScope?) -> String {
+    func scopeRef(_ scope: GroupChatScope?) -> String {
         switch (scope) {
         case .none: ""
         case let .memberSupport(groupMemberId_):
@@ -648,6 +651,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
     case chatStopped
     case apiChats(user: UserRef, chats: [ChatData])
     case apiChat(user: UserRef, chat: ChatData, navInfo: NavigationInfo?)
+    case chatContentTypes(contentTypes: [MsgContentTag])
     case chatTags(user: UserRef, userTags: [ChatTag])
     case chatItemInfo(user: UserRef, chatItem: AChatItem, chatItemInfo: ChatItemInfo)
     case serverTestResult(user: UserRef, testServer: String, testFailure: ProtocolTestFailure?)
@@ -680,6 +684,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .chatStopped: "chatStopped"
         case .apiChats: "apiChats"
         case .apiChat: "apiChat"
+        case .chatContentTypes: "chatContentTypes"
         case .chatTags: "chatTags"
         case .chatItemInfo: "chatItemInfo"
         case .serverTestResult: "serverTestResult"
@@ -714,6 +719,7 @@ enum ChatResponse0: Decodable, ChatAPIResult {
         case .chatStopped: return noDetails
         case let .apiChats(u, chats): return withUser(u, String(describing: chats))
         case let .apiChat(u, chat, navInfo): return withUser(u, "chat: \(String(describing: chat))\nnavInfo: \(String(describing: navInfo))")
+        case let .chatContentTypes(types): return "content types: \(String(describing: types))"
         case let .chatTags(u, userTags): return withUser(u, "userTags: \(String(describing: userTags))")
         case let .chatItemInfo(u, chatItem, chatItemInfo): return withUser(u, "chatItem: \(String(describing: chatItem))\nchatItemInfo: \(String(describing: chatItemInfo))")
         case let .serverTestResult(u, server, testFailure): return withUser(u, "server: \(server)\nresult: \(String(describing: testFailure))")
