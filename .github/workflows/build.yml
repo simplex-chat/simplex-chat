@@ -124,7 +124,7 @@ jobs:
       - name: Prepare "release-assets" directory
         if: matrix.should_run == true
         shell: bash
-        run: mkdir -p ${{ github.workspace }}/release-assets
+        run: mkdir -p ${{ runner.temp }}/release-assets
 
       - name: Restore cached build
         if: matrix.should_run == true
@@ -209,7 +209,7 @@ jobs:
         if: matrix.should_run == true
         shell: bash
         run: |
-          docker cp builder:/out/simplex-chat-test ${{ github.workspace }}/release-assets/
+          docker cp builder:/out/simplex-chat-test ${{ runner.temp }}/release-assets/
 
       - name: Copy CLI from container and prepare it
         id: linux_cli_prepare
@@ -218,30 +218,35 @@ jobs:
         run: |
           cli_name="simplex-chat-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}"
           cli_deb_name="${cli_name}.deb"
-          cli_path="${{ github.workspace }}"
 
-          docker cp builder:/out/simplex-chat "${{ github.workspace }}/release-assets/${cli_name}"
-          docker cp builder:/out/deb-build/simplex-chat.deb "${{ github.workspace }}/release-assets/${cli_deb_name}"
+          docker cp builder:/out/simplex-chat "${{ runner.temp }}/release-assets/${cli_name}"
+          docker cp builder:/out/deb-build/simplex-chat.deb "${{ runner.temp }}/release-assets/${cli_deb_name}"
 
       - name: Build Desktop
         if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          # Build
           scripts/desktop/make-deb-linux.sh
 
-          # Prepare
-          mv "${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_${{ matrix.arch }}.deb" "${{ github.workspace }}/release-assets/simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb"
+      - name: Prepare Desktop
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.should_run == true
+        shell: bash
+        run: |
+          mv "${{ github.workspace }}/apps/multiplatform/release/main/deb/simplex_${{ matrix.arch }}.deb" \
+             "${{ runner.temp }}/release-assets/simplex-desktop-ubuntu-${{ matrix.os_underscore }}-${{ matrix.arch }}.deb"
 
       - name: Build AppImage
         if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
         shell: docker exec -t builder sh -eu {0}
         run: |
-          # Build
           scripts/desktop/make-appimage-linux.sh
 
-          # Prepare
-          mv ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage "${{ github.workspace }}/release-assets/simplex-desktop-${{ matrix.arch }}.AppImage"
+      - name: Prepare AppImage
+        if: startsWith(github.ref, 'refs/tags/v') && matrix.os == '22.04' && matrix.should_run == true
+        shell: bash
+        run: |
+          mv ${{ github.workspace }}/apps/multiplatform/release/main/*imple*.AppImage \
+             "${{ runner.temp }}/release-assets/simplex-desktop-${{ matrix.arch }}.AppImage"
 
       - name: Fix permissions for cache
         if: matrix.should_run == true
@@ -254,12 +259,12 @@ jobs:
         if: matrix.should_run == true
         uses: actions/upload-artifact@v6
         with:
-          name: release-linux-${{ matrix.runner }}
-          path: ${{ github.workspace }}/release-assets/*
+          name: release-linux-${{ matrix.runner }}-${{ matrix.ghc }}
+          path: ${{ runner.temp }}/release-assets/*
 
   test-linux:
     name: "Tests: ubuntu-${{ matrix.os }}-${{ matrix.arch }}"
-    needs: [build-linux]
+    needs: [variables, build-linux]
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -268,26 +273,41 @@ jobs:
           - os: 22.04
             arch: x86_64
             runner: "ubuntu-22.04"
+            ghc: "8.10.7"
+            should_run: ${{ !(github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }}
+          - os: 22.04
+            arch: x86_64
+            runner: "ubuntu-22.04"
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            should_run: true
           - os: 24.04
             arch: x86_64
             runner: "ubuntu-24.04"
+            ghc: ${{ needs.variables.outputs.GHC_VER }}
+            should_run: true
     steps:
       - name: Checkout Code
+        if: matrix.should_run == true
         uses: actions/checkout@v6
 
       - name: Download Linux artifacts
+        if: matrix.should_run == true
         uses: actions/download-artifact@v7
         with:
-          name: release-linux-${{ matrix.runner }}
+          name: release-linux-${{ matrix.runner }}-${{ matrix.ghc }}
           path: ./artifacts/
 
       - name: Run tests
+        if: matrix.should_run == true
         timeout-minutes: 120
         shell: bash
         run: |
           i=1
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
+
+          chmod +x ./artifacts/simplex-chat-test
+
           while [ "$i" -le "$attempts" ]; do
             if ./artifacts/simplex-chat-test; then
               break
@@ -330,7 +350,7 @@ jobs:
 
       - name: Prepare "release-assets" directory
         shell: bash
-        run: mkdir -p ${{ github.workspace }}/release-assets
+        run: mkdir -p ${{ runner.temp }}/release-assets
 
       - name: Prepare build
         uses: ./.github/actions/prepare-build
@@ -363,13 +383,14 @@ jobs:
           cabal build -j --enable-tests
 
           for i in simplex-chat simplex-chat-test; do
-            bin=$(find ./dist-newstyle -name "$i" -type f -executable)
+            bin=$(find ./dist-newstyle -name "$i" -type f -perm +111)
             chmod +x "$bin"
-            mv "$bin" ${{ github.workspace }}/release-assets/
+            mv "$bin" ${{ runner.temp }}/release-assets/
           done
 
           # Rename CLI
-          mv "${{ github.workspace }}/release-assets/simplex-chat" "${{ github.workspace }}/release-assets/${{ matrix.cli_asset_name }}"
+          mv "${{ runner.temp }}/release-assets/simplex-chat" \
+             "${{ runner.temp }}/release-assets/${{ matrix.cli_asset_name }}"
 
       - name: Build Desktop
         id: mac_desktop_build
@@ -384,13 +405,14 @@ jobs:
           scripts/ci/build-desktop-mac.sh
 
           # Prepare
-          mv $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg ${{ github.workspace }}/release-assets/${{ matrix.desktop_asset_name }}
+          mv $PWD/apps/multiplatform/release/main/dmg/SimpleX-*.dmg \
+             "${{ runner.temp }}/release-assets/${{ matrix.desktop_asset_name }}"
 
       - name: Upload builds to artifacts
         uses: actions/upload-artifact@v6
         with:
           name: release-${{ matrix.os }}
-          path: ${{ github.workspace }}/release-assets/*
+          path: ${{ runner.temp }}/release-assets/*
 
   test-macos:
     name: "Tests: ${{ matrix.os }}"
@@ -412,6 +434,9 @@ jobs:
           name: release-${{ matrix.os }}
           path: ./artifacts/
 
+      - name: Install OpenSSL
+        run: brew install openssl@3.0
+
       - name: Run tests
         timeout-minutes: 120
         shell: bash
@@ -419,6 +444,9 @@ jobs:
           i=1
           attempts=1
           ${{ (github.ref == 'refs/heads/stable' || startsWith(github.ref, 'refs/tags/v')) }} && attempts=3
+
+          chmod +x ./artifacts/simplex-chat-test
+
           while [ "$i" -le "$attempts" ]; do
             if ./artifacts/simplex-chat-test; then
               break
@@ -484,7 +512,7 @@ jobs:
 
       - name: Prepare "release-assets" directory
         shell: msys2 {0}
-        run: mkdir -p ${{ github.workspace }}/release-assets
+        run: mkdir -p "$(cygpath -u "${{ runner.temp }}")/release-assets"
 
       - name: Build CLI
         id: windows_cli_build
@@ -492,6 +520,7 @@ jobs:
         run: |
           # Adjust PATH
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          RELEASE_DIR="$(cygpath -u "${{ runner.temp }}")/release-assets"
 
           # Download openssl lib
           scripts/desktop/prepare-openssl-windows.sh
@@ -516,13 +545,14 @@ jobs:
           rm -rf dist-newstyle/src/direct-sq*
 
           for i in simplex-chat; do
-            bin=$(find ./dist-newstyle -name "$i" -type f -executable)
+            bin=$(find ./dist-newstyle -name "${i}.exe" -type f -executable)
             chmod +x "$bin"
-            mv "$bin" ${{ github.workspace }}/release-assets/
+            mv "$bin" "${RELEASE_DIR}/"
           done
 
           # Rename CLI
-          mv "${{ github.workspace }}/release-assets/simplex-chat" "${{ github.workspace }}/release-assets/${{ matrix.cli_asset_name }}"
+          mv "${RELEASE_DIR}/simplex-chat.exe" \
+             "${RELEASE_DIR}/${{ matrix.cli_asset_name }}"
 
       - name: Build Desktop
         id: windows_desktop_build
@@ -531,6 +561,7 @@ jobs:
         run: |
           # Adjust PATH
           export PATH=$PATH:/c/ghcup/bin:$(echo /c/tools/ghc-*/bin || echo)
+          RELEASE_DIR="$(cygpath -u "${{ runner.temp }}")/release-assets"
 
           # Build lib
           scripts/desktop/build-lib-windows.sh
@@ -543,13 +574,14 @@ jobs:
           rm -rf dist-newstyle/src/direct-sq*
 
           # Prepare
-          mv $PWD/release/main/msi/*imple*.msi "${{ github.workspace }}/release-assets/${{ matrix.desktop_asset_name }}"
+          mv $PWD/release/main/msi/*imple*.msi \
+             "${RELEASE_DIR}/${{ matrix.desktop_asset_name }}"
 
       - name: Upload builds to artifacts
         uses: actions/upload-artifact@v6
         with:
           name: release-${{ matrix.os }}
-          path: ${{ github.workspace }}/release-assets/*
+          path: ${{ runner.temp }}/release-assets/*
 
 # =========================
 #   NodeJS libs release
@@ -567,7 +599,7 @@ jobs:
 
   release-nodejs-libs:
     runs-on: ubuntu-latest
-    needs: [build-linux, build-macos]
+    needs: [variables, build-linux, build-macos]
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout current repository
@@ -577,25 +609,25 @@ jobs:
       - name: Download Linux artifacts
         uses: actions/download-artifact@v7
         with:
-          name: release-linux-ubuntu-22.04
-          path: ./artifacts/linux/
+          name: release-linux-ubuntu-22.04-${{ needs.variables.outputs.GHC_VER }}
+          path: ${{ runner.temp }}/artifacts/linux/
 
       # aarch64 and x86_64
       - name: Download MacOS artifacts
         uses: actions/download-artifact@v7
         with:
           pattern: release-macos-*
-          path: ./artifacts/macos/
+          path: ${{ runner.temp }}/artifacts/macos/
 
       - name: Build archives
         run: |
-          INIT_DIR='${{ github.workspace }}/artifacts'
-          RELEASE_DIR='${{ github.workspace }}/release-assets'
+          INIT_DIR='${{ runner.temp }}/artifacts'
+          RELEASE_DIR='${{ runner.temp }}/release-assets'
           TAG='${{ github.ref_name }}'
           PREFIX='${{ github.event.repository.name }}-libs'
 
           # Setup directories
-          mkdir "$INIT_DIR" "$RELEASE_DIR"
+          mkdir -p "$INIT_DIR" "$RELEASE_DIR"
 
           # Prepare desktop builds for  library extraction
           find "${INIT_DIR}/linux" -type f -name 'simplex-desktop-ubuntu-22_04-x86_64.deb' -exec mv {} "${INIT_DIR}/linux.deb" \;
@@ -634,7 +666,7 @@ jobs:
         with:
           repository: ${{ github.repository }}-libs
           tag_name: ${{ github.ref_name }}
-          files: ${{ github.workspace }}/release-assets/*
+          files: ${{ runner.temp }}/release-assets/*
           token: ${{ secrets.NODEJS_REPO_TOKEN }}
 
   release:
@@ -656,13 +688,13 @@ jobs:
         shell: bash
         run: |
           # Prepare final dir
-          mkdir ./release-assets
+          mkdir -p ./release-assets
 
           # Move everything to releases except tests
           find ./artifacts -type f ! -name "*simplex-chat-test*" -exec mv {} ./release-assets/ \;
 
           # Prepare files
-          find "./artifacts" -type f | sort > files.txt
+          find "./release-assets" -type f | sort > files.txt
 
           # Prepare hashes
           while IFS= read -r filepath; do
@@ -672,14 +704,16 @@ jobs:
             filename=$(basename "$filepath")
             # Format and append to hashes.txt
             echo "SHA2-256($filename)= $hash" >> hashes.txt
+            # Newline after
+            echo >> hashes.txt
           done < files.txt
 
           echo "files<<EOF" >> $GITHUB_OUTPUT
-          cat ./release-assets/files.txt >> $GITHUB_OUTPUT
+          cat ./files.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
           echo "hashes<<EOF" >> $GITHUB_OUTPUT
-          cat ./release-assets/hashes.txt >> $GITHUB_OUTPUT
+          cat ./hashes.txt >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Build changelog
