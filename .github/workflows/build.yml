@@ -279,6 +279,7 @@ jobs:
   test-linux:
     name: "Tests: ubuntu-${{ matrix.os }}-${{ matrix.arch }}"
     needs: [variables, build-linux]
+    if: always() && !cancelled()
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -482,6 +483,7 @@ jobs:
   build-windows:
     name: "Build: ${{ matrix.os }}, GHC: ${{ matrix.ghc }}"
     needs: [variables]
+    if: always() && !cancelled()
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
