@@ -184,7 +184,6 @@ import Simplex.Messaging.Util (eitherToMaybe, firstRow', safeDecodeUtf8, ($>>=),
 import Simplex.Messaging.Version
 import UnliftIO.STM
 #if defined(dbPostgres)
-import qualified Data.Set as S
 import Database.PostgreSQL.Simple (In (..), Only (..), Query, (:.) (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)
 #else

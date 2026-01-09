@@ -68,7 +68,7 @@ runTestMessageWithFile :: HasCallStack => TestParams -> IO ()
 runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withXFTPServer $ do
   connectUsers alice bob
 
-  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"text\", \"text\": \"hi, sending a file\"}}]"
+  alice ##> "/_send @2 json [{\"filePath\": \"./tests/fixtures/test.jpg\", \"msgContent\": {\"type\": \"file\", \"text\": \"hi, sending a file\"}}]"
   alice <# "@bob hi, sending a file"
   alice <# "/f @bob ./tests/fixtures/test.jpg"
   alice <## "use /fc 1 to cancel sending"
@@ -83,12 +83,22 @@ runTestMessageWithFile = testChat2 aliceProfile bobProfile $ \alice bob -> withX
            "started receiving file 1 (test.jpg) from alice"
          ]
   bob <## "completed receiving file 1 (test.jpg) from alice"
+  bob #> "@alice received"
+  alice <# "bob> received"
 
   src <- B.readFile "./tests/fixtures/test.jpg"
   dest <- B.readFile "./tests/tmp/test.jpg"
   dest `shouldBe` src
-  alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
-  bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
+
+  alice #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg"), ((0, "received"), Nothing)])
+  alice ##> "/_get content types @2"
+  alice <## "Chat content types: file, text"
+  alice #$> ("/_get chat @2 content=file count=100", chatF, [((1, "hi, sending a file"), Just "./tests/fixtures/test.jpg")])
+
+  bob #$> ("/_get chat @2 count=100", chatF, chatFeaturesF <> [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg"), ((1, "received"), Nothing)])
+  bob ##> "/_get content types @2"
+  bob <## "Chat content types: file, text"
+  bob #$> ("/_get chat @2 content=file count=100", chatF, [((0, "hi, sending a file"), Just "./tests/tmp/test.jpg")])
 
 testSendImage :: HasCallStack => TestParams -> IO ()
 testSendImage =
@@ -343,15 +353,33 @@ testGroupSendImage =
                "started receiving file 1 (test.jpg) from alice"
              ]
       cath <## "completed receiving file 1 (test.jpg) from alice"
+      threadDelay 1000000
+      bob #> "#team received"
+      [alice, cath] *<# "#team bob> received"
+      threadDelay 1000000
+      cath #> "#team received too"
+      [alice, bob] *<# "#team cath> received too"
 
       src <- B.readFile "./tests/fixtures/test.jpg"
       dest <- B.readFile "./tests/tmp/test.jpg"
       dest `shouldBe` src
       dest2 <- B.readFile "./tests/tmp/test_1.jpg"
       dest2 `shouldBe` src
-      alice #$> ("/_get chat #1 count=1", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
-      bob #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
-      cath #$> ("/_get chat #1 count=1", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
+
+      alice #$> ("/_get chat #1 count=3", chatF, [((1, ""), Just "./tests/fixtures/test.jpg"), ((0, "received"), Nothing), ((0, "received too"), Nothing)])
+      alice ##> "/_get content types #1"
+      alice <## "Chat content types: image, text"
+      alice #$> ("/_get chat #1 content=image count=100", chatF, [((1, ""), Just "./tests/fixtures/test.jpg")])
+
+      bob #$> ("/_get chat #1 count=3", chatF, [((0, ""), Just "./tests/tmp/test.jpg"), ((1, "received"), Nothing), ((0, "received too"), Nothing)])
+      bob ##> "/_get content types #1"
+      bob <## "Chat content types: image, text"
+      bob #$> ("/_get chat #1 content=image count=100", chatF, [((0, ""), Just "./tests/tmp/test.jpg")])
+      
+      cath #$> ("/_get chat #1 count=3", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg"), ((0, "received"), Nothing), ((1, "received too"), Nothing)])
+      cath ##> "/_get content types #1"
+      cath <## "Chat content types: image, text"
+      cath #$> ("/_get chat #1 content=image count=100", chatF, [((0, ""), Just "./tests/tmp/test_1.jpg")])
 
 testGroupSendImageWithTextAndQuote :: HasCallStack => TestParams -> IO ()
 testGroupSendImageWithTextAndQuote =

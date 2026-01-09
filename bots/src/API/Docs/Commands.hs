@@ -340,6 +340,7 @@ undocumentedCommands =
     "APIGetAppSettings",
     "APIGetCallInvitations",
     "APIGetChat",
+    "APIGetChatContentTypes",
     "APIGetChatItemInfo",
     "APIGetChatItems",
     "APIGetChatItemTTL",
