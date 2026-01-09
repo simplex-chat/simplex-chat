@@ -140,7 +140,21 @@ jobs:
         uses: simplex-chat/docker-setup-buildx-action@v3
 
       - name: Build and cache Docker image
+        id: docker_build
         if: matrix.should_run == true
+        continue-on-error: true
+        uses: simplex-chat/docker-build-push-action@v6
+        with:
+          context: .
+          load: true
+          file: Dockerfile.build
+          tags: build/${{ matrix.os }}:latest
+          build-args: |
+            TAG=${{ matrix.os }}
+            GHC=${{ matrix.ghc }}
+
+      - name: Build and cache Docker image (2nd time)
+        if: steps.docker_build.outcome == 'failure' && matrix.should_run == true
         uses: simplex-chat/docker-build-push-action@v6
         with:
           context: .
