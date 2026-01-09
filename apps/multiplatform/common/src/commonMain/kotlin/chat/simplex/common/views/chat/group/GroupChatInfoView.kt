@@ -239,22 +239,6 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
   )
 }
 
-private fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
-  val messageId = if (groupInfo.businessChat == null)
-    MR.strings.member_will_be_removed_from_group_cannot_be_undone
-  else
-    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
-  AlertManager.shared.showAlertDialog(
-    title = generalGetString(MR.strings.button_remove_member_question),
-    text = generalGetString(messageId),
-    confirmText = generalGetString(MR.strings.remove_member_confirmation),
-    onConfirm = {
-      removeMembers(rhId, groupInfo, listOf(mem.groupMemberId))
-    },
-    destructive = true,
-  )
-}
-
 private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   val messageId = if (groupInfo.businessChat == null)
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
@@ -432,6 +416,29 @@ fun ModalData.GroupChatInfoLayout(
       if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
     }
   }
+  val selectedTab = rememberSaveable { mutableStateOf(GroupInfoTab.Members) }
+  val filteredChatItems = remember(chat.chatItems, selectedTab.value) {
+    derivedStateOf {
+      when (selectedTab.value) {
+        GroupInfoTab.Members -> emptyList()
+        GroupInfoTab.Images -> chat.chatItems.filter { 
+          it.content.msgContent is MsgContent.MCImage && it.meta.itemDeleted == null
+        }
+        GroupInfoTab.Videos -> chat.chatItems.filter { 
+          it.content.msgContent is MsgContent.MCVideo && it.meta.itemDeleted == null
+        }
+        GroupInfoTab.Links -> chat.chatItems.filter { 
+          it.content.msgContent is MsgContent.MCLink && it.meta.itemDeleted == null
+        }
+        GroupInfoTab.Files -> chat.chatItems.filter { 
+          it.content.msgContent is MsgContent.MCFile && it.meta.itemDeleted == null
+        }
+        GroupInfoTab.Voices -> chat.chatItems.filter { 
+          it.content.msgContent is MsgContent.MCVoice && it.meta.itemDeleted == null
+        }
+      }
+    }
+  }
   Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
     val selectedItemsBarHeight = if (selectedItems.value != null) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
@@ -497,95 +504,25 @@ fun ModalData.GroupChatInfoLayout(
         }
 
         SectionSpacer()
-        var anyTopSectionRowShow = false
-        SectionView {
-          if (groupInfo.canAddMembers && groupInfo.businessChat == null) {
-            anyTopSectionRowShow = true
-            if (groupLink == null) {
-              CreateGroupLinkButton(manageGroupLink)
-            } else {
-              GroupLinkButton(manageGroupLink)
-            }
-          }
-          if (groupInfo.businessChat == null && groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-            anyTopSectionRowShow = true
-            MemberSupportButton(chat, openMemberSupport)
-          }
-          if (groupInfo.canModerate) {
-            anyTopSectionRowShow = true
-            GroupReportsButton(chat) {
-              scope.launch {
-                showGroupReportsView(chatModel.chatId, scrollToItemId, chat.chatInfo)
-              }
-            }
-          }
-          if (
-            groupInfo.membership.memberActive &&
-            (groupInfo.membership.memberRole < GroupMemberRole.Moderator || groupInfo.membership.supportChat != null)
-          ) {
-            anyTopSectionRowShow = true
-            UserSupportChatButton(chat, groupInfo, scrollToItemId)
-          }
-        }
-        if (anyTopSectionRowShow) {
-          SectionDividerSpaced(maxBottomPadding = false)
-        }
+      }
 
-        if (!groupInfo.nextConnectPrepared) {
-          SectionView(title = String.format(generalGetString(MR.strings.group_info_section_title_num_members), activeSortedMembers.count() + 1)) {
-            if (groupInfo.canAddMembers) {
-              val onAddMembersClick = if (chat.chatInfo.incognito) ::cantInviteIncognitoAlert else addMembers
-              val tint = if (chat.chatInfo.incognito) MaterialTheme.colors.secondary else MaterialTheme.colors.primary
-              val addMembersTitleId = when (groupInfo.businessChat?.chatType) {
-                BusinessChatType.Customer -> MR.strings.button_add_team_members
-                BusinessChatType.Business -> MR.strings.button_add_friends
-                null -> MR.strings.button_add_members
-              }
-              AddMembersButton(addMembersTitleId, tint, onAddMembersClick)
-            }
-            if (activeSortedMembers.size > 8) {
-              SectionItemView(padding = PaddingValues(start = 14.dp, end = DEFAULT_PADDING_HALF)) {
-                MemberListSearchRowView(searchText)
-              }
-            }
-            SectionItemView(minHeight = 54.dp, padding = PaddingValues(horizontal = DEFAULT_PADDING)) {
-              MemberRow(groupInfo.membership, user = true)
-            }
-          }
-        }
-      }
-      if (!groupInfo.nextConnectPrepared) {
-        items(filteredMembers.value, key = { it.groupMemberId }) { member ->
-          Divider()
-          val showMenu = remember { mutableStateOf(false) }
-          val canBeSelected = groupInfo.membership.memberRole >= member.memberRole && member.memberRole < GroupMemberRole.Moderator
-          SectionItemViewLongClickable(
-            click = {
-              if (selectedItems.value != null) {
-                if (canBeSelected) {
-                  toggleItemSelection(member.groupMemberId, selectedItems)
-                }
-              } else {
-                showMemberInfo(member)
-              }
-            },
-            longClick = { showMenu.value = true },
-            minHeight = 54.dp,
-            padding = PaddingValues(horizontal = DEFAULT_PADDING)
-          ) {
-            Box(contentAlignment = Alignment.CenterStart) {
-              this@SectionItemViewLongClickable.AnimatedVisibility(selectedItems.value != null, enter = fadeIn(), exit = fadeOut()) {
-                SelectedListItem(Modifier.alpha(if (canBeSelected) 1f else 0f).padding(start = 2.dp), member.groupMemberId, selectedItems)
-              }
-              val selectionOffset by animateDpAsState(if (selectedItems.value != null) 20.dp + 22.dp * fontSizeMultiplier else 0.dp)
-              DropDownMenuForMember(chat.remoteHostId, member, groupInfo, selectedItems, showMenu)
-              Box(Modifier.padding(start = selectionOffset)) {
-                MemberRow(member)
-              }
-            }
-          }
-        }
-      }
+      GroupChatInfoTabs(
+        groupInfo = groupInfo,
+        activeSortedMembers = activeSortedMembers,
+        filteredMembers = filteredMembers,
+        searchText = searchText,
+        selectedItems = selectedItems,
+        scrollToItemId = scrollToItemId,
+        addMembers = addMembers,
+        showMemberInfo = showMemberInfo,
+        selectedTab = selectedTab,
+        filteredChatItems = filteredChatItems,
+        chat = chat,
+        groupLink = groupLink,
+        manageGroupLink = manageGroupLink,
+        openMemberSupport = openMemberSupport
+      )
+
       item {
         if (developerTools) {
           SectionDividerSpaced()
@@ -729,75 +666,6 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 }
 
 @Composable
-private fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
-  SettingsActionItemWithContent(
-    painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
-    stringResource(MR.strings.member_support),
-    click = onClick,
-    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
-  ) {
-    if (chat.supportUnreadCount > 0) {
-      UnreadBadge(
-        text = unreadCountStr(chat.supportUnreadCount),
-        backgroundColor = MaterialTheme.colors.primary
-      )
-    }
-  }
-}
-
-@Composable
-private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_toggle_on),
-    stringResource(titleId),
-    click = onClick
-  )
-}
-
-@Composable
-private fun GroupReportsButton(chat: Chat, onClick: () -> Unit) {
-  SettingsActionItemWithContent(
-    painterResource(if (chat.chatStats.reportsCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
-    stringResource(MR.strings.group_reports_member_reports),
-    click = onClick,
-    iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary)
-  ) {
-    if (chat.chatStats.reportsCount > 0) {
-      UnreadBadge(
-        text = unreadCountStr(chat.chatStats.reportsCount),
-        backgroundColor = Color.Red
-      )
-    }
-  }
-}
-
-@Composable
-private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
-  val values = remember {
-    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsSmallGroups)).map { it to it.text }
-  }
-  ExposedDropDownSettingRow(
-    generalGetString(MR.strings.send_receipts),
-    values,
-    state,
-    icon = painterResource(MR.images.ic_double_check),
-    enabled = remember { mutableStateOf(true) },
-    onSelected = onSelected
-  )
-}
-
-@Composable
-private fun AddMembersButton(titleId: StringResource, tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_add),
-    stringResource(titleId),
-    onClick,
-    iconColor = tint,
-    textColor = tint
-  )
-}
-
-@Composable
 fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false, selected: Boolean = false) {
   @Composable
   fun MemberInfo() {
@@ -879,75 +747,6 @@ fun MemberVerifiedShield() {
 }
 
 @Composable
-private fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, showMenu: MutableState<Boolean>) {
-  if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
-    val canBlockForAll = member.canBlockForAll(groupInfo)
-    val canRemove = member.canBeRemoved(groupInfo)
-    if (canBlockForAll || canRemove) {
-      DefaultDropdownMenu(showMenu) {
-        if (canBlockForAll) {
-          if (member.blockedByAdmin) {
-            ItemAction(stringResource(MR.strings.unblock_for_all), painterResource(MR.images.ic_do_not_touch), onClick = {
-              unblockForAllAlert(rhId, groupInfo, member)
-              showMenu.value = false
-            })
-          } else {
-            ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
-              blockForAllAlert(rhId, groupInfo, member)
-              showMenu.value = false
-            })
-          }
-        }
-        if (canRemove) {
-          ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
-            removeMemberAlert(rhId, groupInfo, member)
-            showMenu.value = false
-          })
-        }
-        if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
-          Divider()
-          SelectItemAction(showMenu) { toggleItemSelection(member.groupMemberId, selectedItems) }
-        }
-      }
-    }
-  } else if (!member.blockedByAdmin) {
-    DefaultDropdownMenu(showMenu) {
-      if (member.memberSettings.showMessages) {
-        ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
-          blockMemberAlert(rhId, groupInfo, member)
-          showMenu.value = false
-        })
-      } else {
-        ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
-          unblockMemberAlert(rhId, groupInfo, member)
-          showMenu.value = false
-        })
-      }
-    }
-  }
-}
-
-@Composable
-private fun GroupLinkButton(onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_link),
-    stringResource(MR.strings.group_link),
-    onClick,
-    iconColor = MaterialTheme.colors.secondary
-  )
-}
-
-@Composable
-private fun CreateGroupLinkButton(onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_add_link),
-    stringResource(MR.strings.create_group_link),
-    onClick,
-    iconColor = MaterialTheme.colors.secondary
-  )
-}
-
-@Composable
 fun EditGroupProfileButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_edit),
@@ -956,6 +755,7 @@ fun EditGroupProfileButton(onClick: () -> Unit) {
     iconColor = MaterialTheme.colors.secondary
   )
 }
+
 
 @Composable
 fun MemberListSearchRowView(
