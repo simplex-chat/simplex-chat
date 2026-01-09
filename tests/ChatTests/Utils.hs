@@ -81,19 +81,19 @@ businessProfile = mkProfile "biz" "Biz Inc" Nothing
 mkProfile :: T.Text -> T.Text -> Maybe ImageData -> Profile
 mkProfile displayName descr image = Profile {displayName, fullName = "", shortDescr = Just descr, image, contactLink = Nothing, peerType = Nothing, preferences = defaultPrefs}
 
-it :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+it :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 it name test =
   Hspec.it name $ \tmp -> timeout t (test tmp) >>= maybe (error "test timed out") pure
   where
     t = 90 * 1000000
 
-xit' :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xit' :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xit' = if os == "linux" then xit else it
 
 xit'' :: (HasCallStack, Example a) => String -> a -> SpecWith (Arg a)
 xit'' = ifCI xit Hspec.it
 
-xitMacCI :: HasCallStack => String -> (TestParams -> Expectation) -> SpecWith (Arg (TestParams -> Expectation))
+xitMacCI :: HasCallStack => String -> (ps -> Expectation) -> SpecWith (Arg (ps -> Expectation))
 xitMacCI = ifCI (if os == "darwin" then xit else it) it
 
 xdescribe'' :: HasCallStack => String -> SpecWith a -> SpecWith a
@@ -142,34 +142,6 @@ runTestCfg3 aliceCfg bobCfg cathCfg runTest ps =
     withNewTestChatCfg ps bobCfg "bob" bobProfile $ \bob ->
       withNewTestChatCfg ps cathCfg "cath" cathProfile $ \cath ->
         runTest alice bob cath
-
-withTestChatGroup3Connected :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatGroup3Connected ps dbPrefix action = do
-  withTestChat ps dbPrefix $ \cc -> do
-    cc <## "2 contacts connected (use /cs for the list)"
-    cc <## "#team: connected to server(s)"
-    action cc
-
-withTestChatGroup3Connected' :: HasCallStack => TestParams -> String -> IO ()
-withTestChatGroup3Connected' ps dbPrefix = withTestChatGroup3Connected ps dbPrefix $ \_ -> pure ()
-
-withTestChatContactConnected :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatContactConnected ps dbPrefix action =
-  withTestChat ps dbPrefix $ \cc -> do
-    cc <## "1 contacts connected (use /cs for the list)"
-    action cc
-
-withTestChatContactConnected' :: HasCallStack => TestParams -> String -> IO ()
-withTestChatContactConnected' ps dbPrefix = withTestChatContactConnected ps dbPrefix $ \_ -> pure ()
-
-withTestChatContactConnectedV1 :: HasCallStack => TestParams -> String -> (HasCallStack => TestCC -> IO a) -> IO a
-withTestChatContactConnectedV1 ps dbPrefix action =
-  withTestChatV1 ps dbPrefix $ \cc -> do
-    cc <## "1 contacts connected (use /cs for the list)"
-    action cc
-
-withTestChatContactConnectedV1' :: HasCallStack => TestParams -> String -> IO ()
-withTestChatContactConnectedV1' ps dbPrefix = withTestChatContactConnectedV1 ps dbPrefix $ \_ -> pure ()
 
 -- | test sending direct messages
 (<##>) :: HasCallStack => TestCC -> TestCC -> IO ()
@@ -621,7 +593,7 @@ getGroupLink_ cc gName mRole created = do
   cc <## ""
   link <- getTermLine cc
   cc <## ""
-  cc <## ("Anybody can connect to you and join group as " <> B.unpack (strEncode mRole) <> " with: /c <group_link_above>")
+  cc <## ("Anybody can connect to you and join group as " <> T.unpack (textEncode mRole) <> " with: /c <group_link_above>")
   cc <## ("to show it again: /show link #" <> gName)
   cc <## ("to delete it: /delete link #" <> gName <> " (joined members will remain connected to you)")
   pure link
@@ -837,12 +809,12 @@ fullAddMember :: HasCallStack => String -> String -> TestCC -> TestCC -> GroupMe
 fullAddMember gName fullName inviting invitee role = do
   name1 <- userName inviting
   memName <- userName invitee
-  inviting ##> ("/a " <> gName <> " " <> memName <> " " <> B.unpack (strEncode role))
+  inviting ##> ("/a " <> gName <> " " <> memName <> " " <> T.unpack (textEncode role))
   let fullName' = if null fullName || fullName == gName then "" else " (" <> fullName <> ")"
   concurrentlyN_
     [ inviting <## ("invitation to join the group #" <> gName <> " sent to " <> memName),
       do
-        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> B.unpack (strEncode role))
+        invitee <## ("#" <> gName <> fullName' <> ": " <> name1 <> " invites you to join the group as " <> T.unpack (textEncode role))
         invitee <## ("use /j " <> gName <> " to accept")
     ]
 

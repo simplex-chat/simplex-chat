@@ -545,6 +545,7 @@ public struct ConnectionStats: Decodable, Hashable {
     public var sndQueuesInfo: [SndQueueInfo]
     public var ratchetSyncState: RatchetSyncState
     public var ratchetSyncSupported: Bool
+    public var subStatus: SubscriptionStatus?
 
     public var ratchetSyncAllowed: Bool {
         ratchetSyncSupported && [.allowed, .required].contains(ratchetSyncState)
@@ -559,25 +560,28 @@ public struct ConnectionStats: Decodable, Hashable {
     }
 }
 
-public struct RcvQueueInfo: Codable, Hashable {
+public struct RcvQueueInfo: Decodable, Hashable {
     public var rcvServer: String
+    public var status: QueueStatus
     public var rcvSwitchStatus: RcvSwitchStatus?
     public var canAbortSwitch: Bool
+    public var subStatus: SubscriptionStatus
 }
 
-public enum RcvSwitchStatus: String, Codable, Hashable {
+public enum RcvSwitchStatus: String, Decodable, Hashable {
     case switchStarted = "switch_started"
     case sendingQADD = "sending_qadd"
     case sendingQUSE = "sending_quse"
     case receivedMessage = "received_message"
 }
 
-public struct SndQueueInfo: Codable, Hashable {
+public struct SndQueueInfo: Decodable, Hashable {
     public var sndServer: String
+    public var status: QueueStatus
     public var sndSwitchStatus: SndSwitchStatus?
 }
 
-public enum SndSwitchStatus: String, Codable, Hashable {
+public enum SndSwitchStatus: String, Decodable, Hashable {
     case sendingQKEY = "sending_qkey"
     case sendingQTEST = "sending_qtest"
 }
@@ -604,6 +608,48 @@ public enum RatchetSyncState: String, Decodable {
     case required
     case started
     case agreed
+}
+
+public enum QueueStatus: String, Decodable, Hashable {
+    case new
+    case confirmed
+    case secured
+    case active
+    case disabled
+}
+
+public enum SubscriptionStatus: Decodable, Hashable {
+    case active
+    case pending
+    case removed(subError: String)
+    case noSub
+
+    public var statusString: LocalizedStringKey {
+        switch self {
+        case .active: "connected"
+        case .pending: "connecting"
+        case .removed: "error"
+        case .noSub: "no subscription"
+        }
+    }
+
+    public var statusExplanation: String {
+        switch self {
+        case .active: NSLocalizedString("You are connected to the server used to receive messages from this connection.", comment: "subscription status explanation")
+        case .pending: NSLocalizedString("Trying to connect to the server used to receive messages from this connection.", comment: "subscription status explanation")
+        case let .removed(err): String.localizedStringWithFormat(NSLocalizedString("Error connecting to the server used to receive messages from this connection: %@", comment: "subscription status explanation"), err)
+        case .noSub: NSLocalizedString("You are not connected to the server used to receive messages from this connection (no subscription).", comment: "subscription status explanation")
+        }
+    }
+
+    public var imageName: String {
+        switch self {
+        case .active: "circle.fill"
+        case .pending: "ellipsis.circle.fill"
+        case .removed: "exclamationmark.circle.fill"
+        case .noSub: "circle.dotted"
+        }
+    }
 }
 
 public protocol SelectableItem: Identifiable, Equatable {
@@ -714,7 +760,6 @@ public enum ChatErrorType: Decodable, Hashable {
     case fileCancelled(message: String)
     case fileCancel(fileId: Int64, message: String)
     case fileAlreadyExists(filePath: String)
-    case fileRead(filePath: String, message: String)
     case fileWrite(filePath: String, message: String)
     case fileSend(fileId: Int64, agentError: String)
     case fileRcvChunk(message: String)
@@ -834,6 +879,7 @@ public enum AgentErrorType: Decodable, Hashable {
     case RCP(rcpErr: RCErrorType)
     case BROKER(brokerAddress: String, brokerErr: BrokerErrorType)
     case AGENT(agentErr: SMPAgentError)
+    case NOTICE(server: String, preset: Bool, expiresAt: Date?)
     case INTERNAL(internalErr: String)
     case CRITICAL(offerRestart: Bool, criticalErr: String)
     case INACTIVE

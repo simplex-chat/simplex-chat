@@ -39,7 +39,7 @@ import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Types
 import Simplex.Chat.Util (shuffle)
 import Simplex.FileTransfer.Client.Presets (defaultXFTPServers)
-import Simplex.Messaging.Agent as Agent
+import Simplex.Messaging.Agent
 import Simplex.Messaging.Agent.Env.SQLite (AgentConfig (..), InitialAgentServers (..), ServerCfg (..), allRoles, createAgentStore, defaultAgentConfig, presetServerCfg)
 import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Agent.Store.Common (DBStore (dbNew))
@@ -106,9 +106,11 @@ defaultChatConfig =
       cleanupManagerInterval = 30 * 60, -- 30 minutes
       cleanupManagerStepDelay = 3 * 1000000, -- 3 seconds
       ciExpirationInterval = 30 * 60 * 1000000, -- 30 minutes
-      coreApi = False,
       highlyAvailable = False,
+      deliveryWorkerDelay = 0,
+      deliveryBucketSize = 10000,
       deviceNameForRemote = "",
+      remoteCompression = True,
       chatHooks = defaultChatHooks
     }
 
@@ -117,8 +119,8 @@ logCfg = LogConfig {lc_file = Nothing, lc_stderr = True}
 
 createChatDatabase :: ChatDbOpts -> MigrationConfig -> IO (Either MigrationError ChatDatabase)
 createChatDatabase chatDbOpts migrationConfig = runExceptT $ do
-  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False) migrationConfig
-  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False) migrationConfig
+  chatStore <- ExceptT $ createChatStore (toDBOpts chatDbOpts chatSuffix False chatDBFunctions) migrationConfig
+  agentStore <- ExceptT $ createAgentStore (toDBOpts chatDbOpts agentSuffix False []) migrationConfig
   pure ChatDatabase {chatStore, agentStore}
 
 newChatController :: ChatDatabase -> Maybe User -> ChatConfig -> ChatOpts -> Bool -> IO ChatController
@@ -148,7 +150,6 @@ newChatController
     eventSeq <- newTVarIO 0
     inputQ <- newTBQueueIO tbqSize
     outputQ <- newTBQueueIO tbqSize
-    connNetworkStatuses <- TM.emptyIO
     subscriptionMode <- newTVarIO SMSubscribe
     chatLock <- newEmptyTMVarIO
     entityLocks <- TM.emptyIO
@@ -163,6 +164,8 @@ newChatController
     remoteCtrlSession <- newTVarIO Nothing
     filesFolder <- newTVarIO optFilesFolder
     chatStoreChanged <- newTVarIO False
+    deliveryTaskWorkers <- TM.emptyIO
+    deliveryJobWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
@@ -188,7 +191,6 @@ newChatController
           eventSeq,
           inputQ,
           outputQ,
-          connNetworkStatuses,
           subscriptionMode,
           chatLock,
           entityLocks,
@@ -203,6 +205,8 @@ newChatController
           remoteCtrlSession,
           config,
           filesFolder,
+          deliveryTaskWorkers,
+          deliveryJobWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,
@@ -247,7 +251,7 @@ newChatController
         ops <- getUpdateServerOperators db presetOps (null users)
         let opDomains = operatorDomains $ mapMaybe snd ops
         (smp', xftp') <- unzip <$> mapM (getServers ops opDomains) users
-        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains}
+        pure InitialAgentServers {smp = M.fromList (optServers smp' smpServers), xftp = M.fromList (optServers xftp' xftpServers), ntf, netCfg, presetDomains, presetServers = L.toList allPresetServers}
         where
           optServers :: [(UserId, NonEmpty (ServerCfg p))] -> [ProtoServerWithAuth p] -> [(UserId, NonEmpty (ServerCfg p))]
           optServers srvs overrides_ = case L.nonEmpty overrides_ of

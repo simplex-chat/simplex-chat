@@ -32,9 +32,11 @@
   <string name="server_connected">connected</string>
   <string name="server_error">error</string>
   <string name="server_connecting">connecting</string>
-  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this contact.</string>
-  <string name="trying_to_connect_to_server_to_receive_messages_with_error">Trying to connect to the server used to receive messages from this contact (error: %1$s).</string>
-  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this contact.</string>
+  <string name="server_no_sub">no subscription</string>
+  <string name="connected_to_server_to_receive_messages_from_contact">You are connected to the server used to receive messages from this connection.</string>
+  <string name="trying_to_connect_to_server_to_receive_messages">Trying to connect to the server used to receive messages from this connection.</string>
+  <string name="error_connecting_to_server_to_receive_messages">Error connecting to the server used to receive messages from this connection: %1$s.</string>
+  <string name="not_connected_to_server_to_receive_messages_no_sub">You are not connected to the server used to receive messages from this connection (no subscription).</string>
 
   <!-- Item Content - ChatModel.kt -->
   <string name="deleted_description">deleted</string>
@@ -1865,14 +1867,19 @@
   <!-- GroupMemberInfoView.kt -->
   <string name="button_remove_member_question">Remove member?</string>
   <string name="button_remove_members_question">Remove members?</string>
+  <string name="button_delete_member_messages_question">Delete member messages?</string>
   <string name="button_remove_member">Remove member</string>
+  <string name="button_delete_member_messages">Delete member messages</string>
   <string name="button_support_chat_member">Chat with member</string>
   <string name="button_send_direct_message">Send direct message</string>
   <string name="member_will_be_removed_from_group_cannot_be_undone">Member will be removed from group - this cannot be undone!</string>
   <string name="members_will_be_removed_from_group_cannot_be_undone">Members will be removed from group - this cannot be undone!</string>
   <string name="member_will_be_removed_from_chat_cannot_be_undone">Member will be removed from chat - this cannot be undone!</string>
   <string name="members_will_be_removed_from_chat_cannot_be_undone">Members will be removed from chat - this cannot be undone!</string>
+  <string name="member_messages_will_be_deleted_cannot_be_undone">Member messages will be deleted - this cannot be undone!</string>
   <string name="remove_member_confirmation">Remove</string>
+  <string name="remove_member_delete_messages_confirmation">Remove and delete messages</string>
+  <string name="delete_member_messages_confirmation">Delete messages</string>
   <string name="remove_member_button">Remove member</string>
   <string name="block_member_question">Block member?</string>
   <string name="block_member_button">Block member</string>

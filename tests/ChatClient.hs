@@ -131,7 +131,7 @@ testCoreOpts =
           -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
           -- instead different schema prefix is passed per client so that single test database is used
           dbSchemaPrefix = "",
-          dbPoolSize = 3,
+          dbPoolSize = 1,
           dbCreateSchema = True
 #else
         { dbFilePrefix = "./simplex_v1", -- dbFilePrefix is not used in tests (except bot tests where it's redefined)
@@ -184,16 +184,11 @@ aCfg = (agentConfig defaultChatConfig) {tbqSize = 16}
 testAgentCfg :: AgentConfig
 testAgentCfg =
   aCfg
-    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000}
+    { reconnectInterval = (reconnectInterval aCfg) {initialInterval = 50000},
+      messageRetryInterval = RetryInterval2 {riFast = riFast {initialInterval = 50000}, riSlow = riSlow {initialInterval = 50000}}
     }
-
-testAgentCfgSlow :: AgentConfig
-testAgentCfgSlow =
-  testAgentCfg
-    { smpClientVRange = mkVersionRange (Version 1) srvHostnamesSMPClientVersion, -- v2
-      smpAgentVRange = mkVersionRange duplexHandshakeSMPAgentVersion pqdrSMPAgentVersion, -- v5
-      smpCfg = (smpCfg testAgentCfg) {serverVRange = mkVersionRange minClientSMPRelayVersion sendingProxySMPVersion} -- v8
-    }
+  where
+    RetryInterval2 {riFast, riSlow} = messageRetryInterval aCfg
 
 testAgentCfgNoShortLinks :: AgentConfig
 testAgentCfgNoShortLinks =
@@ -209,11 +204,9 @@ testCfg =
       showReceipts = False,
       shortLinkPresetServers = ["smp://LcJUMfVhwD8yxjAiSaDzzGF3-kLG4Uh0Fl_ZIjrRwjI=@localhost:7001"],
       testView = True,
-      tbqSize = 16
+      tbqSize = 16,
+      confirmMigrations = MCYesUp
     }
-
-testCfgSlow :: ChatConfig
-testCfgSlow = testCfg {agentConfig = testAgentCfgSlow}
 
 testCfgNoShortLinks :: ChatConfig
 testCfgNoShortLinks = testCfg {agentConfig = testAgentCfgNoShortLinks}
@@ -297,7 +290,7 @@ startTestChat ps cfg opts@ChatOpts {coreOptions} dbPrefix = do
 createDatabase :: TestParams -> CoreChatOpts -> String -> IO (Either MigrationError ChatDatabase)
 #if defined(dbPostgres)
 createDatabase _params CoreChatOpts {dbOptions} dbPrefix = do
-  createChatDatabase dbOptions {dbSchemaPrefix = "client_" <> dbPrefix} MCError
+  createChatDatabase dbOptions {dbSchemaPrefix = "client_" <> dbPrefix} (MigrationConfig MCError Nothing)
 
 insertUser :: DBStore -> IO ()
 insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users DEFAULT VALUES")
@@ -478,6 +471,9 @@ testChat3 = testChatCfgOpts3 testCfg testOpts
 testChatCfg3 :: HasCallStack => ChatConfig -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 testChatCfg3 cfg = testChatCfgOpts3 cfg testOpts
 
+testChatOpts3 :: HasCallStack => ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
+testChatOpts3 = testChatCfgOpts3 testCfg
+
 testChatCfgOpts3 :: HasCallStack => ChatConfig -> ChatOpts -> Profile -> Profile -> Profile -> (HasCallStack => TestCC -> TestCC -> TestCC -> IO ()) -> TestParams -> IO ()
 testChatCfgOpts3 cfg opts p1 p2 p3 test = testChatN cfg opts [p1, p2, p3] test_
   where
@@ -518,7 +514,7 @@ smpServerCfg :: ServerConfig STMMsgStore
 smpServerCfg =
   ServerConfig
     { transports = [(serverPort, transport @TLS, False)],
-      tbqSize = 1,
+      tbqSize = 4,
       msgQueueQuota = 16,
       maxJournalMsgCount = 24,
       maxJournalStateLines = 4,

@@ -761,7 +761,9 @@ testXFTPDeleteUploadedFileGroup =
 
       alice ##> "/fc 1"
       concurrentlyN_
-        [ alice <## "cancelled sending file 1 (test.pdf) to bob, cath",
+        [ do
+            recipients <- dropStrPrefix "cancelled sending file 1 (test.pdf) to " <$> getTermLine alice
+            recipients == "bob, cath" || recipients == "cath, bob" `shouldBe` True,
           cath <## "alice cancelled sending file 1 (test.pdf)"
         ]
 
@@ -818,7 +820,7 @@ testXFTPContinueRcv ps = do
 
   -- server is down - file is not received
   withTestChat ps "bob" $ \bob -> do
-    bob <## "1 contacts connected (use /cs for the list)"
+    bob <## "subscribed 1 connections on server localhost"
     bob ##> "/fr 1 ./tests/tmp"
     bob
       <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",
@@ -833,7 +835,7 @@ testXFTPContinueRcv ps = do
   withXFTPServer $ do
     -- server is up - file reception is continued
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "subscribed 1 connections on server localhost"
       bob <## "completed receiving file 1 (test.pdf) from alice"
       src <- B.readFile "./tests/fixtures/test.pdf"
       dest <- B.readFile "./tests/tmp/test.pdf"
@@ -866,7 +868,7 @@ testXFTPMarkToReceive = do
       bob <## "chat started"
 
       bob
-        <### [ "1 contacts connected (use /cs for the list)",
+        <### [ "subscribed 1 connections on server localhost",
                "started receiving file 1 (test.pdf) from alice",
                "saving file 1 from alice to test.pdf"
              ]
@@ -892,7 +894,7 @@ testXFTPRcvError ps = do
   -- server is up w/t store log - file reception should fail
   withXFTPServer' xftpServerConfig {storeLogFile = Nothing} $ do
     withTestChat ps "bob" $ \bob -> do
-      bob <## "1 contacts connected (use /cs for the list)"
+      bob <## "subscribed 1 connections on server localhost"
       bob ##> "/fr 1 ./tests/tmp"
       bob
         <### [ "saving file 1 from alice to ./tests/tmp/test.pdf",

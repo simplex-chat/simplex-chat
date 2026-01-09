@@ -1182,7 +1182,7 @@
     <string name="messages_section_description">Тази настройка се прилага за съобщения в текущия ви профил</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">За да се защити поверителността, SimpleX използва идентификатори за опашки от съобщения, отделни за всеки от вашите контакти.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %1$s).</string>
     <string name="error_smp_test_failed_at_step">Тестът е неуспешен на стъпка %s.</string>
     <string name="database_initialization_error_desc">Базата данни не работи правилно. Докоснете, за да научите повече</string>
     <string name="image_decoding_exception_desc">Изображението не може да бъде декодирано. Моля, опитайте с друго изображение или се свържете с разработчиците.</string>
