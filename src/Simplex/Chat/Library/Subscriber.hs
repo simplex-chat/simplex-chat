@@ -2751,27 +2751,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       msg
       brokerTs
         | membershipMemId == memId = pure Nothing -- ignore - XGrpMemRestrict can be sent to restricted member for efficiency
-        | otherwise =
-            withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memId) >>= \case
-              Right bm@GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp}
-                | blockedByAdmin == mrsBlocked restriction -> pure Nothing
-                | senderRole < GRModerator || senderRole < memberRole ->
-                    messageError "x.grp.mem.restrict with insufficient member permissions" $> Nothing
-                | otherwise -> do
-                    bm' <- setMemberBlocked bm
-                    toggleNtf bm' (not blocked)
-                    let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
-                    (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
-                    (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs ciContent
-                    groupMsgToView cInfo ci
-                    toView CEvtMemberBlockedForAll {user, groupInfo = gInfo', byMember = m', member = bm', blocked}
-                    pure $ memberEventDeliveryScope bm
-              Left (SEGroupMemberNotFoundByMemberId _) -> do
-                bm <- createUnknownMember gInfo memId Nothing
-                bm' <- setMemberBlocked bm
-                toView $ CEvtUnknownMemberBlocked user gInfo m bm'
-                pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
-              Left e -> throwError $ ChatErrorStore e
+        | otherwise = do
+            (bm, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memId Nothing
+            let GroupMember {groupMemberId = bmId, memberRole, blockedByAdmin, memberProfile = bmp} = bm
+            if
+              | blockedByAdmin == mrsBlocked restriction -> pure Nothing
+              | senderRole < GRModerator || senderRole < memberRole ->
+                  messageError "x.grp.mem.restrict with insufficient member permissions" $> Nothing
+              | otherwise -> do
+                  bm' <- setMemberBlocked bm
+                  toggleNtf bm' (not blocked)
+                  let ciContent = CIRcvGroupEvent $ RGEMemberBlocked bmId (fromLocalProfile bmp) blocked
+                  (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
+                  (ci, cInfo) <- saveRcvChatItemNoParse user (CDGroupRcv gInfo' scopeInfo m') msg brokerTs ciContent
+                  when unknown $ toView $ CEvtUnknownMemberBlocked user gInfo m bm'
+                  groupMsgToView cInfo ci
+                  toView CEvtMemberBlockedForAll {user, groupInfo = gInfo', byMember = m', member = bm', blocked}
+                  pure $ memberEventDeliveryScope bm
         where
           setMemberBlocked bm = withStore' $ \db -> updateGroupMemberBlocked db user gInfo restriction bm
           blocked = mrsBlocked restriction
@@ -3000,13 +2996,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
     xGrpMsgForward :: GroupInfo -> GroupMember -> MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> UTCTime -> CM ()
     xGrpMsgForward gInfo m@GroupMember {localDisplayName} memberId memberName chatMsg msgTs brokerTs = do
       unless (isMemberGrpFwdRelay gInfo m) $ throwChatError (CEGroupContactRole localDisplayName)
-      withStore' (\db -> runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
-        Right author -> processForwardedMsg author
-        Left (SEGroupMemberNotFoundByMemberId _) -> do
-          unknownAuthor <- createUnknownMember gInfo memberId memberName
-          toView $ CEvtUnknownMemberCreated user gInfo m unknownAuthor
-          processForwardedMsg unknownAuthor
-        Left e -> throwError $ ChatErrorStore e
+      (author, unknown) <- withStore $ \db -> getCreateUnknownGMByMemberId db vr user gInfo memberId memberName
+      when unknown $ toView $ CEvtUnknownMemberCreated user gInfo m author
+      processForwardedMsg author
       where
         -- ! see isForwardedGroupMsg: forwarded group events should include msgId to be deduplicated
         processForwardedMsg :: GroupMember -> CM ()
@@ -3031,11 +3023,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XGrpInfo p' -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
             XGrpPrefs ps' -> void $ xGrpPrefs gInfo author ps'
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
-
-    createUnknownMember :: GroupInfo -> MemberId -> Maybe ContactName -> CM GroupMember
-    createUnknownMember gInfo memberId memberName = do
-      let name = fromMaybe (nameFromMemberId memberId) memberName
-      withStore $ \db -> createNewUnknownGroupMember db vr user gInfo memberId name
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do

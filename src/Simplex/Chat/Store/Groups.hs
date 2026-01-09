@@ -60,6 +60,7 @@ module Simplex.Chat.Store.Groups
     getGroupMemberById,
     getGroupMemberByIndex,
     getGroupMemberByMemberId,
+    getCreateUnknownGMByMemberId,
     getGroupMemberIdViaMemberId,
     getScopeMemberIdViaMemberId,
     getGroupMembers,
@@ -1046,6 +1047,16 @@ getGroupMemberByMemberId db vr user GroupInfo {groupId} memberId =
       db
       (groupMemberQuery <> " WHERE m.group_id = ? AND m.member_id = ?")
       (groupId, memberId)
+
+getCreateUnknownGMByMemberId :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> MemberId -> Maybe ContactName -> ExceptT StoreError IO (GroupMember, Bool)
+getCreateUnknownGMByMemberId db vr user gInfo memberId memberName = do
+  liftIO (runExceptT $ getGroupMemberByMemberId db vr user gInfo memberId) >>= \case
+    Right m -> pure (m, False)
+    Left (SEGroupMemberNotFoundByMemberId _) -> do
+      let name = fromMaybe (nameFromMemberId memberId) memberName
+      m <- createNewUnknownGroupMember db vr user gInfo memberId name
+      pure (m, True)
+    Left e -> throwError e
 
 getScopeMemberIdViaMemberId :: DB.Connection -> User -> GroupInfo -> GroupMember -> MemberId -> ExceptT StoreError IO GroupMemberId
 getScopeMemberIdViaMemberId db user g@GroupInfo {membership} sender scopeMemberId
