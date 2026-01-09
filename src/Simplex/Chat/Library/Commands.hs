@@ -558,16 +558,14 @@ processChatCommand vr nm = \case
   APIGetChat (ChatRef cType cId scope_) contentFilter pagination search -> withUser $ \user -> case cType of
     -- TODO optimize queries calculating ChatStats, currently they're disabled
     CTDirect -> do
-      when (isJust contentFilter) $ throwCmdError "content filter not supported"
-      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId pagination search)
+      (directChat, navInfo) <- withFastStore (\db -> getDirectChat db vr user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTDirect directChat) navInfo
     CTGroup -> do
       (groupChat, navInfo) <- withFastStore (\db -> getGroupChat db vr user cId scope_ contentFilter pagination search)
       groupChat' <- checkSupportChatAttention user groupChat
       pure $ CRApiChat user (AChat SCTGroup groupChat') navInfo
     CTLocal -> do
-      when (isJust contentFilter) $ throwCmdError "content filter not supported"
-      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId pagination search)
+      (localChat, navInfo) <- withFastStore (\db -> getLocalChat db user cId contentFilter pagination search)
       pure $ CRApiChat user (AChat SCTLocal localChat) navInfo
     CTContactRequest -> throwCmdError "not implemented"
     CTContactConnection -> throwCmdError "not supported"
@@ -593,6 +591,8 @@ processChatCommand vr nm = \case
               newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
                 groupMemberId' m == scopeGMId
               newFromMember _ = False
+  APIGetChatContentTypes chatRef -> withUser $ \user ->
+    CRChatContentTypes <$> withStore (\db -> getChatContentTypes db user chatRef)
   APIGetChatItems pagination search -> withUser $ \user -> do
     chatItems <- withFastStore $ \db -> getAllChatItems db vr user pagination search
     pure $ CRChatItems user Nothing chatItems
@@ -4555,6 +4555,7 @@ chatCommandP =
               <*> (A.space *> jsonP <|> pure clqNoFilters)
            ),
       "/_get chat " *> (APIGetChat <$> chatRefP <*> optional (" content=" *> strP) <* A.space <*> chatPaginationP <*> optional (" search=" *> textP)),
+      "/_get content types " *> (APIGetChatContentTypes <$> chatRefP),
       "/_get items " *> (APIGetChatItems <$> chatPaginationP <*> optional (" search=" *> textP)),
       "/_get item info " *> (APIGetChatItemInfo <$> chatRefP <* A.space <*> A.decimal),
       "/_send " *> (APISendMessages <$> sendRefP <*> liveMessageP <*> sendMessageTTLP <*> (" json " *> jsonP <|> " text " *> composedMessagesTextP)),

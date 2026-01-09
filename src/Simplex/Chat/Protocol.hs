@@ -520,6 +520,8 @@ instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
 
+instance FromField MsgContentTag where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
+
 instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
 data MsgContainer

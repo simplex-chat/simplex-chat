@@ -174,7 +174,8 @@ cc ?#> cmd = do
 (#$>) :: (Eq a, Show a, HasCallStack) => TestCC -> (String, String -> a, a) -> Expectation
 cc #$> (cmd, f, res) = do
   cc ##> cmd
-  (f <$> getTermLine cc) `shouldReturn` res
+  let expected = "result of " <> cmd <> ": " <> show res
+  (f <$> getTermLine' (Just expected) cc) `shouldReturn` res
 
 -- / PQ combinators
 
@@ -348,7 +349,7 @@ chats = mapChats . read
 getChats :: HasCallStack => (Eq a, Show a) => ([(String, String, Maybe ConnStatus)] -> [a]) -> TestCC -> [a] -> Expectation
 getChats f cc res = do
   cc ##> "/_get chats 1 pcc=on"
-  line <- getTermLine cc
+  line <- getTermLine' (Just "chat list") cc
   f (read line) `shouldMatchList` res
 
 send :: TestCC -> String -> IO ()
@@ -356,41 +357,41 @@ send TestCC {chatController = cc} cmd = atomically $ writeTBQueue (inputQ cc) cm
 
 (<##) :: HasCallStack => TestCC -> String -> Expectation
 cc <## line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just line) cc
   when (l /= line) $ print ("expected: " <> line, ", got: " <> l)
   l `shouldBe` line
 
 (<##.) :: HasCallStack => TestCC -> String -> Expectation
 cc <##. line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "prefix: " <> line) cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
 (.<##) :: HasCallStack => TestCC -> String -> Expectation
 cc .<## line = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
   suffix `shouldBe` True
 
 (<#.) :: HasCallStack => TestCC -> String -> Expectation
 cc <#. line = do
-  l <- dropTime <$> getTermLine cc
+  l <- dropTime <$> getTermLine' (Just $ "prefix: " <> line) cc
   let prefix = line `isPrefixOf` l
   unless prefix $ print ("expected to start from: " <> line, ", got: " <> l)
   prefix `shouldBe` True
 
 (.<#) :: HasCallStack => TestCC -> String -> Expectation
 cc .<# line = do
-  l <- dropTime <$> getTermLine cc
+  l <- dropTime <$> getTermLine' (Just $ "suffix: " <> line) cc
   let suffix = line `isSuffixOf` l
   unless suffix $ print ("expected to end with: " <> line, ", got: " <> l)
   suffix `shouldBe` True
 
 (<##..) :: HasCallStack => TestCC -> [String] -> Expectation
 cc <##.. ls = do
-  l <- getTermLine cc
+  l <- getTermLine' (Just $ "one of prefixes: " <> show ls) cc
   let prefix = any (`isPrefixOf` l) ls
   unless prefix $ print ("expected to start from one of: " <> show ls, ", got: " <> l)
   prefix `shouldBe` True
@@ -398,7 +399,8 @@ cc <##.. ls = do
 (>*) :: HasCallStack => TestCC -> String -> IO ()
 cc >* note = do
   cc `send` ("/* " <> note)
-  (dropTime <$> getTermLine cc) `shouldReturn` ("* " <> note)
+  let expected = "* " <> note
+  (dropTime <$> getTermLine' (Just expected) cc) `shouldReturn` expected
 
 data ConsoleResponse
   = ConsoleString String
@@ -407,13 +409,21 @@ data ConsoleResponse
   | StartsWith String
   | Predicate (String -> Bool)
 
+instance Show ConsoleResponse where
+  show (ConsoleString s) = show s
+  show (WithTime s) = "WithTime " <> show s
+  show (EndsWith s) = "EndsWith " <> show s
+  show (StartsWith s) = "StartsWith " <> show s
+  show (Predicate _) = "<predicate>"
+
 instance IsString ConsoleResponse where fromString = ConsoleString
 
 -- this assumes that the string can only match one option
 getInAnyOrder :: HasCallStack => (String -> String) -> TestCC -> [ConsoleResponse] -> Expectation
 getInAnyOrder _ _ [] = pure ()
 getInAnyOrder f cc ls = do
-  line <- f <$> getTermLine cc
+  let expectedDesc = "one of " <> show (length ls) <> " responses: " <> show ls
+  line <- f <$> getTermLine' (Just expectedDesc) cc
   let rest = filterFirst (expected line) ls
   if length rest < length ls
     then getInAnyOrder f cc rest
@@ -439,25 +449,27 @@ getInAnyOrder f cc ls = do
 (<##?) = getInAnyOrder dropTime
 
 (<#) :: HasCallStack => TestCC -> String -> Expectation
-cc <# line = (dropTime <$> getTermLine cc) `shouldReturn` line
+cc <# line = (dropTime <$> getTermLine' (Just line) cc) `shouldReturn` line
 
 (*<#) :: HasCallStack => [TestCC] -> String -> Expectation
 ccs *<# line = mapConcurrently_ (<# line) ccs
 
 (?<#) :: HasCallStack => TestCC -> String -> Expectation
-cc ?<# line = (dropTime <$> getTermLine cc) `shouldReturn` "i " <> line
+cc ?<# line = do
+  let expected = "i " <> line
+  (dropTime <$> getTermLine' (Just expected) cc) `shouldReturn` expected
 
 ($<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
-(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine cc) `shouldReturn` line
+(cc, uName) $<# line = (dropTime . dropUser uName <$> getTermLine' (Just $ "for user " <> uName <> ": " <> line) cc) `shouldReturn` line
 
 (^<#) :: HasCallStack => (TestCC, String) -> String -> Expectation
-(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine cc) `shouldReturn` line
+(cc, p) ^<# line = (dropTime . dropStrPrefix p <$> getTermLine' (Just $ "without prefix " <> p <> ": " <> line) cc) `shouldReturn` line
 
 (⩗) :: HasCallStack => TestCC -> String -> Expectation
-cc ⩗ line = (dropTime . dropReceipt <$> getTermLine cc) `shouldReturn` line
+cc ⩗ line = (dropTime . dropReceipt <$> getTermLine' (Just $ "receipt: " <> line) cc) `shouldReturn` line
 
 (%) :: HasCallStack => TestCC -> String -> Expectation
-cc % line = (dropTime . dropPartialReceipt <$> getTermLine cc) `shouldReturn` line
+cc % line = (dropTime . dropPartialReceipt <$> getTermLine' (Just $ "partial receipt: " <> line) cc) `shouldReturn` line
 
 (</) :: HasCallStack => TestCC -> Expectation
 (</) = (<// 500000)
@@ -530,7 +542,7 @@ getInvitations :: HasCallStack => TestCC -> IO (String, String)
 getInvitations cc = do
   shortInv <- getInvitation_ cc
   cc <##. "The invitation link for old clients:"
-  fullInv <- getTermLine cc
+  fullInv <- getTermLine' (Just "full invitation link") cc
   pure (shortInv, fullInv)
 
 getInvitationNoShortLink :: HasCallStack => TestCC -> IO String
@@ -540,7 +552,7 @@ getInvitation_ :: HasCallStack => TestCC -> IO String
 getInvitation_ cc = do
   cc <## "pass this invitation link to your contact (via another channel):"
   cc <## ""
-  inv <- getTermLine cc
+  inv <- getTermLine' (Just "invitation link") cc
   cc <## ""
   cc <## "and ask them to connect: /c <invitation_link_above>"
   pure inv
@@ -553,7 +565,8 @@ getContactLink cc created = do
 getContactLinks :: HasCallStack => TestCC -> Bool -> IO (String, String)
 getContactLinks cc created = do
   shortLink <- getContactLink_ cc created
-  fullLink <- dropLinePrefix "The contact link for old clients: " =<< getTermLine cc
+  line <- getTermLine' (Just "full contact link line") cc
+  fullLink <- dropLinePrefix "The contact link for old clients: " line
   pure (shortLink, fullLink)
 
 getContactLinkNoShortLink :: HasCallStack => TestCC -> Bool -> IO String
@@ -563,7 +576,7 @@ getContactLink_ :: HasCallStack => TestCC -> Bool -> IO String
 getContactLink_ cc created = do
   cc <## if created then "Your new chat address is created!" else "Your chat address:"
   cc <## ""
-  link <- getTermLine cc
+  link <- getTermLine' (Just "contact link") cc
   cc <## ""
   cc <## "Anybody can send you contact requests with: /c <contact_link_above>"
   cc <## "to show it again: /sa"
@@ -584,7 +597,8 @@ getGroupLink cc gName mRole created = do
 getGroupLinks :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO (String, String)
 getGroupLinks cc gName mRole created = do
   shortLink <- getGroupLink_ cc gName mRole created
-  fullLink <- dropLinePrefix "The group link for old clients: " =<< getTermLine cc
+  line <- getTermLine' (Just "full group link line") cc
+  fullLink <- dropLinePrefix "The group link for old clients: " line
   pure (shortLink, fullLink)
 
 getGroupLinkNoShortLink :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> IO String
@@ -594,7 +608,7 @@ getGroupLink_ :: HasCallStack => TestCC -> String -> GroupMemberRole -> Bool -> 
 getGroupLink_ cc gName mRole created = do
   cc <## if created then "Group link is created!" else "Group link:"
   cc <## ""
-  link <- getTermLine cc
+  link <- getTermLine' (Just $ "group link for " <> gName) cc
   cc <## ""
   cc <## ("Anybody can connect to you and join group as " <> T.unpack (textEncode mRole) <> " with: /c <group_link_above>")
   cc <## ("to show it again: /show link #" <> gName)
@@ -672,7 +686,7 @@ getTestCCContact cc contactId = do
 lastItemId :: HasCallStack => TestCC -> IO String
 lastItemId cc = do
   cc ##> "/last_item_id"
-  getTermLine cc
+  getTermLine' (Just "last item id") cc
 
 showActiveUser :: HasCallStack => TestCC -> String -> Expectation
 showActiveUser cc name = do

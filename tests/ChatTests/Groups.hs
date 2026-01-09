@@ -241,7 +241,7 @@ chatGroupTests = do
           it "number of recipients is equal to bucket size (3/3)" (testChannels1RelayDeliverLoop 3)
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
       describe "multiple relays" $ do
-        fit "2 relays: should deliver messages to members" testChannels2RelaysDeliver
+        it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -2071,11 +2071,8 @@ testSharedMessageBody ps' =
             ]
           bob <# "#team alice> hello"
           cath <# "#team alice> hello"
--- because of PostgreSQL concurrency deleteSndMsgDelivery fails to delete message body
-#if !defined(dbPostgres)
           threadDelay 500000
           checkMsgBodyCount alice 0
-#endif
 
     alice <## "disconnected 4 connections on server localhost"
   where
@@ -2130,10 +2127,7 @@ testSharedBatchBody ps =
             concurrently_
               (bob <# ("#team alice> message " <> show i))
               (cath <# ("#team alice> message " <> show i))
--- because of PostgreSQL concurrency deleteSndMsgDelivery fails to delete message body
-#if !defined(dbPostgres)          
           checkMsgBodyCount alice 0
-#endif
 
     alice <## "disconnected 4 connections on server localhost"
   where

@@ -121,6 +121,7 @@ undocumentedResponses =
     "CRBroadcastSent",
     "CRCallInvitations",
     "CRChatCleared",
+    "CRChatContentTypes",
     "CRChatHelp",
     "CRChatItemId",
     "CRChatItemInfo",
