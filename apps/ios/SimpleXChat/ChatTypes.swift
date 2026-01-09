@@ -4601,7 +4601,7 @@ extension MsgContent: Encodable {
     }
 }
 
-public enum MsgContentTag: String {
+public enum MsgContentTag: String, Decodable {
     case text
     case link
     case image
