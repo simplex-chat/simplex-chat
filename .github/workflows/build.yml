@@ -279,7 +279,7 @@ jobs:
   test-linux:
     name: "Tests: ubuntu-${{ matrix.os }}-${{ matrix.arch }}"
     needs: [variables, build-linux]
-    if: always() && !cancelled()
+    if: (!cancelled())
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -395,6 +395,8 @@ jobs:
         id: mac_cli_build
         shell: bash
         run: |
+          cabal clean
+          cabal update
           cabal build -j --enable-tests
 
           for i in simplex-chat simplex-chat-test; do
@@ -432,6 +434,7 @@ jobs:
   test-macos:
     name: "Tests: ${{ matrix.os }}"
     needs: [build-macos]
+    if: (!cancelled())
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -483,7 +486,6 @@ jobs:
   build-windows:
     name: "Build: ${{ matrix.os }}, GHC: ${{ matrix.ghc }}"
     needs: [variables]
-    if: always() && !cancelled()
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
