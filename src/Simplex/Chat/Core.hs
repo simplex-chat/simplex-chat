@@ -38,7 +38,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath}, createBot, maintenance} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -60,7 +60,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       runSimplexChat opts u cc chat
 
 runSimplexChat :: ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatOpts {maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatOpts {coreOptions = CoreChatOpts {maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc
