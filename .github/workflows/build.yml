@@ -277,7 +277,7 @@ jobs:
           path: ${{ runner.temp }}/release-assets/*
 
   test-linux:
-    name: "Tests: ubuntu-${{ matrix.os }}-${{ matrix.arch }}"
+    name: "Tests: ubuntu-${{ matrix.os }}-${{ matrix.arch }}, GHC: ${{ matrix.ghc }}"
     needs: [variables, build-linux]
     if: (!cancelled())
     runs-on: ${{ matrix.runner }}
