@@ -27,6 +27,7 @@ data DirectoryOpts = DirectoryOpts
     adminUsers :: [KnownContact],
     superUsers :: [KnownContact],
     ownersGroup :: Maybe KnownGroup,
+    noAddress :: Bool, -- skip creating address
     blockedWordsFile :: Maybe FilePath,
     blockedFragmentsFile :: Maybe FilePath,
     blockedExtensionRules :: Maybe FilePath,
@@ -70,6 +71,11 @@ directoryOpts appDir defaultDbName = do
             <> metavar "OWNERS_GROUP"
             <> help "The group of group owners in the format GROUP_ID:DISPLAY_NAME - owners of listed groups will be invited automatically"
         )
+  noAddress <-
+    switch
+      ( long "no-address"
+          <> help "skip checking and creating service address"
+      )
   blockedWordsFile <-
     optional $
       strOption
@@ -153,6 +159,7 @@ directoryOpts appDir defaultDbName = do
         adminUsers,
         superUsers,
         ownersGroup,
+        noAddress,
         blockedWordsFile,
         blockedFragmentsFile,
         blockedExtensionRules,
