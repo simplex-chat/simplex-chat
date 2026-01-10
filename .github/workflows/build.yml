@@ -152,6 +152,8 @@ jobs:
           build-args: |
             TAG=${{ matrix.os }}
             GHC=${{ matrix.ghc }}
+            USER_UID=${{ steps.ids.outputs.uid }}
+            USER_GID=${{ steps.ids.outputs.gid }}
 
       - name: Build and cache Docker image (2nd time)
         if: steps.docker_build.outcome == 'failure' && matrix.should_run == true
