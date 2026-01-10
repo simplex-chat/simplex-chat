@@ -1,24 +1,32 @@
 {
   "name": "simplex-chat",
   "version": "6.5.0-beta.3",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "preinstall": "node src/download-libs.js",
     "install": "node-gyp configure; node-gyp rebuild --release",
     "install-tools": "npm install -g node-gyp",
     "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
-    "rebuild": "node-gyp rebuild",
-    "build": "node-gyp build",
+    "build": "node-gyp rebuild && tsc",
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",
     "test": "jest"
   },
   "dependencies": {
+    "@simplex-chat/types": "^0.1.0",
     "extract-zip": "^2.0.1",
     "node-addon-api": "^8.5.0"
   },
   "devDependencies": {
-    "jest": "^30.2.0"
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.5",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "typescript": "^5.9.3"
   },
   "repository": {
     "type": "git",
