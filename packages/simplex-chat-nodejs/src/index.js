@@ -1,1 +1,1 @@
-module.exports = require('../build/Release/simplex_shim');
+module.exports = require('../build/Release/simplex');

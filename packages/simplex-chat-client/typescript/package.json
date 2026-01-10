@@ -1,6 +1,6 @@
 {
-  "name": "simplex-chat",
-  "version": "0.3.0",
+  "name": "@simplex-chat/webrtc-client",
+  "version": "6.5.0-beta.3",
   "description": "SimpleX Chat client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -38,7 +38,7 @@
   "bugs": {
     "url": "https://github.com/simplex-chat/simplex-chat/issues"
   },
-  "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-client/typescript#readme",
+  "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript#readme",
   "dependencies": {
     "isomorphic-ws": "^4.0.1"
   },

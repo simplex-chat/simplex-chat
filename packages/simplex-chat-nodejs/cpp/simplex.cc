@@ -1,188 +1,568 @@
+#include <napi.h>
 #include <sstream>
 #include <string>
-
-#include <node.h>
+#include <functional>
+#include <cstdlib>
 #include "simplex.h"
 
 namespace simplex
 {
 
-  using v8::Array;
-  using v8::ArrayBuffer;
-  using v8::Context;
-  using v8::FunctionCallbackInfo;
-  using v8::Isolate;
-  using v8::Local;
-  using v8::Maybe;
-  using v8::Number;
-  using v8::Object;
-  using v8::String;
-  using v8::Value;
+  using namespace Napi;
 
   void haskell_init()
   {
     int argc = 5;
-    char *argv[] = {
+    const char *argv[] = {
         "simplex",
         "+RTS",  // requires `hs_init_with_rtsopts`
         "-A64m", // chunk size for new allocations
         "-H64m", // initial heap size
         "-xn",   // non-moving GC
-        0};
-    char **pargv = argv;
+        nullptr};
+    char **pargv = const_cast<char **>(argv);
     hs_init_with_rtsopts(&argc, &pargv);
   }
 
-  void ChatMigrateInit(const FunctionCallbackInfo<Value> &args)
-  {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
-
-    std::string path(*(v8::String::Utf8Value(isolate, args[0])));
-    std::string key(*(v8::String::Utf8Value(isolate, args[1])));
-    std::string confirm(*(v8::String::Utf8Value(isolate, args[2])));
-
-    long *ctrl(0);
-
-    std::string res = chat_migrate_init(path.c_str(), key.c_str(), confirm.c_str(), &ctrl);
-    std::stringstream ss;
-    ss << ctrl
-       << "\n"
-       << res;
-    // printf("ChatCtrl after init %d", cChatCtrl);
-    //   v8::Local<v8::String> ctrl = v8::String::NewFromUtf8(isolate, cppChatCtrl.c_str(), v8::String::kNormalString);
-
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, ss.str().c_str())
-            .ToLocalChecked());
+  Napi::Value ParseJson(Env env, const std::string& json_str) {
+    Object global = env.Global();
+    Object json = global.Get("JSON").As<Object>();
+    Function parse = json.Get("parse").As<Function>();
+    return parse.Call(json, {String::New(env, json_str)});
   }
 
-  void ChatCloseStore(const FunctionCallbackInfo<Value> &args)
+  class GenericAsyncWorker : public AsyncWorker
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    public:
+      GenericAsyncWorker(Function& callback, std::function<void(GenericAsyncWorker*)> execute_lambda)
+        : AsyncWorker(callback), execute_lambda_(std::move(execute_lambda)) {}
 
-    long *ctrl = (long *)((long)args[0].As<Number>()->Value());
+      void Execute() override {
+        execute_lambda_(this);
+      }
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_close_store(ctrl))
-            .ToLocalChecked());
+      void OnOK() override {
+        HandleScope scope(Env());
+        std::vector<napi_value> args = { Env().Null() };
+        auto res = GetResult(Env());
+        args.insert(args.end(), res.begin(), res.end());
+        Callback().Call(args);
+      }
+
+      void OnError(const Error& e) override {
+        HandleScope scope(Env());
+        Callback().Call({e.Value(), Env().Undefined()});
+      }
+
+      virtual std::vector<napi_value> GetResult(Napi::Env env) override {
+        return { String::New(env, result_) };
+      }
+
+      void SetResult(std::string result) {
+        result_ = std::move(result);
+      }
+
+      void SetWorkerError(const std::string& msg) {
+        SetError(msg);
+      }
+
+    protected:
+      std::string result_;
+
+    private:
+      std::function<void(GenericAsyncWorker*)> execute_lambda_;
+  };
+
+  class JsonAsyncWorker : public GenericAsyncWorker
+  {
+    public:
+      JsonAsyncWorker(Function& callback, std::function<void(GenericAsyncWorker*)> execute_lambda)
+        : GenericAsyncWorker(callback, std::move(execute_lambda)) {}
+
+      void OnOK() override {
+        HandleScope scope(Env());
+        Value parsed = ParseJson(Env(), result_);
+        if (Env().IsExceptionPending()) {
+          Error exception = Env().GetAndClearPendingException();
+          Callback().Call({exception.Value(), Env().Undefined()});
+          return;
+        }
+        Callback().Call({Env().Null(), parsed});
+      }
+  };
+
+  class ResultUnwrapAsyncWorker : public GenericAsyncWorker
+  {
+    public:
+      ResultUnwrapAsyncWorker(Function& callback, std::function<void(GenericAsyncWorker*)> execute_lambda)
+        : GenericAsyncWorker(callback, std::move(execute_lambda)) {}
+
+      void OnOK() override {
+        HandleScope scope(Env());
+        Value parsed = ParseJson(Env(), result_);
+        if (Env().IsExceptionPending()) {
+          Error exception = Env().GetAndClearPendingException();
+          Callback().Call({exception.Value(), Env().Undefined()});
+          return;
+        }
+        Object parsed_obj = parsed.As<Object>();
+        Value type_val = parsed_obj.Get("type");
+        if (!type_val.IsString()) {
+          Error err = Error::New(Env(), "Invalid response type");
+          Callback().Call({err.Value(), Env().Undefined()});
+          return;
+        }
+        std::string type = type_val.As<String>().Utf8Value();
+        if (type == "error") {
+          Value err_val = parsed_obj.Get("writeError");
+          std::string err_msg = err_val.IsString() ? err_val.As<String>().Utf8Value() : "Unknown error";
+          Error err = Error::New(Env(), err_msg);
+          Callback().Call({err.Value(), Env().Undefined()});
+        } else {
+          Value cryptoArgs = parsed_obj.Get("cryptoArgs");
+          if (cryptoArgs.IsUndefined()) {
+            Error err = Error::New(Env(), "Missing cryptoArgs");
+            Callback().Call({err.Value(), Env().Undefined()});
+            return;
+          }
+          Callback().Call({Env().Null(), cryptoArgs});
+        }
+      }
+  };
+
+  class MigrateAsyncWorker : public GenericAsyncWorker
+  {
+    public:
+      MigrateAsyncWorker(Function& callback, std::function<void(GenericAsyncWorker*)> execute_lambda)
+        : GenericAsyncWorker(callback, execute_lambda) {}
+
+      void SetCtrl(uintptr_t ctrl) {
+        ctrl_ = ctrl;
+      }
+
+      void OnOK() override {
+        HandleScope scope(Env());
+        Value parsed = ParseJson(Env(), result_);
+        if (Env().IsExceptionPending()) {
+          Error exception = Env().GetAndClearPendingException();
+          Callback().Call({exception.Value(), Env().Undefined()});
+          return;
+        }
+        Object parsed_obj = parsed.As<Object>();
+        Value type_val = parsed_obj.Get("type");
+        if (type_val.IsString() && type_val.As<String>().Utf8Value() == "ok") {
+          Callback().Call({Env().Null(), BigInt::New(Env(), static_cast<uint64_t>(ctrl_))});
+        } else {
+          Error err = Error::New(Env(), "Database or migration error (see dbMigrationError property)");
+          err.Set("dbMigrationError", parsed_obj);
+          Callback().Call({err.Value(), Env().Undefined()});
+        }
+      }
+
+    private:
+      uintptr_t ctrl_ = 0;
+  };
+
+  class BinaryAsyncWorker : public AsyncWorker
+  {
+    public:
+      BinaryAsyncWorker(Function& callback, std::function<void(BinaryAsyncWorker*)> execute_lambda)
+        : AsyncWorker(callback), execute_lambda_(std::move(execute_lambda)) {}
+
+      void Execute() override {
+        execute_lambda_(this);
+      }
+
+      void OnOK() override {
+        HandleScope scope(Env());
+        char* data_ptr = original_buf + 5;
+        auto finalizer = [](Napi::Env env, char* finalize_data, char* orig) {
+          free(orig);
+        };
+        Napi::Buffer<char> buffer = Napi::Buffer<char>::New(Env(), data_ptr, binary_len, finalizer, original_buf);
+        Callback().Call({Env().Null(), buffer});
+      }
+
+      void OnError(const Error& e) override {
+        HandleScope scope(Env());
+        Callback().Call({e.Value(), Env().Undefined()});
+      }
+
+      void SetWorkerError(const std::string& msg) {
+        SetError(msg);
+      }
+
+    public:
+      char* original_buf = nullptr;
+      size_t binary_len = 0;
+
+    private:
+      std::function<void(BinaryAsyncWorker*)> execute_lambda_;
+  };
+
+  class WriteAsyncWorker : public ResultUnwrapAsyncWorker
+  {
+    public:
+      WriteAsyncWorker(Function& callback, std::function<void(GenericAsyncWorker*)> execute_lambda, ArrayBuffer ab)
+        : ResultUnwrapAsyncWorker(callback, std::move(execute_lambda)), ab_ref(Reference<ArrayBuffer>::New(ab, 1)) {}
+
+      Reference<ArrayBuffer> ab_ref;
+  };
+
+  Napi::Promise CreatePromiseAndCallback(Env env, Function& cb_out) {
+    Promise::Deferred deferred = Promise::Deferred::New(env);
+    cb_out = Function::New(env, [deferred](const CallbackInfo& args) {
+      if (!args[0].IsNull() && !args[0].IsUndefined()) {
+        deferred.Reject(args[0]);
+      } else {
+        deferred.Resolve(args[1]);
+      }
+    });
+    return deferred.Promise();
   }
 
-  void ChatSendCmd(const FunctionCallbackInfo<Value> &args)
+  Value ChatMigrateInit(const CallbackInfo& args)
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    Env env = args.Env();
+    if (args.Length() < 3 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString()) {
+      TypeError::New(env, "Expected three string arguments").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
 
-    long *ctrl = (long *)((long)args[0].As<Number>()->Value());
-    std::string cmd(*(v8::String::Utf8Value(isolate, args[1])));
+    std::string path = args[0].As<String>().Utf8Value();
+    std::string key = args[1].As<String>().Utf8Value();
+    std::string confirm = args[2].As<String>().Utf8Value();
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_send_cmd(ctrl, cmd.c_str()))
-            .ToLocalChecked());
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
+
+    auto execute_lambda = [path, key, confirm](GenericAsyncWorker* worker) {
+      chat_ctrl ctrl = nullptr;
+      char* c_res = chat_migrate_init(path.c_str(), key.c_str(), confirm.c_str(), &ctrl);
+      if (c_res == nullptr) {
+        worker->SetWorkerError("chat_migrate_init failed");
+        return;
+      }
+      std::string res = c_res;
+      free(c_res);
+      auto mworker = static_cast<MigrateAsyncWorker*>(worker);
+      mworker->SetCtrl(reinterpret_cast<uintptr_t>(ctrl));
+      worker->SetResult(res);
+    };
+
+    MigrateAsyncWorker* worker = new MigrateAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
   }
 
-  void ChatRecvMsgWait(const FunctionCallbackInfo<Value> &args)
+  class CloseStoreAsyncWorker : public GenericAsyncWorker
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    public:
+      CloseStoreAsyncWorker(Function& callback, std::function<void(GenericAsyncWorker*)> execute_lambda)
+        : GenericAsyncWorker(callback, std::move(execute_lambda)) {}
 
-    long *ctrl = (long *)((long)args[0].As<Number>()->Value());
-    long wait = ((long)args[1].As<Number>()->Value());
+      void OnOK() override {
+        HandleScope scope(Env());
+        if (result_.empty()) {
+          Callback().Call({Env().Null(), Env().Undefined()});
+        } else {
+          Error err = Error::New(Env(), result_);
+          Callback().Call({err.Value(), Env().Undefined()});
+        }
+      }
+  };
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_recv_msg_wait(ctrl, wait))
-            .ToLocalChecked());
+  Value ChatCloseStore(const CallbackInfo& args)
+  {
+    Env env = args.Env();
+    if (args.Length() < 1 || !args[0].IsBigInt()) {
+      TypeError::New(env, "Expected bigint (ctrl)").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+
+    bool lossless;
+    chat_ctrl ctrl = reinterpret_cast<chat_ctrl>(args[0].As<BigInt>().Int64Value(&lossless));
+
+    if (!lossless) {
+      TypeError::New(env, "BigInt too large for ctrl").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
+
+    auto execute_lambda = [ctrl](GenericAsyncWorker* worker) {
+      char* c_res = chat_close_store(ctrl);
+      if (c_res == nullptr) {
+        worker->SetWorkerError("chat_close_store failed");
+        return;
+      }
+      std::string res = c_res;
+      free(c_res);
+      worker->SetResult(res);
+    };
+
+    CloseStoreAsyncWorker* worker = new CloseStoreAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
   }
 
-  void ChatWriteFile(const FunctionCallbackInfo<Value> &args)
+  Value ChatSendCmd(const CallbackInfo& args)
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    Env env = args.Env();
+    if (args.Length() < 2 || !args[0].IsBigInt() || !args[1].IsString()) {
+      TypeError::New(env, "Expected bigint (ctrl) and string (cmd)").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
 
-    long *ctrl = (long *)((long)args[0].As<Number>()->Value());
-    std::string path(*(v8::String::Utf8Value(isolate, args[1])));
+    bool lossless;
+    chat_ctrl ctrl = reinterpret_cast<chat_ctrl>(args[0].As<BigInt>().Int64Value(&lossless));
+    if (!lossless) {
+      TypeError::New(env, "BigInt too large for ctrl").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+    std::string cmd = args[1].As<String>().Utf8Value();
 
-    Local<v8::ArrayBuffer> arr = args[2].As<ArrayBuffer>();
-    char *buffer = (char *)arr->Data();
-    int len(arr->ByteLength());
-    // std::array address(*arr);
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
 
-    // v8::Array a = *buffer;
-    // std::string data(*((isolate, args[1])));
+    auto execute_lambda = [ctrl, cmd](GenericAsyncWorker* worker) {
+      char* c_res = chat_send_cmd(ctrl, cmd.c_str());
+      if (c_res == nullptr) {
+        worker->SetWorkerError("chat_send_cmd failed");
+        return;
+      }
+      std::string res = c_res;
+      free(c_res);
+      if (res.empty()) {
+        worker->SetWorkerError("chat_send_cmd failed");
+        return;
+      }
+      worker->SetResult(res);
+    };
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_write_file(ctrl, path.c_str(), buffer, len))
-            .ToLocalChecked());
+    JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
   }
 
-  void ChatReadFile(const FunctionCallbackInfo<Value> &args)
+  Value ChatRecvMsgWait(const CallbackInfo& args)
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    Env env = args.Env();
+    if (args.Length() < 2 || !args[0].IsBigInt() || !args[1].IsNumber()) {
+      TypeError::New(env, "Expected bigint (ctrl), number (wait)").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+  
+    bool lossless;
+    chat_ctrl ctrl = reinterpret_cast<chat_ctrl>(args[0].As<BigInt>().Int64Value(&lossless));
+    if (!lossless) {
+      TypeError::New(env, "BigInt too large for ctrl").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+    int wait = static_cast<int>(args[1].As<Number>().Int32Value());
 
-    long *ctrl = (long *)((long)args[0].As<Number>()->Value());
-    std::string path(*(v8::String::Utf8Value(isolate, args[1])));
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
 
-    Local<v8::ArrayBuffer> arr = args[2].As<ArrayBuffer>();
-    char *buffer = (char *)arr->Data();
-    int len(arr->ByteLength());
+    auto execute_lambda = [ctrl, wait](GenericAsyncWorker* worker) {
+      char* c_res = chat_recv_msg_wait(ctrl, wait);
+      if (c_res == nullptr) {
+        worker->SetWorkerError("chat_recv_msg_wait failed");
+        return;
+      }
+      std::string res = c_res;
+      free(c_res);
+      if (res.empty()) {
+        worker->SetWorkerError("chat_recv_msg_wait failed");
+        return;
+      }
+      worker->SetResult(res);
+    };
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_write_file(ctrl, path.c_str(), buffer, len))
-            .ToLocalChecked());
+    JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
   }
 
-  void ChatEncryptFile(const FunctionCallbackInfo<Value> &args)
+  Value ChatWriteFile(const CallbackInfo& args)
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    Env env = args.Env();
+    if (args.Length() < 3 || !args[0].IsBigInt() || !args[1].IsString() || !args[2].IsArrayBuffer()) {
+      TypeError::New(env, "Expected bigint (ctrl), string (path), ArrayBuffer").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
 
-    long *ctrl = (long *)((long)args[0].As<Number>()->Value());
-    std::string fromPath(*(v8::String::Utf8Value(isolate, args[1])));
-    std::string toPath(*(v8::String::Utf8Value(isolate, args[2])));
+    bool lossless;
+    chat_ctrl ctrl = reinterpret_cast<chat_ctrl>(args[0].As<BigInt>().Int64Value(&lossless));
+    if (!lossless) {
+      TypeError::New(env, "BigInt too large for ctrl").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+    std::string path = args[1].As<String>().Utf8Value();
+    ArrayBuffer ab = args[2].As<ArrayBuffer>();
+    char* data = static_cast<char*>(ab.Data());
+    int len = static_cast<int>(ab.ByteLength());
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_encrypt_file(ctrl, fromPath.c_str(), toPath.c_str()))
-            .ToLocalChecked());
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
+
+    auto execute_lambda = [ctrl, path, data, len](GenericAsyncWorker* worker) {
+      char* c_res = chat_write_file(ctrl, path.c_str(), data, len);
+      if (c_res == nullptr) {
+        worker->SetWorkerError("chat_write_file failed");
+        return;
+      }
+      std::string res = c_res;
+      free(c_res);
+      if (res.empty()) {
+        worker->SetWorkerError("chat_write_file failed");
+        return;
+      }
+      worker->SetResult(res);
+    };
+
+    WriteAsyncWorker* worker = new WriteAsyncWorker(cb, std::move(execute_lambda), ab);
+    worker->Queue();
+
+    return promise;
   }
 
-  void ChatDecryptFile(const FunctionCallbackInfo<Value> &args)
+  Value ChatReadFile(const CallbackInfo& args)
   {
-    Isolate *isolate = args.GetIsolate();
-    Local<Context> context = isolate->GetCurrentContext();
+    Env env = args.Env();
+    if (args.Length() < 3 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString()) {
+      TypeError::New(env, "Expected three strings (path, key, nonce)").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
 
-    std::string fromPath(*(v8::String::Utf8Value(isolate, args[0])));
-    std::string key(*(v8::String::Utf8Value(isolate, args[1])));
-    std::string nonce(*(v8::String::Utf8Value(isolate, args[2])));
-    std::string toPath(*(v8::String::Utf8Value(isolate, args[3])));
+    std::string path = args[0].As<String>().Utf8Value();
+    std::string key = args[1].As<String>().Utf8Value();
+    std::string nonce = args[2].As<String>().Utf8Value();
 
-    args.GetReturnValue().Set(
-        String::NewFromUtf8(
-            isolate, chat_decrypt_file(fromPath.c_str(), key.c_str(), nonce.c_str(), toPath.c_str()))
-            .ToLocalChecked());
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
+
+    auto execute_lambda = [path, key, nonce](BinaryAsyncWorker* worker) {
+      char* buf = chat_read_file(path.c_str(), key.c_str(), nonce.c_str());
+      if (buf == nullptr) {
+        worker->SetWorkerError("chat_read_file failed");
+        return;
+      }
+      char status = buf[0];
+      if (status == 1) {
+        std::string err = buf + 1;
+        free(buf);
+        worker->SetWorkerError(err);
+        return;
+      } else if (status == 0) {
+        uint32_t len = *(uint32_t*)(buf + 1);
+        worker->original_buf = buf;
+        worker->binary_len = len;
+      } else {
+        free(buf);
+        worker->SetWorkerError("Unexpected status from chat_read_file");
+        return;
+      }
+    };
+
+    BinaryAsyncWorker* worker = new BinaryAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
   }
 
-  void Initialize(Local<Object> exports)
+  Value ChatEncryptFile(const CallbackInfo& args)
   {
+    Env env = args.Env();
+    if (args.Length() < 3 || !args[0].IsBigInt() || !args[1].IsString() || !args[2].IsString()) {
+      TypeError::New(env, "Expected bigint (ctrl), two strings (fromPath, toPath)").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+
+    bool lossless;
+    chat_ctrl ctrl = reinterpret_cast<chat_ctrl>(args[0].As<BigInt>().Int64Value(&lossless));
+    if (!lossless) {
+      TypeError::New(env, "BigInt too large for ctrl").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+    std::string fromPath = args[1].As<String>().Utf8Value();
+    std::string toPath = args[2].As<String>().Utf8Value();
+
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
+
+    auto execute_lambda = [ctrl, fromPath, toPath](GenericAsyncWorker* worker) {
+      char* c_res = chat_encrypt_file(ctrl, fromPath.c_str(), toPath.c_str());
+      if (c_res == nullptr) {
+        worker->SetWorkerError("chat_encrypt_file failed");
+        return;
+      }
+      std::string res = c_res;
+      free(c_res);
+      if (res.empty()) {
+        worker->SetWorkerError("chat_encrypt_file failed");
+        return;
+      }
+      worker->SetResult(res);
+    };
+
+    ResultUnwrapAsyncWorker* worker = new ResultUnwrapAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
+  }
+
+  Value ChatDecryptFile(const CallbackInfo& args)
+  {
+    Env env = args.Env();
+    if (args.Length() < 4 || !args[0].IsString() || !args[1].IsString() || !args[2].IsString() || !args[3].IsString()) {
+      TypeError::New(env, "Expected four strings (fromPath, key, nonce, toPath)").ThrowAsJavaScriptException();
+      return env.Undefined();
+    }
+
+    std::string fromPath = args[0].As<String>().Utf8Value();
+    std::string key = args[1].As<String>().Utf8Value();
+    std::string nonce = args[2].As<String>().Utf8Value();
+    std::string toPath = args[3].As<String>().Utf8Value();
+
+    Function cb;
+    Promise promise = CreatePromiseAndCallback(env, cb);
+
+    auto execute_lambda = [fromPath, key, nonce, toPath](GenericAsyncWorker* worker) {
+      char* c_res = chat_decrypt_file(fromPath.c_str(), key.c_str(), nonce.c_str(), toPath.c_str());
+      std::string res = c_res ? c_res : "";
+      free(c_res);
+      if (!res.empty()) {
+        worker->SetWorkerError(res);
+        return;
+      }
+      worker->SetResult("ok");
+    };
+
+    GenericAsyncWorker* worker = new GenericAsyncWorker(cb, std::move(execute_lambda));
+    worker->Queue();
+
+    return promise;
+  }
+
+  Object Init(Env env, Object exports) {
     haskell_init();
-    NODE_SET_METHOD(exports, "chat_migrate_init", ChatMigrateInit);
-    NODE_SET_METHOD(exports, "chat_close_store", ChatCloseStore);
-    NODE_SET_METHOD(exports, "chat_send_cmd", ChatSendCmd);
-    NODE_SET_METHOD(exports, "chat_recv_msg_wait", ChatRecvMsgWait);
-    NODE_SET_METHOD(exports, "chat_write_file", ChatWriteFile);
-    NODE_SET_METHOD(exports, "chat_read_file", ChatReadFile);
-    NODE_SET_METHOD(exports, "chat_encrypt_file", ChatEncryptFile);
-    NODE_SET_METHOD(exports, "chat_decrypt_file", ChatDecryptFile);
+    exports.Set("chatMigrateInit", Function::New(env, ChatMigrateInit));
+    exports.Set("chatCloseStore", Function::New(env, ChatCloseStore));
+    exports.Set("chatSendCmd", Function::New(env, ChatSendCmd));
+    exports.Set("chatRecvMsgWait", Function::New(env, ChatRecvMsgWait));
+    exports.Set("chatWriteFile", Function::New(env, ChatWriteFile));
+    exports.Set("chatReadFile", Function::New(env, ChatReadFile));
+    exports.Set("chatEncryptFile", Function::New(env, ChatEncryptFile));
+    exports.Set("chatDecryptFile", Function::New(env, ChatDecryptFile));
+    return exports;
   }
 
-  NODE_MODULE(NODE_GYP_MODULE_NAME, Initialize)
+  NODE_API_MODULE(simplex, Init)
 
-} // namespace simplex
+}

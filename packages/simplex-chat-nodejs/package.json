@@ -1,6 +1,6 @@
 {
-  "name": "simplexjs",
-  "version": "6.5.3",
+  "name": "simplex-chat",
+  "version": "6.5.0-beta.3",
   "main": "src/index.js",
   "scripts": {
     "preinstall": "node src/download-libs.js",
@@ -11,10 +11,14 @@
     "build": "node-gyp build",
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",
-    "test": "node src/tests.js"
+    "test": "jest"
   },
   "dependencies": {
-    "extract-zip": "^2.0.1"
+    "extract-zip": "^2.0.1",
+    "node-addon-api": "^8.5.0"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0"
   },
   "repository": {
     "type": "git",
@@ -31,6 +35,6 @@
   "bugs": {
     "url": "https://github.com/simplex-chat/simplex-chat/issues"
   },
-  "homepage": "https://github.com/simplex-chat/simplex-chat/packages/simplex-chat-nodejs#readme",
+  "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-nodejs#readme",
   "description": ""
 }
