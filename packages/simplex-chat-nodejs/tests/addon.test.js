@@ -6,13 +6,9 @@ describe('Addon Tests', () => {
   const tmpDir = './tests/tmp';
   const dbPath = path.join(tmpDir, 'simplex_v1');
 
-  beforeEach(() => {
-    fs.mkdirSync(tmpDir, {recursive: true});
-  });
+  beforeEach(() => fs.mkdirSync(tmpDir, {recursive: true}));
 
-  afterEach(() => {
-    fs.rmSync(tmpDir, {recursive: true, force: true});
-  });
+  afterEach(() => fs.rmSync(tmpDir, {recursive: true, force: true}));
 
   it('should initialize controller', async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", "yesUp");
@@ -32,17 +28,15 @@ describe('Addon Tests', () => {
   it('should send command and receive event', async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", "yesUp");
 
-    const sendRes1 = await core.chatSendCmd(ctrl, "/v");
-    expect(typeof sendRes1).toBe('object');
-    expect(sendRes1).toHaveProperty('result')
+    await expect(core.chatSendCmd(ctrl, "/v")).resolves.toHaveProperty('result');
+    await expect(core.chatSendCmd(ctrl, '/debug event {"type": "chatSuspended"}')).resolves.toMatchObject({result: {type: 'cmdOk'}});
 
-    const sendRes2 = await core.chatSendCmd(ctrl, '/debug event {"type": "chatSuspended"}');
-    expect(sendRes2).toMatchObject({result: {type: 'cmdOk'}});
-
-    const wait = 15_000_000;
-    const recvRes = await core.chatRecvMsgWait(ctrl, wait);
-    expect(recvRes).toMatchObject({result: {type: 'chatSuspended'}});
+    const wait = 500_000;
+    await expect(core.chatRecvMsgWait(ctrl, wait)).resolves.toMatchObject({result: {type: 'chatSuspended'}});    
+    await expect(core.chatRecvMsgWait(ctrl, wait)).resolves.toBe(undefined);
     
+    await expect(core.chatSendCmd(ctrl, '/unknown')).resolves.toHaveProperty('error');
+
     await core.chatCloseStore(ctrl);
   });
 
@@ -51,17 +45,17 @@ describe('Addon Tests', () => {
 
     const filePath = path.join(tmpDir, 'write_file.txt');
     const buffer = new Uint8Array([0, 1, 2]).buffer;
-    const encRes1 = await core.chatWriteFile(ctrl, filePath, buffer);
-    const key1 = encRes1.fileKey;
-    const nonce1 = encRes1.fileNonce;
-    expect(typeof key1).toBe('string');
-    expect(typeof nonce1).toBe('string');
+    const encRes = await core.chatWriteFile(ctrl, filePath, buffer);
+    const key = encRes.fileKey;
+    const nonce = encRes.fileNonce;
+    expect(typeof key).toBe('string');
+    expect(typeof nonce).toBe('string');
 
-    const buffer2 = await core.chatReadFile(filePath, key1, nonce1);
+    const buffer2 = await core.chatReadFile(filePath, key, nonce);
     expect(Buffer.from(buffer2).equals(Buffer.from(buffer))).toBe(true);
 
     await expect(core.chatWriteFile(ctrl, path.join(tmpDir, 'unknown', 'unknown.txt'), buffer)).rejects.toThrow();
-    await expect(core.chatReadFile(path.join(tmpDir, 'unknown.txt'), key1, nonce1)).rejects.toThrow();
+    await expect(core.chatReadFile(path.join(tmpDir, 'unknown.txt'), key, nonce)).rejects.toThrow();
     
     core.chatCloseStore(ctrl);
   });
@@ -79,11 +73,9 @@ describe('Addon Tests', () => {
     expect(typeof nonce).toBe('string');
 
     const decryptedPath = path.join(tmpDir, 'file_decrypted.txt');
-    const decryptRes = await core.chatDecryptFile(encryptedPath, key, nonce, decryptedPath);
-    expect(decryptRes).toBeDefined(); // Assuming it returns something like 'ok'
+    await expect(core.chatDecryptFile(encryptedPath, key, nonce, decryptedPath)).resolves.toBe(undefined);
 
-    const decryptedContent = fs.readFileSync(decryptedPath, 'utf8');
-    expect(decryptedContent).toBe("unencrypted\n");
+    expect(fs.readFileSync(decryptedPath, 'utf8')).toBe("unencrypted\n");
 
     await expect(core.chatEncryptFile(ctrl, path.join(tmpDir, 'unknown.txt'), encryptedPath)).rejects.toThrow();
     await expect(core.chatDecryptFile(path.join(tmpDir, 'unknown.txt'), key, nonce, decryptedPath)).rejects.toThrow();
