@@ -22,19 +22,12 @@ void haskell_init() {
   hs_init_with_rtsopts(&argc, &pargv);
 }
 
-Napi::Value ParseJson(Env env, const std::string& json_str) {
-  Object global = env.Global();
-  Object json = global.Get("JSON").As<Object>();
-  Function parse = json.Get("parse").As<Function>();
-  return parse.Call(json, {String::New(env, json_str)});
-}
-
-class JsonAsyncWorker : public AsyncWorker {
+class ResultAsyncWorker : public AsyncWorker {
  public:
-  using ExecuteFn = std::function<void(JsonAsyncWorker*)>;
-  using ResultProcessor = std::function<void(JsonAsyncWorker*, Napi::Env)>;
+  using ExecuteFn = std::function<void(ResultAsyncWorker*)>;
+  using ResultProcessor = std::function<void(ResultAsyncWorker*, Napi::Env)>;
 
-  JsonAsyncWorker(Function& callback, ExecuteFn execute_fn, ResultProcessor result_processor = nullptr)
+  ResultAsyncWorker(Function& callback, ExecuteFn execute_fn, ResultProcessor result_processor = nullptr)
       : AsyncWorker(callback), execute_fn_(std::move(execute_fn)), result_processor_(std::move(result_processor)) {}
 
   void Execute() override {
@@ -65,21 +58,6 @@ class JsonAsyncWorker : public AsyncWorker {
 
   const std::string& GetStringResult() const {
     return result_;
-  }
-
-  Value ParseAndHandleJson(Napi::Env env, bool allow_empty = false) {
-    if (result_.empty() && allow_empty) return env.Undefined();
-    if (result_.empty()) {
-      Callback().Call({Error::New(env, "Empty result").Value(), env.Undefined()});
-      return env.Undefined();
-    }
-    Value parsed = ParseJson(env, result_);
-    if (env.IsExceptionPending()) {
-      Error exception = env.GetAndClearPendingException();
-      Callback().Call({exception.Value(), env.Undefined()});
-      return env.Undefined();
-    }
-    return parsed;
   }
 
   void SetCtrl(uintptr_t ctrl) {
@@ -162,18 +140,14 @@ chat_ctrl FromChatCtrlBigInt(const Napi::Value& value) {
   return reinterpret_cast<chat_ctrl>(val);
 }
 
-// Helper for handling common C result patterns (where empty res is error)
-void HandleCResult(JsonAsyncWorker* worker, char* c_res, const std::string& func_name) {
+// Helper for handling common C result patterns (no empty check)
+void HandleCResult(ResultAsyncWorker* worker, char* c_res, const std::string& func_name) {
   if (c_res == nullptr) {
     worker->SetWorkerError(func_name + " failed");
     return;
   }
   std::string res = c_res;
   free(c_res);
-  if (res.empty()) {
-    worker->SetWorkerError(func_name + " failed");
-    return;
-  }
   worker->SetResult(res);
 }
 
@@ -190,75 +164,12 @@ Napi::Promise CreatePromiseAndCallback(Env env, Function& cb_out) {
 }
 
 // Common result processors
-JsonAsyncWorker::ResultProcessor JsonResultProcessor() {
-  return [](JsonAsyncWorker* worker, Napi::Env env) {
-    Value parsed = worker->ParseAndHandleJson(env);
-    if (parsed.IsUndefined()) return;
-    worker->Callback().Call({env.Null(), parsed});
-  };
-}
-
-JsonAsyncWorker::ResultProcessor RecvResultProcessor() {
-  return [](JsonAsyncWorker* worker, Napi::Env env) {
-    Value parsed = worker->ParseAndHandleJson(env, true);  // Allow empty
-    if (parsed.IsUndefined() && !worker->GetStringResult().empty()) return;
-    worker->Callback().Call({env.Null(), parsed});
-  };
-}
-
-JsonAsyncWorker::ResultProcessor WriteResultProcessor() {
-  return [](JsonAsyncWorker* worker, Napi::Env env) {
-    Value parsed = worker->ParseAndHandleJson(env);
-    if (parsed.IsUndefined()) return;
-    Object parsed_obj = parsed.As<Object>();
-    Value type_val = parsed_obj.Get("type");
-    if (!type_val.IsString()) {
-      Error err = Error::New(env, "Invalid response type");
-      worker->Callback().Call({err.Value(), env.Undefined()});
-      return;
-    }
-    std::string type = type_val.As<String>().Utf8Value();
-    if (type == "error") {
-      Value err_val = parsed_obj.Get("writeError");
-      std::string err_msg = err_val.IsString() ? err_val.As<String>().Utf8Value() : "Unknown error";
-      Error err = Error::New(env, err_msg);
-      worker->Callback().Call({err.Value(), env.Undefined()});
-    } else {
-      Value cryptoArgs = parsed_obj.Get("cryptoArgs");
-      if (cryptoArgs.IsUndefined()) {
-        Error err = Error::New(env, "Missing cryptoArgs");
-        worker->Callback().Call({err.Value(), env.Undefined()});
-        return;
-      }
-      worker->Callback().Call({env.Null(), cryptoArgs});
-    }
-  };
-}
-
-JsonAsyncWorker::ResultProcessor MigrateResultProcessor() {
-  return [](JsonAsyncWorker* worker, Napi::Env env) {
-    Value parsed = worker->ParseAndHandleJson(env);
-    if (parsed.IsUndefined()) return;
-    Object parsed_obj = parsed.As<Object>();
-    Value type_val = parsed_obj.Get("type");
-    if (type_val.IsString() && type_val.As<String>().Utf8Value() == "ok") {
-      worker->Callback().Call({env.Null(), ToChatCtrlBigInt(env, worker->GetCtrl())});
-    } else {
-      Error err = Error::New(env, "Database or migration error (see dbMigrationError property)");
-      err.Set("dbMigrationError", parsed_obj);
-      worker->Callback().Call({err.Value(), env.Undefined()});
-    }
-  };
-}
-
-JsonAsyncWorker::ResultProcessor ErrorResultProcessor() {
-  return [](JsonAsyncWorker* worker, Napi::Env env) {
-    if (worker->GetStringResult().empty()) {
-      worker->Callback().Call({env.Null(), env.Undefined()});
-    } else {
-      Error err = Error::New(env, worker->GetStringResult());
-      worker->Callback().Call({err.Value(), env.Undefined()});
-    }
+ResultAsyncWorker::ResultProcessor MigrateResultProcessor() {
+  return [](ResultAsyncWorker* worker, Napi::Env env) {
+    Napi::Array arr = Napi::Array::New(env, 2);
+    arr.Set(0u, ToChatCtrlBigInt(env, worker->GetCtrl()));
+    arr.Set(1u, Napi::String::New(env, worker->GetStringResult()));
+    worker->Callback().Call({env.Null(), arr});
   };
 }
 
@@ -278,20 +189,14 @@ Value ChatMigrateInit(const CallbackInfo& args) {
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [path, key, confirm](JsonAsyncWorker* worker) {
+  auto execute_fn = [path, key, confirm](ResultAsyncWorker* worker) {
     chat_ctrl ctrl = nullptr;
     char* c_res = chat_migrate_init(path.c_str(), key.c_str(), confirm.c_str(), &ctrl);
-    if (c_res == nullptr) {
-      worker->SetWorkerError("chat_migrate_init failed");
-      return;
-    }
-    std::string res = c_res;
-    free(c_res);
     worker->SetCtrl(reinterpret_cast<uintptr_t>(ctrl));
-    worker->SetResult(res);
+    HandleCResult(worker, c_res, "chat_migrate_init");
   };
 
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), MigrateResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn), MigrateResultProcessor());
   worker->Queue();
 
   return promise;
@@ -309,18 +214,12 @@ Value ChatCloseStore(const CallbackInfo& args) {
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl](JsonAsyncWorker* worker) {
+  auto execute_fn = [ctrl](ResultAsyncWorker* worker) {
     char* c_res = chat_close_store(ctrl);
-    if (c_res == nullptr) {
-      worker->SetWorkerError("chat_close_store failed");
-      return;
-    }
-    std::string res = c_res;
-    free(c_res);
-    worker->SetResult(res);
+    HandleCResult(worker, c_res, "chat_close_store");
   };
 
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), ErrorResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
   worker->Queue();
 
   return promise;
@@ -339,12 +238,12 @@ Value ChatSendCmd(const CallbackInfo& args) {
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl, cmd](JsonAsyncWorker* worker) {
+  auto execute_fn = [ctrl, cmd](ResultAsyncWorker* worker) {
     char* c_res = chat_send_cmd(ctrl, cmd.c_str());
     HandleCResult(worker, c_res, "chat_send_cmd");
   };
 
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), JsonResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
   worker->Queue();
 
   return promise;
@@ -363,18 +262,12 @@ Value ChatRecvMsgWait(const CallbackInfo& args) {
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl, wait](JsonAsyncWorker* worker) {
+  auto execute_fn = [ctrl, wait](ResultAsyncWorker* worker) {
     char* c_res = chat_recv_msg_wait(ctrl, wait);
-    if (c_res == nullptr) {
-      worker->SetWorkerError("chat_recv_msg_wait failed");
-      return;
-    }
-    std::string res = c_res;
-    free(c_res);
-    worker->SetResult(res);
+    HandleCResult(worker, c_res, "chat_recv_msg_wait");
   };
 
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), RecvResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
   worker->Queue();
 
   return promise;
@@ -391,19 +284,18 @@ Value ChatWriteFile(const CallbackInfo& args) {
   std::string path = args[1].As<String>().Utf8Value();
   ArrayBuffer ab = args[2].As<ArrayBuffer>();
   char* data = static_cast<char*>(ab.Data());
-  int len = static_cast<int>(ab.ByteLength());
+  size_t len = ab.ByteLength();
 
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl, path, data, len](JsonAsyncWorker* worker) {
-    char* c_res = chat_write_file(ctrl, path.c_str(), data, len);
+  auto execute_fn = [ctrl, path, ab, data, len](ResultAsyncWorker* worker) {
+    (void)ab; // to keep ArrayBuffer alive
+    char* c_res = chat_write_file(ctrl, path.c_str(), data, static_cast<int>(len));
     HandleCResult(worker, c_res, "chat_write_file");
   };
 
-  // Note: To keep ab alive, we can use a Reference, but since data is used in lambda capture by value, it's fine as long as the worker lives.
-  // If needed, add Reference<ArrayBuffer> to JsonAsyncWorker for this case.
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), WriteResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
   worker->Queue();
 
   return promise;
@@ -466,12 +358,12 @@ Value ChatEncryptFile(const CallbackInfo& args) {
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [ctrl, fromPath, toPath](JsonAsyncWorker* worker) {
+  auto execute_fn = [ctrl, fromPath, toPath](ResultAsyncWorker* worker) {
     char* c_res = chat_encrypt_file(ctrl, fromPath.c_str(), toPath.c_str());
     HandleCResult(worker, c_res, "chat_encrypt_file");
   };
 
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), WriteResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
   worker->Queue();
 
   return promise;
@@ -492,18 +384,12 @@ Value ChatDecryptFile(const CallbackInfo& args) {
   Function cb;
   Promise promise = CreatePromiseAndCallback(env, cb);
 
-  auto execute_fn = [fromPath, key, nonce, toPath](JsonAsyncWorker* worker) {
+  auto execute_fn = [fromPath, key, nonce, toPath](ResultAsyncWorker* worker) {
     char* c_res = chat_decrypt_file(fromPath.c_str(), key.c_str(), nonce.c_str(), toPath.c_str());
-    if (c_res == nullptr) {
-      worker->SetWorkerError("chat_decrypt_file failed");
-      return;
-    }
-    std::string res = c_res;
-    free(c_res);
-    worker->SetResult(res);
+    HandleCResult(worker, c_res, "chat_decrypt_file");
   };
 
-  JsonAsyncWorker* worker = new JsonAsyncWorker(cb, std::move(execute_fn), ErrorResultProcessor());
+  ResultAsyncWorker* worker = new ResultAsyncWorker(cb, std::move(execute_fn));
   worker->Queue();
 
   return promise;
@@ -511,14 +397,14 @@ Value ChatDecryptFile(const CallbackInfo& args) {
 
 Object Init(Env env, Object exports) {
   haskell_init();
-  exports.Set("chatMigrateInit", Function::New(env, ChatMigrateInit));
-  exports.Set("chatCloseStore", Function::New(env, ChatCloseStore));
-  exports.Set("chatSendCmd", Function::New(env, ChatSendCmd));
-  exports.Set("chatRecvMsgWait", Function::New(env, ChatRecvMsgWait));
-  exports.Set("chatWriteFile", Function::New(env, ChatWriteFile));
-  exports.Set("chatReadFile", Function::New(env, ChatReadFile));
-  exports.Set("chatEncryptFile", Function::New(env, ChatEncryptFile));
-  exports.Set("chatDecryptFile", Function::New(env, ChatDecryptFile));
+  exports.Set("chat_migrate_init", Function::New(env, ChatMigrateInit));
+  exports.Set("chat_close_store", Function::New(env, ChatCloseStore));
+  exports.Set("chat_send_cmd", Function::New(env, ChatSendCmd));
+  exports.Set("chat_recv_msg_wait", Function::New(env, ChatRecvMsgWait));
+  exports.Set("chat_write_file", Function::New(env, ChatWriteFile));
+  exports.Set("chat_read_file", Function::New(env, ChatReadFile));
+  exports.Set("chat_encrypt_file", Function::New(env, ChatEncryptFile));
+  exports.Set("chat_decrypt_file", Function::New(env, ChatDecryptFile));
   return exports;
 }
 

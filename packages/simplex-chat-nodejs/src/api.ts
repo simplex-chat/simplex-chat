@@ -1,6 +1,5 @@
 import {CC, ChatResponse, T} from "@simplex-chat/types"
 import * as core from "./core"
-import {MigrationConfirmation} from "./types"
 
 export class ChatCommandError extends Error {
   constructor(public message: string, public response: ChatResponse) {
@@ -16,7 +15,7 @@ export enum ConnReqType {
 export class ChatApi {
   private constructor(protected ctrl_: bigint | undefined) {}
 
-  static async init(dbPath: string, dbKey: string, confirm = MigrationConfirmation.YesUp): Promise<ChatApi> {
+  static async init(dbPath: string, dbKey: string, confirm = core.MigrationConfirmation.YesUp): Promise<ChatApi> {
     const ctrl = await core.chatMigrateInit(dbPath, dbKey, confirm)
     return new ChatApi(ctrl)
   }
