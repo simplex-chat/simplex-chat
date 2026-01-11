@@ -75,11 +75,11 @@ remoteFilesFolder = "simplex_v1_files"
 
 -- when acting as host
 minRemoteCtrlVersion :: AppVersion
-minRemoteCtrlVersion = AppVersion [6, 4, 3, 0]
+minRemoteCtrlVersion = AppVersion [6, 4, 6, 0]
 
 -- when acting as controller
 minRemoteHostVersion :: AppVersion
-minRemoteHostVersion = AppVersion [6, 4, 3, 0]
+minRemoteHostVersion = AppVersion [6, 4, 6, 0]
 
 currentAppVersion :: AppVersion
 currentAppVersion = AppVersion SC.version
@@ -165,7 +165,8 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
   where
     mkCtrlAppInfo = do
       deviceName <- chatReadVar localDeviceName
-      pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName}
+      useCompression <- asks $ remoteCompression . config
+      pure CtrlAppInfo {appVersionRange = ctrlAppVersionRange, deviceName, compression = BoolDef useCompression}
     parseHostAppInfo :: RCHostHello -> ExceptT RemoteHostError IO HostAppInfo
     parseHostAppInfo RCHostHello {app = hostAppInfo} = do
       hostInfo@HostAppInfo {appVersion, encoding} <-
@@ -175,13 +176,13 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
       pure hostInfo
     handleConnectError :: RHKey -> SessionSeq -> CM a -> CM a
     handleConnectError rhKey sessSeq action =
-      action `catchChatError` \err -> do
+      action `catchAllErrors` \err -> do
         logError $ "startRemoteHost.rcConnectHost crashed: " <> tshow err
         cancelRemoteHostSession (Just (sessSeq, RHSRConnectionFailed err)) rhKey
         throwError err
     handleHostError :: SessionSeq -> TVar RHKey -> CM () -> CM ()
     handleHostError sessSeq rhKeyVar action =
-      action `catchChatError` \err -> do
+      action `catchAllErrors` \err -> do
         logError $ "startRemoteHost.waitForHostSession crashed: " <> tshow err
         readTVarIO rhKeyVar >>= cancelRemoteHostSession (Just (sessSeq, RHSRCrashed err))
     waitForHostSession :: Maybe RemoteHostInfo -> RHKey -> SessionSeq -> Maybe RCCtrlAddress -> TVar RHKey -> RCStepTMVar (ByteString, TLS 'TServer, RCStepTMVar (RCHostSession, RCHostHello, RCHostPairing)) -> CM ()
@@ -213,7 +214,9 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
         RHSessionConfirmed _ RHPendingSession {rchClient} -> Right ((), RHSessionConnected {rchClient, tls, rhClient, pollAction, storePath})
         _ -> Left $ ChatErrorRemoteHost rhKey RHEBadState
       chatWriteVar currentRemoteHost $ Just remoteHostId -- this is required for commands to be passed to remote host
-      toView $ CEvtRemoteHostConnected rhi {sessionState = Just RHSConnected {sessionCode}}
+      let RemoteHostClient {encryption = RemoteCrypto {compression}} = rhClient
+          remoteHost = rhi {sessionState = Just RHSConnected {sessionCode}} :: RemoteHostInfo
+      toView $ CEvtRemoteHostConnected {remoteHost, compression}
     upsertRemoteHost :: RCHostPairing -> Maybe RemoteHostInfo -> Maybe RCCtrlAddress -> Text -> SessionSeq -> RemoteHostSessionState -> CM RemoteHostInfo
     upsertRemoteHost pairing'@RCHostPairing {knownHost = kh_} rhi_ rcAddr_ hostDeviceName sseq state = do
       KnownHostPairing {hostDhPubKey = hostDhPubKey'} <- maybe (throwError . ChatError $ CEInternalError "KnownHost is known after verification") pure kh_
@@ -233,9 +236,13 @@ startRemoteHost rh_ rcAddrPrefs_ port_ = do
     pollEvents :: RemoteHostId -> RemoteHostClient -> CM ()
     pollEvents rhId rhClient = do
       oq <- asks outputQ
-      forever $ do
-        r_ <- liftRH rhId $ remoteRecv rhClient 10000000
-        forM r_ $ \r -> atomically $ writeTBQueue oq (Just rhId, r)
+      forever $
+        handlePollError oq $ do
+          r_ <- liftRH rhId $ remoteRecv rhClient 10000000
+          forM_ r_ $ \r -> atomically $ writeTBQueue oq (Just rhId, r)
+      where
+        handlePollError oq a = a `catchAllErrors` \e ->
+          atomically $ writeTBQueue oq (Just rhId, Left e)
     httpError :: RemoteHostId -> HTTP2ClientError -> ChatError
     httpError rhId = ChatErrorRemoteHost (RHId rhId) . RHEProtocolError . RPEHTTP2 . tshow
 
@@ -411,7 +418,7 @@ findKnownRemoteCtrl = do
     atomically $ takeTMVar cmdOk
     (RCCtrlPairing {ctrlFingerprint}, inv@(RCVerifiedInvitation RCInvitation {app})) <-
       timeoutThrow (ChatErrorRemoteCtrl RCETimeout) discoveryTimeout . withAgent $ \a -> rcDiscoverCtrl a pairings
-    ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchChatError` const (pure Nothing)
+    ctrlAppInfo_ <- (Just <$> parseCtrlAppInfo app) `catchAllErrors` const (pure Nothing)
     rc <-
       withStore' (`getRemoteCtrlByFingerprint` ctrlFingerprint) >>= \case
         Nothing -> throwChatError $ CEInternalError "connecting with a stored ctrl"
@@ -455,7 +462,7 @@ startRemoteCtrlSession = do
 
 connectRemoteCtrl :: RCVerifiedInvitation -> SessionSeq -> CM (Maybe RemoteCtrlInfo, CtrlAppInfo)
 connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) sseq = handleCtrlError sseq RCSRConnectionFailed "connectRemoteCtrl" $ do
-  ctrlInfo@CtrlAppInfo {deviceName = ctrlDeviceName} <- parseCtrlAppInfo app
+  ctrlInfo <- parseCtrlAppInfo app
   v <- checkAppVersion ctrlInfo
   rc_ <- withStore' $ \db -> getRemoteCtrlByFingerprint db ca
   mapM_ (validateRemoteCtrl inv) rc_
@@ -465,23 +472,23 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
   cmdOk <- newEmptyTMVarIO
   rcsWaitSession <- async $ do
     atomically $ takeTMVar cmdOk
-    handleCtrlError sseq RCSRConnectionFailed "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlDeviceName rcsClient vars
+    handleCtrlError sseq RCSRConnectionFailed "waitForCtrlSession" $ waitForCtrlSession rc_ ctrlInfo rcsClient vars
   updateRemoteCtrlSession sseq $ \case
-    RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession}
+    RCSessionStarting -> Right RCSessionConnecting {remoteCtrlId_ = remoteCtrlId' <$> rc_, rcsClient, rcsWaitSession, ctrlAppInfo = ctrlInfo}
     _ -> Left $ ChatErrorRemoteCtrl RCEBadState
   atomically $ putTMVar cmdOk ()
   pure ((`remoteCtrlInfo` Just RCSConnecting) <$> rc_, ctrlInfo)
   where
     validateRemoteCtrl RCInvitation {idkey} RemoteCtrl {ctrlPairing = RCCtrlPairing {idPubKey}} =
       unless (idkey == idPubKey) $ throwError $ ChatErrorRemoteCtrl $ RCEProtocolError $ PRERemoteControl RCEIdentity
-    waitForCtrlSession :: Maybe RemoteCtrl -> Text -> RCCtrlClient -> RCStepTMVar (ByteString, TLS 'TClient, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> CM ()
-    waitForCtrlSession rc_ ctrlName rcsClient vars = do
+    waitForCtrlSession :: Maybe RemoteCtrl -> CtrlAppInfo -> RCCtrlClient -> RCStepTMVar (ByteString, TLS 'TClient, RCStepTMVar (RCCtrlSession, RCCtrlPairing)) -> CM ()
+    waitForCtrlSession rc_ ctrlAppInfo@CtrlAppInfo {deviceName = ctrlName} rcsClient vars = do
       (uniq, tls, rcsWaitConfirmation) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
       let sessionCode = verificationCode uniq
       updateRemoteCtrlSession sseq $ \case
         RCSessionConnecting {rcsWaitSession} ->
           let remoteCtrlId_ = remoteCtrlId' <$> rc_
-           in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation}
+           in Right RCSessionPendingConfirmation {remoteCtrlId_, ctrlDeviceName = ctrlName, rcsClient, tls, sessionCode, rcsWaitSession, rcsWaitConfirmation, ctrlAppInfo}
         _ -> Left $ ChatErrorRemoteCtrl RCEBadState
       toView CEvtRemoteCtrlSessionCode {remoteCtrl_ = (`remoteCtrlInfo` Just RCSPendingConfirmation {sessionCode}) <$> rc_, sessionCode}
     checkAppVersion CtrlAppInfo {appVersionRange} =
@@ -491,7 +498,8 @@ connectRemoteCtrl verifiedInv@(RCVerifiedInvitation inv@RCInvitation {ca, app}) 
     getHostAppInfo appVersion = do
       hostDeviceName <- chatReadVar localDeviceName
       encryptFiles <- chatReadVar encryptLocalFiles
-      pure HostAppInfo {appVersion, deviceName = hostDeviceName, encoding = localEncoding, encryptFiles}
+      useCompression <- asks $ remoteCompression . config
+      pure HostAppInfo {appVersion, deviceName = hostDeviceName, encoding = localEncoding, encryptFiles, compression = BoolDef useCompression}
 
 parseCtrlAppInfo :: JT.Value -> CM CtrlAppInfo
 parseCtrlAppInfo ctrlAppInfo = do
@@ -500,17 +508,17 @@ parseCtrlAppInfo ctrlAppInfo = do
 handleRemoteCommand :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> RemoteCrypto -> TBQueue (Either ChatError ChatEvent) -> HTTP2Request -> CM' ()
 handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBody, sendResponse} = do
   logDebug "handleRemoteCommand"
-  liftIO (tryRemoteError' parseRequest) >>= \case
+  liftIO (tryAllErrors' parseRequest) >>= \case
     Right (rfKN, getNext, rc) -> do
       chatReadVar' currentUser >>= \case
         Nothing -> replyError $ ChatError CENoActiveUser
-        Just user -> processCommand user rfKN getNext rc `catchChatError'` replyError
+        Just user -> processCommand user rfKN getNext rc `catchAllErrors'` replyError
     Left e -> reply $ RRProtocolError e
   where
     parseRequest :: ExceptT RemoteProtocolError IO (C.SbKeyNonce, GetChunk, RemoteCommand)
     parseRequest = do
       (rfKN, header, getNext) <- parseDecryptHTTP2Body encryption request reqBody
-      (rfKN,getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecode header)
+      (rfKN,getNext,) <$> liftEitherWith RPEInvalidJSON (J.eitherDecodeStrict header)
     replyError = reply . RRChatResponse . RRError
     processCommand :: User -> C.SbKeyNonce -> GetChunk -> RemoteCommand -> CM ()
     processCommand user rfKN getNext = \case
@@ -523,7 +531,7 @@ handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBo
     replyWith :: Respond
     replyWith rr attach = do
       (corrId, cmdKN, sfKN) <- atomically $ getRemoteSndKeys encryption
-      liftIO (tryRemoteError' . encryptEncodeHTTP2Body corrId cmdKN encryption $ J.encode rr) >>= \case
+      liftIO (tryAllErrors' . encryptEncodeHTTP2Body corrId cmdKN encryption $ J.encode rr) >>= \case
         Right resp -> liftIO . sendResponse . responseStreaming N.status200 [] $ \send flush -> do
           send resp
           attach sfKN send
@@ -531,7 +539,7 @@ handleRemoteCommand execCC encryption remoteOutputQ HTTP2Request {request, reqBo
         Left e -> eToView' $ ChatErrorRemoteCtrl $ RCEProtocolError e
 
 takeRCStep :: RCStepTMVar a -> CM a
-takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, connectionEntity_ = Nothing}) . atomically . takeTMVar
+takeRCStep = liftError' (\e -> ChatErrorAgent {agentError = RCP e, agentConnId = AgentConnId "", connectionEntity_ = Nothing}) . atomically . takeTMVar
 
 type GetChunk = Int -> IO ByteString
 
@@ -541,14 +549,6 @@ type Respond = RemoteResponse -> (C.SbKeyNonce -> SendChunk -> IO ()) -> CM' ()
 
 liftRC :: ExceptT RemoteProtocolError IO a -> CM a
 liftRC = liftError (ChatErrorRemoteCtrl . RCEProtocolError)
-
-tryRemoteError :: ExceptT RemoteProtocolError IO a -> ExceptT RemoteProtocolError IO (Either RemoteProtocolError a)
-tryRemoteError = tryAllErrors (RPEException . tshow)
-{-# INLINE tryRemoteError #-}
-
-tryRemoteError' :: ExceptT RemoteProtocolError IO a -> IO (Either RemoteProtocolError a)
-tryRemoteError' = tryAllErrors' (RPEException . tshow)
-{-# INLINE tryRemoteError' #-}
 
 handleSend :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> Int -> CM' RemoteResponse
 handleSend execCC command retryNum = do
@@ -573,7 +573,7 @@ handleStoreFile rfKN fileName fileSize fileDigest getChunk =
       Just ff -> takeFileName <$$> storeFileTo ff
       Nothing -> storeFileTo =<< getDefaultFilesFolder
     storeFileTo :: FilePath -> CM' (Either RemoteProtocolError FilePath)
-    storeFileTo dir = liftIO . tryRemoteError' $ do
+    storeFileTo dir = liftIO . tryAllErrors' $ do
       filePath <- liftIO $ dir `uniqueCombine` fileName
       receiveEncryptedFile rfKN getChunk fileSize fileDigest filePath
       pure filePath
@@ -586,7 +586,7 @@ handleGetFile User {userId} RemoteFile {userId = commandUserId, fileId, sent, fi
   withStore $ \db -> do
     cf <- getLocalCryptoFile db commandUserId fileId sent
     unless (cf == cf') $ throwError $ SEFileNotFound fileId
-  liftRC (tryRemoteError $ getFileInfo path) >>= \case
+  liftRC (tryAllErrors $ getFileInfo path) >>= \case
     Left e -> lift $ reply (RRProtocolError e) $ \_ _ -> pure ()
     Right (fileSize, fileDigest) ->
       lift . withFile path ReadMode $ \h -> do
@@ -615,7 +615,7 @@ remoteCtrlInfo RemoteCtrl {remoteCtrlId, ctrlDeviceName} sessionState =
   RemoteCtrlInfo {remoteCtrlId, ctrlDeviceName, sessionState}
 
 -- | Take a look at emoji of tlsunique, commit pairing, and start session server
-verifyRemoteCtrlSession :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> CM RemoteCtrlInfo
+verifyRemoteCtrlSession :: (ByteString -> Int -> CM' (Either ChatError ChatResponse)) -> Text -> CM ChatResponse
 verifyRemoteCtrlSession execCC sessCode' = do
   (sseq, client, ctrlName, sessionCode, vars) <-
     chatReadVar remoteCtrlSession >>= \case
@@ -629,14 +629,15 @@ verifyRemoteCtrlSession execCC sessCode' = do
     (rcsSession@RCCtrlSession {tls, sessionKeys}, rcCtrlPairing) <- timeoutThrow (ChatErrorRemoteCtrl RCETimeout) networkIOTimeout $ takeRCStep vars
     rc@RemoteCtrl {remoteCtrlId} <- upsertRemoteCtrl ctrlName rcCtrlPairing
     remoteOutputQ <- asks (tbqSize . config) >>= newTBQueueIO
-    encryption <- mkCtrlRemoteCrypto sessionKeys $ tlsUniq tls
+    encryption@RemoteCrypto {compression} <- mkCtrlRemoteCrypto sessionKeys (tlsUniq tls) =<< getRemoteCtrlAppInfo sseq
     cc <- ask
     http2Server <- liftIO . async $ attachHTTP2Server tls $ \req -> handleRemoteCommand execCC encryption remoteOutputQ req `runReaderT` cc
     void . forkIO $ monitor sseq http2Server
     updateRemoteCtrlSession sseq $ \case
-      RCSessionPendingConfirmation {} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ}
+      RCSessionPendingConfirmation {ctrlAppInfo} -> Right RCSessionConnected {remoteCtrlId, rcsClient = client, rcsSession, tls, http2Server, remoteOutputQ, ctrlAppInfo}
       _ -> Left $ ChatErrorRemoteCtrl RCEBadState
-    pure $ remoteCtrlInfo rc $ Just RCSConnected {sessionCode = tlsSessionCode tls}
+    let remoteCtrl = remoteCtrlInfo rc $ Just RCSConnected {sessionCode = tlsSessionCode tls}
+    pure CRRemoteCtrlConnected {remoteCtrl, compression}
   where
     upsertRemoteCtrl :: Text -> RCCtrlPairing -> CM RemoteCtrl
     upsertRemoteCtrl ctrlName rcCtrlPairing = withStore $ \db -> do
@@ -658,7 +659,7 @@ stopRemoteCtrl = cancelActiveRemoteCtrl Nothing
 
 handleCtrlError :: SessionSeq -> (ChatError -> RemoteCtrlStopReason) -> Text -> CM a -> CM a
 handleCtrlError sseq mkReason name action =
-  action `catchChatError` \e -> do
+  action `catchAllErrors` \e -> do
     logError $ name <> " remote ctrl error: " <> tshow e
     cancelActiveRemoteCtrl $ Just (sseq, mkReason e)
     throwError e
@@ -720,6 +721,18 @@ updateRemoteCtrlSession sseq state = do
             Left ce -> pure $ Left ce
             Right st' -> Right () <$ writeTVar session (Just (sseq, st'))
   liftEither r
+
+getRemoteCtrlAppInfo :: SessionSeq -> CM (Maybe CtrlAppInfo)
+getRemoteCtrlAppInfo sseq = chatReadVar remoteCtrlSession $>>= pure . appInfo
+  where
+    appInfo (currSseq, sess)
+      | sseq == currSseq = case sess of
+          RCSessionStarting -> Nothing
+          RCSessionSearching {} -> Nothing
+          RCSessionConnecting {ctrlAppInfo} -> Just ctrlAppInfo
+          RCSessionPendingConfirmation {ctrlAppInfo} -> Just ctrlAppInfo
+          RCSessionConnected {ctrlAppInfo} -> Just ctrlAppInfo
+      | otherwise = Nothing
 
 utf8String :: [Char] -> ByteString
 utf8String = encodeUtf8 . T.pack

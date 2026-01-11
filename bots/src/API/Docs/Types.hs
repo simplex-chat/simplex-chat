@@ -29,7 +29,6 @@ import Simplex.Chat.Messages
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Protocol
-import Simplex.Chat.Store.Groups
 import Simplex.Chat.Store.Profiles
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -42,7 +41,8 @@ import Simplex.Messaging.Agent.Protocol
 import Simplex.Messaging.Client
 import Simplex.Messaging.Crypto.File
 import Simplex.Messaging.Parsers (dropPrefix, fstToLower)
-import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), ProxyError (..))
+import Simplex.Messaging.Protocol (BlockingInfo (..), BlockingReason (..), CommandError (..), ErrorType (..), NetworkError (..), ProxyError (..))
+import Simplex.Messaging.Protocol.Types (ClientNotice (..))
 import Simplex.Messaging.Transport
 import Simplex.RemoteControl.Types
 import System.Console.ANSI.Types (Color (..))
@@ -69,7 +69,7 @@ chatTypesDocs = sortOn docTypeName $! snd $! mapAccumL toCTDoc (S.empty, M.empty
       let (tds', td_) = toTypeDef tds sumTypeInfo
        in case td_ of
             Just typeDef -> (tds', CTDoc {typeDef, typeSyntax, typeDescr})
-            Nothing -> error $ "Recursive type: "  <> typeName
+            Nothing -> error $ "Recursive type: " <> typeName
 
 toTypeDef :: (S.Set String, M.Map String APITypeDef) -> (SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text) -> ((S.Set String, M.Map String APITypeDef), Maybe APITypeDef)
 toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, consPrefix, hideConstrs, _, _) =
@@ -84,7 +84,7 @@ toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, cons
                   let fields = fromMaybe (error $ "Record type without fields: " <> typeName) $ L.nonEmpty fieldInfos
                       ((visited', typeDefs'), fields') = mapAccumL (toAPIField_ typeName) (S.insert typeName visited, typeDefs) fields
                       td = APITypeDef typeName $ ATDRecord $ L.toList fields'
-                    in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
+                   in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
                 _ -> error $ "Record type with " <> show (length constrs) <> " constructors: " <> typeName
               STUnion -> if length constrs > 1 then toUnionType constrs else unionError constrs
               STUnion1 -> if length constrs == 1 then toUnionType constrs else unionError constrs
@@ -98,16 +98,16 @@ toTypeDef acc@(!visited, !typeDefs) (STI typeName allConstrs, jsonEncoding, cons
     toUnionType constrs =
       let ((visited', typeDefs'), members) = mapAccumL toUnionMember (S.insert typeName visited, typeDefs) $ fromMaybe (unionError constrs) $ L.nonEmpty constrs
           td = APITypeDef typeName $ ATDUnion members
-        in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
+       in ((S.insert typeName visited', M.insert typeName td typeDefs'), Just td)
     toUnionMember tds RecordTypeInfo {consName, fieldInfos} =
       let memberTag = normalizeConsName consPrefix consName
-        in second (ATUnionMember memberTag) $ mapAccumL (toAPIField_ typeName) tds fieldInfos
+       in second (ATUnionMember memberTag) $ mapAccumL (toAPIField_ typeName) tds fieldInfos
     unionError constrs = error $ "Union type with " <> show (length constrs) <> " constructor(s): " <> typeName
     toEnumType = toEnumType_ $ normalizeConsName consPrefix
     toEnumType_ f constrs =
       let members = L.map toEnumMember $ fromMaybe (enumError constrs) $ L.nonEmpty constrs
           td = APITypeDef typeName $ ATDEnum members
-        in ((S.insert typeName visited, M.insert typeName td typeDefs), Just td)
+       in ((S.insert typeName visited, M.insert typeName td typeDefs), Just td)
       where
         toEnumMember RecordTypeInfo {consName, fieldInfos} = case fieldInfos of
           [] -> f consName
@@ -121,7 +121,7 @@ toAPIField_ typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField
     toAPIType = \case
       TIType (ST name _) -> apiTypeForName name
       TIOptional tInfo -> second ATOptional $ toAPIType tInfo
-      TIArray {elemType, nonEmpty} -> second (`ATArray`nonEmpty) $ toAPIType elemType
+      TIArray {elemType, nonEmpty} -> second (`ATArray` nonEmpty) $ toAPIType elemType
       TIMap {keyType = ST name _, valueType}
         | name `elem` primitiveTypes -> second (ATMap (PT name)) $ toAPIType valueType
         | otherwise -> error $ "Non-primitive key type in " <> typeName <> ", " <> fieldName
@@ -133,7 +133,7 @@ toAPIField_ typeName tds (FieldInfo fieldName typeInfo) = second (APIRecordField
           Nothing -> case find (\(STI name' _, _, _, _, _, _) -> name == name') chatTypesDocsData of
             Just sumTypeInfo ->
               let (tds', td_) = toTypeDef tds sumTypeInfo -- recursion to outer function, loops are resolved via type defs map lookup
-                in case td_ of
+               in case td_ of
                     Just td -> (tds', ATDef td)
                     Nothing -> (tds', ATRef name)
             Nothing -> error $ "Undefined type: " <> name
@@ -229,6 +229,7 @@ chatTypesDocsData =
     (sti @CIMentionMember, STRecord, "", [], "", ""),
     (sti @CIReactionCount, STRecord, "", [], "", ""),
     (sti @CITimed, STRecord, "", [], "", ""),
+    (sti @ClientNotice, STRecord, "", [], "", ""),
     (sti @Color, STEnum, "", [], "", ""),
     (sti @CommandError, STUnion, "", [], "", ""),
     (sti @CommandErrorType, STUnion, "", [], "", ""),
@@ -239,7 +240,7 @@ chatTypesDocsData =
     (sti @ConnectionMode, (STEnum' $ take 3 . consLower "CM"), "", [], "", ""),
     (sti @ConnectionPlan, STUnion, "CP", [], "", ""),
     (sti @ConnStatus, (STEnum' $ consSep "Conn" '-'), "", [], "", ""),
-    (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", ["ConnSndFile", "ConnRcvFile"], "", ""),
+    (sti @ConnType, (STEnum' $ consSep "Conn" '_'), "", [], "", ""),
     (sti @Contact, STRecord, "", [], "", ""),
     (sti @ContactAddressPlan, STUnion, "CAP", [], "", ""),
     (sti @ContactShortLinkData, STRecord, "", [], "", ""),
@@ -267,7 +268,6 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
-    (sti @GroupInfoSummary, STRecord, "", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
@@ -299,6 +299,7 @@ chatTypesDocsData =
     (sti @MsgFilter, STEnum, "MF", [], "", ""),
     (sti @MsgReaction, STUnion, "MR", [], "", ""),
     (sti @MsgReceiptStatus, STEnum, "MR", [], "", ""),
+    (sti @NetworkError, STUnion, "NE", [], "", ""),
     (sti @NewUser, STRecord, "", [], "", ""),
     (sti @NoteFolder, STRecord, "", [], "", ""),
     (sti @PendingContactConnection, STRecord, "", [], "", ""),
@@ -315,7 +316,6 @@ chatTypesDocsData =
     (sti @RcvConnEvent, STUnion, "RCE", [], "", ""),
     (sti @RcvDirectEvent, STUnion, "RDE", [], "", ""),
     (sti @RcvFileDescr, STRecord, "", [], "", ""),
-    (sti @RcvFileInfo, STRecord, "", [], "", ""),
     (sti @RcvFileStatus, STUnion, "RFS", [], "", ""),
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
@@ -351,7 +351,6 @@ chatTypesDocsData =
     (sti @XFTPErrorType, STUnion, "", [], "", ""),
     (sti @XFTPRcvFile, STRecord, "", [], "", ""),
     (sti @XFTPSndFile, STRecord, "", [], "", "")
-
     -- (sti @DatabaseError, STUnion, "DB", [], "", ""),
     -- (sti @ChatItemInfo, STRecord, "", [], "", ""),
     -- (sti @ChatItemVersion, STRecord, "", [], "", ""),
@@ -370,7 +369,7 @@ chatTypesDocsData =
     -- (sti @SendRef, STRecord, "", [], "", ""),
     -- (sti @SndQueueInfo, STRecord, "", [], "", ""),
     -- (sti @SndSwitchStatus, STEnum, "", [], "", ""), -- incorrect
- ]
+  ]
 
 data SimplePreference = SimplePreference {allow :: FeatureAllowed} deriving (Generic)
 
@@ -416,6 +415,7 @@ deriving instance Generic CIMention
 deriving instance Generic CIMentionMember
 deriving instance Generic CIReactionCount
 deriving instance Generic CITimed
+deriving instance Generic ClientNotice
 deriving instance Generic Color
 deriving instance Generic CommandError
 deriving instance Generic CommandErrorType
@@ -454,7 +454,6 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
-deriving instance Generic GroupInfoSummary
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember
@@ -492,6 +491,7 @@ deriving instance Generic MsgErrorType
 deriving instance Generic MsgFilter
 deriving instance Generic MsgReaction
 deriving instance Generic MsgReceiptStatus
+deriving instance Generic NetworkError
 deriving instance Generic NewUser
 deriving instance Generic NoteFolder
 deriving instance Generic PendingContactConnection
@@ -508,7 +508,6 @@ deriving instance Generic RCErrorType
 deriving instance Generic RcvConnEvent
 deriving instance Generic RcvDirectEvent
 deriving instance Generic RcvFileDescr
-deriving instance Generic RcvFileInfo
 deriving instance Generic RcvFileStatus
 deriving instance Generic RcvFileTransfer
 deriving instance Generic RcvGroupEvent

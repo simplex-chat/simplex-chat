@@ -1023,7 +1023,7 @@
     <string name="v4_6_hidden_chat_profiles_descr">Sohbet profillerini parola ile koru!</string>
     <string name="v4_5_reduced_battery_usage">Daha az pil kullanımı</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">Gizliliği korumak için, SimpleX her bir konuşma için farklı bir ID kullanır.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Bu kişiden mesaj almak için kullanılan sunucuya bağlanılmaya çalışılıyor (hata: %1$s).</string>
     <string name="v4_4_live_messages_desc">Alıcılar güncellemeleri siz yazdıkça görürler.</string>
     <string name="auth_log_in_using_credential">Bilgilerinizi kullanarak giriş yapın</string>
     <string name="markdown_in_messages">Mesajlarda Markdown</string>
@@ -2503,4 +2503,10 @@
     <string name="group_descr_too_large">Açıklama çok büyük</string>
     <string name="time_to_disappear_is_set_only_for_new_contacts">Kaybolma süresi yalnızca yeni kişiler için ayarlanır.</string>
     <string name="connect_use_incognito_profile">Gizli profil kullan</string>
+    <string name="open_to_use_bot">Botu kullanmak için açın</string>
+    <string name="chat_banner_connect_to_use_bot">Botu kullanmak için Bağlan tuşuna basın.</string>
+    <string name="chat_banner_bot">Bot</string>
+    <string name="cant_send_commands_alert_text">Komutlar gönderebilmek için bağlanmanış olmanız gereklidir.</string>
+    <string name="member_is_deleted_cant_accept_request">Üye silinmiş - isteği kabul edemeyecek</string>
+    <string name="upgrade_group_link">Grup linkini güncelle</string>
 </resources>

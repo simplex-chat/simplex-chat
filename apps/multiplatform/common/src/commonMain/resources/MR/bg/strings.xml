@@ -1182,7 +1182,7 @@
     <string name="messages_section_description">Тази настройка се прилага за съобщения в текущия ви профил</string>
     <string name="to_protect_privacy_simplex_has_ids_for_queues">За да се защити поверителността, SimpleX използва идентификатори за опашки от съобщения, отделни за всеки от вашите контакти.</string>
     <string name="trying_to_connect_to_server_to_receive_messages">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт.</string>
-    <string name="trying_to_connect_to_server_to_receive_messages_with_error">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %1$s).</string>
+    <string name="error_connecting_to_server_to_receive_messages">Опит за свързване със сървъра, използван за получаване на съобщения от този контакт (грешка: %1$s).</string>
     <string name="error_smp_test_failed_at_step">Тестът е неуспешен на стъпка %s.</string>
     <string name="database_initialization_error_desc">Базата данни не работи правилно. Докоснете, за да научите повече</string>
     <string name="image_decoding_exception_desc">Изображението не може да бъде декодирано. Моля, опитайте с друго изображение или се свържете с разработчиците.</string>
@@ -1559,7 +1559,7 @@
     <string name="remote_ctrl_error_busy">Настолното устройство е заето</string>
     <string name="remote_ctrl_error_disconnected">Връзката с настолното устройство бе прекъсната</string>
     <string name="agent_critical_error_title">Критична грешка</string>
-    <string name="past_member_vName">Бивш член %1$s</string>
+    <string name="past_member_vName">Член %1$s</string>
     <string name="group_member_status_unknown">неизвестен статус</string>
     <string name="group_member_status_unknown_short">неизвестен</string>
     <string name="agent_internal_error_title">Вътрешна грешка</string>
@@ -1859,7 +1859,7 @@
     <string name="appearance_font_size">Размер на шрифта</string>
     <string name="share_text_message_status">Статус на съобщението: %s</string>
     <string name="chat_theme_set_default_theme">Задай тема по подразбиране</string>
-    <string name="v5_8_safe_files_descr">Потвърдете файловете от неизвестни сървъри.</string>
+    <string name="v5_8_safe_files_descr">Потвърди файлове от неизвестни сървъри.</string>
     <string name="servers_info_detailed_statistics_sent_messages_header">Изпратени съобщения</string>
     <string name="error_initializing_web_view">Грешка при стартиране на WebView. Актуализирайте системата си до новата версия. Моля, свържете се с разработчиците.\nГрешка: %s</string>
     <string name="xftp_servers_other">Други XFTP сървъри</string>
@@ -1967,7 +1967,7 @@
     <string name="uploaded_files">Качени файлове</string>
     <string name="upload_errors">Грешки при качване</string>
     <string name="size">Размер</string>
-    <string name="chunks_deleted">Парчета изтрити</string>
+    <string name="chunks_deleted">Изтрити парчета</string>
     <string name="chunks_downloaded">Изтеглени парчета</string>
     <string name="downloaded_files">Изтеглени файлове</string>
     <string name="toolbar_settings">Настройки</string>
@@ -2313,7 +2313,7 @@
     <string name="block_members_for_all_question">Блокиране на членовете за всички?</string>
     <string name="chat_banner_business_connection">Бизнес връзка</string>
     <string name="onboarding_conditions_by_using_you_agree">С използването на SimpleX Chat вие се съгласявате със:\n- изпращане само на легално съдържание в публични групи.\n- уважение към другите потребители – без спам.</string>
-    <string name="context_user_picker_cant_change_profile_alert_title">Промената на профила е невъзможна</string>
+    <string name="context_user_picker_cant_change_profile_alert_title">Промяната на профила е невъзможна</string>
     <string name="cant_send_message_generic">съобщенията не могат да бъдат изпратени</string>
     <string name="v6_4_1_new_interface_languages_descr">Каталонски, индонезийски, румънски и виетнамски - благодарение на нашите потребители!</string>
     <string name="e2ee_info_e2ee"><![CDATA[Съобщенията са защитени с<b>криптиране от край до край</b>.]]></string>
@@ -2508,4 +2508,21 @@
     <string name="member_is_deleted_cant_accept_request">Членът е изтрит - не може да се приеме заявката</string>
     <string name="rcv_direct_event_group_inv_link_received">заявка за връзка от група %1$s</string>
     <string name="this_setting_is_for_your_current_profile">Тази настройка е за текущия профил</string>
+    <string name="allow_files_and_media_only_if">Разреши файлове и медия само ако вашият контакт ги разрешава.</string>
+    <string name="allow_your_contacts_to_send_files_and_media">Позволи на вашите контактите да изпращат файлове и медия.</string>
+    <string name="chat_banner_bot">Бот</string>
+    <string name="both_you_and_your_contact_can_send_files">И вие, и вашият контакт можете да изпращате файлове и медия.</string>
+    <string name="deprecated_options_section">Отпадащи опции</string>
+    <string name="error_marking_member_support_chat_read">Грешка при маркиране на чата като прочетен</string>
+    <string name="files_prohibited_in_this_chat">Файлове и медията са забранени в този чат.</string>
+    <string name="only_you_can_send_files">Само вие можете да изпращате файлове и медия.</string>
+    <string name="only_your_contact_can_send_files">Само вашият контакт може да изпраща файлове и медия.</string>
+    <string name="privacy_chat_list_open_clean_web_link">Отвори почистен линк</string>
+    <string name="privacy_chat_list_open_full_web_link">Отвори пълен линк</string>
+    <string name="open_to_use_bot">Отвори за използване на бот</string>
+    <string name="prohibit_sending_files_and_media">Забрани изпращането на файлове и медия.</string>
+    <string name="sanitize_links_toggle">Премахни параметри за проследяване от линковете</string>
+    <string name="simplex_link_relay">SimpleX реле линк</string>
+    <string name="chat_banner_connect_to_use_bot">Натисни Свързване, за използване на бота</string>
+    <string name="cant_send_commands_alert_text">За да изпращате команди, трябва да сте свързани.</string>
 </resources>

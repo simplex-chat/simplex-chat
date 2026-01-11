@@ -1791,7 +1791,7 @@ set passcode view</note>
       <trans-unit id="Conditions of use" xml:space="preserve">
         <source>Conditions of use</source>
         <target>Gebruiksvoorwaarden</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve">
         <source>Conditions will be accepted for the operator(s): **%@**.</source>
@@ -3290,6 +3290,10 @@ chat item action</note>
         <target>Fout bij het verbinden met doorstuurserver %@. Probeer het later opnieuw.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
+        <source>Error connecting to the server used to receive messages from this connection: %@</source>
+        <note>subscription status explanation</note>
+      </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
         <source>Error creating address</source>
         <target>Fout bij aanmaken van adres</target>
@@ -3335,14 +3339,14 @@ chat item action</note>
         <target>Fout bij het ontsleutelen van bestand</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error deleting chat" xml:space="preserve">
+        <source>Error deleting chat</source>
+        <target>Fout bij het verwijderen van chat met lid</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Fout bij het verwijderen van de chat database</target>
-        <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
-        <source>Error deleting chat with member</source>
-        <target>Fout bij het verwijderen van chat met lid</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
@@ -3619,6 +3623,10 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
+      <trans-unit id="Error: %@." xml:space="preserve">
+        <source>Error: %@.</source>
+        <note>server test error</note>
+      </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
         <target>Fout: URL is ongeldig</target>
@@ -3840,6 +3848,23 @@ snd error text</note>
       <trans-unit id="Find chats faster" xml:space="preserve">
         <source>Find chats faster</source>
         <target>Vind chats sneller</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
+        <target>Mogelijk is de certificaat vingerafdruk in het server adres onjuist</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate: %@.</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -4864,6 +4889,10 @@ Dit is jouw link voor groep %@!</target>
         <target>Lid</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member %@" xml:space="preserve">
+        <source>Member %@</source>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
         <target>Toelating van leden</target>
@@ -5269,7 +5298,7 @@ Dit is jouw link voor groep %@!</target>
       <trans-unit id="Network status" xml:space="preserve">
         <source>Network status</source>
         <target>Netwerk status</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="New" xml:space="preserve">
         <source>New</source>
@@ -5906,11 +5935,6 @@ Vereist het inschakelen van VPN.</target>
         <target>Wachtwoord om weer te geven</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
-        <source>Past member %@</source>
-        <target>Voormalig lid %@</target>
-        <note>past/unknown group member</note>
-      </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
         <target>Desktopadres plakken</target>
@@ -6069,11 +6093,6 @@ Fout: %@</target>
         <source>Port</source>
         <target>Poort</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>Mogelijk is de certificaat vingerafdruk in het server adres onjuist</target>
-        <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
@@ -6374,11 +6393,6 @@ Schakel dit in in *Netwerk en servers*-instellingen.</target>
         <source>Received at: %@</source>
         <target>Ontvangen op: %@</target>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Received file event" xml:space="preserve">
-        <source>Received file event</source>
-        <target>Ontvangen bestandsgebeurtenis</target>
-        <note>notification</note>
       </trans-unit>
       <trans-unit id="Received message" xml:space="preserve">
         <source>Received message</source>
@@ -7204,11 +7218,6 @@ chat item action</note>
         <target>Direct verzonden</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent file event" xml:space="preserve">
-        <source>Sent file event</source>
-        <target>Verzonden bestandsgebeurtenis</target>
-        <note>notification</note>
-      </trans-unit>
       <trans-unit id="Sent message" xml:space="preserve">
         <source>Sent message</source>
         <target>Verzonden bericht</target>
@@ -7279,13 +7288,13 @@ chat item action</note>
         <target>Serverprotocol gewijzigd.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
         <target>Server vereist autorisatie om wachtrijen te maken, controleer wachtwoord</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
-        <source>Server requires authorization to upload, check password</source>
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+        <source>Server requires authorization to upload, check password.</source>
         <target>Server vereist autorisatie om te uploaden, wachtwoord controleren</target>
         <note>server test error</note>
       </trans-unit>
@@ -8389,15 +8398,9 @@ U wordt gevraagd de authenticatie te voltooien voordat deze functie wordt ingesc
         <target>Transportsessies</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
-        <source>Trying to connect to the server used to receive messages from this contact (error: %@).</source>
-        <target>Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen (fout: %@).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve">
-        <source>Trying to connect to the server used to receive messages from this contact.</source>
-        <target>Proberen verbinding te maken met de server die wordt gebruikt om berichten van dit contact te ontvangen.</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
+        <source>Trying to connect to the server used to receive messages from this connection.</source>
+        <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
         <source>Turkish interface</source>
@@ -9100,15 +9103,18 @@ Repeat join request?</source>
 Deelnameverzoek herhalen?</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
-        <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>U bent verbonden met de server die wordt gebruikt om berichten van dit contact te ontvangen.</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
+        <source>You are connected to the server used to receive messages from this connection.</source>
+        <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
         <source>You are invited to group</source>
         <target>Je bent uitgenodigd voor de groep</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
+        <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
+        <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
         <source>You are not connected to these servers. Private routing is used to deliver messages to them.</source>
@@ -10160,6 +10166,10 @@ pref value</note>
       <trans-unit id="no e2e encryption" xml:space="preserve">
         <source>no e2e encryption</source>
         <target>geen e2e versleuteling</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="no subscription" xml:space="preserve">
+        <source>no subscription</source>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">

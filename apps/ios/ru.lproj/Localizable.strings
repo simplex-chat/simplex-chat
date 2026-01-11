@@ -1191,7 +1191,7 @@ set passcode view */
 /* No comment provided by engineer. */
 "Conditions are already accepted for these operator(s): **%@**." = "Условия уже приняты для следующих оператора(ов): **%@**.";
 
-/* No comment provided by engineer. */
+/* alert button */
 "Conditions of use" = "Условия использования";
 
 /* No comment provided by engineer. */
@@ -2266,10 +2266,10 @@ chat item action */
 "Error decrypting file" = "Ошибка расшифровки файла";
 
 /* alert title */
-"Error deleting chat database" = "Ошибка при удалении данных чата";
+"Error deleting chat" = "Ошибка при удалении чата с членом группы";
 
 /* alert title */
-"Error deleting chat with member" = "Ошибка при удалении чата с членом группы";
+"Error deleting chat database" = "Ошибка при удалении данных чата";
 
 /* alert title */
 "Error deleting chat!" = "Ошибка при удалении чата!";
@@ -2438,6 +2438,9 @@ file error text
 snd error text */
 "Error: %@" = "Ошибка: %@";
 
+/* server test error */
+"Error: %@." = "Ошибка: %@.";
+
 /* No comment provided by engineer. */
 "Error: no database file" = "Ошибка: данные чата не найдены";
 
@@ -2572,6 +2575,18 @@ snd error text */
 
 /* No comment provided by engineer. */
 "Find chats faster" = "Быстро найти чаты";
+
+/* No comment provided by engineer. */
+"Fingerprint in destination server address does not match certificate: %@." = "Хэш в адресе сервера назначения не соответствует сертификату: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in forwarding server address does not match certificate: %@." = "Хэш в адресе пересылающего сервера не соответствует сертификату: %@.";
+
+/* No comment provided by engineer. */
+"Fingerprint in server address does not match certificate: %@." = "Хэш в адресе сервера не соответствует сертификату: %@.";
+
+/* server test error */
+"Fingerprint in server address does not match certificate." = "Возможно, хэш сертификата в адресе сервера неверный.";
 
 /* No comment provided by engineer. */
 "Fix" = "Починить";
@@ -3257,6 +3272,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Member" = "Член группы";
 
+/* past/unknown group member */
+"Member %@" = "Член группы %@";
+
 /* profile update event chat item */
 "member %@ changed to %@" = "член %1$@ изменился на %2$@";
 
@@ -3513,7 +3531,7 @@ snd error text */
 "Name" = "Имя";
 
 /* No comment provided by engineer. */
-"Network & servers" = "Сеть & серверы";
+"Network & servers" = "Сеть и серверы";
 
 /* No comment provided by engineer. */
 "Network connection" = "Интернет-соединение";
@@ -3533,7 +3551,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "Настройки сети";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "Состояние сети";
 
 /* delete after time */
@@ -3961,9 +3979,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Password to show" = "Пароль чтобы раскрыть";
 
-/* past/unknown group member */
-"Past member %@" = "Бывший член %@";
-
 /* No comment provided by engineer. */
 "Paste desktop address" = "Вставить адрес компьютера";
 
@@ -4074,9 +4089,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "Port" = "Порт";
-
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "Возможно, хэш сертификата в адресе сервера неверный";
 
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "Сохранить последний черновик, вместе с вложениями.";
@@ -4266,9 +4278,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "получено подтверждение…";
-
-/* notification */
-"Received file event" = "Загрузка файла";
 
 /* message info title */
 "Received message" = "Полученное сообщение";
@@ -4540,7 +4549,7 @@ swipe action */
 "Review members" = "Одобрять членов";
 
 /* admission stage description */
-"Review members before admitting (\"knocking\")." = "Одобрять членов для вступления в группу.";
+"Review members before admitting (\"knocking\")." = "Вручную одобрять членов для вступления в группу.";
 
 /* No comment provided by engineer. */
 "reviewed by admins" = "одобрен админами";
@@ -4831,9 +4840,6 @@ chat item action */
 /* No comment provided by engineer. */
 "Sent directly" = "Отправлено напрямую";
 
-/* notification */
-"Sent file event" = "Отправка файла";
-
 /* message info title */
 "Sent message" = "Отправленное сообщение";
 
@@ -4880,10 +4886,10 @@ chat item action */
 "server queue info: %@\n\nlast received msg: %@" = "информация сервера об очереди: %1$@\n\nпоследнее полученное сообщение: %2$@";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "Сервер требует авторизации для создания очередей, проверьте пароль";
+"Server requires authorization to create queues, check password." = "Сервер требует авторизации для создания очередей, проверьте пароль.";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "Сервер требует авторизации для загрузки, проверьте пароль";
+"Server requires authorization to upload, check password." = "Сервер требует авторизации для загрузки, проверьте пароль.";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "Ошибка теста сервера!";
@@ -5114,6 +5120,9 @@ chat item action */
 /* No comment provided by engineer. */
 "SimpleX protocols reviewed by Trail of Bits." = "Аудит SimpleX протоколов от Trail of Bits.";
 
+/* simplex link type */
+"SimpleX relay link" = "Ссылка SimpleX relay";
+
 /* No comment provided by engineer. */
 "Simplified incognito mode" = "Упрощенный режим Инкогнито";
 
@@ -5269,7 +5278,7 @@ report reason */
 "Tap Connect to send request" = "Нажмите Соединиться, чтобы отправить запрос";
 
 /* No comment provided by engineer. */
-"Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот.";
+"Tap Connect to use bot" = "Нажмите Соединиться, чтобы использовать бот";
 
 /* No comment provided by engineer. */
 "Tap Create SimpleX address in the menu to create it later." = "Нажмите Создать адрес SimpleX в меню, чтобы создать его позже.";
@@ -5573,12 +5582,6 @@ report reason */
 
 /* No comment provided by engineer. */
 "Transport sessions" = "Транспортные сессии";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта (ошибка: %@).";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "Устанавливается соединение с сервером, через который Вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
 "Turkish interface" = "Турецкий интерфейс";
@@ -6071,9 +6074,6 @@ report reason */
 
 /* new chat sheet title */
 "You are already joining the group!\nRepeat join request?" = "Вы уже вступаете в группу!\nПовторить запрос на вступление?";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "Установлено соединение с сервером, через который Вы получаете сообщения от этого контакта.";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "Вы приглашены в группу";

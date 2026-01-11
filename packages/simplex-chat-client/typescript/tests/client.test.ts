@@ -8,8 +8,7 @@ import {ChatEvent, CEvt, T} from "@simplex-chat/types"
 describe.skip("ChatClient (expects SimpleX Chat server with a user, without contacts, on localhost:5225)", () => {
   test("connect, send message to themselves, delete contact", async () => {
     const c = await ChatClient.create("ws://localhost:5225")
-    assert.strictEqual((await c.msgQ.dequeue()).type, "contactSubSummary")
-    assert.strictEqual((await c.msgQ.dequeue()).type, "userContactSubSummary")
+    assert.strictEqual((await c.msgQ.dequeue()).type, "connSubSummary")
     assert.strictEqual((await c.msgQ.dequeue()).type, "terminalEvent")
     assert.strictEqual((await c.msgQ.dequeue()).type, "terminalEvent")
     const user = await c.apiGetActiveUser()

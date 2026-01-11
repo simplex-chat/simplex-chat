@@ -18,6 +18,7 @@ struct GroupMemberInfoView: View {
     @ObservedObject var groupMember: GMember
     @Binding var scrollToItemId: ChatItem.ID?
     var navigation: Bool = false
+    var openedFromSupportChat: Bool = false
     @State private var connectionStats: ConnectionStats? = nil
     @State private var connectionCode: String? = nil
     @State private var connectionLoaded: Bool = false
@@ -35,7 +36,6 @@ struct GroupMemberInfoView: View {
         case unblockMemberAlert(mem: GroupMember)
         case blockForAllAlert(mem: GroupMember)
         case unblockForAllAlert(mem: GroupMember)
-        case removeMemberAlert(mem: GroupMember)
         case changeMemberRoleAlert(mem: GroupMember, role: GroupMemberRole)
         case switchAddressAlert
         case abortSwitchAddressAlert
@@ -50,7 +50,6 @@ struct GroupMemberInfoView: View {
             case let .unblockMemberAlert(mem): return "unblockMemberAlert \(mem.groupMemberId)"
             case let .blockForAllAlert(mem): return "blockForAllAlert \(mem.groupMemberId)"
             case let .unblockForAllAlert(mem): return "unblockForAllAlert \(mem.groupMemberId)"
-            case let .removeMemberAlert(mem): return "removeMemberAlert \(mem.groupMemberId)"
             case let .changeMemberRoleAlert(mem, role): return "changeMemberRoleAlert \(mem.groupMemberId) \(role.rawValue)"
             case .switchAddressAlert: return "switchAddressAlert"
             case .abortSwitchAddressAlert: return "abortSwitchAddressAlert"
@@ -101,7 +100,8 @@ struct GroupMemberInfoView: View {
 
                     if member.memberActive {
                         Section {
-                            if groupInfo.membership.memberRole >= .moderator
+                            if !openedFromSupportChat
+                                && groupInfo.membership.memberRole >= .moderator
                                 && (member.memberRole < .moderator || member.supportChat != nil) {
                                 MemberInfoSupportChatNavLink(groupInfo: groupInfo, member: groupMember, scrollToItemId: $scrollToItemId)
                             }
@@ -158,7 +158,15 @@ struct GroupMemberInfoView: View {
 
                     if let connStats = connectionStats {
                         Section(header: Text("Servers").foregroundColor(theme.colors.secondary)) {
-                            // TODO network connection status
+                            if let subStatus = connStats.subStatus {
+                                SubStatusRow(status: subStatus)
+                                    .onTapGesture {
+                                        showAlert(
+                                            NSLocalizedString("Network status", comment: "alert title"),
+                                            message: subStatus.statusExplanation
+                                        )
+                                    }
+                            }
                             Button("Change receiving address") {
                                 alert = .switchAddressAlert
                             }
@@ -263,7 +271,6 @@ struct GroupMemberInfoView: View {
                 case let .unblockMemberAlert(mem): return unblockMemberAlert(groupInfo, mem)
                 case let .blockForAllAlert(mem): return blockForAllAlert(groupInfo, mem)
                 case let .unblockForAllAlert(mem): return unblockForAllAlert(groupInfo, mem)
-                case let .removeMemberAlert(mem): return removeMemberAlert(mem)
                 case let .changeMemberRoleAlert(mem, _): return changeMemberRoleAlert(mem)
                 case .switchAddressAlert: return switchAddressAlert(switchMemberAddress)
                 case .abortSwitchAddressAlert: return abortSwitchAddressAlert(abortSwitchMemberAddress)
@@ -394,7 +401,6 @@ struct GroupMemberInfoView: View {
                             ItemsModel.shared.loadOpenChat(memberContact.id) {
                                 dismissAllSheets(animated: true)
                             }
-                            NetworkModel.shared.setContactNetworkStatus(memberContact, .connected)
                         }
                     } catch let error {
                         logger.error("createMemberContactButton apiCreateMemberContact error: \(responseError(error))")
@@ -570,7 +576,11 @@ struct GroupMemberInfoView: View {
                     }
                 }
                 if canRemove {
-                    removeMemberButton(mem)
+                    if mem.memberStatus == .memRemoved || mem.memberStatus == .memLeft {
+                        deleteMemberMessagesButton(mem)
+                    } else {
+                        removeMemberButton(mem)
+                    }
                 }
             }
         }
@@ -625,41 +635,32 @@ struct GroupMemberInfoView: View {
 
     private func removeMemberButton(_ mem: GroupMember) -> some View {
         Button(role: .destructive) {
-            alert = .removeMemberAlert(mem: mem)
+            showRemoveMemberAlert(groupInfo, mem, dismiss: dismiss)
         } label: {
             Label("Remove member", systemImage: "trash")
                 .foregroundColor(.red)
         }
     }
 
-    private func removeMemberAlert(_ mem: GroupMember) -> Alert {
-        let label: LocalizedStringKey = (
-            groupInfo.businessChat == nil
-            ? "Member will be removed from group - this cannot be undone!"
-            : "Member will be removed from chat - this cannot be undone!"
-        )
-        return Alert(
-            title: Text("Remove member?"),
-            message: Text(label),
-            primaryButton: .destructive(Text("Remove")) {
-                Task {
-                    do {
-                        let (updatedGroupInfo, updatedMembers) = try await apiRemoveMembers(groupInfo.groupId, [mem.groupMemberId])
-                        await MainActor.run {
-                            chatModel.updateGroup(updatedGroupInfo)
-                            updatedMembers.forEach { updatedMember in
-                                _ = chatModel.upsertGroupMember(updatedGroupInfo, updatedMember)
-                            }
-                            dismiss()
-                        }
-                    } catch let error {
-                        logger.error("apiRemoveMembers error: \(responseError(error))")
-                        let a = getErrorAlert(error, "Error removing member")
-                        alert = .error(title: a.title, error: a.message)
-                    }
-                }
-            },
-            secondaryButton: .cancel()
+    private func deleteMemberMessagesButton(_ mem: GroupMember) -> some View {
+        Button(role: .destructive) {
+            showDeleteMemberMessagesAlert(mem)
+        } label: {
+            Label("Delete member messages", systemImage: "trash")
+                .foregroundColor(.red)
+        }
+    }
+
+    func showDeleteMemberMessagesAlert(_ mem: GroupMember) {
+        showAlert(
+            NSLocalizedString("Delete member messages?", comment: "alert title"),
+            message: NSLocalizedString("Member messages will be deleted - this cannot be undone!", comment: "alert message"),
+            actions: {[
+                UIAlertAction(title: NSLocalizedString("Delete messages", comment: "alert action"), style: .destructive) { _ in
+                    removeMember(groupInfo, mem, withMessages: true, dismiss: dismiss)
+                },
+                cancelAlertAction
+            ]}
         )
     }
 

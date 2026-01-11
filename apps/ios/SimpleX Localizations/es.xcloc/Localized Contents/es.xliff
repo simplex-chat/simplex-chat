@@ -1802,7 +1802,7 @@ set passcode view</note>
       <trans-unit id="Conditions of use" xml:space="preserve">
         <source>Conditions of use</source>
         <target>Condiciones de uso</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert button</note>
       </trans-unit>
       <trans-unit id="Conditions will be accepted for the operator(s): **%@**." xml:space="preserve">
         <source>Conditions will be accepted for the operator(s): **%@**.</source>
@@ -2486,7 +2486,7 @@ swipe action</note>
       </trans-unit>
       <trans-unit id="Delete chat with member?" xml:space="preserve">
         <source>Delete chat with member?</source>
-        <target>¿Eliminar chat con el miembro?</target>
+        <target>¿Eliminar chat con miembro?</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Delete chat?" xml:space="preserve">
@@ -3062,7 +3062,7 @@ chat item action</note>
       </trans-unit>
       <trans-unit id="Enable instant notifications?" xml:space="preserve">
         <source>Enable instant notifications?</source>
-        <target>¿Activar notificación instantánea?</target>
+        <target>¿Activar notificaciones instantáneas?</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Enable lock" xml:space="preserve">
@@ -3310,6 +3310,11 @@ chat item action</note>
         <target>Error al conectar con el servidor de reenvío %@. Por favor, inténtalo más tarde.</target>
         <note>alert message</note>
       </trans-unit>
+      <trans-unit id="Error connecting to the server used to receive messages from this connection: %@" xml:space="preserve">
+        <source>Error connecting to the server used to receive messages from this connection: %@</source>
+        <target>Error al conectar con el servidor usado para recibir mensajes de esta conexión: %@</target>
+        <note>subscription status explanation</note>
+      </trans-unit>
       <trans-unit id="Error creating address" xml:space="preserve">
         <source>Error creating address</source>
         <target>Error al crear dirección</target>
@@ -3355,14 +3360,14 @@ chat item action</note>
         <target>Error al descifrar el archivo</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Error deleting chat" xml:space="preserve">
+        <source>Error deleting chat</source>
+        <target>Error al eliminar el chat</target>
+        <note>alert title</note>
+      </trans-unit>
       <trans-unit id="Error deleting chat database" xml:space="preserve">
         <source>Error deleting chat database</source>
         <target>Error al eliminar base de datos</target>
-        <note>alert title</note>
-      </trans-unit>
-      <trans-unit id="Error deleting chat with member" xml:space="preserve">
-        <source>Error deleting chat with member</source>
-        <target>Error al eliminar el chat con el miembro</target>
         <note>alert title</note>
       </trans-unit>
       <trans-unit id="Error deleting chat!" xml:space="preserve">
@@ -3642,6 +3647,11 @@ chat item action</note>
 file error text
 snd error text</note>
       </trans-unit>
+      <trans-unit id="Error: %@." xml:space="preserve">
+        <source>Error: %@.</source>
+        <target>Error: %@.</target>
+        <note>server test error</note>
+      </trans-unit>
       <trans-unit id="Error: URL is invalid" xml:space="preserve">
         <source>Error: URL is invalid</source>
         <target>Error: la URL no es válida</target>
@@ -3864,6 +3874,26 @@ snd error text</note>
       <trans-unit id="Find chats faster" xml:space="preserve">
         <source>Find chats faster</source>
         <target>Encuentra chats mas rápido</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in destination server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in destination server address does not match certificate: %@.</source>
+        <target>La huella en la dirección del servidor de destino no coincide con el certificado: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in forwarding server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in forwarding server address does not match certificate: %@.</source>
+        <target>La huella en la dirección del servidor de reenvío no coincide con el certificado: %@.</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in server address does not match certificate." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate.</source>
+        <target>La huella en la dirección del servidor no coincide con el certificado.</target>
+        <note>server test error</note>
+      </trans-unit>
+      <trans-unit id="Fingerprint in server address does not match certificate: %@." xml:space="preserve">
+        <source>Fingerprint in server address does not match certificate: %@.</source>
+        <target>La huella en la dirección del servidor no coincide con el certificado: %@.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Fix" xml:space="preserve">
@@ -4892,6 +4922,11 @@ This is your link for group %@!</source>
         <target>Miembro</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
+      <trans-unit id="Member %@" xml:space="preserve">
+        <source>Member %@</source>
+        <target>Miembro %@</target>
+        <note>past/unknown group member</note>
+      </trans-unit>
       <trans-unit id="Member admission" xml:space="preserve">
         <source>Member admission</source>
         <target>Admisión de miembros</target>
@@ -5300,7 +5335,7 @@ This is your link for group %@!</source>
       <trans-unit id="Network status" xml:space="preserve">
         <source>Network status</source>
         <target>Estado de la red</target>
-        <note>No comment provided by engineer.</note>
+        <note>alert title</note>
       </trans-unit>
       <trans-unit id="New" xml:space="preserve">
         <source>New</source>
@@ -5949,11 +5984,6 @@ Requiere activación de la VPN.</target>
         <target>Contraseña para hacerlo visible</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Past member %@" xml:space="preserve">
-        <source>Past member %@</source>
-        <target>Miembro pasado %@</target>
-        <note>past/unknown group member</note>
-      </trans-unit>
       <trans-unit id="Paste desktop address" xml:space="preserve">
         <source>Paste desktop address</source>
         <target>Pegar dirección de ordenador</target>
@@ -6112,11 +6142,6 @@ Error: %@</target>
         <source>Port</source>
         <target>Puerto</target>
         <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Possibly, certificate fingerprint in server address is incorrect" xml:space="preserve">
-        <source>Possibly, certificate fingerprint in server address is incorrect</source>
-        <target>Posiblemente la huella del certificado en la dirección del servidor es incorrecta</target>
-        <note>server test error</note>
       </trans-unit>
       <trans-unit id="Preserve the last message draft, with attachments." xml:space="preserve">
         <source>Preserve the last message draft, with attachments.</source>
@@ -6419,11 +6444,6 @@ Actívalo en ajustes de *Servidores y Redes*.</target>
         <source>Received at: %@</source>
         <target>Recibido: %@</target>
         <note>copied message info</note>
-      </trans-unit>
-      <trans-unit id="Received file event" xml:space="preserve">
-        <source>Received file event</source>
-        <target>Evento de archivo recibido</target>
-        <note>notification</note>
       </trans-unit>
       <trans-unit id="Received message" xml:space="preserve">
         <source>Received message</source>
@@ -7258,11 +7278,6 @@ chat item action</note>
         <target>Directamente</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Sent file event" xml:space="preserve">
-        <source>Sent file event</source>
-        <target>Evento de archivo enviado</target>
-        <note>notification</note>
-      </trans-unit>
       <trans-unit id="Sent message" xml:space="preserve">
         <source>Sent message</source>
         <target>Mensaje saliente</target>
@@ -7333,14 +7348,14 @@ chat item action</note>
         <target>El protocolo del servidor ha cambiado.</target>
         <note>alert title</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to create queues, check password" xml:space="preserve">
-        <source>Server requires authorization to create queues, check password</source>
-        <target>El servidor requiere autorización para crear colas, comprueba la contraseña</target>
+      <trans-unit id="Server requires authorization to create queues, check password." xml:space="preserve">
+        <source>Server requires authorization to create queues, check password.</source>
+        <target>El servidor requiere autorización para crear colas, comprueba la contraseña.</target>
         <note>server test error</note>
       </trans-unit>
-      <trans-unit id="Server requires authorization to upload, check password" xml:space="preserve">
-        <source>Server requires authorization to upload, check password</source>
-        <target>El servidor requiere autorización para subir, comprueba la contraseña</target>
+      <trans-unit id="Server requires authorization to upload, check password." xml:space="preserve">
+        <source>Server requires authorization to upload, check password.</source>
+        <target>El servidor requiere autorización para subir, comprueba la contraseña.</target>
         <note>server test error</note>
       </trans-unit>
       <trans-unit id="Server test failed!" xml:space="preserve">
@@ -7969,7 +7984,7 @@ report reason</note>
       </trans-unit>
       <trans-unit id="Take picture" xml:space="preserve">
         <source>Take picture</source>
-        <target>Tomar foto</target>
+        <target>Hacer foto</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Tap Connect to chat" xml:space="preserve">
@@ -8461,15 +8476,10 @@ Se te pedirá que completes la autenticación antes de activar esta función.</t
         <target>Sesiones de transporte</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this contact (error: %@)." xml:space="preserve">
-        <source>Trying to connect to the server used to receive messages from this contact (error: %@).</source>
-        <target>Intentando conectar con el servidor usado para recibir mensajes de este contacto (error: %@).</target>
-        <note>No comment provided by engineer.</note>
-      </trans-unit>
-      <trans-unit id="Trying to connect to the server used to receive messages from this contact." xml:space="preserve">
-        <source>Trying to connect to the server used to receive messages from this contact.</source>
-        <target>Intentando conectar con el servidor usado para recibir mensajes de este contacto.</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="Trying to connect to the server used to receive messages from this connection." xml:space="preserve">
+        <source>Trying to connect to the server used to receive messages from this connection.</source>
+        <target>Intentando conectar con el servidor usado para recibir mensajes de esta conexión.</target>
+        <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="Turkish interface" xml:space="preserve">
         <source>Turkish interface</source>
@@ -9180,15 +9190,20 @@ Repeat join request?</source>
 ¿Repetir solicitud de admisión?</target>
         <note>new chat sheet title</note>
       </trans-unit>
-      <trans-unit id="You are connected to the server used to receive messages from this contact." xml:space="preserve">
-        <source>You are connected to the server used to receive messages from this contact.</source>
-        <target>Estás conectado al servidor usado para recibir mensajes de este contacto.</target>
-        <note>No comment provided by engineer.</note>
+      <trans-unit id="You are connected to the server used to receive messages from this connection." xml:space="preserve">
+        <source>You are connected to the server used to receive messages from this connection.</source>
+        <target>Estás conectado al servidor usado para recibir mensajes de esta conexión.</target>
+        <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are invited to group" xml:space="preserve">
         <source>You are invited to group</source>
         <target>Has sido invitado a un grupo</target>
         <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="You are not connected to the server used to receive messages from this connection (no subscription)." xml:space="preserve">
+        <source>You are not connected to the server used to receive messages from this connection (no subscription).</source>
+        <target>No estás conectado al servidor usado para recibir mensajes de esta conexión (no suscrito).</target>
+        <note>subscription status explanation</note>
       </trans-unit>
       <trans-unit id="You are not connected to these servers. Private routing is used to deliver messages to them." xml:space="preserve">
         <source>You are not connected to these servers. Private routing is used to deliver messages to them.</source>
@@ -9559,7 +9574,7 @@ Repeat connection request?</source>
       </trans-unit>
       <trans-unit id="Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile." xml:space="preserve">
         <source>Your profile is stored on your device and shared only with your contacts. SimpleX servers cannot see your profile.</source>
-        <target>Tu perfil se almacena en tu dispositivo y sólo se comparte con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</target>
+        <target>Tu perfil se almacena en tu dispositivo y se comparte sólo con tus contactos. Los servidores SimpleX no pueden ver tu perfil.</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Your profile was changed. If you save it, the updated profile will be sent to all your contacts." xml:space="preserve">
@@ -10247,6 +10262,11 @@ pref value</note>
       <trans-unit id="no e2e encryption" xml:space="preserve">
         <source>no e2e encryption</source>
         <target>sin cifrar</target>
+        <note>No comment provided by engineer.</note>
+      </trans-unit>
+      <trans-unit id="no subscription" xml:space="preserve">
+        <source>no subscription</source>
+        <target>sin suscripciones</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="no text" xml:space="preserve">

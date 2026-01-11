@@ -34,11 +34,10 @@ import qualified Data.ByteString.Char8 as B
 import Data.ByteString.Internal (c2w, w2c)
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Either (fromRight)
-import Data.List.NonEmpty (NonEmpty (..))
 import qualified Data.List.NonEmpty as L
 import Data.Map.Strict (Map)
 import qualified Data.Map.Strict as M
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Maybe (fromMaybe)
 import Data.String
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -53,7 +52,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (VersionSMPA, pqdrSMPAgentVersion)
-import Simplex.Messaging.Agent.Store.DB (fromTextField_)
+import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder, fromTextField_)
 import Simplex.Messaging.Compression (Compressed, compress1, decompress1)
 import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
@@ -154,8 +153,6 @@ agentToChatVersion v
 data ConnectionEntity
   = RcvDirectMsgConnection {entityConnection :: Connection, contact :: Maybe Contact}
   | RcvGroupMsgConnection {entityConnection :: Connection, groupInfo :: GroupInfo, groupMember :: GroupMember}
-  | SndFileConnection {entityConnection :: Connection, sndFileTransfer :: SndFileTransfer}
-  | RcvFileConnection {entityConnection :: Connection, rcvFileTransfer :: RcvFileTransfer}
   | UserContactConnection {entityConnection :: Connection, userContact :: UserContact}
   deriving (Eq, Show)
 
@@ -165,8 +162,6 @@ connEntityInfo :: ConnectionEntity -> String
 connEntityInfo = \case
   RcvDirectMsgConnection c ct_ -> ctInfo ct_ <> ", status: " <> show (connStatus c)
   RcvGroupMsgConnection c g m -> mInfo g m <> ", status: " <> show (connStatus c)
-  SndFileConnection c _ft -> "snd file, status: " <> show (connStatus c)
-  RcvFileConnection c _ft -> "rcv file, status: " <> show (connStatus c)
   UserContactConnection c _uc -> "user address, status: " <> show (connStatus c)
   where
     ctInfo = maybe "connection" $ \Contact {contactId} -> "contact " <> show contactId
@@ -176,8 +171,6 @@ updateEntityConnStatus :: ConnectionEntity -> ConnStatus -> ConnectionEntity
 updateEntityConnStatus connEntity connStatus = case connEntity of
   RcvDirectMsgConnection c ct_ -> RcvDirectMsgConnection (st c) ((\ct -> (ct :: Contact) {activeConn = Just $ st c}) <$> ct_)
   RcvGroupMsgConnection c gInfo m@GroupMember {activeConn = c'} -> RcvGroupMsgConnection (st c) gInfo m {activeConn = st <$> c'}
-  SndFileConnection c ft -> SndFileConnection (st c) ft
-  RcvFileConnection c ft -> RcvFileConnection (st c) ft
   UserContactConnection c uc -> UserContactConnection (st c) uc
   where
     st c = c {connStatus}
@@ -313,6 +306,8 @@ data ChatMessage e = ChatMessage
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
+type MessageFromChannel = Bool
+
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
@@ -391,32 +386,6 @@ isForwardedGroupMsg ev = case ev of
   XGrpInfo _ -> True
   XGrpPrefs _ -> True
   _ -> False
-
--- applied after building list of messages to forward and building list of group members to forward to, see Chat;
---
--- this filters out members if any of forwarded events in batch is an XGrpMemRestrict event referring to them,
--- but practically XGrpMemRestrict is not batched with other events so it wouldn't prevent forwarding of other events
--- to these members;
---
--- same for reports (MCReport) - they are not batched with other events, so we can safely filter out
--- members with role less than moderator when forwarding
-msgsForwardedToMember :: NonEmpty (ChatMessage 'Json) -> GroupMember -> Bool
-msgsForwardedToMember fwdMsgs GroupMember {memberId, memberRole} =
-  (memberId `notElem` restrictMemberIds) && (not hasReport || memberRole >= GRModerator)
-  where
-    restrictMemberIds = mapMaybe restrictMemberId $ L.toList fwdMsgs
-    restrictMemberId :: ChatMessage 'Json -> Maybe MemberId
-    restrictMemberId ChatMessage {chatMsgEvent} =
-      case chatMsgEvent of
-        XGrpMemRestrict mId _ -> Just mId
-        _ -> Nothing
-    hasReport = any isReportEvent fwdMsgs
-    isReportEvent ChatMessage {chatMsgEvent} =
-      case chatMsgEvent of
-        XMsgNew mc -> case mcExtMsgContent mc of
-          ExtMsgContent {content = MCReport {}} -> True
-          _ -> False
-        _ -> False
 
 data MsgReaction = MREmoji {emoji :: MREmojiChar} | MRUnknown {tag :: Text, json :: J.Object}
   deriving (Eq, Show)
@@ -548,6 +517,8 @@ instance FromJSON MsgContentTag where
 instance ToJSON MsgContentTag where
   toJSON = strToJSON
   toEncoding = strToJEncoding
+
+instance FromField MsgContentTag where fromField = fromTextField_ $ eitherToMaybe . strDecode . encodeUtf8
 
 instance ToField MsgContentTag where toField = toField . safeDecodeUtf8 . strEncode
 
@@ -1221,6 +1192,9 @@ instance ToJSON (ChatMessage 'Json) where
 
 instance FromJSON (ChatMessage 'Json) where
   parseJSON v = appJsonToCM <$?> parseJSON v
+
+instance FromField (ChatMessage 'Json) where
+  fromField = blobFieldDecoder J.eitherDecodeStrict'
 
 data ContactShortLinkData = ContactShortLinkData
   { profile :: Profile,

@@ -28,7 +28,7 @@ rm -rf $BUILD_DIR
 
 if [[ "$DATABASE_BACKEND" == "postgres" ]]; then
     echo "Building with postgres backend..."
-    cabal build -f client_postgres lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-install_name,@rpath/$LIB -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
+    cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-install_name,@rpath/$LIB -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library +client_postgres' --constraint 'simplex-chat +client_library +client_postgres'
 else
     echo "Building with sqlite backend..."
     cabal build lib:simplex-chat lib:simplex-chat --ghc-options="-optl-Wl,-rpath,@loader_path -optl-Wl,-install_name,@rpath/$LIB -optl-Wl,-L$GHC_LIBS_DIR/$ARCH-osx-ghc-$GHC_VERSION -optl-lHSrts_thr-ghc$GHC_VERSION -optl-lffi" --constraint 'simplexmq +client_library' --constraint 'simplex-chat +client_library'
@@ -42,12 +42,12 @@ mkdir deps 2> /dev/null || true
 #cp $GHC_LIBS_DIR/libffi.dylib ./deps
 (
   BUILD=$PWD
-  cp /tmp/libffi-3.4.4/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
+  cp /tmp/libffi-3.5.2/*-apple-darwin*/.libs/libffi.dylib $BUILD/deps || \
     ( \
     cd /tmp && \
-    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/libffi-3.4.4/libffi-3.4.4.tar.gz?inline=false" -o libffi.tar.gz && \
+    curl --tlsv1.2 "https://gitlab.haskell.org/ghc/libffi-tarballs/-/raw/3914c27381526ce586ea0ac0359a332fd82987af/libffi-3.5.2.tar.gz?inline=false" -o libffi.tar.gz && \
     tar -xzvf libffi.tar.gz && \
-    cd "libffi-3.4.4" && \
+    cd "libffi-3.5.2" && \
     ./configure && \
     make && \
     cp *-apple-darwin*/.libs/libffi.dylib $BUILD/deps \

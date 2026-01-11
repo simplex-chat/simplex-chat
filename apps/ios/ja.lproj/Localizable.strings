@@ -372,6 +372,9 @@ swipe action */
 "Accepted conditions" = "承諾された条件";
 
 /* No comment provided by engineer. */
+"Acknowledged" = "了承済み";
+
+/* No comment provided by engineer. */
 "Add address to your profile, so that your contacts can share it with other people. Profile update will be sent to your contacts." = "プロフィールにアドレスを追加し、連絡先があなたのアドレスを他の人と共有できるようにします。プロフィールの更新は連絡先に送信されます。";
 
 /* No comment provided by engineer. */
@@ -1659,6 +1662,9 @@ snd error text */
 /* No comment provided by engineer. */
 "Find chats faster" = "チャットを素早く検索";
 
+/* server test error */
+"Fingerprint in server address does not match certificate." = "サーバアドレスの証明証IDが正しくないかもしれません";
+
 /* No comment provided by engineer. */
 "Fix" = "修正";
 
@@ -2217,7 +2223,7 @@ snd error text */
 /* No comment provided by engineer. */
 "Network settings" = "ネットワーク設定";
 
-/* No comment provided by engineer. */
+/* alert title */
 "Network status" = "ネットワーク状況";
 
 /* delete after time */
@@ -2483,9 +2489,6 @@ new chat action */
 /* No comment provided by engineer. */
 "Polish interface" = "ポーランド語UI";
 
-/* server test error */
-"Possibly, certificate fingerprint in server address is incorrect" = "サーバアドレスの証明証IDが正しくないかもしれません";
-
 /* No comment provided by engineer. */
 "Preserve the last message draft, with attachments." = "添付を含めて、下書きを保存する。";
 
@@ -2590,9 +2593,6 @@ new chat action */
 
 /* No comment provided by engineer. */
 "received confirmation…" = "確認を受け取りました…";
-
-/* notification */
-"Received file event" = "ファイル受信イベント";
 
 /* message info title */
 "Received message" = "受信したメッセージ";
@@ -2864,9 +2864,6 @@ chat item action */
 /* copied message info */
 "Sent at: %@" = "送信日時: %@";
 
-/* notification */
-"Sent file event" = "送信済みファイルイベント";
-
 /* message info title */
 "Sent message" = "送信";
 
@@ -2874,10 +2871,10 @@ chat item action */
 "Sent messages will be deleted after set time." = "一定時間が経ったら送信されたメッセージが削除されます。";
 
 /* server test error */
-"Server requires authorization to create queues, check password" = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to create queues, check password." = "キューを作成するにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* server test error */
-"Server requires authorization to upload, check password" = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
+"Server requires authorization to upload, check password." = "アップロードにはサーバーの認証が必要です。パスワードを確認してください";
 
 /* No comment provided by engineer. */
 "Server test failed!" = "サーバテスト失敗！";
@@ -3202,12 +3199,6 @@ chat item action */
 "Transport isolation" = "トランスポート隔離";
 
 /* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact (error: %@)." = "この連絡先からのメッセージの受信に使用されるサーバーに接続しようとしています (エラー: %@)。";
-
-/* No comment provided by engineer. */
-"Trying to connect to the server used to receive messages from this contact." = "このコンタクトから受信するメッセージのサーバに接続しようとしてます。";
-
-/* No comment provided by engineer. */
 "Turn off" = "オフにする";
 
 /* No comment provided by engineer. */
@@ -3434,9 +3425,6 @@ chat item action */
 
 /* No comment provided by engineer. */
 "You are already connected to %@." = "すでに %@ に接続されています。";
-
-/* No comment provided by engineer. */
-"You are connected to the server used to receive messages from this contact." = "この連絡先から受信するメッセージのサーバに既に接続してます。";
 
 /* No comment provided by engineer. */
 "You are invited to group" = "グループ招待が届きました";

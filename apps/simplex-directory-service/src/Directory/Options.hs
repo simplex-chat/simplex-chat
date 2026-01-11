@@ -7,16 +7,20 @@
 
 module Directory.Options
   ( DirectoryOpts (..),
+    MigrateLog (..),
     getDirectoryOpts,
     mkChatOpts,
   )
 where
 
+import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.Text as T
+import Data.Text.Encoding (encodeUtf8)
 import Options.Applicative
 import Simplex.Chat.Bot.KnownContacts
 import Simplex.Chat.Controller (updateStr, versionNumber, versionString)
 import Simplex.Chat.Options (ChatCmdLog (..), ChatOpts (..), CoreChatOpts, CreateBotOpts (..), coreChatOptsP)
+import Simplex.Messaging.Parsers (parseAll)
 
 data DirectoryOpts = DirectoryOpts
   { coreOptions :: CoreChatOpts,
@@ -30,11 +34,15 @@ data DirectoryOpts = DirectoryOpts
     profileNameLimit :: Int,
     captchaGenerator :: Maybe FilePath,
     directoryLog :: Maybe FilePath,
+    migrateDirectoryLog :: Maybe MigrateLog,
     serviceName :: T.Text,
     runCLI :: Bool,
     searchResults :: Int,
+    webFolder :: Maybe FilePath,
     testing :: Bool
   }
+
+data MigrateLog = MLCheck | MLImport | MLExport | MLListing
 
 directoryOpts :: FilePath -> FilePath -> Parser DirectoryOpts
 directoryOpts appDir defaultDbName = do
@@ -106,11 +114,19 @@ directoryOpts appDir defaultDbName = do
             <> help "Executable to generate captcha files, must accept text as parameter and save file to stdout as base64 up to 12500 bytes"
         )
   directoryLog <-
-    Just
-      <$> strOption
+    optional $
+      strOption
         ( long "directory-file"
             <> metavar "DIRECTORY_FILE"
             <> help "Append only log for directory state"
+        )
+  migrateDirectoryLog <-
+    optional $
+      option
+        parseMigrateLog
+        ( long "migrate-directory-file"
+            <> metavar "MIGRATE_COMMAND"
+            <> help "Command to import/export directory log file"
         )
   serviceName <-
     strOption
@@ -124,6 +140,13 @@ directoryOpts appDir defaultDbName = do
       ( long "run-cli"
           <> help "Run directory service as CLI"
       )
+  webFolder <-
+    optional $
+      strOption
+        ( long "web-folder"
+            <> metavar "WEB_FOLDER"
+            <> help "Folder to store static web assets"
+        )
   pure
     DirectoryOpts
       { coreOptions,
@@ -137,9 +160,11 @@ directoryOpts appDir defaultDbName = do
         profileNameLimit,
         captchaGenerator,
         directoryLog,
+        migrateDirectoryLog,
         serviceName = T.pack serviceName,
         runCLI,
         searchResults = 10,
+        webFolder,
         testing = False
       }
 
@@ -172,3 +197,14 @@ mkChatOpts DirectoryOpts {coreOptions, serviceName} =
       createBot = Just CreateBotOpts {botDisplayName = serviceName, allowFiles = False},
       maintenance = False
     }
+
+parseMigrateLog :: ReadM MigrateLog
+parseMigrateLog = eitherReader $ parseAll mlP . encodeUtf8 . T.pack
+  where
+    mlP =
+      A.takeTill (== ' ') >>= \case
+        "check" -> pure MLCheck
+        "import" -> pure MLImport
+        "export" -> pure MLExport
+        "listing" -> pure MLListing
+        _ -> fail "bad MigrateLog"

@@ -1,0 +1,276 @@
+---
+layout: layouts/main.html
+title: "SimpleX Directory"
+description: "Find communities on SimpleX network and create your own"
+templateEngineOverride: njk
+active_directory: true
+---
+
+{% set lang = page.url | getlang %}
+{% block js_scripts %}
+<script src="/js/flag-anchor.js"></script>
+{% endblock %}
+
+<style>
+  #directory .entry {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding: 16px;
+    word-break: break-word;
+  }
+
+  #directory .entry a {
+    order: -1;
+    object-fit: cover;
+    margin-right: 16px;
+    margin-bottom: 16px;
+  }
+
+  #directory .entry a img {
+    min-width: 104px;
+    min-height: 104px;
+    width: 104px;
+    height: 104px;
+    border-radius: 24px;
+  }
+
+  #directory .entry h2 {
+    margin: 0 0 5px 0;
+  }
+
+  #directory .entry p {
+    margin: 0 0 5px 0;
+  }
+
+  #directory .entry .secret {
+    filter: blur(5px);
+    cursor: pointer;
+    transition: filter 0.1s ease;
+    user-select: none;
+  }
+
+  #directory .entry .secret.visible {
+    filter: none;
+    user-select: auto;
+  }
+
+  #directory .entry .read-more {
+    color: #0053D0;
+    text-decoration: underline;
+    cursor: pointer;
+  }
+
+  #directory .entry .read-less {
+    color: darkgray;
+    cursor: pointer;
+  }
+
+  .dark #directory .entry .read-more {
+    color: #70F0F9;
+  }
+
+  #directory .entry .red {
+    color: #DD0000;
+  }
+
+  #directory .entry .green {
+    color: #20BD3D;
+  }
+
+  #directory .entry .blue {
+    color: #0053d0;
+  }
+
+  #directory .entry .cyan {
+    color: #0AC4D1;
+  }
+
+  #directory .entry .yellow {
+    color: #DEBD00;
+  }
+
+  #directory .entry .magenta {
+    color: magenta;
+  }
+
+  .dark #directory .entry .green {
+    color: #4DDA67;
+  }
+
+  .dark #directory .entry .blue {
+    color: #00A2FF;
+  }
+
+  .dark #directory .entry .cyan {
+    color: #70F0F9;
+  }
+
+  .dark #directory .entry .yellow {
+    color: #FFD700;
+  }
+
+  .dark #directory .entry .magenta {
+    color: magenta;
+  }
+
+  .pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 4px;
+    margin-top: 20px;
+    padding: 10px 0;
+  }
+
+  .pagination button {
+    padding: 8px 12px;
+    border: none;
+    background-color: transparent;
+    color: #374151;
+    cursor: pointer;
+    border-radius: 50%;
+    font-size: 14px;
+    min-width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+  }
+
+  .dark .pagination button {
+    color: #70F0F9;
+  }
+
+  .pagination button:hover {
+    background-color: #f3f4f6;
+  }
+
+  .dark .pagination button:hover {
+    background-color: #0B2A50;
+  }
+
+  .pagination button.active {
+    font-weight: bold;
+    color: #0B2A59;
+  }
+
+  .dark .pagination button.active {
+    color: #70F0F9;
+  }
+
+  .pagination button.text-btn {
+    border-radius: 20px;
+    min-width: auto;
+    height: 40px;
+    padding: 8px 16px;
+  }
+
+  .pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 768px) {
+    .pagination {
+      gap: 2px;
+      padding: 8px 0;
+    }
+
+    .pagination button {
+      font-size: 12px;
+      min-width: 32px;
+      height: 32px;
+      padding: 4px 8px;
+    }
+
+    .pagination button.text-btn {
+      padding: 4px 8px;
+      height: 32px;
+      border-radius: 16px;
+      font-size: 12px;
+    }
+
+    @media (max-width: 480px) {
+      .pagination button:not(.text-btn):not(.active):not(.neighbor) {
+        display: none;
+      }
+
+      .pagination button.active,
+      .pagination button.neighbor {
+        display: flex;
+      }
+    }
+  }
+
+  #search {
+    width: 100%;
+    max-width: 540px;
+    padding: 8px 12px 8px 32px;
+    font-size: 15px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    border: none;
+    border-radius: 10px;
+    background-color: white;
+    color: #000000;
+    outline: solid 1px #f2f2ff;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iIzg4ODg4OCI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
+    background-position: 8px center;
+    background-repeat: no-repeat;
+    background-size: 18px;
+  }
+
+  #search::placeholder {
+    color: #8e8e93;
+  }
+
+  .dark #search {
+    background-color: #0B2A50;
+    color: #ffffff;
+    background-image: url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjQiIGhlaWdodD0iMjQiIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPGcgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZT0iI2JiYmJiYiI+CjxjaXJjbGUgY3g9IjEwLjUiIGN5PSIxMC41IiByPSI3LjUiIC8+CjxsaW5lIHgxPSIxNiIgeTE9IjE2IiB4Mj0iMjEiIHkyPSIyMSIgLz4KPC9nPgo8L3N2Zz4=');
+    outline: none;
+  }
+
+  .dark #search::placeholder {
+    color: #8e8e93;
+  }
+
+  .search-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+  }
+
+  #search {
+    flex-grow: 1;
+  }
+
+  #top-pagination {
+    margin-bottom: 16px;
+  }
+</style>
+
+<section class="py-10 px-5 mt-[66px] dark:text-white">
+  <div class="container">
+    <h1 class="text-[38px] text-center font-bold text-active-blue mb-8">SimpleX Directory</h1>
+    <p>Welcome to the selected users' communities that you can join via <a href="/downloads">SimpleX Chat
+        app</a>.</p>
+    <p>SimpleX Directory is also available as a <a href="https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok" target="_blank">SimpleX chat bot</a>.</p>
+    <p>Read about <a href="/docs/directory.html">how to add</a> your community</a>.</p>
+    <div class="search-container">
+      <input id="search" autocomplete="off">
+      <div id="top-pagination" class="pagination">
+        <button class="text-btn live">Active</button>
+        <button class="text-btn new">New</button>
+        <button class="text-btn top">All</button>
+      </div>
+    </div>
+    <div id="directory" style="height: 3000px;"></div>
+    <div id="bottom-pagination" class="pagination"></div>
+  </div>
+</section>
+
+<script src="/js/directory.js"></script>

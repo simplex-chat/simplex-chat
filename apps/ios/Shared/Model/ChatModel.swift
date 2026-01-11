@@ -283,29 +283,6 @@ class ChatTagsModel: ObservableObject {
     }
 }
 
-class NetworkModel: ObservableObject {
-    // map of connections network statuses, key is agent connection id
-    @Published var networkStatuses: Dictionary<String, NetworkStatus> = [:]
-
-    static let shared = NetworkModel()
-
-    private init() { }
-
-    func setContactNetworkStatus(_ contact: Contact, _ status: NetworkStatus) {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] = status
-        }
-    }
-
-    func contactNetworkStatus(_ contact: Contact) -> NetworkStatus {
-        if let conn = contact.activeConn {
-            networkStatuses[conn.agentConnId] ?? .unknown
-        } else {
-            .unknown
-        }
-    }
-}
-
 /// ChatItemWithMenu can depend on previous or next item for it's appearance
 /// This dummy model is used to force an update of all chat items,
 /// when they might have changed appearance.
@@ -374,6 +351,8 @@ final class ChatModel: ObservableObject {
     @Published var deletedChats: Set<String> = []
     // current chat
     @Published var chatId: String?
+    @Published var chatAgentConnId: String?
+    @Published var chatSubStatus: SubscriptionStatus?
     @Published var openAroundItemId: ChatItem.ID? = nil
     @Published var chatToTop: String?
     @Published var groupMembers: [GMember] = []
@@ -385,6 +364,7 @@ final class ChatModel: ObservableObject {
     @Published var userAddress: UserContactLink?
     @Published var chatItemTTL: ChatItemTTL = .none
     @Published var appOpenUrl: URL?
+    @Published var appOpenUrlLater: URL?
     @Published var deviceToken: DeviceToken?
     @Published var savedToken: DeviceToken?
     @Published var tokenRegistered = false
@@ -667,20 +647,24 @@ final class ChatModel: ObservableObject {
 
     func getCIItemsModel(_ cInfo: ChatInfo, _ ci: ChatItem) -> ItemsModel? {
         let cInfoScope = cInfo.groupChatScope()
-        if let cInfoScope = cInfoScope {
-            switch cInfoScope {
-            case .memberSupport:
-                switch secondaryIM?.secondaryIMFilter {
-                case .none:
-                    return nil
-                case let .groupChatScopeContext(groupScopeInfo):
-                    return (cInfo.id == chatId && sameChatScope(cInfoScope, groupScopeInfo.toChatScope())) ? secondaryIM : nil
-                case let .msgContentTagContext(contentTag):
-                    return (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
-                }
+        return if let cInfoScope = cInfoScope {
+            switch (cInfoScope, secondaryIM?.secondaryIMFilter) {
+            case let (.memberSupport, .some(.groupChatScopeContext(groupScopeInfo))):
+                // Chat with member or Chat with admins opened (secondaryIM has .groupChatScopeContext filter), cInfo has matching scope
+                (cInfo.id == chatId && sameChatScope(cInfoScope, groupScopeInfo.toChatScope())) ? secondaryIM : nil
+
+            case let (.memberSupport, .some(.msgContentTagContext(contentTag))):
+                // Reports view opened (secondaryIM has .msgContentTagContext(.report) filter), we process event (cInfo has proper .memberSupport scope)
+                (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+
+            case let (.reports, .some(.msgContentTagContext(contentTag))):
+                // Reports view opened (secondaryIM has .msgContentTagContext(.report) filter), we process user action (cInfo has surrogate .reports scope)
+                (cInfo.id == chatId && ci.isReport && contentTag == .report) ? secondaryIM : nil
+            default:
+                nil
             }
         } else {
-            return cInfo.id == chatId ? im : nil
+            cInfo.id == chatId ? im : nil
         }
     }
 
@@ -782,11 +766,6 @@ final class ChatModel: ObservableObject {
     }
 
     func removeMemberItems(_ removedMember: GroupMember, byMember: GroupMember, _ groupInfo: GroupInfo) {
-        // this should not happen, only another member can "remove" user, user can only "leave" (another event).
-        if byMember.groupMemberId == groupInfo.membership.groupMemberId {
-            logger.debug("exiting removeMemberItems")
-            return
-        }
         if chatId == groupInfo.id {
             for i in 0..<im.reversedChatItems.count {
                 if let updatedItem = removedUpdatedItem(im.reversedChatItems[i]) {

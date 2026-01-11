@@ -50,7 +50,7 @@ import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Client (agentClientStore)
 import Simplex.Messaging.Agent.Env.SQLite (createAgentStore)
 import Simplex.Messaging.Agent.Store.Interface (closeDBStore, reopenDBStore)
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfirmation (..), MigrationError)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..), MigrationError)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, sumTypeJSON)
@@ -254,7 +254,8 @@ mobileChatOpts dbOptions =
             tbqSize = 4096,
             deviceName = Nothing,
             highlyAvailable = False,
-            yesToUpMigrations = False
+            yesToUpMigrations = False,
+            migrationBackupPath = Just ""
           },
       chatCmd = "",
       chatCmdDelay = 3,
@@ -276,7 +277,6 @@ defaultMobileConfig =
   defaultChatConfig
     { confirmMigrations = MCYesUp,
       logLevel = CLLError,
-      coreApi = True,
       deviceNameForRemote = "Mobile"
     }
 
@@ -294,8 +294,9 @@ chatMigrateInit dbFilePrefix dbKey confirm = do
 chatMigrateInitKey :: ChatDbOpts -> Bool -> String -> Bool -> IO (Either DBMigrationResult ChatController)
 chatMigrateInitKey chatDbOpts keepKey confirm backgroundMode = runExceptT $ do
   confirmMigrations <- liftEitherWith (const DBMInvalidConfirmation) $ strDecode $ B.pack confirm
-  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey) confirmMigrations
-  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey) confirmMigrations
+  let migrationConfig = MigrationConfig confirmMigrations (Just "")
+  chatStore <- migrate createChatStore (toDBOpts chatDbOpts chatSuffix keepKey chatDBFunctions) migrationConfig
+  agentStore <- migrate createAgentStore (toDBOpts chatDbOpts agentSuffix keepKey []) migrationConfig
   liftIO $ initialize chatStore ChatDatabase {chatStore, agentStore}
   where
     opts = mobileChatOpts $ removeDbKey chatDbOpts

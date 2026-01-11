@@ -21,13 +21,14 @@ import Data.Int (Int64)
 import Data.Text (Text)
 import Data.Word (Word16, Word32)
 import Simplex.Chat.Remote.AppVersion
-import Simplex.Chat.Types (verificationCode)
+import Simplex.Chat.Types (BoolDef, verificationCode)
 import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFile)
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Transport (TLS (..), TSbChainKeys (..), TransportPeer (..))
 import Simplex.Messaging.Transport.HTTP2.Client (HTTP2Client)
 import qualified Simplex.Messaging.TMap as TM
+import Simplex.Messaging.Util (AnyError (..), tshow)
 import Simplex.RemoteControl.Client
 import Simplex.RemoteControl.Types
 
@@ -46,7 +47,8 @@ data RemoteCrypto = RemoteCrypto
     rcvCounter :: TVar Word32,
     chainKeys :: TSbChainKeys,
     skippedKeys :: TM.TMap Word32 (C.SbKeyNonce, C.SbKeyNonce),
-    signatures :: RemoteSignatures
+    signatures :: RemoteSignatures,
+    compression :: Bool
   }
 
 getRemoteSndKeys :: RemoteCrypto -> STM (Word32, C.SbKeyNonce, C.SbKeyNonce)
@@ -155,6 +157,9 @@ data RemoteProtocolError
   | RPEException {someException :: Text}
   deriving (Show, Exception)
 
+instance AnyError RemoteProtocolError where
+  fromSomeException = RPEException . tshow
+
 type RemoteHostId = Int64
 
 data RHKey = RHNew | RHId {remoteHostId :: RemoteHostId}
@@ -216,7 +221,8 @@ data RemoteFile = RemoteFile
 
 data CtrlAppInfo = CtrlAppInfo
   { appVersionRange :: AppVersionRange,
-    deviceName :: Text
+    deviceName :: Text,
+    compression :: BoolDef
   }
   deriving (Show)
 
@@ -224,7 +230,8 @@ data HostAppInfo = HostAppInfo
   { appVersion :: AppVersion,
     deviceName :: Text,
     encoding :: PlatformEncoding,
-    encryptFiles :: Bool -- if the host encrypts files in app storage
+    encryptFiles :: Bool, -- if the host encrypts files in app storage
+    compression :: BoolDef
   }
 
 $(J.deriveJSON defaultJSON ''RemoteFile)

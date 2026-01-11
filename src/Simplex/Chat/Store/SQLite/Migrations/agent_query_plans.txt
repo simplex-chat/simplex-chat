@@ -60,12 +60,32 @@ Plan:
 SEARCH commands USING INDEX idx_commands_server_commands (host=? AND port=?)
 
 Query: 
+              SELECT rcpt_status, snd_message_body_id FROM snd_messages
+              WHERE NOT EXISTS (SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0)
+                AND conn_id = ? AND internal_id = ?
+            
+Plan:
+SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
+SCALAR SUBQUERY 1
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
+
+Query: 
               SELECT rcv_file_chunk_id, chunk_no, chunk_size, digest, tmp_path
               FROM rcv_file_chunks
               WHERE rcv_file_id = ?
+              ORDER BY chunk_no ASC
             
 Plan:
 SEARCH rcv_file_chunks USING INDEX idx_rcv_file_chunks_rcv_file_id (rcv_file_id=?)
+USE TEMP B-TREE FOR ORDER BY
+
+Query: 
+              SELECT rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, deleted, redirect_id, redirect_entity_id, redirect_size, redirect_digest
+              FROM rcv_files
+              WHERE rcv_file_id = ?
+            
+Plan:
+SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
               SELECT snd_file_chunk_id, chunk_no, chunk_offset, chunk_size, digest
@@ -74,6 +94,14 @@ Query:
             
 Plan:
 SEARCH snd_file_chunks USING INDEX idx_snd_file_chunks_snd_file_id (snd_file_id=?)
+
+Query: 
+              SELECT snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, digest, prefix_path, key, nonce, status, deleted, redirect_size, redirect_digest
+              FROM snd_files
+              WHERE snd_file_id = ?
+            
+Plan:
+SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             DELETE FROM snd_message_bodies
@@ -200,24 +228,6 @@ SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
-            SELECT rcpt_status, snd_message_body_id FROM snd_messages
-            WHERE NOT EXISTS (SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0)
-              AND conn_id = ? AND internal_id = ?
-          
-Plan:
-SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
-SCALAR SUBQUERY 1
-SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
-
-Query: 
-            SELECT rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, deleted, redirect_id, redirect_entity_id, redirect_size, redirect_digest
-            FROM rcv_files
-            WHERE rcv_file_id = ?
-          
-Plan:
-SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
             SELECT rcv_file_id
             FROM rcv_files
             WHERE status IN (?,?) AND deleted = 0 AND created_at >= ?
@@ -227,14 +237,6 @@ Query:
 Plan:
 SEARCH rcv_files USING INDEX idx_rcv_files_status_created_at (status=? AND created_at>?)
 USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-            SELECT snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, digest, prefix_path, key, nonce, status, deleted, redirect_size, redirect_digest
-            FROM snd_files
-            WHERE snd_file_id = ?
-          
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT snd_file_id
@@ -256,6 +258,22 @@ Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=?)
 
 Query: 
+          SELECT last_internal_msg_id, last_internal_rcv_msg_id, last_external_snd_msg_id, last_rcv_msg_hash
+          FROM connections
+          WHERE conn_id = ?
+        
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: 
+          SELECT last_internal_msg_id, last_internal_snd_msg_id, last_snd_msg_hash
+          FROM connections
+          WHERE conn_id = ?
+        
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: 
           SELECT user_id FROM users u
           WHERE u.user_id = ?
             AND u.deleted = ?
@@ -265,6 +283,15 @@ Plan:
 SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
 CORRELATED SCALAR SUBQUERY 1
 SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
+
+Query: 
+          SELECT user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
+            last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
+          FROM connections
+          WHERE conn_id = ? AND deleted = ?
+        
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
         INSERT INTO conn_confirmations
@@ -284,6 +311,18 @@ Query:
         VALUES (?,?,?)
       
 Plan:
+
+Query: 
+        INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash)
+        VALUES (?, ?, ?)
+        ON CONFLICT (xftp_host, xftp_port, xftp_key_hash)
+        DO UPDATE SET xftp_host = EXCLUDED.xftp_host
+        RETURNING xftp_server_id
+      
+Plan:
+SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_xftp_server_id (xftp_server_id=?)
+SEARCH snd_file_chunk_replicas USING COVERING INDEX idx_snd_file_chunk_replicas_xftp_server_id (xftp_server_id=?)
+SEARCH rcv_file_chunk_replicas USING COVERING INDEX idx_rcv_file_chunk_replicas_xftp_server_id (xftp_server_id=?)
 
 Query: 
         SELECT
@@ -326,16 +365,6 @@ Query:
 Plan:
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
-        SELECT
-          user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
-          last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
-        FROM connections
-        WHERE conn_id = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
         SELECT DISTINCT
@@ -384,14 +413,40 @@ SEARCH s USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR DISTINCT
 
 Query: 
-        SELECT DISTINCT c.host, c.port, COALESCE(c.server_key_hash, s.key_hash)
+        SELECT DISTINCT c.conn_id, c.host, c.port, COALESCE(c.server_key_hash, s.key_hash)
         FROM commands c
+        JOIN connections cs ON c.conn_id = cs.conn_id
         LEFT JOIN servers s ON s.host = c.host AND s.port = c.port
-        WHERE conn_id = ?
+        WHERE cs.deleted = 0
       
 Plan:
-SEARCH c USING INDEX idx_commands_conn_id (conn_id=?)
+SCAN c USING INDEX idx_commands_conn_id
+SEARCH cs USING PRIMARY KEY (conn_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?) LEFT-JOIN
+USE TEMP B-TREE FOR DISTINCT
+
+Query: 
+        SELECT DISTINCT c.user_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash)
+        FROM rcv_queues q
+        JOIN servers s ON q.host = s.host AND q.port = s.port
+        JOIN connections c ON q.conn_id = c.conn_id
+       WHERE  c.deleted = 0 AND q.deleted = 0
+Plan:
+SCAN q USING INDEX idx_rcv_queues_client_notice_id
+SEARCH c USING PRIMARY KEY (conn_id=?)
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+USE TEMP B-TREE FOR DISTINCT
+
+Query: 
+        SELECT DISTINCT c.user_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash)
+        FROM rcv_queues q
+        JOIN servers s ON q.host = s.host AND q.port = s.port
+        JOIN connections c ON q.conn_id = c.conn_id
+       WHERE q.to_subscribe = 1 AND  c.deleted = 0 AND q.deleted = 0
+Plan:
+SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=?)
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH c USING PRIMARY KEY (conn_id=?)
 USE TEMP B-TREE FOR DISTINCT
 
 Query: 
@@ -428,22 +483,6 @@ Plan:
 SEARCH conn_invitations USING PRIMARY KEY (invitation_id=?)
 
 Query: 
-        SELECT last_internal_msg_id, last_internal_rcv_msg_id, last_external_snd_msg_id, last_rcv_msg_hash
-        FROM connections
-        WHERE conn_id = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
-Query: 
-        SELECT last_internal_msg_id, last_internal_snd_msg_id, last_snd_msg_hash
-        FROM connections
-        WHERE conn_id = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
-Query: 
         SELECT link_id, snd_private_key
         FROM inv_short_links
         WHERE host = ? AND port = ? AND snd_id = ?
@@ -458,6 +497,16 @@ Query:
       
 Plan:
 SEARCH inv_short_links USING INDEX idx_inv_short_links_link_id (host=? AND port=? AND link_id=?)
+
+Query: 
+        SELECT n.host, n.port, n.entity_id, COALESCE(n.server_key_hash, s.key_hash), n.created_at, n.notice_ttl
+        FROM client_notices n
+        JOIN servers s ON n.host = s.host AND n.port = s.port
+        WHERE n.protocol = 'smp'
+      
+Plan:
+SEARCH n USING INDEX idx_client_notices_entity (protocol=?)
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
         SELECT s.internal_id, m.msg_type, s.internal_hash, s.rcpt_internal_id, s.rcpt_status
@@ -554,10 +603,10 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id_internal_rcv_id (conn_
 Query: 
       INSERT INTO rcv_queues
         ( host, port, rcv_id, conn_id, rcv_private_key, rcv_dh_secret, e2e_priv_key, e2e_dh_secret,
-          snd_id, queue_mode, status, rcv_queue_id, rcv_primary, replace_rcv_queue_id, smp_client_version, server_key_hash,
+          snd_id, queue_mode, status, to_subscribe, rcv_queue_id, rcv_primary, replace_rcv_queue_id, smp_client_version, server_key_hash,
           link_id, link_key, link_priv_sig_key, link_enc_fixed_data,
           ntf_public_key, ntf_private_key, ntf_id, rcv_ntf_dh_secret
-        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+        ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
     
 Plan:
 
@@ -579,16 +628,15 @@ SEARCH messages USING COVERING INDEX idx_messages_conn_id_internal_snd_id (conn_
 
 Query: 
       INSERT INTO snd_queues
-        (host, port, snd_id, queue_mode, conn_id, snd_public_key, snd_private_key, e2e_pub_key, e2e_dh_secret,
+        (host, port, snd_id, queue_mode, conn_id, snd_private_key, e2e_pub_key, e2e_dh_secret,
          status, snd_queue_id, snd_primary, replace_snd_queue_id, smp_client_version, server_key_hash)
-      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
       ON CONFLICT (host, port, snd_id) DO UPDATE SET
         host=EXCLUDED.host,
         port=EXCLUDED.port,
         snd_id=EXCLUDED.snd_id,
         queue_mode=EXCLUDED.queue_mode,
         conn_id=EXCLUDED.conn_id,
-        snd_public_key=EXCLUDED.snd_public_key,
         snd_private_key=EXCLUDED.snd_private_key,
         e2e_pub_key=EXCLUDED.e2e_pub_key,
         e2e_dh_secret=EXCLUDED.e2e_dh_secret,
@@ -733,7 +781,28 @@ SEARCH snd_queues USING PRIMARY KEY (host=? AND port=? AND snd_id=?)
 Query: 
     SELECT
       c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.snd_id, q.queue_mode,
-      q.snd_public_key, q.snd_private_key, q.e2e_pub_key, q.e2e_dh_secret, q.status,
+      q.snd_private_key, q.e2e_pub_key, q.e2e_dh_secret, q.status,
+      q.snd_queue_id, q.snd_primary, q.replace_snd_queue_id, q.switch_status, q.smp_client_version
+    FROM snd_queues q
+    JOIN servers s ON q.host = s.host AND q.port = s.port
+    JOIN connections c ON q.conn_id = c.conn_id
+   
+      JOIN (SELECT DISTINCT conn_id, snd_queue_id FROM snd_message_deliveries WHERE failed = 0) d
+      ON d.conn_id = q.conn_id AND d.snd_queue_id = q.snd_queue_id
+      WHERE c.deleted = 0
+    
+Plan:
+MATERIALIZE d
+SCAN snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired
+SCAN d
+SEARCH q USING INDEX idx_snd_queue_id (conn_id=? AND snd_queue_id=?)
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH c USING PRIMARY KEY (conn_id=?)
+
+Query: 
+    SELECT
+      c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.snd_id, q.queue_mode,
+      q.snd_private_key, q.e2e_pub_key, q.e2e_dh_secret, q.status,
       q.snd_queue_id, q.snd_primary, q.replace_snd_queue_id, q.switch_status, q.smp_client_version
     FROM snd_queues q
     JOIN servers s ON q.host = s.host AND q.port = s.port
@@ -746,7 +815,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
@@ -761,7 +830,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
@@ -776,7 +845,7 @@ SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
@@ -791,7 +860,7 @@ SEARCH c USING PRIMARY KEY (conn_id=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
@@ -806,7 +875,7 @@ SEARCH s USING PRIMARY KEY (host=? AND port=?)
 
 Query: 
     SELECT c.user_id, COALESCE(q.server_key_hash, s.key_hash), q.conn_id, q.host, q.port, q.rcv_id, q.rcv_private_key, q.rcv_dh_secret,
-      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status,
+      q.e2e_priv_key, q.e2e_dh_secret, q.snd_id, q.queue_mode, q.status, c.enable_ntfs, q.client_notice_id,
       q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id, q.switch_status, q.smp_client_version, q.delete_errors,
       q.ntf_public_key, q.ntf_private_key, q.ntf_id, q.rcv_ntf_dh_secret,
       q.link_id, q.link_key, q.link_priv_sig_key, q.link_enc_fixed_data
@@ -819,6 +888,30 @@ SEARCH q USING PRIMARY KEY (host=? AND port=? AND rcv_id=?)
 SEARCH s USING PRIMARY KEY (host=? AND port=?)
 SEARCH c USING PRIMARY KEY (conn_id=?)
 
+Query: 
+    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
+    FROM rcv_queues q
+    JOIN servers s ON q.host = s.host AND q.port = s.port
+    JOIN connections c ON q.conn_id = c.conn_id
+   WHERE  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ?
+Plan:
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+SEARCH q USING PRIMARY KEY (host=? AND port=?)
+SEARCH c USING PRIMARY KEY (conn_id=?)
+
+Query: 
+    SELECT c.user_id, q.conn_id, q.host, q.port, COALESCE(q.server_key_hash, s.key_hash), q.rcv_id, q.rcv_private_key, q.status, c.enable_ntfs, q.client_notice_id,
+      q.rcv_queue_id, q.rcv_primary, q.replace_rcv_queue_id
+    FROM rcv_queues q
+    JOIN servers s ON q.host = s.host AND q.port = s.port
+    JOIN connections c ON q.conn_id = c.conn_id
+   WHERE q.to_subscribe = 1 AND  c.deleted = 0 AND q.deleted = 0 AND c.user_id = ? AND q.host = ? AND q.port = ? AND COALESCE(q.server_key_hash, s.key_hash) = ?
+Plan:
+SEARCH q USING INDEX idx_rcv_queues_to_subscribe (to_subscribe=? AND host=? AND port=?)
+SEARCH c USING PRIMARY KEY (conn_id=?)
+SEARCH s USING PRIMARY KEY (host=? AND port=?)
+
 Query: DELETE FROM commands WHERE command_id = ?
 Plan:
 SEARCH commands USING INTEGER PRIMARY KEY (rowid=?)
@@ -830,6 +923,20 @@ SEARCH conn_invitations USING PRIMARY KEY (invitation_id=?)
 Query: DELETE FROM connections WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
+SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
+SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
+SEARCH commands USING COVERING INDEX idx_commands_conn_id (conn_id=?)
+SEARCH ratchets USING PRIMARY KEY (conn_id=?)
+SEARCH conn_invitations USING COVERING INDEX idx_conn_invitations_contact_conn_id (contact_conn_id=?)
+SEARCH conn_confirmations USING COVERING INDEX idx_conn_confirmations_conn_id (conn_id=?)
+SEARCH messages USING COVERING INDEX idx_messages_conn_id (conn_id=?)
+SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=?)
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=?)
+
+Query: DELETE FROM connections WHERE user_id = 2
+Plan:
+SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 SEARCH processed_ratchet_key_hashes USING COVERING INDEX idx_processed_ratchet_key_hashes_hash (conn_id=?)
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=?)
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_conn_id_internal_id (conn_id=?)
@@ -892,6 +999,14 @@ Query: DELETE FROM snd_queues WHERE conn_id = ? AND snd_queue_id = ?
 Plan:
 SEARCH snd_queues USING COVERING INDEX idx_snd_queue_id (conn_id=? AND snd_queue_id=?)
 
+Query: DELETE FROM users WHERE user_id = 2
+Plan:
+SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_user_id (user_id=?)
+SEARCH snd_files USING COVERING INDEX idx_snd_files_user_id (user_id=?)
+SEARCH rcv_files USING COVERING INDEX idx_rcv_files_user_id (user_id=?)
+SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
+
 Query: DELETE FROM users WHERE user_id = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
@@ -924,8 +1039,13 @@ Plan:
 Query: INSERT INTO rcv_files (rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, redirect_id, redirect_entity_id, redirect_digest, redirect_size, approved_relays) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO servers (host, port, key_hash) VALUES (?,?,?)
+Query: INSERT INTO servers (host, port, key_hash) VALUES (?,?,?) ON CONFLICT (host, port) DO NOTHING RETURNING 1
 Plan:
+SEARCH inv_short_links USING COVERING INDEX idx_inv_short_links_link_id (host=? AND port=?)
+SEARCH commands USING COVERING INDEX idx_commands_server_commands (host=? AND port=?)
+SEARCH ntf_subscriptions USING COVERING INDEX idx_ntf_subscriptions_smp_host_smp_port (smp_host=? AND smp_port=?)
+SEARCH snd_queues USING COVERING INDEX idx_snd_queues_host_port (host=? AND port=?)
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queues_link_id (host=? AND port=?)
 
 Query: INSERT INTO skipped_messages (conn_id, header_key, msg_n, msg_key) VALUES (?, ?, ?, ?)
 Plan:
@@ -949,9 +1069,6 @@ Plan:
 Query: INSERT INTO users DEFAULT VALUES
 Plan:
 
-Query: INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash) VALUES (?,?,?)
-Plan:
-
 Query: SELECT 1 FROM encrypted_rcv_message_hashes WHERE conn_id = ? AND hash = ? LIMIT 1
 Plan:
 SEARCH encrypted_rcv_message_hashes USING COVERING INDEX idx_encrypted_rcv_message_hashes_hash (conn_id=? AND hash=?)
@@ -964,17 +1081,25 @@ Query: SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND failed = 0 LIM
 Plan:
 SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
 
-Query: SELECT DISTINCT conn_id FROM snd_message_deliveries WHERE failed = 0
+Query: SELECT conn_id FROM connections WHERE deleted = 0
 Plan:
-SCAN snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired
+SCAN connections
 
 Query: SELECT conn_id FROM connections WHERE user_id = ?
 Plan:
 SEARCH connections USING COVERING INDEX idx_connections_user (user_id=?)
 
+Query: SELECT count(1) FROM connections
+Plan:
+SCAN connections USING COVERING INDEX idx_connections_user
+
 Query: SELECT count(1) FROM snd_message_bodies
 Plan:
 SCAN snd_message_bodies
+
+Query: SELECT count(1) FROM users
+Plan:
+SCAN users
 
 Query: SELECT deleted FROM snd_files WHERE snd_file_id = ?
 Plan:
@@ -1036,6 +1161,10 @@ Query: SELECT started_at, servers_stats FROM servers_stats WHERE servers_stats_i
 Plan:
 SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: SELECT user_id FROM users WHERE deleted = 0
+Plan:
+SCAN users
+
 Query: SELECT user_id FROM users WHERE user_id = ? AND deleted = ?
 Plan:
 SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
@@ -1043,10 +1172,6 @@ SEARCH users USING INTEGER PRIMARY KEY (rowid=?)
 Query: SELECT x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem FROM ratchets WHERE conn_id = ?
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
-
-Query: SELECT xftp_server_id FROM xftp_servers WHERE xftp_host = ? AND xftp_port = ? AND xftp_key_hash = ?
-Plan:
-SEARCH xftp_servers USING COVERING INDEX sqlite_autoindex_xftp_servers_1 (xftp_host=? AND xftp_port=? AND xftp_key_hash=?)
 
 Query: UPDATE connections SET deleted = ? WHERE conn_id = ?
 Plan:
@@ -1128,6 +1253,10 @@ Query: UPDATE rcv_queues SET rcv_primary = ?, replace_rcv_queue_id = ? WHERE con
 Plan:
 SEARCH rcv_queues USING COVERING INDEX idx_rcv_queue_id (conn_id=? AND rcv_queue_id=?)
 
+Query: UPDATE rcv_queues SET to_subscribe = 0 WHERE to_subscribe = 1
+Plan:
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queues_to_subscribe (to_subscribe=?)
+
 Query: UPDATE servers_stats SET servers_stats = ?, updated_at = ? WHERE servers_stats_id = 1
 Plan:
 SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
@@ -1135,10 +1264,6 @@ SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE snd_file_chunk_replicas SET replica_status = ?, updated_at = ? WHERE snd_file_chunk_replica_id = ?
 Plan:
 SEARCH snd_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE snd_files SET deleted = 1, updated_at = ? WHERE snd_file_id = ?
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE snd_files SET prefix_path = NULL, status = ?, updated_at = ? WHERE snd_file_id = ?
 Plan:
