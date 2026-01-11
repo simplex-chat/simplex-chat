@@ -6,9 +6,8 @@ describe("Core tests", () => {
   const tmpDir = "./tests/tmp";
   const dbPath = path.join(tmpDir, "simplex_v1");
 
-  beforeEach(() => fs.mkdirSync(tmpDir, { recursive: true }));
-
-  afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
+  beforeEach(() => fs.mkdirSync(tmpDir, {recursive: true}));
+  afterEach(() => fs.rmSync(tmpDir, {recursive: true, force: true}));
 
   it("should initialize chat controller", async () => {
     const ctrl = await core.chatMigrateInit(dbPath, "key", core.MigrationConfirmation.YesUp);

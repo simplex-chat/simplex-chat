@@ -25,7 +25,7 @@ describe.skip("ChatClient (expects SimpleX Chat server with a user, without cont
     const r2 = await c.msgQ.dequeue()
     assert.strictEqual(r1.type, "contactConnecting")
     assert.strictEqual(r2.type, "contactConnected")
-    const contact1 = (r1 as CEvt.ContactConnected).contact
+    const contact1 = (r1 as CEvt.ContactConnecting).contact
     // const contact2 = (r2 as C.CRContactConnected).contact
     const r3 = await c.apiSendTextMessage(T.ChatType.Direct, contact1.contactId, "hello")
     assert(r3[0].chatItem.content.type === "sndMsgContent" && r3[0].chatItem.content.msgContent.text === "hello")

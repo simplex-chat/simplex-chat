@@ -1,4 +1,4 @@
-import {CC, ChatResponse, T} from "@simplex-chat/types"
+import {CC, CEvt, ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as core from "./core"
 
 export class ChatCommandError extends Error {
@@ -12,23 +12,121 @@ export enum ConnReqType {
   Contact = "contact",
 }
 
+export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => Promise<void>
+
+interface EventSubscriber<K extends CEvt.Tag> {
+  subscriber: EventSubscriberFunc<K>
+  once: boolean
+}
+
 export class ChatApi {
+  private receiveEvents = false
+  private eventsLoop: Promise<void> | undefined = undefined
+  private subscribers: {[K in CEvt.Tag]?: EventSubscriber<K>[]} = {}
+  
   private constructor(protected ctrl_: bigint | undefined) {}
 
-  static async init(dbPath: string, dbKey: string, confirm = core.MigrationConfirmation.YesUp): Promise<ChatApi> {
+  static async init(
+    dbPath: string,
+    dbKey: string = "",
+    confirm = core.MigrationConfirmation.YesUp
+  ): Promise<ChatApi> {
     const ctrl = await core.chatMigrateInit(dbPath, dbKey, confirm)
     return new ChatApi(ctrl)
   }
+    
+  async startChat(): Promise<void> {
+    this.receiveEvents = true
+    this.eventsLoop = this.runEventsLoop()
+    await this.sendChatCmd("/_start")
+    // if (r.type !== "chatStarted") throw new ChatCommandError("error starting chat", r)
+  }
   
+  async stopChat(): Promise<void> {
+    await this.sendChatCmd("/_stop")
+    // if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
+    this.receiveEvents = false
+    this.eventsLoop = undefined    
+  }
+
   async close(): Promise<void> {
+    this.receiveEvents = false
+    this.eventsLoop = undefined    
     await core.chatCloseStore(this.ctrl)
     this.ctrl_ = undefined
   }
+  
+  private async runEventsLoop(): Promise<void> {
+    while (this.receiveEvents) {
+      try {
+        const event = await this.recvChatEvent()
+        if (!event) continue
+        const subs = this.subscribers[event.type]
+        if (!subs) continue
+        let i = 0;
+        while (i < subs.length) {
+          const {subscriber, once} = subs[i]
+          try {
+            await (subscriber as (event: ChatEvent) => Promise<void>)(event)
+          } catch(e) {
+            console.log(`${event.type} subsriber error`, e)
+          }
+          if (once) subs.splice(i, 1)
+          else i++
+        }
+      } catch(e) {
+        console.log("invalid event", e)
+      }
+    }
+  }
 
+  on<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>, once: boolean = false) {
+    const subs: EventSubscriber<K>[] = this.subscribers[event] || (this.subscribers[event] = [])
+    if (!subs.some(s => s.subscriber === subscriber)) {
+      subs.push({subscriber, once})
+    }
+  }
+  
+  once<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>) {
+    this.on(event, subscriber, true)
+  }
+  
+  wait<K extends CEvt.Tag>(event: K, predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined = undefined): Promise<ChatEvent & {type: K}> {
+    if (predicate) {
+      return new Promise(resolve => {
+        const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
+          if (predicate(evt)) {
+            this.off(event, subscriber)
+            resolve(evt)
+          }
+        }
+        this.on(event, subscriber)
+      })
+    } else {
+      return new Promise(resolve => this.once(event, resolve as EventSubscriberFunc<K>))
+    }
+  }
+    
+  off<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K> | undefined = undefined) {
+    if (subscriber) {
+      const subs = this.subscribers[event]
+      if (subs) {
+        const i = subs.findIndex(s => s.subscriber === subscriber)
+        if (i !== -1) subs.splice(i, 1)
+      }
+    } else {
+      delete this.subscribers[event]
+    }
+  }
+  
   get initialized(): boolean {
     return typeof this.ctrl_ === "bigint"
-  }  
-  
+  }
+
+  get receiving(): boolean {
+    return this.receiveEvents && this.eventsLoop !== undefined 
+  }
+
   get ctrl(): bigint {
     if (typeof this.ctrl_ === "bigint") return this.ctrl_
     else throw Error("chat api controller not initialized")
@@ -36,6 +134,10 @@ export class ChatApi {
   
   async sendChatCmd(cmd: string): Promise<ChatResponse> {
     return await core.chatSendCmd(this.ctrl, cmd)
+  }
+  
+  async recvChatEvent(wait: number = 15_000_000): Promise<ChatEvent | undefined> {
+    return await core.chatRecvMsgWait(this.ctrl, wait)
   }
   
   // Address commands
