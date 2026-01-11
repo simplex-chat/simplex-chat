@@ -49,6 +49,7 @@ export type ChatEvent =
   | CEvt.MessageError
   | CEvt.ChatError
   | CEvt.ChatErrors
+  | CEvt.Interface
 
 export namespace CEvt {
   export type Tag = 
@@ -97,8 +98,9 @@ export namespace CEvt {
     | "messageError"
     | "chatError"
     | "chatErrors"
+    | string
 
-  interface Interface {
+  export interface Interface {
     type: Tag
   }
 

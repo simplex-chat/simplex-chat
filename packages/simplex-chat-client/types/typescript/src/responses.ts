@@ -52,6 +52,7 @@ export type ChatResponse =
   | CR.UserProfileUpdated
   | CR.UserProfileNoChange
   | CR.UsersList
+  | CR.Interface
 
 export namespace CR {
   export type Tag = 
@@ -103,8 +104,9 @@ export namespace CR {
     | "userProfileUpdated"
     | "userProfileNoChange"
     | "usersList"
+    | string
 
-  interface Interface {
+  export interface Interface {
     type: Tag
   }
 
