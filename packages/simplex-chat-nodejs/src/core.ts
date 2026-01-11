@@ -19,7 +19,7 @@ export async function chatCloseStore(ctrl: bigint): Promise<void> {
 export async function chatSendCmd(ctrl: bigint, cmd: string): Promise<ChatResponse> {
   const res = await simplex.chat_send_cmd(ctrl, cmd)
   const json = JSON.parse(res) as APIResult<ChatResponse>
-  // console.log(cmd, json)
+  // console.log(cmd.slice(0, 16), json.result?.type || json.error)
   if (typeof json.result === 'object') return json.result
   if (typeof json.error === 'object') throw new ChatAPIError("Chat command error (see chatError property)", json.error as T.ChatError)
   throw new ChatAPIError("Invalid chat command result")
@@ -30,7 +30,7 @@ export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatE
   const res = await simplex.chat_recv_msg_wait(ctrl, wait)
   if (res === "") return undefined
   const json = JSON.parse(res) as APIResult<ChatEvent>
-  // console.log(json)
+  // if (json.result) console.log("event", json.result.type)
   if (typeof json.result === 'object') return json.result
   if (typeof json.error === 'object') throw new ChatAPIError("Chat event error (see chatError property)", json.error as T.ChatError)
   throw new ChatAPIError("Invalid chat event")  

@@ -23,6 +23,7 @@ export class ChatApi {
   private receiveEvents = false
   private eventsLoop: Promise<void> | undefined = undefined
   private subscribers: {[K in CEvt.Tag]?: EventSubscriber<K>[]} = {}
+  private receivers: ((event: ChatEvent) => Promise<void>)[] = []
   
   private constructor(protected ctrl_: bigint | undefined) {}
 
@@ -38,19 +39,23 @@ export class ChatApi {
   async startChat(): Promise<void> {
     this.receiveEvents = true
     this.eventsLoop = this.runEventsLoop()
-    await this.sendChatCmd("/_start")
-    // if (r.type !== "chatStarted") throw new ChatCommandError("error starting chat", r)
+    const r = await this.sendChatCmd(CC.StartChat.cmdString({mainApp: true, enableSndFiles: true}))
+    if (r.type !== "chatStarted" && r.type !== "chatRunning") {
+      throw new ChatCommandError("error starting chat", r)
+    }
   }
   
   async stopChat(): Promise<void> {
-    await this.sendChatCmd("/_stop")
-    // if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
+    const r = await this.sendChatCmd("/_stop")
+    if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
     this.receiveEvents = false
+    if (this.eventsLoop) await this.eventsLoop
     this.eventsLoop = undefined    
   }
 
   async close(): Promise<void> {
     this.receiveEvents = false
+    if (this.eventsLoop) await this.eventsLoop
     this.eventsLoop = undefined    
     await core.chatCloseStore(this.ctrl)
     this.ctrl_ = undefined
@@ -62,20 +67,24 @@ export class ChatApi {
         const event = await this.recvChatEvent()
         if (!event) continue
         const subs = this.subscribers[event.type]
-        if (!subs) continue
-        let i = 0;
-        while (i < subs.length) {
-          const {subscriber, once} = subs[i]
-          try {
-            await (subscriber as (event: ChatEvent) => Promise<void>)(event)
-          } catch(e) {
-            console.log(`${event.type} subsriber error`, e)
+        if (subs) {
+          for (const {subscriber, once} of [...subs]) {
+            try { await (subscriber as EventSubscriberFunc<typeof event.type>)(event) }
+            catch(e) { console.log(`${event.type} subsriber error`, e) }
+            if (once) this.off(event.type, subscriber as EventSubscriberFunc<typeof event.type>)
           }
-          if (once) subs.splice(i, 1)
-          else i++
         }
-      } catch(e) {
-        console.log("invalid event", e)
+        for (const r of [...this.receivers]) {          
+          try { await r(event) }
+          catch(e) { console.log(`${event.type} receiver error`, e) }        
+        }
+      } catch(err) {
+        const e = err as core.ChatAPIError
+        if ("chatError" in e) {
+          console.log("Chat error", e.chatError)
+        } else {
+          console.log("Invalid event", e)
+        }
       }
     }
   }
@@ -87,24 +96,51 @@ export class ChatApi {
     }
   }
   
+  onAny(receiver: (event: ChatEvent) => Promise<void>) {
+    if (!this.receivers.some(s => s === receiver)) {
+      this.receivers.push(receiver)
+    }
+  }
+  
   once<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>) {
     this.on(event, subscriber, true)
   }
-  
-  wait<K extends CEvt.Tag>(event: K, predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined = undefined): Promise<ChatEvent & {type: K}> {
-    if (predicate) {
-      return new Promise(resolve => {
-        const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
-          if (predicate(evt)) {
-            this.off(event, subscriber)
-            resolve(evt)
-          }
-        }
-        this.on(event, subscriber)
-      })
-    } else {
-      return new Promise(resolve => this.once(event, resolve as EventSubscriberFunc<K>))
+
+  // Waits for specific event, with optional predicate.
+  // Returns `undefined` on timeout if specified.
+  wait<K extends CEvt.Tag>(event: K): Promise<ChatEvent & {type: K}>
+  wait<K extends CEvt.Tag>(event: K, predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined): Promise<ChatEvent & {type: K}>
+  wait<K extends CEvt.Tag>(event: K, timeout: number): Promise<ChatEvent & {type: K} | undefined>
+  wait<K extends CEvt.Tag>(event: K, predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined, timeout: number): Promise<ChatEvent & {type: K} | undefined>
+  wait<K extends CEvt.Tag>(
+    event: K,
+    predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined | number = undefined, // number for timeout
+    timeout: number = 0 // milliseconds, default - indefinite
+  ): Promise<ChatEvent & {type: K} | undefined> {
+    if (typeof predicate === "number") {
+      timeout = predicate
+      predicate = undefined
     }
+    return new Promise((resolve, reject) => {
+      let done = false
+      const cleanup = () => {
+        done = true
+        this.off(event, subscriber)    
+      }
+      const subscriber: EventSubscriberFunc<K> = async (evt: ChatEvent & {type: K}) => {
+        if (done) return
+        if (predicate) {
+          try { if (!predicate(evt)) return }
+          catch(e) { cleanup(); reject(e); return }
+        }
+        cleanup()
+        resolve(evt)
+      }
+      this.on(event, subscriber)
+      if (timeout > 0) {
+        setTimeout(() => { if (!done) { cleanup(); resolve(undefined) } }, timeout)        
+      }
+    })
   }
     
   off<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K> | undefined = undefined) {
@@ -112,10 +148,19 @@ export class ChatApi {
       const subs = this.subscribers[event]
       if (subs) {
         const i = subs.findIndex(s => s.subscriber === subscriber)
-        if (i !== -1) subs.splice(i, 1)
+        if (i >= 0) subs.splice(i, 1)
       }
     } else {
       delete this.subscribers[event]
+    }
+  }
+
+  offAny(receiver: ((event: ChatEvent) => Promise<void>) | undefined = undefined) {
+    if (receiver) {
+      const i = this.receivers.findIndex(r => r === receiver)
+      if (i >= 0) this.receivers.splice(i, 1)
+    } else {
+      this.receivers = []
     }
   }
   
@@ -136,7 +181,7 @@ export class ChatApi {
     return await core.chatSendCmd(this.ctrl, cmd)
   }
   
-  async recvChatEvent(wait: number = 15_000_000): Promise<ChatEvent | undefined> {
+  async recvChatEvent(wait: number = 5_000_000): Promise<ChatEvent | undefined> {
     return await core.chatRecvMsgWait(this.ctrl, wait)
   }
   
@@ -501,7 +546,7 @@ export class ChatApi {
 
   // Get groups.
   // Network usage: no.
-  async apiListGroups(userId: number, contactId?: number, search?: string): Promise<T.GroupInfoSummary[]> {
+  async apiListGroups(userId: number, contactId?: number, search?: string): Promise<T.GroupInfo[]> {
     const r = await this.sendChatCmd(CC.APIListGroups.cmdString({userId, contactId_: contactId, search}))
     if (r.type === "groupsList") return r.groups
     throw new ChatCommandError("error listing groups", r)

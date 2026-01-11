@@ -4,7 +4,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
-    "dist"
+    "dist",
+    "src"
   ],
   "scripts": {
     "preinstall": "node src/download-libs.js",
@@ -17,7 +18,7 @@
     "test": "jest"
   },
   "dependencies": {
-    "@simplex-chat/types": "^0.1.0",
+    "@simplex-chat/types": "^0.2.3",
     "extract-zip": "^2.0.1",
     "node-addon-api": "^8.5.0"
   },
