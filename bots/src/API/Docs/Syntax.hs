@@ -99,8 +99,8 @@ withOptBoolParam r param p f =
     (ATOptional (ATPrim (PT TBool))) -> f True
     _ -> paramError r param p "is not [optional] boolean"
 
-jsSyntaxText :: Bool -> TypeAndFields -> Expr -> Text
-jsSyntaxText useSelf r = T.replace "' + '" "" . T.pack . go Nothing True
+jsSyntaxText :: Bool -> String -> TypeAndFields -> Expr -> Text
+jsSyntaxText useSelf typeNamespace r = T.replace "' + '" "" . T.pack . go Nothing True
   where
     go param top = \case
       Concat exs -> intercalate " + " $ map (go param False) $ L.toList exs
@@ -112,7 +112,7 @@ jsSyntaxText useSelf r = T.replace "' + '" "" . T.pack . go Nothing True
           _ -> paramName' useSelf param p
         where
           toStringSyntax (APITypeDef typeName _)
-            | typeHasSyntax typeName = paramName' useSelf param p <> ".toString()"
+            | typeHasSyntax typeName = typeNamespace <> typeName <> ".cmdString(" <> paramName' useSelf param p <> ")"
             | otherwise = paramName' useSelf param p
       Optional exN exJ p -> open <> n <> " ? " <> go (Just p) False exJ <> " : " <> nothing <> close
         where

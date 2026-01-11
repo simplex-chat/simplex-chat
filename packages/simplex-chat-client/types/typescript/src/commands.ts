@@ -96,7 +96,7 @@ export namespace APISendMessages {
   export type Response = CR.NewChatItems | CR.ChatCmdError
 
   export function cmdString(self: APISendMessages): string {
-    return '/_send ' + self.sendRef.toString() + (self.liveMessage ? ' live=on' : '') + (self.ttl ? ' ttl=' + self.ttl : '') + ' json ' + JSON.stringify(self.composedMessages)
+    return '/_send ' + T.ChatRef.cmdString(self.sendRef) + (self.liveMessage ? ' live=on' : '') + (self.ttl ? ' ttl=' + self.ttl : '') + ' json ' + JSON.stringify(self.composedMessages)
   }
 }
 
@@ -113,7 +113,7 @@ export namespace APIUpdateChatItem {
   export type Response = CR.ChatItemUpdated | CR.ChatItemNotChanged | CR.ChatCmdError
 
   export function cmdString(self: APIUpdateChatItem): string {
-    return '/_update item ' + self.chatRef.toString() + ' ' + self.chatItemId + (self.liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(self.updatedMessage)
+    return '/_update item ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + (self.liveMessage ? ' live=on' : '') + ' json ' + JSON.stringify(self.updatedMessage)
   }
 }
 
@@ -129,7 +129,7 @@ export namespace APIDeleteChatItem {
   export type Response = CR.ChatItemsDeleted | CR.ChatCmdError
 
   export function cmdString(self: APIDeleteChatItem): string {
-    return '/_delete item ' + self.chatRef.toString() + ' ' + self.chatItemIds.join(',') + ' ' + self.deleteMode
+    return '/_delete item ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemIds.join(',') + ' ' + self.deleteMode
   }
 }
 
@@ -161,7 +161,7 @@ export namespace APIChatItemReaction {
   export type Response = CR.ChatItemReaction | CR.ChatCmdError
 
   export function cmdString(self: APIChatItemReaction): string {
-    return '/_reaction ' + self.chatRef.toString() + ' ' + self.chatItemId + ' ' + (self.add ? 'on' : 'off') + ' ' + JSON.stringify(self.reaction)
+    return '/_reaction ' + T.ChatRef.cmdString(self.chatRef) + ' ' + self.chatItemId + ' ' + (self.add ? 'on' : 'off') + ' ' + JSON.stringify(self.reaction)
   }
 }
 
@@ -450,7 +450,7 @@ export namespace APIConnectPlan {
   }
 }
 
-// Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
+// Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.
 // Network usage: interactive.
 export interface APIConnect {
   userId: number // int64
@@ -462,7 +462,7 @@ export namespace APIConnect {
   export type Response = CR.SentConfirmation | CR.ContactAlreadyExists | CR.SentInvitation | CR.ChatCmdError
 
   export function cmdString(self: APIConnect): string {
-    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + self.preparedLink_.toString() : '')
+    return '/_connect ' + self.userId + (self.preparedLink_ ? ' ' + T.CreatedConnLink.cmdString(self.preparedLink_) : '')
   }
 }
 
@@ -553,14 +553,14 @@ export namespace APIDeleteChat {
   export type Response = CR.ContactDeleted | CR.ContactConnectionDeleted | CR.GroupDeletedUser | CR.ChatCmdError
 
   export function cmdString(self: APIDeleteChat): string {
-    return '/_delete ' + self.chatRef.toString() + ' ' + self.chatDeleteMode.toString()
+    return '/_delete ' + T.ChatRef.cmdString(self.chatRef) + ' ' + T.ChatDeleteMode.cmdString(self.chatDeleteMode)
   }
 }
 
 // User profile commands
 // Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
 
-// Get active user profile
+// Get active user profile.
 // Network usage: no.
 export interface ShowActiveUser {
 }
@@ -573,7 +573,7 @@ export namespace ShowActiveUser {
   }
 }
 
-// Create new user profile
+// Create new user profile.
 // Network usage: no.
 export interface CreateActiveUser {
   newUser: T.NewUser
@@ -587,7 +587,7 @@ export namespace CreateActiveUser {
   }
 }
 
-// Get all user profiles
+// Get all user profiles.
 // Network usage: no.
 export interface ListUsers {
 }
@@ -600,7 +600,7 @@ export namespace ListUsers {
   }
 }
 
-// Set active user profile
+// Set active user profile.
 // Network usage: no.
 export interface APISetActiveUser {
   userId: number // int64
@@ -658,5 +658,36 @@ export namespace APISetContactPrefs {
 
   export function cmdString(self: APISetContactPrefs): string {
     return '/_set prefs @' + self.contactId + ' ' + JSON.stringify(self.preferences)
+  }
+}
+
+// Chat management
+// These commands should not be used with CLI-based bots
+
+// Start chat controller.
+// Network usage: no.
+export interface StartChat {
+  mainApp: boolean
+  enableSndFiles: boolean
+}
+
+export namespace StartChat {
+  export type Response = CR.ChatStarted | CR.ChatRunning
+
+  export function cmdString(_self: StartChat): string {
+    return '/_start'
+  }
+}
+
+// Stop chat controller.
+// Network usage: no.
+export interface APIStopChat {
+}
+
+export namespace APIStopChat {
+  export type Response = CR.ChatStopped
+
+  export function cmdString(_self: APIStopChat): string {
+    return '/_stop'
   }
 }

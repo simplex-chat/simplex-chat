@@ -1,6 +1,6 @@
 {
   "name": "@simplex-chat/types",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript types for SimpleX Chat bot libraries",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

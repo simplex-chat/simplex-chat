@@ -73,7 +73,7 @@ syntaxText :: TypeAndFields -> Expr -> Text
 syntaxText r syntax =
   "\n**Syntax**:\n"
     <> "\n```\n" <> docSyntaxText r syntax <> "\n```\n"
-    <> (if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText False r syntax <> " // JavaScript\n```\n")
+    <> (if isConst syntax then "" else "\n```javascript\n" <> jsSyntaxText False "" r syntax <> " // JavaScript\n```\n")
     <> (if isConst syntax then "" else "\n```python\n" <> pySyntaxText r syntax <> " # Python\n```\n")
 
 camelToSpace :: String -> String
