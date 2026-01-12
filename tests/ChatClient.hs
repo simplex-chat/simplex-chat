@@ -84,7 +84,7 @@ schemaDumpDBOpts =
   DBOpts
     { connstr = B.pack testDBConnstr,
       schema = "test_chat_schema",
-      poolSize = 3,
+      poolSize = 10,
       createSchema = True
     }
 
@@ -131,7 +131,7 @@ testCoreOpts =
           -- dbSchemaPrefix is not used in tests (except bot tests where it's redefined),
           -- instead different schema prefix is passed per client so that single test database is used
           dbSchemaPrefix = "",
-          dbPoolSize = 1,
+          dbPoolSize = 10,
           dbCreateSchema = True
 #else
         { dbFilePrefix = "./simplex_v1", -- dbFilePrefix is not used in tests (except bot tests where it's redefined)
@@ -424,7 +424,10 @@ testChatN cfg opts ps test params =
 (<//) cc t = timeout t (getTermLine cc) `shouldReturn` Nothing
 
 getTermLine :: HasCallStack => TestCC -> IO String
-getTermLine cc@TestCC {printOutput} =
+getTermLine = getTermLine' Nothing
+
+getTermLine' :: HasCallStack => Maybe String -> TestCC -> IO String
+getTermLine' expected cc@TestCC {printOutput} =
   5000000 `timeout` atomically (readTQueue $ termQ cc) >>= \case
     Just s -> do
       -- remove condition to always echo virtual terminal
@@ -433,7 +436,12 @@ getTermLine cc@TestCC {printOutput} =
         name <- userName cc
         putStrLn $ name <> ": " <> s
       pure s
-    _ -> error "no output for 5 seconds"
+    Nothing -> do
+      name <- userName cc
+      let expectedMsg = case expected of
+            Just e -> ", expected: " <> show e
+            Nothing -> ""
+      error $ name <> ": no output for 5 seconds" <> expectedMsg
 
 userName :: TestCC -> IO [Char]
 userName (TestCC ChatController {currentUser} _ _ _ _ _) =
