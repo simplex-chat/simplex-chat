@@ -102,6 +102,7 @@ data StoreError
   | SEInvalidMemberRelationUpdate
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
+  | SEDuplicateMemberId
   | SEGroupAlreadyJoined
   | SEGroupInvitationNotFound
   | SENoteFolderAlreadyExists {noteFolderId :: NoteFolderId}

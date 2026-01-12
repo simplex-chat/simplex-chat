@@ -1162,6 +1162,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
+          XContactRelay p joiningMemberId welcomeMsgId_ -> relayGroupJoinRequest invId chatVRange p joiningMemberId welcomeMsgId_
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
@@ -1349,7 +1350,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                       messageError "processContactConnMessage: chat version range incompatible for accepting group join request"
                   | otherwise -> do
                       let profileMode = ExistingIncognito <$> incognitoMembershipProfile gInfo
-                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ welcomeMsgId_ acceptance useRole profileMode
+                      mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p xContactId_ Nothing welcomeMsgId_ acceptance useRole profileMode
                       (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
                       createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
                       toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
@@ -1363,6 +1364,20 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         relayContactRequest invId chatVRange groupRelayInv = do
           (_gInfo, _ownerMember) <- withStore $ \db -> createRelayRequestGroup db vr user groupRelayInv invId chatVRange
           lift $ void $ getRelayRequestWorker True
+        -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
+        -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
+        relayGroupJoinRequest :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> Maybe SharedMsgId -> CM ()
+        relayGroupJoinRequest invId chatVRange p joiningMemberId welcomeMsgId_ = do
+          (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
+          case gLinkInfo_ of
+            Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
+              gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
+              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) welcomeMsgId_ GAAccepted gLinkMemRole Nothing
+              (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
+              createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
+              toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
+            Nothing ->
+              messageError "relayGroupJoinRequest: no group link info for relay link"
 
     memberCanSend ::
       GroupMember ->

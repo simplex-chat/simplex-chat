@@ -568,13 +568,17 @@ deleteContactCardKeepConn db connId Contact {contactId, profile = LocalProfile {
   DB.execute db "DELETE FROM contacts WHERE contact_id = ?" (Only contactId)
   DB.execute db "DELETE FROM contact_profiles WHERE contact_profile_id = ?" (Only profileId)
 
-createPreparedGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createPreparedGroup db vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays = do
+createPreparedGroup :: DB.Connection -> TVar ChaChaDRG -> VersionRangeChat -> User -> GroupProfile -> Bool -> CreatedLinkContact -> Maybe SharedMsgId -> Bool -> ExceptT StoreError IO (GroupInfo, GroupMember)
+createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile business connLinkToConnect welcomeSharedMsgId useRelays = do
   currentTs <- liftIO getCurrentTime
   let prepared = Just (connLinkToConnect, welcomeSharedMsgId)
   (groupId, groupLDN) <- createGroup_ db userId groupProfile prepared Nothing useRelays Nothing currentTs
   hostMemberId <- insertHost_ currentTs groupId groupLDN
-  let userMember = MemberIdRole (MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id") GRMember
+  userMemberId <-
+    if useRelays
+      then liftIO $ MemberId <$> encodedRandomBytes gVar 12
+      else pure $ MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id"
+  let userMember = MemberIdRole userMemberId GRMember
   membership <- createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing False currentTs vr
   hostMember <- getGroupMember db vr user groupId hostMemberId
   when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
@@ -1480,7 +1484,7 @@ createNewContactMemberAsync db gVar user@User {userId, userContactId} GroupInfo 
               :. (minV, maxV)
           )
 
-createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
+createJoiningMember :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> VersionRangeChat -> Profile -> Maybe XContactId -> Maybe MemberId -> Maybe SharedMsgId -> GroupMemberRole -> GroupMemberStatus -> ExceptT StoreError IO (GroupMemberId, MemberId)
 createJoiningMember
   db
   gVar
@@ -1489,6 +1493,7 @@ createJoiningMember
   cReqChatVRange
   Profile {displayName, fullName, shortDescr, image, contactLink, preferences}
   cReqXContactId_
+  cReqMemberId_
   welcomeMsgId_
   memberRole
   memberStatus = do
@@ -1500,12 +1505,24 @@ createJoiningMember
           "INSERT INTO contact_profiles (display_name, full_name, short_descr, image, contact_link, user_id, preferences, created_at, updated_at) VALUES (?,?,?,?,?,?,?,?,?)"
           (displayName, fullName, shortDescr, image, contactLink, userId, preferences, currentTs, currentTs)
       profileId <- liftIO $ insertedRowId db
-      createWithRandomId' gVar $ \memId -> runExceptT $ do
-        insertMember_ ldn profileId (MemberId memId) currentTs
-        groupMemberId <- liftIO $ insertedRowId db
-        pure (groupMemberId, MemberId memId)
+      case cReqMemberId_ of
+        Just memberId -> do
+          checkMemberNotExists memberId
+          insertMember_ ldn profileId memberId currentTs
+          groupMemberId <- liftIO $ insertedRowId db
+          pure (groupMemberId, memberId)
+        Nothing ->
+          createWithRandomId' gVar $ \memId -> runExceptT $ do
+            insertMember_ ldn profileId (MemberId memId) currentTs
+            groupMemberId <- liftIO $ insertedRowId db
+            pure (groupMemberId, MemberId memId)
     where
       VersionRange minV maxV = cReqChatVRange
+      -- TODO [relays] relay: TBC communicate rejection
+      checkMemberNotExists :: MemberId -> ExceptT StoreError IO ()
+      checkMemberNotExists memberId = do
+        exists <- liftIO $ fromOnly . head <$> DB.query db "SELECT EXISTS (SELECT 1 FROM group_members WHERE group_id = ? AND member_id = ?)" (groupId, memberId)
+        when exists $ throwError SEDuplicateMemberId
       insertMember_ ldn profileId memberId currentTs = do
         indexInGroup <- getUpdateNextIndexInGroup_ db groupId
         liftIO $
