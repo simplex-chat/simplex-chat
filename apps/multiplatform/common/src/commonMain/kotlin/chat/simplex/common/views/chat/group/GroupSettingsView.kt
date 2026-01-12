@@ -165,30 +165,6 @@ private fun GroupSettingsLayout(
 }
 
 @Composable
-private fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_toggle_on),
-    stringResource(titleId),
-    click = onClick
-  )
-}
-
-@Composable
-private fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
-  val values = remember {
-    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsSmallGroups)).map { it to it.text }
-  }
-  ExposedDropDownSettingRow(
-    generalGetString(MR.strings.send_receipts),
-    values,
-    state,
-    icon = painterResource(MR.images.ic_double_check),
-    enabled = remember { mutableStateOf(true) },
-    onSelected = onSelected
-  )
-}
-
-@Composable
 private fun SendReceiptsOptionDisabled() {
   SettingsActionItemWithContent(
     icon = painterResource(MR.images.ic_double_check),
@@ -221,43 +197,6 @@ private fun ClearChatButton(onClick: () -> Unit) {
     click = onClick,
     textColor = WarningOrange,
     iconColor = WarningOrange,
-  )
-}
-
-@Composable
-private fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_delete),
-    stringResource(titleId),
-    onClick,
-    iconColor = Color.Red,
-    textColor = Color.Red
-  )
-}
-
-@Composable
-private fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit) {
-  val text = if (welcomeMessage == null) {
-    stringResource(MR.strings.button_add_welcome_message)
-  } else {
-    stringResource(MR.strings.button_welcome_message)
-  }
-  SettingsActionItem(
-    painterResource(MR.images.ic_maps_ugc),
-    text,
-    onClick,
-    iconColor = MaterialTheme.colors.secondary
-  )
-}
-
-@Composable
-private fun LeaveGroupButton(titleId: StringResource, onClick: () -> Unit) {
-  SettingsActionItem(
-    painterResource(MR.images.ic_logout),
-    stringResource(titleId),
-    onClick,
-    iconColor = Color.Red,
-    textColor = Color.Red
   )
 }
 

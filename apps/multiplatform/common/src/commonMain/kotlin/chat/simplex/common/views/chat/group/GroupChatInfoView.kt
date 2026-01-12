@@ -239,6 +239,37 @@ fun leaveGroupDialog(rhId: Long?, groupInfo: GroupInfo, chatModel: ChatModel, cl
   )
 }
 
+fun removeMemberAlert(rhId: Long?, groupInfo: GroupInfo, mem: GroupMember) {
+  val messageId = if (groupInfo.businessChat == null)
+    MR.strings.member_will_be_removed_from_group_cannot_be_undone
+  else
+    MR.strings.member_will_be_removed_from_chat_cannot_be_undone
+  AlertManager.shared.showAlertDialogButtonsColumn(
+    generalGetString(MR.strings.button_remove_member_question),
+    generalGetString(messageId),
+    buttons = {
+      Column {
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = false)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+          removeMembers(rhId, groupInfo, listOf(mem.groupMemberId), withMessages = true)
+        }) {
+          Text(generalGetString(MR.strings.remove_member_delete_messages_confirmation), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = Color.Red)
+        }
+        SectionItemView({
+          AlertManager.shared.hideAlert()
+        }) {
+          Text(generalGetString(MR.strings.cancel_verb), Modifier.fillMaxWidth(), textAlign = TextAlign.Center, color = MaterialTheme.colors.primary)
+        }
+      }
+    })
+}
+
 private fun removeMembersAlert(rhId: Long?, groupInfo: GroupInfo, memberIds: List<Long>, onSuccess: () -> Unit = {}) {
   val messageId = if (groupInfo.businessChat == null)
     MR.strings.members_will_be_removed_from_group_cannot_be_undone
@@ -681,6 +712,75 @@ private fun GroupChatInfoHeader(cInfo: ChatInfo, groupInfo: GroupInfo) {
 }
 
 @Composable
+fun MemberSupportButton(chat: Chat, onClick: () -> Unit) {
+  SettingsActionItemWithContent(
+    painterResource(if (chat.supportUnreadCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
+    stringResource(MR.strings.member_support),
+    click = onClick,
+    iconColor = (if (chat.supportUnreadCount > 0) MaterialTheme.colors.primary else MaterialTheme.colors.secondary)
+  ) {
+    if (chat.supportUnreadCount > 0) {
+      UnreadBadge(
+        text = unreadCountStr(chat.supportUnreadCount),
+        backgroundColor = MaterialTheme.colors.primary
+      )
+    }
+  }
+}
+
+@Composable
+fun GroupPreferencesButton(titleId: StringResource, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_toggle_on),
+    stringResource(titleId),
+    click = onClick
+  )
+}
+
+@Composable
+fun GroupReportsButton(chat: Chat, onClick: () -> Unit) {
+  SettingsActionItemWithContent(
+    painterResource(if (chat.chatStats.reportsCount > 0) MR.images.ic_flag_filled else MR.images.ic_flag),
+    stringResource(MR.strings.group_reports_member_reports),
+    click = onClick,
+    iconColor = (if (chat.chatStats.reportsCount > 0) Color.Red else MaterialTheme.colors.secondary)
+  ) {
+    if (chat.chatStats.reportsCount > 0) {
+      UnreadBadge(
+        text = unreadCountStr(chat.chatStats.reportsCount),
+        backgroundColor = Color.Red
+      )
+    }
+  }
+}
+
+@Composable
+fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected: (SendReceipts) -> Unit) {
+  val values = remember {
+    mutableListOf(SendReceipts.Yes, SendReceipts.No, SendReceipts.UserDefault(currentUser.sendRcptsSmallGroups)).map { it to it.text }
+  }
+  ExposedDropDownSettingRow(
+    generalGetString(MR.strings.send_receipts),
+    values,
+    state,
+    icon = painterResource(MR.images.ic_double_check),
+    enabled = remember { mutableStateOf(true) },
+    onSelected = onSelected
+  )
+}
+
+@Composable
+fun AddMembersButton(titleId: StringResource, tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_add),
+    stringResource(titleId),
+    onClick,
+    iconColor = tint,
+    textColor = tint
+  )
+}
+
+@Composable
 fun MemberRow(member: GroupMember, user: Boolean = false, infoPage: Boolean = true, showlocalAliasAndFullName: Boolean = false, selected: Boolean = false) {
   @Composable
   fun MemberInfo() {
@@ -762,12 +862,118 @@ fun MemberVerifiedShield() {
 }
 
 @Composable
+fun DropDownMenuForMember(rhId: Long?, member: GroupMember, groupInfo: GroupInfo, selectedItems: MutableState<Set<Long>?>, showMenu: MutableState<Boolean>) {
+  if (groupInfo.membership.memberRole >= GroupMemberRole.Moderator) {
+    val canBlockForAll = member.canBlockForAll(groupInfo)
+    val canRemove = member.canBeRemoved(groupInfo)
+    if (canBlockForAll || canRemove) {
+      DefaultDropdownMenu(showMenu) {
+        if (canBlockForAll) {
+          if (member.blockedByAdmin) {
+            ItemAction(stringResource(MR.strings.unblock_for_all), painterResource(MR.images.ic_do_not_touch), onClick = {
+              unblockForAllAlert(rhId, groupInfo, member)
+              showMenu.value = false
+            })
+          } else {
+            ItemAction(stringResource(MR.strings.block_for_all), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+              blockForAllAlert(rhId, groupInfo, member)
+              showMenu.value = false
+            })
+          }
+        }
+        if (canRemove) {
+          ItemAction(stringResource(MR.strings.remove_member_button), painterResource(MR.images.ic_delete), color = MaterialTheme.colors.error, onClick = {
+            removeMemberAlert(rhId, groupInfo, member)
+            showMenu.value = false
+          })
+        }
+        if (selectedItems.value == null && member.memberRole < GroupMemberRole.Moderator) {
+          Divider()
+          SelectItemAction(showMenu) { toggleItemSelection(member.groupMemberId, selectedItems) }
+        }
+      }
+    }
+  } else if (!member.blockedByAdmin) {
+    DefaultDropdownMenu(showMenu) {
+      if (member.memberSettings.showMessages) {
+        ItemAction(stringResource(MR.strings.block_member_button), painterResource(MR.images.ic_back_hand), color = MaterialTheme.colors.error, onClick = {
+          blockMemberAlert(rhId, groupInfo, member)
+          showMenu.value = false
+        })
+      } else {
+        ItemAction(stringResource(MR.strings.unblock_member_button), painterResource(MR.images.ic_do_not_touch), onClick = {
+          unblockMemberAlert(rhId, groupInfo, member)
+          showMenu.value = false
+        })
+      }
+    }
+  }
+}
+
+@Composable
+fun GroupLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_link),
+    stringResource(MR.strings.group_link),
+    onClick,
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+fun CreateGroupLinkButton(onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_add_link),
+    stringResource(MR.strings.create_group_link),
+    onClick,
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
 fun EditGroupProfileButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_edit),
     stringResource(MR.strings.button_edit_group_profile),
     onClick,
     iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+fun AddOrEditWelcomeMessage(welcomeMessage: String?, onClick: () -> Unit) {
+  val text = if (welcomeMessage == null) {
+    stringResource(MR.strings.button_add_welcome_message)
+  } else {
+    stringResource(MR.strings.button_welcome_message)
+  }
+  SettingsActionItem(
+    painterResource(MR.images.ic_maps_ugc),
+    text,
+    onClick,
+    iconColor = MaterialTheme.colors.secondary
+  )
+}
+
+@Composable
+fun LeaveGroupButton(titleId: StringResource, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_logout),
+    stringResource(titleId),
+    onClick,
+    iconColor = Color.Red,
+    textColor = Color.Red
+  )
+}
+
+@Composable
+fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
+  SettingsActionItem(
+    painterResource(MR.images.ic_delete),
+    stringResource(titleId),
+    onClick,
+    iconColor = Color.Red,
+    textColor = Color.Red
   )
 }
 
