@@ -12,10 +12,11 @@
     "install": "node-gyp configure; node-gyp rebuild --release",
     "install-tools": "npm install -g node-gyp",
     "configure": "node-gyp configure; mkdir libs 2> /dev/null | true",
-    "build": "node-gyp rebuild && tsc",
+    "build": "node-gyp rebuild && tsc && cp ./src/simplex.* ./dist",
     "run": "node src/index.js",
     "build-run": "node-gyp build && node src/index.js",
-    "test": "jest"
+    "test": "jest",
+    "docs": "typedoc"
   },
   "dependencies": {
     "@simplex-chat/types": "^0.2.3",
@@ -27,6 +28,8 @@
     "@types/node": "^25.0.5",
     "jest": "^30.2.0",
     "ts-jest": "^29.4.6",
+    "typedoc": "^0.28.15",
+    "typedoc-plugin-markdown": "^4.9.0",
     "typescript": "^5.9.3"
   },
   "repository": {
