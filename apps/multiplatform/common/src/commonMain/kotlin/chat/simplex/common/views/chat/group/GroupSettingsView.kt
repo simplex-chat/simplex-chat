@@ -165,22 +165,6 @@ private fun GroupSettingsLayout(
 }
 
 @Composable
-private fun SendReceiptsOptionDisabled() {
-  SettingsActionItemWithContent(
-    icon = painterResource(MR.images.ic_double_check),
-    text = generalGetString(MR.strings.send_receipts),
-    click = {
-      AlertManager.shared.showAlertMsg(
-        title = generalGetString(MR.strings.send_receipts_disabled_alert_title),
-        text = String.format(generalGetString(MR.strings.send_receipts_disabled_alert_msg), SMALL_GROUPS_RCPS_MEM_LIMIT)
-      )
-    }
-  ) {
-    androidx.compose.material.Text(generalGetString(MR.strings.send_receipts_disabled), color = MaterialTheme.colors.secondary)
-  }
-}
-
-@Composable
 private fun WallpaperButton(onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_image),

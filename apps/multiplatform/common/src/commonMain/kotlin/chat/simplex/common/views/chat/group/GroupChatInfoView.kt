@@ -770,6 +770,22 @@ fun SendReceiptsOption(currentUser: User, state: State<SendReceipts>, onSelected
 }
 
 @Composable
+fun SendReceiptsOptionDisabled() {
+  SettingsActionItemWithContent(
+    icon = painterResource(MR.images.ic_double_check),
+    text = generalGetString(MR.strings.send_receipts),
+    click = {
+      AlertManager.shared.showAlertMsg(
+        title = generalGetString(MR.strings.send_receipts_disabled_alert_title),
+        text = String.format(generalGetString(MR.strings.send_receipts_disabled_alert_msg), SMALL_GROUPS_RCPS_MEM_LIMIT)
+      )
+    }
+  ) {
+    Text(generalGetString(MR.strings.send_receipts_disabled), color = MaterialTheme.colors.secondary)
+  }
+}
+
+@Composable
 fun AddMembersButton(titleId: StringResource, tint: Color = MaterialTheme.colors.primary, onClick: () -> Unit) {
   SettingsActionItem(
     painterResource(MR.images.ic_add),
