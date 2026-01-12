@@ -1,7 +1,7 @@
 import * as path from "path"
 import * as fs from "fs"
 import {CEvt, T} from "@simplex-chat/types"
-import {api} from "../src/index"
+import {api} from ".."
 
 const CT = T.ChatType
 
@@ -21,7 +21,9 @@ describe("API tests (use preset servers)", () => {
     let eventCount = 0
     alice.on("hostConnected" as CEvt.Tag, async ({transportHost}: any) => { servers.push(transportHost) })
     alice.onAny(async () => { eventCount++ })
+    await expect(alice.apiGetActiveUser()).resolves.toBeUndefined()
     const aliceUser = await alice.apiCreateActiveUser({displayName: "alice", fullName: ""})
+    await expect(alice.apiGetActiveUser()).resolves.toMatchObject(aliceUser)
     await bob.apiCreateActiveUser({displayName: "bob", fullName: ""})
     await alice.startChat()
     await bob.startChat()

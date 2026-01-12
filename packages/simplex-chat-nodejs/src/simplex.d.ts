@@ -1,5 +1,3 @@
-import {ChatEvent, ChatResponse} from "@simplex-chat/types";
-
 // These functions are defined in CPP add-on ../cpp/simplex.cc
 
 export function chat_migrate_init(dbPath: string, dbKey: string, confirm: string): Promise<[bigint, string]>

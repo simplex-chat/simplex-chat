@@ -1,4 +1,4 @@
-# SimpleX Chat JavaScript client
+# SimpleX Chat JavaScript WebRTC client
 
 **THIS PACKAGE IS DEPRECATED**
 

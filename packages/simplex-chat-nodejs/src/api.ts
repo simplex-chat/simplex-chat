@@ -210,31 +210,31 @@ export class ChatApi {
   // Get bot address and settings.
   // Network usage: no.
   async apiGetUserAddress(userId: number): Promise<string | undefined> {
-    const r = await this.sendChatCmd(CC.APIShowMyAddress.cmdString({userId}))
-    switch (r.type) {
-      case "userContactLink": {
-        const link = r.contactLink.connLinkContact
-        return link.connShortLink || link.connFullLink
-      }
-      default:
-        if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
-          return undefined
+    try {
+      const r = await this.sendChatCmd(CC.APIShowMyAddress.cmdString({userId}))
+      switch (r.type) {
+        case "userContactLink": {
+          const link = r.contactLink.connLinkContact
+          return link.connShortLink || link.connFullLink
         }
-        throw new ChatCommandError("error loading user address", r)
+        default:
+          throw new ChatCommandError("error loading user address", r)
+      }
+    } catch (err) {
+      const e = err as any
+      if (e.chatError?.type === "errorStore" && e.chatError.storeError?.type === "userContactLinkNotFound") return undefined
+      throw e
     }
   }
 
   // Add address to bot profile.
   // Network usage: interactive.
-  async apiSetProfileAddress(userId: number, enable: boolean): Promise<T.UserProfileUpdateSummary | undefined> {
+  async apiSetProfileAddress(userId: number, enable: boolean): Promise<T.UserProfileUpdateSummary> {
     const r = await this.sendChatCmd(CC.APISetProfileAddress.cmdString({userId, enable}))
     switch (r.type) {
       case "userProfileUpdated":
         return r.updateSummary
       default:
-        if (r.type === "chatCmdError" && r.chatError.type === "errorStore" && r.chatError.storeError.type === "userContactLinkNotFound") {
-          return undefined
-        }
         throw new ChatCommandError("error loading user address", r)
     }
   }
@@ -573,15 +573,18 @@ export class ChatApi {
   // Get active user profile
   // Network usage: no.
   async apiGetActiveUser(): Promise<T.User | undefined> {
-    const r = await this.sendChatCmd(CC.ShowActiveUser.cmdString({}))
-    switch (r.type) {
-      case "activeUser":
-        return r.user
-      case "chatCmdError":
-        if (r.chatError.type === "error" && r.chatError.errorType.type === "noActiveUser") return undefined
-        throw new ChatCommandError("unexpected response error", r)
-      default:
-        throw new ChatCommandError("unexpected response", r)
+    try {
+      const r = await this.sendChatCmd(CC.ShowActiveUser.cmdString({}))
+      switch (r.type) {
+        case "activeUser":
+          return r.user
+        default:
+          throw new ChatCommandError("unexpected response", r)
+      }
+    } catch (err) {
+      const e = err as core.ChatAPIError
+      if (e.chatError?.type === "error" && e.chatError.errorType.type === "noActiveUser") return undefined
+      throw err
     }
   }
 
