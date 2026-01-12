@@ -143,7 +143,7 @@ chatEventsDocsData =
       \or because messages may be delivered to deleted chats for a short period of time \
       \(they will be ignored).",
       [ ("CEvtMessageError", ""),
-        ("CEvtChatError", ""), -- only used in WebSockets API, Haskell code uses Either, with error in Left
+        ("CEvtChatError", "Chat error (only used in WebSockets API)."), -- Haskell code uses Either, with error in Left
         ("CEvtChatErrors", "")
       ],
       []

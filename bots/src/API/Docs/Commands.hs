@@ -72,7 +72,7 @@ instance IsString ErrorTypeDoc where fromString s = TD s ""
 
 
 -- category name, category description, commands
--- inner: constructor, description, responses, errors (ChatErrorType constructors), network usage, syntax
+-- inner: constructor, hidden params, description, responses, errors (ChatErrorType constructors), network usage, syntax
 chatCommandsDocsData :: [(String, String, [(ConsName, [String], Text, [ConsName], [ErrorTypeDoc], Maybe UsesNetwork, Expr)])]
 chatCommandsDocsData =
   [ ( "Address commands",
@@ -132,7 +132,7 @@ chatCommandsDocsData =
       "These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.",
       [ ("APIAddContact", [], "Create 1-time invitation link.", ["CRInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> OnOffParam "incognito" "incognito" (Just False)),
         ("APIConnectPlan", [], "Determine SimpleX link type and if the bot is already connected via this link.", ["CRConnectionPlan", "CRChatCmdError"], [], Just UNInteractive, "/_connect plan " <> Param "userId" <> " " <> Param "connectionLink"),
-        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
+        ("APIConnect", [], "Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/_connect " <> Param "userId" <> Optional "" (" " <> Param "$0") "preparedLink_"),
         ("Connect", [], "Connect via SimpleX link as string in the active user profile.", ["CRSentConfirmation", "CRContactAlreadyExists", "CRSentInvitation", "CRChatCmdError"], [], Just UNInteractive, "/connect" <> Optional "" (" " <> Param "$0") "connLink_"),
         ("APIAcceptContact", ["incognito"], "Accept contact request.", ["CRAcceptingContactRequest", "CRChatCmdError"], [], Just UNInteractive, "/_accept " <> Param "contactReqId"),
         ("APIRejectContact", [], "Reject contact request. The user who sent the request is **not notified**.", ["CRContactRequestRejected", "CRChatCmdError"], [], Nothing, "/_reject " <> Param "contactReqId")
@@ -163,20 +163,26 @@ chatCommandsDocsData =
     ),
     ( "User profile commands",
       "Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).",
-      [ ("ShowActiveUser", [], "Get active user profile", ["CRActiveUser", "CRChatCmdError"], [], Nothing, "/user"),
+      [ ("ShowActiveUser", [], "Get active user profile.", ["CRActiveUser", "CRChatCmdError"], [], Nothing, "/user"),
         ( "CreateActiveUser",
           [],
-          "Create new user profile",
+          "Create new user profile.",
           ["CRActiveUser", "CRChatCmdError"],
           [TD "CEUserExists" "User or contact with this name already exists", TD "CEInvalidDisplayName" "Invalid user display name"],
           Nothing,
           "/_create user " <> Json "newUser"
         ),
-        ("ListUsers", [], "Get all user profiles", ["CRUsersList", "CRChatCmdError"], [], Nothing, "/users"),
-        ("APISetActiveUser", [], "Set active user profile", ["CRActiveUser", "CRChatCmdError"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
+        ("ListUsers", [], "Get all user profiles.", ["CRUsersList", "CRChatCmdError"], [], Nothing, "/users"),
+        ("APISetActiveUser", [], "Set active user profile.", ["CRActiveUser", "CRChatCmdError"], ["CEChatNotStarted"], Nothing, "/_user " <> Param "userId" <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIDeleteUser", [], "Delete user profile.", ["CRCmdOk", "CRChatCmdError"], [], Just UNBackground, "/_delete user " <> Param "userId" <> OnOffParam "del_smp" "delSMPQueues" Nothing <> Optional "" (" " <> Json "$0") "viewPwd"),
         ("APIUpdateProfile", [], "Update user profile.", ["CRUserProfileUpdated", "CRUserProfileNoChange", "CRChatCmdError"], [], Just UNBackground, "/_profile " <> Param "userId" <> " " <> Json "profile"),
         ("APISetContactPrefs", [], "Configure chat preference overrides for the contact.", ["CRContactPrefsUpdated", "CRChatCmdError"], [], Just UNBackground, "/_set prefs @" <> Param "contactId" <> " " <> Json "preferences")
+      ]
+    ),
+    ( "Chat management",
+      "These commands should not be used with CLI-based bots",
+      [ ("StartChat", [], "Start chat controller.", ["CRChatStarted", "CRChatRunning"], [], Nothing, "/_start"),
+        ("APIStopChat", [], "Stop chat controller.", ["CRChatStopped"], [], Nothing, "/_stop")
       ]
     )
   ]
@@ -396,7 +402,6 @@ undocumentedCommands =
     "APISetUserServers",
     "APISetUserUIThemes",
     "APIStandaloneFileInfo",
-    "APIStopChat",
     "APIStorageEncryption",
     "APISuspendChat",
     "APISwitchContact",
@@ -455,7 +460,6 @@ undocumentedCommands =
     "SetUserProtoServers",
     "SetUserChatRelays",
     "SlowSQLQueries",
-    "StartChat",
     "StartRemoteHost",
     "StopRemoteCtrl",
     "StopRemoteHost",
