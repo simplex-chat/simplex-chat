@@ -51,8 +51,11 @@ chatResponsesDocsData =
     ("CRChatItemReaction", "Message reaction"),
     ("CRChatItemUpdated", "Message updated"),
     ("CRChatItemsDeleted", "Messages deleted"),
+    ("CRChatRunning", ""),
+    ("CRChatStarted", ""),
+    ("CRChatStopped", ""),
     ("CRCmdOk", "Ok"),
-    ("CRChatCmdError", "Command error"), -- only used in WebSockets API, Haskell code uses Either, with error in Left
+    ("CRChatCmdError", "Command error (only used in WebSockets API)"), -- Haskell code uses Either, with error in Left
     ("CRConnectionPlan", "Connection link information"),
     ("CRContactAlreadyExists", ""),
     ("CRContactConnectionDeleted", "Connection deleted"),
@@ -127,10 +130,7 @@ undocumentedResponses =
     "CRChatItemInfo",
     "CRChatItems",
     "CRChatItemTTL",
-    "CRChatRunning",
     "CRChats",
-    "CRChatStarted",
-    "CRChatStopped",
     "CRConnectionsDiff",
     "CRChatTags",
     "CRConnectionAliasUpdated",

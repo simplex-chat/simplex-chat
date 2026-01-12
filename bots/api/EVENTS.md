@@ -705,7 +705,7 @@ Message error.
 
 ### ChatError
 
-Chat error.
+Chat error (only used in WebSockets API).
 
 **Record type**:
 - type: "chatError"

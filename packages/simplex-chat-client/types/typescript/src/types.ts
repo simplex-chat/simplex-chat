@@ -1558,7 +1558,7 @@ export interface ChatRef {
 
 export namespace ChatRef {
   export function cmdString(self: ChatRef): string {
-    return self.chatType.toString() + self.chatId + (self.chatScope ? self.chatScope.toString() : '')
+    return ChatType.cmdString(self.chatType) + self.chatId + (self.chatScope ? GroupChatScope.cmdString(self.chatScope) : '')
   }
 }
 
