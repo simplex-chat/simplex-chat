@@ -40,7 +40,7 @@
   },
   "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/typescript#readme",
   "dependencies": {
-    "@simplex-chat/types": "^0.1.0",
+    "@simplex-chat/types": "^0.3.0",
     "isomorphic-ws": "^4.0.1"
   },
   "devDependencies": {

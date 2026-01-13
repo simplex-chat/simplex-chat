@@ -28,7 +28,7 @@ Please share your use cases and implementations.
 ## Quick start
 
 ```
-npm i @simplex-chat/webrtc-client
+npm i @simplex-chat/webrtc-client@6.5.0-beta.3
 npm run build
 ```
 
