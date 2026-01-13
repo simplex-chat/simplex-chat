@@ -58,7 +58,12 @@ import {bot, util} from "simplex-chat"
 
 An example with more options is in [./examples/squaring-bot.ts](_media/squaring-bot.ts).
 
-You can run it with `npx ts-node ./examples/squaring-bot.ts`
+You can run it with:
+
+```sh
+npm run build # only needed if you cloned from GitHub
+npx ts-node ./examples/squaring-bot.ts
+```
 
 ## Documentation
 

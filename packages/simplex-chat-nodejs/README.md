@@ -45,7 +45,9 @@ import {bot, util} from "simplex-chat"
     },
     onMessage: async (ci, content) => {
       const n = +content.text
-      const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
+      const reply = typeof n === "number" && !isNaN(n)
+                    ? `${n} * ${n} = ${n * n}`
+                    : `this is not a number`
       await chat.apiSendTextReply(ci, reply)
     }
   })
@@ -54,7 +56,12 @@ import {bot, util} from "simplex-chat"
 
 An example with more options is in [./examples/squaring-bot.ts](./examples/squaring-bot.ts).
 
-You can run it with `npx ts-node ./examples/squaring-bot.ts`
+You can run it with:
+
+```sh
+npm run build # only needed if you cloned from GitHub
+npx ts-node ./examples/squaring-bot.ts
+```
 
 ## Documentation
 
