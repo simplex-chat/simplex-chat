@@ -30,9 +30,11 @@ describe("API tests (use preset servers)", () => {
     // connect via link
     const link = await alice.apiCreateLink(aliceUser.userId)
     await expect(bob.apiConnectActiveUser(link)).resolves.toBe(api.ConnReqType.Invitation)
-    const bobContact = (await alice.wait("contactConnected")).contact
+    const [bobContact, aliceContact] = await Promise.all([
+      (await alice.wait("contactConnected")).contact,
+      (await bob.wait("contactConnected")).contact
+    ])
     expect(bobContact).toMatchObject({profile: {displayName: "bob"}})
-    const aliceContact = (await bob.wait("contactConnected")).contact
     expect(aliceContact).toMatchObject({profile: {displayName: "alice"}})
     // exchange messages
     const isMessage = ({contactId}: T.Contact, msg: string) => (evt: CEvt.NewChatItems) =>

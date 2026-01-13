@@ -37,13 +37,15 @@ describe("Bot tests (use preset servers)", () => {
     const [plan, link] = await alice.apiConnectPlan(aliceUser.userId, util.contactAddressStr(botAddress.connLinkContact))
     assert(plan.type === "contactAddress")
     await expect(alice.apiConnect(aliceUser.userId, false, link)).resolves.toBe(api.ConnReqType.Contact)
-    const botContact = (await alice.wait("contactConnected")).contact
+    const [botContact, aliceContact] = await Promise.all([
+      (await alice.wait("contactConnected")).contact,
+      (await chat.wait("contactConnected")).contact
+    ])
     expect(botContact.profile.displayName).toBe("Squaring bot")
-    const aliceContact = (await chat.wait("contactConnected")).contact
     // send message to bot
     const isMessage = ({contactId}: T.Contact, msg: string) => (evt: CEvt.NewChatItems) =>
       evt.chatItems.some(ci => ci.chatInfo.type === CT.Direct && ci.chatInfo.contact.contactId === contactId && ci.chatItem.meta.itemText === msg)
-    console.log("sent message", await alice.apiSendTextMessage([CT.Direct, botContact.contactId], "2"))
+    await alice.apiSendTextMessage([CT.Direct, botContact.contactId], "2")
     console.log("after sending message")
     await alice.wait("newChatItems", isMessage(botContact, "2 * 2 = 4"), 5000)
     // cleanup
