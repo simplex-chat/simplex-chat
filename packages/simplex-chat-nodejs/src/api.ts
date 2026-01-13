@@ -1,5 +1,6 @@
 import {CC, CEvt, ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as core from "./core"
+import * as util from "./util"
 
 export class ChatCommandError extends Error {
   constructor(public message: string, public response: ChatResponse) {
@@ -12,7 +13,19 @@ export enum ConnReqType {
   Contact = "contact",
 }
 
-export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => Promise<void>
+export interface BotAddressSettings {
+  autoAccept?: boolean // default: true
+  welcomeMessage?: T.MsgContent | undefined // default: no welcome message
+  businessAddress?: boolean // default: false
+}
+
+export const defaultBotAddressSettings: BotAddressSettings = {
+  autoAccept: true,
+  welcomeMessage: undefined,
+  businessAddress: false
+}
+
+export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => void | Promise<void>
 
 interface EventSubscriber<K extends CEvt.Tag> {
   subscriber: EventSubscriberFunc<K>
@@ -23,7 +36,7 @@ export class ChatApi {
   private receiveEvents = false
   private eventsLoop: Promise<void> | undefined = undefined
   private subscribers: {[K in CEvt.Tag]?: EventSubscriber<K>[]} = {}
-  private receivers: ((event: ChatEvent) => Promise<void>)[] = []
+  private receivers: EventSubscriberFunc<CEvt.Tag>[] = []
   
   private constructor(protected ctrl_: bigint | undefined) {}
 
@@ -69,14 +82,22 @@ export class ChatApi {
         const subs = this.subscribers[event.type]
         if (subs) {
           for (const {subscriber, once} of [...subs]) {
-            try { await (subscriber as EventSubscriberFunc<typeof event.type>)(event) }
-            catch(e) { console.log(`${event.type} subsriber error`, e) }
+            try {
+              const p = (subscriber as EventSubscriberFunc<typeof event.type>)(event)
+              if (p instanceof Promise) await p
+            } catch(e) {
+              console.log(`${event.type} event processing error`, e)
+            }
             if (once) this.off(event.type, subscriber as EventSubscriberFunc<typeof event.type>)
           }
         }
         for (const r of [...this.receivers]) {          
-          try { await r(event) }
-          catch(e) { console.log(`${event.type} receiver error`, e) }        
+          try {
+            const p = r(event)
+            if (p instanceof Promise) await p
+          } catch(e) {
+            console.log(`${event.type} event processing error`, e)
+          }
         }
       } catch(err) {
         const e = err as core.ChatAPIError
@@ -88,22 +109,33 @@ export class ChatApi {
       }
     }
   }
-
-  on<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>, once: boolean = false) {
+  
+  on<K extends CEvt.Tag>(subscribers: {[K in CEvt.Tag]?: EventSubscriberFunc<K>}): void
+  on<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>): void
+  on<K extends CEvt.Tag>(events: K | {[K in CEvt.Tag]?: EventSubscriberFunc<K>}, subscriber?: EventSubscriberFunc<K>): void {
+    if (typeof events === "string" && subscriber) {
+      this.on_(events, subscriber)
+    } else {
+      const eventEntries = Object.entries(events) as [CEvt.Tag, EventSubscriberFunc<CEvt.Tag> | undefined][]
+      for (const [event, subscriber] of eventEntries) {
+        if (subscriber) this.on_(event, subscriber)
+      }      
+    }
+  }
+  
+  private on_<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>, once: boolean = false): void {
     const subs: EventSubscriber<K>[] = this.subscribers[event] || (this.subscribers[event] = [])
-    if (!subs.some(s => s.subscriber === subscriber)) {
-      subs.push({subscriber, once})
-    }
+    if (subs.some(s => s.subscriber === subscriber)) throw Error(`this function is already subscribed to ${event}`)
+    subs.push({subscriber, once})
   }
   
-  onAny(receiver: (event: ChatEvent) => Promise<void>) {
-    if (!this.receivers.some(s => s === receiver)) {
-      this.receivers.push(receiver)
-    }
+  onAny(receiver: EventSubscriberFunc<CEvt.Tag>): void {
+    if (this.receivers.some(s => s === receiver)) throw Error("this function is already subscribed")
+    this.receivers.push(receiver)
   }
   
-  once<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>) {
-    this.on(event, subscriber, true)
+  once<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>): void {
+    this.on_(event, subscriber, true)
   }
 
   // Waits for specific event, with optional predicate.
@@ -143,7 +175,7 @@ export class ChatApi {
     })
   }
     
-  off<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K> | undefined = undefined) {
+  off<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K> | undefined = undefined): void {
     if (subscriber) {
       const subs = this.subscribers[event]
       if (subs) {
@@ -155,7 +187,7 @@ export class ChatApi {
     }
   }
 
-  offAny(receiver: ((event: ChatEvent) => Promise<void>) | undefined = undefined) {
+  offAny(receiver: EventSubscriberFunc<CEvt.Tag> | undefined = undefined): void {
     if (receiver) {
       const i = this.receivers.findIndex(r => r === receiver)
       if (i >= 0) this.receivers.splice(i, 1)
@@ -190,12 +222,9 @@ export class ChatApi {
 
   // Create bot address.
   // Network usage: interactive.
-  async apiCreateUserAddress(userId: number): Promise<string> {
+  async apiCreateUserAddress(userId: number): Promise<T.CreatedConnLink> {
     const r = await this.sendChatCmd(CC.APICreateMyAddress.cmdString({userId}))
-    if (r.type === "userContactLinkCreated") {
-      const link = r.connLinkContact
-      return link.connShortLink || link.connFullLink
-    }
+    if (r.type === "userContactLinkCreated") return r.connLinkContact
     throw new ChatCommandError("error creating user address", r)
   }
 
@@ -209,16 +238,12 @@ export class ChatApi {
 
   // Get bot address and settings.
   // Network usage: no.
-  async apiGetUserAddress(userId: number): Promise<string | undefined> {
+  async apiGetUserAddress(userId: number): Promise<T.UserContactLink | undefined> {
     try {
       const r = await this.sendChatCmd(CC.APIShowMyAddress.cmdString({userId}))
       switch (r.type) {
-        case "userContactLink": {
-          const link = r.contactLink.connLinkContact
-          return link.connShortLink || link.connFullLink
-        }
-        default:
-          throw new ChatCommandError("error loading user address", r)
+        case "userContactLink": return r.contactLink
+        default: throw new ChatCommandError("error loading user address", r)
       }
     } catch (err) {
       const e = err as any
@@ -241,21 +266,16 @@ export class ChatApi {
 
   // Set bot address settings.
   // Network usage: interactive.
-  async apiSetAddressSettings(userId: number, settings: T.AddressSettings): Promise<void> {
-    const r = await this.sendChatCmd(
-      CC.APISetAddressSettings.cmdString({userId, settings})
-    )
+  async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings): Promise<void> {
+    const settings: T.AddressSettings = {
+      autoAccept: (autoAccept === undefined ? defaultBotAddressSettings.autoAccept : autoAccept) ? {acceptIncognito: false} : undefined,
+      autoReply: welcomeMessage || defaultBotAddressSettings.welcomeMessage,
+      businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false
+    }
+    const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))
     if (r.type !== "userContactLinkUpdated") {
       throw new ChatCommandError("error changing user contact address settings", r)
     }  
-  }
-
-  async enableAddressAutoAccept(userId: number, autoReply?: T.MsgContent, businessAddress = false): Promise<void> {
-    await this.apiSetAddressSettings(userId, {businessAddress, autoAccept: {acceptIncognito: false}, autoReply})
-  }
-
-  async disableAddressAutoAccept(userId: number, businessAddress = false): Promise<void> {
-    await this.apiSetAddressSettings(userId, {businessAddress})
   }
 
   // Message commands
@@ -263,16 +283,26 @@ export class ChatApi {
 
   // Send messages.
   // Network usage: background.
-  async apiSendMessages(chatType: T.ChatType, chatId: number, messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
+  async apiSendMessages(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
+    const sendRef = Array.isArray(chat)
+                    ? {chatType: chat[0], chatId: chat[1]}
+                    : "chatType" in chat
+                    ? chat
+                    : util.chatInfoRef(chat)
+    if (!sendRef) throw Error("apiSendMessages: can't send messages to this chat")
     const r = await this.sendChatCmd(
-      CC.APISendMessages.cmdString({sendRef: {chatType, chatId}, composedMessages: messages, liveMessage: false})
+      CC.APISendMessages.cmdString({sendRef, composedMessages: messages, liveMessage: false})
     )
     if (r.type === "newChatItems") return r.chatItems
     throw new ChatCommandError("unexpected response", r)
   }
 
-  async apiSendTextMessage(chatType: T.ChatType, chatId: number, text: string): Promise<T.AChatItem[]> {
-    return this.apiSendMessages(chatType, chatId, [{msgContent: {type: "text", text}, mentions: {}}])
+  async apiSendTextMessage(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, text: string, inReplyTo?: number): Promise<T.AChatItem[]> {
+    return this.apiSendMessages(chat, [{msgContent: {type: "text", text}, mentions: {}, quotedItemId: inReplyTo}])
+  }
+
+  async apiSendTextReply(chatItem: T.AChatItem, text: string): Promise<T.AChatItem[]> {
+    return this.apiSendTextMessage(chatItem.chatInfo, text, chatItem.chatItem.meta.itemId)
   }
 
   // Update message.
@@ -622,13 +652,13 @@ export class ChatApi {
 
   // Update user profile.
   // Network usage: background.
-  async apiUpdateProfile(userId: number, profile: T.Profile): Promise<T.Profile | undefined> {
+  async apiUpdateProfile(userId: number, profile: T.Profile): Promise<T.UserProfileUpdateSummary | undefined> {
     const r = await this.sendChatCmd(CC.APIUpdateProfile.cmdString({userId, profile}))
     switch (r.type) {
       case "userProfileNoChange":
         return undefined
       case "userProfileUpdated":
-        return r.toProfile
+        return r.updateSummary
       default:
         throw new ChatCommandError("error updating profile", r)
     }

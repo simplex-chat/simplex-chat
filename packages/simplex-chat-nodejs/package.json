@@ -19,7 +19,7 @@
     "docs": "typedoc"
   },
   "dependencies": {
-    "@simplex-chat/types": "^0.2.3",
+    "@simplex-chat/types": "^0.3.0",
     "extract-zip": "^2.0.1",
     "node-addon-api": "^8.5.0"
   },

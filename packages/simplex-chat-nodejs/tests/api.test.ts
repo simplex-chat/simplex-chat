@@ -37,13 +37,13 @@ describe("API tests (use preset servers)", () => {
     // exchange messages
     const isMessage = ({contactId}: T.Contact, msg: string) => (evt: CEvt.NewChatItems) =>
       evt.chatItems.some(ci => ci.chatInfo.type === CT.Direct && ci.chatInfo.contact.contactId === contactId && ci.chatItem.meta.itemText === msg)
-    await alice.apiSendTextMessage(CT.Direct, bobContact.contactId, "hello")
+    await alice.apiSendTextMessage([CT.Direct, bobContact.contactId], "hello")
     await bob.wait("newChatItems", isMessage(aliceContact, "hello"))
-    await bob.apiSendTextMessage(CT.Direct, bobContact.contactId, "hello too")
+    await bob.apiSendTextMessage([CT.Direct, aliceContact.contactId], "hello too")
     await alice.wait("newChatItems", isMessage(bobContact, "hello too"), 10000)
-    await alice.apiSendTextMessage(CT.Direct, bobContact.contactId, "how are you?")
+    await alice.apiSendTextMessage([CT.Direct, bobContact.contactId], "how are you?")
     await bob.wait("newChatItems", isMessage(aliceContact, "how are you?"))
-    await bob.apiSendTextMessage(CT.Direct, bobContact.contactId, "ok, and you?")
+    await bob.apiSendTextMessage([CT.Direct, aliceContact.contactId], "ok, and you?")
     await alice.wait("newChatItems", isMessage(bobContact, "ok, and you?"), 10000)
     // no more messages
     await expect(alice.wait("newChatItems", 500)).resolves.toBeUndefined()

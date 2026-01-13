@@ -1,38 +1,39 @@
 import {T} from "@simplex-chat/types"
-import {api} from ".."
+import {bot, util} from "../dist"
 
-const dbPath = "./squaring_bot"
-const botProfile = {displayName: "Squaring bot example", fullName: ""}
+(async function run() {
+  const welcomeMsgText = "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."
+  const [chat, _user] = await bot.run({
+    profile: {displayName: "Squaring bot example", fullName: ""},
+    dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
+    options: {
+      addressSettings: {autoAccept: true, welcomeMessage: {type: "text", text: welcomeMsgText}},
+      commands: [ // commands to show in client UI
+        {type: "command", keyword: "help", label: "Send welcome message"},
+        {type: "command", keyword: "info", label: "More information (not implemented)"}
+      ],
+      logContacts: true,
+      logNetwork: false
+    },
+    onMessage: async (ci, content) => {
+      const n = +content.text
+      const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
+      await chat.apiSendTextReply(ci, reply)        
 
-run()
-
-async function run() {
-  const bot = await api.ChatApi.init(dbPath)
-  const user = (await bot.apiGetActiveUser()) || (await bot.apiCreateActiveUser(botProfile))
-  console.log("Bot user: ", user.profile.displayName)
-  const {userId} = user
-  await bot.startChat()
-  const address = (await bot.apiGetUserAddress(userId)) || (await bot.apiCreateUserAddress(userId))
-  console.log(`Bot address: ${address}`)
-  await bot.enableAddressAutoAccept(userId, {type: "text", text: "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."})
-  bot.on("contactConnected", async ({contact}) => console.log(`${contact.profile.displayName} connected`))
-  bot.on("newChatItems", async (evt) => {
-    for (const {chatInfo, chatItem} of evt.chatItems) {
-      if (chatInfo.type !== T.ChatType.Direct) continue
-      const msg = ciContentText(chatItem.content)
-      if (msg) {
-        const n = +msg
-        const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
-        await bot.apiSendTextMessage(T.ChatType.Direct, chatInfo.contact.contactId, reply)        
+    },
+    onCommands: { // command handlers can be different from commands to be shown in client UI
+      "help": async (ci: T.AChatItem, _cmd: util.BotCommand) => {
+        await chat.apiSendTextMessage(ci.chatInfo, welcomeMsgText)
+      },
+      // fallback handler that will be called for all other commands
+      "": async (ci: T.AChatItem, _cmd: util.BotCommand) => {
+        await chat.apiSendTextReply(ci, "This command is not supported")
       }
-    }
+    },
+    events: {
+      "chatItemReaction": ({added, reaction}) => {
+        console.log(`${util.senderName(reaction.chatInfo, reaction.chatReaction.chatDir)} ${added ? "added" : "removed"} reaction ${util.reactionText(reaction)}`)
+      }
+    },
   })
-  
-  function ciContentText(content: T.CIContent): string | undefined {
-    switch (content.type) {
-      case "sndMsgContent": return content.msgContent.text;
-      case "rcvMsgContent": return content.msgContent.text;
-      default: return undefined;
-    }
-  }
-}
+})()
