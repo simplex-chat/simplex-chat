@@ -29,7 +29,7 @@ describe("API tests (use preset servers)", () => {
     await bob.startChat()
     // connect via link
     const link = await alice.apiCreateLink(aliceUser.userId)
-    await bob.apiConnectActiveUser(link)
+    await expect(bob.apiConnectActiveUser(link)).resolves.toBe(api.ConnReqType.Invitation)
     const bobContact = (await alice.wait("contactConnected")).contact
     expect(bobContact).toMatchObject({profile: {displayName: "bob"}})
     const aliceContact = (await bob.wait("contactConnected")).contact

@@ -46,7 +46,7 @@ export interface BotConfig {
   events?: api.EventSubscribers
 }
 
-export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User]> {
+export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User, T.UserContactLink | undefined]> {
   const bot = await api.ChatApi.init(dbOpts.dbFilePrefix, dbOpts.dbKey || "", dbOpts.confirmMigrations || core.MigrationConfirmation.YesUp)
   const opts = fullOptions(options)
   if (onMessage) subscribeMessages(bot, onMessage)
@@ -56,12 +56,14 @@ export async function run({profile, dbOpts, options = defaultOpts, onMessage, on
   const botProfile = mkBotProfile(profile, opts)
   const user = await createBotUser(bot, botProfile)
   await bot.startChat()
-  const address = await createOrUpdateAddress(bot, user, opts)  
-  const addressLink = util.contactAddressStr(address.connLinkContact)
-  console.log(`Bot address: ${addressLink}`)
-  if (opts.useBotProfile) botProfile.contactLink = addressLink
+  const address = await createOrUpdateAddress(bot, user, opts)
+  if (address) {
+    const addressLink = util.contactAddressStr(address.connLinkContact)
+    console.log(`Bot address: ${addressLink}`)
+    if (opts.useBotProfile) botProfile.contactLink = addressLink
+  }
   await updateBotUserProfile(bot, user, botProfile, opts)  
-  return [bot, user]
+  return [bot, user, address]
 }
 
 function fullOptions(options: BotOptions): Required<BotOptions> {
@@ -113,7 +115,7 @@ function subscribeMessages(bot: api.ChatApi, onMessage: (chatItem: T.AChatItem, 
           const p = onMessage(ci, ci.chatItem.content.msgContent)
           if (p instanceof Promise) await p
         } catch (e) {
-          console.log(`message processing error`, e)
+          console.log("message processing error", e)
         }
       }
     }
@@ -158,14 +160,14 @@ function subscribeLogEvents(bot: api.ChatApi, opts: Required<BotOptions>) {
 async function createBotUser(bot: api.ChatApi, profile: T.Profile): Promise<T.User> {
   let user = await bot.apiGetActiveUser()
   if (!user) {
-    console.log("No active user in dabase, creating...")
+    console.log("No active user in database, creating...")
     user = await bot.apiCreateActiveUser(profile)
   }
   console.log("Bot user: ", user.profile.displayName)
   return user    
 }
     
-async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Required<BotOptions>): Promise<T.UserContactLink> {
+async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Required<BotOptions>): Promise<T.UserContactLink | undefined> {
   const {userId} = user
   let address = await bot.apiGetUserAddress(userId)
   if (!address) {
@@ -178,14 +180,13 @@ async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Requi
         process.exit()
       }
     } else {
-      console.log("Bot has no address, exiting")
-      process.exit()
+      console.log("Warning: bot has no address")
+      return
     }
   }
   
   const addressSettings = opts.addressSettings || defaultOpts.addressSettings
   if (!equal(util.botAddressSettings(address), addressSettings)) {
-    console.log(util.botAddressSettings(address), addressSettings)
     if (opts.updateAddress) {
       console.log("Bot address settings changed, updating...")
       await bot.apiSetAddressSettings(userId, addressSettings)

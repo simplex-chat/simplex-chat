@@ -1,5 +1,7 @@
 # SimpleX Chat Node.js library
 
+This library replaced now deprecated [WebRTC TypeScript client](https://www.npmjs.com/package/@simplex-chat/webrtc-client).
+
 ## Use cases
 
 - chat bots: you can implement any logic of connecting with and communicating with SimpleX Chat users. Using chat groups a chat bot can connect SimpleX Chat users with each other.
@@ -24,7 +26,7 @@ Library provides types and functions to:
 ## Quick start
 
 ```
-npm i simplex-chat
+npm i simplex-chat@6.5.0-beta.3
 ```
 
 Simple bot that replies with squares of numbers you send to it:
