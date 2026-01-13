@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, partitionEithers, rights)
+import Data.Either (fromRight, isRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -1983,60 +1983,68 @@ processChatCommand vr nm = \case
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
-  APIConnectPreparedGroup groupId incognito msgContent_ -> withUser $ \user -> do
+  APIConnectPreparedGroup groupId incognito msgContent_ -> withUser $ \user@User {userId} -> do
     (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
-    case preparedGroup gInfo of
-      Nothing -> throwCmdError "group doesn't have link to connect"
-      Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}
-        | useRelays' gInfo -> do
-            sLnk <- case toShortLinkContact connLinkToConnect of
-              Just sl -> pure sl
-              Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
-            (_cReq, _cData@(ContactLinkData _ UserContactData {relays})) <- getShortLinkConnReq nm user sLnk
+    case gInfo of
+      GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
+      GroupInfo {useRelays = BoolDef True, preparedGroup = Just PreparedGroup {connLinkToConnect}} -> do
+        sLnk <- case toShortLinkContact connLinkToConnect of
+          Just sl -> pure sl
+          Nothing -> throwChatError $ CEException "failed to retrieve relays: no short link"
+        (mainCReq@(CRContactUri crData), ContactLinkData _ UserContactData {relays}) <- getShortLinkConnReq nm user sLnk
+        -- Set group link info and incognito profile once before connecting to relays
+        incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+        let cReqHash = ConnReqUriHash . C.sha256Hash . strEncode $ CRContactUri crData {crScheme = SSSimplex}
+        gInfo' <- withFastStore $ \db -> setPreparedGroupLinkInfo db vr user gInfo mainCReq cReqHash incognitoProfile
+        rs <- zip relays <$> mapConcurrently (tryAllErrors . connectToRelay gInfo') relays
+        let (succeeded, failed) = partition (isRight . snd) rs
+        if null succeeded
+          then do
+            -- updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
+            -- user or incognito profile for group, in case server received request while client got network error
+            toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+            -- TODO [relays] member: prefer throwing temporary network connection error to enable retry
+            case failed of
+              (_, Left e) : _ -> throwError e
+              _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
+          else do
+            withFastStore' $ \db -> setPreparedGroupStartedConnection db groupId
+            -- TODO [relays] member: async retry failed relays
+            pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
+        where
+          connectToRelay gInfo' relayLink = do
+            -- TODO [relays] member: check relay record already exists (getCreateRelayForMember)
+            -- TODO   - TBC pass welcomeSharedMsgId to connectViaContact
             gVar <- asks random
-            -- TODO [relays] member: TBC concurrently/catch on each
-            forM_ relays $ \relayLink -> do
-              -- TODO [relays] member: check relay record already exists -> then decide based on connection
-              relayMember <- withFastStore $ \db -> createRelayForMember db vr gVar user gInfo
-              -- TODO [relays] member: pass same incognito profile to all relays
-              -- TODO   - TBC welcomeSharedMsgId
-              (cReq, _cData) <- getShortLinkConnReq nm user relayLink -- this is network operation - consider recovery
-              let relayLinkToConnect = CCLink cReq (Just relayLink)
-              r <- connectViaContact user (Just $ PCEGroup gInfo relayMember) incognito relayLinkToConnect Nothing Nothing `catchAllErrors` \e -> do
-                -- TODO [relays] member: lock ability to change profile (see below)
-                throwError e
-              case r of
-                CVRSentInvitation _conn _customUserProfile -> do
-                  _gInfo' <- withFastStore $ \db -> do
-                    liftIO $ setPreparedGroupStartedConnection db groupId
-                    getGroupInfo db vr user groupId
-                  pure relayMember -- what should be in returned event?
-                CVRConnectedContact _ct -> pure relayMember -- error?
-            ok_
-        | otherwise -> do
-            msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
-              Just smId -> pure (smId, mc)
-              Nothing -> do
-                smId <- getSharedMsgId
-                withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
-                pure (smId, mc)
-            r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
-              -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
-              -- user or incognito profile for group or business chat, in case server received request while client got network error
-              gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
-              toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
-              throwError e
-            case r of
-              CVRSentInvitation _conn customUserProfile -> do
-                -- get updated group info (connLinkStartedConnection and incognito membership)
-                gInfo' <- withFastStore $ \db -> do
-                  liftIO $ setPreparedGroupStartedConnection db groupId
-                  getGroupInfo db vr user groupId
-                forM_ msg_ $ \(sharedMsgId, mc) -> do
-                  ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
-                  toView $ CEvtNewChatItems user [ci]
-                pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
-              CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
+            relayMember <- withFastStore $ \db -> createRelayForMember db vr gVar user gInfo'
+            (cReq, _cData) <- getShortLinkConnReq nm user relayLink
+            let relayLinkToConnect = CCLink cReq (Just relayLink)
+            _r <- connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
+            pure relayMember
+      GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
+        msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
+          Just smId -> pure (smId, mc)
+          Nothing -> do
+            smId <- getSharedMsgId
+            withFastStore' $ \db -> setRequestSharedMsgIdForGroup db groupId smId
+            pure (smId, mc)
+        r <- connectViaContact user (Just $ PCEGroup gInfo hostMember) incognito connLinkToConnect welcomeSharedMsgId msg_ `catchAllErrors` \e -> do
+          -- get updated group info, in case connection was started (connLinkPreparedConnection) - in UI it would lock ability to change
+          -- user or incognito profile for group or business chat, in case server received request while client got network error
+          gInfo' <- withFastStore $ \db -> getGroupInfo db vr user groupId
+          toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
+          throwError e
+        case r of
+          CVRSentInvitation _conn customUserProfile -> do
+            -- get updated group info (connLinkStartedConnection and incognito membership)
+            gInfo' <- withFastStore $ \db -> do
+              liftIO $ setPreparedGroupStartedConnection db groupId
+              getGroupInfo db vr user groupId
+            forM_ msg_ $ \(sharedMsgId, mc) -> do
+              ci <- createChatItem user (CDGroupSnd gInfo' Nothing) False (CISndMsgContent mc) (Just sharedMsgId) Nothing
+              toView $ CEvtNewChatItems user [ci]
+            pure $ CRStartedConnectionToGroup user gInfo' customUserProfile
+          CVRConnectedContact _ct -> throwChatError $ CEException "contact already exists when connecting to group"
   APIConnect userId incognito (Just acl) -> withUserId userId $ \user -> case acl of
     ACCL SCMInvitation ccLink -> do
       (conn, incognitoProfile) <- connectViaInvitation user incognito ccLink Nothing
@@ -3292,11 +3300,14 @@ processChatCommand vr nm = \case
               pqSup = if inGroup then PQSupportOff else PQSupportOn
           (connId, chatV) <- prepareContact user cReq pqSup
           xContactId <- mkXContactId xContactId_
-          -- [incognito] generate profile to send
-          incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
+          -- [incognito] generate profile to send, or use membership profile for relay groups
+          incognitoProfile_ <- case gInfo_ of
+            Just (Just gInfo) | useRelays' gInfo -> pure $ ExistingIncognito <$> incognitoMembershipProfile gInfo
+            _ -> if incognito then Just . NewIncognito <$> liftIO generateRandomProfile else pure Nothing
+          let incognitoProfile = fromIncognitoProfile <$> incognitoProfile_
           subMode <- chatReadVar subscriptionMode
           let sLnk' = serverShortLink <$> sLnk
-          conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq cReqHash1 sLnk' xContactId incognitoProfile groupLinkId subMode chatV pqSup
+          conn <- withFastStore' $ \db -> createConnReqConnection db userId connId preparedEntity_ cReq cReqHash1 sLnk' xContactId incognitoProfile_ groupLinkId subMode chatV pqSup
           conn' <- joinContact user conn cReq incognitoProfile xContactId welcomeSharedMsgId msg_ gInfo_ pqSup
           pure $ CVRSentInvitation conn' incognitoProfile
     connectContactViaAddress :: User -> IncognitoEnabled -> Contact -> CreatedLinkContact -> CM ChatResponse
@@ -3311,7 +3322,7 @@ processChatCommand vr nm = \case
             incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
             subMode <- chatReadVar subscriptionMode
             let cReqHash = ConnReqUriHash . C.sha256Hash $ strEncode cReq
-            conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq cReqHash shortLink newXContactId incognitoProfile Nothing subMode chatV pqSup
+            conn <- withFastStore' $ \db -> createConnReqConnection db userId connId (Just $ PCEContact ct) cReq cReqHash shortLink newXContactId (NewIncognito <$> incognitoProfile) Nothing subMode chatV pqSup
             void $ joinContact user conn cReq incognitoProfile newXContactId Nothing Nothing Nothing pqSup
             ct' <- withStore $ \db -> getContact db vr user contactId
             pure $ CRSentInvitationToContact user ct' incognitoProfile

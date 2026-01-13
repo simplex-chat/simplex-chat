@@ -842,6 +842,37 @@ addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
 
+getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
+getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
+  chatTags <- getGroupChatTags db groupId
+  firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
+    DB.query
+      db
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+      (groupId, userId, userContactId)
+
+-- Set group link info and optionally incognito profile before connecting to relays.
+-- This is called once before connecting to relays, unlike createConnReqConnection -> setPreparedGroupLinkInfo_,
+-- which is used in single-connection flows.
+setPreparedGroupLinkInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Profile -> ExceptT StoreError IO GroupInfo
+setPreparedGroupLinkInfo db vr user@User {userId} gInfo@GroupInfo {groupId} cReq cReqHash incognitoProfile = do
+  currentTs <- liftIO getCurrentTime
+  customUserProfileId <- liftIO $ mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
+  liftIO $ setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId currentTs
+  getGroupInfo db vr user groupId
+
+setPreparedGroupLinkInfo_ :: DB.Connection -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Int64 -> UTCTime -> IO ()
+setPreparedGroupLinkInfo_ db GroupInfo {groupId, membership} cReq cReqHash customUserProfileId currentTs = do
+  DB.execute
+    db
+    "UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
+    (cReq, cReqHash, BI True, currentTs, groupId)
+  when (isJust customUserProfileId) $
+    DB.execute
+      db
+      "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
+      (customUserProfileId, currentTs, groupMemberId' membership)
+
 setViaGroupLinkUri :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkUri db groupId connId = do
   r <-

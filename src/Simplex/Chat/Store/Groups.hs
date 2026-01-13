@@ -41,7 +41,6 @@ module Simplex.Chat.Store.Groups
     createGroupRejectedViaLink,
     setGroupInvitationChatItemId,
     getGroup,
-    getGroupInfo,
     getGroupInfoByUserContactLinkConnReq,
     getGroupInfoViaUserShortLink,
     getGroupViaShortLinkToConnect,
@@ -2096,15 +2095,6 @@ updateGroupProfileFromMember db user g@GroupInfo {groupId} Profile {displayName 
             (Only groupId)
     toGroupProfile (displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission) =
       GroupProfile {displayName, fullName, shortDescr, description, image, groupLink, groupPreferences, memberAdmission}
-
-getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
-getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
-  chatTags <- getGroupChatTags db groupId
-  firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
-    DB.query
-      db
-      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
-      (groupId, userId, userContactId)
 
 getGroupInfoByUserContactLinkConnReq :: DB.Connection -> VersionRangeChat -> User -> (ConnReqContact, ConnReqContact) -> IO (Maybe GroupInfo)
 getGroupInfoByUserContactLinkConnReq db vr user@User {userId} (cReqSchema1, cReqSchema2) = do

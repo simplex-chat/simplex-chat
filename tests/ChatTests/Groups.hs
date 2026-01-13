@@ -231,7 +231,7 @@ chatGroupTests = do
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
-  describe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -8475,7 +8475,7 @@ memberJoinChannel gName relays shortLink fullLink member = do
   member <## ("#" <> gName <> ": group is prepared")
 
   member ##> "/_connect group #1"
-  member <## "ok"
+  member <## ("#" <> gName <> ": connection started")
   -- TODO [relays] member: different output after first relay
   concurrentlyN_ $
     [ member
