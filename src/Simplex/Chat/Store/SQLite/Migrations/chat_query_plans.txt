@@ -6398,6 +6398,12 @@ SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
+Query: SELECT EXISTS (SELECT 1 FROM group_members WHERE group_id = ? AND member_id = ?)
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SEARCH group_members USING COVERING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
+
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
 SEARCH operator_usage_conditions USING INDEX idx_operator_usage_conditions_conditions_commit (conditions_commit=? AND server_operator_id=?)

@@ -3414,6 +3414,9 @@ GroupWithoutUser:
 DuplicateGroupMember:
 - type: "duplicateGroupMember"
 
+DuplicateMemberId:
+- type: "duplicateMemberId"
+
 GroupAlreadyJoined:
 - type: "groupAlreadyJoined"
 

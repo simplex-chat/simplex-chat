@@ -3281,6 +3281,7 @@ processChatCommand vr nm = \case
         cReqHash2 = cReqHash $ CRContactUri crData {crScheme = simplexChat}
         joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
+          -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
           xContactId <- mkXContactId xContactId_
           localIncognitoProfile <- forM customUserProfileId $ \pId -> withFastStore $ \db -> getProfileById db userId pId
           let incognitoProfile = fromLocalProfile <$> localIncognitoProfile

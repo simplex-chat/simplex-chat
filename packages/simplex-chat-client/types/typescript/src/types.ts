@@ -3770,6 +3770,7 @@ export type StoreError =
   | StoreError.InvalidMemberRelationUpdate
   | StoreError.GroupWithoutUser
   | StoreError.DuplicateGroupMember
+  | StoreError.DuplicateMemberId
   | StoreError.GroupAlreadyJoined
   | StoreError.GroupInvitationNotFound
   | StoreError.NoteFolderAlreadyExists
@@ -3861,6 +3862,7 @@ export namespace StoreError {
     | "invalidMemberRelationUpdate"
     | "groupWithoutUser"
     | "duplicateGroupMember"
+    | "duplicateMemberId"
     | "groupAlreadyJoined"
     | "groupInvitationNotFound"
     | "noteFolderAlreadyExists"
@@ -4065,6 +4067,10 @@ export namespace StoreError {
 
   export interface DuplicateGroupMember extends Interface {
     type: "duplicateGroupMember"
+  }
+
+  export interface DuplicateMemberId extends Interface {
+    type: "duplicateMemberId"
   }
 
   export interface GroupAlreadyJoined extends Interface {
