@@ -231,7 +231,7 @@ chatGroupTests = do
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
-  fdescribe "channels" $ do
+  describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -242,6 +242,7 @@ chatGroupTests = do
         it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
+        it "should share same incognito profile with all relays" testChannels2RelaysIncognito
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8492,6 +8493,35 @@ memberJoinChannel gName relays shortLink fullLink member = do
          | relay <- relays
          ]
 
+memberJoinChannelIncognito :: String -> [TestCC] -> String -> String -> TestCC -> IO String
+memberJoinChannelIncognito gName relays shortLink fullLink member = do
+  member ##> ("/_connect plan 1 " <> shortLink)
+  member <## "group link: ok to connect via relays"
+  groupSLinkData <- getTermLine member
+
+  member ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+  member <## ("#" <> gName <> ": group is prepared")
+
+  member ##> "/_connect group #1 incognito=on"
+  memIncognito <- getTermLine member
+  member <## ("#" <> gName <> ": connection started incognito")
+  -- TODO [relays] member: different output after first relay
+  concurrentlyN_ $
+    [ member
+        <### concat
+          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay)..."),
+              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay) incognito as " <> memIncognito)
+            ]
+          | _ <- relays
+          ]
+    ]
+      <> [ do
+             relay <## (memIncognito <> ": accepting request to join group #team...")
+             relay <## ("#" <> gName <> ": " <> memIncognito <> " joined the group")
+         | relay <- relays
+         ]
+  pure memIncognito
+
 testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
 testChannels1RelayDeliverLoop deliveryBucketSize ps =
   withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -8612,3 +8642,47 @@ testChannels2RelaysDeliver ps =
               frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
               frank <# "#team dan> > alice hi"
               frank <## "    + 👍"
+
+              -- remove below if default role is changed to observer
+              dan #> "#team hey"
+              [bob, cath] *<# "#team dan> hey"
+              [alice, eve, frank] *<# "#team dan> hey [>>]"
+
+testChannels2RelaysIncognito :: HasCallStack => TestParams -> IO ()
+testChannels2RelaysIncognito ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+              danIncognito <- memberJoinChannelIncognito "team" [bob, cath] shortLink fullLink dan
+              forM_ [eve, frank] $ \member ->
+                memberJoinChannel "team" [bob, cath] shortLink fullLink member
+
+              alice #> "#team hi"
+              [bob, cath] *<# "#team alice> hi"
+              dan ?<# "#team alice> hi [>>]"
+              [eve, frank] *<# "#team alice> hi [>>]"
+
+              dan ##> "+1 #team hi"
+              dan <## "added 👍"
+              bob <# ("#team " <> danIncognito <> "> > alice hi")
+              bob <## "    + 👍"
+              cath <# ("#team " <> danIncognito <> "> > alice hi")
+              cath <## "    + 👍"
+              alice .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              alice <# ("#team " <> danIncognito <> "> > alice hi")
+              alice <## "    + 👍"
+              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              eve <# ("#team " <> danIncognito <> "> > alice hi")
+              eve <## "    + 👍"
+              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              frank <# ("#team " <> danIncognito <> "> > alice hi")
+              frank <## "    + 👍"
+
+              -- remove below if default role is changed to observer
+              dan ?#> "#team hey"
+              [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
+              [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")
