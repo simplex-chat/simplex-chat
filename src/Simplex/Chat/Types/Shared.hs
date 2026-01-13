@@ -7,7 +7,7 @@ import Data.Aeson (FromJSON (..), ToJSON (..))
 import qualified Data.Attoparsec.ByteString.Char8 as A
 import qualified Data.ByteString.Char8 as B
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
-import Simplex.Messaging.Agent.Store.DB (blobFieldDecoder)
+import Simplex.Messaging.Agent.Store.DB (fromTextField_)
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Util ((<$?>))
 
@@ -20,34 +20,33 @@ data GroupMemberRole
   | GROwner -- + delete and change group information, add/remove/change roles for Owners
   deriving (Eq, Show, Ord)
 
-instance FromField GroupMemberRole where fromField = blobFieldDecoder strDecode
+instance FromField GroupMemberRole where fromField = fromTextField_ textDecode
 
-instance ToField GroupMemberRole where toField = toField . strEncode
+instance ToField GroupMemberRole where toField = toField . textEncode
 
-instance StrEncoding GroupMemberRole where
-  strEncode = \case
+instance TextEncoding GroupMemberRole where
+  textEncode = \case
     GROwner -> "owner"
     GRAdmin -> "admin"
     GRModerator -> "moderator"
     GRMember -> "member"
     GRAuthor -> "author"
     GRObserver -> "observer"
-  strDecode = \case
-    "owner" -> Right GROwner
-    "admin" -> Right GRAdmin
-    "moderator" -> Right GRModerator
-    "member" -> Right GRMember
-    "author" -> Right GRAuthor
-    "observer" -> Right GRObserver
-    r -> Left $ "bad GroupMemberRole " <> B.unpack r
-  strP = strDecode <$?> A.takeByteString
+  textDecode = \case
+    "owner" -> Just GROwner
+    "admin" -> Just GRAdmin
+    "moderator" -> Just GRModerator
+    "member" -> Just GRMember
+    "author" -> Just GRAuthor
+    "observer" -> Just GRObserver
+    r -> Nothing
 
 instance FromJSON GroupMemberRole where
-  parseJSON = strParseJSON "GroupMemberRole"
+  parseJSON = textParseJSON "GroupMemberRole"
 
 instance ToJSON GroupMemberRole where
-  toJSON = strToJSON
-  toEncoding = strToJEncoding
+  toJSON = textToJSON
+  toEncoding = textToEncoding
 
 data GroupAcceptance = GAAccepted | GAPendingApproval | GAPendingReview  deriving (Eq, Show)
 

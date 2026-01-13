@@ -17,7 +17,7 @@ Please donate via:
 
 - [GitHub](https://github.com/sponsors/simplex-chat) (commission-free) or [OpenCollective](https://opencollective.com/simplex-chat) (~10% commission)
 - BTC: [bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u](bitcoin:bc1q2gy6f02nn6vvcxs0pnu29tpnpyz0qf66505d4u)
-- XMR: [8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt](monero:8568eeVjaJ1RQ65ZUn9PRQ8ENtqeX9VVhcCYYhnVLxhV4JtBqw42so2VEUDQZNkFfsH5sXCuV7FN8VhRQ21DkNibTZP57Qt)
+- XMR: [8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c](monero:8A3ZWAXrrQddvnT1fPrtbK86ZAoM4nai3Gjg1LEow3JWcryJtovMnHYZnxTJpCLmAbfWbnPMeTzPmMBjAhyd4xoM89hYq1c)
 - ETH/USDT (Ethereum, Arbitrum One): [0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a) ([donate.simplexchat.eth](ethereum:0xD7047Fe3Eecb2f2FF78d839dD927Be27Bc12c86a))
 - [Other cryptocurrencies](https://github.com/simplex-chat/simplex-chat#please-support-us-with-your-donations)
 

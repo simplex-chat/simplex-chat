@@ -707,8 +707,8 @@ acceptFileReceive user@User {userId} RcvFileTransfer {fileId, xftpRcvFile, fileI
       if
         | inline -> do
             -- accepting inline
-            ci <- withStore $ \db -> acceptRcvInlineFT db vr user fileId filePath
-            sharedMsgId <- withStore $ \db -> getSharedMsgIdByFileId db userId fileId
+            (ci, sharedMsgId) <- withStore $ \db ->
+              liftM2 (,) (acceptRcvInlineFT db vr user fileId filePath) (getSharedMsgIdByFileId db userId fileId)
             send $ XFileAcptInv sharedMsgId Nothing fName
             pure ci
         | fileInline == Just IFMSent -> throwChatError $ CEFileAlreadyReceiving fName
@@ -925,9 +925,11 @@ acceptGroupJoinRequestAsync
   incognitoProfile = do
     gVar <- asks random
     let initialStatus = acceptanceToStatus (memberAdmission groupProfile) gAccepted
-    (groupMemberId, memberId) <- withStore $ \db ->
-      createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus
-    currentMemCount <- withStore' $ \db -> getGroupCurrentMembersCount db user gInfo
+    ((groupMemberId, memberId), currentMemCount) <- withStore $ \db ->
+      liftM2
+        (,)
+        (createJoiningMember db gVar user gInfo cReqChatVRange cReqProfile cReqXContactId_ welcomeMsgId_ gLinkMemRole initialStatus)
+        (liftIO $ getGroupCurrentMembersCount db user gInfo)
     let Profile {displayName} = userProfileInGroup user gInfo (fromIncognitoProfile <$> incognitoProfile)
         GroupMember {memberRole = userRole, memberId = userMemberId} = membership
         msg =
@@ -1030,54 +1032,43 @@ introduceToModerators vr user gInfo@GroupInfo {groupId} m@GroupMember {memberRol
             else XMsgNew $ MCSimple $ extMsgContent (MCText pendingReviewMessage) Nothing
     void $ sendDirectMemberMessage mConn msg groupId
   modMs <- withStore' $ \db -> getGroupModerators db vr user gInfo
-  let rcpModMs = filter shouldIntroduce modMs
-  introduceMember vr user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
+  let rcpModMs = filter shouldIntroduceToMod modMs
+  introduceMember user gInfo m rcpModMs (Just $ MSMember $ memberId' m)
   where
-    shouldIntroduce :: GroupMember -> Bool
-    shouldIntroduce mem =
+    shouldIntroduceToMod :: GroupMember -> Bool
+    shouldIntroduceToMod mem =
       memberCurrent mem
         && groupMemberId' mem /= groupMemberId' m
         && maxVersion (memberChatVRange mem) >= groupKnockingVersion
 
 introduceToAll :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToAll vr user gInfo m = do
-  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  vector_ <- withStore' (`getMemberRelationsVector_` m)
-  let recipients = filter (shouldIntroduce vector_) members
-  introduceMember vr user gInfo m recipients Nothing
-  where
-    shouldIntroduce :: Maybe ByteString -> GroupMember -> Bool
-    shouldIntroduce vector_ m' =
-      memberCurrent m'
-        && groupMemberId' m' /= groupMemberId' m
-        && maybe True (\v -> getRelation (indexInGroup m') v == MRNew) vector_
+  (members, vector) <- withStore $ \db -> liftM2 (,) (liftIO $ getGroupMembers db vr user gInfo) (getMemberRelationsVector db m)
+  let recipients = filter (shouldIntroduce m vector) members
+  introduceMember user gInfo m recipients Nothing
 
 introduceToRemaining :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> CM ()
 introduceToRemaining vr user gInfo m = do
-  members <- withStore' $ \db -> getGroupMembers db vr user gInfo
-  vector_ <- withStore' (`getMemberRelationsVector_` m)
-  recipients <- filterRecipients vector_ members
-  introduceMember vr user gInfo m recipients Nothing
-  where
-    filterRecipients :: Maybe ByteString -> [GroupMember] -> CM [GroupMember]
-    filterRecipients vector_ members = do
-      newRelation <- case vector_ of
-        Nothing -> do
-          introducedGMIds <- S.fromList <$> withStore' (`getIntroducedGroupMemberIds` m)
-          pure $ \m' -> groupMemberId' m' `S.notMember` introducedGMIds
-        Just vec -> pure $ \m' -> getRelation (indexInGroup m') vec == MRNew
-      pure $ filter (\m' -> groupMemberId' m' /= groupMemberId' m && memberCurrent m' && newRelation m') members
+  (members, vector) <- withStore $ \db -> liftM2 (,) (liftIO $ getGroupMembers db vr user gInfo) (getMemberRelationsVector db m)
+  let recipients = filter (shouldIntroduce m vector) members
+  introduceMember user gInfo m recipients Nothing
 
-introduceMember :: VersionRangeChat -> User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
-introduceMember _ _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
-introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
+shouldIntroduce :: GroupMember -> ByteString -> GroupMember -> Bool
+shouldIntroduce m vec mem =
+  memberCurrent mem
+    && groupMemberId' mem /= groupMemberId' m
+    && getRelation (indexInGroup mem) vec == MRNew
+
+introduceMember :: User -> GroupInfo -> GroupMember -> [GroupMember] -> Maybe MsgScope -> CM ()
+introduceMember _ _ GroupMember {activeConn = Nothing} _ _ = throwChatError $ CEInternalError "member connection not active"
+introduceMember user gInfo@GroupInfo {groupId} toMember@GroupMember {activeConn = Just conn} introduceToMembers msgScope = do
   void . sendGroupMessage' user gInfo introduceToMembers $ XGrpMemNew (memberInfo gInfo toMember) msgScope
   sendIntroductions introduceToMembers
   where
     sendIntroductions reMembers = do
       updateToMemberVector reMembers
-      reMembers' <- withStore' $ \db -> createIntrosOrUpdateVectors db vr reMembers toMember
-      shuffledReMembers <- liftIO $ shuffleMembers reMembers'
+      updateReMembersVectors reMembers
+      shuffledReMembers <- liftIO $ shuffleMembers reMembers
       if toMember `supportsVersion` batchSendVersion
         then do
           let events = map memberIntro shuffledReMembers
@@ -1089,6 +1080,10 @@ introduceMember vr user gInfo@GroupInfo {groupId} toMember@GroupMember {activeCo
     updateToMemberVector reMembers = do
       let relations = map (\GroupMember {indexInGroup} -> (indexInGroup, (IDReferencedIntroduced, MRIntroduced))) reMembers
       withStore' $ \db -> setMemberVectorNewRelations db toMember relations
+    updateReMembersVectors :: [GroupMember] -> CM ()
+    updateReMembersVectors reMembers = do
+      let GroupMember {indexInGroup} = toMember
+      withStore' $ \db -> setMembersVectorsNewRelation db reMembers indexInGroup IDSubjectIntroduced MRIntroduced
     memberIntro :: GroupMember -> ChatMsgEvent 'Json
     memberIntro reMember =
       let mInfo = memberInfo gInfo reMember
@@ -2020,7 +2015,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
             pendingReq SndMessage {msgId} = (groupMemberId, msgId)
     createPendingMsg :: DB.Connection -> (GroupMemberId, MessageId) -> IO (Either ChatError ())
     createPendingMsg db (groupMemberId, msgId) =
-      createPendingGroupMessage db groupMemberId msgId Nothing $> Right ()
+      createPendingGroupMessage db groupMemberId msgId $> Right ()
 
 data MemberSendAction = MSASend Connection | MSASendBatched Connection | MSAPending | MSAForwarded
 
@@ -2083,32 +2078,25 @@ readyMemberConn GroupMember {groupMemberId, activeConn = Just conn@Connection {c
   | otherwise = Nothing
 readyMemberConn GroupMember {activeConn = Nothing} = Nothing
 
-sendGroupMemberMessage :: MsgEncodingI e => GroupInfo -> GroupMember -> ChatMsgEvent e -> Maybe GroupMemberIntro -> CM () -> CM ()
-sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent intro_ postDeliver = do
+sendGroupMemberMessage :: MsgEncodingI e => GroupInfo -> GroupMember -> ChatMsgEvent e -> CM ()
+sendGroupMemberMessage gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId} chatMsgEvent = do
   msg <- createSndMessage chatMsgEvent (GroupId groupId)
   messageMember msg `catchAllErrors` eToView
   where
     messageMember :: SndMessage -> CM ()
     messageMember SndMessage {msgId, msgBody} = forM_ (memberSendAction gInfo (chatMsgEvent :| []) [m] m) $ \case
-      MSASend conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
-      MSASendBatched conn -> deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId >> postDeliver
-      MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId (introId <$> intro_)
+      MSASend conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
+      MSASendBatched conn -> void $ deliverMessage conn (toCMEventTag chatMsgEvent) msgBody msgId
+      MSAPending -> withStore' $ \db -> createPendingGroupMessage db groupMemberId msgId
       MSAForwarded -> pure ()
 
 -- TODO ensure order - pending messages interleave with user input messages
 sendPendingGroupMessages :: User -> GroupMember -> Connection -> CM ()
 sendPendingGroupMessages user GroupMember {groupMemberId} conn = do
-  pgms <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
-  forM_ (L.nonEmpty pgms) $ \pgms' -> do
-    let msgs = L.map (\(sndMsg, _, _) -> sndMsg) pgms'
-    void $ batchSendConnMessages user conn MsgFlags {notification = True} msgs
-    lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs
-    lift . void . withStoreBatch' $ \db -> L.map (\(_, tag, introId_) -> updateIntro_ db tag introId_) pgms'
-  where
-    updateIntro_ :: DB.Connection -> ACMEventTag -> Maybe Int64 -> IO ()
-    updateIntro_ db tag introId_ = case (tag, introId_) of
-      (ACMEventTag _ XGrpMemFwd_, Just introId) -> updateIntroStatus db introId GMIntroInvForwarded
-      _ -> pure ()
+  msgs <- withStore' $ \db -> getPendingGroupMessages db groupMemberId
+  forM_ (L.nonEmpty msgs) $ \msgs' -> do
+    void $ batchSendConnMessages user conn MsgFlags {notification = True} msgs'
+    lift . void . withStoreBatch' $ \db -> L.map (\SndMessage {msgId} -> deletePendingGroupMessage db groupMemberId msgId) msgs'
 
 saveDirectRcvMSG :: MsgEncodingI e => Connection -> MsgMeta -> MsgBody -> ChatMessage e -> CM (Connection, RcvMessage)
 saveDirectRcvMSG conn@Connection {connId} agentMsgMeta msgBody ChatMessage {chatVRange, msgId = sharedMsgId_, chatMsgEvent} = do

@@ -665,7 +665,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
       where
         rStatus = groupRolesStatus contactRole serviceRole
         groupRef = groupReference g
-        ctRole = "*" <> strEncodeTxt contactRole <> "*"
+        ctRole = "*" <> textEncode contactRole <> "*"
         suCtRole = "(user role is set to " <> ctRole <> ")."
 
     deServiceRoleChanged :: GroupInfo -> GroupMemberRole -> IO ()
@@ -691,7 +691,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
           _ -> pure ()
       where
         groupRef = groupReference g
-        srvRole = "*" <> strEncodeTxt serviceRole <> "*"
+        srvRole = "*" <> textEncode serviceRole <> "*"
         suSrvRole = "(" <> serviceName <> " role is changed to " <> srvRole <> ")."
         whenContactIsOwner gr action =
           getOwnerGroupMember groupId gr
@@ -801,7 +801,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                   let anotherRole = case acceptMemberRole of GRObserver -> GRMember; _ -> GRObserver
                   sendReply $
                     initialRole n acceptMemberRole
-                      <> ("Send /'role " <> tshow gId <> " " <> strEncodeTxt anotherRole <> "' to change it.\n\n")
+                      <> ("Send /'role " <> tshow gId <> " " <> textEncode anotherRole <> "' to change it.\n\n")
                       <> onlyViaLink gLink
                 Left _ -> sendReply $ "Error: failed reading the initial member role for the group " <> n
             Just mRole -> do
@@ -809,7 +809,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 Just gLink -> sendReply $ initialRole n mRole <> "\n" <> onlyViaLink gLink
                 Nothing -> sendReply $ "Error: the initial member role for the group " <> n <> " was NOT upgated."
         where
-          initialRole n mRole = "The initial member role for the group " <> n <> " is set to *" <> strEncodeTxt mRole <> "*\n"
+          initialRole n mRole = "The initial member role for the group " <> n <> " is set to *" <> textEncode mRole <> "*\n"
           onlyViaLink gLink = "*Please note*: it applies only to members joining via this link: " <> groupLinkText gLink
       DCGroupFilter gId gName_ acceptance_ ->
         (if isAdmin then withGroupAndReg_ sendReply else withUserGroupReg_) gId gName_ $ \g _gr -> do
@@ -852,7 +852,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
                 T.unlines $
                   [ "The link to join the group " <> groupRef <> ":",
                     groupLinkText gLink,
-                    "New member role: " <> strEncodeTxt acceptMemberRole
+                    "New member role: " <> textEncode acceptMemberRole
                   ]
                     <> ["The link is being upgraded..." | shouldBeUpgraded]
               when shouldBeUpgraded $ do

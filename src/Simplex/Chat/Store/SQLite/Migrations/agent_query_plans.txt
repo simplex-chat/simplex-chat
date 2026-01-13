@@ -60,6 +60,16 @@ Plan:
 SEARCH commands USING INDEX idx_commands_server_commands (host=? AND port=?)
 
 Query: 
+              SELECT rcpt_status, snd_message_body_id FROM snd_messages
+              WHERE NOT EXISTS (SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0)
+                AND conn_id = ? AND internal_id = ?
+            
+Plan:
+SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
+SCALAR SUBQUERY 1
+SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
+
+Query: 
               SELECT rcv_file_chunk_id, chunk_no, chunk_size, digest, tmp_path
               FROM rcv_file_chunks
               WHERE rcv_file_id = ?
@@ -70,12 +80,28 @@ SEARCH rcv_file_chunks USING INDEX idx_rcv_file_chunks_rcv_file_id (rcv_file_id=
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
+              SELECT rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, deleted, redirect_id, redirect_entity_id, redirect_size, redirect_digest
+              FROM rcv_files
+              WHERE rcv_file_id = ?
+            
+Plan:
+SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
+
+Query: 
               SELECT snd_file_chunk_id, chunk_no, chunk_offset, chunk_size, digest
               FROM snd_file_chunks
               WHERE snd_file_id = ?
             
 Plan:
 SEARCH snd_file_chunks USING INDEX idx_snd_file_chunks_snd_file_id (snd_file_id=?)
+
+Query: 
+              SELECT snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, digest, prefix_path, key, nonce, status, deleted, redirect_size, redirect_digest
+              FROM snd_files
+              WHERE snd_file_id = ?
+            
+Plan:
+SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             DELETE FROM snd_message_bodies
@@ -202,24 +228,6 @@ SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
-            SELECT rcpt_status, snd_message_body_id FROM snd_messages
-            WHERE NOT EXISTS (SELECT 1 FROM snd_message_deliveries WHERE conn_id = ? AND internal_id = ? AND failed = 0)
-              AND conn_id = ? AND internal_id = ?
-          
-Plan:
-SEARCH snd_messages USING PRIMARY KEY (conn_id=?)
-SCALAR SUBQUERY 1
-SEARCH snd_message_deliveries USING COVERING INDEX idx_snd_message_deliveries_expired (conn_id=?)
-
-Query: 
-            SELECT rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, deleted, redirect_id, redirect_entity_id, redirect_size, redirect_digest
-            FROM rcv_files
-            WHERE rcv_file_id = ?
-          
-Plan:
-SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: 
             SELECT rcv_file_id
             FROM rcv_files
             WHERE status IN (?,?) AND deleted = 0 AND created_at >= ?
@@ -229,14 +237,6 @@ Query:
 Plan:
 SEARCH rcv_files USING INDEX idx_rcv_files_status_created_at (status=? AND created_at>?)
 USE TEMP B-TREE FOR ORDER BY
-
-Query: 
-            SELECT snd_file_entity_id, user_id, path, src_file_key, src_file_nonce, num_recipients, digest, prefix_path, key, nonce, status, deleted, redirect_size, redirect_digest
-            FROM snd_files
-            WHERE snd_file_id = ?
-          
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
             SELECT snd_file_id
@@ -258,6 +258,22 @@ Plan:
 SEARCH messages USING PRIMARY KEY (conn_id=?)
 
 Query: 
+          SELECT last_internal_msg_id, last_internal_rcv_msg_id, last_external_snd_msg_id, last_rcv_msg_hash
+          FROM connections
+          WHERE conn_id = ?
+        
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: 
+          SELECT last_internal_msg_id, last_internal_snd_msg_id, last_snd_msg_hash
+          FROM connections
+          WHERE conn_id = ?
+        
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
+
+Query: 
           SELECT user_id FROM users u
           WHERE u.user_id = ?
             AND u.deleted = ?
@@ -267,6 +283,15 @@ Plan:
 SEARCH u USING INTEGER PRIMARY KEY (rowid=?)
 CORRELATED SCALAR SUBQUERY 1
 SEARCH c USING COVERING INDEX idx_connections_user (user_id=?)
+
+Query: 
+          SELECT user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
+            last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
+          FROM connections
+          WHERE conn_id = ? AND deleted = ?
+        
+Plan:
+SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
         INSERT INTO conn_confirmations
@@ -286,6 +311,18 @@ Query:
         VALUES (?,?,?)
       
 Plan:
+
+Query: 
+        INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash)
+        VALUES (?, ?, ?)
+        ON CONFLICT (xftp_host, xftp_port, xftp_key_hash)
+        DO UPDATE SET xftp_host = EXCLUDED.xftp_host
+        RETURNING xftp_server_id
+      
+Plan:
+SEARCH deleted_snd_chunk_replicas USING COVERING INDEX idx_deleted_snd_chunk_replicas_xftp_server_id (xftp_server_id=?)
+SEARCH snd_file_chunk_replicas USING COVERING INDEX idx_snd_file_chunk_replicas_xftp_server_id (xftp_server_id=?)
+SEARCH rcv_file_chunk_replicas USING COVERING INDEX idx_rcv_file_chunk_replicas_xftp_server_id (xftp_server_id=?)
 
 Query: 
         SELECT
@@ -446,22 +483,6 @@ Plan:
 SEARCH conn_invitations USING PRIMARY KEY (invitation_id=?)
 
 Query: 
-        SELECT last_internal_msg_id, last_internal_rcv_msg_id, last_external_snd_msg_id, last_rcv_msg_hash
-        FROM connections
-        WHERE conn_id = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
-Query: 
-        SELECT last_internal_msg_id, last_internal_snd_msg_id, last_snd_msg_hash
-        FROM connections
-        WHERE conn_id = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
-
-Query: 
         SELECT link_id, snd_private_key
         FROM inv_short_links
         WHERE host = ? AND port = ? AND snd_id = ?
@@ -496,15 +517,6 @@ Query:
 Plan:
 SEARCH s USING PRIMARY KEY (conn_id=? AND internal_snd_id=?)
 SEARCH m USING PRIMARY KEY (conn_id=? AND internal_id=?)
-
-Query: 
-        SELECT user_id, conn_id, conn_mode, smp_agent_version, enable_ntfs,
-          last_external_snd_msg_id, deleted, ratchet_sync_state, pq_support
-        FROM connections
-        WHERE conn_id = ? AND deleted = ?
-      
-Plan:
-SEARCH connections USING PRIMARY KEY (conn_id=?)
 
 Query: 
       DELETE FROM conn_confirmations
@@ -1027,8 +1039,13 @@ Plan:
 Query: INSERT INTO rcv_files (rcv_file_entity_id, user_id, size, digest, key, nonce, chunk_size, prefix_path, tmp_path, save_path, save_file_key, save_file_nonce, status, redirect_id, redirect_entity_id, redirect_digest, redirect_size, approved_relays) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
 Plan:
 
-Query: INSERT INTO servers (host, port, key_hash) VALUES (?,?,?)
+Query: INSERT INTO servers (host, port, key_hash) VALUES (?,?,?) ON CONFLICT (host, port) DO NOTHING RETURNING 1
 Plan:
+SEARCH inv_short_links USING COVERING INDEX idx_inv_short_links_link_id (host=? AND port=?)
+SEARCH commands USING COVERING INDEX idx_commands_server_commands (host=? AND port=?)
+SEARCH ntf_subscriptions USING COVERING INDEX idx_ntf_subscriptions_smp_host_smp_port (smp_host=? AND smp_port=?)
+SEARCH snd_queues USING COVERING INDEX idx_snd_queues_host_port (host=? AND port=?)
+SEARCH rcv_queues USING COVERING INDEX idx_rcv_queues_link_id (host=? AND port=?)
 
 Query: INSERT INTO skipped_messages (conn_id, header_key, msg_n, msg_key) VALUES (?, ?, ?, ?)
 Plan:
@@ -1050,9 +1067,6 @@ Query: INSERT INTO users (user_id) VALUES (1)
 Plan:
 
 Query: INSERT INTO users DEFAULT VALUES
-Plan:
-
-Query: INSERT INTO xftp_servers (xftp_host, xftp_port, xftp_key_hash) VALUES (?,?,?)
 Plan:
 
 Query: SELECT 1 FROM encrypted_rcv_message_hashes WHERE conn_id = ? AND hash = ? LIMIT 1
@@ -1159,10 +1173,6 @@ Query: SELECT x3dh_priv_key_1, x3dh_priv_key_2, pq_priv_kem FROM ratchets WHERE 
 Plan:
 SEARCH ratchets USING PRIMARY KEY (conn_id=?)
 
-Query: SELECT xftp_server_id FROM xftp_servers WHERE xftp_host = ? AND xftp_port = ? AND xftp_key_hash = ?
-Plan:
-SEARCH xftp_servers USING COVERING INDEX sqlite_autoindex_xftp_servers_1 (xftp_host=? AND xftp_port=? AND xftp_key_hash=?)
-
 Query: UPDATE connections SET deleted = ? WHERE conn_id = ?
 Plan:
 SEARCH connections USING PRIMARY KEY (conn_id=?)
@@ -1254,10 +1264,6 @@ SEARCH servers_stats USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE snd_file_chunk_replicas SET replica_status = ?, updated_at = ? WHERE snd_file_chunk_replica_id = ?
 Plan:
 SEARCH snd_file_chunk_replicas USING INTEGER PRIMARY KEY (rowid=?)
-
-Query: UPDATE snd_files SET deleted = 1, updated_at = ? WHERE snd_file_id = ?
-Plan:
-SEARCH snd_files USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE snd_files SET prefix_path = NULL, status = ?, updated_at = ? WHERE snd_file_id = ?
 Plan:
