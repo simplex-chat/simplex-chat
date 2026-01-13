@@ -1,0 +1,5 @@
+{
+  "plugin": ["typedoc-plugin-markdown"],
+  "gitRevision": "master",
+  "out": "./docs"
+}

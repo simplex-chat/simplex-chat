@@ -228,8 +228,10 @@ export class ChatApi {
     throw new ChatCommandError("error creating user address", r)
   }
 
-  // Delete bot address.
-  // Network usage: background.
+  /**
+   * Deletes a user address.
+   * Network usage: background.
+   */
   async apiDeleteUserAddress(userId: number): Promise<void> {
     const r = await this.sendChatCmd(CC.APIDeleteMyAddress.cmdString({userId}))
     if (r.type === "userContactLinkDeleted") return

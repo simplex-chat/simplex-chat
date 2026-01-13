@@ -4,13 +4,13 @@ import * as core from "./core"
 import * as util from "./util"
 import equal = require("fast-deep-equal")
 
-interface BotDbOpts {
+export interface BotDbOpts {
   dbFilePrefix: string // two schema files will be named <prefix>_chat.db and <prefix>_agent.db
   dbKey?: string
   confirmMigrations?: core.MigrationConfirmation
 }
 
-interface BotOptions {
+export interface BotOptions {
   createAddress?: boolean
   updateAddress?: boolean
   updateProfile?: boolean
@@ -34,7 +34,7 @@ const defaultOpts: Required<BotOptions> = {
   logNetwork: false
 }
 
-interface BotConfig {
+export interface BotConfig {
   profile: T.Profile,
   dbOpts: BotDbOpts,
   options: BotOptions,
