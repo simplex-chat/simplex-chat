@@ -29,6 +29,8 @@ import {bot, util} from "../dist"
         await chat.apiSendTextReply(ci, "This command is not supported")
       }
     },
+    // If you use `onMessage` and subscribe to "newChatItems" event, exclude content messages from processing
+    // If you use `onCommands` and subscribe to "newChatItems" event, exclude commands from processing
     events: {
       "chatItemReaction": ({added, reaction}) => {
         console.log(`${util.senderName(reaction.chatInfo, reaction.chatReaction.chatDir)} ${added ? "added" : "removed"} reaction ${util.reactionText(reaction)}`)

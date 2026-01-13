@@ -377,7 +377,7 @@ export class ChatApi {
    * Send messages.
    * Network usage: background.
    */
-  async apiSendMessages(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
+  async apiSendMessages(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, messages: T.ComposedMessage[], liveMessage = false): Promise<T.AChatItem[]> {
     const sendRef = Array.isArray(chat)
                     ? {chatType: chat[0], chatId: chat[1]}
                     : "chatType" in chat
@@ -385,7 +385,11 @@ export class ChatApi {
                     : util.chatInfoRef(chat)
     if (!sendRef) throw Error("apiSendMessages: can't send messages to this chat")
     const r = await this.sendChatCmd(
-      CC.APISendMessages.cmdString({sendRef, composedMessages: messages, liveMessage: false})
+      CC.APISendMessages.cmdString({
+        sendRef,
+        composedMessages: messages,
+        liveMessage
+      })
     )
     if (r.type === "newChatItems") return r.chatItems
     throw new ChatCommandError("unexpected response", r)
@@ -411,12 +415,12 @@ export class ChatApi {
    * Update message.
    * Network usage: background.
    */
-  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent): Promise<T.ChatItem> {
+  async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent, liveMessage: false): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
         chatRef: {chatType, chatId},
         chatItemId,
-        liveMessage: false,
+        liveMessage,
         updatedMessage: {msgContent, mentions: {}},
       })
     )

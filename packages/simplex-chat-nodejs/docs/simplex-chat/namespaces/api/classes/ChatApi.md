@@ -72,7 +72,7 @@ Chat controller is started
 
 > **apiAcceptContactRequest**(`contactReqId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:692](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L692)
+Defined in: [src/api.ts:696](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L696)
 
 Accept contact request.
 Network usage: interactive.
@@ -93,7 +93,7 @@ Network usage: interactive.
 
 > **apiAcceptMember**(`groupId`, `groupMemberId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:512](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L512)
+Defined in: [src/api.ts:516](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L516)
 
 Accept group member. Requires Admin role.
 Network usage: background.
@@ -122,7 +122,7 @@ Network usage: background.
 
 > **apiAddMember**(`groupId`, `contactId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:492](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L492)
+Defined in: [src/api.ts:496](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L496)
 
 Add contact to group. Requires bot to have Admin role.
 Network usage: interactive.
@@ -151,7 +151,7 @@ Network usage: interactive.
 
 > **apiBlockMembersForAll**(`groupId`, `groupMemberIds`, `blocked`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:532](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L532)
+Defined in: [src/api.ts:536](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L536)
 
 Block members. Requires Moderator role.
 Network usage: background.
@@ -180,7 +180,7 @@ Network usage: background.
 
 > **apiCancelFile**(`fileId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:482](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L482)
+Defined in: [src/api.ts:486](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L486)
 
 Cancel file.
 Network usage: background.
@@ -201,7 +201,7 @@ Network usage: background.
 
 > **apiChatItemReaction**(`chatType`, `chatId`, `chatItemId`, `add`, `reaction`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:456](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L456)
+Defined in: [src/api.ts:460](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L460)
 
 Add/remove message reaction.
 Network usage: background.
@@ -238,7 +238,7 @@ Network usage: background.
 
 > **apiConnect**(`userId`, `incognito`, `preparedLink?`): `Promise`\<[`ConnReqType`](../enumerations/ConnReqType.md)\>
 
-Defined in: [src/api.ts:661](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L661)
+Defined in: [src/api.ts:665](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L665)
 
 Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
 Network usage: interactive.
@@ -267,7 +267,7 @@ Network usage: interactive.
 
 > **apiConnectActiveUser**(`connLink`): `Promise`\<[`ConnReqType`](../enumerations/ConnReqType.md)\>
 
-Defined in: [src/api.ts:670](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L670)
+Defined in: [src/api.ts:674](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L674)
 
 Connect via SimpleX link as string in the active user profile.
 Network usage: interactive.
@@ -288,7 +288,7 @@ Network usage: interactive.
 
 > **apiConnectPlan**(`userId`, `connectionLink`): `Promise`\<`ConnectionPlan`\>
 
-Defined in: [src/api.ts:651](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L651)
+Defined in: [src/api.ts:655](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L655)
 
 Determine SimpleX link type and if the bot is already connected via this link.
 Network usage: interactive.
@@ -313,7 +313,7 @@ Network usage: interactive.
 
 > **apiCreateActiveUser**(`profile?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:769](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L769)
+Defined in: [src/api.ts:773](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L773)
 
 Create new user profile
 Network usage: no.
@@ -334,7 +334,7 @@ Network usage: no.
 
 > **apiCreateGroupLink**(`groupId`, `memberRole`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:592](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L592)
+Defined in: [src/api.ts:596](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L596)
 
 Create group link.
 Network usage: interactive.
@@ -359,7 +359,7 @@ Network usage: interactive.
 
 > **apiCreateLink**(`userId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:638](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L638)
+Defined in: [src/api.ts:642](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L642)
 
 Create 1-time invitation link.
 Network usage: interactive.
@@ -401,7 +401,7 @@ Network usage: interactive.
 
 > **apiDeleteChat**(`chatType`, `chatId`, `deleteMode`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:732](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L732)
+Defined in: [src/api.ts:736](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L736)
 
 Delete chat.
 Network usage: background.
@@ -430,7 +430,7 @@ Network usage: background.
 
 > **apiDeleteChatItems**(`chatType`, `chatId`, `chatItemIds`, `deleteMode`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:431](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L431)
+Defined in: [src/api.ts:435](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L435)
 
 Delete message.
 Network usage: background.
@@ -463,7 +463,7 @@ Network usage: background.
 
 > **apiDeleteGroupLink**(`groupId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:614](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L614)
+Defined in: [src/api.ts:618](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L618)
 
 Delete group link.
 Network usage: background.
@@ -484,7 +484,7 @@ Network usage: background.
 
 > **apiDeleteMemberChatItem**(`groupId`, `chatItemIds`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:446](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L446)
+Defined in: [src/api.ts:450](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L450)
 
 Moderate message. Requires Moderator role (and higher than message author's).
 Network usage: background.
@@ -509,7 +509,7 @@ Network usage: background.
 
 > **apiDeleteUser**(`userId`, `delSMPQueues`, `viewPwd?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:799](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L799)
+Defined in: [src/api.ts:803](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L803)
 
 Delete user profile.
 Network usage: background.
@@ -559,7 +559,7 @@ Network usage: background.
 
 > **apiGetActiveUser**(): `Promise`\<`User` \| `undefined`\>
 
-Defined in: [src/api.ts:749](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L749)
+Defined in: [src/api.ts:753](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L753)
 
 Get active user profile
 Network usage: no.
@@ -574,7 +574,7 @@ Network usage: no.
 
 > **apiGetGroupLink**(`groupId`): `Promise`\<`GroupLink`\>
 
-Defined in: [src/api.ts:623](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L623)
+Defined in: [src/api.ts:627](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L627)
 
 Get group link.
 Network usage: no.
@@ -595,7 +595,7 @@ Network usage: no.
 
 > **apiGetGroupLinkStr**(`groupId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:629](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L629)
+Defined in: [src/api.ts:633](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L633)
 
 #### Parameters
 
@@ -634,7 +634,7 @@ Network usage: no.
 
 > **apiJoinGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:502](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L502)
+Defined in: [src/api.ts:506](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L506)
 
 Join group.
 Network usage: interactive.
@@ -655,7 +655,7 @@ Network usage: interactive.
 
 > **apiLeaveGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:552](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L552)
+Defined in: [src/api.ts:556](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L556)
 
 Leave group.
 Network usage: background.
@@ -676,7 +676,7 @@ Network usage: background.
 
 > **apiListContacts**(`userId`): `Promise`\<`Contact`[]\>
 
-Defined in: [src/api.ts:712](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L712)
+Defined in: [src/api.ts:716](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L716)
 
 Get contacts.
 Network usage: no.
@@ -697,7 +697,7 @@ Network usage: no.
 
 > **apiListGroups**(`userId`, `contactId?`, `search?`): `Promise`\<`GroupInfo`[]\>
 
-Defined in: [src/api.ts:722](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L722)
+Defined in: [src/api.ts:726](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L726)
 
 Get groups.
 Network usage: no.
@@ -726,7 +726,7 @@ Network usage: no.
 
 > **apiListMembers**(`groupId`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:562](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L562)
+Defined in: [src/api.ts:566](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L566)
 
 Get group members.
 Network usage: no.
@@ -747,7 +747,7 @@ Network usage: no.
 
 > **apiListUsers**(): `Promise`\<`UserInfo`[]\>
 
-Defined in: [src/api.ts:779](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L779)
+Defined in: [src/api.ts:783](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L783)
 
 Get all user profiles
 Network usage: no.
@@ -762,7 +762,7 @@ Network usage: no.
 
 > **apiNewGroup**(`userId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:572](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L572)
+Defined in: [src/api.ts:576](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L576)
 
 Create group.
 Network usage: no.
@@ -787,7 +787,7 @@ Network usage: no.
 
 > **apiReceiveFile**(`fileId`): `Promise`\<`AChatItem`\>
 
-Defined in: [src/api.ts:472](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L472)
+Defined in: [src/api.ts:476](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L476)
 
 Receive file.
 Network usage: no.
@@ -808,7 +808,7 @@ Network usage: no.
 
 > **apiRejectContactRequest**(`contactReqId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:702](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L702)
+Defined in: [src/api.ts:706](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L706)
 
 Reject contact request. The user who sent the request is **not notified**.
 Network usage: no.
@@ -829,7 +829,7 @@ Network usage: no.
 
 > **apiRemoveMembers**(`groupId`, `memberIds`, `withMessages`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:542](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L542)
+Defined in: [src/api.ts:546](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L546)
 
 Remove members. Requires Admin role.
 Network usage: background.
@@ -856,7 +856,7 @@ Network usage: background.
 
 ### apiSendMessages()
 
-> **apiSendMessages**(`chat`, `messages`): `Promise`\<`AChatItem`[]\>
+> **apiSendMessages**(`chat`, `messages`, `liveMessage`): `Promise`\<`AChatItem`[]\>
 
 Defined in: [src/api.ts:380](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L380)
 
@@ -873,6 +873,10 @@ Network usage: background.
 
 `ComposedMessage`[]
 
+##### liveMessage
+
+`boolean` = `false`
+
 #### Returns
 
 `Promise`\<`AChatItem`[]\>
@@ -883,7 +887,7 @@ Network usage: background.
 
 > **apiSendTextMessage**(`chat`, `text`, `inReplyTo?`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:398](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L398)
+Defined in: [src/api.ts:402](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L402)
 
 Send text message.
 Network usage: background.
@@ -912,7 +916,7 @@ Network usage: background.
 
 > **apiSendTextReply**(`chatItem`, `text`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:406](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L406)
+Defined in: [src/api.ts:410](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L410)
 
 Send text message in reply to received message.
 Network usage: background.
@@ -937,7 +941,7 @@ Network usage: background.
 
 > **apiSetActiveUser**(`userId`, `viewPwd?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:789](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L789)
+Defined in: [src/api.ts:793](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L793)
 
 Set active user profile
 Network usage: no.
@@ -987,7 +991,7 @@ Network usage: interactive.
 
 > **apiSetContactPrefs**(`contactId`, `preferences`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:825](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L825)
+Defined in: [src/api.ts:829](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L829)
 
 Configure chat preference overrides for the contact.
 Network usage: background.
@@ -1012,7 +1016,7 @@ Network usage: background.
 
 > **apiSetGroupLinkMemberRole**(`groupId`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:605](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L605)
+Defined in: [src/api.ts:609](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L609)
 
 Set member role for group link.
 Network usage: no.
@@ -1037,7 +1041,7 @@ Network usage: no.
 
 > **apiSetMembersRole**(`groupId`, `groupMemberIds`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:522](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L522)
+Defined in: [src/api.ts:526](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L526)
 
 Set members role. Requires Admin role.
 Network usage: background.
@@ -1089,9 +1093,9 @@ Network usage: interactive.
 
 ### apiUpdateChatItem()
 
-> **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`): `Promise`\<`ChatItem`\>
+> **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`, `liveMessage`): `Promise`\<`ChatItem`\>
 
-Defined in: [src/api.ts:414](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L414)
+Defined in: [src/api.ts:418](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L418)
 
 Update message.
 Network usage: background.
@@ -1114,6 +1118,10 @@ Network usage: background.
 
 `MsgContent`
 
+##### liveMessage
+
+`false`
+
 #### Returns
 
 `Promise`\<`ChatItem`\>
@@ -1124,7 +1132,7 @@ Network usage: background.
 
 > **apiUpdateGroupProfile**(`groupId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:582](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L582)
+Defined in: [src/api.ts:586](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L586)
 
 Update group profile.
 Network usage: background.
@@ -1149,7 +1157,7 @@ Network usage: background.
 
 > **apiUpdateProfile**(`userId`, `profile`): `Promise`\<`UserProfileUpdateSummary` \| `undefined`\>
 
-Defined in: [src/api.ts:809](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L809)
+Defined in: [src/api.ts:813](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L813)
 
 Update user profile.
 Network usage: background.

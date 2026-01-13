@@ -49,7 +49,9 @@ import {bot, util} from "simplex-chat"
     },
     onMessage: async (ci, content) => {
       const n = +content.text
-      const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
+      const reply = typeof n === "number" && !isNaN(n)
+                    ? `${n} * ${n} = ${n * n}`
+                    : `this is not a number`
       await chat.apiSendTextReply(ci, reply)
     }
   })

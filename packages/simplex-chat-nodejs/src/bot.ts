@@ -41,8 +41,8 @@ export interface BotConfig {
   onMessage?: (chatItem: T.AChatItem, content: T.MsgContent) => void | Promise<void>,
   // command handlers can be different from commands to be shown in client UI
   onCommands?: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)},
-  // If you use `onMessage` and to "newChatItems" event, exclude content messages from processing
-  // If you use `onCommands` and to "newChatItems" event, exclude commands from processing
+  // If you use `onMessage` and to subscribe "newChatItems" event, exclude content messages from processing
+  // If you use `onCommands` and to subscribe "newChatItems" event, exclude commands from processing
   events?: api.EventSubscribers
 }
 
