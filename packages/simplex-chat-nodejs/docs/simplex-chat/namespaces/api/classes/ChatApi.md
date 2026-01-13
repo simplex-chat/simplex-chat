@@ -6,7 +6,9 @@
 
 # Class: ChatApi
 
-Defined in: [src/api.ts:35](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L35)
+Defined in: [src/api.ts:62](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L62)
+
+Main API class for interacting with the chat core library.
 
 ## Properties
 
@@ -14,7 +16,7 @@ Defined in: [src/api.ts:35](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > `protected` **ctrl\_**: `bigint` \| `undefined`
 
-Defined in: [src/api.ts:41](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L41)
+Defined in: [src/api.ts:68](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L68)
 
 ## Accessors
 
@@ -24,7 +26,9 @@ Defined in: [src/api.ts:41](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > **get** **ctrl**(): `bigint`
 
-Defined in: [src/api.ts:207](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L207)
+Defined in: [src/api.ts:295](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L295)
+
+Chat controller reference
 
 ##### Returns
 
@@ -38,7 +42,9 @@ Defined in: [src/api.ts:207](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **get** **initialized**(): `boolean`
 
-Defined in: [src/api.ts:199](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L199)
+Defined in: [src/api.ts:281](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L281)
+
+Chat controller is initialized
 
 ##### Returns
 
@@ -46,13 +52,15 @@ Defined in: [src/api.ts:199](https://github.com/simplex-chat/simplex-chat/blob/m
 
 ***
 
-### receiving
+### started
 
 #### Get Signature
 
-> **get** **receiving**(): `boolean`
+> **get** **started**(): `boolean`
 
-Defined in: [src/api.ts:203](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L203)
+Defined in: [src/api.ts:288](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L288)
+
+Chat controller is started
 
 ##### Returns
 
@@ -64,7 +72,10 @@ Defined in: [src/api.ts:203](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiAcceptContactRequest**(`contactReqId`): `Promise`\<`Contact`\>
 
-Defined in: [src/api.ts:554](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L554)
+Defined in: [src/api.ts:692](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L692)
+
+Accept contact request.
+Network usage: interactive.
 
 #### Parameters
 
@@ -82,7 +93,10 @@ Defined in: [src/api.ts:554](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiAcceptMember**(`groupId`, `groupMemberId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:400](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L400)
+Defined in: [src/api.ts:512](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L512)
+
+Accept group member. Requires Admin role.
+Network usage: background.
 
 #### Parameters
 
@@ -108,7 +122,10 @@ Defined in: [src/api.ts:400](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiAddMember**(`groupId`, `contactId`, `memberRole`): `Promise`\<`GroupMember`\>
 
-Defined in: [src/api.ts:384](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L384)
+Defined in: [src/api.ts:492](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L492)
+
+Add contact to group. Requires bot to have Admin role.
+Network usage: interactive.
 
 #### Parameters
 
@@ -134,7 +151,10 @@ Defined in: [src/api.ts:384](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiBlockMembersForAll**(`groupId`, `groupMemberIds`, `blocked`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:416](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L416)
+Defined in: [src/api.ts:532](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L532)
+
+Block members. Requires Moderator role.
+Network usage: background.
 
 #### Parameters
 
@@ -160,7 +180,10 @@ Defined in: [src/api.ts:416](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiCancelFile**(`fileId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:373](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L373)
+Defined in: [src/api.ts:482](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L482)
+
+Cancel file.
+Network usage: background.
 
 #### Parameters
 
@@ -178,7 +201,10 @@ Defined in: [src/api.ts:373](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiChatItemReaction**(`chatType`, `chatId`, `chatItemId`, `add`, `reaction`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:348](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L348)
+Defined in: [src/api.ts:456](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L456)
+
+Add/remove message reaction.
+Network usage: background.
 
 #### Parameters
 
@@ -212,7 +238,10 @@ Defined in: [src/api.ts:348](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiConnect**(`userId`, `incognito`, `preparedLink?`): `Promise`\<[`ConnReqType`](../enumerations/ConnReqType.md)\>
 
-Defined in: [src/api.ts:527](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L527)
+Defined in: [src/api.ts:661](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L661)
+
+Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
+Network usage: interactive.
 
 #### Parameters
 
@@ -238,7 +267,10 @@ Defined in: [src/api.ts:527](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiConnectActiveUser**(`connLink`): `Promise`\<[`ConnReqType`](../enumerations/ConnReqType.md)\>
 
-Defined in: [src/api.ts:534](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L534)
+Defined in: [src/api.ts:670](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L670)
+
+Connect via SimpleX link as string in the active user profile.
+Network usage: interactive.
 
 #### Parameters
 
@@ -256,7 +288,10 @@ Defined in: [src/api.ts:534](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiConnectPlan**(`userId`, `connectionLink`): `Promise`\<`ConnectionPlan`\>
 
-Defined in: [src/api.ts:519](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L519)
+Defined in: [src/api.ts:651](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L651)
+
+Determine SimpleX link type and if the bot is already connected via this link.
+Network usage: interactive.
 
 #### Parameters
 
@@ -278,7 +313,10 @@ Defined in: [src/api.ts:519](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiCreateActiveUser**(`profile?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:625](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L625)
+Defined in: [src/api.ts:769](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L769)
+
+Create new user profile
+Network usage: no.
 
 #### Parameters
 
@@ -296,7 +334,10 @@ Defined in: [src/api.ts:625](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiCreateGroupLink**(`groupId`, `memberRole`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:467](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L467)
+Defined in: [src/api.ts:592](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L592)
+
+Create group link.
+Network usage: interactive.
 
 #### Parameters
 
@@ -318,7 +359,10 @@ Defined in: [src/api.ts:467](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiCreateLink**(`userId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:508](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L508)
+Defined in: [src/api.ts:638](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L638)
+
+Create 1-time invitation link.
+Network usage: interactive.
 
 #### Parameters
 
@@ -336,7 +380,10 @@ Defined in: [src/api.ts:508](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiCreateUserAddress**(`userId`): `Promise`\<`CreatedConnLink`\>
 
-Defined in: [src/api.ts:225](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L225)
+Defined in: [src/api.ts:312](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L312)
+
+Create bot address.
+Network usage: interactive.
 
 #### Parameters
 
@@ -354,7 +401,10 @@ Defined in: [src/api.ts:225](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiDeleteChat**(`chatType`, `chatId`, `deleteMode`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:589](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L589)
+Defined in: [src/api.ts:732](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L732)
+
+Delete chat.
+Network usage: background.
 
 #### Parameters
 
@@ -380,7 +430,10 @@ Defined in: [src/api.ts:589](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiDeleteChatItems**(`chatType`, `chatId`, `chatItemIds`, `deleteMode`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:327](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L327)
+Defined in: [src/api.ts:431](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L431)
+
+Delete message.
+Network usage: background.
 
 #### Parameters
 
@@ -410,7 +463,10 @@ Defined in: [src/api.ts:327](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiDeleteGroupLink**(`groupId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:485](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L485)
+Defined in: [src/api.ts:614](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L614)
+
+Delete group link.
+Network usage: background.
 
 #### Parameters
 
@@ -428,7 +484,10 @@ Defined in: [src/api.ts:485](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiDeleteMemberChatItem**(`groupId`, `chatItemIds`): `Promise`\<`ChatItemDeletion`[]\>
 
-Defined in: [src/api.ts:340](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L340)
+Defined in: [src/api.ts:446](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L446)
+
+Moderate message. Requires Moderator role (and higher than message author's).
+Network usage: background.
 
 #### Parameters
 
@@ -450,7 +509,10 @@ Defined in: [src/api.ts:340](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiDeleteUser**(`userId`, `delSMPQueues`, `viewPwd?`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:649](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L649)
+Defined in: [src/api.ts:799](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L799)
+
+Delete user profile.
+Network usage: background.
 
 #### Parameters
 
@@ -476,7 +538,7 @@ Defined in: [src/api.ts:649](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiDeleteUserAddress**(`userId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:235](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L235)
+Defined in: [src/api.ts:322](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L322)
 
 Deletes a user address.
 Network usage: background.
@@ -497,7 +559,10 @@ Network usage: background.
 
 > **apiGetActiveUser**(): `Promise`\<`User` \| `undefined`\>
 
-Defined in: [src/api.ts:607](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L607)
+Defined in: [src/api.ts:749](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L749)
+
+Get active user profile
+Network usage: no.
 
 #### Returns
 
@@ -509,7 +574,10 @@ Defined in: [src/api.ts:607](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiGetGroupLink**(`groupId`): `Promise`\<`GroupLink`\>
 
-Defined in: [src/api.ts:492](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L492)
+Defined in: [src/api.ts:623](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L623)
+
+Get group link.
+Network usage: no.
 
 #### Parameters
 
@@ -527,7 +595,7 @@ Defined in: [src/api.ts:492](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiGetGroupLinkStr**(`groupId`): `Promise`\<`string`\>
 
-Defined in: [src/api.ts:498](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L498)
+Defined in: [src/api.ts:629](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L629)
 
 #### Parameters
 
@@ -545,7 +613,10 @@ Defined in: [src/api.ts:498](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiGetUserAddress**(`userId`): `Promise`\<`UserContactLink` \| `undefined`\>
 
-Defined in: [src/api.ts:243](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L243)
+Defined in: [src/api.ts:332](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L332)
+
+Get bot address and settings.
+Network usage: no.
 
 #### Parameters
 
@@ -563,7 +634,10 @@ Defined in: [src/api.ts:243](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiJoinGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:392](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L392)
+Defined in: [src/api.ts:502](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L502)
+
+Join group.
+Network usage: interactive.
 
 #### Parameters
 
@@ -581,7 +655,10 @@ Defined in: [src/api.ts:392](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiLeaveGroup**(`groupId`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:432](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L432)
+Defined in: [src/api.ts:552](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L552)
+
+Leave group.
+Network usage: background.
 
 #### Parameters
 
@@ -599,7 +676,10 @@ Defined in: [src/api.ts:432](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiListContacts**(`userId`): `Promise`\<`Contact`[]\>
 
-Defined in: [src/api.ts:573](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L573)
+Defined in: [src/api.ts:712](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L712)
+
+Get contacts.
+Network usage: no.
 
 #### Parameters
 
@@ -617,7 +697,10 @@ Defined in: [src/api.ts:573](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiListGroups**(`userId`, `contactId?`, `search?`): `Promise`\<`GroupInfo`[]\>
 
-Defined in: [src/api.ts:581](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L581)
+Defined in: [src/api.ts:722](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L722)
+
+Get groups.
+Network usage: no.
 
 #### Parameters
 
@@ -643,7 +726,10 @@ Defined in: [src/api.ts:581](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiListMembers**(`groupId`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:440](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L440)
+Defined in: [src/api.ts:562](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L562)
+
+Get group members.
+Network usage: no.
 
 #### Parameters
 
@@ -661,7 +747,10 @@ Defined in: [src/api.ts:440](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiListUsers**(): `Promise`\<`UserInfo`[]\>
 
-Defined in: [src/api.ts:633](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L633)
+Defined in: [src/api.ts:779](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L779)
+
+Get all user profiles
+Network usage: no.
 
 #### Returns
 
@@ -673,7 +762,10 @@ Defined in: [src/api.ts:633](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiNewGroup**(`userId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:448](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L448)
+Defined in: [src/api.ts:572](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L572)
+
+Create group.
+Network usage: no.
 
 #### Parameters
 
@@ -695,7 +787,10 @@ Defined in: [src/api.ts:448](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiReceiveFile**(`fileId`): `Promise`\<`AChatItem`\>
 
-Defined in: [src/api.ts:365](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L365)
+Defined in: [src/api.ts:472](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L472)
+
+Receive file.
+Network usage: no.
 
 #### Parameters
 
@@ -713,7 +808,10 @@ Defined in: [src/api.ts:365](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiRejectContactRequest**(`contactReqId`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:562](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L562)
+Defined in: [src/api.ts:702](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L702)
+
+Reject contact request. The user who sent the request is **not notified**.
+Network usage: no.
 
 #### Parameters
 
@@ -731,7 +829,10 @@ Defined in: [src/api.ts:562](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiRemoveMembers**(`groupId`, `memberIds`, `withMessages`): `Promise`\<`GroupMember`[]\>
 
-Defined in: [src/api.ts:424](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L424)
+Defined in: [src/api.ts:542](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L542)
+
+Remove members. Requires Admin role.
+Network usage: background.
 
 #### Parameters
 
@@ -757,7 +858,10 @@ Defined in: [src/api.ts:424](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSendMessages**(`chat`, `messages`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:288](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L288)
+Defined in: [src/api.ts:380](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L380)
+
+Send messages.
+Network usage: background.
 
 #### Parameters
 
@@ -779,7 +883,10 @@ Defined in: [src/api.ts:288](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSendTextMessage**(`chat`, `text`, `inReplyTo?`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:302](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L302)
+Defined in: [src/api.ts:398](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L398)
+
+Send text message.
+Network usage: background.
 
 #### Parameters
 
@@ -805,7 +912,10 @@ Defined in: [src/api.ts:302](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSendTextReply**(`chatItem`, `text`): `Promise`\<`AChatItem`[]\>
 
-Defined in: [src/api.ts:306](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L306)
+Defined in: [src/api.ts:406](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L406)
+
+Send text message in reply to received message.
+Network usage: background.
 
 #### Parameters
 
@@ -827,7 +937,10 @@ Defined in: [src/api.ts:306](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSetActiveUser**(`userId`, `viewPwd?`): `Promise`\<`User`\>
 
-Defined in: [src/api.ts:641](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L641)
+Defined in: [src/api.ts:789](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L789)
+
+Set active user profile
+Network usage: no.
 
 #### Parameters
 
@@ -849,7 +962,10 @@ Defined in: [src/api.ts:641](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSetAddressSettings**(`userId`, `__namedParameters`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:271](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L271)
+Defined in: [src/api.ts:364](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L364)
+
+Set bot address settings.
+Network usage: interactive.
 
 #### Parameters
 
@@ -871,7 +987,10 @@ Defined in: [src/api.ts:271](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSetContactPrefs**(`contactId`, `preferences`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:671](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L671)
+Defined in: [src/api.ts:825](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L825)
+
+Configure chat preference overrides for the contact.
+Network usage: background.
 
 #### Parameters
 
@@ -893,7 +1012,10 @@ Defined in: [src/api.ts:671](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSetGroupLinkMemberRole**(`groupId`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:478](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L478)
+Defined in: [src/api.ts:605](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L605)
+
+Set member role for group link.
+Network usage: no.
 
 #### Parameters
 
@@ -915,7 +1037,10 @@ Defined in: [src/api.ts:478](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSetMembersRole**(`groupId`, `groupMemberIds`, `memberRole`): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:408](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L408)
+Defined in: [src/api.ts:522](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L522)
+
+Set members role. Requires Admin role.
+Network usage: background.
 
 #### Parameters
 
@@ -941,7 +1066,10 @@ Defined in: [src/api.ts:408](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiSetProfileAddress**(`userId`, `enable`): `Promise`\<`UserProfileUpdateSummary`\>
 
-Defined in: [src/api.ts:259](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L259)
+Defined in: [src/api.ts:350](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L350)
+
+Add address to bot profile.
+Network usage: interactive.
 
 #### Parameters
 
@@ -963,7 +1091,10 @@ Defined in: [src/api.ts:259](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiUpdateChatItem**(`chatType`, `chatId`, `chatItemId`, `msgContent`): `Promise`\<`ChatItem`\>
 
-Defined in: [src/api.ts:312](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L312)
+Defined in: [src/api.ts:414](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L414)
+
+Update message.
+Network usage: background.
 
 #### Parameters
 
@@ -993,7 +1124,10 @@ Defined in: [src/api.ts:312](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiUpdateGroupProfile**(`groupId`, `groupProfile`): `Promise`\<`GroupInfo`\>
 
-Defined in: [src/api.ts:456](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L456)
+Defined in: [src/api.ts:582](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L582)
+
+Update group profile.
+Network usage: background.
 
 #### Parameters
 
@@ -1015,7 +1149,10 @@ Defined in: [src/api.ts:456](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **apiUpdateProfile**(`userId`, `profile`): `Promise`\<`UserProfileUpdateSummary` \| `undefined`\>
 
-Defined in: [src/api.ts:657](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L657)
+Defined in: [src/api.ts:809](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L809)
+
+Update user profile.
+Network usage: background.
 
 #### Parameters
 
@@ -1037,7 +1174,10 @@ Defined in: [src/api.ts:657](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **close**(): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:69](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L69)
+Defined in: [src/api.ts:114](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L114)
+
+Close chat database.
+Usually doesn't need to be called in chat bots.
 
 #### Returns
 
@@ -1049,7 +1189,9 @@ Defined in: [src/api.ts:69](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > **off**\<`K`\>(`event`, `subscriber`): `void`
 
-Defined in: [src/api.ts:178](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L178)
+Defined in: [src/api.ts:253](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L253)
+
+Unsubscribe all or a specific handler from a specific event.
 
 #### Type Parameters
 
@@ -1063,7 +1205,11 @@ Defined in: [src/api.ts:178](https://github.com/simplex-chat/simplex-chat/blob/m
 
 `K`
 
+The event type to unsubscribe from.
+
 ##### subscriber
+
+An optional subscriber function for the event.
 
 [`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`K`\> | `undefined`
 
@@ -1077,11 +1223,15 @@ Defined in: [src/api.ts:178](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **offAny**(`receiver`): `void`
 
-Defined in: [src/api.ts:190](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L190)
+Defined in: [src/api.ts:269](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L269)
+
+Unsubscribe all or a specific handler from any events.
 
 #### Parameters
 
 ##### receiver
+
+An optional subscriber function for the event.
 
 [`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`Tag`\> | `undefined`
 
@@ -1097,7 +1247,9 @@ Defined in: [src/api.ts:190](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **on**\<`K`\>(`subscribers`): `void`
 
-Defined in: [src/api.ts:113](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L113)
+Defined in: [src/api.ts:163](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L163)
+
+Subscribe multiple event handlers at once.
 
 ##### Type Parameters
 
@@ -1109,207 +1261,25 @@ Defined in: [src/api.ts:113](https://github.com/simplex-chat/simplex-chat/blob/m
 
 ###### subscribers
 
-###### acceptingBusinessRequest?
+[`EventSubscribers`](../type-aliases/EventSubscribers.md)
 
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"acceptingBusinessRequest"`\>
-
-###### acceptingContactRequest?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"acceptingContactRequest"`\>
-
-###### businessLinkConnecting?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"businessLinkConnecting"`\>
-
-###### chatError?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"chatError"`\>
-
-###### chatErrors?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"chatErrors"`\>
-
-###### chatItemReaction?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"chatItemReaction"`\>
-
-###### chatItemsDeleted?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"chatItemsDeleted"`\>
-
-###### chatItemsStatusesUpdated?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"chatItemsStatusesUpdated"`\>
-
-###### chatItemUpdated?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"chatItemUpdated"`\>
-
-###### connectedToGroupMember?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"connectedToGroupMember"`\>
-
-###### contactConnected?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"contactConnected"`\>
-
-###### contactConnecting?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"contactConnecting"`\>
-
-###### contactDeletedByContact?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"contactDeletedByContact"`\>
-
-###### contactSndReady?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"contactSndReady"`\>
-
-###### contactUpdated?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"contactUpdated"`\>
-
-###### deletedMember?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"deletedMember"`\>
-
-###### deletedMemberUser?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"deletedMemberUser"`\>
-
-###### groupChatItemsDeleted?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"groupChatItemsDeleted"`\>
-
-###### groupDeleted?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"groupDeleted"`\>
-
-###### groupLinkConnecting?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"groupLinkConnecting"`\>
-
-###### groupMemberUpdated?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"groupMemberUpdated"`\>
-
-###### groupUpdated?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"groupUpdated"`\>
-
-###### hostConnected?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"hostConnected"`\>
-
-###### hostDisconnected?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"hostDisconnected"`\>
-
-###### joinedGroupMember?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"joinedGroupMember"`\>
-
-###### joinedGroupMemberConnecting?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"joinedGroupMemberConnecting"`\>
-
-###### leftMember?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"leftMember"`\>
-
-###### memberAcceptedByOther?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"memberAcceptedByOther"`\>
-
-###### memberBlockedForAll?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"memberBlockedForAll"`\>
-
-###### memberRole?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"memberRole"`\>
-
-###### messageError?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"messageError"`\>
-
-###### newChatItems?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"newChatItems"`\>
-
-###### newMemberContactReceivedInv?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"newMemberContactReceivedInv"`\>
-
-###### rcvFileAccepted?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileAccepted"`\>
-
-###### rcvFileComplete?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileComplete"`\>
-
-###### rcvFileDescrReady?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileDescrReady"`\>
-
-###### rcvFileError?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileError"`\>
-
-###### rcvFileSndCancelled?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileSndCancelled"`\>
-
-###### rcvFileStart?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileStart"`\>
-
-###### rcvFileWarning?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"rcvFileWarning"`\>
-
-###### receivedContactRequest?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"receivedContactRequest"`\>
-
-###### receivedGroupInvitation?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"receivedGroupInvitation"`\>
-
-###### sentGroupInvitation?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"sentGroupInvitation"`\>
-
-###### sndFileCompleteXFTP?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"sndFileCompleteXFTP"`\>
-
-###### sndFileError?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"sndFileError"`\>
-
-###### sndFileWarning?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"sndFileWarning"`\>
-
-###### subscriptionStatus?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"subscriptionStatus"`\>
-
-###### userJoinedGroup?
-
-[`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`"userJoinedGroup"`\>
+An object mapping event types (CEvt.Tag) to their subscriber functions.
 
 ##### Returns
 
 `void`
 
+##### Throws
+
+If the same function is subscribed to event.
+
 #### Call Signature
 
 > **on**\<`K`\>(`event`, `subscriber`): `void`
 
-Defined in: [src/api.ts:114](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L114)
+Defined in: [src/api.ts:171](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L171)
+
+Subscribe a handler to a specific event.
 
 ##### Type Parameters
 
@@ -1323,13 +1293,21 @@ Defined in: [src/api.ts:114](https://github.com/simplex-chat/simplex-chat/blob/m
 
 `K`
 
+The event type to subscribe to.
+
 ###### subscriber
 
 [`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`K`\>
 
+The subscriber function for the event.
+
 ##### Returns
 
 `void`
+
+##### Throws
+
+If the same function is subscribed to event.
 
 ***
 
@@ -1337,7 +1315,9 @@ Defined in: [src/api.ts:114](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **onAny**(`receiver`): `void`
 
-Defined in: [src/api.ts:132](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L132)
+Defined in: [src/api.ts:194](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L194)
+
+Subscribe a handler to any event.
 
 #### Parameters
 
@@ -1345,9 +1325,15 @@ Defined in: [src/api.ts:132](https://github.com/simplex-chat/simplex-chat/blob/m
 
 [`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`Tag`\>
 
+The receiver function for any event.
+
 #### Returns
 
 `void`
+
+#### Throws
+
+If the same function is subscribed to event.
 
 ***
 
@@ -1355,7 +1341,9 @@ Defined in: [src/api.ts:132](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **once**\<`K`\>(`event`, `subscriber`): `void`
 
-Defined in: [src/api.ts:137](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L137)
+Defined in: [src/api.ts:205](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L205)
+
+Subscribe a handler to a specific event to be delivered one time.
 
 #### Type Parameters
 
@@ -1369,13 +1357,21 @@ Defined in: [src/api.ts:137](https://github.com/simplex-chat/simplex-chat/blob/m
 
 `K`
 
+The event type to subscribe to.
+
 ##### subscriber
 
 [`EventSubscriberFunc`](../type-aliases/EventSubscriberFunc.md)\<`K`\>
 
+The subscriber function for the event.
+
 #### Returns
 
 `void`
+
+#### Throws
+
+If the same function is subscribed to event.
 
 ***
 
@@ -1383,7 +1379,7 @@ Defined in: [src/api.ts:137](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **recvChatEvent**(`wait`): `Promise`\<`ChatEvent` \| `undefined`\>
 
-Defined in: [src/api.ts:216](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L216)
+Defined in: [src/api.ts:304](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L304)
 
 #### Parameters
 
@@ -1401,7 +1397,7 @@ Defined in: [src/api.ts:216](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **sendChatCmd**(`cmd`): `Promise`\<`ChatResponse`\>
 
-Defined in: [src/api.ts:212](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L212)
+Defined in: [src/api.ts:300](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L300)
 
 #### Parameters
 
@@ -1419,7 +1415,9 @@ Defined in: [src/api.ts:212](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **startChat**(): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:52](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L52)
+Defined in: [src/api.ts:88](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L88)
+
+Start chat controller. Must be called with the existing user profile.
 
 #### Returns
 
@@ -1431,7 +1429,11 @@ Defined in: [src/api.ts:52](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > **stopChat**(): `Promise`\<`void`\>
 
-Defined in: [src/api.ts:61](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L61)
+Defined in: [src/api.ts:102](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L102)
+
+Stop chat controller.
+Must be called before closing the database.
+Usually doesn't need to be called in chat bots.
 
 #### Returns
 
@@ -1445,7 +1447,10 @@ Defined in: [src/api.ts:61](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > **wait**\<`K`\>(`event`): `Promise`\<`ChatEvent` & `object`\>
 
-Defined in: [src/api.ts:143](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L143)
+Defined in: [src/api.ts:213](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L213)
+
+Waits for specific event, with an optional predicate.
+Returns `undefined` on timeout if specified.
 
 ##### Type Parameters
 
@@ -1467,7 +1472,10 @@ Defined in: [src/api.ts:143](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **wait**\<`K`\>(`event`, `predicate`): `Promise`\<`ChatEvent` & `object`\>
 
-Defined in: [src/api.ts:144](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L144)
+Defined in: [src/api.ts:214](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L214)
+
+Waits for specific event, with an optional predicate.
+Returns `undefined` on timeout if specified.
 
 ##### Type Parameters
 
@@ -1493,7 +1501,10 @@ Defined in: [src/api.ts:144](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **wait**\<`K`\>(`event`, `timeout`): `Promise`\<ChatEvent & \{ type: K; \} \| `undefined`\>
 
-Defined in: [src/api.ts:145](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L145)
+Defined in: [src/api.ts:215](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L215)
+
+Waits for specific event, with an optional predicate.
+Returns `undefined` on timeout if specified.
 
 ##### Type Parameters
 
@@ -1519,7 +1530,10 @@ Defined in: [src/api.ts:145](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **wait**\<`K`\>(`event`, `predicate`, `timeout`): `Promise`\<ChatEvent & \{ type: K; \} \| `undefined`\>
 
-Defined in: [src/api.ts:146](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L146)
+Defined in: [src/api.ts:216](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L216)
+
+Waits for specific event, with an optional predicate.
+Returns `undefined` on timeout if specified.
 
 ##### Type Parameters
 
@@ -1549,23 +1563,31 @@ Defined in: [src/api.ts:146](https://github.com/simplex-chat/simplex-chat/blob/m
 
 ### init()
 
-> `static` **init**(`dbPath`, `dbKey`, `confirm`): `Promise`\<`ChatApi`\>
+> `static` **init**(`dbFilePrefix`, `dbKey?`, `confirm?`): `Promise`\<`ChatApi`\>
 
-Defined in: [src/api.ts:43](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L43)
+Defined in: [src/api.ts:76](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L76)
+
+Initializes the ChatApi.
 
 #### Parameters
 
-##### dbPath
+##### dbFilePrefix
 
 `string`
 
-##### dbKey
+File prefix for the database files.
+
+##### dbKey?
 
 `string` = `""`
 
-##### confirm
+Database encryption key.
+
+##### confirm?
 
 [`MigrationConfirmation`](../../core/enumerations/MigrationConfirmation.md) = `core.MigrationConfirmation.YesUp`
+
+Migration confirmation mode.
 
 #### Returns
 

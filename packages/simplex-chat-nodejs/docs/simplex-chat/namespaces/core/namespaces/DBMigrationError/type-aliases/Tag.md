@@ -8,4 +8,4 @@
 
 > **Tag** = `"invalidConfirmation"` \| `"errorNotADatabase"` \| `"errorMigration"` \| `"errorSQL"`
 
-Defined in: [src/core.ts:107](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L107)
+Defined in: [src/core.ts:129](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L129)

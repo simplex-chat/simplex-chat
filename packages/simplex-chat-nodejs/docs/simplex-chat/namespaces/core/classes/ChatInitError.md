@@ -6,7 +6,7 @@
 
 # Class: ChatInitError
 
-Defined in: [src/core.ts:94](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L94)
+Defined in: [src/core.ts:116](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L116)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:94](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **new ChatInitError**(`message`, `dbMigrationError`): `ChatInitError`
 
-Defined in: [src/core.ts:95](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L95)
+Defined in: [src/core.ts:117](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L117)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [src/core.ts:95](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **dbMigrationError**: [`DBMigrationError`](../type-aliases/DBMigrationError.md)
 
-Defined in: [src/core.ts:95](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L95)
+Defined in: [src/core.ts:117](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L117)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [src/core.ts:95](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **message**: `string`
 
-Defined in: [src/core.ts:95](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L95)
+Defined in: [src/core.ts:117](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L117)
 
 #### Inherited from
 

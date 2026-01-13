@@ -6,7 +6,7 @@
 
 # Interface: MTREDifferent
 
-Defined in: [src/core.ts:184](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L184)
+Defined in: [src/core.ts:206](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L206)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:184](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **downMigrations**: `string`[]
 
-Defined in: [src/core.ts:186](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L186)
+Defined in: [src/core.ts:208](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L208)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:186](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"different"`
 
-Defined in: [src/core.ts:185](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L185)
+Defined in: [src/core.ts:207](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L207)
 
 #### Overrides
 

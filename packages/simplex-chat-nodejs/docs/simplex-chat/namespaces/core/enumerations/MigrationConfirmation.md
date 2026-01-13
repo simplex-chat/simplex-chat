@@ -6,7 +6,9 @@
 
 # Enumeration: MigrationConfirmation
 
-Defined in: [src/core.ts:82](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L82)
+Defined in: [src/core.ts:101](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L101)
+
+Migration confirmation mode
 
 ## Enumeration Members
 
@@ -14,7 +16,7 @@ Defined in: [src/core.ts:82](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **Console**: `"console"`
 
-Defined in: [src/core.ts:85](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L85)
+Defined in: [src/core.ts:104](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L104)
 
 ***
 
@@ -22,7 +24,7 @@ Defined in: [src/core.ts:85](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **Error**: `"error"`
 
-Defined in: [src/core.ts:86](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L86)
+Defined in: [src/core.ts:105](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L105)
 
 ***
 
@@ -30,7 +32,7 @@ Defined in: [src/core.ts:86](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **YesUp**: `"yesUp"`
 
-Defined in: [src/core.ts:83](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L83)
+Defined in: [src/core.ts:102](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L102)
 
 ***
 
@@ -38,4 +40,4 @@ Defined in: [src/core.ts:83](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **YesUpDown**: `"yesUpDown"`
 
-Defined in: [src/core.ts:84](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L84)
+Defined in: [src/core.ts:103](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L103)

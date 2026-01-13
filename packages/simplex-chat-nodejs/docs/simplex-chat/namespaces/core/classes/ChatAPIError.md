@@ -6,7 +6,7 @@
 
 # Class: ChatAPIError
 
-Defined in: [src/core.ts:76](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L76)
+Defined in: [src/core.ts:92](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L92)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:76](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **new ChatAPIError**(`message`, `chatError`): `ChatAPIError`
 
-Defined in: [src/core.ts:77](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L77)
+Defined in: [src/core.ts:93](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L93)
 
 #### Parameters
 
@@ -44,7 +44,7 @@ Defined in: [src/core.ts:77](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **chatError**: `ChatError` \| `undefined` = `undefined`
 
-Defined in: [src/core.ts:77](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L77)
+Defined in: [src/core.ts:93](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L93)
 
 ***
 
@@ -52,7 +52,7 @@ Defined in: [src/core.ts:77](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **message**: `string`
 
-Defined in: [src/core.ts:77](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L77)
+Defined in: [src/core.ts:93](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L93)
 
 #### Inherited from
 

@@ -6,7 +6,7 @@
 
 # Interface: MEDowngrade
 
-Defined in: [src/core.ts:152](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L152)
+Defined in: [src/core.ts:174](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L174)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:152](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **downMigrations**: `string`[]
 
-Defined in: [src/core.ts:154](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L154)
+Defined in: [src/core.ts:176](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L176)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:154](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"downgrade"`
 
-Defined in: [src/core.ts:153](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L153)
+Defined in: [src/core.ts:175](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L175)
 
 #### Overrides
 

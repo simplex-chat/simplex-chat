@@ -8,7 +8,9 @@
 
 > **chatReadFile**(`path`, `__namedParameters`): `Promise`\<`ArrayBuffer`\>
 
-Defined in: [src/core.ts:46](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L46)
+Defined in: [src/core.ts:58](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L58)
+
+Read buffer from encrypted file
 
 ## Parameters
 

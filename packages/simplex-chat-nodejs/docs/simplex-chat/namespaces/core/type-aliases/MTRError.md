@@ -8,4 +8,4 @@
 
 > **MTRError** = [`MTRENoDown`](../namespaces/MTRError/interfaces/MTRENoDown.md) \| [`MTREDifferent`](../namespaces/MTRError/interfaces/MTREDifferent.md)
 
-Defined in: [src/core.ts:168](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L168)
+Defined in: [src/core.ts:190](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L190)

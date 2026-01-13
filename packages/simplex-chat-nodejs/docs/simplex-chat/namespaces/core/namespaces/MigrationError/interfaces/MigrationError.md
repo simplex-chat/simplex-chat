@@ -6,7 +6,7 @@
 
 # Interface: MigrationError
 
-Defined in: [src/core.ts:157](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L157)
+Defined in: [src/core.ts:179](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L179)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:157](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **mtrError**: [`MTRError`](../../../type-aliases/MTRError.md)
 
-Defined in: [src/core.ts:159](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L159)
+Defined in: [src/core.ts:181](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L181)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:159](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"migrationError"`
 
-Defined in: [src/core.ts:158](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L158)
+Defined in: [src/core.ts:180](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L180)
 
 #### Overrides
 

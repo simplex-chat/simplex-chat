@@ -8,15 +8,37 @@ export class ChatCommandError extends Error {
   }
 }
 
+/**
+ * Connection request types.
+ * @enum {string}
+ */
 export enum ConnReqType {
   Invitation = "invitation",
   Contact = "contact",
 }
 
+/**
+ * Bot address settings.
+ */
 export interface BotAddressSettings {
-  autoAccept?: boolean // default: true
-  welcomeMessage?: T.MsgContent | undefined // default: no welcome message
-  businessAddress?: boolean // default: false
+  /**
+   * Automatically accept contact requests.
+   * @default true
+   */
+  autoAccept?: boolean
+
+  /**
+   * Optional welcome message to show before connection to the users.
+   * @default undefined (no welcome message)
+   */
+  welcomeMessage?: T.MsgContent | undefined
+
+  /**
+   * Business contact address.
+   * For all requests business chats will be created where other participants can be added.
+   * @default false
+   */
+  businessAddress?: boolean
 }
 
 export const defaultBotAddressSettings: BotAddressSettings = {
@@ -27,11 +49,16 @@ export const defaultBotAddressSettings: BotAddressSettings = {
 
 export type EventSubscriberFunc<K extends CEvt.Tag> = (event: ChatEvent & {type: K}) => void | Promise<void>
 
+export type EventSubscribers = {[K in CEvt.Tag]?: EventSubscriberFunc<K>}
+
 interface EventSubscriber<K extends CEvt.Tag> {
   subscriber: EventSubscriberFunc<K>
   once: boolean
 }
 
+/**
+ * Main API class for interacting with the chat core library.
+ */
 export class ChatApi {
   private receiveEvents = false
   private eventsLoop: Promise<void> | undefined = undefined
@@ -40,15 +67,24 @@ export class ChatApi {
   
   private constructor(protected ctrl_: bigint | undefined) {}
 
+  /**
+   * Initializes the ChatApi.
+   * @param {string} dbFilePrefix - File prefix for the database files.
+   * @param {string} [dbKey=""] - Database encryption key.
+   * @param {core.MigrationConfirmation} [confirm=core.MigrationConfirmation.YesUp] - Migration confirmation mode.
+   */
   static async init(
-    dbPath: string,
+    dbFilePrefix: string,
     dbKey: string = "",
     confirm = core.MigrationConfirmation.YesUp
   ): Promise<ChatApi> {
-    const ctrl = await core.chatMigrateInit(dbPath, dbKey, confirm)
+    const ctrl = await core.chatMigrateInit(dbFilePrefix, dbKey, confirm)
     return new ChatApi(ctrl)
   }
-    
+
+  /**
+   * Start chat controller. Must be called with the existing user profile.
+   */
   async startChat(): Promise<void> {
     this.receiveEvents = true
     this.eventsLoop = this.runEventsLoop()
@@ -58,6 +94,11 @@ export class ChatApi {
     }
   }
   
+  /**
+   * Stop chat controller.
+   * Must be called before closing the database.
+   * Usually doesn't need to be called in chat bots.
+   */
   async stopChat(): Promise<void> {
     const r = await this.sendChatCmd("/_stop")
     if (r.type !== "chatStopped") throw new ChatCommandError("error starting chat", r)
@@ -66,6 +107,10 @@ export class ChatApi {
     this.eventsLoop = undefined    
   }
 
+  /**
+   * Close chat database.
+   * Usually doesn't need to be called in chat bots.
+   */
   async close(): Promise<void> {
     this.receiveEvents = false
     if (this.eventsLoop) await this.eventsLoop
@@ -110,9 +155,21 @@ export class ChatApi {
     }
   }
   
-  on<K extends CEvt.Tag>(subscribers: {[K in CEvt.Tag]?: EventSubscriberFunc<K>}): void
+  /**
+   * Subscribe multiple event handlers at once.
+   * @param subscribers - An object mapping event types (CEvt.Tag) to their subscriber functions.
+   * @throws {Error} If the same function is subscribed to event.
+   */
+  on<K extends CEvt.Tag>(subscribers: EventSubscribers): void
+  
+  /**
+   * Subscribe a handler to a specific event.
+   * @param {CEvt.Tag} event - The event type to subscribe to.
+   * @param subscriber - The subscriber function for the event.
+   * @throws {Error} If the same function is subscribed to event.
+   */
   on<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>): void
-  on<K extends CEvt.Tag>(events: K | {[K in CEvt.Tag]?: EventSubscriberFunc<K>}, subscriber?: EventSubscriberFunc<K>): void {
+  on<K extends CEvt.Tag>(events: K | EventSubscribers, subscriber?: EventSubscriberFunc<K>): void {
     if (typeof events === "string" && subscriber) {
       this.on_(events, subscriber)
     } else {
@@ -129,17 +186,30 @@ export class ChatApi {
     subs.push({subscriber, once})
   }
   
+  /**
+   * Subscribe a handler to any event.
+   * @param receiver - The receiver function for any event.
+   * @throws {Error} If the same function is subscribed to event.
+   */
   onAny(receiver: EventSubscriberFunc<CEvt.Tag>): void {
     if (this.receivers.some(s => s === receiver)) throw Error("this function is already subscribed")
     this.receivers.push(receiver)
   }
   
+  /**
+   * Subscribe a handler to a specific event to be delivered one time.
+   * @param {CEvt.Tag} event - The event type to subscribe to.
+   * @param subscriber - The subscriber function for the event.
+   * @throws {Error} If the same function is subscribed to event.
+   */
   once<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K>): void {
     this.on_(event, subscriber, true)
   }
 
-  // Waits for specific event, with optional predicate.
-  // Returns `undefined` on timeout if specified.
+  /**
+   * Waits for specific event, with an optional predicate.
+   * Returns `undefined` on timeout if specified.
+   */
   wait<K extends CEvt.Tag>(event: K): Promise<ChatEvent & {type: K}>
   wait<K extends CEvt.Tag>(event: K, predicate: ((event: ChatEvent & {type: K}) => boolean) | undefined): Promise<ChatEvent & {type: K}>
   wait<K extends CEvt.Tag>(event: K, timeout: number): Promise<ChatEvent & {type: K} | undefined>
@@ -174,7 +244,12 @@ export class ChatApi {
       }
     })
   }
-    
+
+  /**
+   * Unsubscribe all or a specific handler from a specific event.
+   * @param {CEvt.Tag} event - The event type to unsubscribe from.
+   * @param subscriber - An optional subscriber function for the event.
+   */    
   off<K extends CEvt.Tag>(event: K, subscriber: EventSubscriberFunc<K> | undefined = undefined): void {
     if (subscriber) {
       const subs = this.subscribers[event]
@@ -187,6 +262,10 @@ export class ChatApi {
     }
   }
 
+  /**
+   * Unsubscribe all or a specific handler from any events.
+   * @param receiver - An optional subscriber function for the event.
+   */    
   offAny(receiver: EventSubscriberFunc<CEvt.Tag> | undefined = undefined): void {
     if (receiver) {
       const i = this.receivers.findIndex(r => r === receiver)
@@ -196,14 +275,23 @@ export class ChatApi {
     }
   }
   
+  /**
+   * Chat controller is initialized
+   */
   get initialized(): boolean {
     return typeof this.ctrl_ === "bigint"
   }
 
-  get receiving(): boolean {
+  /**
+   * Chat controller is started
+   */
+  get started(): boolean {
     return this.receiveEvents && this.eventsLoop !== undefined 
   }
 
+  /**
+   * Chat controller reference
+   */
   get ctrl(): bigint {
     if (typeof this.ctrl_ === "bigint") return this.ctrl_
     else throw Error("chat api controller not initialized")
@@ -217,11 +305,10 @@ export class ChatApi {
     return await core.chatRecvMsgWait(this.ctrl, wait)
   }
   
-  // Address commands
-  // Bots can use these commands to automatically check and create address when initialized
-
-  // Create bot address.
-  // Network usage: interactive.
+  /**
+   * Create bot address.
+   * Network usage: interactive.
+   */
   async apiCreateUserAddress(userId: number): Promise<T.CreatedConnLink> {
     const r = await this.sendChatCmd(CC.APICreateMyAddress.cmdString({userId}))
     if (r.type === "userContactLinkCreated") return r.connLinkContact
@@ -238,8 +325,10 @@ export class ChatApi {
     throw new ChatCommandError("error deleting user address", r)
   }
 
-  // Get bot address and settings.
-  // Network usage: no.
+  /**
+   * Get bot address and settings.
+   * Network usage: no.
+   */
   async apiGetUserAddress(userId: number): Promise<T.UserContactLink | undefined> {
     try {
       const r = await this.sendChatCmd(CC.APIShowMyAddress.cmdString({userId}))
@@ -254,8 +343,10 @@ export class ChatApi {
     }
   }
 
-  // Add address to bot profile.
-  // Network usage: interactive.
+  /**
+   * Add address to bot profile.
+   * Network usage: interactive.
+   */
   async apiSetProfileAddress(userId: number, enable: boolean): Promise<T.UserProfileUpdateSummary> {
     const r = await this.sendChatCmd(CC.APISetProfileAddress.cmdString({userId, enable}))
     switch (r.type) {
@@ -266,8 +357,10 @@ export class ChatApi {
     }
   }
 
-  // Set bot address settings.
-  // Network usage: interactive.
+  /**
+   * Set bot address settings.
+   * Network usage: interactive.
+   */
   async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings): Promise<void> {
     const settings: T.AddressSettings = {
       autoAccept: (autoAccept === undefined ? defaultBotAddressSettings.autoAccept : autoAccept) ? {acceptIncognito: false} : undefined,
@@ -280,11 +373,10 @@ export class ChatApi {
     }  
   }
 
-  // Message commands
-  // Commands to send, update, delete, moderate messages and set message reactions
-
-  // Send messages.
-  // Network usage: background.
+  /**
+   * Send messages.
+   * Network usage: background.
+   */
   async apiSendMessages(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, messages: T.ComposedMessage[]): Promise<T.AChatItem[]> {
     const sendRef = Array.isArray(chat)
                     ? {chatType: chat[0], chatId: chat[1]}
@@ -299,16 +391,26 @@ export class ChatApi {
     throw new ChatCommandError("unexpected response", r)
   }
 
+  /**
+   * Send text message.
+   * Network usage: background.
+   */
   async apiSendTextMessage(chat: [T.ChatType, number] | T.ChatRef | T.ChatInfo, text: string, inReplyTo?: number): Promise<T.AChatItem[]> {
     return this.apiSendMessages(chat, [{msgContent: {type: "text", text}, mentions: {}, quotedItemId: inReplyTo}])
   }
 
+  /**
+   * Send text message in reply to received message.
+   * Network usage: background.
+   */
   async apiSendTextReply(chatItem: T.AChatItem, text: string): Promise<T.AChatItem[]> {
     return this.apiSendTextMessage(chatItem.chatInfo, text, chatItem.chatItem.meta.itemId)
   }
 
-  // Update message.
-  // Network usage: background.
+  /**
+   * Update message.
+   * Network usage: background.
+   */
   async apiUpdateChatItem(chatType: T.ChatType, chatId: number, chatItemId: number, msgContent: T.MsgContent): Promise<T.ChatItem> {
     const r = await this.sendChatCmd(
       CC.APIUpdateChatItem.cmdString({
@@ -322,8 +424,10 @@ export class ChatApi {
     throw new ChatCommandError("error updating chat item", r)
   }
 
-  // Delete message.
-  // Network usage: background.
+  /**
+   * Delete message.
+   * Network usage: background.
+   */
   async apiDeleteChatItems(
     chatType: T.ChatType,
     chatId: number,
@@ -335,16 +439,20 @@ export class ChatApi {
     throw new ChatCommandError("error deleting chat item", r)
   }
 
-  // Moderate message. Requires Moderator role (and higher than message author's).
-  // Network usage: background.
+  /**
+   * Moderate message. Requires Moderator role (and higher than message author's).
+   * Network usage: background.
+   */
   async apiDeleteMemberChatItem(groupId: number, chatItemIds: number[]): Promise<T.ChatItemDeletion[]> {
     const r = await this.sendChatCmd(CC.APIDeleteMemberChatItem.cmdString({groupId, chatItemIds}))
     if (r.type === "chatItemsDeleted") return r.chatItemDeletions
     throw new ChatCommandError("error deleting member chat item", r)  
   }
 
-  // Add/remove message reaction.
-  // Network usage: background.
+  /**
+   * Add/remove message reaction.
+   * Network usage: background.
+   */
   async apiChatItemReaction(
     chatType: T.ChatType,
     chatId: number,
@@ -357,113 +465,130 @@ export class ChatApi {
     throw new ChatCommandError("error setting item reaction", r)  
   }
 
-  // File commands
-  // Commands to receive and to cancel files. Files are sent as part of the message, there are no separate commands to send files.
-
-  // Receive file.
-  // Network usage: no.
+  /**
+   * Receive file.
+   * Network usage: no.
+   */
   async apiReceiveFile(fileId: number): Promise<T.AChatItem> {
     const r = await this.sendChatCmd(CC.ReceiveFile.cmdString({fileId, userApprovedRelays: true}))
     if (r.type === "rcvFileAccepted") return r.chatItem
     throw new ChatCommandError("error receiving file", r)
   }
 
-  // Cancel file.
-  // Network usage: background.
+  /**
+   * Cancel file.
+   * Network usage: background.
+   */
   async apiCancelFile(fileId: number): Promise<void> {
     const r = await this.sendChatCmd(CC.CancelFile.cmdString({fileId}))
     if (r.type === "sndFileCancelled" || r.type === "rcvFileCancelled") return
     throw new ChatCommandError("error canceling file", r)
   }
 
-  // Group commands
-  // Commands to manage and moderate groups. These commands can be used with business chats as well - they are groups. E.g., a common scenario would be to add human agents to business chat with the customer who connected via business address.
-
-  // Add contact to group. Requires bot to have Admin role.
-  // Network usage: interactive.
+  /**
+   * Add contact to group. Requires bot to have Admin role.
+   * Network usage: interactive.
+   */
   async apiAddMember(groupId: number, contactId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAddMember.cmdString({groupId, contactId, memberRole}))
     if (r.type === "sentGroupInvitation") return r.member
     throw new ChatCommandError("error adding member", r)
   }
 
-  // Join group.
-  // Network usage: interactive.
+  /**
+   * Join group.
+   * Network usage: interactive.
+   */
   async apiJoinGroup(groupId: number): Promise<T.GroupInfo> {
     const r = await this.sendChatCmd(CC.APIJoinGroup.cmdString({groupId}))
     if (r.type === "userAcceptedGroupSent") return r.groupInfo
     throw new ChatCommandError("error joining group", r)
   }
 
-  // Accept group member. Requires Admin role.
-  // Network usage: background.
+  /**
+   * Accept group member. Requires Admin role.
+   * Network usage: background.
+   */
   async apiAcceptMember(groupId: number, groupMemberId: number, memberRole: T.GroupMemberRole): Promise<T.GroupMember> {
     const r = await this.sendChatCmd(CC.APIAcceptMember.cmdString({groupId, groupMemberId, memberRole}))
     if (r.type === "memberAccepted") return r.member
     throw new ChatCommandError("error accepting member", r)
   }
   
-  // Set members role. Requires Admin role.
-  // Network usage: background.
+  /**
+   * Set members role. Requires Admin role.
+   * Network usage: background.
+   */
   async apiSetMembersRole(groupId: number, groupMemberIds: number[], memberRole: T.GroupMemberRole): Promise<void> {
     const r = await this.sendChatCmd(CC.APIMembersRole.cmdString({groupId, groupMemberIds, memberRole}))
     if (r.type === "membersRoleUser") return
     throw new ChatCommandError("error setting members role", r)
   }
 
-  // Block members. Requires Moderator role.
-  // Network usage: background.
+  /**
+   * Block members. Requires Moderator role.
+   * Network usage: background.
+   */
   async apiBlockMembersForAll(groupId: number, groupMemberIds: number[], blocked: boolean): Promise<void> {
     const r = await this.sendChatCmd(CC.APIBlockMembersForAll.cmdString({groupId, groupMemberIds, blocked}))
     if (r.type === "membersBlockedForAllUser") return
     throw new ChatCommandError("error blocking members", r)
   }
   
-  // Remove members. Requires Admin role.
-  // Network usage: background.
+  /**
+   * Remove members. Requires Admin role.
+   * Network usage: background.
+   */
   async apiRemoveMembers(groupId: number, memberIds: number[], withMessages = false): Promise<T.GroupMember[]> {
     const r = await this.sendChatCmd(CC.APIRemoveMembers.cmdString({groupId, groupMemberIds: memberIds, withMessages}))
     if (r.type === "userDeletedMembers") return r.members
     throw new ChatCommandError("error removing member", r)
   }
 
-  // Leave group.
-  // Network usage: background.
+  /**
+   * Leave group.
+   * Network usage: background.
+   */
   async apiLeaveGroup(groupId: number): Promise<T.GroupInfo> {
     const r = await this.sendChatCmd(CC.APILeaveGroup.cmdString({groupId}))
     if (r.type === "leftMemberUser") return r.groupInfo
     throw new ChatCommandError("error leaving group", r)
   }
 
-  // Get group members.
-  // Network usage: no.
+  /**
+   * Get group members.
+   * Network usage: no.
+   */
   async apiListMembers(groupId: number): Promise<T.GroupMember[]> {
     const r = await this.sendChatCmd(CC.APIListMembers.cmdString({groupId}))
     if (r.type === "groupMembers") return r.group.members
     throw new ChatCommandError("error getting group members", r)
   }
 
-  // Create group.
-  // Network usage: no.
+  /**
+   * Create group.
+   * Network usage: no.
+   */
   async apiNewGroup(userId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     const r = await this.sendChatCmd(CC.APINewGroup.cmdString({userId, groupProfile, incognito: false}))
     if (r.type === "groupCreated") return r.groupInfo
     throw new ChatCommandError("error creating group", r)
   }
 
-  // Update group profile.
-  // Network usage: background.
+  /**
+   * Update group profile.
+   * Network usage: background.
+   */
   async apiUpdateGroupProfile(groupId: number, groupProfile: T.GroupProfile): Promise<T.GroupInfo> {
     const r = await this.sendChatCmd(CC.APIUpdateGroupProfile.cmdString({groupId, groupProfile}))
     if (r.type === "groupUpdated") return r.toGroup
     throw new ChatCommandError("error updating group", r)
   }
 
-  // Group link commands
-  // These commands can be used by bots that manage multiple public groups
-
-  // Create group link.
-  // Network usage: interactive.
+  /**
+   * Create group link.
+   * Network usage: interactive.
+   */
   async apiCreateGroupLink(groupId: number, memberRole: T.GroupMemberRole): Promise<string> {
     const r = await this.sendChatCmd(CC.APICreateGroupLink.cmdString({groupId, memberRole}))
     if (r.type === "groupLinkCreated") {
@@ -473,22 +598,28 @@ export class ChatApi {
     throw new ChatCommandError("error creating group link", r)
   }
 
-  // Set member role for group link.
-  // Network usage: no.
+  /**
+   * Set member role for group link.
+   * Network usage: no.
+   */
   async apiSetGroupLinkMemberRole(groupId: number, memberRole: T.GroupMemberRole): Promise<void> {
     const r = await this.sendChatCmd(CC.APIGroupLinkMemberRole.cmdString({groupId, memberRole}))
     if (r.type !== "groupLink") throw new ChatCommandError("error setting group link member role", r)
   }
   
-  // Delete group link.
-  // Network usage: background.
+  /**
+   * Delete group link.
+   * Network usage: background.
+   */
   async apiDeleteGroupLink(groupId: number): Promise<void> {
     const r = await this.sendChatCmd(CC.APIDeleteGroupLink.cmdString({groupId}))
     if (r.type !== "groupLinkDeleted") throw new ChatCommandError("error deleting group link", r)
   }
 
-  // Get group link.
-  // Network usage: no.
+  /**
+   * Get group link.
+   * Network usage: no.
+   */
   async apiGetGroupLink(groupId: number): Promise<T.GroupLink> {
     const r = await this.sendChatCmd(CC.APIGetGroupLink.cmdString({groupId}))
     if (r.type === "groupLink") return r.groupLink
@@ -500,11 +631,10 @@ export class ChatApi {
     return link.connShortLink || link.connFullLink
   }
 
-  // Connection commands
-  // These commands may be used to create connections. Most bots do not need to use them - bot users will connect via bot address with auto-accept enabled.
-
-  // Create 1-time invitation link.
-  // Network usage: interactive.
+  /**
+   * Create 1-time invitation link.
+   * Network usage: interactive.
+   */
   async apiCreateLink(userId: number): Promise<string> {
     const r = await this.sendChatCmd(CC.APIAddContact.cmdString({userId, incognito: false}))
     if (r.type === "invitation") {
@@ -514,23 +644,29 @@ export class ChatApi {
     throw new ChatCommandError("error creating link", r)
   }
 
-  // Determine SimpleX link type and if the bot is already connected via this link.
-  // Network usage: interactive.
+  /**
+   * Determine SimpleX link type and if the bot is already connected via this link.
+   * Network usage: interactive.
+   */
   async apiConnectPlan(userId: number, connectionLink: string): Promise<T.ConnectionPlan> {
     const r = await this.sendChatCmd(CC.APIConnectPlan.cmdString({userId, connectionLink}))
     if (r.type === "connectionPlan") return r.connectionPlan
     throw new ChatCommandError("error getting connect plan", r)
   }
 
-  // Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
-  // Network usage: interactive.
+  /**
+   * Connect via prepared SimpleX link. The link can be 1-time invitation link, contact address or group link
+   * Network usage: interactive.
+   */
   async apiConnect(userId: number, incognito: boolean, preparedLink?: T.CreatedConnLink): Promise<ConnReqType> {
     const r = await this.sendChatCmd(CC.APIConnect.cmdString({userId, incognito, preparedLink_: preparedLink}))
     return this.handleConnectResult(r)
   }
 
-  // Connect via SimpleX link as string in the active user profile.
-  // Network usage: interactive.
+  /**
+   * Connect via SimpleX link as string in the active user profile.
+   * Network usage: interactive.
+   */
   async apiConnectActiveUser(connLink: string): Promise<ConnReqType> {
     const r = await this.sendChatCmd(CC.Connect.cmdString({incognito: false, connLink_: connLink}))
     return this.handleConnectResult(r)
@@ -549,43 +685,50 @@ export class ChatApi {
     }    
   }  
   
-  // Accept contact request.
-  // Network usage: interactive.
+  /**
+   * Accept contact request.
+   * Network usage: interactive.
+   */
   async apiAcceptContactRequest(contactReqId: number): Promise<T.Contact> {
     const r = await this.sendChatCmd(CC.APIAcceptContact.cmdString({contactReqId}))
     if (r.type === "acceptingContactRequest") return r.contact
     throw new ChatCommandError("error accepting contact request", r)
   }
 
-  // Reject contact request. The user who sent the request is **not notified**.
-  // Network usage: no.
+  /**
+   * Reject contact request. The user who sent the request is **not notified**.
+   * Network usage: no.
+   */
   async apiRejectContactRequest(contactReqId: number): Promise<void> {
     const r = await this.sendChatCmd(CC.APIRejectContact.cmdString({contactReqId}))
     if (r.type === "contactRequestRejected") return
     throw new ChatCommandError("error rejecting contact request", r)
   }
 
-  // Chat commands
-  // Commands to list and delete conversations.
-
-  // Get contacts.
-  // Network usage: no.
+  /**
+   * Get contacts.
+   * Network usage: no.
+   */
   async apiListContacts(userId: number): Promise<T.Contact[]> {
     const r = await this.sendChatCmd(CC.APIListContacts.cmdString({userId}))
     if (r.type === "contactsList") return r.contacts
     throw new ChatCommandError("error listing contacts", r)
   }
 
-  // Get groups.
-  // Network usage: no.
+  /**
+   * Get groups.
+   * Network usage: no.
+   */
   async apiListGroups(userId: number, contactId?: number, search?: string): Promise<T.GroupInfo[]> {
     const r = await this.sendChatCmd(CC.APIListGroups.cmdString({userId, contactId_: contactId, search}))
     if (r.type === "groupsList") return r.groups
     throw new ChatCommandError("error listing groups", r)
   }
 
-  // Delete chat.
-  // Network usage: background.
+  /**
+   * Delete chat.
+   * Network usage: background.
+   */
   async apiDeleteChat(chatType: T.ChatType, chatId: number, deleteMode: T.ChatDeleteMode = {type: "full", notify: true}): Promise<void> {
     const r = await this.sendChatCmd(CC.APIDeleteChat.cmdString({chatRef: {chatType, chatId}, chatDeleteMode: deleteMode}))
     switch (chatType) {
@@ -599,11 +742,10 @@ export class ChatApi {
     throw new ChatCommandError("error deleting chat", r)
   }
 
-  // User profile commands
-  // Most bots don't need to use these commands, as bot profile can be configured manually via CLI or desktop client. These commands can be used by bots that need to manage multiple user profiles (e.g., the profiles of support agents).
-
-  // Get active user profile
-  // Network usage: no.
+  /**
+   * Get active user profile
+   * Network usage: no.
+   */
   async apiGetActiveUser(): Promise<T.User | undefined> {
     try {
       const r = await this.sendChatCmd(CC.ShowActiveUser.cmdString({}))
@@ -620,40 +762,50 @@ export class ChatApi {
     }
   }
 
-  // Create new user profile
-  // Network usage: no.
+  /**
+   * Create new user profile
+   * Network usage: no.
+   */
   async apiCreateActiveUser(profile?: T.Profile): Promise<T.User> {
     const r = await this.sendChatCmd(CC.CreateActiveUser.cmdString({newUser: {profile, pastTimestamp: false}}))
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("unexpected response", r)
   }
 
-  // Get all user profiles
-  // Network usage: no.
+  /**
+   * Get all user profiles
+   * Network usage: no.
+   */
   async apiListUsers(): Promise<T.UserInfo[]> {
     const r = await this.sendChatCmd(CC.ListUsers.cmdString({}))
     if (r.type === "usersList") return r.users
     throw new ChatCommandError("error listing users", r)
   }
 
-  // Set active user profile
-  // Network usage: no.
+  /**
+   * Set active user profile
+   * Network usage: no.
+   */
   async apiSetActiveUser(userId: number, viewPwd?: string): Promise<T.User> {
     const r = await this.sendChatCmd(CC.APISetActiveUser.cmdString({userId, viewPwd}))
     if (r.type === "activeUser") return r.user
     throw new ChatCommandError("error setting active user", r)
   }
 
-  // Delete user profile.
-  // Network usage: background.
+  /**
+   * Delete user profile.
+   * Network usage: background.
+   */
   async apiDeleteUser(userId: number, delSMPQueues: boolean, viewPwd?: string): Promise<void> {
     const r = await this.sendChatCmd(CC.APIDeleteUser.cmdString({userId, delSMPQueues, viewPwd}))
     if (r.type === "cmdOk") return
     throw new ChatCommandError("error deleting user", r)
   }
 
-  // Update user profile.
-  // Network usage: background.
+  /**
+   * Update user profile.
+   * Network usage: background.
+   */
   async apiUpdateProfile(userId: number, profile: T.Profile): Promise<T.UserProfileUpdateSummary | undefined> {
     const r = await this.sendChatCmd(CC.APIUpdateProfile.cmdString({userId, profile}))
     switch (r.type) {
@@ -666,8 +818,10 @@ export class ChatApi {
     }
   }
 
-  // Configure chat preference overrides for the contact.
-  // Network usage: background.
+  /**
+   * Configure chat preference overrides for the contact.
+   * Network usage: background.
+   */
   async apiSetContactPrefs(contactId: number, preferences: T.Preferences): Promise<void> {
     const r = await this.sendChatCmd(CC.APISetContactPrefs.cmdString({contactId, preferences}))
     if (r.type !== "contactPrefsUpdated") throw new ChatCommandError("error setting contact prefs", r)

@@ -6,7 +6,7 @@
 
 # Interface: APIResult\<R\>
 
-Defined in: [src/core.ts:71](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L71)
+Defined in: [src/core.ts:87](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L87)
 
 ## Type Parameters
 
@@ -20,7 +20,7 @@ Defined in: [src/core.ts:71](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > `optional` **error**: `ChatError`
 
-Defined in: [src/core.ts:73](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L73)
+Defined in: [src/core.ts:89](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L89)
 
 ***
 
@@ -28,4 +28,4 @@ Defined in: [src/core.ts:73](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > `optional` **result**: `R`
 
-Defined in: [src/core.ts:72](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L72)
+Defined in: [src/core.ts:88](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L88)

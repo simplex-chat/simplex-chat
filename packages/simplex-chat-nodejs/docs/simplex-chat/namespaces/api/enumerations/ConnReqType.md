@@ -6,7 +6,9 @@
 
 # Enumeration: ConnReqType
 
-Defined in: [src/api.ts:11](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L11)
+Defined in: [src/api.ts:15](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L15)
+
+Connection request types.
 
 ## Enumeration Members
 
@@ -14,7 +16,7 @@ Defined in: [src/api.ts:11](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > **Contact**: `"contact"`
 
-Defined in: [src/api.ts:13](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L13)
+Defined in: [src/api.ts:17](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L17)
 
 ***
 
@@ -22,4 +24,4 @@ Defined in: [src/api.ts:13](https://github.com/simplex-chat/simplex-chat/blob/ma
 
 > **Invitation**: `"invitation"`
 
-Defined in: [src/api.ts:12](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L12)
+Defined in: [src/api.ts:16](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L16)

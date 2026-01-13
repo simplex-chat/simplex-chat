@@ -18,8 +18,7 @@ import {bot, util} from "../dist"
     onMessage: async (ci, content) => {
       const n = +content.text
       const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
-      await chat.apiSendTextReply(ci, reply)        
-
+      await chat.apiSendTextReply(ci, reply)
     },
     onCommands: { // command handlers can be different from commands to be shown in client UI
       "help": async (ci: T.AChatItem, _cmd: util.BotCommand) => {

@@ -8,4 +8,4 @@
 
 > **Tag** = `"upgrade"` \| `"downgrade"` \| `"migrationError"`
 
-Defined in: [src/core.ts:141](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L141)
+Defined in: [src/core.ts:163](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L163)

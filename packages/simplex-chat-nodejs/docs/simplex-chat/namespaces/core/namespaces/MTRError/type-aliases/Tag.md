@@ -8,4 +8,4 @@
 
 > **Tag** = `"noDown"` \| `"different"`
 
-Defined in: [src/core.ts:173](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L173)
+Defined in: [src/core.ts:195](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L195)

@@ -8,7 +8,9 @@
 
 > **chatCloseStore**(`ctrl`): `Promise`\<`void`\>
 
-Defined in: [src/core.ts:13](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L13)
+Defined in: [src/core.ts:17](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L17)
+
+Close chat store
 
 ## Parameters
 

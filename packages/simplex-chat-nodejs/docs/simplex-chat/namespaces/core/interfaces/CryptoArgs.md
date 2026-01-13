@@ -6,7 +6,9 @@
 
 # Interface: CryptoArgs
 
-Defined in: [src/core.ts:89](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L89)
+Defined in: [src/core.ts:111](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L111)
+
+File encryption key and nonce
 
 ## Properties
 
@@ -14,7 +16,7 @@ Defined in: [src/core.ts:89](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **fileKey**: `string`
 
-Defined in: [src/core.ts:90](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L90)
+Defined in: [src/core.ts:112](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L112)
 
 ***
 
@@ -22,4 +24,4 @@ Defined in: [src/core.ts:90](https://github.com/simplex-chat/simplex-chat/blob/m
 
 > **fileNonce**: `string`
 
-Defined in: [src/core.ts:91](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L91)
+Defined in: [src/core.ts:113](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L113)

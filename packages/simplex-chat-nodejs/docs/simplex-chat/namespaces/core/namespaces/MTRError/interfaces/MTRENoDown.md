@@ -6,7 +6,7 @@
 
 # Interface: MTRENoDown
 
-Defined in: [src/core.ts:179](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L179)
+Defined in: [src/core.ts:201](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L201)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:179](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"noDown"`
 
-Defined in: [src/core.ts:180](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L180)
+Defined in: [src/core.ts:202](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L202)
 
 #### Overrides
 
@@ -30,4 +30,4 @@ Defined in: [src/core.ts:180](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **upMigrations**: [`UpMigration`](../../../interfaces/UpMigration.md)
 
-Defined in: [src/core.ts:181](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L181)
+Defined in: [src/core.ts:203](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L203)

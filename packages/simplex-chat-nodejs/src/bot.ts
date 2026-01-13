@@ -1,4 +1,4 @@
-import {CEvt, T} from "@simplex-chat/types"
+import {T} from "@simplex-chat/types"
 import * as api from "./api"
 import * as core from "./core"
 import * as util from "./util"
@@ -43,7 +43,7 @@ export interface BotConfig {
   onCommands?: {[K in string]?: ((chatItem: T.AChatItem, command: util.BotCommand) => void | Promise<void>)},
   // If you use `onMessage` and to "newChatItems" event, exclude content messages from processing
   // If you use `onCommands` and to "newChatItems" event, exclude commands from processing
-  events?: {[K in CEvt.Tag]?: api.EventSubscriberFunc<K>}
+  events?: api.EventSubscribers
 }
 
 export async function run({profile, dbOpts, options = defaultOpts, onMessage, onCommands = {}, events = {}}: BotConfig): Promise<[api.ChatApi, T.User]> {

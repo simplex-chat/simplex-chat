@@ -43,18 +43,10 @@ import {bot, util} from "simplex-chat"
         welcomeMessage: {type: "text", text: "If you send me a number, I will calculate its square."}
       },
     },
-    events: {
-      "newChatItems": async (evt) => {
-        for (const {chatInfo, chatItem} of evt.chatItems) {
-          if (chatInfo.type !== T.ChatType.Direct) continue
-          const msg = util.ciContentText(chatItem)
-          if (msg) {
-            const n = +msg
-            const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
-            await chat.apiSendTextMessage(T.ChatType.Direct, chatInfo.contact.contactId, reply)        
-          }
-        }        
-      }
+    onMessage: async (ci, content) => {
+      const n = +content.text
+      const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
+      await chat.apiSendTextReply(ci, reply)
     }
   })
 })()

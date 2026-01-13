@@ -6,7 +6,7 @@
 
 # Interface: UpMigration
 
-Defined in: [src/core.ts:163](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L163)
+Defined in: [src/core.ts:185](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L185)
 
 ## Properties
 
@@ -14,7 +14,7 @@ Defined in: [src/core.ts:163](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **upName**: `string`
 
-Defined in: [src/core.ts:164](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L164)
+Defined in: [src/core.ts:186](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L186)
 
 ***
 
@@ -22,4 +22,4 @@ Defined in: [src/core.ts:164](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **withDown**: `boolean`
 
-Defined in: [src/core.ts:165](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L165)
+Defined in: [src/core.ts:187](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L187)

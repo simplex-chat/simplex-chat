@@ -6,7 +6,7 @@
 
 # Interface: ErrorMigration
 
-Defined in: [src/core.ts:122](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L122)
+Defined in: [src/core.ts:144](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L144)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:122](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **dbFile**: `string`
 
-Defined in: [src/core.ts:124](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L124)
+Defined in: [src/core.ts:146](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L146)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:124](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **migrationError**: [`MigrationError`](../../../type-aliases/MigrationError.md)
 
-Defined in: [src/core.ts:125](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L125)
+Defined in: [src/core.ts:147](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L147)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [src/core.ts:125](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"errorMigration"`
 
-Defined in: [src/core.ts:123](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L123)
+Defined in: [src/core.ts:145](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L145)
 
 #### Overrides
 

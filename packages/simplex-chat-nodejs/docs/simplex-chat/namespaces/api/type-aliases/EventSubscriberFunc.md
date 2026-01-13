@@ -8,7 +8,7 @@
 
 > **EventSubscriberFunc**\<`K`\> = (`event`) => `void` \| `Promise`\<`void`\>
 
-Defined in: [src/api.ts:28](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L28)
+Defined in: [src/api.ts:50](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/api.ts#L50)
 
 ## Type Parameters
 

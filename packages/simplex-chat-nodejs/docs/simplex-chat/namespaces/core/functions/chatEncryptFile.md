@@ -8,7 +8,9 @@
 
 > **chatEncryptFile**(`ctrl`, `fromPath`, `toPath`): `Promise`\<[`CryptoArgs`](../interfaces/CryptoArgs.md)\>
 
-Defined in: [src/core.ts:51](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L51)
+Defined in: [src/core.ts:65](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L65)
+
+Encrypt file
 
 ## Parameters
 

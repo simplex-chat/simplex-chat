@@ -22,6 +22,7 @@
 ## Type Aliases
 
 - [EventSubscriberFunc](type-aliases/EventSubscriberFunc.md)
+- [EventSubscribers](type-aliases/EventSubscribers.md)
 
 ## Variables
 

@@ -1,7 +1,9 @@
 import {ChatEvent, ChatResponse, T} from "@simplex-chat/types"
 import * as simplex from "./simplex"
 
-// initialize chat controller
+/**
+ * Initialize chat controller
+ */
 export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: MigrationConfirmation): Promise<bigint> {
   const [ctrl, res] = await simplex.chat_migrate_init(dbPath, dbKey, confirm)
   const json = JSON.parse(res)
@@ -9,13 +11,17 @@ export async function chatMigrateInit(dbPath: string, dbKey: string, confirm: Mi
   throw new ChatInitError("Database or migration error (see dbMigrationError property)", json as DBMigrationError)
 }
 
-// close chat store
+/**
+ * Close chat store
+ */
 export async function chatCloseStore(ctrl: bigint): Promise<void> {
   const res = await simplex.chat_close_store(ctrl)
   if (res !== "") throw new Error(res)
 }
 
-// send chat command as string
+/**
+ * Send chat command as string
+ */
 export async function chatSendCmd(ctrl: bigint, cmd: string): Promise<ChatResponse> {
   const res = await simplex.chat_send_cmd(ctrl, cmd)
   const json = JSON.parse(res) as APIResult<ChatResponse>
@@ -25,7 +31,9 @@ export async function chatSendCmd(ctrl: bigint, cmd: string): Promise<ChatRespon
   throw new ChatAPIError("Invalid chat command result")
 }
 
-// receive chat event
+/**
+ * Receive chat event
+ */
 export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatEvent | undefined> {
   const res = await simplex.chat_recv_msg_wait(ctrl, wait)
   if (res === "") return undefined
@@ -36,24 +44,32 @@ export async function chatRecvMsgWait(ctrl: bigint, wait: number): Promise<ChatE
   throw new ChatAPIError("Invalid chat event")  
 }
 
-// write buffer to encrypted file
+/**
+ * Write buffer to encrypted file
+ */
 export async function chatWriteFile(ctrl: bigint, path: string, buffer: ArrayBuffer): Promise<CryptoArgs> {
   const res = await simplex.chat_write_file(ctrl, path, buffer)
   return cryptoArgsResult(res)
 }
 
-// read buffer from encrypted file
+/**
+ * Read buffer from encrypted file
+ */
 export async function chatReadFile(path: string, {fileKey, fileNonce}: CryptoArgs): Promise<ArrayBuffer> {
   return await simplex.chat_read_file(path, fileKey, fileNonce)
 }
 
-// encrypt file
+/**
+ * Encrypt file
+ */
 export async function chatEncryptFile(ctrl: bigint, fromPath: string, toPath: string): Promise<CryptoArgs> {
   const res = await simplex.chat_encrypt_file(ctrl, fromPath, toPath)
   return cryptoArgsResult(res)
 }
 
-// decrypt file
+/**
+ * Decrypt file
+ */
 export async function chatDecryptFile(fromPath: string, {fileKey, fileNonce}: CryptoArgs, toPath: string): Promise<void> {
   const res = await simplex.chat_decrypt_file(fromPath, fileKey, fileNonce, toPath)
   if (res !== "") throw new Error(res)
@@ -79,6 +95,9 @@ export class ChatAPIError extends Error {
   }
 }
 
+/**
+ * Migration confirmation mode
+ */
 export enum MigrationConfirmation {
   YesUp = "yesUp",
   YesUpDown = "yesUpDown",
@@ -86,6 +105,9 @@ export enum MigrationConfirmation {
   Error = "error"
 }
 
+/**
+ * File encryption key and nonce
+ */
 export interface CryptoArgs {
   fileKey: string
   fileNonce: string

@@ -6,7 +6,7 @@
 
 # Interface: InvalidConfirmation
 
-Defined in: [src/core.ts:113](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L113)
+Defined in: [src/core.ts:135](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L135)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:113](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"invalidConfirmation"`
 
-Defined in: [src/core.ts:114](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L114)
+Defined in: [src/core.ts:136](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L136)
 
 #### Overrides
 

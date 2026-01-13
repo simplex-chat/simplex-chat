@@ -8,7 +8,9 @@
 
 > **chatMigrateInit**(`dbPath`, `dbKey`, `confirm`): `Promise`\<`bigint`\>
 
-Defined in: [src/core.ts:5](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L5)
+Defined in: [src/core.ts:7](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L7)
+
+Initialize chat controller
 
 ## Parameters
 

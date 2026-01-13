@@ -8,7 +8,9 @@
 
 > **chatDecryptFile**(`fromPath`, `__namedParameters`, `toPath`): `Promise`\<`void`\>
 
-Defined in: [src/core.ts:57](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L57)
+Defined in: [src/core.ts:73](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L73)
+
+Decrypt file
 
 ## Parameters
 

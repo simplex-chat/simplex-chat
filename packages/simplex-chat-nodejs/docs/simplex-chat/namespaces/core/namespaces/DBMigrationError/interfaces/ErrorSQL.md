@@ -6,7 +6,7 @@
 
 # Interface: ErrorSQL
 
-Defined in: [src/core.ts:128](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L128)
+Defined in: [src/core.ts:150](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L150)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:128](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **dbFile**: `string`
 
-Defined in: [src/core.ts:130](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L130)
+Defined in: [src/core.ts:152](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L152)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:130](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **migrationSQLError**: `string`
 
-Defined in: [src/core.ts:131](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L131)
+Defined in: [src/core.ts:153](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L153)
 
 ***
 
@@ -34,7 +34,7 @@ Defined in: [src/core.ts:131](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"errorSQL"`
 
-Defined in: [src/core.ts:129](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L129)
+Defined in: [src/core.ts:151](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L151)
 
 #### Overrides
 

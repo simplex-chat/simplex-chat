@@ -6,7 +6,7 @@
 
 # Interface: ErrorNotADatabase
 
-Defined in: [src/core.ts:117](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L117)
+Defined in: [src/core.ts:139](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L139)
 
 ## Extends
 
@@ -18,7 +18,7 @@ Defined in: [src/core.ts:117](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **dbFile**: `string`
 
-Defined in: [src/core.ts:119](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L119)
+Defined in: [src/core.ts:141](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L141)
 
 ***
 
@@ -26,7 +26,7 @@ Defined in: [src/core.ts:119](https://github.com/simplex-chat/simplex-chat/blob/
 
 > **type**: `"errorNotADatabase"`
 
-Defined in: [src/core.ts:118](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L118)
+Defined in: [src/core.ts:140](https://github.com/simplex-chat/simplex-chat/blob/master/packages/simplex-chat-nodejs/src/core.ts#L140)
 
 #### Overrides
 
