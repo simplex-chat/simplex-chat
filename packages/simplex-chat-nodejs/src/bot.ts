@@ -76,9 +76,10 @@ function fullOptions(options: BotOptions): Required<BotOptions> {
     logContacts: options.logContacts ?? defaultOpts.logContacts,
     logNetwork: options.logNetwork ?? defaultOpts.logNetwork
   }
+  const welcomeMessage = opts.addressSettings.welcomeMessage ?? defaultOpts.addressSettings.welcomeMessage
   opts.addressSettings = {
     autoAccept: opts.addressSettings.autoAccept ?? defaultOpts.addressSettings.autoAccept,
-    welcomeMessage: opts.addressSettings.welcomeMessage ?? defaultOpts.addressSettings.welcomeMessage,
+    welcomeMessage: typeof welcomeMessage === "string" ? {type: "text", text: welcomeMessage} : welcomeMessage,
     businessAddress: opts.addressSettings.businessAddress ?? defaultOpts.addressSettings.businessAddress
   }
   return opts
@@ -184,6 +185,7 @@ async function createOrUpdateAddress(bot: api.ChatApi, user: T.User, opts: Requi
   
   const addressSettings = opts.addressSettings || defaultOpts.addressSettings
   if (!equal(util.botAddressSettings(address), addressSettings)) {
+    console.log(util.botAddressSettings(address), addressSettings)
     if (opts.updateAddress) {
       console.log("Bot address settings changed, updating...")
       await bot.apiSetAddressSettings(userId, addressSettings)

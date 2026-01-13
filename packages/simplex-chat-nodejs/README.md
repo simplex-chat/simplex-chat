@@ -25,29 +25,24 @@ Library provides types and functions to:
 
 ```
 npm i simplex-chat
-npm run build
 ```
 
 Simple bot that replies with squares of numbers you send to it:
 
-```typescript
-import {T} from "@simplex-chat/types"
-import {bot, util} from "simplex-chat"
-
-(async function run() {
+```javascript
+(async () => {
+  const {bot} = await import("simplex-chat")
+  // if you are running from this GitHub repo:
+  // const {bot} = await import("../dist/index.js")
   const [chat, _user] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
     options: {
-      addressSettings: {
-        welcomeMessage: {type: "text", text: "If you send me a number, I will calculate its square."}
-      },
+      addressSettings: {welcomeMessage: "If you send me a number, I will calculate its square."},
     },
     onMessage: async (ci, content) => {
       const n = +content.text
-      const reply = typeof n === "number" && !isNaN(n)
-                    ? `${n} * ${n} = ${n * n}`
-                    : `this is not a number`
+      const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
       await chat.apiSendTextReply(ci, reply)
     }
   })

@@ -31,7 +31,7 @@ export interface BotAddressSettings {
    * Optional welcome message to show before connection to the users.
    * @default undefined (no welcome message)
    */
-  welcomeMessage?: T.MsgContent | undefined
+  welcomeMessage?: T.MsgContent | string | undefined
 
   /**
    * Business contact address.
@@ -362,9 +362,10 @@ export class ChatApi {
    * Network usage: interactive.
    */
   async apiSetAddressSettings(userId: number, {autoAccept, welcomeMessage, businessAddress}: BotAddressSettings): Promise<void> {
+    const autoReply = welcomeMessage || defaultBotAddressSettings.welcomeMessage
     const settings: T.AddressSettings = {
       autoAccept: (autoAccept === undefined ? defaultBotAddressSettings.autoAccept : autoAccept) ? {acceptIncognito: false} : undefined,
-      autoReply: welcomeMessage || defaultBotAddressSettings.welcomeMessage,
+      autoReply: typeof autoReply === "string" ? {type: "text", text: autoReply} : autoReply,
       businessAddress: businessAddress || defaultBotAddressSettings.businessAddress || false
     }
     const r = await this.sendChatCmd(CC.APISetAddressSettings.cmdString({userId, settings}))

@@ -1,13 +1,13 @@
 import {T} from "@simplex-chat/types"
 import {bot, util} from "../dist"
 
-(async function run() {
-  const welcomeMsgText = "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."
+(async () => {
+  const welcomeMessage = "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."
   const [chat, _user] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
     options: {
-      addressSettings: {autoAccept: true, welcomeMessage: {type: "text", text: welcomeMsgText}},
+      addressSettings: {autoAccept: true, welcomeMessage, businessAddress: false},
       commands: [ // commands to show in client UI
         {type: "command", keyword: "help", label: "Send welcome message"},
         {type: "command", keyword: "info", label: "More information (not implemented)"}
@@ -22,7 +22,7 @@ import {bot, util} from "../dist"
     },
     onCommands: { // command handlers can be different from commands to be shown in client UI
       "help": async (ci: T.AChatItem, _cmd: util.BotCommand) => {
-        await chat.apiSendTextMessage(ci.chatInfo, welcomeMsgText)
+        await chat.apiSendTextMessage(ci.chatInfo, welcomeMessage)
       },
       // fallback handler that will be called for all other commands
       "": async (ci: T.AChatItem, _cmd: util.BotCommand) => {
