@@ -5,7 +5,7 @@ set -e
 OS=mac
 ARCH="$(uname -m)"
 COMPOSE_ARCH=$ARCH
-GHC_VERSION="$(ghc --version | rev | cut -d ' ' -f 1 | rev)"
+GHC_VERSION=9.6.3
 DATABASE_BACKEND="${2:-sqlite}"
 
 if [ "$ARCH" == "arm64" ]; then
