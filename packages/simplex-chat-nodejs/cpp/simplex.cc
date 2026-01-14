@@ -10,13 +10,14 @@ namespace simplex {
 using namespace Napi;
 
 void haskell_init() {
-  int argc = 5;
+  int argc = 6;
   const char *argv[] = {
       "simplex",
       "+RTS",  // requires `hs_init_with_rtsopts`
       "-A64m", // chunk size for new allocations
       "-H64m", // initial heap size
       "-xn",   // non-moving GC
+      "--install-signal-handlers=no",
       nullptr};
   char **pargv = const_cast<char **>(argv);
   hs_init_with_rtsopts(&argc, &pargv);
