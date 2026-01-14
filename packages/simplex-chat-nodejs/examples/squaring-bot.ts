@@ -3,7 +3,7 @@ import {bot, util} from "../dist"
 
 (async () => {
   const welcomeMessage = "Hello! I am a simple squaring bot.\n\nIf you send me a number, I will calculate its square."
-  const [chat, _user] = await bot.run({
+  const [chat, _user, _address] = await bot.run({
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
     options: {
@@ -17,7 +17,9 @@ import {bot, util} from "../dist"
     },
     onMessage: async (ci, content) => {
       const n = +content.text
-      const reply = typeof n === "number" && !isNaN(n) ? `${n} * ${n} = ${n * n}` : `this is not a number`
+      const reply = typeof n === "number" && !isNaN(n)
+                    ? `${n} * ${n} = ${n * n}`
+                    : `this is not a number`
       await chat.apiSendTextReply(ci, reply)
     },
     onCommands: { // command handlers can be different from commands to be shown in client UI
