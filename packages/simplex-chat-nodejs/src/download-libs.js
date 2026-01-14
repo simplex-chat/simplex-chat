@@ -4,7 +4,7 @@ const path = require('path');
 const extract = require('extract-zip');
 
 const GITHUB_REPO = 'simplex-chat/simplex-chat-libs';
-const RELEASE_TAG = 'v6.5.5';
+const RELEASE_TAG = 'v6.5.0-beta.4';
 const ROOT_DIR = process.cwd(); // Root of the package being installed
 const LIBS_DIR = path.join(ROOT_DIR, 'libs')
 const INSTALLED_FILE = path.join(LIBS_DIR, 'installed.txt');
