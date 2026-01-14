@@ -2013,10 +2013,9 @@ processChatCommand vr nm = \case
             pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
         where
           connectToRelay gInfo' relayLink = do
-            -- TODO [relays] member: check relay record already exists (getCreateRelayForMember)
-            -- TODO   - TBC pass welcomeSharedMsgId to connectViaContact
             gVar <- asks random
-            relayMember <- withFastStore $ \db -> createRelayForMember db vr gVar user gInfo'
+            -- Save relayLink to re-use relay member record on retry (check by relayLink)
+            relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
             (cReq, _cData) <- getShortLinkConnReq nm user relayLink
             let relayLinkToConnect = CCLink cReq (Just relayLink)
             _r <- connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing

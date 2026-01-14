@@ -5,6 +5,7 @@ module Simplex.Chat.Store.SQLite.Migrations.M20260109_chat_relays where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
+-- TODO [relays] TBC schema improvement - relay_link is duplicate on group_relays and group_members for owner
 -- - chat_relays - user's list of chat relays to choose from (similar to protocol_servers)
 -- - users.is_user_chat_relay - indicates that the user can serve as a chat relay
 --     (TBC usage, e.g. agree to invitations to be relay)
@@ -15,6 +16,7 @@ import Database.SQLite.Simple.QQ (sql)
 --     chat_relays.deleted is to keep associated record if user removes chat relay from configuration,
 --     but has group relays using it
 -- - group_members.is_relay - indicates that the member is a chat relay
+-- - group_members.relay_link - relay link, saved on member record for user joining group
 -- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (RelayStatus)
 -- - groups.relay_request_* - relay request "work item" fields
 m20260109_chat_relays :: Query
@@ -68,6 +70,7 @@ CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_membe
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
 ALTER TABLE group_members ADD COLUMN is_relay INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE group_members ADD COLUMN relay_link BLOB;
 |]
 
 down_m20260109_chat_relays :: Query
@@ -100,4 +103,5 @@ DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
 ALTER TABLE group_members DROP COLUMN is_relay;
+ALTER TABLE group_members DROP COLUMN relay_link;
 |]
