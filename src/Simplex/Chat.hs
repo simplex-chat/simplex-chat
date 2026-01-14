@@ -59,7 +59,8 @@ defaultChatConfig =
     { agentConfig =
         defaultAgentConfig
           { tcpPort = Nothing, -- agent does not listen to TCP
-            tbqSize = 1024
+            tbqSize = 1024,
+            cleanupInterval = 60 * 1000000, -- 1 minute, default is 5 min
           },
       chatVRange = supportedChatVRange,
       confirmMigrations = MCConsole,
