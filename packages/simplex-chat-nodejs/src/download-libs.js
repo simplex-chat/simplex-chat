@@ -38,6 +38,16 @@ function getPlatformInfo() {
   return { platformName, archName };
 }
 
+// Cleanup on libs version mismatch
+function cleanLibsDirectory() {
+  if (fs.existsSync(LIBS_DIR)) {
+    console.log('Cleaning old libraries...');
+    fs.rmSync(LIBS_DIR, { recursive: true, force: true });
+    fs.mkdirSync(LIBS_DIR, { recursive: true });
+    console.log('✓ Old libraries removed');
+  }
+}
+
 // Check if libraries are already installed with the correct version
 function isAlreadyInstalled() {
   if (!fs.existsSync(INSTALLED_FILE)) {
@@ -51,6 +61,7 @@ function isAlreadyInstalled() {
       return true;
     } else {
       console.log(`Version mismatch: installed ${installedVersion}, need ${RELEASE_TAG}`);
+      cleanLibsDirectory();
       return false;
     }
   } catch (err) {
