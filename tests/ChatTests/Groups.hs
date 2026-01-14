@@ -231,6 +231,7 @@ chatGroupTests = do
   -- TODO [channels fwd] add tests for channels
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
+  -- TODO   - connect plans for relay groups
   describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
@@ -8467,6 +8468,7 @@ memberJoinChannel :: String -> [TestCC] -> String -> String -> TestCC -> IO ()
 memberJoinChannel gName relays shortLink fullLink member = do
   mName <- userName member
   mFullName <- showName member
+  relayNames <- mapM userName relays
 
   member ##> ("/_connect plan 1 " <> shortLink)
   member <## "group link: ok to connect via relays"
@@ -8477,14 +8479,13 @@ memberJoinChannel gName relays shortLink fullLink member = do
 
   member ##> "/_connect group #1"
   member <## ("#" <> gName <> ": connection started")
-  -- TODO [relays] member: different output after first relay
   concurrentlyN_ $
     [ member
         <### concat
-          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay)..."),
-              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay)")
+          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay " <> rName <> ")..."),
+              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay " <> rName <> ")")
             ]
-          | _ <- relays
+          | rName <- relayNames
           ]
     ]
       <> [ do
@@ -8495,6 +8496,8 @@ memberJoinChannel gName relays shortLink fullLink member = do
 
 memberJoinChannelIncognito :: String -> [TestCC] -> String -> String -> TestCC -> IO String
 memberJoinChannelIncognito gName relays shortLink fullLink member = do
+  relayNames <- mapM userName relays
+
   member ##> ("/_connect plan 1 " <> shortLink)
   member <## "group link: ok to connect via relays"
   groupSLinkData <- getTermLine member
@@ -8505,14 +8508,13 @@ memberJoinChannelIncognito gName relays shortLink fullLink member = do
   member ##> "/_connect group #1 incognito=on"
   memIncognito <- getTermLine member
   member <## ("#" <> gName <> ": connection started incognito")
-  -- TODO [relays] member: different output after first relay
   concurrentlyN_ $
     [ member
         <### concat
-          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay)..."),
-              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay) incognito as " <> memIncognito)
+          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay " <> rName <> ")..."),
+              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay " <> rName <> ") incognito as " <> memIncognito)
             ]
-          | _ <- relays
+          | rName <- relayNames
           ]
     ]
       <> [ do

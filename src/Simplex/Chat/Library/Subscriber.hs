@@ -802,16 +802,28 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     pure gInfo {membership = membership {memberStatus = GSMemConnected}}
                   else pure gInfo
               pure (m {memberStatus = GSMemConnected}, gInfo')
-            -- TODO [relays] member: don't duplicate e2ee and descr chat items for each relay
             toView $ CEvtUserJoinedGroup user gInfo' m'
             (gInfo'', m'', scopeInfo) <- mkGroupChatScope gInfo' m'
-            let cd = CDGroupRcv gInfo'' scopeInfo m''
-            createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
-            let prepared = preparedGroup gInfo''
-            unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
-            memberConnectedChatItem gInfo'' scopeInfo m''
-            let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
-            unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
+            -- Create e2ee, feature and group description chat items only on first connected relay
+            ifM
+              firstConnectedHost
+              ( do
+                  let cd = CDGroupRcv gInfo'' scopeInfo m''
+                  createInternalChatItem user cd (CIRcvGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing
+                  let prepared = preparedGroup gInfo''
+                  unless (isJust prepared) $ createGroupFeatureItems user cd CIRcvGroupFeature gInfo''
+                  memberConnectedChatItem gInfo'' scopeInfo m''
+                  let welcomeMsgId_ = (\PreparedGroup {welcomeSharedMsgId = mId} -> mId) <$> prepared
+                  unless (memberPending membership || isJust welcomeMsgId_) $ maybeCreateGroupDescrLocal gInfo'' m''
+              )
+              (memberConnectedChatItem gInfo'' scopeInfo m'')
+            where
+              firstConnectedHost
+                | useRelays' gInfo = do
+                    relayMems <- withStore' $ \db -> getGroupRelayMembers db vr user gInfo
+                    let numConnected = length $ filter (\GroupMember {memberStatus = ms} -> ms == GSMemConnected) relayMems
+                    pure $ numConnected == 1
+                | otherwise = pure True
           GCInviteeMember
             | isRelay' m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
