@@ -810,7 +810,8 @@ CREATE TABLE test_chat_schema.group_members (
     member_welcome_shared_msg_id bytea,
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
-    is_relay smallint DEFAULT 0 NOT NULL
+    is_relay smallint DEFAULT 0 NOT NULL,
+    relay_link bytea
 );
 
 

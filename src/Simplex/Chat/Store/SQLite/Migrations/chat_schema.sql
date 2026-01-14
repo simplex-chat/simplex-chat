@@ -209,6 +209,7 @@ CREATE TABLE group_members(
   index_in_group INTEGER NOT NULL DEFAULT 0,
   member_relations_vector BLOB,
   is_relay INTEGER NOT NULL DEFAULT 0,
+  relay_link BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

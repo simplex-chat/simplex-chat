@@ -1983,7 +1983,7 @@ processChatCommand vr nm = \case
               toView $ CEvtNewChatItems user [ci]
             pure $ CRStartedConnectionToContact user ct' customUserProfile
           CVRConnectedContact ct' -> pure $ CRContactAlreadyExists user ct'
-  APIConnectPreparedGroup groupId incognito msgContent_ -> withUser $ \user@User {userId} -> do
+  APIConnectPreparedGroup groupId incognito msgContent_ -> withUser $ \user -> do
     (gInfo, hostMember) <- withFastStore $ \db -> (,) <$> getGroupInfo db vr user groupId <*> getHostMember db vr user groupId
     case gInfo of
       GroupInfo {preparedGroup = Nothing} -> throwCmdError "group doesn't have link to connect"
@@ -3637,7 +3637,7 @@ processChatCommand vr nm = \case
         startProximateTimedItemThread user (ChatRef CTDirect contactId Nothing, chatItemId' ci)
     addRelays :: User -> GroupInfo -> ShortLinkContact -> [UserChatRelay] -> CM [GroupRelay]
     addRelays user gInfo@GroupInfo {membership} groupSLink relays =
-      forM relays $ \relay -> addRelay relay
+      mapConcurrently addRelay relays
       where
         addRelay :: UserChatRelay -> CM GroupRelay
         addRelay relay@UserChatRelay {address} = do

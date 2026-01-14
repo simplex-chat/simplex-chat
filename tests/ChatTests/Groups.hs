@@ -232,6 +232,7 @@ chatGroupTests = do
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
   -- TODO   - connect plans for relay groups
+  -- TODO   - cancellation on failure to create relay group (for owner)
   describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
