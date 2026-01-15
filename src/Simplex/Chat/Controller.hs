@@ -391,6 +391,11 @@ data ChatCommand
   | SetUserProtoServers AProtocolType [AProtoServerWithAuth]
   | APITestProtoServer UserId AProtoServerWithAuth
   | TestProtoServer AProtoServerWithAuth
+  | GetUserChatRelays
+  | SetUserChatRelays [CLINewRelay]
+  -- TODO [chat relays] commands to test chat relay
+  -- | APITestChatRelay UserId ConnLinkContact
+  -- | TestChatRelay ConnLinkContact
   | APIGetServerOperators
   | APISetServerOperators (NonEmpty ServerOperator)
   | SetServerOperators (NonEmpty ServerOperatorRoles)
@@ -646,7 +651,7 @@ data ChatResponse
   | CRServerTestResult {user :: User, testServer :: AProtoServerWithAuth, testFailure :: Maybe ProtocolTestFailure}
   | CRServerOperatorConditions {conditions :: ServerOperatorConditions}
   | CRUserServers {user :: User, userServers :: [UserOperatorServers]}
-  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError]}
+  | CRUserServersValidation {user :: User, serverErrors :: [UserServersError], serverWarnings :: [UserServersWarning]}
   | CRUsageConditions {usageConditions :: UsageConditions, conditionsText :: Text, acceptedConditions :: Maybe UsageConditions}
   | CRChatItemTTL {user :: User, chatItemTTL :: Maybe Int64}
   | CRNetworkConfig {networkConfig :: NetworkConfig}
@@ -1253,6 +1258,7 @@ data ChatErrorType
   | CEUserUnknown
   | CEActiveUserExists -- TODO delete
   | CEUserExists {contactName :: ContactName}
+  | CEChatRelayExists
   | CEDifferentActiveUser {commandUserId :: UserId, activeUserId :: UserId}
   | CECantDeleteActiveUser {userId :: UserId}
   | CECantDeleteLastUser {userId :: UserId}

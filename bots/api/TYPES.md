@@ -959,6 +959,9 @@ UserExists:
 - type: "userExists"
 - contactName: string
 
+ChatRelayExists:
+- type: "chatRelayExists"
+
 DifferentActiveUser:
 - type: "differentActiveUser"
 - commandUserId: int64
@@ -2217,6 +2220,7 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
+- isChatRelay: bool
 
 
 ---
@@ -2666,6 +2670,7 @@ SubscribeError:
 **Record type**:
 - profile: [Profile](#profile)?
 - pastTimestamp: bool
+- userChatRelay: bool
 
 
 ---
@@ -3745,6 +3750,7 @@ Handshake:
 - autoAcceptMemberContacts: bool
 - userMemberProfileUpdatedAt: UTCTime?
 - uiThemes: [UIThemeEntityOverrides](#uithemeentityoverrides)?
+- userChatRelay: bool
 
 
 ---

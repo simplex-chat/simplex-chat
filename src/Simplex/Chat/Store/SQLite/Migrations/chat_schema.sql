@@ -38,7 +38,8 @@ CREATE TABLE users(
   user_member_profile_updated_at TEXT,
   ui_themes TEXT,
   active_order INTEGER NOT NULL DEFAULT 0,
-  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0, -- 1 for active user
+  auto_accept_member_contacts INTEGER NOT NULL DEFAULT 0,
+  is_user_chat_relay INTEGER NOT NULL DEFAULT 0, -- 1 for active user
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE RESTRICT
@@ -198,6 +199,7 @@ CREATE TABLE group_members(
   member_welcome_shared_msg_id BLOB,
   index_in_group INTEGER NOT NULL DEFAULT 0,
   member_relations_vector BLOB,
+  is_chat_relay INTEGER NOT NULL DEFAULT 0,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -723,6 +725,20 @@ CREATE TABLE connections_sync(
   should_sync INTEGER NOT NULL DEFAULT 0,
   last_sync_ts TEXT
 ) STRICT;
+CREATE TABLE chat_relays(
+  chat_relay_id INTEGER PRIMARY KEY,
+  address TEXT NOT NULL,
+  name TEXT NOT NULL,
+  domains TEXT NOT NULL,
+  preset INTEGER NOT NULL DEFAULT 0,
+  tested INTEGER,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE,
+  created_at TEXT NOT NULL DEFAULT(datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT(datetime('now')),
+  UNIQUE(user_id, address),
+  UNIQUE(user_id, name)
+);
 CREATE INDEX contact_profiles_index ON contact_profiles(
   display_name,
   full_name
@@ -1199,6 +1215,7 @@ CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON chat_items
   msg_content_tag,
   created_at
 );
+CREATE INDEX idx_chat_relays_user_id ON chat_relays(user_id);
 CREATE TRIGGER on_group_members_insert_update_summary
 AFTER INSERT ON group_members
 FOR EACH ROW
