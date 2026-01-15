@@ -47,12 +47,12 @@ struct GroupChatInfoView: View {
         
         var imageName: String {
             switch self {
-            case .members: return "person.2.fill"
-            case .images: return "photo.fill"
-            case .videos: return "video.fill"
-            case .files: return "doc.fill"
+            case .members: return "person.2"
+            case .images: return "photo"
+            case .videos: return "video"
+            case .files: return "doc"
             case .links: return "link"
-            case .voices: return "mic.fill"
+            case .voices: return "mic"
             }
         }
     }
@@ -102,11 +102,19 @@ struct GroupChatInfoView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .padding(.bottom, 18)
                     
-                    segmentedControl()
+                    // TODO hide if there are no gallery tabs, only show needed tabs
+                    Section {
+                        Picker("", selection: $selectedTab) {
+                            ForEach(GroupInfoTab.allCases, id: \.self) { tab in
+                                Image(systemName: tab.imageName)
+                                    .tag(tab)
+                            }
+                        }
+                        .pickerStyle(.segmented)
                         .listRowBackground(Color.clear)
                         .listRowSeparator(.hidden)
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                        .clipShape(Rectangle())
+                    }
                     
                     if selectedTab == .members {
                         membersTabContent(members: members)
@@ -318,36 +326,6 @@ struct GroupChatInfoView: View {
             setSendReceipts: setSendReceipts,
             dismiss: dismiss
         )
-    }
-    
-    private func segmentedControl() -> some View {
-        VStack(spacing: 0) {
-            HStack(spacing: 0) {
-                ForEach(GroupInfoTab.allCases, id: \.self) { tab in
-                    Button {
-                        withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
-                            selectedTab = tab
-                        }
-                    } label: {
-                        VStack(spacing: 4) {
-                            Image(systemName: tab.imageName)
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(selectedTab == tab ? theme.colors.primary : Color(.secondaryLabel))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 8)
-                            
-                            Rectangle()
-                                .fill(selectedTab == tab ? theme.colors.primary : Color.clear)
-                                .frame(height: 3)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .frame(maxWidth: .infinity)
-        }
-        .padding(.top, 12)
-        .padding(.bottom, 8)
     }
     
     private func membersTabContent(members: [GMember]) -> some View {
