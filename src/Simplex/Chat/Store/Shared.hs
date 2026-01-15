@@ -581,7 +581,7 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
     tryCreateName ldnSuffix attempts = do
       currentTs <- getCurrentTime
       let ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
-      E.try (insertName ldn currentTs) >>= \case
+      withSavepoint db "ldn_insert" (insertName ldn currentTs) >>= \case
         Right () -> action ldn
         Left e
           | constraintError e -> tryCreateName (ldnSuffix + 1) (attempts - 1)
@@ -596,6 +596,25 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
               VALUES (?,?,?,?,?,?)
             |]
             (ldn, displayName, ldnSuffix, userId, ts, ts)
+
+-- Execute an action within a savepoint (PostgreSQL only).
+-- On success, releases the savepoint. On error, rolls back to the savepoint
+-- to restore the transaction to a usable state before returning the error.
+withSavepoint :: DB.Connection -> Query -> IO a -> IO (Either SQLError a)
+withSavepoint db name action =
+#if defined(dbPostgres)
+  do
+    DB.execute_ db $ "SAVEPOINT " <> name
+    E.try action >>= \case
+      Right r -> do
+        DB.execute_ db $ "RELEASE SAVEPOINT " <> name
+        pure $ Right r
+      Left e -> do
+        DB.execute_ db $ "ROLLBACK TO SAVEPOINT " <> name
+        pure $ Left e
+#else
+  E.try action
+#endif
 
 createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
 createWithRandomId = createWithRandomBytes 12

@@ -153,6 +153,7 @@ This file is generated automatically.
 - [SndGroupEvent](#sndgroupevent)
 - [SrvError](#srverror)
 - [StoreError](#storeerror)
+- [SubscriptionStatus](#subscriptionstatus)
 - [SwitchPhase](#switchphase)
 - [TimedMessagesGroupPreference](#timedmessagesgrouppreference)
 - [TimedMessagesPreference](#timedmessagespreference)
@@ -3591,6 +3592,26 @@ DeliveryJobNotFound:
 WorkItemError:
 - type: "workItemError"
 - errContext: string
+
+
+---
+
+## SubscriptionStatus
+
+**Discriminated union type**:
+
+Active:
+- type: "active"
+
+Pending:
+- type: "pending"
+
+Removed:
+- type: "removed"
+- subError: string
+
+NoSub:
+- type: "noSub"
 
 
 ---
