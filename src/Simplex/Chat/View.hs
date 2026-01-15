@@ -519,7 +519,7 @@ chatEventToView hu ChatConfig {logLevel, showReactions, showReceipts, testView} 
   CEvtAgentUserDeleted auId -> ["completed deleting user" <> if logLevel <= CLLInfo then ", agent user id: " <> sShow auId else ""]
   CEvtMessageError u prefix err -> ttyUser u [plain prefix <> ": " <> plain err | prefix == "error" || logLevel <= CLLWarning]
   CEvtChatErrors errs -> concatMap (viewChatError False logLevel testView) errs
-  CEvtTimedAction _ _ -> []
+  CEvtTimedAction action durationMilliseconds -> [plain action <> ", duration: " <> plain (show durationMilliseconds) <> " ms"]
   CEvtTerminalEvent te -> case te of
     TERejectingGroupJoinRequestMember _ g m reason -> [ttyFullMember m <> ": rejecting request to join group " <> ttyGroup' g <> ", reason: " <> sShow reason]
     TEGroupLinkRejected u g reason -> ttyUser u [ttyGroup' g <> ": join rejected, reason: " <> sShow reason]

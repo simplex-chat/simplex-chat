@@ -3254,7 +3254,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
         processDeliveryJob job =
           case jobScopeImpliedSpec jobScope of
             DJDeliveryJob _includePending -> do
-              sendBodyToMembers
+              timeItToView "sendBodyToMembers" sendBodyToMembers
               withStore' $ \db -> updateDeliveryJobStatus db jobId DJSComplete
             DJRelayRemoved
               | workerScope /= DWSGroup ->
@@ -3278,7 +3278,7 @@ runDeliveryJobWorker a deliveryKey Worker {doWork} = do
                         sendLoop bucketSize cursorGMId_ = do
                           mems <- withStore' $ \db -> getGroupMembersByCursor db vr user gInfo cursorGMId_ singleSenderGMId_ bucketSize
                           unless (null mems) $ do
-                            deliver body mems
+                            timeItToView ("deliver, " <> show (length mems) <> " mems") $ deliver body mems
                             let cursorGMId' = groupMemberId' $ last mems
                             withStore' $ \db -> updateDeliveryJobCursor db jobId cursorGMId'
                             unless (length mems < bucketSize) $ sendLoop bucketSize (Just cursorGMId')
