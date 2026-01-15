@@ -41,6 +41,7 @@ import chat.simplex.common.views.helpers.*
 import chat.simplex.common.views.usersettings.SettingsActionItem
 import chat.simplex.common.views.usersettings.SettingsActionItemWithContent
 import chat.simplex.res.MR
+import dev.icerock.moko.resources.ImageResource
 import dev.icerock.moko.resources.StringResource
 import dev.icerock.moko.resources.compose.painterResource
 import dev.icerock.moko.resources.compose.stringResource
@@ -50,9 +51,9 @@ enum class GroupInfoTab {
   Members,
   Images,
   Videos,
-  Links,
   Files,
-  Voices
+  Links,
+  Voice
 }
 
 fun LazyListScope.GroupChatInfoTabs(
@@ -73,37 +74,40 @@ fun LazyListScope.GroupChatInfoTabs(
 ) {
 
   item {
-    SectionSpacer()
-
-    val scrollState = rememberScrollState()
-    Column {
-      Row(
-        Modifier
-          .fillMaxWidth()
-          .horizontalScroll(scrollState),
-        horizontalArrangement = Arrangement.Start
-      ) {
-        GroupInfoTab.values().forEach { tab ->
-          Tab(
-            selected = selectedTab.value == tab,
-            onClick = { selectedTab.value = tab },
-            text = { Text(tabTitle(tab), fontSize = 13.sp) },
-            selectedContentColor = MaterialTheme.colors.primary,
-            unselectedContentColor = MaterialTheme.colors.secondary,
-          )
-        }
+    TabRow(
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING),
+      selectedTabIndex = GroupInfoTab.entries.indexOf(selectedTab.value),
+      backgroundColor = Color.Transparent,
+      contentColor = MaterialTheme.colors.primary,
+    ) {
+      GroupInfoTab.entries.forEachIndexed { index, tab ->
+        val isSelected = selectedTab.value == tab
+        LeadingIconTab(
+          selected = isSelected,
+          onClick = { selectedTab.value = tab },
+          text = { Text("") },
+          icon = {
+            Column(
+              modifier = Modifier.fillMaxWidth(),
+              horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+              Icon(
+                painterResource(tabLabel(tab).first),
+                contentDescription = tab.name,
+                modifier = Modifier.size(24.dp),
+                tint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+              )
+              // TODO make it conditional on the actual tab count
+              if (GroupInfoTab.entries.size <= 4) {
+                Text(generalGetString(tabLabel(tab).second), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp), fontSize = 10.sp, softWrap = false, overflow = TextOverflow.Ellipsis)
+              }
+            }
+          },
+          selectedContentColor = MaterialTheme.colors.primary,
+          unselectedContentColor = MaterialTheme.colors.secondary,
+        )
       }
-      // Simple indicator line
-      Box(
-        Modifier
-          .fillMaxWidth()
-          .height(2.dp)
-          .background(MaterialTheme.colors.surface)
-      )
     }
-    Divider()
-
-    SectionSpacer()
   }
 
   when (selectedTab.value) {
@@ -125,9 +129,9 @@ fun LazyListScope.GroupChatInfoTabs(
     }
     GroupInfoTab.Images,
     GroupInfoTab.Videos,
-    GroupInfoTab.Links,
     GroupInfoTab.Files,
-    GroupInfoTab.Voices -> {
+    GroupInfoTab.Links,
+    GroupInfoTab.Voice -> {
       ContentItemsTab(
         filteredChatItems = filteredChatItems,
         scrollToItemId = scrollToItemId
@@ -281,14 +285,14 @@ private fun LazyListScope.ContentItemsTab(
 
 
 @Composable
-private fun tabTitle(tab: GroupInfoTab): String {
+private fun tabLabel(tab: GroupInfoTab): Pair<ImageResource, StringResource> {
   return when (tab) {
-    GroupInfoTab.Members -> stringResource(MR.strings.group_info_tab_members)
-    GroupInfoTab.Images -> stringResource(MR.strings.group_info_tab_images)
-    GroupInfoTab.Videos -> stringResource(MR.strings.group_info_tab_videos)
-    GroupInfoTab.Links -> stringResource(MR.strings.group_info_tab_links)
-    GroupInfoTab.Files -> stringResource(MR.strings.group_info_tab_files)
-    GroupInfoTab.Voices -> stringResource(MR.strings.group_info_tab_voices)
+    GroupInfoTab.Members -> MR.images.ic_group to MR.strings.group_info_tab_members
+    GroupInfoTab.Images -> MR.images.ic_image to MR.strings.group_info_tab_images
+    GroupInfoTab.Videos -> MR.images.ic_videocam to MR.strings.group_info_tab_videos
+    GroupInfoTab.Voice -> MR.images.ic_mic_filled to MR.strings.group_info_tab_voice
+    GroupInfoTab.Files -> MR.images.ic_draft to MR.strings.group_info_tab_files
+    GroupInfoTab.Links -> MR.images.ic_link to MR.strings.group_info_tab_links
   }
 }
 

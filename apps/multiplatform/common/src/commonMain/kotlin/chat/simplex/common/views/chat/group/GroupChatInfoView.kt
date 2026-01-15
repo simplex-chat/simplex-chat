@@ -353,10 +353,11 @@ fun SettingsButton(
   groupInfo: GroupInfo,
   onClick: () -> Unit
 ) {
+  val isOwner = groupInfo.isOwner && groupInfo.businessChat?.chatType == null
   InfoViewActionButton(
     modifier = modifier,
-    icon = painterResource(MR.images.ic_settings),
-    title = generalGetString(MR.strings.icon_descr_settings),
+    icon = if (isOwner) painterResource(MR.images.ic_edit) else painterResource(MR.images.ic_info),
+    title = if (isOwner) generalGetString(MR.strings.edit_verb) else generalGetString(MR.strings.info_menu),
     disabled = !groupInfo.ready,
     disabledLook = !groupInfo.ready,
     onClick = onClick
@@ -473,13 +474,13 @@ fun ModalData.GroupChatInfoLayout(
         GroupInfoTab.Videos -> chat.chatItems.filter {
           it.content.msgContent is MsgContent.MCVideo && it.meta.itemDeleted == null
         }
-        GroupInfoTab.Links -> chat.chatItems.filter {
-          it.content.msgContent is MsgContent.MCLink && it.meta.itemDeleted == null
-        }
         GroupInfoTab.Files -> chat.chatItems.filter {
           it.content.msgContent is MsgContent.MCFile && it.meta.itemDeleted == null
         }
-        GroupInfoTab.Voices -> chat.chatItems.filter {
+        GroupInfoTab.Links -> chat.chatItems.filter {
+          it.content.msgContent is MsgContent.MCLink && it.meta.itemDeleted == null
+        }
+        GroupInfoTab.Voice -> chat.chatItems.filter {
           it.content.msgContent is MsgContent.MCVoice && it.meta.itemDeleted == null
         }
       }
@@ -570,13 +571,6 @@ fun ModalData.GroupChatInfoLayout(
       )
 
       item {
-        if (developerTools) {
-          SectionDividerSpaced()
-          SectionView(title = stringResource(MR.strings.section_title_for_console)) {
-            InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
-            InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())
-          }
-        }
         SectionBottomSpacer()
       }
     }
