@@ -1116,7 +1116,10 @@ instance ToJSON MemberId where
   toEncoding = strToJEncoding
 
 nameFromMemberId :: MemberId -> ContactName
-nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
+nameFromMemberId = nameFromBS . unMemberId
+
+nameFromBS :: ByteString -> ContactName
+nameFromBS = T.take 7 . safeDecodeUtf8 . B64.encode
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)

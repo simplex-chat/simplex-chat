@@ -585,8 +585,9 @@ createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile bu
   pure (g, hostMember)
   where
     insertHost_ currentTs groupId groupLDN = do
-      let memberId = MemberId $ encodeUtf8 groupLDN <> "_host_unknown_id"
-          hostProfile = profileFromName $ nameFromMemberId memberId
+      randHostId <- liftIO $ encodedRandomBytes gVar 12
+      let memberId = MemberId $ encodeUtf8 groupLDN <> "_unknown_host_" <> randHostId
+          hostProfile = profileFromName $ nameFromBS randHostId
       (localDisplayName, profileId) <- createNewMemberProfile_ db user hostProfile currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       liftIO $ do
@@ -1323,8 +1324,8 @@ getCreateRelayForMember db vr gVar user@User {userId, userContactId} GroupInfo {
     createRelayMember = do
       currentTs <- liftIO getCurrentTime
       randRelayId <- liftIO $ encodedRandomBytes gVar 12
-      let memberId = MemberId $ encodeUtf8 groupLDN <> "_relay_" <> randRelayId <> "_unknown_id"
-          relayProfile = profileFromName $ nameFromMemberId memberId
+      let memberId = MemberId $ encodeUtf8 groupLDN <> "_unknown_relay_" <> randRelayId
+          relayProfile = profileFromName $ nameFromBS randRelayId
       (localDisplayName, profileId) <- createNewMemberProfile_ db user relayProfile currentTs
       indexInGroup <- getUpdateNextIndexInGroup_ db groupId
       groupMemberId <- liftIO $ do
