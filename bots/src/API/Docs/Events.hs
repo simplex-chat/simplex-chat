@@ -192,6 +192,7 @@ undocumentedEvents =
     "CEvtRcvFileAcceptedSndCancelled", -- only sent with legacy SMP files when they are cancelled
     "CEvtRcvFileProgressXFTP",
     "CEvtRcvStandaloneFileComplete",
+    "CEvtGroupLinkRelaysUpdated",
     "CEvtRemoteCtrlFound",
     "CEvtRemoteCtrlSessionCode",
     "CEvtRemoteCtrlStopped",

@@ -153,10 +153,12 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqContact -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqContact -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe IncognitoProfile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
 createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   currentTs <- getCurrentTime
-  customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
+  customUserProfileId <- forM incognitoProfile $ \case
+    NewIncognito p -> createIncognitoProfile_ db userId currentTs p
+    ExistingIncognito LocalProfile {profileId = pId} -> pure pId
   let connStatus = ConnPrepared
   DB.execute
     db
@@ -175,7 +177,9 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
     )
   connId <- insertedRowId db
   case preparedEntity_ of
-    Just (PCEGroup gInfo _) -> updatePreparedGroup gInfo customUserProfileId currentTs
+    -- For relay groups, setPreparedGroupLinkInfo is called before the relay loop
+    Just (PCEGroup gInfo _) | not (useRelays' gInfo) ->
+      setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId currentTs
     _ -> pure ()
   pure
     Connection
@@ -213,16 +217,6 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
       Just (PCEContact Contact {contactId}) -> (ConnContact, Just contactId, Nothing, Just contactId)
       Just (PCEGroup _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
       Nothing -> (ConnContact, Nothing, Nothing, Nothing)
-    updatePreparedGroup GroupInfo {groupId, membership} customUserProfileId currentTs = do
-      DB.execute
-        db
-        "UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
-        (cReq, cReqHash, BI True, currentTs, groupId)
-      when (isJust customUserProfileId) $
-        DB.execute
-          db
-          "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
-          (customUserProfileId, currentTs, groupMemberId' membership)
 
 setPreparedGroupStartedConnection :: DB.Connection -> GroupId -> IO ()
 setPreparedGroupStartedConnection db groupId = do
