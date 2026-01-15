@@ -17,7 +17,6 @@ struct GroupSettingsView: View {
     @Binding var sendReceipts: SendReceipts
     var sendReceiptsUserDefault: Bool
     @Binding var progressIndicator: Bool
-    var setSendReceipts: () -> Void
     var dismiss: DismissAction
     @State private var alert: GroupSettingsViewAlert? = nil
     @AppStorage(DEFAULT_DEVELOPER_TOOLS) private var developerTools = false
@@ -51,6 +50,8 @@ struct GroupSettingsView: View {
                     addOrEditWelcomeMessage()
                 }
                 GroupPreferencesButton(groupInfo: $groupInfo, preferences: groupInfo.fullGroupPreferences, currentPreferences: groupInfo.fullGroupPreferences)
+            } header: {
+                Text(verbatim: "")
             } footer: {
                 let label: LocalizedStringKey = (
                     groupInfo.businessChat == nil
@@ -94,7 +95,7 @@ struct GroupSettingsView: View {
                 }
             }
         }
-        .navigationTitle("Chat Settings")
+        .navigationTitle("Group settings")
         .modifier(ThemedBackground(grouped: true))
         .navigationBarTitleDisplayMode(.large)
         .alert(item: $alert) { alertItem in
@@ -146,6 +147,12 @@ struct GroupSettingsView: View {
         .onChange(of: sendReceipts) { _ in
             setSendReceipts()
         }
+    }
+    
+    private func setSendReceipts() {
+        var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
+        chatSettings.sendRcpts = sendReceipts.bool()
+        updateChatSettings(chat, chatSettings: chatSettings)
     }
     
     private func sendReceiptsOptionDisabled() -> some View {

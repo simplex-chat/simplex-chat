@@ -323,7 +323,6 @@ struct GroupChatInfoView: View {
             sendReceipts: $sendReceipts,
             sendReceiptsUserDefault: sendReceiptsUserDefault,
             progressIndicator: $progressIndicator,
-            setSendReceipts: setSendReceipts,
             dismiss: dismiss
         )
     }
@@ -389,12 +388,6 @@ struct GroupChatInfoView: View {
                 Spacer()
             }
         }
-    }
-    
-    private func setSendReceipts() {
-        var chatSettings = chat.chatInfo.chatSettings ?? ChatSettings.defaults
-        chatSettings.sendRcpts = sendReceipts.bool()
-        updateChatSettings(chat, chatSettings: chatSettings)
     }
     
     private func addMembersButton() -> some View {
