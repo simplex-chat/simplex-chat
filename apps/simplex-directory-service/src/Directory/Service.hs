@@ -184,10 +184,11 @@ directoryPreStartHook :: DirectoryOpts -> ChatController -> IO ()
 directoryPreStartHook opts ChatController {config, chatStore} = runDirectoryMigrations opts config chatStore
 
 directoryPostStartHook :: DirectoryOpts -> ServiceState -> ChatController -> IO ()
-directoryPostStartHook opts env cc =
+directoryPostStartHook opts@DirectoryOpts {noAddress, testing} env cc =
   readTVarIO (currentUser cc) >>= \case
     Nothing -> putStrLn "No current user" >> exitFailure
     Just User {userId, profile = p@LocalProfile {preferences}} -> do
+      unless noAddress $ initializeBotAddress' (not testing) cc
       listingsUpdated env cc
       let cmds = fromMaybe [] $ preferences >>= commands_
       unless (cmds == directoryCommands) $ do
@@ -216,7 +217,7 @@ directoryCommands =
     idParam = Just "<ID>"
 
 directoryService :: DirectoryLog -> DirectoryOpts -> ChatConfig -> IO ()
-directoryService st opts@DirectoryOpts {testing} cfg = do
+directoryService st opts cfg = do
   env <- newServiceState opts
   let chatHooks =
         defaultChatHooks
@@ -224,8 +225,7 @@ directoryService st opts@DirectoryOpts {testing} cfg = do
             postStartHook = Just $ directoryPostStartHook opts env,
             acceptMember = Just $ acceptMemberHook opts env
           }
-  simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc -> do
-    initializeBotAddress' (not testing) cc
+  simplexChatCore cfg {chatHooks} (mkChatOpts opts) $ \user cc ->
     raceAny_ $
       [ forever $ void getLine,
         forever $ do

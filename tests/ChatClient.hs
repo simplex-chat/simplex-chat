@@ -117,8 +117,7 @@ testOpts =
       autoAcceptFileSize = 0,
       muteNotifications = True,
       markRead = True,
-      createBot = Nothing,
-      maintenance = False
+      createBot = Nothing
     }
 
 testCoreOpts :: CoreChatOpts
@@ -152,7 +151,8 @@ testCoreOpts =
       deviceName = Nothing,
       highlyAvailable = False,
       yesToUpMigrations = False,
-      migrationBackupPath = Nothing
+      migrationBackupPath = Nothing,
+      maintenance = False      
     }
 
 #if !defined(dbPostgres)
@@ -303,7 +303,7 @@ insertUser st = withTransaction st (`DB.execute_` "INSERT INTO users (user_id) V
 #endif
 
 startTestChat_ :: TestParams -> ChatDatabase -> ChatConfig -> ChatOpts -> User -> IO TestCC
-startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {maintenance} user = do
+startTestChat_ TestParams {printOutput} db cfg opts@ChatOpts {coreOptions = CoreChatOpts {maintenance}} user = do
   t <- withVirtualTerminal termSettings pure
   ct <- newChatTerminal t opts
   cc <- newChatController db (Just user) cfg opts False
