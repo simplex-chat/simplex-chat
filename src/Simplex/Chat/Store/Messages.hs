@@ -174,6 +174,7 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Shared
 import Simplex.Messaging.Agent.Protocol (AgentMsgId, ConnId, MsgMeta (..), UserId)
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, firstRow', maybeFirstRow)
+import Simplex.Messaging.Agent.Store.Common (withSavepoint)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -219,7 +220,7 @@ deleteGroupChatItemsMessages db User {userId} GroupInfo {groupId} = do
 
 createNewSndMessage :: MsgEncodingI e => DB.Connection -> TVar ChaChaDRG -> ConnOrGroupId -> ChatMsgEvent e -> (SharedMsgId -> EncodedChatMessage) -> ExceptT StoreError IO SndMessage
 createNewSndMessage db gVar connOrGroupId chatMsgEvent encodeMessage =
-  createWithRandomId' gVar $ \sharedMsgId ->
+  createWithRandomId' db gVar $ \sharedMsgId ->
     case encodeMessage (SharedMsgId sharedMsgId) of
       ECMLarge -> pure $ Left SELargeMsg
       ECMEncoded msgBody -> do
@@ -2700,12 +2701,14 @@ updateGroupCIMentions :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> Ma
 updateGroupCIMentions db g ci@ChatItem {mentions} mentions'
   | mentions' == mentions = pure ci
   | otherwise = do
-      unless (null mentions) $ deleteMentions
+      unless (null mentions) deleteMentions
       if null mentions'
         then pure ci
         else -- This is a fallback for the error that should not happen in practice.
         -- In theory, it may happen in item mentions in database are different from item record.
-          createMentions `E.catch` \e -> if constraintError e then deleteMentions >> createMentions else E.throwIO e
+          withSavepoint db "create_mentions" createMentions >>= \case
+            Right r -> pure r
+            Left e -> if constraintError e then deleteMentions >> createMentions else E.throwIO e
   where
     deleteMentions = DB.execute db "DELETE FROM chat_item_mentions WHERE chat_item_id = ?" (Only $ chatItemId' ci)
     createMentions = createGroupCIMentions db g ci mentions'
