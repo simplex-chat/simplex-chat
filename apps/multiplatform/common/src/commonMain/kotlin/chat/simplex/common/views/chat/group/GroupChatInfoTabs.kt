@@ -53,7 +53,7 @@ enum class GroupInfoTab {
   Videos,
   Files,
   Links,
-  Voices
+  Voice
 }
 
 fun LazyListScope.GroupChatInfoTabs(
@@ -74,30 +74,33 @@ fun LazyListScope.GroupChatInfoTabs(
 ) {
 
   item {
-    SectionSpacer()
-
     TabRow(
-      selectedTabIndex = GroupInfoTab.values().indexOf(selectedTab.value),
+      modifier = Modifier.padding(top = DEFAULT_PADDING_HALF, bottom = DEFAULT_PADDING),
+      selectedTabIndex = GroupInfoTab.entries.indexOf(selectedTab.value),
       backgroundColor = Color.Transparent,
       contentColor = MaterialTheme.colors.primary,
     ) {
-      GroupInfoTab.values().forEachIndexed { index, tab ->
+      GroupInfoTab.entries.forEachIndexed { index, tab ->
         val isSelected = selectedTab.value == tab
         LeadingIconTab(
           selected = isSelected,
           onClick = { selectedTab.value = tab },
           text = { Text("") },
           icon = {
-            Box(
+            Column(
               modifier = Modifier.fillMaxWidth(),
-              contentAlignment = Alignment.Center
+              horizontalAlignment = Alignment.CenterHorizontally
             ) {
               Icon(
-                painterResource(tabIcon(tab)),
+                painterResource(tabLabel(tab).first),
                 contentDescription = tab.name,
                 modifier = Modifier.size(24.dp),
                 tint = if (isSelected) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
               )
+              // TODO make it conditional on the actual tab count
+              if (GroupInfoTab.entries.size <= 4) {
+                Text(generalGetString(tabLabel(tab).second), modifier = Modifier.padding(top = 2.dp, bottom = 6.dp), fontSize = 10.sp, softWrap = false, overflow = TextOverflow.Ellipsis)
+              }
             }
           },
           selectedContentColor = MaterialTheme.colors.primary,
@@ -105,8 +108,6 @@ fun LazyListScope.GroupChatInfoTabs(
         )
       }
     }
-
-    SectionSpacer()
   }
 
   when (selectedTab.value) {
@@ -130,7 +131,7 @@ fun LazyListScope.GroupChatInfoTabs(
     GroupInfoTab.Videos,
     GroupInfoTab.Files,
     GroupInfoTab.Links,
-    GroupInfoTab.Voices -> {
+    GroupInfoTab.Voice -> {
       ContentItemsTab(
         filteredChatItems = filteredChatItems,
         scrollToItemId = scrollToItemId
@@ -284,14 +285,14 @@ private fun LazyListScope.ContentItemsTab(
 
 
 @Composable
-private fun tabIcon(tab: GroupInfoTab): ImageResource {
+private fun tabLabel(tab: GroupInfoTab): Pair<ImageResource, StringResource> {
   return when (tab) {
-    GroupInfoTab.Members -> MR.images.ic_group
-    GroupInfoTab.Images -> MR.images.ic_image
-    GroupInfoTab.Videos -> MR.images.ic_videocam
-    GroupInfoTab.Files -> MR.images.ic_draft_filled
-    GroupInfoTab.Links -> MR.images.ic_link
-    GroupInfoTab.Voices -> MR.images.ic_mic_filled
+    GroupInfoTab.Members -> MR.images.ic_group to MR.strings.group_info_tab_members
+    GroupInfoTab.Images -> MR.images.ic_image to MR.strings.group_info_tab_images
+    GroupInfoTab.Videos -> MR.images.ic_videocam to MR.strings.group_info_tab_videos
+    GroupInfoTab.Voice -> MR.images.ic_mic_filled to MR.strings.group_info_tab_voice
+    GroupInfoTab.Files -> MR.images.ic_draft to MR.strings.group_info_tab_files
+    GroupInfoTab.Links -> MR.images.ic_link to MR.strings.group_info_tab_links
   }
 }
 

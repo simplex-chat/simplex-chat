@@ -480,7 +480,7 @@ fun ModalData.GroupChatInfoLayout(
         GroupInfoTab.Links -> chat.chatItems.filter {
           it.content.msgContent is MsgContent.MCLink && it.meta.itemDeleted == null
         }
-        GroupInfoTab.Voices -> chat.chatItems.filter {
+        GroupInfoTab.Voice -> chat.chatItems.filter {
           it.content.msgContent is MsgContent.MCVoice && it.meta.itemDeleted == null
         }
       }
