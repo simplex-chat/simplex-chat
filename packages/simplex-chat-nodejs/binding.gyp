@@ -28,6 +28,14 @@
           "ldflags": [
             "-Wl,-rpath,'$$ORIGIN'/../../libs"
           ]
+        }],
+        ["OS=='win'", {
+          "copies": [{
+            "destination": "<(PRODUCT_DIR)",
+            "files": [
+              "<(module_root_dir)/libs/*"
+            ]
+          }]
         }]
       ]
     }
