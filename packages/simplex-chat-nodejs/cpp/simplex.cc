@@ -10,6 +10,17 @@ namespace simplex {
 using namespace Napi;
 
 void haskell_init() {
+#ifdef _WIN32
+  // non-moving GC is broken on windows with GHC 9.4-9.6.3
+  int argc = 5;
+  const char *argv[] = {
+      "simplex",
+      "+RTS",  // requires `hs_init_with_rtsopts`
+      "-A64m", // chunk size for new allocations
+      "-H64m", // initial heap size
+      "--install-signal-handlers=no",
+      nullptr};
+#else
   int argc = 6;
   const char *argv[] = {
       "simplex",
@@ -19,6 +30,7 @@ void haskell_init() {
       "-xn",   // non-moving GC
       "--install-signal-handlers=no",
       nullptr};
+#endif
   char **pargv = const_cast<char **>(argv);
   hs_init_with_rtsopts(&argc, &pargv);
 }
