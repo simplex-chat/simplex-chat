@@ -1,5 +1,6 @@
 package chat.simplex.common.views.chat.group
 
+import InfoRow
 import SectionBottomSpacer
 import SectionDividerSpaced
 import SectionTextFooter
@@ -35,6 +36,7 @@ fun GroupSettingsView(
   
   val groupInfo = c.chatInfo.groupInfo
   val currentUser = m.currentUser.value ?: return
+  val developerTools = m.controller.appPrefs.developerTools.get()
   
   val sendReceipts = remember { mutableStateOf(SendReceipts.fromBool(groupInfo.chatSettings.sendRcpts, currentUser.sendRcptsSmallGroups)) }
   val chatItemTTL = rememberSaveable(groupInfo.id) { mutableStateOf(if (groupInfo.chatItemTTL != null) ChatItemTTL.fromSeconds(groupInfo.chatItemTTL) else null) }
@@ -63,6 +65,7 @@ fun GroupSettingsView(
       chatItemTTL = chatItemTTL,
       setChatItemTTL = ::setChatItemTTL,
       deletingItems = deletingItems,
+      developerTools = developerTools,
       editGroupProfile = {
         ModalManager.end.showCustomModal { closeModal -> 
           GroupProfileView(rhId, groupInfo, m, closeModal)
@@ -96,6 +99,7 @@ private fun GroupSettingsLayout(
   chatItemTTL: MutableState<ChatItemTTL?>,
   setChatItemTTL: (ChatItemTTL?) -> Unit,
   deletingItems: MutableState<Boolean>,
+  developerTools: Boolean,
   editGroupProfile: () -> Unit,
   addOrEditWelcomeMessage: () -> Unit,
   openPreferences: () -> Unit,
@@ -157,6 +161,14 @@ private fun GroupSettingsLayout(
       if (groupInfo.membership.memberCurrentOrPending) {
         val titleId = if (groupInfo.businessChat == null) MR.strings.button_leave_group else MR.strings.button_leave_chat
         LeaveGroupButton(titleId, leaveGroup)
+      }
+    }
+
+    if (developerTools) {
+      SectionDividerSpaced(maxTopPadding = true, maxBottomPadding = false)
+      SectionView(title = stringResource(MR.strings.section_title_for_console)) {
+        InfoRow(stringResource(MR.strings.info_row_local_name), groupInfo.localDisplayName)
+        InfoRow(stringResource(MR.strings.info_row_database_id), groupInfo.apiId.toString())
       }
     }
 
