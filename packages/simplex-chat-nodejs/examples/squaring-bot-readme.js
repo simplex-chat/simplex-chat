@@ -4,7 +4,7 @@
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
     options: {
-      addressSettings: {welcomeMessage: "If you send me a number, I will calculate its square."},
+      addressSettings: {welcomeMessage: "Send a number, I will square it."},
     },
     onMessage: async (ci, content) => {
       const n = +content.text
