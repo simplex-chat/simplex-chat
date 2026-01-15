@@ -58,7 +58,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
     run db@ChatDatabase {chatStore} = do
       users <- withTransaction chatStore getUsers
       u_ <- selectActiveUser coreOptions chatStore users
-      let backgroundMode = not maintenance
+      let backgroundMode = maintenance
       cc <- newChatController db u_ cfg opts backgroundMode
       u <- maybe (createActiveUser cc coreOptions createBot) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u

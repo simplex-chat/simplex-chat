@@ -4307,6 +4307,37 @@ export namespace StoreError {
   }
 }
 
+export type SubscriptionStatus = 
+  | SubscriptionStatus.Active
+  | SubscriptionStatus.Pending
+  | SubscriptionStatus.Removed
+  | SubscriptionStatus.NoSub
+
+export namespace SubscriptionStatus {
+  export type Tag = "active" | "pending" | "removed" | "noSub"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Active extends Interface {
+    type: "active"
+  }
+
+  export interface Pending extends Interface {
+    type: "pending"
+  }
+
+  export interface Removed extends Interface {
+    type: "removed"
+    subError: string
+  }
+
+  export interface NoSub extends Interface {
+    type: "noSub"
+  }
+}
+
 export enum SwitchPhase {
   Started = "started",
   Confirmed = "confirmed",
