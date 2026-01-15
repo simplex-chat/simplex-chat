@@ -2,7 +2,7 @@
 
 set -e
 
-ARCH="$(uname -m)"
+ARCH="${1:-$(uname -m)}" 
 if [ "$ARCH" == "arm64" ]; then
     ARCH=aarch64
     vlc_arch=arm64
