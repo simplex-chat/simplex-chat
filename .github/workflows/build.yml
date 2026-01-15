@@ -657,7 +657,7 @@ jobs:
           msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
 
           # We need to generate library that exports symbols from Windows dll
-          curl -LO "${FILE_URL}/libsimplex.dll.def"
+          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
           x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
 
           mkdir libs && cp *.dll *.lib libs/
