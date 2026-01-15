@@ -136,6 +136,14 @@ chatEventsDocsData =
       ],
       []
     ),
+    ( "Network connection events",
+      "",
+      [ ("CEvtHostConnected", "Messaging or file server connected"),
+        ("CEvtHostDisconnected", "Messaging or file server disconnected"),
+        ("CEvtSubscriptionStatus", "Messaging subscription status changed")
+      ],
+      []
+    ),
     ( "Error events",
       "Bots may log these events for debugging. \
       \There will be many error events - this does NOT indicate a malfunction - \
@@ -178,9 +186,6 @@ undocumentedEvents =
     "CEvtCustomChatEvent",
     "CEvtGroupMemberRatchetSync",
     "CEvtGroupMemberSwitch",
-    "CEvtHostConnected",
-    "CEvtHostDisconnected",
-    "CEvtSubscriptionStatus",
     "CEvtNewRemoteHost",
     "CEvtNoMemberContactCreating",
     "CEvtNtfMessage",

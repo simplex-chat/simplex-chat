@@ -176,6 +176,7 @@ ciQuoteType =
       updateRecord (RecordTypeInfo name fields) = RecordTypeInfo name $ map optChatDir fields
    in st {recordTypes = map updateRecord records} -- need to map even though there is one constructor in this type
 
+-- type info, JSON encoding, constructor prefix, removed constructors, string encoding for commands, description
 chatTypesDocsData :: [(SumTypeInfo, SumTypeJsonEncoding, String, [ConsName], Expr, Text)]
 chatTypesDocsData =
   [ ((sti @(Chat 'CTDirect)) {typeName = "AChat"}, STRecord, "", [], "", ""),
@@ -334,6 +335,7 @@ chatTypesDocsData =
     (sti @SndGroupEvent, STUnion, "SGE", [], "", ""),
     (sti @SrvError, STUnion, "SrvErr", [], "", ""),
     (sti @StoreError, STUnion, "SE", [], "", ""),
+    (sti @SubscriptionStatus, STUnion, "SS", [], "", ""),
     (sti @SwitchPhase, STEnum, "SP", [], "", ""),
     (sti @TimedMessagesGroupPreference, STRecord, "", [], "", ""),
     (sti @TimedMessagesPreference, STRecord, "", [], "", ""),
@@ -526,6 +528,7 @@ deriving instance Generic SndFileTransfer
 deriving instance Generic SndGroupEvent
 deriving instance Generic SrvError
 deriving instance Generic StoreError
+deriving instance Generic SubscriptionStatus
 deriving instance Generic SwitchPhase
 deriving instance Generic TimedMessagesGroupPreference
 deriving instance Generic TimedMessagesPreference
