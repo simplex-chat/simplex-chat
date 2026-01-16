@@ -3375,7 +3375,7 @@ processChatCommand vr nm = \case
           chatEvent = case gInfo_ of
             Just (Just gInfo) | useRelays' gInfo ->
               let GroupInfo {membership = GroupMember {memberId}} = gInfo
-               in XContactRelay profileToSend memberId welcomeSharedMsgId
+               in XMember profileToSend memberId
             _ -> XContact profileToSend (Just xContactId) welcomeSharedMsgId msg_
       dm <- encodeConnInfoPQ pqSup chatV chatEvent
       subMode <- chatReadVar subscriptionMode

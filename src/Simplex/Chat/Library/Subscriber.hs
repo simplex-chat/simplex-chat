@@ -1080,7 +1080,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 let GroupMember {memberId = membershipMemId} = membership
                     incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
                     profileToSend = userProfileInGroup user gInfo incognitoProfile
-                dm <- encodeConnInfo $ XContactRelay profileToSend membershipMemId Nothing
+                dm <- encodeConnInfo $ XMember profileToSend membershipMemId
                 subMode <- chatReadVar subscriptionMode
                 void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
               CRInvitationUri {} -> throwChatError $ CECommandError "LDATA: unexpected invitation URI for relay"
@@ -1192,7 +1192,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
-          XContactRelay p joiningMemberId welcomeMsgId_ -> relayGroupJoinRequest invId chatVRange p joiningMemberId welcomeMsgId_
+          XMember p joiningMemberId -> relayGroupJoinRequest invId chatVRange p joiningMemberId
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
@@ -1396,13 +1396,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           lift $ void $ getRelayRequestWorker True
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
-        relayGroupJoinRequest :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> Maybe SharedMsgId -> CM ()
-        relayGroupJoinRequest invId chatVRange p joiningMemberId welcomeMsgId_ = do
+        relayGroupJoinRequest :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> CM ()
+        relayGroupJoinRequest invId chatVRange p joiningMemberId = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) welcomeMsgId_ GAAccepted gLinkMemRole Nothing
+              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing
               (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
