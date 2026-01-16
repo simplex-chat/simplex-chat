@@ -2333,11 +2333,11 @@ createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do
   connId <- withAgent $ \a -> createConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cMode IKPQOff subMode
   pure (cmdId, connId)
 
-joinAgentConnectionAsync :: User -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM (CommandId, ConnId)
-joinAgentConnectionAsync user enableNtfs cReqUri cInfo subMode = do
-  cmdId <- withStore' $ \db -> createCommand db user Nothing CFJoinConn
-  connId <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) enableNtfs cReqUri cInfo PQSupportOff subMode
-  pure (cmdId, connId)
+joinAgentConnectionAsync :: User -> Maybe Connection -> Bool -> ConnectionRequestUri c -> ConnInfo -> SubscriptionMode -> CM (CommandId, ConnId)
+joinAgentConnectionAsync user conn_ enableNtfs cReqUri cInfo subMode = do
+  cmdId <- withStore' $ \db -> createCommand db user (dbConnId <$> conn_) CFJoinConn
+  connId' <- withAgent $ \a -> joinConnectionAsync a (aUserId user) (aCorrId cmdId) (aConnId <$> conn_) enableNtfs cReqUri cInfo PQSupportOff subMode
+  pure (cmdId, connId')
 
 allowAgentConnectionAsync :: MsgEncodingI e => User -> Connection -> ConfirmationId -> ChatMsgEvent e -> CM ()
 allowAgentConnectionAsync user conn@Connection {connId, pqSupport, connChatVersion} confId msg = do
@@ -2374,6 +2374,13 @@ setAgentConnShortLinkAsync :: ConnectionModeI c => User -> Connection -> UserCon
 setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientData_ = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetConnShortLink
   withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) sConnectionMode userLinkData crClientData_
+
+getAgentConnShortLinkAsync :: User -> ShortLinkContact -> CM (CommandId, ConnId)
+getAgentConnShortLinkAsync user shortLink = do
+  shortLink' <- restoreShortLink' shortLink
+  cmdId <- withStore' $ \db -> createCommand db user Nothing CFGetConnShortLink
+  connId <- withAgent $ \a -> getConnShortLinkAsync a (aUserId user) (aCorrId cmdId) True shortLink'
+  pure (cmdId, connId)
 
 agentXFTPDeleteRcvFile :: RcvFileId -> FileTransferId -> CM ()
 agentXFTPDeleteRcvFile aFileId fileId = do

@@ -122,13 +122,13 @@ import UnliftIO.IO (hClose)
 import UnliftIO.STM
 #if defined(dbPostgres)
 import Data.Bifunctor (bimap, second)
-import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
+import Simplex.Messaging.Agent.Client (SubInfo (..), getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 #else
 import Data.Bifunctor (bimap, first, second)
 import qualified Data.ByteArray as BA
 import qualified Database.SQLite.Simple as SQL
 import Simplex.Chat.Archive
-import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary)
+import Simplex.Messaging.Agent.Client (SubInfo (..), agentClientStore, getAgentQueuesInfo, getAgentWorkersDetails, getAgentWorkersSummary, temporaryOrHostError)
 import Simplex.Messaging.Agent.Store.Common (withConnection)
 import Simplex.Messaging.Agent.Store.SQLite.DB (SlowQueryStats (..))
 #endif
@@ -1996,8 +1996,10 @@ processChatCommand vr nm = \case
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = ConnReqUriHash . C.sha256Hash . strEncode $ CRContactUri crData {crScheme = SSSimplex}
         gInfo' <- withFastStore $ \db -> setPreparedGroupLinkInfo db vr user gInfo mainCReq cReqHash incognitoProfile
-        rs <- zip relays <$> mapConcurrently (tryAllErrors . connectToRelay gInfo') relays
-        let (succeeded, failed) = partition (isRight . snd) rs
+        -- Connect to relays concurrently
+        results <- mapConcurrently (connectToRelay gInfo') relays
+        let relayFailed = \case (_, _, Left _) -> True; _ -> False
+            (failed, succeeded) = partition relayFailed results
         if null succeeded
           then do
             -- updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
@@ -2005,21 +2007,36 @@ processChatCommand vr nm = \case
             toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
             -- TODO [relays] member: prefer throwing temporary network connection error to enable retry
             case failed of
-              (_, Left e) : _ -> throwError e
+              (_, _, Left e) : _ -> throwError e
               _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
           else do
             withFastStore' $ \db -> setPreparedGroupStartedConnection db groupId
-            -- TODO [relays] member: async retry failed relays
+            -- Async retry failed relays with temporary errors
+            let retryable = [(l, m) | (l, m, Left ChatErrorAgent {agentError = e}) <- failed, temporaryOrHostError e]
+            void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
+            -- TODO [relays] member: TBC response type for UI to display state of relays connection
+            -- TODO   - differentiate success, temporary failure, permanent failure
+            -- TODO   - possibly, additional status on relay member record
             pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
         where
-          connectToRelay gInfo' relayLink = do
+          connectToRelay gInfo'@GroupInfo {groupId} relayLink = do
             gVar <- asks random
             -- Save relayLink to re-use relay member record on retry (check by relayLink)
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
-            (cReq, _cData) <- getShortLinkConnReq nm user relayLink
-            let relayLinkToConnect = CCLink cReq (Just relayLink)
-            _r <- connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
-            pure relayMember
+            r <- tryAllErrors $ do
+              (cReq, _cData) <- getShortLinkConnReq nm user relayLink
+              let relayLinkToConnect = CCLink cReq (Just relayLink)
+              void $ connectViaContact user (Just $ PCEGroup gInfo' relayMember) incognito relayLinkToConnect Nothing Nothing
+            -- Re-read member to get updated activeConn
+            relayMember' <- withFastStore $ \db -> getGroupMember db vr user groupId (groupMemberId' relayMember)
+            pure (relayLink, relayMember', r)
+          retryRelayConnectionAsync gInfo' relayLink relayMember@GroupMember {activeConn} = do
+            forM_ activeConn $ \conn -> do
+              deleteAgentConnectionAsync $ aConnId conn
+              withStore' $ \db -> deleteConnectionRecord db user (dbConnId conn)
+            subMode <- chatReadVar subscriptionMode
+            newConnIds <- getAgentConnShortLinkAsync user relayLink
+            withStore' $ \db -> createRelayMemberConnectionAsync db user gInfo' relayMember relayLink newConnIds subMode
       GroupInfo {preparedGroup = Just PreparedGroup {connLinkToConnect, welcomeSharedMsgId, requestSharedMsgId}} -> do
         msg_ <- forM msgContent_ $ \mc -> case requestSharedMsgId of
           Just smId -> pure (smId, mc)

@@ -85,6 +85,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..))
+import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
@@ -1067,6 +1068,23 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
               sendGroupAutoReply mc connReq_
+      LDATA (ACR _ cReq) _cData ->
+        -- [async agent commands] CFGetConnShortLink continuation - join relay connection with resolved link
+        withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+          case cmdFunction of
+            CFGetConnShortLink -> case cReq of
+              CRContactUri crData@ConnReqUriData {crClientData} -> do
+                let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+                    cReqHash = ConnReqUriHash . C.sha256Hash . strEncode $ CRContactUri crData {crScheme = SSSimplex}
+                withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId
+                let GroupMember {memberId = membershipMemId} = membership
+                    incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
+                    profileToSend = userProfileInGroup user gInfo incognitoProfile
+                dm <- encodeConnInfo $ XContactRelay profileToSend membershipMemId Nothing
+                subMode <- chatReadVar subscriptionMode
+                void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
+              CRInvitationUri {} -> throwChatError $ CECommandError "LDATA: unexpected invitation URI for relay"
+            _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -2176,7 +2194,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           then do
             subMode <- chatReadVar subscriptionMode
             dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-            connIds <- joinAgentConnectionAsync user True connRequest dm subMode
+            connIds <- joinAgentConnectionAsync user Nothing True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkUri db groupId connId
               createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
@@ -2736,8 +2754,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
-      groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
-      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
+      groupConnIds <- joinAgentConnectionAsync user Nothing (chatHasNtfs chatSettings) groupConnReq dm subMode
+      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user Nothing True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr `peerConnChatVersion` mcvr
@@ -3006,7 +3024,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
           -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
           dm <- encodeConnInfo $ XInfo p
-          joinAgentConnectionAsync user True connReq dm subMode
+          joinAgentConnectionAsync user Nothing True connReq dm subMode
         createItems mCt' m' = do
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
