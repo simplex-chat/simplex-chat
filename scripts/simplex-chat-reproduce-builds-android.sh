@@ -33,13 +33,12 @@ cleanup() {
   docker rm --force "${CONTAINER_NAME}" 2>/dev/null || :
   docker image rm "${IMAGE_NAME}" 2>/dev/null || :
 
-  if [ "$(sysctl -n kernel.pid_max)" != "$PID_MAX_CURRENT" ]; then
+  if [ "$(sysctl -n kernel.pid_max)" != "$PID_MAX_ORIGINAL" ]; then
     printf 'Adjusting kernel.pid_max back to original value...\n'
-    if $SUDO sysctl "$PID_MAX_CURRENT"; then
+    if $SUDO sysctl "$PID_MAX_ORIGINAL"; then
       printf 'Successfully adjusted kernel.pid_max\n'
     else
-      printf 'Failed to adjust kernel.pid_max, aborting.\n'
-      exit 1
+      printf 'Failed to adjust kernel.pid_max. Please set the value manually with: %s sysctl kernel.pid_max=%s\n' "$SUDO" "$PID_MAX_ORIGINAL"
     fi
   fi
 }
@@ -47,8 +46,6 @@ trap 'cleanup' EXIT INT
 
 check() {
   commands="$1"
-
-  SUDO=$(command -v sudo || command -v doas) || { echo "No sudo or doas"; exit 1; }
 
   set +u
 
@@ -64,10 +61,13 @@ check() {
     exit 1
   fi
 
-  PID_MAX_CURRENT="$(sysctl -n kernel.pid_max)"
+  PID_MAX_ORIGINAL="$(sysctl -n kernel.pid_max)"
 
-  if [ "$PID_MAX_CURRENT" -gt 65535 ]; then
-    printf 'Adjust kernel.pid_max value to 65535...\n'
+  if [ "$PID_MAX_ORIGINAL" -gt 65535 ]; then
+    SUDO=$(command -v sudo || command -v doas) || { echo "No sudo or doas"; exit 1; }
+
+    printf 'Adjusting kernel.pid_max value to 65535...\n'
+
     if $SUDO sysctl 65535; then
       printf 'Successfully adjusted kernel.pid_max\n'
     else
