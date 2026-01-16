@@ -321,7 +321,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
-  XContactRelay :: {profile :: Profile, joiningMemberId :: MemberId, welcomeMsgId :: Maybe SharedMsgId} -> ChatMsgEvent 'Json
+  XMember :: {profile :: Profile, joiningMemberId :: MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -814,7 +814,7 @@ data CMEventTag (e :: MsgEncoding) where
   XFileCancel_ :: CMEventTag 'Json
   XInfo_ :: CMEventTag 'Json
   XContact_ :: CMEventTag 'Json
-  XContactRelay_ :: CMEventTag 'Json
+  XMember_ :: CMEventTag 'Json
   XDirectDel_ :: CMEventTag 'Json
   XGrpInv_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
@@ -870,7 +870,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
-    XContactRelay_ -> "x.contact.relay"
+    XMember_ -> "x.member"
     XDirectDel_ -> "x.direct.del"
     XGrpInv_ -> "x.grp.inv"
     XGrpAcpt_ -> "x.grp.acpt"
@@ -927,7 +927,7 @@ instance StrEncoding ACMEventTag where
         "x.file.cancel" -> XFileCancel_
         "x.info" -> XInfo_
         "x.contact" -> XContact_
-        "x.contact.relay" -> XContactRelay_
+        "x.member" -> XMember_
         "x.direct.del" -> XDirectDel_
         "x.grp.inv" -> XGrpInv_
         "x.grp.acpt" -> XGrpAcpt_
@@ -980,7 +980,7 @@ toCMEventTag msg = case msg of
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact {} -> XContact_
-  XContactRelay {} -> XContactRelay_
+  XMember {} -> XMember_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
@@ -1100,7 +1100,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
-      XContactRelay_ -> XContactRelay <$> p "profile" <*> p "joiningMemberId" <*> opt "welcomeMsgId"
+      XMember_ -> XMember <$> p "profile" <*> p "joiningMemberId"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1162,7 +1162,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
-      XContactRelay {profile, joiningMemberId, welcomeMsgId} -> o $ ("welcomeMsgId" .=? welcomeMsgId) ["profile" .= profile, "joiningMemberId" .= joiningMemberId]
+      XMember {profile, joiningMemberId} -> o ["profile" .= profile, "joiningMemberId" .= joiningMemberId]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]

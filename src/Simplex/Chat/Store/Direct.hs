@@ -30,6 +30,8 @@ module Simplex.Chat.Store.Direct
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
+    createRelayMemberConnectionAsync,
+    updateConnLinkData,
     setPreparedGroupStartedConnection,
     getProfileById,
     getConnReqContactXContactId,
@@ -217,6 +219,39 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
       Just (PCEContact Contact {contactId}) -> (ConnContact, Just contactId, Nothing, Just contactId)
       Just (PCEGroup _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
       Nothing -> (ConnContact, Nothing, Nothing, Nothing)
+
+createRelayMemberConnectionAsync :: DB.Connection -> User -> GroupInfo -> GroupMember -> ShortLinkContact -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createRelayMemberConnectionAsync db user@User {userId} gInfo GroupMember {groupMemberId} relayLink (cmdId, agentConnId) subMode = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO connections (
+        user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
+        group_member_id, via_short_link_contact, custom_user_profile_id, via_group_link,
+        created_at, updated_at, to_subscribe
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+    |]
+    ( (userId, agentConnId, ConnNew, ConnMember, BI True)
+        :. (groupMemberId, relayLink, customUserProfileId_, BI True)
+        :. (currentTs, currentTs, BI (subMode == SMOnlyCreate))
+    )
+  connId <- insertedRowId db
+  setCommandConnId db user cmdId connId
+  where
+    customUserProfileId_ = localProfileId <$> incognitoMembershipProfile gInfo
+
+updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> IO ()
+updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET via_contact_uri = ?, via_contact_uri_hash = ?, group_link_id = ?, updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (cReq, cReqHash, groupLinkId_, currentTs, userId, connId)
 
 setPreparedGroupStartedConnection :: DB.Connection -> GroupId -> IO ()
 setPreparedGroupStartedConnection db groupId = do
