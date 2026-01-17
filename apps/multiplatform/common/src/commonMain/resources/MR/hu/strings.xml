@@ -495,7 +495,7 @@
     <string name="group_profile_is_stored_on_members_devices">A csoportprofil a tagok eszközein tárolódik, nem a kiszolgálókon.</string>
     <string name="enter_passphrase">Adja meg a jelmondatot…</string>
     <string name="error_updating_user_privacy">Hiba történt a felhasználói adatvédelem frissítésekor</string>
-    <string name="encrypt_database">Titkosít</string>
+    <string name="encrypt_database">Titkosítás</string>
     <string name="alert_title_no_group">Csoport nem található!</string>
     <string name="error_saving_smp_servers">Hiba történt az SMP-kiszolgálók mentésekor</string>
     <string name="downgrade_and_open_chat">Visszafejlesztés és a csevegés megnyitása</string>
