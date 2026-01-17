@@ -134,8 +134,8 @@
 
 
 <header id="navbar">
-    <a href="/nl" class="logo flex dark:hidden ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo"></a>
-    <a href="/nl" class="logo hidden dark:flex ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo"></a>
+    <a href="/nl" class="logo logo-light ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-light.png" alt="logo"></a>
+    <a href="/nl" class="logo logo-dark ltr:mr-auto rtl:ml-auto"><img src="/img/new/logo-dark.png" alt="logo"></a>
 
     <nav id="menu">
         <ul>
@@ -359,6 +359,12 @@
                             </li>
                         
                     
+                        
+                            <li>
+                                <a href="/ar/">
+                                    <p>العربية</p>
+                                </a>
+                            </li>
                         
                     
                         
@@ -638,17 +644,17 @@ window.addEventListener('click',(e)=>{
                         <h2>SimpleX Roadmap to Free Internet</h2>
                         <div class="roadmap">
                             <p>2025 </p>
-                            <p class="title"><span>: </span>Scale to Large Communities</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>Scale to Large Communities</p>
                             <p>Escaping centralized platforms</p>
                         </div>
                         <div class="roadmap">
                             <p>2026 </p>
-                            <p class="title"><span>: </span>Sustainable Communities &amp; Servers</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>Sustainable Communities &amp; Servers</p>
                             <p>Launching Community Vouchers</p>
                         </div>
                         <div class="roadmap">
                             <p>2027 </p>
-                            <p class="title"><span>: </span>Make Your Communities Grow</p>
+                            <p class="title"><span class="ltr:order-first rtl:order-last">: </span>Make Your Communities Grow</p>
                             <p>Tools to promote your communities</p>
                         </div>
                     </div>
@@ -836,19 +842,19 @@ window.addEventListener('click',(e)=>{
     (function navColorOnScroll(){
         const header = document.querySelector('header#navbar');
         const cover = document.querySelector('.page-1.cover');
-        if (!header || !cover || !('IntersectionObserver' in window)) {
+        const footer = document.querySelector('.footer.page');
+        if (!header || !cover || !footer || !('IntersectionObserver' in window)) {
             window.addEventListener('load', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             window.addEventListener('scroll', () => header && document.body.classList.toggle('change-nav-color', window.scrollY > 10));
             return;
         }
         const io = new IntersectionObserver((entries) => {
-            for (const e of entries) {
-            // if cover is mostly visible, keep white nav; else switch to #001796
-            const onCover = e.isIntersecting && e.intersectionRatio >= 0.02;
-            document.body.classList.toggle('change-nav-color', !onCover);
-            }
+            // if cover or footer is mostly visible, keep white nav; else switch to #001796
+            const onObserved = entries.some((e) => e.isIntersecting && e.intersectionRatio >= 0.02);
+            document.body.classList.toggle('change-nav-color', !onObserved);
         }, { threshold: [0, 0.02, 1] });
         io.observe(cover);
+        io.observe(footer);
     })();
     </script>
     <script>

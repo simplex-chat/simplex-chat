@@ -646,6 +646,10 @@ video {
   z-index: 49;
 }
 
+.order-last {
+  order: 9999;
+}
+
 .float-right {
   float: right;
 }
@@ -2098,6 +2102,10 @@ video {
   outline-offset: 2px;
 }
 
+:is([dir="ltr"] .ltr\:order-first) {
+  order: -9999;
+}
+
 :is([dir="ltr"] .ltr\:mr-auto) {
   margin-right: auto;
 }
@@ -2114,6 +2122,10 @@ video {
 :is([dir="ltr"] .ltr\:rounded-r-\[34px\]) {
   border-top-right-radius: 34px;
   border-bottom-right-radius: 34px;
+}
+
+:is([dir="rtl"] .rtl\:order-last) {
+  order: 9999;
 }
 
 :is([dir="rtl"] .rtl\:ml-auto) {
