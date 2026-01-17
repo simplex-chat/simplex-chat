@@ -101,6 +101,30 @@ header#navbar>a.logo {
     padding-right: 30px;
 }
 
+header#navbar>a.logo.logo-light {
+    display: flex;
+}
+
+header#navbar>a.logo.logo-dark {
+    display: none;
+}
+
+.dark header#navbar>a.logo.logo-light {
+    display: none;
+}
+
+.dark header#navbar>a.logo.logo-dark {
+    display: flex;
+}
+
+[dir="rtl"].dark .change-nav-color header#navbar>a.logo.logo-light {
+    display: flex;
+}
+
+[dir="rtl"].dark .change-nav-color header#navbar>a.logo.logo-dark {
+    display: none;
+}
+
 header#navbar>a.logo img {
     height: 40px;
     width: auto;
@@ -207,7 +231,7 @@ header#navbar ul a {
     color: black;
 }
 
-.change-nav-color .box-btn.token {
+.dark .change-nav-color .box-btn.token {
     background: linear-gradient(90deg, #019bfe 0%, #2e3fa0 100%);
     color: white;
 }
