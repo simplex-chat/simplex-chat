@@ -3100,9 +3100,9 @@ chat item action</note>
         <target>Számukra engedélyezve</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Encrypt" xml:space="preserve">
+      <trans-unit id="Encrypt" xml:space="preserve" approved="no">
         <source>Encrypt</source>
-        <target>Titkosít</target>
+        <target state="translated">Titkosítás</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Encrypt database?" xml:space="preserve">
