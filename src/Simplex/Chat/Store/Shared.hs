@@ -40,6 +40,7 @@ import Simplex.Chat.Types.UITheme
 import Simplex.Messaging.Agent.Protocol (AConnShortLink (..), AConnectionRequestUri (..), ACreatedConnLink (..), ConnId, ConnShortLink, ConnectionRequestUri, CreatedConnLink (..), UserId, connMode)
 import Simplex.Messaging.Agent.Store (AnyStoreError (..))
 import Simplex.Messaging.Agent.Store.AgentStore (firstRow, maybeFirstRow)
+import Simplex.Messaging.Agent.Store.Common (withSavepoint)
 import Simplex.Messaging.Agent.Store.DB (BoolInt (..))
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import qualified Simplex.Messaging.Crypto as C
@@ -581,7 +582,7 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
     tryCreateName ldnSuffix attempts = do
       currentTs <- getCurrentTime
       let ldn = displayName <> (if ldnSuffix == 0 then "" else T.pack $ '_' : show ldnSuffix)
-      E.try (insertName ldn currentTs) >>= \case
+      withSavepoint db "ldn_insert" (insertName ldn currentTs) >>= \case
         Right () -> action ldn
         Left e
           | constraintError e -> tryCreateName (ldnSuffix + 1) (attempts - 1)
@@ -597,23 +598,23 @@ withLocalDisplayName db userId displayName action = getLdnSuffix >>= (`tryCreate
             |]
             (ldn, displayName, ldnSuffix, userId, ts, ts)
 
-createWithRandomId :: forall a. TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
-createWithRandomId = createWithRandomBytes 12
+createWithRandomId :: forall a. DB.Connection -> TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
+createWithRandomId db = createWithRandomBytes db 12
 
-createWithRandomId' :: forall a. TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
-createWithRandomId' = createWithRandomBytes' 12
+createWithRandomId' :: forall a. DB.Connection -> TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomId' db = createWithRandomBytes' db 12
 
-createWithRandomBytes :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
-createWithRandomBytes size gVar create = createWithRandomBytes' size gVar (fmap Right . create)
+createWithRandomBytes :: forall a. DB.Connection -> Int -> TVar ChaChaDRG -> (ByteString -> IO a) -> ExceptT StoreError IO a
+createWithRandomBytes db size gVar create = createWithRandomBytes' db size gVar (fmap Right . create)
 
-createWithRandomBytes' :: forall a. Int -> TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
-createWithRandomBytes' size gVar create = tryCreate 3
+createWithRandomBytes' :: forall a. DB.Connection -> Int -> TVar ChaChaDRG -> (ByteString -> IO (Either StoreError a)) -> ExceptT StoreError IO a
+createWithRandomBytes' db size gVar create = tryCreate 3
   where
     tryCreate :: Int -> ExceptT StoreError IO a
     tryCreate 0 = throwError SEUniqueID
     tryCreate n = do
       id' <- liftIO $ encodedRandomBytes gVar size
-      liftIO (E.try $ create id') >>= \case
+      liftIO (withSavepoint db "create_random_id" (create id')) >>= \case
         Right x -> liftEither x
         Left e
           | constraintError e -> tryCreate (n - 1)

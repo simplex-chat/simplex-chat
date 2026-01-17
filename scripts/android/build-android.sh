@@ -102,6 +102,7 @@ build() {
   sed -i.bak 's/jniLibs.useLegacyPackaging =.*/jniLibs.useLegacyPackaging = true/' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak '/android {/a lint {abortOnError = false}' "$folder/apps/multiplatform/android/build.gradle.kts"
   sed -i.bak '/tasks/Q' "$folder/apps/multiplatform/android/build.gradle.kts"
+  sed -i.bak "s/android.version_code=.*/android.version_code=${vercode}/" "$folder/apps/multiplatform/gradle.properties"
 
   for arch in $arches; do
     if [ "$arch" = "armv7a" ]; then
@@ -169,8 +170,10 @@ pre() {
   done
   
   shift $(( $OPTIND - 1 ))
-  
-  commit="${1:-HEAD}"
+
+  vercode="${1}"
+
+  commit="${2:-HEAD}"
 }
 
 main() {

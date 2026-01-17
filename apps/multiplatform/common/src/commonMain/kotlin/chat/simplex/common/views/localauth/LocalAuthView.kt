@@ -33,7 +33,7 @@ fun LocalAuthView(m: ChatModel, authRequest: LocalAuthRequest) {
         }
       } else {
         val r: LAResult = if (passcode.value == authRequest.password) {
-          if (authRequest.selfDestruct && sdPassword != null && controller.ctrl == -1L) {
+          if (authRequest.selfDestruct && sdPassword != null && controller.getChatCtrl() == -1L) {
             initChatControllerOnStart()
           }
           LAResult.Success
@@ -58,7 +58,7 @@ private fun deleteStorageAndRestart(m: ChatModel, password: String, completed: (
       if (m.chatRunning.value == true) {
         stopChatAsync(m)
       }
-      val ctrl = m.controller.ctrl
+      val ctrl = m.controller.getChatCtrl()
       if (ctrl != null && ctrl != -1L) {
         /**
          * The following sequence can bring a user here:

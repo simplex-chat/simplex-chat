@@ -62,6 +62,11 @@ This file is generated automatically.
 - [SentGroupInvitation](#sentgroupinvitation)
 - [GroupLinkConnecting](#grouplinkconnecting)
 
+[Network connection events](#network-connection-events)
+- [HostConnected](#hostconnected)
+- [HostDisconnected](#hostdisconnected)
+- [SubscriptionStatus](#subscriptionstatus)
+
 [Error events](#error-events)
 - [MessageError](#messageerror)
 - [ChatError](#chaterror)
@@ -685,6 +690,48 @@ Sent when bot joins group via another user link.
 ---
 
 
+## Network connection events
+
+
+
+
+### HostConnected
+
+Messaging or file server connected
+
+**Record type**:
+- type: "hostConnected"
+- protocol: string
+- transportHost: string
+
+---
+
+
+### HostDisconnected
+
+Messaging or file server disconnected
+
+**Record type**:
+- type: "hostDisconnected"
+- protocol: string
+- transportHost: string
+
+---
+
+
+### SubscriptionStatus
+
+Messaging subscription status changed
+
+**Record type**:
+- type: "subscriptionStatus"
+- server: string
+- subscriptionStatus: [SubscriptionStatus](./TYPES.md#subscriptionstatus)
+- connections: [string]
+
+---
+
+
 ## Error events
 
 Bots may log these events for debugging. There will be many error events - this does NOT indicate a malfunction - e.g., they may happen because of bad network connectivity, or because messages may be delivered to deleted chats for a short period of time (they will be ignored).
@@ -705,7 +752,7 @@ Message error.
 
 ### ChatError
 
-Chat error.
+Chat error (only used in WebSockets API).
 
 **Record type**:
 - type: "chatError"
