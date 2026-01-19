@@ -1996,9 +1996,9 @@ processChatCommand vr nm = \case
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
         let cReqHash = ConnReqUriHash . C.sha256Hash . strEncode $ CRContactUri crData {crScheme = SSSimplex}
         gInfo' <- withFastStore $ \db -> setPreparedGroupLinkInfo db vr user gInfo mainCReq cReqHash incognitoProfile
-        results <- mapConcurrently (connectToRelay gInfo') relays
+        rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
-            (failed, succeeded) = partition relayFailed results
+            (failed, succeeded) = partition relayFailed rs
         if null succeeded
           then do
             -- updated group info (connLinkPreparedConnection) - in UI it would lock ability to change

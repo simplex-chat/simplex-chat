@@ -233,7 +233,7 @@ chatGroupTests = do
   -- TODO   - delivery in support scopes inside channels
   -- TODO   - connect plans for relay groups
   -- TODO   - cancellation on failure to create relay group (for owner)
-  fdescribe "channels" $ do
+  describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
