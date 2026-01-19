@@ -209,9 +209,19 @@ private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap,
     snapshotFlow { isCurrentPage.value }
       .distinctUntilChanged()
       .collect {
-        if (it) play() else stop()
-        player.enableSound(true)
+        if (it) {
+          player.enableSound(true)
+          play()
+        } else {
+          stop()
+        }
       }
+  }
+
+  DisposableEffect(Unit) {
+    onDispose {
+      player.stop()
+    }
   }
 
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
