@@ -5,6 +5,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -71,7 +72,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   )
 
   @Composable
-  fun Content(index: Int) {
+  fun Content(index: Int, pagerState: PagerState) {
     // Index can be huge but in reality at that moment pager state scrolls to 0 and that page should have index 0 too if it's the first one.
     // Or index 1 if it's the second page
     val index = index - firstValidPageBeforeScrollingToStart.value
@@ -158,7 +159,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           val uriDecrypted = remember(media.uri.path) { mutableStateOf(if (media.fileSource?.cryptoArgs == null) media.uri else media.fileSource.decryptedGet()) }
           val decrypted = uriDecrypted.value
           if (decrypted != null) {
-            VideoView(modifier, decrypted, preview, index == settledCurrentPage, close)
+            // settledCurrentPage finishes **only** when fully swiped
+            // So we use pagerState.currentPage that changes right away as the screen is being dragged
+            VideoView(modifier, decrypted, preview, index == pagerState.currentPage && kotlin.math.abs(pagerState.currentPageOffsetFraction) < 0.3f, close)
             DisposableEffect(Unit) {
               onDispose { playersToRelease.add(decrypted) }
             }
@@ -170,9 +173,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     }
   }
   if (appPlatform.isAndroid) {
-    HorizontalPager(state = pagerState) { index -> Content(index) }
+    HorizontalPager(state = pagerState) { index -> Content(index, pagerState) }
   } else {
-    Content(pagerState.currentPage)
+    Content(pagerState.currentPage, pagerState)
   }
 }
 
