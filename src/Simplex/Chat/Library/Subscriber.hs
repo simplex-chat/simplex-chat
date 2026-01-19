@@ -1074,15 +1074,21 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case cmdFunction of
             CFGetConnShortLink -> case cReq of
               CRContactUri crData@ConnReqUriData {crClientData} -> do
-                let groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
-                    cReqHash = ConnReqUriHash . C.sha256Hash . strEncode $ CRContactUri crData {crScheme = SSSimplex}
-                withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId
-                let GroupMember {memberId = membershipMemId} = membership
-                    incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
-                    profileToSend = userProfileInGroup user gInfo incognitoProfile
-                dm <- encodeConnInfo $ XMember profileToSend membershipMemId
-                subMode <- chatReadVar subscriptionMode
-                void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
+                let pqSup = PQSupportOff
+                lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+                  Nothing -> throwChatError CEInvalidConnReq
+                  Just (agentV, _) -> do
+                    let chatV = agentToChatVersion agentV
+                        groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+                        cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
+                    -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
+                    withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
+                    let GroupMember {memberId = membershipMemId} = membership
+                        incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
+                        profileToSend = userProfileInGroup user gInfo incognitoProfile
+                    dm <- encodeConnInfo $ XMember profileToSend membershipMemId
+                    subMode <- chatReadVar subscriptionMode
+                    void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
               CRInvitationUri {} -> throwChatError $ CECommandError "LDATA: unexpected invitation URI for relay"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do

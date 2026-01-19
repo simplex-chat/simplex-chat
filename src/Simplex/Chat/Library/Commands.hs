@@ -1994,7 +1994,7 @@ processChatCommand vr nm = \case
         (mainCReq@(CRContactUri crData), ContactLinkData _ UserContactData {relays}) <- getShortLinkConnReq nm user sLnk
         -- Set group link info and incognito profile once before connecting to relays
         incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-        let cReqHash = ConnReqUriHash . C.sha256Hash . strEncode $ CRContactUri crData {crScheme = SSSimplex}
+        let cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
         gInfo' <- withFastStore $ \db -> setPreparedGroupLinkInfo db vr user gInfo mainCReq cReqHash incognitoProfile
         rs <- mapConcurrently (connectToRelay gInfo') relays
         let relayFailed = \case (_, _, Left _) -> True; _ -> False
@@ -3299,9 +3299,8 @@ processChatCommand vr nm = \case
               Just Connection {xContactId} -> connect' groupLinkId xContactId (groupLinkId $> Nothing)
               Nothing -> connect' groupLinkId Nothing (groupLinkId $> Nothing)
       where
-        cReqHash = ConnReqUriHash . C.sha256Hash . strEncode
-        cReqHash1 = cReqHash $ CRContactUri crData {crScheme = SSSimplex}
-        cReqHash2 = cReqHash $ CRContactUri crData {crScheme = simplexChat}
+        cReqHash1 = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
+        cReqHash2 = contactCReqHash $ CRContactUri crData {crScheme = simplexChat}
         joinPreparedConn' xContactId_ conn@Connection {customUserProfileId} gInfo_ = do
           when (incognito /= isJust customUserProfileId) $ throwCmdError "incognito mode is different from prepared connection"
           -- TODO [relays] member: refactor joinContact and up avoiding parallel ifs, xContactId is not used
@@ -3903,8 +3902,6 @@ processChatCommand vr nm = \case
       ( CRContactUri crData {crScheme = SSSimplex},
         CRContactUri crData {crScheme = simplexChat}
       )
-    contactCReqHash :: ConnReqContact -> ConnReqUriHash
-    contactCReqHash = ConnReqUriHash . C.sha256Hash . strEncode
 
     -- This function is needed, as UI uses simplex:/ schema in message view, so that the links can be handled without browser,
     -- and short links are stored with server hostname schema, so they wouldn't match without it.

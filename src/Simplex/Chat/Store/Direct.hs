@@ -241,17 +241,19 @@ createRelayMemberConnectionAsync db user@User {userId} gInfo GroupMember {groupM
   where
     customUserProfileId_ = localProfileId <$> incognitoMembershipProfile gInfo
 
-updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> IO ()
-updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ = do
+updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> VersionChat -> PQSupport -> IO ()
+updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ chatV pqSup = do
   currentTs <- getCurrentTime
   DB.execute
     db
     [sql|
       UPDATE connections
-      SET via_contact_uri = ?, via_contact_uri_hash = ?, group_link_id = ?, updated_at = ?
+      SET via_contact_uri = ?, via_contact_uri_hash = ?, group_link_id = ?,
+          conn_chat_version = ?, pq_support = ?, pq_encryption = ?,
+          updated_at = ?
       WHERE user_id = ? AND connection_id = ?
     |]
-    (cReq, cReqHash, groupLinkId_, currentTs, userId, connId)
+    (cReq, cReqHash, groupLinkId_, chatV, pqSup, pqSup, currentTs, userId, connId)
 
 setPreparedGroupStartedConnection :: DB.Connection -> GroupId -> IO ()
 setPreparedGroupStartedConnection db groupId = do
