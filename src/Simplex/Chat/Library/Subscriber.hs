@@ -85,6 +85,7 @@ import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport (..), patt
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Protocol (ErrorType (..), MsgFlags (..))
+import Simplex.Messaging.ServiceScheme (ServiceScheme (..))
 import qualified Simplex.Messaging.Protocol as SMP
 import qualified Simplex.Messaging.TMap as TM
 import Simplex.Messaging.Transport (TransportError (..))
@@ -1067,6 +1068,29 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
               sendGroupAutoReply mc connReq_
+      LDATA (ACR _ cReq) _cData ->
+        -- [async agent commands] CFGetConnShortLink continuation - join relay connection with resolved link
+        withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
+          case cmdFunction of
+            CFGetConnShortLink -> case cReq of
+              CRContactUri crData@ConnReqUriData {crClientData} -> do
+                let pqSup = PQSupportOff
+                lift (withAgent' $ \a -> connRequestPQSupport a pqSup cReq) >>= \case
+                  Nothing -> throwChatError CEInvalidConnReq
+                  Just (agentV, _) -> do
+                    let chatV = agentToChatVersion agentV
+                        groupLinkId = crClientData >>= decodeJSON >>= \(CRDataGroup gli) -> Just gli
+                        cReqHash = contactCReqHash $ CRContactUri crData {crScheme = SSSimplex}
+                    -- Update connection with data derived from cReq, now available after getConnShortLinkAsync
+                    withStore' $ \db -> updateConnLinkData db user conn cReq cReqHash groupLinkId chatV pqSup
+                    let GroupMember {memberId = membershipMemId} = membership
+                        incognitoProfile = fromLocalProfile <$> incognitoMembershipProfile gInfo
+                        profileToSend = userProfileInGroup user gInfo incognitoProfile
+                    dm <- encodeConnInfo $ XMember profileToSend membershipMemId
+                    subMode <- chatReadVar subscriptionMode
+                    void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
+              CRInvitationUri {} -> throwChatError $ CECommandError "LDATA: unexpected invitation URI for relay"
+            _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
         when continued $ sendPendingGroupMessages user m conn
@@ -1174,7 +1198,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         ChatMessage {chatVRange, chatMsgEvent} <- parseChatMessage conn connInfo
         case chatMsgEvent of
           XContact p xContactId_ welcomeMsgId_ requestMsg_ -> profileContactRequest invId chatVRange p xContactId_ welcomeMsgId_ requestMsg_ pqSupport
-          XContactRelay p joiningMemberId welcomeMsgId_ -> relayGroupJoinRequest invId chatVRange p joiningMemberId welcomeMsgId_
+          XMember p joiningMemberId -> relayGroupJoinRequest invId chatVRange p joiningMemberId
           XInfo p -> profileContactRequest invId chatVRange p Nothing Nothing Nothing pqSupport
           XGrpRelayInv groupRelayInv -> relayContactRequest invId chatVRange groupRelayInv
           -- TODO show/log error, other events in contact request
@@ -1378,13 +1402,13 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           lift $ void $ getRelayRequestWorker True
         -- TODO [relays] owner, relays: TBC how to communicate member rejection rules from owner to relays
         -- TODO [relays] relay: TBC communicate rejection when memberId already exists (currently checked in createJoiningMember)
-        relayGroupJoinRequest :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> Maybe SharedMsgId -> CM ()
-        relayGroupJoinRequest invId chatVRange p joiningMemberId welcomeMsgId_ = do
+        relayGroupJoinRequest :: InvitationId -> VersionRangeChat -> Profile -> MemberId -> CM ()
+        relayGroupJoinRequest invId chatVRange p joiningMemberId = do
           (_ucl, gLinkInfo_) <- withStore $ \db -> getUserContactLinkById db userId uclId
           case gLinkInfo_ of
             Just GroupLinkInfo {groupId, memberRole = gLinkMemRole} -> do
               gInfo <- withStore $ \db -> getGroupInfo db vr user groupId
-              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) welcomeMsgId_ GAAccepted gLinkMemRole Nothing
+              mem <- acceptGroupJoinRequestAsync user uclId gInfo invId chatVRange p Nothing (Just joiningMemberId) Nothing GAAccepted gLinkMemRole Nothing
               (gInfo', mem', scopeInfo) <- mkGroupChatScope gInfo mem
               createInternalChatItem user (CDGroupRcv gInfo' scopeInfo mem') (CIRcvGroupEvent RGEInvitedViaGroupLink) Nothing
               toView $ CEvtAcceptingGroupJoinRequestMember user gInfo' mem'
@@ -2176,7 +2200,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           then do
             subMode <- chatReadVar subscriptionMode
             dm <- encodeConnInfo $ XGrpAcpt membershipMemId
-            connIds <- joinAgentConnectionAsync user True connRequest dm subMode
+            connIds <- joinAgentConnectionAsync user Nothing True connRequest dm subMode
             withStore' $ \db -> do
               setViaGroupLinkUri db groupId connId
               createMemberConnectionAsync db user hostId connIds connChatVersion peerChatVRange subMode
@@ -2736,8 +2760,8 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
       dm <- encodeConnInfo $ XGrpMemInfo membershipMemId membershipProfile
       -- [async agent commands] no continuation needed, but commands should be asynchronous for stability
-      groupConnIds <- joinAgentConnectionAsync user (chatHasNtfs chatSettings) groupConnReq dm subMode
-      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user True dcr dm subMode
+      groupConnIds <- joinAgentConnectionAsync user Nothing (chatHasNtfs chatSettings) groupConnReq dm subMode
+      directConnIds <- forM directConnReq $ \dcr -> joinAgentConnectionAsync user Nothing True dcr dm subMode
       let customUserProfileId = localProfileId <$> incognitoMembershipProfile gInfo
           mcvr = maybe chatInitialVRange fromChatVRange memChatVRange
           chatV = vr `peerConnChatVersion` mcvr
@@ -3006,7 +3030,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           let p = userProfileDirect user (fromLocalProfile <$> incognitoMembershipProfile g) Nothing True
           -- TODO PQ should negotitate contact connection with PQSupportOn? (use encodeConnInfoPQ)
           dm <- encodeConnInfo $ XInfo p
-          joinAgentConnectionAsync user True connReq dm subMode
+          joinAgentConnectionAsync user Nothing True connReq dm subMode
         createItems mCt' m' = do
           (g', m'', scopeInfo) <- mkGroupChatScope g m'
           createInternalChatItem user (CDGroupRcv g' scopeInfo m'') (CIRcvGroupEvent RGEMemberCreatedContact) Nothing
