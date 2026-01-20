@@ -9,11 +9,12 @@
 module Simplex.Chat.Store.RelayRequests
   ( hasPendingRelayRequests,
     getNextPendingRelayRequest,
-    markRelayRequestFailed
+    setRelayRequestErr
   )
 where
 
 import Data.Maybe (fromMaybe)
+import Data.Text (Text)
 import Data.Time.Clock (getCurrentTime)
 import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
@@ -41,6 +42,7 @@ hasPendingRelayRequests db =
           FROM groups
           WHERE relay_own_status = ?
             AND relay_request_failed = 0
+            AND relay_request_err_reason IS NULL
           LIMIT 1
         )
       |]
@@ -60,6 +62,7 @@ getNextPendingRelayRequest db =
             FROM groups
             WHERE relay_own_status = ?
               AND relay_request_failed = 0
+              AND relay_request_err_reason IS NULL
             ORDER BY group_id ASC
             LIMIT 1
           |]
@@ -91,3 +94,11 @@ markRelayRequestFailed db groupId = do
     db
     "UPDATE groups SET relay_request_failed = 1, updated_at = ? WHERE group_id = ?"
     (currentTs, groupId)
+
+setRelayRequestErr :: DB.Connection -> GroupId -> Text -> IO ()
+setRelayRequestErr db groupId errReason = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET relay_request_err_reason = ?, updated_at = ? WHERE group_id = ?"
+    (errReason, currentTs, groupId)

@@ -40,6 +40,7 @@ ALTER TABLE groups ADD COLUMN relay_request_group_link BYTEA;
 ALTER TABLE groups ADD COLUMN relay_request_peer_chat_min_version INTEGER;
 ALTER TABLE groups ADD COLUMN relay_request_peer_chat_max_version INTEGER;
 ALTER TABLE groups ADD COLUMN relay_request_failed SMALLINT DEFAULT 0;
+ALTER TABLE groups ADD COLUMN relay_request_err_reason TEXT;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
 
@@ -78,6 +79,7 @@ ALTER TABLE groups DROP COLUMN relay_request_group_link;
 ALTER TABLE groups DROP COLUMN relay_request_peer_chat_min_version;
 ALTER TABLE groups DROP COLUMN relay_request_peer_chat_max_version;
 ALTER TABLE groups DROP COLUMN relay_request_failed;
+ALTER TABLE groups DROP COLUMN relay_request_err_reason;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 

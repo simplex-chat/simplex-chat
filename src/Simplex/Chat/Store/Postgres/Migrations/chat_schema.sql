@@ -944,7 +944,8 @@ CREATE TABLE test_chat_schema.groups (
     relay_request_group_link bytea,
     relay_request_peer_chat_min_version integer,
     relay_request_peer_chat_max_version integer,
-    relay_request_failed smallint DEFAULT 0
+    relay_request_failed smallint DEFAULT 0,
+    relay_request_err_reason text
 );
 
 
