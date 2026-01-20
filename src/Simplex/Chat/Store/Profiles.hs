@@ -628,7 +628,7 @@ getChatRelays db User {userId} =
       [sql|
         SELECT chat_relay_id, address, name, domains, preset, tested, enabled
         FROM chat_relays
-        WHERE user_id = ?
+        WHERE user_id = ? AND deleted = 0
       |]
       (Only userId)
 
@@ -644,7 +644,7 @@ getChatRelayById db User {userId} relayId =
       [sql|
         SELECT chat_relay_id, address, name, domains, preset, tested, enabled
         FROM chat_relays
-        WHERE user_id = ? AND chat_relay_id = ?
+        WHERE user_id = ? AND chat_relay_id = ? AND deleted = 0
       |]
       (userId, relayId)
 
@@ -920,14 +920,19 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
       DBEntityId srvId
         | deleted -> Nothing <$ DB.execute db "DELETE FROM protocol_servers WHERE user_id = ? AND smp_server_id = ? AND preset = ?" (userId, srvId, BI False)
         | otherwise -> Just s <$ updateProtocolServer db p ts s
-    -- TODO [relays] when deleting check group_relays - if relay record is referenced, keep it and mark as deleted
     upsertOrDeleteCRelay :: AUserChatRelay -> IO (Maybe UserChatRelay)
     upsertOrDeleteCRelay (AUCR _ relay@UserChatRelay {chatRelayId, deleted}) = case chatRelayId of
       DBNewEntity
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertChatRelay db user ts relay
       DBEntityId relayId
-        | deleted -> Nothing <$ DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, relayId, BI False)
+        | deleted -> do
+            -- If relay is referenced in group_relays, mark it as deleted instead of deleting
+            referenced <- fromOnly . head <$> DB.query db "SELECT EXISTS (SELECT 1 FROM group_relays WHERE chat_relay_id = ?)" (Only relayId)
+            if referenced
+              then DB.execute db "UPDATE chat_relays SET deleted = 1, updated_at = ? WHERE chat_relay_id = ?" (ts, relayId)
+              else DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, relayId, BI False)
+            pure Nothing
         | otherwise -> Just relay <$ updateChatRelay db ts relay
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()
