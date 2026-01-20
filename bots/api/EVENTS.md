@@ -38,6 +38,7 @@ This file is generated automatically.
   - [MemberAcceptedByOther](#memberacceptedbyother)
   - [MemberBlockedForAll](#memberblockedforall)
   - [GroupMemberUpdated](#groupmemberupdated)
+  - [GroupLinkRelaysUpdated](#grouplinkrelaysupdated)
 
 [File events](#file-events)
 - Main events
@@ -441,6 +442,20 @@ Another group member profile updated.
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - fromMember: [GroupMember](./TYPES.md#groupmember)
 - toMember: [GroupMember](./TYPES.md#groupmember)
+
+---
+
+
+### GroupLinkRelaysUpdated
+
+Group link relays updated.
+
+**Record type**:
+- type: "groupLinkRelaysUpdated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 
 ---
 

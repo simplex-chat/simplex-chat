@@ -30,6 +30,7 @@ This file is generated automatically.
 - [APILeaveGroup](#apileavegroup)
 - [APIListMembers](#apilistmembers)
 - [APINewGroup](#apinewgroup)
+- [APINewPublicGroup](#apinewpublicgroup)
 - [APIUpdateGroupProfile](#apiupdategroupprofile)
 
 [Group link commands](#group-link-commands)
@@ -932,6 +933,48 @@ GroupCreated: Group created.
 - type: "groupCreated"
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+
+ChatCmdError: Command error (only used in WebSockets API).
+- type: "chatCmdError"
+- chatError: [ChatError](./TYPES.md#chaterror)
+
+---
+
+
+### APINewPublicGroup
+
+Create public group.
+
+*Network usage*: interactive.
+
+**Parameters**:
+- userId: int64
+- incognito: bool
+- relayIds: [int64]
+- groupProfile: [GroupProfile](./TYPES.md#groupprofile)
+
+**Syntax**:
+
+```
+/_public group <userId>[ incognito=on] <relayIds> <json(groupProfile)>
+```
+
+```javascript
+'/_public group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + relayIds + ' ' + JSON.stringify(groupProfile) // JavaScript
+```
+
+```python
+'/_public group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + str(relayIds) + ' ' + json.dumps(groupProfile) # Python
+```
+
+**Responses**:
+
+PublicGroupCreated: Public group created.
+- type: "publicGroupCreated"
+- user: [User](./TYPES.md#user)
+- groupInfo: [GroupInfo](./TYPES.md#groupinfo)
+- groupLink: [GroupLink](./TYPES.md#grouplink)
+- groupRelays: [[GroupRelay](./TYPES.md#grouprelay)]
 
 ChatCmdError: Command error (only used in WebSockets API).
 - type: "chatCmdError"
