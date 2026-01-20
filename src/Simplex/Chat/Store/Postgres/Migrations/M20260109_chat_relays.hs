@@ -29,18 +29,16 @@ CREATE UNIQUE INDEX idx_chat_relays_user_id_name ON chat_relays(user_id, name);
 
 ALTER TABLE users ADD COLUMN is_user_chat_relay SMALLINT NOT NULL DEFAULT 0;
 
-ALTER TABLE groups ADD COLUMN use_relays SMALLINT NOT NULL DEFAULT 0;
-
-ALTER TABLE groups ADD COLUMN creating_in_progress SMALLINT NOT NULL DEFAULT 0;
-
-ALTER TABLE groups ADD COLUMN relay_own_status TEXT;
-
-ALTER TABLE groups ADD COLUMN relay_request_inv_id BYTEA;
-ALTER TABLE groups ADD COLUMN relay_request_group_link BYTEA;
-ALTER TABLE groups ADD COLUMN relay_request_peer_chat_min_version INTEGER;
-ALTER TABLE groups ADD COLUMN relay_request_peer_chat_max_version INTEGER;
-ALTER TABLE groups ADD COLUMN relay_request_failed SMALLINT DEFAULT 0;
-ALTER TABLE groups ADD COLUMN relay_request_err_reason TEXT;
+ALTER TABLE groups
+  ADD COLUMN use_relays SMALLINT NOT NULL DEFAULT 0,
+  ADD COLUMN creating_in_progress SMALLINT NOT NULL DEFAULT 0,
+  ADD COLUMN relay_own_status TEXT,
+  ADD COLUMN relay_request_inv_id BYTEA,
+  ADD COLUMN relay_request_group_link BYTEA,
+  ADD COLUMN relay_request_peer_chat_min_version INTEGER,
+  ADD COLUMN relay_request_peer_chat_max_version INTEGER,
+  ADD COLUMN relay_request_failed SMALLINT DEFAULT 0,
+  ADD COLUMN relay_request_err_reason TEXT;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
 
@@ -67,18 +65,16 @@ down_m20260109_chat_relays =
     [r|
 ALTER TABLE users DROP COLUMN is_user_chat_relay;
 
-ALTER TABLE groups DROP COLUMN use_relays;
-
-ALTER TABLE groups DROP COLUMN creating_in_progress;
-
-ALTER TABLE groups DROP COLUMN relay_own_status;
-
-ALTER TABLE groups DROP COLUMN relay_request_inv_id;
-ALTER TABLE groups DROP COLUMN relay_request_group_link;
-ALTER TABLE groups DROP COLUMN relay_request_peer_chat_min_version;
-ALTER TABLE groups DROP COLUMN relay_request_peer_chat_max_version;
-ALTER TABLE groups DROP COLUMN relay_request_failed;
-ALTER TABLE groups DROP COLUMN relay_request_err_reason;
+ALTER TABLE groups
+  DROP COLUMN use_relays,
+  DROP COLUMN creating_in_progress,
+  DROP COLUMN relay_own_status,
+  DROP COLUMN relay_request_inv_id,
+  DROP COLUMN relay_request_group_link,
+  DROP COLUMN relay_request_peer_chat_min_version,
+  DROP COLUMN relay_request_peer_chat_max_version,
+  DROP COLUMN relay_request_failed,
+  DROP COLUMN relay_request_err_reason;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 

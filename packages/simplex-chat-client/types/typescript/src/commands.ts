@@ -354,7 +354,7 @@ export namespace APINewPublicGroup {
   export type Response = CR.PublicGroupCreated | CR.ChatCmdError
 
   export function cmdString(self: APINewPublicGroup): string {
-    return '/_public group ' + self.userId + (self.incognito ? ' incognito=on' : '') + ' ' + self.relayIds + ' ' + JSON.stringify(self.groupProfile)
+    return '/_public group ' + self.userId + (self.incognito ? ' incognito=on' : '') + ' ' + self.relayIds.join(',') + ' ' + JSON.stringify(self.groupProfile)
   }
 }
 

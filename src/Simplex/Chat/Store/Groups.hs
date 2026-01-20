@@ -1398,7 +1398,7 @@ setGroupInProgressDone db GroupInfo {groupId} = do
     (currentTs, groupId)
 
 createRelayRequestGroup :: DB.Connection -> VersionRangeChat -> User -> GroupRelayInvitation -> InvitationId -> VersionRangeChat -> ExceptT StoreError IO (GroupInfo, GroupMember)
-createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, invitedMemberId, groupLink} invId reqChatVRange = do
+createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMember, fromMemberProfile, relayMemberId, groupLink} invId reqChatVRange = do
   currentTs <- liftIO getCurrentTime
   -- Create group with placeholder profile
   let Profile {displayName = fromMemberLDN} = fromMemberProfile
@@ -1416,8 +1416,8 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
   -- Store relay request data for recovery
   liftIO $ setRelayRequestData_ groupId
   ownerMemberId <- insertOwner_ currentTs groupId
-  let invitedMember = MemberIdRole invitedMemberId GRRelay
-  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user invitedMember GCUserMember GSMemAccepted IBUnknown Nothing currentTs vr
+  let relayMember = MemberIdRole relayMemberId GRRelay
+  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)

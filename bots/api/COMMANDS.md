@@ -956,15 +956,15 @@ Create public group.
 **Syntax**:
 
 ```
-/_public group <userId>[ incognito=on] <relayIds> <json(groupProfile)>
+/_public group <userId>[ incognito=on] <relayIds[0]>[,<relayIds[1]>...] <json(groupProfile)>
 ```
 
 ```javascript
-'/_public group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + relayIds + ' ' + JSON.stringify(groupProfile) // JavaScript
+'/_public group ' + userId + (incognito ? ' incognito=on' : '') + ' ' + relayIds.join(',') + ' ' + JSON.stringify(groupProfile) // JavaScript
 ```
 
 ```python
-'/_public group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + str(relayIds) + ' ' + json.dumps(groupProfile) # Python
+'/_public group ' + str(userId) + (' incognito=on' if incognito else '') + ' ' + ','.join(map(str, relayIds)) + ' ' + json.dumps(groupProfile) # Python
 ```
 
 **Responses**:

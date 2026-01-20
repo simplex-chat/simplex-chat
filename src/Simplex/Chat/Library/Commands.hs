@@ -3686,7 +3686,7 @@ processChatCommand vr nm = \case
                   relayInv = GroupRelayInvitation {
                     fromMember = MemberIdRole userMemberId userRole,
                     fromMemberProfile = membershipProfile,
-                    invitedMemberId = relayMemberId,
+                    relayMemberId,
                     groupLink = groupSLink
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv

@@ -819,10 +819,11 @@ data GroupLinkRejection = GroupLinkRejection
   }
   deriving (Eq, Show)
 
+-- sent by owner to relay when adding it to group
 data GroupRelayInvitation = GroupRelayInvitation
   { fromMember :: MemberIdRole,
     fromMemberProfile :: Profile,
-    invitedMemberId :: MemberId,
+    relayMemberId :: MemberId,
     groupLink :: ShortLinkContact
   }
   deriving (Eq, Show)

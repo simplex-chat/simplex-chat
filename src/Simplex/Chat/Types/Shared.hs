@@ -29,22 +29,22 @@ instance ToField GroupMemberRole where toField = toField . textEncode
 
 instance TextEncoding GroupMemberRole where
   textEncode = \case
-    GRUnknown t -> t
-    GRRelay -> "relay"
     GROwner -> "owner"
     GRAdmin -> "admin"
     GRModerator -> "moderator"
     GRMember -> "member"
     GRAuthor -> "author"
     GRObserver -> "observer"
+    GRRelay -> "relay"
+    GRUnknown t -> t
   textDecode = Just . \case
-    "relay" -> GRRelay
     "owner" -> GROwner
     "admin" -> GRAdmin
     "moderator" -> GRModerator
     "member" -> GRMember
     "author" -> GRAuthor
     "observer" -> GRObserver
+    "relay" -> GRRelay
     t -> GRUnknown t
 
 instance FromJSON GroupMemberRole where
