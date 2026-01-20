@@ -2001,23 +2001,26 @@ processChatCommand vr nm = \case
             (failed, succeeded) = partition relayFailed rs
         if null succeeded
           then do
-            -- updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
+            -- Updated group info (connLinkPreparedConnection) - in UI it would lock ability to change
             -- user or incognito profile for group, in case server received request while client got network error
             toView $ CEvtChatInfoUpdated user (AChatInfo SCTGroup $ GroupChat gInfo' Nothing)
-            -- TODO [relays] member: prefer throwing temporary network connection error to enable retry
-            case failed of
-              (_, _, Left e) : _ -> throwError e
+            -- Prefer throwing temporary network connection error to enable retry
+            case find isTempErr failed <|> listToMaybe failed of
+              Just (_, _, Left e) -> throwError e
               _ -> throwChatError $ CEException "no relay connection results" -- shouldn't happen
           else do
             withFastStore' $ \db -> setPreparedGroupStartedConnection db groupId
             -- Async retry failed relays with temporary errors
-            let retryable = [(l, m) | (l, m, Left ChatErrorAgent {agentError = e}) <- failed, temporaryOrHostError e]
+            let retryable = [(l, m) | r@(l, m, _) <- failed, isTempErr r]
             void $ mapConcurrently (uncurry $ retryRelayConnectionAsync gInfo') retryable
             -- TODO [relays] member: TBC response type for UI to display state of relays connection
             -- TODO   - differentiate success, temporary failure, permanent failure
             -- TODO   - possibly, additional status on relay member record
             pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
         where
+          isTempErr = \case
+            (_, _, Left ChatErrorAgent {agentError = e}) -> temporaryOrHostError e
+            _ -> False
           connectToRelay gInfo' relayLink = do
             gVar <- asks random
             -- Save relayLink to re-use relay member record on retry (check by relayLink)
