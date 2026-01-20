@@ -34,7 +34,7 @@ import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy.Char8 as LB
 import Data.Char
 import Data.Constraint (Dict (..))
-import Data.Either (fromRight, isRight, partitionEithers, rights)
+import Data.Either (fromRight, partitionEithers, rights)
 import Data.Foldable (foldr')
 import Data.Functor (($>))
 import Data.Int (Int64)
@@ -2018,7 +2018,7 @@ processChatCommand vr nm = \case
             -- TODO   - possibly, additional status on relay member record
             pure $ CRStartedConnectionToGroup user gInfo' incognitoProfile
         where
-          connectToRelay gInfo'@GroupInfo {groupId} relayLink = do
+          connectToRelay gInfo' relayLink = do
             gVar <- asks random
             -- Save relayLink to re-use relay member record on retry (check by relayLink)
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink

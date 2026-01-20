@@ -1068,7 +1068,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             forM_ mc_ $ \mc -> do
               connReq_ <- withStore' $ \db -> getBusinessContactRequest db user groupId
               sendGroupAutoReply mc connReq_
-      LDATA (ACR _ cReq) _cData ->
+      LDATA FixedLinkData {linkConnReq = cReq} _cData ->
         -- [async agent commands] CFGetConnShortLink continuation - join relay connection with resolved link
         withCompletedCommand conn agentMsg $ \CommandData {cmdFunction} ->
           case cmdFunction of
@@ -1089,7 +1089,6 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     dm <- encodeConnInfo $ XMember profileToSend membershipMemId
                     subMode <- chatReadVar subscriptionMode
                     void $ joinAgentConnectionAsync user (Just conn) True cReq dm subMode
-              CRInvitationUri {} -> throwChatError $ CECommandError "LDATA: unexpected invitation URI for relay"
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
@@ -1208,7 +1207,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case cmdFunction of
             CFSetConnShortLink ->
               case (ucGroupId_, auData) of
-                (Just groupId, AUCLD SCMContact (UserContactLinkData UserContactData {relays = relayLinks})) -> do
+                (Just groupId, UserContactLinkData UserContactData {relays = relayLinks}) -> do
                   (gInfo, gLink, relays) <- withStore $ \db -> do
                     gInfo <- getGroupInfo db vr user groupId
                     gLink <- getGroupLink db user gInfo

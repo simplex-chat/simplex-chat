@@ -1312,14 +1312,14 @@ restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . 
 getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
 getShortLinkConnReq nm user@User {userChatRelay} l = do
   l' <- restoreShortLink' l
-  (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+  (fd, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
   case cData of
     ContactLinkData _ UserContactData {direct, relays}
       | not supported -> throwChatError CEUnsupportedConnReq
       where
         supported = direct || not (null relays) || isTrue userChatRelay
     _ -> pure ()
-  pure (cReq, cData)
+  pure (linkConnReq fd, cData)
 
 encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
 encodeShortLinkData d =
@@ -2370,10 +2370,10 @@ deleteAgentConnectionsAsync' [] _ = pure ()
 deleteAgentConnectionsAsync' acIds waitDelivery = do
   withAgent (\a -> deleteConnectionsAsync a waitDelivery acIds) `catchAllErrors` eToView
 
-setAgentConnShortLinkAsync :: ConnectionModeI c => User -> Connection -> UserConnLinkData c -> Maybe CRClientData -> CM ()
+setAgentConnShortLinkAsync :: User -> Connection -> UserConnLinkData 'CMContact -> Maybe CRClientData -> CM ()
 setAgentConnShortLinkAsync user conn@Connection {connId} userLinkData crClientData_ = do
   cmdId <- withStore' $ \db -> createCommand db user (Just connId) CFSetConnShortLink
-  withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) sConnectionMode userLinkData crClientData_
+  withAgent $ \a -> setConnShortLinkAsync a (aCorrId cmdId) (aConnId conn) userLinkData crClientData_
 
 getAgentConnShortLinkAsync :: User -> ShortLinkContact -> CM (CommandId, ConnId)
 getAgentConnShortLinkAsync user shortLink = do
