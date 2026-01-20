@@ -605,6 +605,9 @@ jobs:
       - name: Checkout current repository
         uses: actions/checkout@v6
 
+      - name: Install packages for archiving
+        run: sudo apt install -y msitools gcc-mingw-w64
+
       - name: Build archives
         run: |
           INIT_DIR='${{ runner.temp }}/artifacts'
@@ -612,6 +615,8 @@ jobs:
           TAG='${{ github.ref_name }}'
           URL='https://github.com/${{ github.repository }}/releases/download'
           PREFIX='${{ github.event.repository.name }}-libs'
+          # Windows-specific
+          FILE_URL='https://raw.githubusercontent.com/${{ github.repository }}/refs/tags/${{ github.ref_name }}'
 
           # Setup directories
           mkdir "$INIT_DIR" "$RELEASE_DIR" && cd "$INIT_DIR"
@@ -620,6 +625,7 @@ jobs:
           curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-ubuntu-22_04-x86_64.deb" -o linux.deb
           curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-aarch64.dmg" -o macos-aarch64.dmg
           curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-x86_64.dmg" -o macos-x86_64.dmg
+          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-windows-x86_64.msi" -o windows-x86_64.msi
 
           # Linux
           # -----
@@ -645,6 +651,18 @@ jobs:
           mkdir libs && cp *.dylib libs/
           zip -r "${PREFIX}-macos-x86_64.zip" libs
           mv "${PREFIX}-macos-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+          # Windows: x86_64
+          # ---------------
+          msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
+
+          # We need to generate library that exports symbols from Windows dll
+          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
+          x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
+
+          mkdir libs && cp *.dll *.lib libs/
+          zip -r "${PREFIX}-windows-x86_64.zip" libs
+          mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
 
       - name: Create release in libs repo and upload artifacts
         uses: softprops/action-gh-release@v2
