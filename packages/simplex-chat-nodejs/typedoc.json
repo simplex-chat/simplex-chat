@@ -1,0 +1,14 @@
+{
+  "name": "simplex-chat",
+  "plugin": ["typedoc-plugin-markdown"],
+  "entryPoints": [
+    "./src/index.ts",
+    "../simplex-chat-client/types/typescript/src/index.ts"
+  ],
+  "entryPointStrategy": "expand",
+  "tsconfig": "./tsconfig.json",
+  "sourceLinkTemplate": "../{path}#L{line}",
+  "disableGit": true,
+  "flattenOutputFiles": true,
+  "out": "./docs"
+}

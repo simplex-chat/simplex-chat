@@ -52,7 +52,7 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       exitFailure
     run db@ChatDatabase {chatStore} = do
       u_ <- getSelectActiveUser chatStore
-      let backgroundMode = not maintenance
+      let backgroundMode = maintenance
       cc <- newChatController db u_ cfg opts backgroundMode
       forM_ (preStartHook chatHooks) ($ cc)
       u <- maybe (noMaintenance >> createActiveUser cc createBot) pure u_

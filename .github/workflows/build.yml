@@ -582,3 +582,92 @@ jobs:
           bin_hash: ${{ steps.windows_desktop_build.outputs.package_hash }}
           github_ref: ${{ github.ref }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+
+# =========================
+#   NodeJS libs release
+# =========================
+
+# Downloads Desktop builds, extracts and archives libraries for NodeJS addon.
+# Depends on Linux/MacOS, executes only on release.
+
+# Secrets:
+# -------
+# NODEJS_REPO_TOKEN
+#  Only select repositories: simplex-chat-libs 
+#  Permissions:
+#   * Contents (Read and Write)
+
+  release-nodejs-libs:
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-macos]
+    if: startsWith(github.ref, 'refs/tags/v') && (!cancelled())
+    steps:
+      - name: Checkout current repository
+        uses: actions/checkout@v6
+
+      - name: Install packages for archiving
+        run: sudo apt install -y msitools gcc-mingw-w64
+
+      - name: Build archives
+        run: |
+          INIT_DIR='${{ runner.temp }}/artifacts'
+          RELEASE_DIR='${{ runner.temp }}/release-assets'
+          TAG='${{ github.ref_name }}'
+          URL='https://github.com/${{ github.repository }}/releases/download'
+          PREFIX='${{ github.event.repository.name }}-libs'
+          # Windows-specific
+          FILE_URL='https://raw.githubusercontent.com/${{ github.repository }}/refs/tags/${{ github.ref_name }}'
+
+          # Setup directories
+          mkdir "$INIT_DIR" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+          # Downlaod desktop release
+          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-ubuntu-22_04-x86_64.deb" -o linux.deb
+          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-aarch64.dmg" -o macos-aarch64.dmg
+          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-macos-x86_64.dmg" -o macos-x86_64.dmg
+          curl --proto '=https' --tlsv1.2 -sSf -L "${URL}/${TAG}/simplex-desktop-windows-x86_64.msi" -o windows-x86_64.msi
+
+          # Linux
+          # -----
+          # Extract libraries
+          dpkg-deb -R linux.deb linux-out/ && cd linux-out/opt/simplex/lib/app/resources
+          # Preprare directory
+          mkdir libs && cp *.so libs/
+          # Archive
+          zip -r "${PREFIX}-linux-x86_64.zip" libs
+          # Back to original dir
+          mv "${PREFIX}-linux-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+          # MacOS: aarch64
+          # --------------
+          7z x macos-aarch64.dmg -omacos1-out/ && cd macos1-out/SimpleX/SimpleX.app/Contents/app/resources/
+          mkdir libs && cp *.dylib libs/
+          zip -r "${PREFIX}-macos-aarch64.zip" libs
+          mv "${PREFIX}-macos-aarch64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+          # Macos: x86_64
+          # -------------
+          7z x macos-x86_64.dmg -omacos2-out/ && cd macos2-out/SimpleX/SimpleX.app/Contents/app/resources/
+          mkdir libs && cp *.dylib libs/
+          zip -r "${PREFIX}-macos-x86_64.zip" libs
+          mv "${PREFIX}-macos-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+          # Windows: x86_64
+          # ---------------
+          msiextract windows-x86_64.msi -C windows-out && cd windows-out/SimpleX/app/resources
+
+          # We need to generate library that exports symbols from Windows dll
+          curl --proto '=https' --tlsv1.2 -sSf -LO "${FILE_URL}/libsimplex.dll.def"
+          x86_64-w64-mingw32-dlltool -d libsimplex.dll.def -l libsimplex.lib -D libsimplex.dll
+
+          mkdir libs && cp *.dll *.lib libs/
+          zip -r "${PREFIX}-windows-x86_64.zip" libs
+          mv "${PREFIX}-windows-x86_64.zip" "$RELEASE_DIR" && cd "$INIT_DIR"
+
+      - name: Create release in libs repo and upload artifacts
+        uses: softprops/action-gh-release@v2
+        with:
+          repository: ${{ github.repository }}-libs
+          tag_name: ${{ github.ref_name }}
+          files: ${{ runner.temp }}/release-assets/*
+          token: ${{ secrets.NODEJS_REPO_TOKEN }}

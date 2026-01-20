@@ -1,6 +1,6 @@
 {
   "name": "@simplex-chat/types",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "TypeScript types for SimpleX Chat bot libraries",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -35,7 +35,7 @@
   "bugs": {
     "url": "https://github.com/simplex-chat/simplex-chat/issues"
   },
-  "homepage": "https://github.com/simplex-chat/simplex-chat#readme",
+  "homepage": "https://github.com/simplex-chat/simplex-chat/tree/stable/packages/simplex-chat-client/types/typescript#readme",
   "dependencies": {
     "typescript": "^5.9.2"
   }

@@ -136,6 +136,14 @@ chatEventsDocsData =
       ],
       []
     ),
+    ( "Network connection events",
+      "",
+      [ ("CEvtHostConnected", "Messaging or file server connected"),
+        ("CEvtHostDisconnected", "Messaging or file server disconnected"),
+        ("CEvtSubscriptionStatus", "Messaging subscription status changed")
+      ],
+      []
+    ),
     ( "Error events",
       "Bots may log these events for debugging. \
       \There will be many error events - this does NOT indicate a malfunction - \
@@ -143,7 +151,7 @@ chatEventsDocsData =
       \or because messages may be delivered to deleted chats for a short period of time \
       \(they will be ignored).",
       [ ("CEvtMessageError", ""),
-        ("CEvtChatError", ""), -- only used in WebSockets API, Haskell code uses Either, with error in Left
+        ("CEvtChatError", "Chat error (only used in WebSockets API)."), -- Haskell code uses Either, with error in Left
         ("CEvtChatErrors", "")
       ],
       []
@@ -178,9 +186,6 @@ undocumentedEvents =
     "CEvtCustomChatEvent",
     "CEvtGroupMemberRatchetSync",
     "CEvtGroupMemberSwitch",
-    "CEvtHostConnected",
-    "CEvtHostDisconnected",
-    "CEvtSubscriptionStatus",
     "CEvtNewRemoteHost",
     "CEvtNoMemberContactCreating",
     "CEvtNtfMessage",
