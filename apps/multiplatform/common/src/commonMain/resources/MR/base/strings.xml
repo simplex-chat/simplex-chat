@@ -2774,6 +2774,8 @@
   <string name="subscription_results_ignored">Subscriptions ignored</string>
   <string name="subscription_errors">Subscription errors</string>
   <string name="uploaded_files">Uploaded files</string>
+  <string name="load_more">Load more</string>
+  <string name="no_items_found">No items found</string>
   <string name="size">Size</string>
   <string name="chunks_uploaded">Chunks uploaded</string>
   <string name="upload_errors">Upload errors</string>

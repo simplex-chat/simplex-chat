@@ -18,6 +18,7 @@ import androidx.compose.foundation.lazy.*
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -45,6 +46,8 @@ import chat.simplex.common.views.database.TtlOptions
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 const val SMALL_GROUPS_RCPS_MEM_LIMIT: Int = 20
 val MEMBER_ROW_AVATAR_SIZE = 42.dp
@@ -463,29 +466,136 @@ fun ModalData.GroupChatInfoLayout(
       if (s.isEmpty()) activeSortedMembers else activeSortedMembers.filter { m -> m.anyNameContains(s) }
     }
   }
-  val selectedTab = rememberSaveable { mutableStateOf(GroupInfoTab.Members) }
-  val filteredChatItems = remember(chat.chatItems, selectedTab.value) {
+  val selectedTab = remember { stateGetOrPut("selectedTab") { GroupInfoTab.Members } }
+
+  // Helper function to map tab to content tag
+  fun tabToContentTag(tab: GroupInfoTab): MsgContentTag? {
+    return when (tab) {
+      GroupInfoTab.Members -> null
+      GroupInfoTab.Images -> MsgContentTag.Image
+      GroupInfoTab.Videos -> MsgContentTag.Video
+      GroupInfoTab.Files -> MsgContentTag.File
+      GroupInfoTab.Links -> MsgContentTag.Link
+      GroupInfoTab.Voice -> MsgContentTag.Voice
+    }
+  }
+  // State for storing items per tab and initing with empty list
+  val tabItemsState = remember { mutableStateMapOf<GroupInfoTab, SnapshotStateList<ChatItem>>() }
+  val loadingTabItems = remember { mutableStateOf<GroupInfoTab?>(null) }
+  val tabPaginationState = remember { mutableStateMapOf<GroupInfoTab, ChatPagination?>() }
+  LaunchedEffect(Unit) {
+    GroupInfoTab.entries.forEach { tab ->
+      if (tab != GroupInfoTab.Members && !tabItemsState.containsKey(tab)) {
+        tabItemsState[tab] = SnapshotStateList()
+      }
+    }
+  }
+  
+  fun loadTabItems(
+    tab: GroupInfoTab,
+    pagination: ChatPagination,
+    items: SnapshotStateList<ChatItem>,
+    clearExisting: Boolean
+  ) {
+    loadingTabItems.value = tab
+    
+    withBGApi {
+      val contentTag = tabToContentTag(tab) ?: run {
+        loadingTabItems.value = null
+        return@withBGApi
+      }
+      
+      val apiResult = chatModel.controller.apiGetChat(
+        chat.remoteHostId,
+        chat.chatInfo.chatType,
+        chat.chatInfo.apiId,
+        scope = null,
+        contentTag = contentTag,
+        pagination = pagination,
+        search = ""
+      ) ?: run {
+        loadingTabItems.value = null
+        return@withBGApi
+      }
+      
+      val loadedItems = apiResult.first.chatItems
+
+      withContext(Dispatchers.Main) {
+        // Filter out deleted items and validate content type matches the tab
+        val filteredItems = loadedItems.filter { item ->
+          item.meta.itemDeleted == null && when (tab) {
+            GroupInfoTab.Images -> item.content.msgContent is MsgContent.MCImage
+            GroupInfoTab.Videos -> item.content.msgContent is MsgContent.MCVideo
+            GroupInfoTab.Files -> item.content.msgContent is MsgContent.MCFile
+            GroupInfoTab.Links -> item.content.msgContent is MsgContent.MCLink
+            GroupInfoTab.Voice -> item.content.msgContent is MsgContent.MCVoice
+            else -> true
+          }
+        }
+        
+        if (clearExisting) {
+          items.clear()
+          items.addAll(filteredItems)
+        } else {
+          // Filter out duplicates when appending
+          val existingIds = items.map { it.id }.toSet()
+          val newItems = filteredItems.filter { it.id !in existingIds }
+          items.addAll(newItems)
+        }
+        
+        if (clearExisting) {
+          tabPaginationState[tab] = pagination
+        }
+        loadingTabItems.value = null
+      }
+    }
+  }
+  
+  // Load items when tab is selected
+  LaunchedEffect(selectedTab.value) {
+    val tab = selectedTab.value
+    if (tab == GroupInfoTab.Members) return@LaunchedEffect
+    val items = tabItemsState[tab] ?: return@LaunchedEffect
+    // Only load if empty (initial load)
+    if (items.isNotEmpty()) return@LaunchedEffect
+
+    val pagination = ChatPagination.Initial(ChatPagination.PRELOAD_COUNT)
+    loadTabItems(tab, pagination, items, clearExisting = true)
+  }
+  // Get current tab items list and track its size for recomposition
+  val currentTabItems = remember(selectedTab.value) {
+    tabItemsState[selectedTab.value]
+  }
+  val currentTabItemsSize = remember(currentTabItems) {
+    currentTabItems?.size ?: 0
+  }
+  // Create filteredChatItems from tabItemsState - updates when tab or list size changes
+  // Using derivedStateOf to observe the SnapshotStateList changes
+  val filteredChatItems = remember(selectedTab.value, currentTabItemsSize) {
     derivedStateOf {
       when (selectedTab.value) {
         GroupInfoTab.Members -> emptyList()
-        GroupInfoTab.Images -> chat.chatItems.filter {
-          it.content.msgContent is MsgContent.MCImage && it.meta.itemDeleted == null
-        }
-        GroupInfoTab.Videos -> chat.chatItems.filter {
-          it.content.msgContent is MsgContent.MCVideo && it.meta.itemDeleted == null
-        }
-        GroupInfoTab.Files -> chat.chatItems.filter {
-          it.content.msgContent is MsgContent.MCFile && it.meta.itemDeleted == null
-        }
-        GroupInfoTab.Links -> chat.chatItems.filter {
-          it.content.msgContent is MsgContent.MCLink && it.meta.itemDeleted == null
-        }
-        GroupInfoTab.Voice -> chat.chatItems.filter {
-          it.content.msgContent is MsgContent.MCVoice && it.meta.itemDeleted == null
+        else -> {
+          // Access the list - SnapshotStateList changes will be observed
+          val items = tabItemsState[selectedTab.value]
+          items?.toList() ?: emptyList()
         }
       }
     }
   }
+
+  val loadMoreTabItems: () -> Unit = loadMoreTabItems@{
+    val tab = selectedTab.value
+    if (tab == GroupInfoTab.Members) return@loadMoreTabItems
+    val items = tabItemsState[tab] ?: return@loadMoreTabItems
+    val lastItemId = items.lastOrNull()?.id ?: return@loadMoreTabItems
+
+    scope.launch(Dispatchers.Default) {
+      val pagination = ChatPagination.Before(lastItemId, ChatPagination.INITIAL_COUNT)
+      loadTabItems(tab, pagination, items, clearExisting = false)
+    }
+  }
+  
   Box {
     val oneHandUI = remember { appPrefs.oneHandUI.state }
     val selectedItemsBarHeight = if (selectedItems.value != null) AppBarHeight * fontSizeSqrtMultiplier else 0.dp
@@ -567,7 +677,9 @@ fun ModalData.GroupChatInfoLayout(
         chat = chat,
         groupLink = groupLink,
         manageGroupLink = manageGroupLink,
-        openMemberSupport = openMemberSupport
+        openMemberSupport = openMemberSupport,
+        isLoadingTab = loadingTabItems.value == selectedTab.value,
+        onLoadMoreTabItems = loadMoreTabItems
       )
 
       item {
@@ -986,7 +1098,6 @@ fun DeleteGroupButton(titleId: StringResource, onClick: () -> Unit) {
     textColor = Color.Red
   )
 }
-
 
 @Composable
 fun MemberListSearchRowView(
