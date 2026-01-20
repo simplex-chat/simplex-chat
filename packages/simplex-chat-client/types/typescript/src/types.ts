@@ -2513,7 +2513,6 @@ export interface GroupMember {
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
-  isRelay: boolean
 }
 
 export interface GroupMemberAdmission {
@@ -2534,6 +2533,7 @@ export interface GroupMemberRef {
 }
 
 export enum GroupMemberRole {
+  Relay = "relay",
   Observer = "observer",
   Author = "author",
   Member = "member",

@@ -822,7 +822,7 @@ data GroupLinkRejection = GroupLinkRejection
 data GroupRelayInvitation = GroupRelayInvitation
   { fromMember :: MemberIdRole,
     fromMemberProfile :: Profile,
-    invitedMember :: MemberIdRole,
+    invitedMemberId :: MemberId,
     groupLink :: ShortLinkContact
   }
   deriving (Eq, Show)
@@ -962,13 +962,9 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupSupportChat,
-    isRelay :: BoolDef
+    supportChat :: Maybe GroupSupportChat
   }
   deriving (Eq, Show)
-
-memberRole' :: GroupMember -> GroupMemberRole
-memberRole' GroupMember {memberRole} = memberRole
 
 data GroupRelay = GroupRelay
   { groupRelayId :: Int64,
@@ -1040,8 +1036,11 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
-isRelay' :: GroupMember -> Bool
-isRelay' GroupMember {isRelay} = isTrue isRelay
+isRelay :: GroupMember -> Bool
+isRelay m = memberRole' m == GRRelay
+
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1093,8 +1092,7 @@ data NewGroupMember = NewGroupMember
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     memProfileId :: Int64,
-    memContactId :: Maybe Int64,
-    isRelay :: Bool
+    memContactId :: Maybe Int64
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}

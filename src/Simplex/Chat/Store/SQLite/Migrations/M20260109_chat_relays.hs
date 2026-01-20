@@ -15,7 +15,6 @@ import Database.SQLite.Simple.QQ (sql)
 -- - group_relays.chat_relay_id - associates group_relays record with a chat_relays record,
 --     chat_relays.deleted is to keep associated record if user removes chat relay from configuration,
 --     but has group relays using it
--- - group_members.is_relay - indicates that the member is a chat relay
 -- - group_members.relay_link - relay link, saved on member record for user joining group
 -- - groups.relay_own_status - indicates for a relay client that it is chat relay for the group (RelayStatus)
 -- - groups.relay_request_* - relay request "work item" fields
@@ -70,7 +69,6 @@ CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_member_id);
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
-ALTER TABLE group_members ADD COLUMN is_relay INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE group_members ADD COLUMN relay_link BLOB;
 |]
 
@@ -104,6 +102,5 @@ DROP INDEX idx_chat_relays_user_id_address;
 DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
-ALTER TABLE group_members DROP COLUMN is_relay;
 ALTER TABLE group_members DROP COLUMN relay_link;
 |]

@@ -734,7 +734,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     allowAgentConnectionAsync user conn' confId XOk
                 | otherwise -> messageError "x.grp.acpt: memberId is different from expected"
               XGrpRelayAcpt relayLink
-                | memberRole' membership == GROwner && isRelay' m -> do
+                | memberRole' membership == GROwner && isRelay m -> do
                     withStore $ \db -> do
                       relay <- getGroupRelayByGMId db (groupMemberId' m)
                       liftIO $ updateGroupMemberStatus db userId m GSMemAccepted
@@ -826,7 +826,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                     pure $ numConnected == 1
                 | otherwise = pure True
           GCInviteeMember
-            | isRelay' m -> do
+            | isRelay m -> do
                 withStore' $ \db -> updateGroupMemberStatus db userId m GSMemConnected
                 gLink <- withStore $ \db -> getGroupLink db user gInfo
                 setGroupLinkDataAsync user gInfo gLink
@@ -2892,12 +2892,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     isUserGrpFwdRelay :: GroupInfo -> Bool
     isUserGrpFwdRelay gInfo@GroupInfo {membership}
-      | useRelays' gInfo = isRelay' membership
+      | useRelays' gInfo = isRelay membership
       | otherwise = memberRole' membership >= GRAdmin
 
     isMemberGrpFwdRelay :: GroupInfo -> GroupMember -> Bool
     isMemberGrpFwdRelay gInfo m
-      | useRelays' gInfo = isRelay' m
+      | useRelays' gInfo = isRelay m
       | otherwise = memberRole' m >= GRAdmin
 
     xGrpLeave :: GroupInfo -> GroupMember -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)

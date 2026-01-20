@@ -58,7 +58,6 @@ CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_member_id);
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
-ALTER TABLE group_members ADD COLUMN is_relay SMALLINT NOT NULL DEFAULT 0;
 ALTER TABLE group_members ADD COLUMN relay_link BYTEA;
 |]
 
@@ -93,6 +92,5 @@ DROP INDEX idx_chat_relays_user_id_address;
 DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
-ALTER TABLE group_members DROP COLUMN is_relay;
 ALTER TABLE group_members DROP COLUMN relay_link;
 |]

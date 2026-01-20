@@ -2224,7 +2224,6 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
-- isRelay: bool
 
 
 ---
@@ -2261,6 +2260,7 @@ Known:
 ## GroupMemberRole
 
 **Enum type**:
+- "relay"
 - "observer"
 - "author"
 - "member"

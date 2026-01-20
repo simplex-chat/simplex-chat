@@ -2023,6 +2023,10 @@ processChatCommand vr nm = \case
             _ -> False
           connectToRelay gInfo' relayLink = do
             gVar <- asks random
+            -- TODO [relays] member: set relay profile before/during connection
+            -- TODO   - on fetching relay link data? (-> relay should add profile to relay link)
+            -- TODO   - or update upon connection, as in regular prepared groups
+            -- TODO     (current logic mimics insertHost_ from createPreparedGroup)
             -- Save relayLink to re-use relay member record on retry (check by relayLink)
             relayMember <- withFastStore $ \db -> getCreateRelayForMember db vr gVar user gInfo' relayLink
             r <- tryAllErrors $ do
@@ -3659,7 +3663,9 @@ processChatCommand vr nm = \case
       where
         addRelay :: UserChatRelay -> CM GroupRelay
         addRelay relay@UserChatRelay {address} = do
-          -- TODO [relays] owner: can update relay profile from data retrieved via getConnShortLink
+          -- TODO [relays] owner: track and reuse relay profiles
+          -- TODO   - single profile linked to relay configuration record (chat_relays)
+          -- TODO   - update when fetching link data from relay address
           (cReq, _cData) <- getShortLinkConnReq nm user address
           lift (withAgent' $ \a -> connRequestPQSupport a PQSupportOff cReq) >>= \case
             Nothing -> throwChatError CEInvalidConnReq
@@ -3676,11 +3682,11 @@ processChatCommand vr nm = \case
               let GroupMember {memberRole = userRole, memberId = userMemberId} = membership
                   allowSimplexLinks = groupFeatureUserAllowed SGFSimplexLinks gInfo
                   membershipProfile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile $ memberProfile membership
-                  GroupMember {memberRole = relayRole, memberId = relayMemberId} = relayMember
+                  GroupMember {memberId = relayMemberId} = relayMember
                   relayInv = GroupRelayInvitation {
                     fromMember = MemberIdRole userMemberId userRole,
                     fromMemberProfile = membershipProfile,
-                    invitedMember = MemberIdRole relayMemberId relayRole,
+                    invitedMemberId = relayMemberId,
                     groupLink = groupSLink
                   }
               dm <- encodeConnInfo $ XGrpRelayInv relayInv

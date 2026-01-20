@@ -275,7 +275,7 @@ chatTypesDocsData =
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
     (sti @GroupMemberCategory, (STEnum' $ dropPfxSfx "GC" "Member"), "", [], "", ""),
     (sti @GroupMemberRef, STRecord, "", [], "", ""),
-    (sti @GroupMemberRole, STEnum, "GR", [], "", ""),
+    (sti @GroupMemberRole, (STEnum' $ dropPfxSfx "GR" ""), "", ["GRUnknown"], "", ""),
     (sti @GroupMemberSettings, STRecord, "", [], "", ""),
     (sti @GroupMemberStatus, (STEnum' $ (\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
     (sti @GroupPreference, STRecord, "", [], "", ""),

@@ -1203,19 +1203,19 @@ viewDirectMessagesProhibited MDRcv c = ["received prohibited direct message from
 
 viewUserJoiningGroup :: GroupInfo -> GroupMember -> [StyledString]
 viewUserJoiningGroup g m
-  | isRelay' m = [ttyGroup' g <> ": joining the group (connecting to relay " <> ttyMember m <> ")..."]
+  | isRelay m = [ttyGroup' g <> ": joining the group (connecting to relay " <> ttyMember m <> ")..."]
   | otherwise = [ttyGroup' g <> ": joining the group..."]
 
 viewUserJoinedGroup :: GroupInfo -> GroupMember -> [StyledString]
 viewUserJoinedGroup g@GroupInfo {membership} m
-  | isRelay' membership = [ttyGroup' g <> ": you joined the group as relay"]
+  | isRelay membership = [ttyGroup' g <> ": you joined the group as relay"]
   | otherwise =
       case incognitoMembershipProfile g of
         Just mp -> [ttyGroup' g <> ": you joined the group" <> connectedToRelay_ <> " incognito as " <> incognitoProfile' (fromLocalProfile mp) <> pendingApproval_]
         Nothing -> [ttyGroup' g <> ": you joined the group" <> connectedToRelay_ <> pendingApproval_]
   where
     connectedToRelay_
-      | isRelay' m = " (connected to relay " <> ttyMember m <> ")"
+      | isRelay m = " (connected to relay " <> ttyMember m <> ")"
       | otherwise = ""
     pendingApproval_ = case memberStatus membership of
       GSMemPendingApproval -> ", pending approval"
