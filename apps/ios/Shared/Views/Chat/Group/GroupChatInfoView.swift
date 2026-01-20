@@ -36,6 +36,8 @@ struct GroupChatInfoView: View {
     @FocusState private var searchFocussed
     @State private var showSecrets: Set<Int> = []
     @State private var selectedTab: GroupInfoTab = .members
+    @State private var selectedImage: ChatItem?
+    @State private var showImageFullScreen = false
     
     enum GroupInfoTab: CaseIterable {
         case members
@@ -102,26 +104,7 @@ struct GroupChatInfoView: View {
                         .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
                         .padding(.bottom, 18)
                     
-                    // TODO hide if there are no gallery tabs, only show needed tabs
-                    Section {
-                        Picker("", selection: $selectedTab) {
-                            ForEach(GroupInfoTab.allCases, id: \.self) { tab in
-                                Image(systemName: tab.imageName)
-                                    .tag(tab)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .listRowBackground(Color.clear)
-                        .listRowSeparator(.hidden)
-                        .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
-                    }
-                    
-                    if selectedTab == .members {
-                        membersTabContent(members: members)
-                    } else {
-                        //TODO: After adding media API calls, add exact UI elements
-                        noDataAvailableView()
-                    }
+                    tabContentView(members: members)
                 }
                 .modifier(ThemedBackground(grouped: true))
                 .navigationBarHidden(true)
@@ -130,6 +113,16 @@ struct GroupChatInfoView: View {
                 
                 if progressIndicator {
                     ProgressView().scaleEffect(2)
+                }
+            }
+            .fullScreenCover(isPresented: $showImageFullScreen) {
+                if let item = selectedImage, let image = getLoadedImage(item.file) {
+                    FullScreenMediaView(
+                        chatItem: item,
+                        scrollToItem: nil,
+                        image: image,
+                        showView: $showImageFullScreen
+                    )
                 }
             }
         }
@@ -156,6 +149,42 @@ struct GroupChatInfoView: View {
                 }
             } catch let error {
                 logger.error("GroupChatInfoView apiGetGroupLink: \(responseError(error))")
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private func tabContentView(members: [GMember]) -> some View {
+        switch selectedTab {
+        case .members:
+            membersTabContent(members: members)
+        case .images:
+            Section {
+                GroupImagesTabView(
+                    groupInfo: groupInfo,
+                    selectedImage: $selectedImage,
+                    showImageFullScreen: $showImageFullScreen
+                )
+            }
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowBackground(Color.clear)
+        case .videos:
+            Section {
+                GroupVideosTabView(groupInfo: groupInfo)
+            }
+            .listRowInsets(EdgeInsets(top: 0, leading: 0, bottom: 0, trailing: 0))
+            .listRowBackground(Color.clear)
+        case .files:
+            Section {
+                GroupFilesTabView(groupInfo: groupInfo)
+            }
+        case .links:
+            Section {
+                GroupLinksTabView(groupInfo: groupInfo)
+            }
+        case .voices:
+            Section {
+                GroupVoicesTabView(groupInfo: groupInfo)
             }
         }
     }

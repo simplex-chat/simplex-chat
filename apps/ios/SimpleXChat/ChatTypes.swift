@@ -3542,6 +3542,28 @@ public func formatTimestampText(_ date: Date) -> Text {
     ))
 }
 
+public func formatTimestampChatInfo(_ date: Date) -> String {
+    let calendar = Calendar.current
+    let now = Date()
+    
+    if calendar.isDateInToday(date) {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "hh:mm a"
+        return "Today, \(formatter.string(from: date))"
+    }
+    
+    let currentYear = calendar.component(.year, from: now)
+    let dateYear = calendar.component(.year, from: date)
+    
+    let formatter = DateFormatter()
+    if currentYear == dateYear {
+        formatter.dateFormat = "d MMM, hh:mm a"
+    } else {
+        formatter.dateFormat = "d MMM, yyyy hh:mm a"
+    }
+    return formatter.string(from: date)
+}
+
 public func formatTimestampMeta(_ date: Date) -> String {
     date.formatted(date: .omitted, time: .shortened)
 }
