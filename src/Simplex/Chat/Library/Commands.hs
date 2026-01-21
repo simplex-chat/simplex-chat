@@ -1866,6 +1866,41 @@ processChatCommand vr nm = \case
           createDirectConnection db newUser agConnId ccLink' Nothing ConnNew Nothing subMode initialChatVersion PQSupportOn
         deleteAgentConnectionAsync (aConnId' conn)
         pure conn'
+  StressTest numMembers ccLink groupSLinkData -> withUser $ \firstUser -> do
+    counter <- newTVarIO 0
+    forM_ ([1 .. numMembers] :: [Int]) $ \i ->
+      connectUser firstUser i `catchAllErrors` \e -> do
+        atomically $ modifyTVar' counter (+ 1)
+        liftIO $ print $ "failed to connect user " <> tshow i <> ": " <> tshow e
+    errCount <- readTVarIO counter
+    when (errCount > 0) $
+      liftIO $ print $ "failed to connect " <> tshow errCount <> " users"
+    ok_
+    where
+      connectUser :: User -> Int -> CM ()
+      connectUser firstUser i = do
+        user@User {localDisplayName = n} <- createUser' firstUser i
+        gInfo <- prepareGroup user
+        connectPreparedGroup gInfo
+        liftIO $ print $ n <> " connected"
+      createUser' :: User -> Int -> CM User
+      createUser' firstUser i = do
+        let User {localDisplayName = n} = firstUser
+            profile = Profile {displayName = n <> tshow i, fullName = "", shortDescr = Nothing, image = Nothing, contactLink = Nothing, peerType = Nothing, preferences = Just $ toChatPrefs defaultChatPrefs}
+            newUser = NewUser {profile = Just profile, pastTimestamp = False, userChatRelay = False}
+        processChatCommand vr nm (CreateActiveUser newUser) >>= \case
+          CRActiveUser user -> pure user
+          r -> throwCmdError $ "failed to create user: " <> show r
+      prepareGroup :: User -> CM GroupInfo
+      prepareGroup User {userId} =
+        processChatCommand vr nm (APIPrepareGroup userId ccLink False groupSLinkData) >>= \case
+          CRNewPreparedChat _ (AChat SCTGroup (Chat (GroupChat gInfo _) _ _)) -> pure gInfo
+          r -> throwCmdError $ "failed to prepare group: " <> show r
+      connectPreparedGroup :: GroupInfo -> CM ()
+      connectPreparedGroup GroupInfo {groupId} =
+        processChatCommand vr nm (APIConnectPreparedGroup groupId False Nothing) >>= \case
+          CRCmdOk _ -> pure ()
+          r -> throwCmdError $ "failed to connect prepared group: " <> show r
   APIConnectPlan userId (Just cLink) -> withUserId userId $ \user ->
     uncurry (CRConnectionPlan user) <$> connectPlan user cLink
   APIConnectPlan _ Nothing -> throwChatError CEInvalidConnReq
@@ -4781,6 +4816,7 @@ chatCommandP =
       (">#" <|> "> #") *> (SendGroupMessageQuote <$> displayNameP <* A.space <* char_ '@' <*> (Just <$> displayNameP) <* A.space <*> quotedMsg <*> msgTextP),
       "/_contacts " *> (APIListContacts <$> A.decimal),
       "/contacts" $> ListContacts,
+      "/stress test " *> (StressTest <$> A.decimal <* A.space <*> connLinkP' <* A.space <*> jsonP),
       "/_connect plan " *> (APIConnectPlan <$> A.decimal <* A.space <*> ((Just <$> strP) <|> A.takeTill (== ' ') $> Nothing)),
       "/_prepare contact " *> (APIPrepareContact <$> A.decimal <* A.space <*> connLinkP <* A.space <*> jsonP),
       "/_prepare group " *> (APIPrepareGroup <$> A.decimal <* A.space <*> connLinkP' <*> (" direct=" *> onOffP <|> pure True) <* A.space <*> jsonP),

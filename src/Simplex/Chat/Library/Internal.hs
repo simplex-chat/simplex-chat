@@ -2701,13 +2701,13 @@ simplexStatusContactProfile =
       preferences = Nothing
     }
 
-timeItToView :: String -> CM' a -> CM' a
+timeItToView :: String -> CM a -> CM a
 timeItToView s action = do
   t1 <- liftIO getCurrentTime
   a <- action
   t2 <- liftIO getCurrentTime
   let diff = diffToMilliseconds $ diffUTCTime t2 t1
-  toView' $ CEvtTimedAction s diff
+  toView $ CEvtTimedAction s diff
   pure a
 
 epochStart :: UTCTime
