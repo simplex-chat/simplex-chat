@@ -201,13 +201,20 @@ private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: C
 @Composable
 private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean, close: () -> Unit) {
   val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, true, defaultPreview, 0L, true) }
-  LaunchedEffect(currentPage) {
-    if (currentPage) {
-      player.enableSound(true)
-      player.play(true)
-    } else {
-      player.stop()
-    }
+  val isCurrentPage = rememberUpdatedState(currentPage)
+  val play = {
+    player.play(true)
+  }
+  val stop = {
+    player.stop()
+  }
+  LaunchedEffect(Unit) {
+    snapshotFlow { isCurrentPage.value }
+      .distinctUntilChanged()
+      .collect {
+        if (it) play() else stop()
+        player.enableSound(true)
+      }
   }
 
   Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
