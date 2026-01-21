@@ -192,7 +192,10 @@ tasks {
             }
             exec {
                 workingDir("../../scripts/android")
-                environment = mapOf("JAVA_HOME" to "$javaHome")
+                environment = mapOf(
+                  "JAVA_HOME" to "$javaHome",
+                  "PATH" to "${javaHome}/bin${File.pathSeparator}${System.getenv("PATH")}"
+                )
                 commandLine = listOf(
                     "./compress-and-sign-apk.sh",
                     "${rootProject.extra["compression.level"]}",
