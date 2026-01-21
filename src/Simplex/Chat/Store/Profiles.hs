@@ -26,6 +26,7 @@ module Simplex.Chat.Store.Profiles
     getUsers,
     setActiveUser,
     getUser,
+    getRelayUser,
     getUserIdByName,
     getUserByAConnId,
     getUserByASndFileId,
@@ -58,6 +59,7 @@ module Simplex.Chat.Store.Profiles
     updateUserAddressSettings,
     getProtocolServers,
     getChatRelays,
+    getChatRelayById,
     insertProtocolServer,
     getUpdateServerOperators,
     getServerOperators,
@@ -215,6 +217,11 @@ getUser :: DB.Connection -> UserId -> ExceptT StoreError IO User
 getUser db userId =
   ExceptT . firstRow toUser (SEUserNotFound userId) $
     DB.query db (userQuery <> " WHERE u.user_id = ?") (Only userId)
+
+getRelayUser :: DB.Connection -> ExceptT StoreError IO User
+getRelayUser db =
+  ExceptT . firstRow toUser SERelayUserNotFound $
+    DB.query_ db (userQuery <> " WHERE u.is_user_chat_relay = 1")
 
 getUserIdByName :: DB.Connection -> UserName -> ExceptT StoreError IO Int64
 getUserIdByName db uName =
@@ -621,13 +628,25 @@ getChatRelays db User {userId} =
       [sql|
         SELECT chat_relay_id, address, name, domains, preset, tested, enabled
         FROM chat_relays
-        WHERE user_id = ?
+        WHERE user_id = ? AND deleted = 0
       |]
       (Only userId)
-  where
-    toChatRelay :: (DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
-    toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
-      UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+
+toChatRelay :: (DBEntityId, ShortLinkContact, Text, Text, BoolInt, Maybe BoolInt, BoolInt) -> UserChatRelay
+toChatRelay (chatRelayId, address, name, domains, BI preset, tested, BI enabled) =
+  UserChatRelay {chatRelayId, address, name, domains = T.splitOn "," domains, preset, tested = unBI <$> tested, enabled, deleted = False}
+
+getChatRelayById :: DB.Connection -> User -> Int64 -> ExceptT StoreError IO UserChatRelay
+getChatRelayById db User {userId} relayId =
+  ExceptT . firstRow toChatRelay (SEUserChatRelayNotFound relayId) $
+    DB.query
+      db
+      [sql|
+        SELECT chat_relay_id, address, name, domains, preset, tested, enabled
+        FROM chat_relays
+        WHERE user_id = ? AND chat_relay_id = ? AND deleted = 0
+      |]
+      (userId, relayId)
 
 insertChatRelay :: DB.Connection -> User -> UTCTime -> NewUserChatRelay -> IO UserChatRelay
 insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains, preset, tested, enabled} = do
@@ -642,7 +661,7 @@ insertChatRelay db User {userId} ts relay@UserChatRelay {address, name, domains,
           RETURNING chat_relay_id
         |]
         (address, name, T.intercalate "," domains, BI preset, BI <$> tested, BI enabled, userId, ts, ts)
-  pure relay {chatRelayId = DBEntityId crId}
+  pure (relay :: NewUserChatRelay) {chatRelayId = DBEntityId crId}
 
 updateChatRelay :: DB.Connection -> UTCTime -> UserChatRelay -> IO ()
 updateChatRelay db ts UserChatRelay {chatRelayId, address, name, domains, preset, tested, enabled} =
@@ -907,7 +926,13 @@ setUserServers' db user@User {userId} ts UpdatedUserOperatorServers {operator, s
         | deleted -> pure Nothing
         | otherwise -> Just <$> insertChatRelay db user ts relay
       DBEntityId relayId
-        | deleted -> Nothing <$ DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, relayId, BI False)
+        | deleted -> do
+            -- If relay is referenced in group_relays, mark it as deleted instead of deleting
+            referenced <- fromOnly . head <$> DB.query db "SELECT EXISTS (SELECT 1 FROM group_relays WHERE chat_relay_id = ?)" (Only relayId)
+            if referenced
+              then DB.execute db "UPDATE chat_relays SET deleted = 1, updated_at = ? WHERE chat_relay_id = ?" (ts, relayId)
+              else DB.execute db "DELETE FROM chat_relays WHERE user_id = ? AND chat_relay_id = ? AND preset = ?" (userId, relayId, BI False)
+            pure Nothing
         | otherwise -> Just relay <$ updateChatRelay db ts relay
 
 createCall :: DB.Connection -> User -> Call -> UTCTime -> IO ()

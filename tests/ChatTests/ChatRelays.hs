@@ -5,6 +5,7 @@ import ChatTests.DBUtils
 import ChatTests.Utils
 import Test.Hspec hiding (it)
 
+-- TODO [relays] test deleting relay (from configuration), referenced in group_relays.
 chatRelayTests :: SpecWith TestParams
 chatRelayTests = do
   describe "configure chat relays" $ do

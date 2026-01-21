@@ -37,7 +37,6 @@ import Simplex.Messaging.Agent.Env.SQLite
 import Simplex.Messaging.Agent.RetryInterval
 import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Agent.Store.DB (Binary (..))
-import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Server.Env.STM hiding (subscriptions)
 import Simplex.Messaging.Transport
 import Simplex.Messaging.Version
@@ -229,19 +228,25 @@ chatGroupTests = do
     it "should remove support chat with member when member is removed" testScopedSupportMemberRemoved
     it "should remove support chat with member when user removes member" testScopedSupportUserRemovesMember
     it "should remove support chat with member when member leaves" testScopedSupportMemberLeaves
-  -- TODO [channels fwd] enable tests (requires communicating useRelays to members)
   -- TODO [channels fwd] add tests for channels
-  -- TODO   - tests with multiple relays (all relays should deliver messages, members should deduplicate)
   -- TODO   - tests with delivery loop over members restored after restart
   -- TODO   - delivery in support scopes inside channels
-  xdescribe "channels" $ do
+  -- TODO   - connect plans for relay groups
+  -- TODO   - cancellation on failure to create relay group (for owner)
+  -- TODO   - async retry connecting to relay (for members)
+  -- TODO   - test relay privileges
+  describe "channels" $ do
     describe "relay delivery" $ do
-      it "should deliver messages to members" testChannelsRelayDeliver
-      describe "should deliver messages in a loop over members" $ do
-        it "number of recipients is multiple of bucket size (3/1)" (testChannelsRelayDeliverLoop 1)
-        it "number of recipients is NOT multiple of bucket size (3/2)" (testChannelsRelayDeliverLoop 2)
-        it "number of recipients is equal to bucket size (3/3)" (testChannelsRelayDeliverLoop 3)
-      it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
+      describe "single relay" $ do
+        it "should deliver messages to members" testChannels1RelayDeliver
+        describe "should deliver messages in a loop over members" $ do
+          it "number of recipients is multiple of bucket size (3/1)" (testChannels1RelayDeliverLoop 1)
+          it "number of recipients is NOT multiple of bucket size (3/2)" (testChannels1RelayDeliverLoop 2)
+          it "number of recipients is equal to bucket size (3/3)" (testChannels1RelayDeliverLoop 3)
+        it "sender should deduplicate their own messages" testChannelsSenderDeduplicateOwn
+      describe "multiple relays" $ do
+        it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
+        it "should share same incognito profile with all relays" testChannels2RelaysIncognito
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -2495,12 +2500,12 @@ testPlanGroupLinkLeaveRejoin =
       threadDelay 100000
 
       bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       _sLinkData <- getTermLine bob
 
       let gLinkSchema2 = linkAnotherSchema gLink
       bob ##> ("/_connect plan 1 " <> gLinkSchema2)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> gLink)
@@ -3531,7 +3536,7 @@ testPlanGroupLinkKnown =
       gLink <- getGroupLink alice "team" GRMember True
 
       bob ##> ("/_connect plan 1 " <> gLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       _sLinkData <- getTermLine bob
 
       bob ##> ("/c " <> gLink)
@@ -8356,107 +8361,198 @@ testScopedSupportMemberLeaves =
       testOpts
         { markRead = False
         }
-testChannelsRelayDeliver :: HasCallStack => TestParams -> IO ()
-testChannelsRelayDeliver =
-  testChat5 aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
-    createChannel5 alice bob cath dan eve GRObserver
 
-    alice #> "#team hi"
-    bob <# "#team alice> hi"
-    [cath, dan, eve] *<# "#team alice> hi [>>]"
+testChannels1RelayDeliver :: HasCallStack => TestParams -> IO ()
+testChannels1RelayDeliver ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
 
-    cath ##> "+1 #team hi"
-    cath <## "added 👍"
-    bob <# "#team cath> > alice hi"
-    bob <## "    + 👍"
-    alice <# "#team cath> > alice hi"
-    alice <## "    + 👍"
-    dan <# "#team cath> > alice hi"
-    dan <## "    + 👍"
-    eve <# "#team cath> > alice hi"
-    eve <## "    + 👍"
+            alice #> "#team hi"
+            bob <# "#team alice> hi"
+            [cath, dan, eve] *<# "#team alice> hi [>>]"
 
--- TODO [channels fwd] correctly setup channel with relay forwarding
--- TODO   - alice to create group as channel
--- TODO   - add bob as relay
--- TODO   - alice to manage group link, but members to connect to relay (bob)
-createChannel5 :: TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> GroupMemberRole -> IO ()
-createChannel5 alice bob cath dan eve mRole = do
-  createGroup2 "team" alice bob
-  bob ##> ("/create link #team " <> T.unpack (textEncode mRole))
-  gLink <- getGroupLink bob "team" mRole True
-  cath ##> ("/c " <> gLink)
-  cath <## "connection request sent!"
-  bob <## "cath (Catherine): accepting request to join group #team..."
+            cath ##> "+1 #team hi"
+            cath <## "added 👍"
+            bob <# "#team cath> > alice hi"
+            bob <## "    + 👍"
+            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            alice <# "#team cath> > alice hi"
+            alice <## "    + 👍"
+            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <# "#team cath> > alice hi"
+            dan <## "    + 👍"
+            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <# "#team cath> > alice hi"
+            eve <## "    + 👍"
+
+createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
+createChannel1Relay gName owner relay cath dan eve = do
+  (shortLink, fullLink) <- prepareChannel1Relay gName owner relay
+  forM_ [cath, dan, eve] $ \member ->
+    memberJoinChannel gName [relay] shortLink fullLink member
+
+prepareChannel1Relay :: String -> TestCC -> TestCC -> IO (String, String)
+prepareChannel1Relay gName owner relay = do
+  rName <- userName relay
+
+  relay ##> "/ad"
+  (relaySLink, _cLink) <- getContactLinks relay True
+
+  owner ##> ("/relays name=" <> rName <> " " <> relaySLink)
+  owner <## "ok"
+
+  owner ##> ("/public group relays=1 #" <> gName)
+  owner <## ("group #" <> gName <> " is created")
+  owner <## "wait for selected relay(s) to join, then you can invite members via group link"
+
   concurrentlyN_
-    [ bob <## "#team: cath joined the group",
-      do
-        cath <## "#team: joining the group..."
-        cath <## "#team: you joined the group"
-        cath <## "#team: member alice (Alice) is connected",
-      do
-        alice <## "#team: bob added cath (Catherine) to the group (connecting...)"
-        alice <## "#team: new member cath is connected"
-    ]
-  dan ##> ("/c " <> gLink)
-  dan <## "connection request sent!"
-  bob <## "dan (Daniel): accepting request to join group #team..."
-  concurrentlyN_
-    [ bob <## "#team: dan joined the group",
-      do
-        dan <## "#team: joining the group..."
-        dan <## "#team: you joined the group"
-        dan <## "#team: member alice (Alice) is connected"
-        dan <## "#team: member cath (Catherine) is connected",
-      do
-        alice <## "#team: bob added dan (Daniel) to the group (connecting...)"
-        alice <## "#team: new member dan is connected",
-      do
-        cath <## "#team: bob added dan (Daniel) to the group (connecting...)"
-        cath <## "#team: new member dan is connected"
-    ]
-  eve ##> ("/c " <> gLink)
-  eve <## "connection request sent!"
-  bob <## "eve (Eve): accepting request to join group #team..."
-  concurrentlyN_
-    [ bob <## "#team: eve joined the group",
-      eve
-        <### [ "#team: joining the group...",
-               "#team: you joined the group",
-               "#team: member alice (Alice) is connected",
-               "#team: member cath (Catherine) is connected",
-               "#team: member dan (Daniel) is connected"
-             ],
-      do
-        alice <## "#team: bob added eve (Eve) to the group (connecting...)"
-        alice <## "#team: new member eve is connected",
-      do
-        cath <## "#team: bob added eve (Eve) to the group (connecting...)"
-        cath <## "#team: new member eve is connected",
-      do
-        dan <## "#team: bob added eve (Eve) to the group (connecting...)"
-        dan <## "#team: new member eve is connected"
+    [ do
+        owner <## ("#" <> gName <> ": group link relays updated, current relays:")
+        owner <## "  - relay id 1: active"
+        owner <## "group link:"
+        _ <- getTermLine owner
+        pure (),
+      relay <## ("#" <> gName <> ": you joined the group as relay")
     ]
 
-testChannelsRelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
-testChannelsRelayDeliverLoop deliveryBucketSize =
-  testChatCfg5 cfg aliceProfile bobProfile cathProfile danProfile eveProfile $ \alice bob cath dan eve -> do
-    createChannel5 alice bob cath dan eve GRObserver
+  owner ##> ("/show link #" <> gName)
+  getGroupLinks owner gName GRMember False
 
-    alice #> "#team hi"
-    bob <# "#team alice> hi"
-    [cath, dan, eve] *<# "#team alice> hi [>>]"
+createChannel2Relays :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
+createChannel2Relays gName owner relay1 relay2 dan eve frank = do
+  (shortLink, fullLink) <- prepareChannel2Relays gName owner relay1 relay2
+  forM_ [dan, eve, frank] $ \member ->
+    memberJoinChannel gName [relay1, relay2] shortLink fullLink member
 
-    cath ##> "+1 #team hi"
-    cath <## "added 👍"
-    bob <# "#team cath> > alice hi"
-    bob <## "    + 👍"
-    alice <# "#team cath> > alice hi"
-    alice <## "    + 👍"
-    dan <# "#team cath> > alice hi"
-    dan <## "    + 👍"
-    eve <# "#team cath> > alice hi"
-    eve <## "    + 👍"
+prepareChannel2Relays :: String -> TestCC -> TestCC -> TestCC -> IO (String, String)
+prepareChannel2Relays gName owner relay1 relay2 = do
+  r1Name <- userName relay1
+  r2Name <- userName relay2
+
+  relay1 ##> "/ad"
+  (r1SLink, _cLink) <- getContactLinks relay1 True
+  relay2 ##> "/ad"
+  (r2SLink, _cLink) <- getContactLinks relay2 True
+
+  owner ##> ("/relays name=" <> r1Name <> " " <> r1SLink <> " name=" <> r2Name <> " " <> r2SLink)
+  owner <## "ok"
+
+  owner ##> ("/public group relays=1,2 #" <> gName)
+  owner <## ("group #" <> gName <> " is created")
+  owner <## "wait for selected relay(s) to join, then you can invite members via group link"
+
+  concurrentlyN_
+    [ owner
+        <### [  -- one relay connects
+                ConsoleString ("#" <> gName <> ": group link relays updated, current relays:"),
+                StartsWith "  - relay id 1: ",
+                StartsWith "  - relay id 2: ",
+                "group link:",
+                Predicate (const True), -- consume group link line
+                -- second relay connects
+                ConsoleString ("#" <> gName <> ": group link relays updated, current relays:"),
+                "  - relay id 1: active",
+                "  - relay id 2: active",
+                "group link:",
+                Predicate (const True) -- consume group link line
+              ],
+      relay1 <## ("#" <> gName <> ": you joined the group as relay"),
+      relay2 <## ("#" <> gName <> ": you joined the group as relay")
+    ]
+
+  owner ##> ("/show link #" <> gName)
+  getGroupLinks owner gName GRMember False
+
+memberJoinChannel :: String -> [TestCC] -> String -> String -> TestCC -> IO ()
+memberJoinChannel gName relays shortLink fullLink member = do
+  mName <- userName member
+  mFullName <- showName member
+  relayNames <- mapM userName relays
+
+  member ##> ("/_connect plan 1 " <> shortLink)
+  member <## "group link: ok to connect via relays"
+  groupSLinkData <- getTermLine member
+
+  member ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+  member <## ("#" <> gName <> ": group is prepared")
+
+  member ##> "/_connect group #1"
+  member <## ("#" <> gName <> ": connection started")
+  concurrentlyN_ $
+    [ member
+        <### concat
+          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay " <> rName <> ")..."),
+              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay " <> rName <> ")")
+            ]
+          | rName <- relayNames
+          ]
+    ]
+      <> [ do
+             relay <## (mFullName <> ": accepting request to join group #team...")
+             relay <## ("#" <> gName <> ": " <> mName <> " joined the group")
+         | relay <- relays
+         ]
+
+memberJoinChannelIncognito :: String -> [TestCC] -> String -> String -> TestCC -> IO String
+memberJoinChannelIncognito gName relays shortLink fullLink member = do
+  relayNames <- mapM userName relays
+
+  member ##> ("/_connect plan 1 " <> shortLink)
+  member <## "group link: ok to connect via relays"
+  groupSLinkData <- getTermLine member
+
+  member ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " direct=off " <> groupSLinkData)
+  member <## ("#" <> gName <> ": group is prepared")
+
+  member ##> "/_connect group #1 incognito=on"
+  memIncognito <- getTermLine member
+  member <## ("#" <> gName <> ": connection started incognito")
+  concurrentlyN_ $
+    [ member
+        <### concat
+          [ [ ConsoleString ("#" <> gName <> ": joining the group (connecting to relay " <> rName <> ")..."),
+              ConsoleString ("#" <> gName <> ": you joined the group (connected to relay " <> rName <> ") incognito as " <> memIncognito)
+            ]
+          | rName <- relayNames
+          ]
+    ]
+      <> [ do
+             relay <## (memIncognito <> ": accepting request to join group #team...")
+             relay <## ("#" <> gName <> ": " <> memIncognito <> " joined the group")
+         | relay <- relays
+         ]
+  pure memIncognito
+
+testChannels1RelayDeliverLoop :: HasCallStack => Int -> TestParams -> IO ()
+testChannels1RelayDeliverLoop deliveryBucketSize ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChat ps "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            alice #> "#team hi"
+            bob <# "#team alice> hi"
+            [cath, dan, eve] *<# "#team alice> hi [>>]"
+
+            cath ##> "+1 #team hi"
+            cath <## "added 👍"
+            bob <# "#team cath> > alice hi"
+            bob <## "    + 👍"
+            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            alice <# "#team cath> > alice hi"
+            alice <## "    + 👍"
+            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <# "#team cath> > alice hi"
+            dan <## "    + 👍"
+            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <# "#team cath> > alice hi"
+            eve <## "    + 👍"
   where
     cfg = testCfg {deliveryBucketSize}
 
@@ -8466,8 +8562,8 @@ testChannelsSenderDeduplicateOwn ps = do
     withNewTestChat ps "cath" cathProfile $ \cath ->
       withNewTestChat ps "dan" danProfile $ \dan ->
         withNewTestChat ps "eve" eveProfile $ \eve -> do
-          withNewTestChatCfg ps cfg "bob" bobProfile $ \bob ->
-            createChannel5 alice bob cath dan eve GRMember
+          withNewTestChatCfgOpts ps cfg relayTestOpts "bob" bobProfile $ \bob -> do
+            createChannel1Relay "team" alice bob cath dan eve
 
           -- chat relay bob is offline
           alice #> "#team 1"
@@ -8477,8 +8573,8 @@ testChannelsSenderDeduplicateOwn ps = do
           cath #> "#team 5"
           dan #> "#team 6"
 
-          withTestChatCfg ps cfg "bob" $ \bob -> do
-            bob <## "subscribed 6 connections server localhost"
+          withTestChatCfgOpts ps cfg relayTestOpts "bob" $ \bob -> do
+            bob <## "subscribed 6 connections on server localhost"
             bob
               <### [ WithTime "#team alice> 1",
                      WithTime "#team alice> 2",
@@ -8488,25 +8584,31 @@ testChannelsSenderDeduplicateOwn ps = do
                      WithTime "#team dan> 6"
                    ]
             alice
-              <### [ WithTime "#team cath> 4 [>>]",
+              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
+                     "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+                     WithTime "#team cath> 4 [>>]",
                      WithTime "#team cath> 5 [>>]",
                      WithTime "#team dan> 6 [>>]"
                    ]
             cath
-              <### [ WithTime "#team alice> 1 [>>]",
+              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+                     WithTime "#team alice> 1 [>>]",
                      WithTime "#team alice> 2 [>>]",
                      WithTime "#team alice> 3 [>>]",
                      WithTime "#team dan> 6 [>>]"
                    ]
             dan
-              <### [ WithTime "#team alice> 1 [>>]",
+              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
+                     WithTime "#team alice> 1 [>>]",
                      WithTime "#team alice> 2 [>>]",
                      WithTime "#team alice> 3 [>>]",
                      WithTime "#team cath> 4 [>>]",
                      WithTime "#team cath> 5 [>>]"
                    ]
             eve
-              <### [ WithTime "#team alice> 1 [>>]",
+              <### [ "#team: bob forwarded a message from an unknown member, creating unknown member record cath",
+                     "#team: bob forwarded a message from an unknown member, creating unknown member record dan",
+                     WithTime "#team alice> 1 [>>]",
                      WithTime "#team alice> 2 [>>]",
                      WithTime "#team alice> 3 [>>]",
                      WithTime "#team cath> 4 [>>]",
@@ -8515,3 +8617,77 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
+
+testChannels2RelaysDeliver :: HasCallStack => TestParams -> IO ()
+testChannels2RelaysDeliver ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              createChannel2Relays "team" alice bob cath dan eve frank
+
+              alice #> "#team hi"
+              [bob, cath] *<# "#team alice> hi"
+              [dan, eve, frank] *<# "#team alice> hi [>>]"
+
+              dan ##> "+1 #team hi"
+              dan <## "added 👍"
+              bob <# "#team dan> > alice hi"
+              bob <## "    + 👍"
+              cath <# "#team dan> > alice hi"
+              cath <## "    + 👍"
+              alice .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              alice <# "#team dan> > alice hi"
+              alice <## "    + 👍"
+              eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              eve <# "#team dan> > alice hi"
+              eve <## "    + 👍"
+              frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              frank <# "#team dan> > alice hi"
+              frank <## "    + 👍"
+
+              -- remove below if default role is changed to observer
+              dan #> "#team hey"
+              [bob, cath] *<# "#team dan> hey"
+              [alice, eve, frank] *<# "#team dan> hey [>>]"
+
+testChannels2RelaysIncognito :: HasCallStack => TestParams -> IO ()
+testChannels2RelaysIncognito ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob -> do
+      withNewTestChatOpts ps relayTestOpts "cath" cathProfile $ \cath -> do
+        withNewTestChat ps "dan" danProfile $ \dan -> do
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            withNewTestChat ps "frank" frankProfile $ \frank -> do
+              (shortLink, fullLink) <- prepareChannel2Relays "team" alice bob cath
+              danIncognito <- memberJoinChannelIncognito "team" [bob, cath] shortLink fullLink dan
+              forM_ [eve, frank] $ \member ->
+                memberJoinChannel "team" [bob, cath] shortLink fullLink member
+
+              alice #> "#team hi"
+              [bob, cath] *<# "#team alice> hi"
+              dan ?<# "#team alice> hi [>>]"
+              [eve, frank] *<# "#team alice> hi [>>]"
+
+              dan ##> "+1 #team hi"
+              dan <## "added 👍"
+              bob <# ("#team " <> danIncognito <> "> > alice hi")
+              bob <## "    + 👍"
+              cath <# ("#team " <> danIncognito <> "> > alice hi")
+              cath <## "    + 👍"
+              alice .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              alice <# ("#team " <> danIncognito <> "> > alice hi")
+              alice <## "    + 👍"
+              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              eve <# ("#team " <> danIncognito <> "> > alice hi")
+              eve <## "    + 👍"
+              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              frank <# ("#team " <> danIncognito <> "> > alice hi")
+              frank <## "    + 👍"
+
+              -- remove below if default role is changed to observer
+              dan ?#> "#team hey"
+              [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
+              [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")

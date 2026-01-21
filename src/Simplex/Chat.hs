@@ -170,9 +170,11 @@ newChatController
     chatStoreChanged <- newTVarIO False
     deliveryTaskWorkers <- TM.emptyIO
     deliveryJobWorkers <- TM.emptyIO
+    relayRequestWorkers <- TM.emptyIO
     expireCIThreads <- TM.emptyIO
     expireCIFlags <- TM.emptyIO
     cleanupManagerAsync <- newTVarIO Nothing
+    relayGroupLinkChecksAsync <- newTVarIO Nothing
     timedItemThreads <- TM.emptyIO
     chatActivated <- newTVarIO True
     showLiveItems <- newTVarIO False
@@ -211,9 +213,11 @@ newChatController
           filesFolder,
           deliveryTaskWorkers,
           deliveryJobWorkers,
+          relayRequestWorkers,
           expireCIThreads,
           expireCIFlags,
           cleanupManagerAsync,
+          relayGroupLinkChecksAsync,
           timedItemThreads,
           chatActivated,
           showLiveItems,

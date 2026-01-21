@@ -30,6 +30,8 @@ module Simplex.Chat.Store.Direct
     createDirectConnection,
     createIncognitoProfile,
     createConnReqConnection,
+    createRelayMemberConnectionAsync,
+    updateConnLinkData,
     setPreparedGroupStartedConnection,
     getProfileById,
     getConnReqContactXContactId,
@@ -153,10 +155,12 @@ deletePendingContactConnection db userId connId =
     |]
     (userId, connId, ConnContact)
 
-createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqContact -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe Profile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
+createConnReqConnection :: DB.Connection -> UserId -> ConnId -> Maybe PreparedChatEntity -> ConnReqContact -> ConnReqUriHash -> Maybe ShortLinkContact -> XContactId -> Maybe IncognitoProfile -> Maybe GroupLinkId -> SubscriptionMode -> VersionChat -> PQSupport -> IO Connection
 createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xContactId incognitoProfile groupLinkId subMode chatV pqSup = do
   currentTs <- getCurrentTime
-  customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
+  customUserProfileId <- forM incognitoProfile $ \case
+    NewIncognito p -> createIncognitoProfile_ db userId currentTs p
+    ExistingIncognito LocalProfile {profileId = pId} -> pure pId
   let connStatus = ConnPrepared
   DB.execute
     db
@@ -175,7 +179,9 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
     )
   connId <- insertedRowId db
   case preparedEntity_ of
-    Just (PCEGroup gInfo _) -> updatePreparedGroup gInfo customUserProfileId currentTs
+    -- For relay groups, setPreparedGroupLinkInfo is called before the relay loop
+    Just (PCEGroup gInfo _) | not (useRelays' gInfo) ->
+      setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId currentTs
     _ -> pure ()
   pure
     Connection
@@ -213,16 +219,41 @@ createConnReqConnection db userId acId preparedEntity_ cReq cReqHash sLnk xConta
       Just (PCEContact Contact {contactId}) -> (ConnContact, Just contactId, Nothing, Just contactId)
       Just (PCEGroup _ GroupMember {groupMemberId}) -> (ConnMember, Nothing, Just groupMemberId, Just groupMemberId)
       Nothing -> (ConnContact, Nothing, Nothing, Nothing)
-    updatePreparedGroup GroupInfo {groupId, membership} customUserProfileId currentTs = do
-      DB.execute
-        db
-        "UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
-        (cReq, cReqHash, BI True, currentTs, groupId)
-      when (isJust customUserProfileId) $
-        DB.execute
-          db
-          "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
-          (customUserProfileId, currentTs, groupMemberId' membership)
+
+createRelayMemberConnectionAsync :: DB.Connection -> User -> GroupInfo -> GroupMember -> ShortLinkContact -> (CommandId, ConnId) -> SubscriptionMode -> IO ()
+createRelayMemberConnectionAsync db user@User {userId} gInfo GroupMember {groupMemberId} relayLink (cmdId, agentConnId) subMode = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      INSERT INTO connections (
+        user_id, agent_conn_id, conn_status, conn_type, contact_conn_initiated,
+        group_member_id, via_short_link_contact, custom_user_profile_id, via_group_link,
+        created_at, updated_at, to_subscribe
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
+    |]
+    ( (userId, agentConnId, ConnNew, ConnMember, BI True)
+        :. (groupMemberId, relayLink, customUserProfileId_, BI True)
+        :. (currentTs, currentTs, BI (subMode == SMOnlyCreate))
+    )
+  connId <- insertedRowId db
+  setCommandConnId db user cmdId connId
+  where
+    customUserProfileId_ = localProfileId <$> incognitoMembershipProfile gInfo
+
+updateConnLinkData :: DB.Connection -> User -> Connection -> ConnReqContact -> ConnReqUriHash -> Maybe GroupLinkId -> VersionChat -> PQSupport -> IO ()
+updateConnLinkData db User {userId} Connection {connId} cReq cReqHash groupLinkId_ chatV pqSup = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    [sql|
+      UPDATE connections
+      SET via_contact_uri = ?, via_contact_uri_hash = ?, group_link_id = ?,
+          conn_chat_version = ?, pq_support = ?, pq_encryption = ?,
+          updated_at = ?
+      WHERE user_id = ? AND connection_id = ?
+    |]
+    (cReq, cReqHash, groupLinkId_, chatV, pqSup, pqSup, currentTs, userId, connId)
 
 setPreparedGroupStartedConnection :: DB.Connection -> GroupId -> IO ()
 setPreparedGroupStartedConnection db groupId = do

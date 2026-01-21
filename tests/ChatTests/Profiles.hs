@@ -2905,7 +2905,7 @@ testShortLinkJoinGroup =
       name <- userName cc
       sName <- showName cc
       cc ##> ("/_connect plan 1 " <> link)
-      cc <## "group link: ok to connect"
+      cc <## "group link: ok to connect directly"
       _sLinkData <- getTermLine cc
       cc ##> ("/c " <> link)
       cc <## "connection request sent!"
@@ -3377,7 +3377,7 @@ testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
       alice ##> "/create link #team"
       (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
@@ -3411,7 +3411,7 @@ testShortLinkPrepareGroup = testChat3 aliceProfile bobProfile cathProfile test
       alice <## "#team: bob left the group"
       cath <## "#team: bob left the group"
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       void $ getTermLine bob
 
 testShortLinkPrepareGroupReject :: HasCallStack => TestParams -> IO ()
@@ -3422,7 +3422,7 @@ testShortLinkPrepareGroupReject = testChatCfg3 cfg aliceProfile bobProfile cathP
       alice ##> "/create link #team"
       (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
@@ -3455,7 +3455,7 @@ testGroupShortLinkWelcome = testChat2 aliceProfile bobProfile test
       alice ##> "/create link #team"
       (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
@@ -3488,7 +3488,7 @@ testShortLinkGroupRetry ps = testChatOpts2 opts' aliceProfile bobProfile test ps
         alice ##> "/create link #team"
         (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
         bob ##> ("/_connect plan 1 " <> shortLink)
-        bob <## "group link: ok to connect"
+        bob <## "group link: ok to connect directly"
         groupSLinkData <- getTermLine bob
         bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
         bob <## "#team: group is prepared"
@@ -3703,7 +3703,7 @@ testShortLinkConnectPreparedGroupIncognito = testChat3 aliceProfile bobProfile c
       alice ##> "/create link #team"
       (shortLink, fullLink) <- getGroupLinks alice "team" GRMember True
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
@@ -3747,7 +3747,7 @@ testShortLinkChangePreparedGroupUser = testChat3 aliceProfile bobProfile cathPro
       showActiveUser bob "bob (Bob)"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#team: group is prepared"
@@ -3803,7 +3803,7 @@ testShortLinkChangePreparedGroupUserDuplicate = testChat3 aliceProfile bobProfil
       showActiveUser bob "robert"
 
       bob ##> ("/_connect plan 2 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData1 <- getTermLine bob
       bob ##> ("/_prepare group 2 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData1)
       bob <## "#team: group is prepared"
@@ -3812,7 +3812,7 @@ testShortLinkChangePreparedGroupUserDuplicate = testChat3 aliceProfile bobProfil
       showActiveUser bob "bob (Bob)"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData2 <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData2)
       bob <## "#team: group is prepared"
@@ -4075,7 +4075,7 @@ testShortLinkGroupChangeProfile = testChat3 aliceProfile bobProfile cathProfile 
       cath <## "changed to #club"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#club: group is prepared"
@@ -4113,7 +4113,7 @@ testShortLinkGroupChangeProfileReceived = testChat3 aliceProfile bobProfile cath
       alice <## "changed to #club"
 
       bob ##> ("/_connect plan 1 " <> shortLink)
-      bob <## "group link: ok to connect"
+      bob <## "group link: ok to connect directly"
       groupSLinkData <- getTermLine bob
       bob ##> ("/_prepare group 1 " <> fullLink <> " " <> shortLink <> " " <> groupSLinkData)
       bob <## "#club: group is prepared"

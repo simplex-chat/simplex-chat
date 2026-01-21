@@ -119,7 +119,7 @@ instance ToField AgentUserId where toField (AgentUserId uId) = toField uId
 aUserId :: User -> UserId
 aUserId User {agentUserId = AgentUserId uId} = uId
 
--- TODO [chat relay] filter out chat relay users where necessary (e.g. loading list of users for UI)
+-- TODO [relays] filter out chat relay users where necessary (e.g. loading list of users for UI)
 data User = User
   { userId :: UserId,
     agentUserId :: AgentUserId,
@@ -450,6 +450,7 @@ type GroupId = Int64
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
+    relayOwnStatus :: Maybe RelayStatus, -- status of the relay itself related to the group
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -471,6 +472,9 @@ data GroupInfo = GroupInfo
     viaGroupLinkUri :: Maybe ConnReqContact
   }
   deriving (Eq, Show)
+
+useRelays' :: GroupInfo -> Bool
+useRelays' GroupInfo {useRelays} = isTrue useRelays
 
 data BusinessChatType
   = BCBusiness -- used on the customer side
@@ -732,6 +736,7 @@ data GroupProfile = GroupProfile
     shortDescr :: Maybe Text, -- short description limited to 160 characters
     description :: Maybe Text, -- this has been repurposed as welcome message
     image :: Maybe ImageData,
+    groupLink :: Maybe ShortLinkContact,
     groupPreferences :: Maybe GroupPreferences,
     memberAdmission :: Maybe GroupMemberAdmission
   }
@@ -811,6 +816,15 @@ data GroupLinkRejection = GroupLinkRejection
     invitedMember :: MemberIdRole,
     groupProfile :: GroupProfile,
     rejectionReason :: GroupRejectionReason
+  }
+  deriving (Eq, Show)
+
+-- sent by owner to relay when adding it to group
+data GroupRelayInvitation = GroupRelayInvitation
+  { fromMember :: MemberIdRole,
+    fromMemberProfile :: Profile,
+    relayMemberId :: MemberId,
+    groupLink :: ShortLinkContact
   }
   deriving (Eq, Show)
 
@@ -949,10 +963,56 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupSupportChat,
-    isChatRelay :: BoolDef
+    supportChat :: Maybe GroupSupportChat
   }
   deriving (Eq, Show)
+
+data GroupRelay = GroupRelay
+  { groupRelayId :: Int64,
+    groupMemberId :: GroupMemberId,
+    userChatRelayId :: Int64, -- ID of configured UserChatRelay
+    relayStatus :: RelayStatus,
+    relayLink :: Maybe ShortLinkContact
+  }
+  deriving (Eq, Show)
+
+data RelayStatus
+  = RSNew -- only for owner
+  | RSInvited
+  | RSAccepted
+  | RSActive
+  deriving (Eq, Show)
+
+data RelayRequestData = RelayRequestData
+  { relayInvId :: InvitationId,
+    reqGroupLink :: ShortLinkContact,
+    reqChatVRange :: VersionRangeChat
+  }
+  deriving (Eq, Show)
+
+relayStatusText :: RelayStatus -> Text
+relayStatusText = \case
+  RSNew -> "new"
+  RSInvited -> "invited"
+  RSAccepted -> "accepted"
+  RSActive -> "active"
+
+instance TextEncoding RelayStatus where
+  textEncode = \case
+    RSNew -> "new"
+    RSInvited -> "invited"
+    RSAccepted -> "accepted"
+    RSActive -> "active"
+  textDecode = \case
+    "new" -> Just RSNew
+    "invited" -> Just RSInvited
+    "accepted" -> Just RSAccepted
+    "active" -> Just RSActive
+    _ -> Nothing
+
+instance FromField RelayStatus where fromField = fromTextField_ textDecode
+
+instance ToField RelayStatus where toField = toField . textEncode
 
 data GroupSupportChat = GroupSupportChat
   { chatTs :: UTCTime,
@@ -977,10 +1037,11 @@ groupMemberRef :: GroupMember -> GroupMemberRef
 groupMemberRef GroupMember {groupMemberId, memberProfile = p} =
   GroupMemberRef {groupMemberId, profile = fromLocalProfile p}
 
--- TODO [channels fwd] knowledge whether member is a relay should come from protocol, not implicitly via role
--- TODO   - in channels members should directly connect only to relays
-isMemberRelay :: GroupMember -> Bool
-isMemberRelay GroupMember {memberRole} = memberRole == GRAdmin
+isRelay :: GroupMember -> Bool
+isRelay m = memberRole' m == GRRelay
+
+memberRole' :: GroupMember -> GroupMemberRole
+memberRole' GroupMember {memberRole} = memberRole
 
 memberConn :: GroupMember -> Maybe Connection
 memberConn GroupMember {activeConn} = activeConn
@@ -1032,8 +1093,7 @@ data NewGroupMember = NewGroupMember
     memInvitedByGroupMemberId :: Maybe GroupMemberId,
     localDisplayName :: ContactName,
     memProfileId :: Int64,
-    memContactId :: Maybe Int64,
-    isChatRelay :: Bool
+    memContactId :: Maybe Int64
   }
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
@@ -1055,7 +1115,10 @@ instance ToJSON MemberId where
   toEncoding = strToJEncoding
 
 nameFromMemberId :: MemberId -> ContactName
-nameFromMemberId = T.take 7 . safeDecodeUtf8 . B64.encode . unMemberId
+nameFromMemberId = nameFromBS . unMemberId
+
+nameFromBS :: ByteString -> ContactName
+nameFromBS = T.take 7 . safeDecodeUtf8 . B64.encode
 
 data InvitedBy = IBContact {byContactId :: Int64} | IBUser | IBUnknown
   deriving (Eq, Show)
@@ -1790,6 +1853,8 @@ data CommandFunction
   | CFAcceptContact
   | CFAckMessage -- not used
   | CFDeleteConn -- not used
+  | CFSetShortLink
+  | CFGetShortLink
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1807,6 +1872,8 @@ instance TextEncoding CommandFunction where
     "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
+    "set_short_link" -> Just CFSetShortLink
+    "get_short_link" -> Just CFGetShortLink
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1818,6 +1885,8 @@ instance TextEncoding CommandFunction where
     CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
+    CFSetShortLink -> "set_short_link"
+    CFGetShortLink -> "get_short_link"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1830,6 +1899,8 @@ commandExpectedResponse = \case
   CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
+  CFSetShortLink -> t LINK_
+  CFGetShortLink -> t LDATA_
   where
     t = AEvtTag SAEConn
 
@@ -1946,6 +2017,10 @@ $(JQ.deriveJSON defaultJSON ''PendingContactConnection)
 
 $(JQ.deriveJSON defaultJSON ''GroupSupportChat)
 
+$(JQ.deriveJSON (enumJSON $ dropPrefix "RS") ''RelayStatus)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelay)
+
 $(JQ.deriveJSON defaultJSON ''GroupMember)
 
 $(JQ.deriveJSON (enumJSON $ dropPrefix "MF") ''MsgFilter)
@@ -1985,6 +2060,8 @@ $(JQ.deriveJSON defaultJSON ''GroupInvitation)
 $(JQ.deriveJSON defaultJSON ''GroupLinkInvitation)
 
 $(JQ.deriveJSON defaultJSON ''GroupLinkRejection)
+
+$(JQ.deriveJSON defaultJSON ''GroupRelayInvitation)
 
 $(JQ.deriveJSON defaultJSON ''IntroInvitation)
 

@@ -341,6 +341,23 @@ export namespace APINewGroup {
   }
 }
 
+// Create public group.
+// Network usage: interactive.
+export interface APINewPublicGroup {
+  userId: number // int64
+  incognito: boolean
+  relayIds: number[] // int64, non-empty
+  groupProfile: T.GroupProfile
+}
+
+export namespace APINewPublicGroup {
+  export type Response = CR.PublicGroupCreated | CR.ChatCmdError
+
+  export function cmdString(self: APINewPublicGroup): string {
+    return '/_public group ' + self.userId + (self.incognito ? ' incognito=on' : '') + ' ' + self.relayIds.join(',') + ' ' + JSON.stringify(self.groupProfile)
+  }
+}
+
 // Update group profile.
 // Network usage: background.
 export interface APIUpdateGroupProfile {

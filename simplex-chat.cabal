@@ -80,6 +80,7 @@ library
       Simplex.Chat.Store.Messages
       Simplex.Chat.Store.NoteFolders
       Simplex.Chat.Store.Profiles
+      Simplex.Chat.Store.RelayRequests
       Simplex.Chat.Store.Remote
       Simplex.Chat.Store.Shared
       Simplex.Chat.Styled

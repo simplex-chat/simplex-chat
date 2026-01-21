@@ -75,6 +75,7 @@ data ChatLockEntity
 data StoreError
   = SEDuplicateName
   | SEUserNotFound {userId :: UserId}
+  | SERelayUserNotFound
   | SEUserNotFoundByName {contactName :: ContactName}
   | SEUserNotFoundByContactId {contactId :: ContactId}
   | SEUserNotFoundByGroupId {groupId :: GroupId}
@@ -102,6 +103,7 @@ data StoreError
   | SEInvalidMemberRelationUpdate
   | SEGroupWithoutUser
   | SEDuplicateGroupMember
+  | SEDuplicateMemberId
   | SEGroupAlreadyJoined
   | SEGroupInvitationNotFound
   | SENoteFolderAlreadyExists {noteFolderId :: NoteFolderId}
@@ -150,6 +152,9 @@ data StoreError
   | SEProhibitedDeleteUser {userId :: UserId, contactId :: ContactId}
   | SEOperatorNotFound {serverOperatorId :: Int64}
   | SEUsageConditionsNotFound
+  | SEUserChatRelayNotFound {chatRelayId :: Int64}
+  | SEGroupRelayNotFound {groupRelayId :: Int64}
+  | SEGroupRelayNotFoundByMemberId {groupMemberId :: GroupMemberId}
   | SEInvalidQuote
   | SEInvalidMention
   | SEInvalidDeliveryTask {taskId :: Int64}
@@ -657,22 +662,22 @@ type PreparedGroupRow = (Maybe ConnReqContact, Maybe ShortLinkContact, BoolInt, 
 
 type BusinessChatInfoRow = (Maybe BusinessChatType, Maybe MemberId, Maybe MemberId)
 
-type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (Maybe UIThemeEntityOverrides, Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupMemberRow
+type GroupInfoRow = (Int64, GroupName, GroupName, Text, Maybe Text, Text, Maybe Text, Maybe ImageData, Maybe ShortLinkContact) :. (Maybe MsgFilter, Maybe BoolInt, BoolInt, Maybe GroupPreferences, Maybe GroupMemberAdmission) :. (UTCTime, UTCTime, Maybe UTCTime, Maybe UTCTime) :. PreparedGroupRow :. BusinessChatInfoRow :. (BoolInt, Maybe RelayStatus, Maybe UIThemeEntityOverrides, Int64, Maybe CustomData, Maybe Int64, Int, Maybe ConnReqContact) :. GroupMemberRow
 
-type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus, BoolInt) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime)
+type GroupMemberRow = (GroupMemberId, GroupId, Int64, MemberId, VersionChat, VersionChat, GroupMemberRole, GroupMemberCategory, GroupMemberStatus, BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, ContactName, Maybe ContactId, ProfileId) :. ProfileRow :. (UTCTime, UTCTime) :. (Maybe UTCTime, Int64, Int64, Int64, Maybe UTCTime)
 
 type ProfileRow = (ProfileId, ContactName, Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, LocalAlias, Maybe Preferences)
 
 toGroupInfo :: VersionRangeChat -> Int64 -> [ChatTagId] -> GroupInfoRow -> GroupInfo
-toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image) :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (uiThemes, currentMembers, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. userMemberRow) =
+toGroupInfo vr userContactId chatTags ((groupId, localDisplayName, displayName, fullName, shortDescr, localAlias, description, image, groupLink) :. (enableNtfs_, sendRcpts, BI favorite, groupPreferences, memberAdmission) :. (createdAt, updatedAt, chatTs, userMemberProfileSentAt) :. preparedGroupRow :. businessRow :. (BI useRelays, relayOwnStatus, uiThemes, currentMembers, customData, chatItemTTL, membersRequireAttention, viaGroupLinkUri) :. userMemberRow) =
   let membership = (toGroupMember userContactId userMemberRow) {memberChatVRange = vr}
       chatSettings = ChatSettings {enableNtfs = fromMaybe MFAll enableNtfs_, sendRcpts = unBI <$> sendRcpts, favorite}
       fullGroupPreferences = mergeGroupPreferences groupPreferences
-      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission}
+      groupProfile = GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission, groupLink}
       businessChat = toBusinessChatInfo businessRow
       preparedGroup = toPreparedGroup preparedGroupRow
       groupSummary = GroupSummary {currentMembers}
-   in GroupInfo {groupId, useRelays = BoolDef False, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri}
+   in GroupInfo {groupId, useRelays = BoolDef useRelays, relayOwnStatus, localDisplayName, groupProfile, localAlias, businessChat, fullGroupPreferences, membership, chatSettings, createdAt, updatedAt, chatTs, userMemberProfileSentAt, preparedGroup, chatTags, chatItemTTL, uiThemes, groupSummary, customData, membersRequireAttention, viaGroupLinkUri}
 
 toPreparedGroup :: PreparedGroupRow -> Maybe PreparedGroup
 toPreparedGroup = \case
@@ -681,14 +686,13 @@ toPreparedGroup = \case
   _ -> Nothing
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
-toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_, BI isCRelay) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs)) =
+toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, BI showMessages, memberRestriction_) :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. profileRow :. (createdAt, updatedAt) :. (supportChatTs_, supportChatUnread, supportChatMemberAttention, supportChatMentions, supportChatLastMsgFromMemberTs)) =
   let memberProfile = rowToLocalProfile profileRow
       memberSettings = GroupMemberSettings {showMessages}
       blockedByAdmin = maybe False mrsBlocked memberRestriction_
       invitedBy = toInvitedBy userContactId invitedById
       activeConn = Nothing
       memberChatVRange = fromMaybe (versionToRange maxVer) $ safeVersionRange minVer maxVer
-      isChatRelay = BoolDef isCRelay
       supportChat = case supportChatTs_ of
         Just chatTs ->
           Just
@@ -706,7 +710,7 @@ groupMemberQuery :: Query
 groupMemberQuery =
   [sql|
     SELECT
-      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction, m.is_chat_relay,
+      m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category, m.member_status, m.show_messages, m.member_restriction,
       m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id, p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
       m.created_at, m.updated_at,
       m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts,
@@ -739,15 +743,16 @@ groupInfoQueryFields =
   [sql|
     SELECT
       -- GroupInfo
-      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image,
+      g.group_id, g.local_display_name, gp.display_name, gp.full_name, gp.short_descr, g.local_alias, gp.description, gp.image, gp.group_link,
       g.enable_ntfs, g.send_rcpts, g.favorite, gp.preferences, gp.member_admission,
       g.created_at, g.updated_at, g.chat_ts, g.user_member_profile_sent_at,
       g.conn_full_link_to_connect, g.conn_short_link_to_connect, g.conn_link_prepared_connection, g.conn_link_started_connection, g.welcome_shared_msg_id, g.request_shared_msg_id,
       g.business_chat, g.business_member_id, g.customer_member_id,
+      g.use_relays, g.relay_own_status,
       g.ui_themes, g.summary_current_members_count, g.custom_data, g.chat_item_ttl, g.members_require_attention, g.via_group_link_uri,
       -- GroupMember - membership
       mu.group_member_id, mu.group_id, mu.index_in_group, mu.member_id, mu.peer_chat_min_version, mu.peer_chat_max_version, mu.member_role, mu.member_category,
-      mu.member_status, mu.show_messages, mu.member_restriction, mu.is_chat_relay, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
+      mu.member_status, mu.show_messages, mu.member_restriction, mu.invited_by, mu.invited_by_group_member_id, mu.local_display_name, mu.contact_id, mu.contact_profile_id, pu.contact_profile_id,
       pu.display_name, pu.full_name, pu.short_descr, pu.image, pu.contact_link, pu.chat_peer_type, pu.local_alias, pu.preferences,
       mu.created_at, mu.updated_at,
       mu.support_chat_ts, mu.support_chat_items_unread, mu.support_chat_items_member_attention, mu.support_chat_items_mentions, mu.support_chat_last_msg_from_member_ts
@@ -834,6 +839,37 @@ addGroupChatTags :: DB.Connection -> GroupInfo -> IO GroupInfo
 addGroupChatTags db g@GroupInfo {groupId} = do
   chatTags <- getGroupChatTags db groupId
   pure (g :: GroupInfo) {chatTags}
+
+getGroupInfo :: DB.Connection -> VersionRangeChat -> User -> Int64 -> ExceptT StoreError IO GroupInfo
+getGroupInfo db vr User {userId, userContactId} groupId = ExceptT $ do
+  chatTags <- getGroupChatTags db groupId
+  firstRow (toGroupInfo vr userContactId chatTags) (SEGroupNotFound groupId) $
+    DB.query
+      db
+      (groupInfoQuery <> " WHERE g.group_id = ? AND g.user_id = ? AND mu.contact_id = ?")
+      (groupId, userId, userContactId)
+
+-- Set group link info and optionally incognito profile before connecting to relays.
+-- This is called once before connecting to relays, unlike createConnReqConnection -> setPreparedGroupLinkInfo_,
+-- which is used in single-connection flows.
+setPreparedGroupLinkInfo :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Profile -> ExceptT StoreError IO GroupInfo
+setPreparedGroupLinkInfo db vr user@User {userId} gInfo@GroupInfo {groupId} cReq cReqHash incognitoProfile = do
+  currentTs <- liftIO getCurrentTime
+  customUserProfileId <- liftIO $ mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
+  liftIO $ setPreparedGroupLinkInfo_ db gInfo cReq cReqHash customUserProfileId currentTs
+  getGroupInfo db vr user groupId
+
+setPreparedGroupLinkInfo_ :: DB.Connection -> GroupInfo -> ConnReqContact -> ConnReqUriHash -> Maybe Int64 -> UTCTime -> IO ()
+setPreparedGroupLinkInfo_ db GroupInfo {groupId, membership} cReq cReqHash customUserProfileId currentTs = do
+  DB.execute
+    db
+    "UPDATE groups SET via_group_link_uri = ?, via_group_link_uri_hash = ?, conn_link_prepared_connection = ?, updated_at = ? WHERE group_id = ?"
+    (cReq, cReqHash, BI True, currentTs, groupId)
+  when (isJust customUserProfileId) $
+    DB.execute
+      db
+      "UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE group_member_id = ?"
+      (customUserProfileId, currentTs, groupMemberId' membership)
 
 setViaGroupLinkUri :: DB.Connection -> GroupId -> Int64 -> IO ()
 setViaGroupLinkUri db groupId connId = do
