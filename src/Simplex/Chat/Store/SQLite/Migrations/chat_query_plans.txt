@@ -548,8 +548,7 @@ SEARCH contacts USING COVERING INDEX idx_contacts_contact_group_member_id (conta
 Query: 
             INSERT INTO group_members
               ( group_id, index_in_group, member_id, member_role, member_category, member_status, invited_by,
-                user_id, local_display_name, contact_profile_id, created_at, updated_at,
-                relay_link
+                user_id, local_display_name, contact_profile_id, created_at, updated_at, relay_link
                 )
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
           
@@ -981,6 +980,7 @@ Query:
             FROM groups
             WHERE relay_own_status = ?
               AND relay_request_failed = 0
+              AND relay_request_err_reason IS NULL
             ORDER BY group_id ASC
             LIMIT 1
           
@@ -3246,6 +3246,7 @@ Query:
           FROM groups
           WHERE relay_own_status = ?
             AND relay_request_failed = 0
+            AND relay_request_err_reason IS NULL
           LIMIT 1
         )
       
@@ -3419,18 +3420,18 @@ SEARCH chat_item_versions USING INDEX idx_chat_item_versions_chat_item_id (chat_
 Query: 
         SELECT chat_relay_id, address, name, domains, preset, tested, enabled
         FROM chat_relays
-        WHERE user_id = ?
+        WHERE user_id = ? AND chat_relay_id = ? AND deleted = 0
       
 Plan:
-SEARCH chat_relays USING INDEX idx_chat_relays_user_id (user_id=?)
+SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: 
         SELECT chat_relay_id, address, name, domains, preset, tested, enabled
         FROM chat_relays
-        WHERE user_id = ? AND chat_relay_id = ?
+        WHERE user_id = ? AND deleted = 0
       
 Plan:
-SEARCH chat_relays USING INTEGER PRIMARY KEY (rowid=?)
+SEARCH chat_relays USING INDEX idx_chat_relays_user_id (user_id=?)
 
 Query: 
         SELECT chat_tag_id, chat_tag_emoji, chat_tag_text
@@ -6411,6 +6412,12 @@ Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
 SEARCH group_members USING COVERING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
+
+Query: SELECT EXISTS (SELECT 1 FROM group_relays WHERE chat_relay_id = ?)
+Plan:
+SCAN CONSTANT ROW
+SCALAR SUBQUERY 1
+SEARCH group_relays USING COVERING INDEX idx_group_relays_chat_relay_id (chat_relay_id=?)
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:
