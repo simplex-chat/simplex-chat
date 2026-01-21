@@ -450,7 +450,7 @@ type GroupId = Int64
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
-    relayOwnStatus :: Maybe RelayStatus,
+    relayOwnStatus :: Maybe RelayStatus, -- status of the relay itself related to the group
     localDisplayName :: GroupName,
     groupProfile :: GroupProfile,
     localAlias :: Text,
@@ -1853,8 +1853,8 @@ data CommandFunction
   | CFAcceptContact
   | CFAckMessage -- not used
   | CFDeleteConn -- not used
-  | CFSetConnShortLink
-  | CFGetConnShortLink
+  | CFSetShortLink
+  | CFGetShortLink
   deriving (Eq, Show)
 
 instance FromField CommandFunction where fromField = fromTextField_ textDecode
@@ -1872,8 +1872,8 @@ instance TextEncoding CommandFunction where
     "accept_contact" -> Just CFAcceptContact
     "ack_message" -> Just CFAckMessage
     "delete_conn" -> Just CFDeleteConn
-    "set_conn_short_link" -> Just CFSetConnShortLink
-    "get_conn_short_link" -> Just CFGetConnShortLink
+    "set_short_link" -> Just CFSetShortLink
+    "get_short_link" -> Just CFGetShortLink
     _ -> Nothing
   textEncode = \case
     CFCreateConnGrpMemInv -> "create_conn"
@@ -1885,8 +1885,8 @@ instance TextEncoding CommandFunction where
     CFAcceptContact -> "accept_contact"
     CFAckMessage -> "ack_message"
     CFDeleteConn -> "delete_conn"
-    CFSetConnShortLink -> "set_conn_short_link"
-    CFGetConnShortLink -> "get_conn_short_link"
+    CFSetShortLink -> "set_short_link"
+    CFGetShortLink -> "get_short_link"
 
 commandExpectedResponse :: CommandFunction -> AEvtTag
 commandExpectedResponse = \case
@@ -1899,8 +1899,8 @@ commandExpectedResponse = \case
   CFAcceptContact -> t JOINED_
   CFAckMessage -> t OK_
   CFDeleteConn -> t OK_
-  CFSetConnShortLink -> t LINK_
-  CFGetConnShortLink -> t LDATA_
+  CFSetShortLink -> t LINK_
+  CFGetShortLink -> t LDATA_
   where
     t = AEvtTag SAEConn
 

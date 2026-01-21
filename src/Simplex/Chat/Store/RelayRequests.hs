@@ -9,7 +9,7 @@
 module Simplex.Chat.Store.RelayRequests
   ( hasPendingRelayRequests,
     getNextPendingRelayRequest,
-    setRelayRequestErr
+    setRelayRequestErr,
   )
 where
 
@@ -20,9 +20,9 @@ import Simplex.Chat.Store.Shared
 import Simplex.Chat.Types
 import Simplex.Messaging.Agent.Protocol (InvitationId)
 import Simplex.Messaging.Agent.Store.AgentStore (getWorkItem, maybeFirstRow)
+import qualified Simplex.Messaging.Agent.Store.DB as DB
 import Simplex.Messaging.Util (firstRow')
 import Simplex.Messaging.Version
-import qualified Simplex.Messaging.Agent.Store.DB as DB
 #if defined(dbPostgres)
 import Database.PostgreSQL.Simple (Only (..))
 import Database.PostgreSQL.Simple.SqlQQ (sql)

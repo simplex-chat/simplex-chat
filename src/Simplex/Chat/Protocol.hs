@@ -227,8 +227,7 @@ instance StrEncoding AppMessageBinary where
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
 
-data MsgScope
-  = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+data MsgScope = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MS") ''MsgScope)
@@ -321,7 +320,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
-  XMember :: {profile :: Profile, joiningMemberId :: MemberId} -> ChatMsgEvent 'Json
+  XMember :: {profile :: Profile, newMemberId :: MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -1100,7 +1099,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
-      XMember_ -> XMember <$> p "profile" <*> p "joiningMemberId"
+      XMember_ -> XMember <$> p "profile" <*> p "newMemberId"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1162,7 +1161,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
-      XMember {profile, joiningMemberId} -> o ["profile" .= profile, "joiningMemberId" .= joiningMemberId]
+      XMember {profile, newMemberId} -> o ["profile" .= profile, "newMemberId" .= newMemberId]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
