@@ -148,6 +148,7 @@ import Simplex.Chat.Store.SQLite.Migrations.M20251117_member_relations_vector
 import Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations
 import Simplex.Chat.Store.SQLite.Migrations.M20251230_strict_tables
 import Simplex.Chat.Store.SQLite.Migrations.M20260108_chat_indices
+import Simplex.Chat.Store.SQLite.Migrations.M20260121_msg_content_tag
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Query, Maybe Query)]
@@ -295,7 +296,8 @@ schemaMigrations =
     ("20251117_member_relations_vector", m20251117_member_relations_vector, Just down_m20251117_member_relations_vector),
     ("20251128_migrate_member_relations", m20251128_migrate_member_relations, Just down_m20251128_migrate_member_relations),
     ("20251230_strict_tables", m20251230_strict_tables, Just down_m20251230_strict_tables),
-    ("20260108_chat_indices", m20260108_chat_indices, Just down_m20260108_chat_indices)
+    ("20260108_chat_indices", m20260108_chat_indices, Just down_m20260108_chat_indices),
+    ("20260121_msg_content_tag", m20260121_msg_content_tag, Just down_m20260121_msg_content_tag)
   ]
 
 -- | The list of migrations in ascending order by date
