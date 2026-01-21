@@ -5,7 +5,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.pager.PagerState
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
@@ -72,7 +71,7 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
   )
 
   @Composable
-  fun Content(index: Int, pagerState: PagerState) {
+  fun Content(index: Int) {
     // Index can be huge but in reality at that moment pager state scrolls to 0 and that page should have index 0 too if it's the first one.
     // Or index 1 if it's the second page
     val index = index - firstValidPageBeforeScrollingToStart.value
@@ -161,7 +160,8 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
           if (decrypted != null) {
             // settledCurrentPage finishes **only** when fully swiped
             // So we use pagerState.currentPage that changes right away as the screen is being dragged
-            VideoView(modifier, decrypted, preview, index == pagerState.currentPage && kotlin.math.abs(pagerState.currentPageOffsetFraction) < 0.3f, close)
+            val isCurrentPage = index == pagerState.currentPage && kotlin.math.abs(pagerState.currentPageOffsetFraction) < 0.3f
+            VideoView(modifier, decrypted, preview, isCurrentPage, close)
             DisposableEffect(Unit) {
               onDispose { playersToRelease.add(decrypted) }
             }
@@ -173,9 +173,9 @@ fun ImageFullScreenView(imageProvider: () -> ImageGalleryProvider, close: () -> 
     }
   }
   if (appPlatform.isAndroid) {
-    HorizontalPager(state = pagerState) { index -> Content(index, pagerState) }
+    HorizontalPager(state = pagerState) { index -> Content(index) }
   } else {
-    Content(pagerState.currentPage, pagerState)
+    Content(pagerState.currentPage)
   }
 }
 
@@ -201,28 +201,11 @@ private fun VideoViewEncrypted(uriUnencrypted: MutableState<URI?>, fileSource: C
 @Composable
 private fun VideoView(modifier: Modifier, uri: URI, defaultPreview: ImageBitmap, currentPage: Boolean, close: () -> Unit) {
   val player = remember(uri) { VideoPlayerHolder.getOrCreate(uri, true, defaultPreview, 0L, true) }
-  val isCurrentPage = rememberUpdatedState(currentPage)
-  val play = {
-    player.play(true)
-  }
-  val stop = {
-    player.stop()
-  }
-  LaunchedEffect(Unit) {
-    snapshotFlow { isCurrentPage.value }
-      .distinctUntilChanged()
-      .collect {
-        if (it) {
-          player.enableSound(true)
-          play()
-        } else {
-          stop()
-        }
-      }
-  }
-
-  DisposableEffect(Unit) {
-    onDispose {
+  LaunchedEffect(currentPage) {
+    if (currentPage) {
+      player.enableSound(true)
+      player.play(true)
+    } else {
       player.stop()
     }
   }
