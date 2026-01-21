@@ -42,7 +42,7 @@
 
 ## Connect to the team
 
-You can connect to the team via the app using "chat with the developers button" available when you have no conversations in the profile, "Send questions and ideas" in the app settings or via our [SimpleX address](https://simplex.chat/contact#/?v=1&smp=smp%3A%2F%2FPQUV2eL0t7OStZOoAsPEV2QYWt4-xilbakvGUGOItUo%3D%40smp6.simplex.im%2FK1rslx-m5bpXVIdMZg9NLUZ_8JBm8xTt%23%2F%3Fv%3D1%26dh%3DMCowBQYDK2VuAyEALDeVe-sG8mRY22LsXlPgiwTNs9dbiLrNuA7f3ZMAJ2w%253D%26srv%3Dbylepyau3ty4czmn77q4fglvperknl4bi2eb2fdy2bh4jxtf32kf73yd.onion). Please connect to:
+You can connect to the team via the app using "chat with the developers button" available when you have no conversations in the profile, "Send questions and ideas" in the app settings or via our [SimpleX address](https://smp6.simplex.im/a#lrdvu2d8A1GumSmoKb2krQmtKhWXq-tyGpHuM7aMwsw). Please connect to:
 
 - to ask any questions
 - to suggest any improvements
@@ -54,7 +54,7 @@ If you are interested in helping us to integrate open-source language models, an
 
 ## Join user groups
 
-You can find the groups created by users in [SimpleX Directory](https://simplex.chat/directory/). It is also available as [SimpleX bot](https://simplex.chat/contact#/?v=1-4&smp=smp%3A%2F%2Fu2dS9sG8nMNURyZwqASV4yROM28Er0luVTx5X1CsMrU%3D%40smp4.simplex.im%2FeXSPwqTkKyDO3px4fLf1wx3MvPdjdLW3%23%2F%3Fv%3D1-2%26dh%3DMCowBQYDK2VuAyEAaiv6MkMH44L2TcYrt_CsX3ZvM11WgbMEUn0hkIKTOho%253D%26srv%3Do5vmywmrnaxalvz6wi3zicyftgio6psuvyniis6gco6bp6ekl4cqj4id.onion) that allows to add your own groups and communities to the directory. We are not responsible for the content shared in these groups.
+You can find the groups created by users in [SimpleX Directory](https://simplex.chat/directory/). It is also available as [SimpleX bot](https://smp4.simplex.im/a#lXUjJW5vHYQzoLYgmi8GbxkGP41_kjefFvBrdwg-0Ok) that allows to add your own groups and communities to the directory. We are not responsible for the content shared in these groups.
 
 **Please note**: The groups below are created for the users to be able to ask questions, make suggestions and ask questions about SimpleX Chat only.
 

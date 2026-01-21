@@ -34,8 +34,8 @@ import Simplex.Chat.Types
 import Simplex.Chat.Types.Preferences (FeatureAllowed (..), FilesPreference (..), Preferences (..), emptyChatPrefs)
 import Simplex.Chat.View (ChatResponseEvent, serializeChatError, serializeChatResponse, simplexChatContact)
 import Simplex.Messaging.Agent.Protocol
-import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Agent.Store.Common (DBStore, withTransaction)
+import Simplex.Messaging.Agent.Store.Shared (MigrationConfig (..), MigrationConfirmation (..))
 import Simplex.Messaging.Encoding.String
 import System.Exit (exitFailure)
 import System.IO (hFlush, stdout)
@@ -43,7 +43,7 @@ import Text.Read (readMaybe)
 import UnliftIO.Async
 
 simplexChatCore :: ChatConfig -> ChatOpts -> (User -> ChatController -> IO ()) -> IO ()
-simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath}, createBot, maintenance} chat =
+simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@ChatOpts {coreOptions = coreOptions@CoreChatOpts {dbOptions, logAgent, yesToUpMigrations, migrationBackupPath, maintenance}, createBot} chat =
   case logAgent of
     Just level -> do
       setLogLevel level
@@ -60,13 +60,16 @@ simplexChatCore cfg@ChatConfig {confirmMigrations, testView, chatHooks} opts@Cha
       u_ <- selectActiveUser coreOptions chatStore users
       let backgroundMode = maintenance
       cc <- newChatController db u_ cfg opts backgroundMode
-      u <- maybe (createActiveUser cc coreOptions createBot) pure u_
+      forM_ (preStartHook chatHooks) ($ cc)
+      u <- maybe (noMaintenance >> createActiveUser cc coreOptions createBot) pure u_
       unless testView $ putStrLn $ "Current user: " <> userStr u
-      unless maintenance $ forM_ (preStartHook chatHooks) ($ cc)
       runSimplexChat cfg opts u cc chat
+    noMaintenance = when maintenance $ do
+      putStrLn "exiting: no active user in maintenance mode"
+      exitFailure
 
 runSimplexChat :: ChatConfig -> ChatOpts -> User -> ChatController -> (User -> ChatController -> IO ()) -> IO ()
-runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay}, maintenance} u cc@ChatController {config = ChatConfig {chatHooks}} chat
+runSimplexChat ChatConfig {testView} ChatOpts {coreOptions = CoreChatOpts {chatRelay, maintenance}} u cc@ChatController {config = ChatConfig {chatHooks}} chat
   | maintenance = wait =<< async (chat u cc)
   | otherwise = do
       a1 <- runReaderT (startChatController True True) cc

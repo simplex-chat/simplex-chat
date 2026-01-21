@@ -1352,7 +1352,7 @@ testNegotiateCall =
 testMaintenanceMode :: HasCallStack => TestParams -> IO ()
 testMaintenanceMode ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts ps testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
       alice ##> "/c"
       alice <## "error: chat not started"
       alice ##> "/_start"
@@ -1397,7 +1397,7 @@ testChatWorking alice bob = do
 testMaintenanceModeWithFiles :: HasCallStack => TestParams -> IO ()
 testMaintenanceModeWithFiles ps = withXFTPServer $ do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts ps testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       alice ##> "/_files_folder ./tests/tmp/alice_files"
@@ -1443,7 +1443,7 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
 testDatabaseEncryption :: HasCallStack => TestParams -> IO ()
 testDatabaseEncryption ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts ps testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       connectUsers alice bob
@@ -1655,7 +1655,7 @@ testSubscribeAppNSE :: HasCallStack => TestParams -> IO ()
 testSubscribeAppNSE ps =
   withNewTestChat ps "bob" bobProfile $ \bob -> do
     withNewTestChat ps "alice" aliceProfile $ \alice -> do
-      withTestChatOpts ps testOpts {maintenance = True} "alice" $ \nseAlice -> do
+      withTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" $ \nseAlice -> do
         alice ##> "/_app suspend 1"
         alice <## "ok"
         alice <## "chat suspended"

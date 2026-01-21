@@ -14,7 +14,7 @@ Please share your use cases and implementations.
 ## Quick start: a simple bot
 
 ```
-npm i simplex-chat@6.5.0-beta.4.2
+npm i simplex-chat@6.5.0-beta.4.4
 ```
 
 Simple bot that replies with squares of numbers you send to it:
@@ -28,7 +28,7 @@ Simple bot that replies with squares of numbers you send to it:
     profile: {displayName: "Squaring bot example", fullName: ""},
     dbOpts: {dbFilePrefix: "./squaring_bot", dbKey: ""},
     options: {
-      addressSettings: {welcomeMessage: "If you send me a number, I will calculate its square."},
+      addressSettings: {welcomeMessage: "Send a number, I will square it.",
     },
     onMessage: async (ci, content) => {
       const n = +content.text
@@ -44,8 +44,10 @@ Simple bot that replies with squares of numbers you send to it:
 If you installed this package as dependency, you can run this example with:
 
 ```sh
-node ./node_modules/simplex-chat/examples/squaring-bot-readme.js`
+node ./node_modules/simplex-chat/examples/squaring-bot-readme.js
 ```
+
+If you run it on Mac, the first time it will take 20-30 seconds for MacOS to verify the library.
 
 If you cloned this repository, you can:
 
