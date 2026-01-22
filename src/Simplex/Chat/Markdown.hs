@@ -281,7 +281,7 @@ markdownP = mconcat <$> A.many' fragmentP
           Left _ -> case parseUri $ encodeUtf8 s' of
             Right _ -> res $ markdown Uri s'
             Left _ -> unmarked s
-      | isDomain s' = res $ markdown Uri s'
+      | isDomainWithPath s' = res $ markdown Uri s'
       | isEmail s' = res $ markdown Email s'
       | otherwise = unmarked s
       where
@@ -295,14 +295,21 @@ markdownP = mconcat <$> A.many' fragmentP
     isUri s = T.length s >= 10 && any (`T.isPrefixOf` s) ["http://", "https://", "simplex:/"]
     -- matches what is likely to be a domain, not all valid domain names
     isDomain s = case T.splitOn "." s of
-      [name, tld] -> isDomain_ name tld
-      [sub, name, tld] -> T.length sub >= 3 && T.length sub <= 8 && isDomain_ name tld
+      [name, tld] -> isDomainPart name && isDomainPart tld && T.length tld >= 2 && T.length tld <= 8
+      [sub, name, tld] -> isDomainPart sub && isDomainPart name && isDomainPart tld && T.length tld >= 2 && T.length tld <= 8
+      sub : name : tld : rest -> all isDomainPart (sub : name : tld : rest) && T.length (last (tld : rest)) >= 2 && T.length (last (tld : rest)) <= 8
       _ -> False
       where
-        isDomain_ name tld =
-          (let n = T.length name in n >= 1 && n <= 24)
-            && (let n = T.length tld in n >= 2 && n <= 8)
-            && (let p c = isAscii c && isAlpha c in T.all p name && T.all p tld)
+        isDomainPart part =
+          let n = T.length part
+           in n >= 1 && n <= 63 -- max length for a domain label is 63
+            && T.all (\c -> isAscii c && (isAlpha c || isDigit c || c == '-')) part
+            && not (T.null part || T.head part == '-' || T.last part == '-') -- hyphens can't be at start or end
+    -- matches domains with optional paths
+    isDomainWithPath s = case T.splitOn "/" s of
+      [] -> False
+      [domain] -> isDomain domain
+      domain : _ -> isDomain domain && not (T.null domain)
     isEmail s = T.any (== '@') s && Email.isValid (encodeUtf8 s)
     noFormat = pure . unmarked
     simplexUriFormat :: Maybe Text -> AConnectionLink -> Format
