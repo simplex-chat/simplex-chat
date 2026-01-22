@@ -765,7 +765,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -776,7 +776,7 @@ Query:
             LIMIT ?
           
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -1088,7 +1088,7 @@ Query:
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol
           FROM chat_items i
@@ -1105,7 +1105,7 @@ Query:
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- CIMeta forwardedByMember, showGroupAsSender
@@ -1161,7 +1161,7 @@ Query:
             i.chat_item_id, i.item_ts, i.item_sent, i.item_content, i.item_text, i.item_status, i.via_proxy, i.shared_msg_id,
             i.item_deleted, i.item_deleted_ts, i.item_edited, i.created_at, i.updated_at,
             i.fwd_from_tag, i.fwd_from_chat_name, i.fwd_from_msg_dir, i.fwd_from_contact_id, i.fwd_from_group_id, i.fwd_from_chat_item_id,
-            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention,
+            i.timed_ttl, i.timed_delete_at, i.item_live, i.user_mention, i.has_link,
             -- CIFile
             f.file_id, f.file_name, f.file_size, f.file_path, f.file_crypto_key, f.file_crypto_nonce, f.ci_file_status, f.protocol,
             -- DirectQuote
@@ -1292,7 +1292,7 @@ Query:
           LIMIT ?
         
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
 USE TEMP B-TREE FOR ORDER BY
 
 Query: 
@@ -4166,7 +4166,7 @@ Query:
 Plan:
 SEARCH files USING INDEX idx_files_user_id (user_id=?)
 LIST SUBQUERY 1
-SEARCH chat_items USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
 SEARCH extra_xftp_file_descriptions USING COVERING INDEX idx_extra_xftp_file_descriptions_file_id (file_id=?)
 SEARCH rcv_files USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH snd_files USING COVERING INDEX idx_snd_files_file_id (file_id=?)
@@ -4212,12 +4212,12 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, show_group_as_sender, timed_ttl, timed_delete_at,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, show_group_as_sender, timed_ttl, timed_delete_at, has_link,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
         fwd_from_tag, fwd_from_chat_name, fwd_from_msg_dir, fwd_from_contact_id, fwd_from_group_id, fwd_from_chat_item_id
-      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+      ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
     
 Plan:
 
@@ -5141,7 +5141,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5150,7 +5150,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.contact_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5168,7 +5168,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.group_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5186,7 +5186,7 @@ Query:
     JOIN files f ON f.chat_item_id = i.chat_item_id
    WHERE i.user_id = ? AND i.note_folder_id = ?
 Plan:
-SEARCH i USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
+SEARCH i USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
 SEARCH f USING INDEX idx_files_chat_item_id (chat_item_id=?)
 
 Query: 
@@ -5549,7 +5549,7 @@ SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ?
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5573,7 +5573,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND contact_id = ? AND item_content_tag != 'chatBanner'
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5585,7 +5585,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ?
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5609,7 +5609,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND group_id = ? AND item_content_tag != 'chatBanner'
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_groups_user_mention (user_id=? AND group_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5621,7 +5621,7 @@ SEARCH groups USING COVERING INDEX idx_groups_chat_item_id (chat_item_id=?)
 
 Query: DELETE FROM chat_items WHERE user_id = ? AND note_folder_id = ?
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=?)
 SEARCH chat_item_mentions USING COVERING INDEX idx_chat_item_mentions_chat_item_id (chat_item_id=?)
 SEARCH group_snd_item_statuses USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id (chat_item_id=?)
 SEARCH chat_item_versions USING COVERING INDEX idx_chat_item_versions_chat_item_id (chat_item_id=?)
@@ -5903,7 +5903,7 @@ SEARCH protocol_servers USING COVERING INDEX idx_smp_servers_user_id (user_id=?)
 SEARCH settings USING COVERING INDEX idx_settings_user_id (user_id=?)
 SEARCH commands USING COVERING INDEX idx_commands_user_id (user_id=?)
 SEARCH calls USING COVERING INDEX idx_calls_user_id (user_id=?)
-SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_msg_content_tag_created_at (user_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=?)
 SEARCH contact_requests USING COVERING INDEX sqlite_autoindex_contact_requests_2 (user_id=?)
 SEARCH user_contact_links USING COVERING INDEX sqlite_autoindex_user_contact_links_1 (user_id=?)
 SEARCH connections USING COVERING INDEX idx_connections_to_subscribe (user_id=?)
@@ -6067,7 +6067,7 @@ Query: SELECT EXISTS (SELECT 1 FROM chat_items WHERE user_id = ? AND contact_id 
 Plan:
 SCAN CONSTANT ROW
 SCALAR SUBQUERY 1
-SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=?)
 
 Query: SELECT accepted_at FROM operator_usage_conditions WHERE server_operator_id = ? AND conditions_commit = ?
 Plan:

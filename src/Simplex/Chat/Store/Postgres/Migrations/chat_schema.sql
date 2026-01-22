@@ -1814,6 +1814,10 @@ CREATE INDEX idx_chat_items_contacts_created_at ON test_chat_schema.chat_items U
 
 
 
+CREATE INDEX idx_chat_items_contacts_has_link_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, has_link, created_at);
+
+
+
 CREATE INDEX idx_chat_items_contacts_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, msg_content_tag, created_at);
 
 
@@ -1874,6 +1878,10 @@ CREATE INDEX idx_chat_items_groups ON test_chat_schema.chat_items USING btree (u
 
 
 
+CREATE INDEX idx_chat_items_groups_has_link_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, has_link, item_ts);
+
+
+
 CREATE INDEX idx_chat_items_groups_history ON test_chat_schema.chat_items USING btree (user_id, group_id, include_in_history, item_deleted, item_ts, chat_item_id);
 
 
@@ -1902,19 +1910,11 @@ CREATE INDEX idx_chat_items_item_status ON test_chat_schema.chat_items USING btr
 
 
 
-CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, note_folder_id, msg_content_tag, created_at);
-
-
-
-CREATE INDEX idx_chat_items_groups_has_link_item_ts ON test_chat_schema.chat_items USING btree (user_id, group_id, has_link, item_ts);
-
-
-
-CREATE INDEX idx_chat_items_contacts_has_link_created_at ON test_chat_schema.chat_items USING btree (user_id, contact_id, has_link, created_at);
-
-
-
 CREATE INDEX idx_chat_items_note_folder_has_link_created_at ON test_chat_schema.chat_items USING btree (user_id, note_folder_id, has_link, created_at);
+
+
+
+CREATE INDEX idx_chat_items_note_folder_msg_content_tag_created_at ON test_chat_schema.chat_items USING btree (user_id, note_folder_id, msg_content_tag, created_at);
 
 
 
