@@ -1443,7 +1443,7 @@ testMaintenanceModeWithFiles ps = withXFTPServer $ do
 testDatabaseEncryption :: HasCallStack => TestParams -> IO ()
 testDatabaseEncryption ps = do
   withNewTestChat ps "bob" bobProfile $ \bob -> do
-    withNewTestChatOpts ps testOpts {maintenance = True} "alice" aliceProfile $ \alice -> do
+    withNewTestChatOpts ps testOpts {coreOptions = testCoreOpts {maintenance = True}} "alice" aliceProfile $ \alice -> do
       alice ##> "/_start"
       alice <## "chat started"
       connectUsers alice bob

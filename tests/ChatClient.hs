@@ -53,7 +53,7 @@ import Simplex.Messaging.Client (ProtocolClientConfig (..))
 import Simplex.Messaging.Client.Agent (defaultSMPClientAgentConfig)
 import Simplex.Messaging.Crypto.Ratchet (supportedE2EEncryptVRange)
 import qualified Simplex.Messaging.Crypto.Ratchet as CR
-import Simplex.Messaging.Protocol (srvHostnamesSMPClientVersion, sndAuthKeySMPClientVersion)
+import Simplex.Messaging.Protocol (sndAuthKeySMPClientVersion)
 import Simplex.Messaging.Server (runSMPServerBlocking)
 import Simplex.Messaging.Server.Env.STM (ServerConfig (..), ServerStoreCfg (..), StartOptions (..), StorePaths (..), defaultMessageExpiration, defaultIdleQueueInterval, defaultNtfExpiration, defaultInactiveClientExpiration)
 import Simplex.Messaging.Server.MsgStore.STM (STMMsgStore)
@@ -157,7 +157,7 @@ testCoreOpts =
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
-getTestOpts maintenance dbKey = testOpts {maintenance, coreOptions = testCoreOpts {dbOptions = (dbOptions testCoreOpts) {dbKey}}}
+getTestOpts maintenance dbKey = testOpts {coreOptions = testCoreOpts {maintenance, dbOptions = (dbOptions testCoreOpts) {dbKey}}}
 #endif
 
 termSettings :: VirtualTerminalSettings
