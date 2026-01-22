@@ -444,7 +444,7 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
     throw r.unexpected
 }
 
-func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?) async throws -> [MsgContentTag] {
+func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope? = nil) async throws -> [MsgContentTag] {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetChatContentTypes(chatId: chatId, scope: scope))
     if case let .chatContentTypes(types) = r { return types }
     throw r.unexpected

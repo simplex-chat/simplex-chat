@@ -45,6 +45,7 @@ struct ChatView: View {
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
     @State private var contentFilter: ContentFilter? = nil
+    @State private var availableContent: [ContentFilter] = [.images, .files, .links]
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
@@ -696,6 +697,7 @@ struct ChatView: View {
                     }
                 }
             }
+            updateAvailableContent()
         }
         if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
            let draft = chatModel.draft {
@@ -709,6 +711,22 @@ struct ChatView: View {
         floatingButtonModel.updateOnListChange(scrollView.listState)
     }
 
+    private func updateAvailableContent() {
+        Task {
+            let content: [ContentFilter]
+            do {
+                let contentTags = Set(try await apiGetChatContentTypes(chatId: chat.chatInfo.id)).union(ContentFilter.alwaysShow)
+                content = ContentFilter.allCases.filter { contentTags.contains($0.contentTag) }
+            } catch let error {
+                logger.error("apiGetChatContentTypes error: \(responseError(error))")
+                content = ContentFilter.allCases
+            }
+            await MainActor.run {
+                availableContent = content
+            }
+        }
+    }
+    
     private func scrollToItem(_ itemId: ChatItem.ID) {
         Task {
             do {
@@ -1272,15 +1290,22 @@ struct ChatView: View {
 
     private func contentFilterMenu() -> some View {
         Menu {
-            ForEach(ContentFilter.allCases, id: \.self) { type in
+            ForEach(availableContent, id: \.self) { type in
                 Button {
                     setContentFilter(type)
                 } label: {
-                    Label(type.label, systemImage: type.icon)
+                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                }
+            }
+            if contentFilter != nil {
+                Button {
+                    closeSearch()
+                } label: {
+                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
                 }
             }
         } label: {
-            Image(systemName: "star")
+            Image(systemName: "square.stack.3d.up")
         }
     }
 
@@ -1302,6 +1327,7 @@ struct ChatView: View {
         searchText = ""
         searchFocussed = false
         contentFilter = nil
+        updateAvailableContent()
     }
 
     private func closeKeyboardAndRun(_ action: @escaping () -> Void) {
@@ -1322,7 +1348,7 @@ struct ChatView: View {
                 Task { await chatModel.loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
-            Image(systemName: "person.crop.circle.badge.plus")
+            Label("Invite member", systemImage: "person.crop.circle.badge.plus")
         }
     }
 
@@ -1342,7 +1368,7 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Image(systemName: "link.badge.plus")
+            Label("Group link", systemImage: "link.badge.plus")
         }
     }
 
@@ -3002,6 +3028,8 @@ enum ContentFilter: CaseIterable {
     case files
     case links
 
+    static let alwaysShow: Set<MsgContentTag> = [.image, .link]
+
     var contentTag: MsgContentTag {
         switch self {
         case .images: .image
@@ -3031,14 +3059,24 @@ enum ContentFilter: CaseIterable {
         case .links: "Search links"
         }
     }
-
+    
     var icon: String {
         switch self {
         case .images: "photo"
         case .videos: "video"
         case .voice: "mic"
         case .files: "doc"
-        case .links: "link"
+        case .links: "link.circle"
+        }
+    }
+
+    var iconFilled: String {
+        switch self {
+        case .images: "photo.fill"
+        case .videos: "video.fill"
+        case .voice: "mic.fill"
+        case .files: "doc.fill"
+        case .links: "link.circle.fill"
         }
     }
 }
