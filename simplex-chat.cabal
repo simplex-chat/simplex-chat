@@ -276,7 +276,6 @@ library
           Simplex.Chat.Store.SQLite.Migrations.M20251128_migrate_member_relations
           Simplex.Chat.Store.SQLite.Migrations.M20251230_strict_tables
           Simplex.Chat.Store.SQLite.Migrations.M20260108_chat_indices
-          Simplex.Chat.Store.SQLite.Migrations.M20260121_msg_content_tag
           Simplex.Chat.Store.SQLite.Migrations.M20260122_has_link
   other-modules:
       Paths_simplex_chat

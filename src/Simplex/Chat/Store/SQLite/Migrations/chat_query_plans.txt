@@ -4212,7 +4212,7 @@ Query:
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, show_group_as_sender, timed_ttl, timed_delete_at, has_link,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, show_group_as_sender, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
@@ -5469,6 +5469,10 @@ Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = 
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_contacts_created_at (user_id=? AND contact_id=?)
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  AND has_link = 1  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_has_link_created_at (user_id=? AND contact_id=? AND has_link=?)
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND contact_id = ?  AND msg_content_tag = ?  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_contacts_msg_content_tag_created_at (user_id=? AND contact_id=? AND msg_content_tag=?)
@@ -5489,6 +5493,10 @@ Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ? 
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_ts (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=?)
 
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND has_link = 1  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_has_link_item_ts (user_id=? AND group_id=? AND has_link=?)
+
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND group_id = ?  AND msg_content_tag = ?  ORDER BY item_ts DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_item_ts (user_id=? AND group_id=? AND msg_content_tag=?)
@@ -5496,6 +5504,10 @@ SEARCH chat_items USING COVERING INDEX idx_chat_items_groups_msg_content_tag_ite
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
 SEARCH chat_items USING INDEX idx_chat_items_notes_created_at (user_id=? AND note_folder_id=?)
+
+Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND has_link = 1  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_note_folder_has_link_created_at (user_id=? AND note_folder_id=? AND has_link=?)
 
 Query:  SELECT chat_item_id FROM chat_items WHERE  user_id = ? AND note_folder_id = ?  AND msg_content_tag = ?  ORDER BY created_at DESC, chat_item_id DESC  LIMIT ?
 Plan:
