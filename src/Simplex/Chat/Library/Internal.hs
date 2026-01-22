@@ -550,7 +550,6 @@ markGroupCIsDeleted user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
   pure deletions
-  -- pure $ CRChatItemsDeleted user deletions byUser False
   where
     markDeleted db (CChatItem md ci) = do
       ci' <- markGroupChatItemDeleted db user gInfo ci byGroupMember_ deletedTs
@@ -1260,7 +1259,7 @@ encodeShortLinkData d =
       s'
         | B.length s > 10240 = B.cons 'X' $ Z1.compress compressionLevel s
         | otherwise = s
-    in UserLinkData s'
+   in UserLinkData s'
 
 decodeShortLinkData :: J.FromJSON a => ConnLinkData c -> IO (Maybe a)
 decodeShortLinkData cData
@@ -2071,9 +2070,9 @@ memberSendAction GroupInfo {useRelays, membership} events members m@GroupMember 
 readyMemberConn :: GroupMember -> Maybe (GroupMemberId, Connection)
 readyMemberConn GroupMember {groupMemberId, activeConn = Just conn@Connection {connStatus}, memberStatus}
   | (connStatus == ConnReady || connStatus == ConnSndReady)
-    && not (connDisabled conn)
-    && not (connInactive conn)
-    && memberStatus /= GSMemRejected =
+      && not (connDisabled conn)
+      && not (connInactive conn)
+      && memberStatus /= GSMemRejected =
       Just (groupMemberId, conn)
   | otherwise = Nothing
 readyMemberConn GroupMember {activeConn = Nothing} = Nothing
@@ -2183,7 +2182,7 @@ saveSndChatItems user cd itemsData itemTimed live = do
   createdAt <- liftIO getCurrentTime
   vr <- chatVersionRange
   when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
-    void $ withStore' (\db -> updateChatTsStats db vr user cd createdAt Nothing)
+    void (withStore' $ \db -> updateChatTsStats db vr user cd createdAt Nothing)
   lift $ withStoreBatch (\db -> map (bindRight $ createItem db createdAt) itemsData)
   where
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
@@ -2220,9 +2219,10 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
             userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
          in pure (mentions', userMention')
       CDDirectRcv _ -> pure (M.empty, False)
-    cInfo' <- if (ciRequiresAttention content || contactChatDeleted cd)
-      then updateChatTsStats db vr user cd createdAt (memberChatStats userMention)
-      else pure $ toChatInfo cd
+    cInfo' <-
+      if ciRequiresAttention content || contactChatDeleted cd
+        then updateChatTsStats db vr user cd createdAt (memberChatStats userMention)
+        else pure $ toChatInfo cd
     let hasLink_ = ciContentHasLink content ft_
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention hasLink_ brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
@@ -2252,13 +2252,15 @@ mkChatItem_ cd showGroupAsSender ciId content (itemText, formattedText) file quo
       meta = mkCIMeta ciId content itemText itemStatus Nothing sharedMsgId itemForwarded Nothing False itemTimed (justTrue live) userMention hasLink_ currentTs itemTs forwardedByMember showGroupAsSender currentTs currentTs
    in ChatItem {chatDir = toCIDirection cd, meta, content, mentions = M.empty, formattedText, quotedItem, reactions = [], file}
 
--- | Determine if a chat item content has a link, either via MCLink content type or via markdown
 ciContentHasLink :: CIContent d -> Maybe MarkdownList -> Bool
 ciContentHasLink content ft_ = case ciMsgContent content of
-  Just mc -> case msgContentTag mc of
-    MCLink_ -> True
-    _ -> maybe False hasLinks ft_
+  Just mc -> msgContentHasLink mc ft_
   Nothing -> False
+
+msgContentHasLink :: MsgContent -> Maybe MarkdownList -> Bool
+msgContentHasLink mc ft_ = case msgContentTag mc of
+  MCLink_ -> True
+  _ -> maybe False hasLinks ft_
 
 createAgentConnectionAsync :: ConnectionModeI c => User -> CommandFunction -> Bool -> SConnectionMode c -> SubscriptionMode -> CM (CommandId, ConnId)
 createAgentConnectionAsync user cmdFunction enableNtfs cMode subMode = do

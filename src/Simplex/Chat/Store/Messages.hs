@@ -575,7 +575,7 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
         user_id, created_by_msg_id, contact_id, group_id, group_member_id, note_folder_id, group_scope_tag, group_scope_group_member_id,
         -- meta
         item_sent, item_ts, item_content, item_content_tag, item_text, item_status, msg_content_tag, shared_msg_id,
-        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, show_group_as_sender, timed_ttl, timed_delete_at, has_link,
+        forwarded_by_group_member_id, include_in_history, created_at, updated_at, item_live, user_mention, has_link, show_group_as_sender, timed_ttl, timed_delete_at,
         -- quote
         quoted_shared_msg_id, quoted_sent_at, quoted_content, quoted_sent, quoted_member_id,
         -- forwarded from
@@ -587,8 +587,8 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
   forM_ msgId_ $ \msgId -> insertChatItemMessage_ db ciId msgId createdAt
   pure ciId
   where
-    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt) :. (Maybe Int, Maybe UTCTime) :. Only BoolInt
-    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> (justTrue live), BI userMention, BI showGroupAsSender) :. ciTimedRow timed :. Only (BI hasLink)
+    itemRow :: (SMsgDirection d, UTCTime, CIContent d, Text, Text, CIStatus d, Maybe MsgContentTag, Maybe SharedMsgId, Maybe GroupMemberId, BoolInt) :. (UTCTime, UTCTime, Maybe BoolInt, BoolInt, BoolInt, BoolInt) :. (Maybe Int, Maybe UTCTime)
+    itemRow = (msgDirection @d, itemTs, ciContent, toCIContentTag ciContent, ciContentToText ciContent, ciCreateStatus ciContent, msgContentTag <$> ciMsgContent ciContent, sharedMsgId, forwardedByMember, BI includeInHistory) :. (createdAt, createdAt, BI <$> justTrue live, BI userMention, BI hasLink, BI showGroupAsSender) :. ciTimedRow timed
     quoteRow' = let (a, b, c, d, e) = quoteRow in (a, b, c, BI <$> d, e)
     idsRow :: (Maybe ContactId, Maybe GroupId, Maybe GroupMemberId, Maybe NoteFolderId)
     idsRow = case chatDirection of
@@ -1470,18 +1470,18 @@ getChatItemIDs db User {userId} cInfo contentFilter range count search = case cI
           (grCond <> " AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL ")
           (userId, groupId)
           "item_ts"
+    (Nothing, Just MCLink_) ->
+      liftIO $
+        idsQuery
+          (grCond <> " AND has_link = 1 ")
+          (userId, groupId)
+          "item_ts"
     (Nothing, Just mcTag) ->
-      liftIO $ case mcTag of
-        MCLink_ ->
-          idsQuery
-            (grCond <> " AND has_link = 1 ")
-            (userId, groupId)
-            "item_ts"
-        _ ->
-          idsQuery
-            (grCond <> " AND msg_content_tag = ? ")
-            (userId, groupId, mcTag)
-            "item_ts"
+      liftIO $
+        idsQuery
+          (grCond <> " AND msg_content_tag = ? ")
+          (userId, groupId, mcTag)
+          "item_ts"
     (Just GCSIMemberSupport {groupMember_ = m}, Nothing) ->
       liftIO $
         idsQuery
