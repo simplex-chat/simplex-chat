@@ -156,6 +156,8 @@ chatDirectTests = do
   describe "delivery receipts" $ do
     it "should send delivery receipts" testSendDeliveryReceipts
     it "should send delivery receipts depending on configuration" testConfigureDeliveryReceipts
+  describe "link content filter" $ do
+    it "filter chat by link content" testLinkContentFilter
   describe "negotiate connection peer chat protocol version range" $ do
     describe "peer version range correctly set for new connection via invitation" $ do
       testInvVRange supportedChatVRange supportedChatVRange
@@ -3311,3 +3313,43 @@ contactInfoChatVRange cc (VersionRange minVer maxVer) = do
   cc <## "connection not verified, use /code command to see security code"
   cc <## "quantum resistant end-to-end encryption"
   cc <## ("peer chat protocol version range: (" <> show minVer <> ", " <> show maxVer <> ")")
+
+testLinkContentFilter :: HasCallStack => TestParams -> IO ()
+testLinkContentFilter =
+  testChat2 aliceProfile bobProfile $
+    \alice bob -> do
+      connectUsers alice bob
+
+      alice ##> "/c"
+      simplexLink <- getInvitation alice
+
+      let linkPreview = "{\"msgContent\": {\"type\": \"link\", \"text\": \"https://simplex.chat\", \"preview\": {\"uri\": \"https://simplex.chat\", \"title\": \"SimpleX Chat\", \"description\": \"SimpleX Chat\", \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
+      alice ##> ("/_send @2 json [" <> linkPreview <> "]")
+      alice <# "@bob https://simplex.chat"
+      bob <# "alice> https://simplex.chat"
+
+      alice #> "@bob check out https://example.com"
+      bob <# "alice> check out https://example.com"
+
+      bob #> "@alice visit http://test.org"
+      alice <# "bob> visit http://test.org"
+
+      alice #> ("@bob " <> simplexLink)
+      bob <#. "alice> https://simplex.chat/invitation#"
+
+      bob #> "@alice [click here](https://link.example.com)"
+      alice <# "bob> [click here](https://link.example.com)"
+
+      alice #> "@bob visit example.com for info"
+      bob <# "alice> visit example.com for info"
+
+      alice #> "@bob hello, no links here"
+      bob <# "alice> hello, no links here"
+
+      alice ##> "/_get content types @2"
+      alice <## "Chat content types: link, text"
+      alice #$> ("/_get chat @2 content=link count=100", chat, [(1, "https://simplex.chat"), (1, "check out https://example.com"), (0, "visit http://test.org"), (1, simplexLink), (0, "[click here](https://link.example.com)"), (1, "visit example.com for info")])
+
+      bob ##> "/_get content types @2"
+      bob <## "Chat content types: link, text"
+      bob #$> ("/_get chat @2 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com"), (1, "visit http://test.org"), (0, simplexLink), (1, "[click here](https://link.example.com)"), (0, "visit example.com for info")])
