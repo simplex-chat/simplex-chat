@@ -210,6 +210,24 @@ Plan:
 SEARCH delivery_tasks USING COVERING INDEX idx_delivery_tasks_next_for_job_scope_sender (group_id=? AND worker_scope=? AND job_scope_spec_tag=? AND job_scope_include_pending=? AND job_scope_support_gm_id=? AND sender_group_member_id=? AND failed=? AND task_status=?)
 
 Query: 
+                SELECT i.chat_item_id, i.item_sent,
+                  -- GroupMember
+                  m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
+                  m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+                  p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+                  m.created_at, m.updated_at,
+                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts
+                FROM chat_items i
+                LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
+                LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+                WHERE i.group_id = ? AND i.shared_msg_id = ?
+              
+Plan:
+SEARCH i USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
+SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+SEARCH p USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+
+Query: 
                 UPDATE contact_profiles
                 SET user_id = ?, updated_at = ?
                 WHERE contact_profile_id = ?
@@ -1001,28 +1019,6 @@ Query:
 Plan:
 SEARCH i USING COVERING INDEX idx_chat_items_groups_history (user_id=? AND group_id=? AND include_in_history=? AND item_deleted=?)
 SEARCH s USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id (chat_item_id=? AND group_member_id=?) LEFT-JOIN
-
-Query: 
-            SELECT i.chat_item_id,
-              -- GroupMember
-              m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-              m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-              p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-              m.created_at, m.updated_at,
-              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts
-            FROM group_members m
-            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-            LEFT JOIN contacts c ON m.contact_id = c.contact_id
-            LEFT JOIN chat_items i ON i.user_id = m.user_id
-                                      AND i.group_id = m.group_id
-                                      AND m.group_member_id = i.group_member_id
-                                      AND i.shared_msg_id = ?
-            WHERE m.user_id = ? AND m.group_id = ? AND m.member_id = ?
-          
-Plan:
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH i USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?) LEFT-JOIN
 
 Query: 
             SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
@@ -3716,7 +3712,7 @@ USE TEMP B-TREE FOR GROUP BY
 Query: 
         SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
         FROM chat_item_reactions
-        WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
+        WHERE group_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ?
         GROUP BY reaction
       
 Plan:
@@ -5868,7 +5864,7 @@ Query: DELETE FROM chat_item_reactions WHERE group_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 
-Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?
+Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ?
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
@@ -6435,10 +6431,6 @@ Query: SELECT auth_err_counter FROM connections WHERE user_id = ? AND connection
 Plan:
 SEARCH connections USING INTEGER PRIMARY KEY (rowid=?)
 
-Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
-
 Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ?  AND group_scope_tag IS NULL AND group_scope_group_member_id IS NULL AND item_status = ?  ORDER BY item_ts ASC, chat_item_id ASC LIMIT 1
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_scope_item_status (user_id=? AND group_id=? AND group_scope_tag=? AND group_scope_group_member_id=? AND item_status=?)
@@ -6447,13 +6439,9 @@ Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AN
 Plan:
 SEARCH chat_items USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=?)
 
-Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id = ?
+Query: SELECT chat_item_id, item_sent FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ?
 Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
-
-Query: SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id IS NULL
-Plan:
-SEARCH chat_items USING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
+SEARCH chat_items USING INDEX idx_chat_items_direct_shared_msg_id (user_id=? AND contact_id=? AND shared_msg_id=?)
 
 Query: SELECT chat_item_ttl FROM contacts WHERE contact_id = ? LIMIT 1
 Plan:

@@ -74,7 +74,7 @@ batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) 
         MessageDeliveryTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel = _messageFromChannel} = task
         -- TODO [channels fwd] handle messageFromChannel (null memberId in XGrpMsgForward)
         msgBody =
-          let fwdEvt = XGrpMsgForward senderMemberId (Just senderMemberName) chatMessage brokerTs
+          let fwdEvt = XGrpMsgForward (Just senderMemberId) (Just senderMemberName) chatMessage brokerTs
               cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
             in chatMsgToBody cm
         msgLen = B.length msgBody

@@ -345,7 +345,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpInfo :: GroupProfile -> ChatMsgEvent 'Json
   XGrpPrefs :: GroupPreferences -> ChatMsgEvent 'Json
   XGrpDirectInv :: ConnReqInvitation -> Maybe MsgContent -> Maybe MsgScope -> ChatMsgEvent 'Json
-  XGrpMsgForward :: MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
+  XGrpMsgForward :: Maybe MemberId -> Maybe ContactName -> ChatMessage 'Json -> UTCTime -> ChatMsgEvent 'Json
   XInfoProbe :: Probe -> ChatMsgEvent 'Json
   XInfoProbeCheck :: ProbeHash -> ChatMsgEvent 'Json
   XInfoProbeOk :: Probe -> ChatMsgEvent 'Json
@@ -1124,7 +1124,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpInfo_ -> XGrpInfo <$> p "groupProfile"
       XGrpPrefs_ -> XGrpPrefs <$> p "groupPreferences"
       XGrpDirectInv_ -> XGrpDirectInv <$> p "connReq" <*> opt "content" <*> opt "scope"
-      XGrpMsgForward_ -> XGrpMsgForward <$> p "memberId" <*> opt "memberName" <*> p "msg" <*> p "msgTs"
+      XGrpMsgForward_ -> XGrpMsgForward <$> opt "memberId" <*> opt "memberName" <*> p "msg" <*> p "msgTs"
       XInfoProbe_ -> XInfoProbe <$> p "probe"
       XInfoProbeCheck_ -> XInfoProbeCheck <$> p "probeHash"
       XInfoProbeOk_ -> XInfoProbeOk <$> p "probe"
@@ -1186,7 +1186,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpInfo p -> o ["groupProfile" .= p]
       XGrpPrefs p -> o ["groupPreferences" .= p]
       XGrpDirectInv connReq content scope -> o $ ("content" .=? content) $ ("scope" .=? scope) ["connReq" .= connReq]
-      XGrpMsgForward memberId memberName msg msgTs -> o $ ("memberName" .=? memberName) ["memberId" .= memberId, "msg" .= msg, "msgTs" .= msgTs]
+      XGrpMsgForward memberId_ memberName_ msg msgTs -> o $ ("memberId" .=? memberId_) $ ("memberName" .=? memberName_) ["msg" .= msg, "msgTs" .= msgTs]
       XInfoProbe probe -> o ["probe" .= probe]
       XInfoProbeCheck probeHash -> o ["probeHash" .= probeHash]
       XInfoProbeOk probe -> o ["probe" .= probe]

@@ -601,7 +601,7 @@ GroupSnd:
 
 GroupRcv:
 - type: "groupRcv"
-- groupMember: [GroupMember](#groupmember)
+- groupMember: [GroupMember](#groupmember)?
 
 LocalSnd:
 - type: "localSnd"

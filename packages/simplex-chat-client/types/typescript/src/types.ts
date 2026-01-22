@@ -578,7 +578,7 @@ export namespace CIDirection {
 
   export interface GroupRcv extends Interface {
     type: "groupRcv"
-    groupMember: GroupMember
+    groupMember?: GroupMember
   }
 
   export interface LocalSnd extends Interface {

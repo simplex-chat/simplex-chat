@@ -551,7 +551,7 @@ userNtf User {showNtfs, activeUser} = showNtfs || activeUser
 chatDirNtf :: User -> ChatInfo c -> CIDirection c d -> Bool -> Bool
 chatDirNtf user cInfo chatDir mention = case (cInfo, chatDir) of
   (DirectChat ct, CIDirectRcv) -> contactNtf user ct mention
-  (GroupChat g _scopeInfo, CIGroupRcv m) -> groupNtf user g mention && not (memberBlocked m)
+  (GroupChat g _scopeInfo, CIGroupRcv m_) -> groupNtf user g mention && not (maybe False memberBlocked m_)
   _ -> True
 
 contactNtf :: User -> Contact -> Bool -> Bool
@@ -894,7 +894,7 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       _ -> []
       where
         from = ttyFromGroup g scopeInfo m
-        reactionMsg mc = quoteText mc . ttyQuotedMember . Just $ sentByMember' g itemDir
+        reactionMsg mc = quoteText mc . ttyQuotedMember $ sentByMember' g itemDir
     (LocalChat _, CILocalRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
@@ -946,10 +946,10 @@ sentByMember GroupInfo {membership} = \case
   CIQGroupSnd -> Just membership
   CIQGroupRcv m -> m
 
-sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> GroupMember
+sentByMember' :: GroupInfo -> CIDirection 'CTGroup d -> Maybe GroupMember
 sentByMember' GroupInfo {membership} = \case
-  CIGroupSnd -> membership
-  CIGroupRcv m -> m
+  CIGroupSnd -> Just membership
+  CIGroupRcv m_ -> m_
 
 quoteText :: MsgContent -> StyledString -> [StyledString]
 quoteText qmc sentBy = prependFirst (sentBy <> " ") $ msgPreview qmc
@@ -2268,7 +2268,7 @@ cryptoFileArgsStr testView cfArgs@(CFArgs key nonce)
 
 fileFrom :: ChatInfo c -> CIDirection c d -> StyledString
 fileFrom (DirectChat ct) CIDirectRcv = " from " <> ttyContact' ct
-fileFrom _ (CIGroupRcv m) = " from " <> ttyMember m
+fileFrom (GroupChat g _) (CIGroupRcv m_) = " from " <> maybe (ttyGroup' g) ttyMember m_
 fileFrom _ _ = ""
 
 receivingFile_ :: StyledString -> RcvFileTransfer -> [StyledString]
@@ -2695,9 +2695,10 @@ ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo 
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ viewName c <> ">"
 
+-- TODO [msg from channel] print "from channel" or group name if member is Nothing?
 ttyQuotedMember :: Maybe GroupMember -> StyledString
 ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom (viewName c)
-ttyQuotedMember _ = "> " <> ttyFrom "?"
+ttyQuotedMember Nothing = "> " <> ttyFrom "?"
 
 ttyFromContact :: Contact -> StyledString
 ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> ")
@@ -2733,26 +2734,30 @@ ttyFullGroup :: GroupInfo -> StyledString
 ttyFullGroup GroupInfo {localDisplayName = g, groupProfile = GroupProfile {fullName, shortDescr}} =
   ttyGroup g <> optFullName g fullName shortDescr
 
-ttyFromGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> StyledString
-ttyFromGroup g scopeInfo m = ttyFromGroupAttention g scopeInfo m False
+ttyFromGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> StyledString
+ttyFromGroup g scopeInfo m_ = ttyFromGroupAttention g scopeInfo m_ False
 
-ttyFromGroupAttention :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Bool -> StyledString
-ttyFromGroupAttention g scopeInfo m attention = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m attention)
+ttyFromGroupAttention :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Bool -> StyledString
+ttyFromGroupAttention g scopeInfo m_ attention = membershipIncognito g <> ttyFrom (fromGroupAttention_ g scopeInfo m_ attention)
 
-ttyFromGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> StyledString
-ttyFromGroupEdited g scopeInfo m = membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m <> "[edited] ")
+ttyFromGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> StyledString
+ttyFromGroupEdited g scopeInfo m_ = membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m_ <> "[edited] ")
 
-ttyFromGroupDeleted :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Maybe Text -> StyledString
-ttyFromGroupDeleted g scopeInfo m deletedText_ =
-  membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
+ttyFromGroupDeleted :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Maybe Text -> StyledString
+ttyFromGroupDeleted g scopeInfo m_ deletedText_ =
+  membershipIncognito g <> ttyFrom (fromGroup_ g scopeInfo m_ <> maybe "" (\t -> "[" <> t <> "] ") deletedText_)
 
-fromGroup_ :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Text
-fromGroup_ g scopeInfo m = fromGroupAttention_ g scopeInfo m False
+fromGroup_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Text
+fromGroup_ g scopeInfo m_ = fromGroupAttention_ g scopeInfo m_ False
 
-fromGroupAttention_ :: GroupInfo -> Maybe GroupChatScopeInfo -> GroupMember -> Bool -> Text
-fromGroupAttention_ g scopeInfo m attention =
+fromGroupAttention_ :: GroupInfo -> Maybe GroupChatScopeInfo -> Maybe GroupMember -> Bool -> Text
+fromGroupAttention_ g scopeInfo m_ attention =
   let attn = if attention then "!" else ""
-   in "#" <> viewGroupName g <> " " <> groupScopeInfoStr scopeInfo <> viewMemberName m <> attn <> "> "
+   in ("#" <> viewGroupName g)
+        <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo)
+        <> maybe "" ((" " <>) . viewMemberName) m_
+        <> attn
+        <> "> "
 
 ttyFrom :: Text -> StyledString
 ttyFrom = styled $ colored Yellow
@@ -2761,17 +2766,17 @@ ttyTo :: Text -> StyledString
 ttyTo = styled $ colored Cyan
 
 ttyToGroup :: GroupInfo -> Maybe GroupChatScopeInfo -> StyledString
-ttyToGroup g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> " " <> groupScopeInfoStr scopeInfo)
+ttyToGroup g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo) <> " ")
 
 ttyToGroupEdited :: GroupInfo -> Maybe GroupChatScopeInfo -> StyledString
-ttyToGroupEdited g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> groupScopeInfoStr scopeInfo <> " [edited] ")
+ttyToGroupEdited g scopeInfo = membershipIncognito g <> ttyTo ("#" <> viewGroupName g <> maybe "" (" " <>) (groupScopeInfoStr scopeInfo) <> " [edited] ")
 
-groupScopeInfoStr :: Maybe GroupChatScopeInfo -> Text
+groupScopeInfoStr :: Maybe GroupChatScopeInfo -> Maybe Text
 groupScopeInfoStr = \case
-  Nothing -> ""
-  Just (GCSIMemberSupport {groupMember_}) -> case groupMember_ of
-    Nothing -> "(support) "
-    Just m -> "(support: " <> viewMemberName m <> ") "
+  Nothing -> Nothing
+  Just (GCSIMemberSupport {groupMember_}) -> Just $ case groupMember_ of
+    Nothing -> "(support)"
+    Just m -> "(support: " <> viewMemberName m <> ")"
 
 ttyFilePath :: FilePath -> StyledString
 ttyFilePath = plain

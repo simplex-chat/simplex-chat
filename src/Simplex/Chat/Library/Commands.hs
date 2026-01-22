@@ -588,7 +588,7 @@ processChatCommand vr nm = \case
              in if numNewFromMember == memberAttention then Nothing else Just numNewFromMember
             where
               newFromMember :: CChatItem 'CTGroup -> Bool
-              newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv m, meta = CIMeta {itemStatus = CISRcvNew}}) =
+              newFromMember (CChatItem _ ChatItem {chatDir = CIGroupRcv (Just m), meta = CIMeta {itemStatus = CISRcvNew}}) =
                 groupMemberId' m == scopeGMId
               newFromMember _ = False
   APIGetChatContentTypes chatRef -> withUser $ \user ->
@@ -846,19 +846,21 @@ processChatCommand vr nm = \case
         chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
         recipients <- getGroupRecipients vr user g chatScopeInfo groupKnockingVersion
         case ci of
+          -- TODO [msg from channel] support reactions to channel messages (Nothing itemMemberId)
           ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
             unless (ciReactionAllowed ci) $
               throwCmdError "reaction not allowed - chat item has no content"
-            let GroupMember {memberId = itemMemberId} = chatItemMember g ci
+            let itemMemberId_ = memberId' <$> chatItemMember g ci
+            itemMemberId <- maybe (throwCmdError "reaction not allowed - chat item has no member") pure itemMemberId_
             rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
             checkReactionAllowed rs
             SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId (Just itemMemberId) (toMsgScope g <$> chatScopeInfo) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
               setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
-              liftIO $ getGroupCIReactions db g itemMemberId itemSharedMId
+              liftIO $ getGroupCIReactions db g (Just itemMemberId) itemSharedMId
             let ci' = CChatItem md ci {reactions}
                 r = ACIReaction SCTGroup SMDSnd (GroupChat g chatScopeInfo) $ CIReaction CIGroupSnd ci' createdAt reaction
             pure $ CRChatItemReaction user add r
@@ -1881,7 +1883,7 @@ processChatCommand vr nm = \case
             gVar <- asks random
             (gInfo, hostMember) <- withStore $ \db -> createPreparedGroup db gVar vr user groupProfile True ccLink welcomeSharedMsgId False
             void $ createChatItem user (CDGroupSnd gInfo Nothing) False CIChatBanner Nothing (Just epochStart)
-            let cd = CDGroupRcv gInfo Nothing hostMember
+            let cd = CDGroupRcv gInfo Nothing (Just hostMember)
                 createItem sharedMsgId content = createChatItem user cd True content sharedMsgId Nothing
                 cInfo = GroupChat gInfo Nothing
             void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
@@ -1914,7 +1916,8 @@ processChatCommand vr nm = \case
     -- TODO   - hostMember to later be associated with owner profile when relays send it
     -- TODO   - pick any owner at random from initial introductions, find unknown member in group?
     -- TODO   - alternatively support not having a member in CDGroupRcv direction?
-    let cd = CDGroupRcv gInfo Nothing hostMember
+    -- TODO [msg from channel] for relays, don't create hostMember - use Nothing here
+    let cd = CDGroupRcv gInfo Nothing (Just hostMember)
         cInfo = GroupChat gInfo Nothing
     void $ createGroupFeatureItems_ user cd True CIRcvGroupFeature gInfo
     aci <- forM description $ \descr -> createChatItem user cd True (CIRcvMsgContent $ MCText descr) welcomeSharedMsgId Nothing
@@ -2444,7 +2447,7 @@ processChatCommand vr nm = \case
                   gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
                   pure (m', gInfo')
                 -- create item in both scopes
-                createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEMemberConnected) Nothing
+                createInternalChatItem user (CDGroupRcv gInfo' Nothing (Just m')) (CIRcvGroupEvent RGEMemberConnected) Nothing
                 let scopeInfo = Just GCSIMemberSupport {groupMember_ = Just m'}
                     gEvent = SGEMemberAccepted gmId (fromLocalProfile $ memberProfile m')
                 createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent gEvent) Nothing
@@ -2468,7 +2471,7 @@ processChatCommand vr nm = \case
           gInfo' <- updateGroupMembersRequireAttention db user gInfo m m'
           pure (m', gInfo')
         -- create item in both scopes
-        createInternalChatItem user (CDGroupRcv gInfo' Nothing m') (CIRcvGroupEvent RGEMemberConnected) Nothing
+        createInternalChatItem user (CDGroupRcv gInfo' Nothing (Just m')) (CIRcvGroupEvent RGEMemberConnected) Nothing
         let scopeInfo = Just GCSIMemberSupport {groupMember_ = Just m'}
             gEvent = SGEMemberAccepted gmId (fromLocalProfile $ memberProfile m')
         createInternalChatItem user (CDGroupSnd gInfo' scopeInfo) (CISndGroupEvent gEvent) Nothing
@@ -3545,16 +3548,19 @@ processChatCommand vr nm = \case
             itemDeletable :: CChatItem 'CTGroup -> Bool
             itemDeletable (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
               case chatDir of
-                CIGroupRcv GroupMember {memberRole} -> memberRole' membership >= memberRole && isJust itemSharedMsgId
+                CIGroupRcv (Just GroupMember {memberRole}) -> memberRole' membership >= memberRole && isJust itemSharedMsgId
+                CIGroupRcv Nothing -> memberRole' membership == GROwner && isJust itemSharedMsgId
                 CIGroupSnd -> isJust itemSharedMsgId
         itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
         itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
           where
             itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
             itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
-              join <$> forM itemSharedMsgId $ \msgId -> Just $ case chatDir of
-                CIGroupRcv GroupMember {memberId} -> (msgId, memberId)
-                CIGroupSnd -> (msgId, membershipMemId)
+              -- TODO [msg from channel] support batch deletion of channel messages (no memberId)
+              join <$> forM itemSharedMsgId $ \msgId -> case chatDir of
+                CIGroupRcv (Just GroupMember {memberId}) -> Just (msgId, memberId)
+                CIGroupRcv Nothing -> Nothing
+                CIGroupSnd -> Just (msgId, membershipMemId)
 
     delGroupChatItems :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Bool -> CM [ChatItemDeletion]
     delGroupChatItems user gInfo@GroupInfo {membership} chatScopeInfo items moderation = do
