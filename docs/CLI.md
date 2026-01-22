@@ -218,6 +218,8 @@ Use `/help` in chat to see the list of available commands.
 
 ### Groups
 
+To accept an invitation to a public group address (e.g. from [SimpleX Directory](https://simplex.chat/directory/)) use `/c <SimpleX group link>`.
+
 To create a group use `/g <group>`, then add contacts to it with `/a <group> <name>`. You can then send messages to the group by entering `#<group> <message>`. Use `/help groups` for other commands.
 
 ![simplex-chat](../images/groups.gif)
