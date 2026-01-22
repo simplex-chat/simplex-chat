@@ -9544,7 +9544,7 @@ Répéter la demande de connexion ?</target>
       </trans-unit>
       <trans-unit id="blocked" xml:space="preserve">
         <source>blocked</source>
-        <target>blocké</target>
+        <target>bloqué</target>
         <note>marked deleted chat item preview text</note>
       </trans-unit>
       <trans-unit id="blocked %@" xml:space="preserve">
