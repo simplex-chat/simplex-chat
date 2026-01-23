@@ -44,6 +44,8 @@ struct ChatView: View {
     @State private var showSearch = false
     @State private var searchText: String = ""
     @FocusState private var searchFocussed
+    @State private var contentFilter: ContentFilter? = nil
+    @State private var availableContent: [ContentFilter] = [.images, .files, .links]
     // opening GroupMemberInfoView on member icon
     @State private var selectedMember: GMember? = nil
     // opening GroupLinkView on link button (incognito)
@@ -528,22 +530,28 @@ struct ChatView: View {
             case let .direct(contact):
                 HStack {
                     let callsPrefEnabled = contact.mergedPreferences.calls.enabled.forUser
-                    if callsPrefEnabled {
-                        if chatModel.activeCall == nil {
-                            callButton(contact, .audio, imageName: "phone")
-                                .disabled(!contact.ready || !contact.active)
-                        } else if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                            endCallButton(call)
-                        }
+                    if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                        endCallButton(call)
+                    } else {
+                        contentFilterMenu()
                     }
                     Menu {
                         if callsPrefEnabled && chatModel.activeCall == nil {
+                            Button {
+                                CallController.shared.startCall(contact, .audio)
+                            } label: {
+                                Label("Audio call", systemImage: "phone")
+                            }
+                            .disabled(!contact.ready || !contact.active)
                             Button {
                                 CallController.shared.startCall(contact, .video)
                             } label: {
                                 Label("Video call", systemImage: "video")
                             }
                             .disabled(!contact.ready || !contact.active)
+                        }
+                        if let call = chatModel.activeCall, call.contact.id == cInfo.id {
+                            contentFilterMenu()
                         }
                         searchButton()
                         ToggleNtfsButton(chat: chat)
@@ -554,23 +562,24 @@ struct ChatView: View {
                 }
             case let .group(groupInfo, _):
                 HStack {
-                    if groupInfo.canAddMembers {
-                        if (chat.chatInfo.incognito) {
-                            groupLinkButton()
-                                .appSheet(isPresented: $showGroupLinkSheet) {
-                                    GroupLinkView(
-                                        groupId: groupInfo.groupId,
-                                        groupLink: $groupLink,
-                                        groupLinkMemberRole: $groupLinkMemberRole,
-                                        showTitle: true,
-                                        creatingGroup: false
-                                    )
-                                }
-                        } else {
-                            addMembersButton()
-                        }
-                    }
+                    contentFilterMenu()
                     Menu {
+                        if groupInfo.canAddMembers {
+                            if (chat.chatInfo.incognito) {
+                                groupLinkButton()
+                                    .appSheet(isPresented: $showGroupLinkSheet) {
+                                        GroupLinkView(
+                                            groupId: groupInfo.groupId,
+                                            groupLink: $groupLink,
+                                            groupLinkMemberRole: $groupLinkMemberRole,
+                                            showTitle: true,
+                                            creatingGroup: false
+                                        )
+                                    }
+                            } else {
+                                addMembersButton()
+                            }
+                        }
                         searchButton()
                         ToggleNtfsButton(chat: chat)
                     } label: {
@@ -578,7 +587,10 @@ struct ChatView: View {
                     }
                 }
             case .local:
-                searchButton()
+                HStack {
+                    contentFilterMenu()
+                    searchButton()
+                }
             default:
                 EmptyView()
             }
@@ -685,6 +697,7 @@ struct ChatView: View {
                     }
                 }
             }
+            updateAvailableContent()
         }
         if chatModel.draftChatId == cInfo.id && !composeState.forwarding,
            let draft = chatModel.draft {
@@ -698,6 +711,22 @@ struct ChatView: View {
         floatingButtonModel.updateOnListChange(scrollView.listState)
     }
 
+    private func updateAvailableContent() {
+        Task {
+            let content: [ContentFilter]
+            do {
+                let contentTags = Set(try await apiGetChatContentTypes(chatId: chat.chatInfo.id)).union(ContentFilter.alwaysShow)
+                content = ContentFilter.allCases.filter { contentTags.contains($0.contentTag) }
+            } catch let error {
+                logger.error("apiGetChatContentTypes error: \(responseError(error))")
+                content = ContentFilter.allCases
+            }
+            await MainActor.run {
+                availableContent = content
+            }
+        }
+    }
+    
     private func scrollToItem(_ itemId: ChatItem.ID) {
         Task {
             do {
@@ -732,10 +761,14 @@ struct ChatView: View {
     }
 
     private func searchToolbar() -> some View {
-        HStack(spacing: 12) {
+        let placeholder: LocalizedStringKey = contentFilter?.searchPlaceholder ?? "Search"
+        return HStack(spacing: 12) {
             HStack(spacing: 4) {
                 Image(systemName: "magnifyingglass")
-                TextField("Search", text: $searchText)
+                if let contentFilter {
+                    Image(systemName: contentFilter.icon)
+                }
+                TextField(placeholder, text: $searchText)
                     .focused($searchFocussed)
                     .foregroundColor(theme.colors.onBackground)
                     .frame(maxWidth: .infinity)
@@ -1052,7 +1085,7 @@ struct ChatView: View {
 
     private func searchTextChanged(_ s: String) {
         Task {
-            await loadChat(chat: chat, im: im, search: s)
+            await loadChat(chat: chat, im: im, contentTag: contentFilter?.contentTag, search: s)
             mergedItems.boxedValue = MergedItems.create(im, revealedItems)
             await MainActor.run {
                 scrollView.updateItems(mergedItems.boxedValue.items)
@@ -1255,16 +1288,46 @@ struct ChatView: View {
         }
     }
 
+    private func contentFilterMenu() -> some View {
+        Menu {
+            ForEach(availableContent, id: \.self) { type in
+                Button {
+                    setContentFilter(type)
+                } label: {
+                    Label(type.label, systemImage: contentFilter == type ? type.iconFilled : type.icon)
+                }
+            }
+            if contentFilter != nil {
+                Button {
+                    closeSearch()
+                } label: {
+                    Label("All messages", systemImage: "bubble.left.and.text.bubble.right")
+                }
+            }
+        } label: {
+            Image(systemName: "photo.on.rectangle.angled")
+        }
+    }
+
     private func focusSearch() {
         showSearch = true
         searchFocussed = true
         searchText = ""
     }
 
+    private func setContentFilter(_ type: ContentFilter) {
+        contentFilter = type
+        showSearch = true
+        searchText = ""
+        searchTextChanged("")
+    }
+
     private func closeSearch() {
         showSearch = false
         searchText = ""
         searchFocussed = false
+        contentFilter = nil
+        updateAvailableContent()
     }
 
     private func closeKeyboardAndRun(_ action: @escaping () -> Void) {
@@ -1285,7 +1348,7 @@ struct ChatView: View {
                 Task { await chatModel.loadGroupMembers(gInfo) { showAddMembersSheet = true } }
             }
         } label: {
-            Image(systemName: "person.crop.circle.badge.plus")
+            Label("Invite member", systemImage: "person.crop.circle.badge.plus")
         }
     }
 
@@ -1305,7 +1368,7 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Image(systemName: "link.badge.plus")
+            Label("Group link", systemImage: "link.badge.plus")
         }
     }
 
@@ -1473,6 +1536,7 @@ struct ChatView: View {
             chat.chatInfo.id,
             im,
             pagination,
+            contentFilter?.contentTag,
             searchText,
             nil,
             { visibleItemIndexesNonReversed(im, scrollView.listState, mergedItems.boxedValue) }
@@ -2953,6 +3017,66 @@ func updateChatSettings(_ chat: Chat, chatSettings: ChatSettings) {
             }
         } catch let error {
             logger.error("apiSetChatSettings error \(responseError(error))")
+        }
+    }
+}
+
+enum ContentFilter: CaseIterable {
+    case images
+    case videos
+    case voice
+    case files
+    case links
+
+    static let alwaysShow: Set<MsgContentTag> = [.image, .link]
+
+    var contentTag: MsgContentTag {
+        switch self {
+        case .images: .image
+        case .videos: .video
+        case .voice: .voice
+        case .files: .file
+        case .links: .link
+        }
+    }
+
+    var label: LocalizedStringKey {
+        switch self {
+        case .images: "Images"
+        case .videos: "Videos"
+        case .voice: "Voice messages"
+        case .files: "Files"
+        case .links: "Links"
+        }
+    }
+
+    var searchPlaceholder: LocalizedStringKey {
+        switch self {
+        case .images: "Search images"
+        case .videos: "Search videos"
+        case .voice: "Search voice messages"
+        case .files: "Search files"
+        case .links: "Search links"
+        }
+    }
+    
+    var icon: String {
+        switch self {
+        case .images: "photo"
+        case .videos: "video"
+        case .voice: "mic"
+        case .files: "doc"
+        case .links: "link"
+        }
+    }
+
+    var iconFilled: String {
+        switch self {
+        case .images: "photo.fill"
+        case .videos: "video.fill"
+        case .voice: "mic.fill"
+        case .files: "doc.fill"
+        case .links: "link.circle.fill"
         }
     }
 }

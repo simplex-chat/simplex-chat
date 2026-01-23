@@ -95,6 +95,7 @@ mkDirectoryOpts TestParams {tmpPath = ps} superUsers ownersGroup webFolder =
       adminUsers = [],
       superUsers,
       ownersGroup,
+      noAddress = False,
       blockedFragmentsFile = Nothing,
       blockedWordsFile = Nothing,
       blockedExtensionRules = Nothing,
