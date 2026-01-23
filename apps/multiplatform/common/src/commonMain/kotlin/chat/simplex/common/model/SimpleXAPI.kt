@@ -3735,7 +3735,7 @@ sealed class CC {
       }
       "/_get chat ${chatRef(type, id, scope)}$tag ${pagination.cmdString}" + (if (search == "") "" else " search=$search")
     }
-    is ApiGetChatContentTypes -> "/_get content types ${chatRef(type, id, scope)})"
+    is ApiGetChatContentTypes -> "/_get content types ${chatRef(type, id, scope)}"
     is ApiGetChatItemInfo -> "/_get item info ${chatRef(type, id, scope)} $itemId"
     is ApiSendMessages -> {
       val msgs = json.encodeToString(composedMessages)
