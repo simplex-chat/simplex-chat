@@ -11,10 +11,10 @@ m20260122_has_link =
   [r|
 ALTER TABLE chat_items ADD COLUMN has_link SMALLINT NOT NULL DEFAULT 0;
 
+UPDATE chat_items SET msg_content_tag = 'text' WHERE msg_content_tag = 'liveText';
+
 UPDATE chat_items SET has_link = 1
-WHERE msg_content_tag = 'link'
-   OR item_text LIKE '%http://%'
-   OR item_text LIKE '%https://%';
+WHERE msg_content_tag = 'link' OR item_text LIKE '%https://%';
 
 CREATE INDEX idx_chat_items_groups_has_link_item_ts ON chat_items(user_id, group_id, has_link, item_ts);
 CREATE INDEX idx_chat_items_contacts_has_link_created_at ON chat_items(user_id, contact_id, has_link, created_at);
