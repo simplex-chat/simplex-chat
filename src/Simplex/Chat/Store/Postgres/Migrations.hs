@@ -25,6 +25,7 @@ import Simplex.Chat.Store.Postgres.Migrations.M20251117_member_relations_vector
 import Simplex.Chat.Store.Postgres.Migrations.M20251128_migrate_member_relations
 import Simplex.Chat.Store.Postgres.Migrations.M20251230_strict_tables
 import Simplex.Chat.Store.Postgres.Migrations.M20260108_chat_indices
+import Simplex.Chat.Store.Postgres.Migrations.M20260122_has_link
 import Simplex.Messaging.Agent.Store.Shared (Migration (..))
 
 schemaMigrations :: [(String, Text, Maybe Text)]
@@ -49,7 +50,8 @@ schemaMigrations =
     ("20251117_member_relations_vector", m20251117_member_relations_vector, Just down_m20251117_member_relations_vector),
     ("20251128_migrate_member_relations", m20251128_migrate_member_relations, Just down_m20251128_migrate_member_relations),
     ("20251230_strict_tables", m20251230_strict_tables, Just down_m20251230_strict_tables),
-    ("20260108_chat_indices", m20260108_chat_indices, Just down_m20260108_chat_indices)
+    ("20260108_chat_indices", m20260108_chat_indices, Just down_m20260108_chat_indices),
+    ("20260122_has_link", m20260122_has_link, Just down_m20260122_has_link)
   ]
 
 -- | The list of migrations in ascending order by date
