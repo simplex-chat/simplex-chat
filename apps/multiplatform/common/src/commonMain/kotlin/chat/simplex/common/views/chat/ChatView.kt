@@ -148,18 +148,6 @@ fun ChatView(
     val contentFilter = rememberSaveable { mutableStateOf<ContentFilter?>(null) }
     val availableContent = remember { mutableStateOf<List<ContentFilter>>(ContentFilter.initialList) }
 
-    fun updateAvailableContent() {
-      withBGApi {
-        val types = chatModel.controller.apiGetChatContentTypes(chatRh, chat.chatInfo.chatType, chat.chatInfo.apiId, null)
-        if (types == null) {
-          availableContent.value = ContentFilter.entries
-        } else {
-          val typeSet = setOf(types).union(ContentFilter.alwaysShow)
-          availableContent.value = ContentFilter.entries.filter { it -> typeSet.contains(it.contentTag) }
-        }
-      }
-    }
-
     if (appPlatform.isAndroid) {
       DisposableEffect(Unit) {
         onDispose {
@@ -190,7 +178,7 @@ fun ChatView(
             availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
             if (chatsCtx.secondaryContextFilter == null) {
-              updateAvailableContent()
+              updateAvailableContent(chatRh, activeChat, availableContent)
             }
             if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
               withBGApi {
@@ -769,7 +757,7 @@ fun ChatView(
               contentFilter.value = null
               // Update available content types when search closes
               if (chatsCtx.secondaryContextFilter == null) {
-                updateAvailableContent()
+                updateAvailableContent(chatRh, activeChat, availableContent)
               }
             },
             onComposed,
@@ -811,6 +799,23 @@ fun ChatView(
       }
       else -> {}
     }
+    }
+  }
+}
+
+fun updateAvailableContent(chatRh: Long?, activeChat: State<Chat?>, availableContent: MutableState<List<ContentFilter>>) {
+  withBGApi {
+    Log.e(TAG, "updateAvailableContent")
+    val chatInfo = activeChat.value?.chatInfo
+    if (chatInfo == null) return@withBGApi
+    val types = chatModel.controller.apiGetChatContentTypes(chatRh, chatInfo.chatType, chatInfo.apiId, null)
+    if (activeChat.value?.chatInfo?.id != chatInfo.id) return@withBGApi
+    if (types == null) {
+      availableContent.value = ContentFilter.entries
+    } else {
+      val typeSet: Set<MsgContentTag> = types.union(ContentFilter.alwaysShow)
+      Log.e(TAG, "updateAvailableContent $typeSet")
+      availableContent.value = ContentFilter.entries.filter { it -> typeSet.contains(it.contentTag) }
     }
   }
 }
