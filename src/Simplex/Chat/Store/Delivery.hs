@@ -81,10 +81,10 @@ createMsgDeliveryTask db gInfo sender newTask = do
         created_at, updated_at
       ) VALUES (?,?,?,?,?,?,?,?,?,?,?)
     |]
-    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI messageFromChannel, DTSNew, currentTs, currentTs))
+    ((Only groupId) :. jobScopeRow_ jobScope :. (groupMemberId' sender, messageId, BI sentAsGroup, DTSNew, currentTs, currentTs))
   where
     GroupInfo {groupId} = gInfo
-    NewMessageDeliveryTask {messageId, jobScope, messageFromChannel} = newTask
+    NewMessageDeliveryTask {messageId, taskContext = DeliveryTaskContext {jobScope, sentAsGroup}} = newTask
 
 deleteGroupDeliveryTasks :: DB.Connection -> GroupInfo -> IO ()
 deleteGroupDeliveryTasks db GroupInfo {groupId} =
@@ -146,9 +146,11 @@ getMsgDeliveryTask_ db taskId =
       (Only taskId)
   where
     toTask :: MessageDeliveryTaskRow -> Either StoreError MessageDeliveryTask
-    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI messageFromChannel)) =
+    toTask ((Only taskId') :. jobScopeRow :. (senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, BI sentAsGroup)) =
       case toJobScope_ jobScopeRow of
-        Just jobScope -> Right $ MessageDeliveryTask {taskId = taskId', jobScope, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel}
+        Just jobScope ->
+          let taskContext = DeliveryTaskContext {jobScope, sentAsGroup}
+           in Right $ MessageDeliveryTask {taskId = taskId', taskContext, senderGMId, senderMemberId, senderMemberName, brokerTs, chatMessage}
         Nothing -> Left $ SEInvalidDeliveryTask taskId'
 
 markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
@@ -162,7 +164,7 @@ getNextDeliveryTasks db gInfo task =
   getWorkItems "message delivery task" getTaskIds (getMsgDeliveryTask_ db) (markDeliveryTaskFailed_ db)
   where
     GroupInfo {groupId} = gInfo
-    MessageDeliveryTask {jobScope, senderGMId} = task
+    MessageDeliveryTask {taskContext = DeliveryTaskContext {jobScope}, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
       | useRelays' gInfo =

@@ -71,12 +71,13 @@ batchDeliveryTasks1 vr maxLen = toResult . foldl' addToBatch ([], [], [], 0, 0) 
       -- doesn’t fit: stop adding further messages
       | otherwise = (msgBodies, taskIds, largeTaskIds, len, n)
       where
-        MessageDeliveryTask {taskId, senderMemberId, senderMemberName, brokerTs, chatMessage, messageFromChannel = _messageFromChannel} = task
-        -- TODO [channels fwd] handle messageFromChannel (null memberId in XGrpMsgForward)
+        MessageDeliveryTask {taskId, taskContext = DeliveryTaskContext {sentAsGroup}, senderMemberId, senderMemberName, brokerTs, chatMessage} = task
         msgBody =
-          let fwdEvt = XGrpMsgForward (Just senderMemberId) (Just senderMemberName) chatMessage brokerTs
+          let memberId_ = if sentAsGroup then Nothing else Just senderMemberId
+              memberName_ = if sentAsGroup then Nothing else Just senderMemberName
+              fwdEvt = XGrpMsgForward memberId_ memberName_ chatMessage brokerTs
               cm = ChatMessage {chatVRange = vr, msgId = Nothing, chatMsgEvent = fwdEvt}
-            in chatMsgToBody cm
+           in chatMsgToBody cm
         msgLen = B.length msgBody
         len'
           | n == 0 = msgLen

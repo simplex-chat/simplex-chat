@@ -473,8 +473,16 @@ data GroupInfo = GroupInfo
   }
   deriving (Eq, Show)
 
+groupId' :: GroupInfo -> GroupId
+groupId' GroupInfo {groupId} = groupId
+
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
+
+type SendAsGroup = Bool
+
+sendAsGroup' :: GroupInfo -> SendAsGroup
+sendAsGroup' gInfo@GroupInfo {membership} = useRelays' gInfo && memberRole' membership == GROwner
 
 data BusinessChatType
   = BCBusiness -- used on the customer side

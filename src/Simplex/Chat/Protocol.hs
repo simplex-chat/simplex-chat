@@ -305,8 +305,6 @@ data ChatMessage e = ChatMessage
 
 data AChatMessage = forall e. MsgEncodingI e => ACMsg (SMsgEncoding e) (ChatMessage e)
 
-type MessageFromChannel = Bool
-
 data ChatMsgEvent (e :: MsgEncoding) where
   XMsgNew :: MsgContainer -> ChatMsgEvent 'Json
   XMsgFileDescr :: {msgId :: SharedMsgId, fileDescr :: FileDescr} -> ChatMsgEvent 'Json
@@ -624,7 +622,8 @@ data ExtMsgContent = ExtMsgContent
     file :: Maybe FileInvitation,
     ttl :: Maybe Int,
     live :: Maybe Bool,
-    scope :: Maybe MsgScope
+    scope :: Maybe MsgScope,
+    asGroup :: Maybe Bool
   }
   deriving (Eq, Show)
 
@@ -707,10 +706,11 @@ parseMsgContainer v =
       live <- v .:? "live"
       mentions <- fromMaybe M.empty <$> (v .:? "mentions")
       scope <- v .:? "scope"
-      pure ExtMsgContent {content, mentions, file, ttl, live, scope}
+      asGroup <- v .:? "asGroup"
+      pure ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup}
 
 extMsgContent :: MsgContent -> Maybe FileInvitation -> ExtMsgContent
-extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing
+extMsgContent mc file = ExtMsgContent mc M.empty file Nothing Nothing Nothing Nothing
 
 justTrue :: Bool -> Maybe Bool
 justTrue True = Just True
@@ -763,8 +763,8 @@ msgContainerJSON = \case
   MCSimple mc -> o $ msgContent mc
   where
     o = JM.fromList
-    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope} =
-      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) ["content" .= content]
+    msgContent ExtMsgContent {content, mentions, file, ttl, live, scope, asGroup} =
+      ("file" .=? file) $ ("ttl" .=? ttl) $ ("live" .=? live) $ ("mentions" .=? nonEmptyMap mentions) $ ("scope" .=? scope) $ ("asGroup" .=? asGroup) ["content" .= content]
 
 nonEmptyMap :: Map k v -> Maybe (Map k v)
 nonEmptyMap m = if M.null m then Nothing else Just m

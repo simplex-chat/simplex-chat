@@ -21,7 +21,7 @@ import Database.SQLite.Simple.QQ (sql)
 -- delivery_tasks table:
 -- - sender_group_member_id <-> GroupMemberId (sender of the original message that created task),
 -- - message_id <-> MessageId (reference to the original message that created task),
--- - message_from_channel <-> Maybe MessageFromChannel (for MessageDeliveryTask),
+-- - message_from_channel <-> Maybe SendAsGroup (for MessageDeliveryTask),
 -- - task_status <-> DeliveryTaskStatus,
 -- - task_err_reason <-> Maybe Text (set when task status is DTSError, not encoded in status to allow filtering by DTSError in queries).
 
