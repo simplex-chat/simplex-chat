@@ -533,7 +533,7 @@ struct ChatView: View {
                     if let call = chatModel.activeCall, call.contact.id == cInfo.id {
                         endCallButton(call)
                     } else {
-                        contentFilterMenu()
+                        contentFilterMenu(withLabel: false)
                     }
                     Menu {
                         if callsPrefEnabled && chatModel.activeCall == nil {
@@ -551,7 +551,7 @@ struct ChatView: View {
                             .disabled(!contact.ready || !contact.active)
                         }
                         if let call = chatModel.activeCall, call.contact.id == cInfo.id {
-                            contentFilterMenu()
+                            contentFilterMenu(withLabel: true)
                         }
                         searchButton()
                         ToggleNtfsButton(chat: chat)
@@ -562,7 +562,7 @@ struct ChatView: View {
                 }
             case let .group(groupInfo, _):
                 HStack {
-                    contentFilterMenu()
+                    contentFilterMenu(withLabel: false)
                     Menu {
                         if groupInfo.canAddMembers {
                             if (chat.chatInfo.incognito) {
@@ -588,7 +588,7 @@ struct ChatView: View {
                 }
             case .local:
                 HStack {
-                    contentFilterMenu()
+                    contentFilterMenu(withLabel: false)
                     searchButton()
                 }
             default:
@@ -1288,7 +1288,7 @@ struct ChatView: View {
         }
     }
 
-    private func contentFilterMenu() -> some View {
+    private func contentFilterMenu(withLabel: Bool) -> some View {
         Menu {
             ForEach(availableContent, id: \.self) { type in
                 Button {
@@ -1305,7 +1305,12 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Image(systemName: "photo.on.rectangle.angled")
+            let icon = contentFilter == nil ? "photo.on.rectangle" : "photo.on.rectangle.fill"
+            if withLabel {
+                Label("Filter", systemImage: icon)
+            } else {
+                Image(systemName: icon)
+            }
         }
     }
 
@@ -1316,6 +1321,7 @@ struct ChatView: View {
     }
 
     private func setContentFilter(_ type: ContentFilter) {
+        if (contentFilter == type) { return }
         contentFilter = type
         showSearch = true
         searchText = ""
