@@ -444,17 +444,17 @@ func apiGetChat(chatId: ChatId, scope: GroupChatScope?, contentTag: MsgContentTa
     throw r.unexpected
 }
 
-func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope?) async throws -> [MsgContentTag] {
+func apiGetChatContentTypes(chatId: ChatId, scope: GroupChatScope? = nil) async throws -> [MsgContentTag] {
     let r: ChatResponse0 = try await chatSendCmd(.apiGetChatContentTypes(chatId: chatId, scope: scope))
     if case let .chatContentTypes(types) = r { return types }
     throw r.unexpected
 }
 
-func loadChat(chat: Chat, im: ItemsModel, search: String = "", clearItems: Bool = true) async {
-    await loadChat(chatId: chat.chatInfo.id, im: im, search: search, clearItems: clearItems)
+func loadChat(chat: Chat, im: ItemsModel, contentTag: MsgContentTag? = nil, search: String = "", clearItems: Bool = true) async {
+    await loadChat(chatId: chat.chatInfo.id, im: im, contentTag: contentTag, search: search, clearItems: clearItems)
 }
 
-func loadChat(chatId: ChatId, im: ItemsModel, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
+func loadChat(chatId: ChatId, im: ItemsModel, contentTag: MsgContentTag? = nil, search: String = "", openAroundItemId: ChatItem.ID? = nil, clearItems: Bool = true) async {
     await MainActor.run {
         if clearItems {
             im.reversedChatItems = []
@@ -468,10 +468,11 @@ func loadChat(chatId: ChatId, im: ItemsModel, search: String = "", openAroundIte
             openAroundItemId != nil
             ? .around(chatItemId: openAroundItemId!, count: loadItemsPerPage)
             : (
-                search == ""
+                contentTag == nil && search == ""
                 ? .initial(count: loadItemsPerPage) : .last(count: loadItemsPerPage)
             )
         ),
+        contentTag,
         search,
         openAroundItemId,
         { 0...0 }
