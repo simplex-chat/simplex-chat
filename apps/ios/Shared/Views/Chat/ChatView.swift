@@ -1305,7 +1305,7 @@ struct ChatView: View {
                 }
             }
         } label: {
-            Image(systemName: "square.stack.3d.up")
+            Image(systemName: "photo.on.rectangle.angled")
         }
     }
 
@@ -3066,7 +3066,7 @@ enum ContentFilter: CaseIterable {
         case .videos: "video"
         case .voice: "mic"
         case .files: "doc"
-        case .links: "link.circle"
+        case .links: "link"
         }
     }
 
