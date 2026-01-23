@@ -379,6 +379,7 @@
   <string name="content_filter_files">Files</string>
   <string name="content_filter_links">Links</string>
   <string name="content_filter_all_messages">All messages</string>
+  <string name="content_filter_menu_item">Filter</string>
   <string name="archive_verb">Archive</string>
   <string name="archive_report">Archive report</string>
   <string name="archive_reports">Archive reports</string>

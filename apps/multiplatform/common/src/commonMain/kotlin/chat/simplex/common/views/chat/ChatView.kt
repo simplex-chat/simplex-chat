@@ -1160,20 +1160,34 @@ fun BoxScope.ChatInfoToolbar(
   val activeCall by remember { chatModel.activeCall }
 
   val showContentFilterButton = availableContent.value.isNotEmpty()
+  val activeCallInChat = chatInfo is ChatInfo.Direct && activeCall?.contact?.id == chatInfo.id
 
-  // Content filter button - shown in bar for all chat types
+  // Content filter button - shown in bar, or moved to menu during active call
   if (showContentFilterButton) {
-    barButtons.add {
-      val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
-      IconButton(
-        { showContentFilterMenu.value = true },
-        enabled = enabled
-      ) {
-        Icon(
+    val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
+    if (activeCallInChat) {
+      menuItems.add {
+        ItemAction(
+          stringResource(MR.strings.content_filter_menu_item),
           painterResource(MR.images.ic_photo_library),
-          null,
-          tint = MaterialTheme.colors.primary
+          onClick = {
+            showMenu.value = false
+            showContentFilterMenu.value = true
+          }
         )
+      }
+    } else {
+      barButtons.add {
+        IconButton(
+          { showContentFilterMenu.value = true },
+          enabled = enabled
+        ) {
+          Icon(
+            painterResource(MR.images.ic_photo_library),
+            null,
+            tint = MaterialTheme.colors.primary
+          )
+        }
       }
     }
   }
@@ -1197,20 +1211,22 @@ fun BoxScope.ChatInfoToolbar(
       }
     }
     is ChatInfo.Direct -> {
-      if (activeCall?.contact?.id == chatInfo.id && appPlatform.isDesktop) {
-        barButtons.add {
-          val call = remember { chatModel.activeCall }.value
-          val connectedAt = call?.connectedAt
-          if (connectedAt != null) {
-            val time = remember { mutableStateOf(durationText(0)) }
-            LaunchedEffect(Unit) {
-              while (true) {
-                time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
-                delay(250)
+      if (activeCall?.contact?.id == chatInfo.id) {
+        if (appPlatform.isDesktop) {
+          barButtons.add {
+            val call = remember { chatModel.activeCall }.value
+            val connectedAt = call?.connectedAt
+            if (connectedAt != null) {
+              val time = remember { mutableStateOf(durationText(0)) }
+              LaunchedEffect(Unit) {
+                while (true) {
+                  time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
+                  delay(250)
+                }
               }
+              val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
+              Text(time.value, Modifier.widthIn(min = sp50))
             }
-            val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
-            Text(time.value, Modifier.widthIn(min = sp50))
           }
         }
         barButtons.add {
