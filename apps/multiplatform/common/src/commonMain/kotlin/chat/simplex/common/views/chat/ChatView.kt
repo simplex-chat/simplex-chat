@@ -1170,7 +1170,7 @@ fun BoxScope.ChatInfoToolbar(
         enabled = enabled
       ) {
         Icon(
-          painterResource(MR.images.ic_stacks),
+          painterResource(MR.images.ic_photo_library),
           null,
           tint = MaterialTheme.colors.primary
         )
@@ -1306,14 +1306,27 @@ fun BoxScope.ChatInfoToolbar(
   }
   val oneHandUI = remember { appPrefs.oneHandUI.state }
   val chatBottomBar = remember { appPrefs.chatBottomBar.state }
+  val searchTrailingContent: @Composable (() -> Unit)? = if (showContentFilterButton) {{
+    IconButton({ showContentFilterMenu.value = true }) {
+      Icon(
+        painterResource(if (contentFilter.value == null) MR.images.ic_photo_library else MR.images.ic_photo_library_filled),
+        null,
+        Modifier.padding(4.dp),
+        tint = MaterialTheme.colors.primary
+      )
+    }
+  }} else null
+
   DefaultAppBar(
     navigationButton = { if (appPlatform.isAndroid || showSearch.value) { NavigationButtonBack(onBackClicked) }  },
     title = { ChatInfoToolbarTitle(chatInfo) },
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
+    searchAlwaysVisible = contentFilter.value != null,
     onTop = !oneHandUI.value || !chatBottomBar.value,
     searchPlaceholder = searchPlaceholder,
     onSearchValueChanged = onSearchValueChanged,
+    searchTrailingContent = searchTrailingContent,
     buttons = { barButtons.forEach { it() } }
   )
   Box(Modifier.fillMaxWidth().wrapContentSize(Alignment.TopEnd)) {
@@ -1346,18 +1359,40 @@ fun BoxScope.ChatInfoToolbar(
     ) {
       val contentFilterMenuItems: List<@Composable () -> Unit> = buildList {
         availableContent.value.forEach { filter ->
+          val isSelected = contentFilter.value == filter
           add {
             ItemAction(
               stringResource(filter.label),
-              painterResource(filter.icon),
+              painterResource(if (isSelected) filter.iconFilled else filter.icon),
+              color = if (isSelected) MaterialTheme.colors.primary else Color.Unspecified,
               onClick = {
                 showContentFilterMenu.value = false
+                if (contentFilter.value == filter) return@ItemAction
                 contentFilter.value = filter
                 showSearch.value = true
                 scope.launch {
                   val c = chatModel.getChat(chatInfo.id)
                   if (c != null) {
                     apiFindMessages(chatsCtx, c, filter.contentTag, "")
+                  }
+                }
+              }
+            )
+          }
+        }
+        if (showSearch.value) {
+          add {
+            ItemAction(
+              stringResource(MR.strings.content_filter_all_messages),
+              painterResource(MR.images.ic_forum),
+              onClick = {
+                showContentFilterMenu.value = false
+                contentFilter.value = null
+                showSearch.value = false
+                scope.launch {
+                  val c = chatModel.getChat(chatInfo.id)
+                  if (c != null) {
+                    apiFindMessages(chatsCtx, c, null, "")
                   }
                 }
               }
@@ -3622,13 +3657,14 @@ enum class ContentFilter(
   val contentTag: MsgContentTag,
   val label: StringResource,
   val searchPlaceholder: StringResource,
-  val icon: ImageResource
+  val icon: ImageResource,
+  val iconFilled: ImageResource
 ) {
-  Images(MsgContentTag.Image, MR.strings.content_filter_images, MR.strings.placeholder_search_images, MR.images.ic_image),
-  Videos(MsgContentTag.Video, MR.strings.content_filter_videos, MR.strings.placeholder_search_videos, MR.images.ic_videocam),
-  Voice(MsgContentTag.Voice, MR.strings.content_filter_voice_messages, MR.strings.placeholder_search_voice_messages, MR.images.ic_mic),
-  Files(MsgContentTag.File, MR.strings.content_filter_files, MR.strings.placeholder_search_files, MR.images.ic_article),
-  Links(MsgContentTag.Link, MR.strings.content_filter_links, MR.strings.placeholder_search_links, MR.images.ic_link);
+  Images(MsgContentTag.Image, MR.strings.content_filter_images, MR.strings.placeholder_search_images, MR.images.ic_image, MR.images.ic_image_filled),
+  Videos(MsgContentTag.Video, MR.strings.content_filter_videos, MR.strings.placeholder_search_videos, MR.images.ic_videocam, MR.images.ic_videocam_filled),
+  Voice(MsgContentTag.Voice, MR.strings.content_filter_voice_messages, MR.strings.placeholder_search_voice_messages, MR.images.ic_mic, MR.images.ic_mic_filled),
+  Files(MsgContentTag.File, MR.strings.content_filter_files, MR.strings.placeholder_search_files, MR.images.ic_draft, MR.images.ic_draft_filled),
+  Links(MsgContentTag.Link, MR.strings.content_filter_links, MR.strings.placeholder_search_links, MR.images.ic_link, MR.images.ic_link);
 
   companion object {
     val alwaysShow: Set<MsgContentTag> = setOf(MsgContentTag.Image, MsgContentTag.Link)

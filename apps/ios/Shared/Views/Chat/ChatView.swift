@@ -1316,6 +1316,7 @@ struct ChatView: View {
     }
 
     private func setContentFilter(_ type: ContentFilter) {
+        if (contentFilter == type) { return }
         contentFilter = type
         showSearch = true
         searchText = ""
