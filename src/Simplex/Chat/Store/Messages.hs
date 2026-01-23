@@ -684,7 +684,9 @@ getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRe
             | itemSent == MDRcv, let member_ = toMaybeGroupMember userContactId memberRow, matchesMemberId member_ ->
                 ciQuote (Just itemId) $ CIQGroupRcv member_
           -- if item is not found or memberId mismatch, return quote without item reference
-          _ -> ciQuote Nothing $ CIQGroupRcv Nothing
+          _
+            | memberId == Just userMemberId -> ciQuote Nothing CIQGroupSnd
+            | otherwise -> ciQuote Nothing $ CIQGroupRcv Nothing
         matchesMemberId :: Maybe GroupMember -> Bool
         matchesMemberId member_ = case (memberId, member_) of
           -- memberId from MsgRef matches member on found item
