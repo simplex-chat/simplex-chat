@@ -368,6 +368,16 @@
   <string name="edit_verb">Edit</string>
   <string name="info_menu">Info</string>
   <string name="search_verb">Search</string>
+  <string name="placeholder_search_images">Search images</string>
+  <string name="placeholder_search_videos">Search videos</string>
+  <string name="placeholder_search_voice_messages">Search voice messages</string>
+  <string name="placeholder_search_files">Search files</string>
+  <string name="placeholder_search_links">Search links</string>
+  <string name="content_filter_images">Images</string>
+  <string name="content_filter_videos">Videos</string>
+  <string name="content_filter_voice_messages">Voice messages</string>
+  <string name="content_filter_files">Files</string>
+  <string name="content_filter_links">Links</string>
   <string name="archive_verb">Archive</string>
   <string name="archive_report">Archive report</string>
   <string name="archive_reports">Archive reports</string>

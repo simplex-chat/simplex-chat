@@ -29,6 +29,7 @@ fun DefaultAppBar(
   onTop: Boolean,
   showSearch: Boolean = false,
   searchAlwaysVisible: Boolean = false,
+  searchPlaceholder: String? = null,
   onSearchValueChanged: (String) -> Unit = {},
   buttons: @Composable RowScope.() -> Unit = {},
 ) {
@@ -78,7 +79,8 @@ fun DefaultAppBar(
       AppBar(
         title = {
           if (showSearch) {
-            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
+            val placeholder = searchPlaceholder ?: stringResource(MR.strings.search_verb)
+            SearchTextField(Modifier.fillMaxWidth(), alwaysVisible = searchAlwaysVisible, placeholder = placeholder, reducedCloseButtonPadding = 12.dp, onValueChange = onSearchValueChanged)
           } else if (title != null) {
             title()
           } else if (titleText.value.isNotEmpty() && connection != null) {

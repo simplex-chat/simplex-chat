@@ -45,6 +45,7 @@ import chat.simplex.common.views.newchat.ContactConnectionInfoView
 import chat.simplex.common.views.newchat.alertProfileImageSize
 import chat.simplex.res.MR
 import dev.icerock.moko.resources.ImageResource
+import dev.icerock.moko.resources.StringResource
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import kotlinx.datetime.*
@@ -144,6 +145,21 @@ fun ChatView(
     val scope = rememberCoroutineScope()
     val selectedChatItems = rememberSaveable { mutableStateOf(null as Set<Long>?) }
     val showCommandsMenu = rememberSaveable { mutableStateOf(false) }
+    val contentFilter = rememberSaveable { mutableStateOf<ContentFilter?>(null) }
+    val availableContent = remember { mutableStateOf<List<ContentFilter>>(ContentFilter.initialList) }
+
+    fun updateAvailableContent() {
+      withBGApi {
+        val types = chatModel.controller.apiGetChatContentTypes(chatRh, chat.chatInfo.chatType, chat.chatInfo.apiId, null)
+        if (types == null) {
+          availableContent.value = ContentFilter.entries
+        } else {
+          val typeSet = setOf(types).union(ContentFilter.alwaysShow)
+          availableContent.value = ContentFilter.entries.filter { it -> typeSet.contains(it.contentTag) }
+        }
+      }
+    }
+
     if (appPlatform.isAndroid) {
       DisposableEffect(Unit) {
         onDispose {
@@ -170,7 +186,12 @@ fun ChatView(
             }
             showSearch.value = false
             searchText.value = ""
+            contentFilter.value = null
+            availableContent.value = ContentFilter.initialList
             selectedChatItems.value = null
+            if (chatsCtx.secondaryContextFilter == null) {
+              updateAvailableContent()
+            }
             if (chat.chatInfo is ChatInfo.Direct && chat.chatInfo.contact.activeConn != null) {
               withBGApi {
                 val r = chatModel.controller.apiContactInfo(chatRh, chatInfo.apiId)
@@ -229,11 +250,11 @@ fun ChatView(
             val sameText = searchText.value == value
             // showSearch can be false with empty text when it was closed manually after clicking on message from search to load .around it
             // (required on Android to have this check to prevent call to search with old text)
-            val emptyAndClosedSearch = searchText.value.isEmpty() && !showSearch.value && chatsCtx.secondaryContextFilter == null
+            val emptyAndClosedSearch = searchText.value.isEmpty() && !showSearch.value && chatsCtx.secondaryContextFilter == null && contentFilter.value == null
             val c = chatModel.getChat(chatInfo.id)
-            if (sameText || emptyAndClosedSearch || c == null || chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
+            if ((sameText && contentFilter.value == null) || emptyAndClosedSearch || c == null || chatModel.chatId.value != chatInfo.id) return@onSearchValueChanged
             withBGApi {
-              apiFindMessages(chatsCtx, c, value)
+              apiFindMessages(chatsCtx, c, contentFilter.value?.contentTag, value)
               searchText.value = value
             }
           }
@@ -486,7 +507,7 @@ fun ChatView(
               val c = chatModel.getChat(chatId)
               if (chatModel.chatId.value != chatId) return@ChatLayout
               if (c != null) {
-                apiLoadMessages(chatsCtx, c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, pagination, searchText.value, null, visibleItemIndexes)
+                apiLoadMessages(chatsCtx, c.remoteHostId, c.chatInfo.chatType, c.chatInfo.apiId, pagination, contentFilter.value?.contentTag, searchText.value, null, visibleItemIndexes)
               }
             },
             deleteMessage = { itemId, mode ->
@@ -742,14 +763,23 @@ fun ChatView(
             changeNtfsState = { enabled, currentValue -> toggleNotifications(chatRh, chatInfo, enabled, chatModel, currentValue) },
             onSearchValueChanged = onSearchValueChanged,
             closeSearch = {
+              onSearchValueChanged("")
               showSearch.value = false
               searchText.value = ""
+              contentFilter.value = null
+              // Update available content types when search closes
+              if (chatsCtx.secondaryContextFilter == null) {
+                updateAvailableContent()
+              }
             },
             onComposed,
             developerTools = chatModel.controller.appPrefs.developerTools.get(),
             showViaProxy = chatModel.controller.appPrefs.showSentViaProxy.get(),
             showSearch = showSearch,
-            showCommandsMenu = showCommandsMenu
+            showCommandsMenu = showCommandsMenu,
+            contentFilter = contentFilter,
+            availableContent = availableContent,
+            searchPlaceholder = contentFilter.value?.searchPlaceholder?.let { generalGetString(it) }
           )
         }
       }
@@ -879,7 +909,10 @@ fun ChatLayout(
   developerTools: Boolean,
   showViaProxy: Boolean,
   showSearch: MutableState<Boolean>,
-  showCommandsMenu: MutableState<Boolean>
+  showCommandsMenu: MutableState<Boolean>,
+  contentFilter: MutableState<ContentFilter?>,
+  availableContent: State<List<ContentFilter>>,
+  searchPlaceholder: String?
 ) {
   val chatInfo = remember { derivedStateOf { chat.value?.chatInfo } }
   val scope = rememberCoroutineScope()
@@ -1063,7 +1096,7 @@ fun ChatLayout(
               Box {
                 if (selectedChatItems.value == null) {
                   if (chatInfo != null) {
-                    ChatInfoToolbar(chatsCtx, chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch)
+                    ChatInfoToolbar(chatsCtx, chatInfo, back, info, startCall, endCall, addMembers, openGroupLink, changeNtfsState, onSearchValueChanged, showSearch, contentFilter, availableContent, searchPlaceholder)
                   }
                 } else {
                   SelectedItemsCounterToolbar(selectedChatItems, !oneHandUI.value || !chatBottomBar.value)
@@ -1096,10 +1129,14 @@ fun BoxScope.ChatInfoToolbar(
   openGroupLink: (GroupInfo) -> Unit,
   changeNtfsState: (MsgFilter, currentValue: MutableState<MsgFilter>) -> Unit,
   onSearchValueChanged: (String) -> Unit,
-  showSearch: MutableState<Boolean>
+  showSearch: MutableState<Boolean>,
+  contentFilter: MutableState<ContentFilter?>,
+  availableContent: State<List<ContentFilter>>,
+  searchPlaceholder: String?
 ) {
   val scope = rememberCoroutineScope()
   val showMenu = rememberSaveable { mutableStateOf(false) }
+  val showContentFilterMenu = rememberSaveable { mutableStateOf(false) }
 
   val onBackClicked = {
     if (!showSearch.value) {
@@ -1107,6 +1144,7 @@ fun BoxScope.ChatInfoToolbar(
     } else {
       onSearchValueChanged("")
       showSearch.value = false
+      contentFilter.value = null
     }
   }
   if (appPlatform.isAndroid && chatsCtx.secondaryContextFilter == null) {
@@ -1115,102 +1153,123 @@ fun BoxScope.ChatInfoToolbar(
   val barButtons = arrayListOf<@Composable RowScope.() -> Unit>()
   val menuItems = arrayListOf<@Composable () -> Unit>()
   val activeCall by remember { chatModel.activeCall }
-  if (chatInfo is ChatInfo.Local) {
+
+  val showContentFilterButton = availableContent.value.isNotEmpty()
+
+  // Content filter button - shown in bar for all chat types
+  if (showContentFilterButton) {
     barButtons.add {
+      val enabled = chatInfo !is ChatInfo.Local || chatInfo.noteFolder.ready
       IconButton(
-        {
-          showMenu.value = false
-          showSearch.value = true
-        }, enabled = chatInfo.noteFolder.ready
+        { showContentFilterMenu.value = true },
+        enabled = enabled
       ) {
         Icon(
-          painterResource(MR.images.ic_search),
-          stringResource(MR.strings.search_verb).capitalize(Locale.current),
-          tint = if (chatInfo.noteFolder.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
+          painterResource(MR.images.ic_stacks),
+          null,
+          tint = MaterialTheme.colors.primary
         )
       }
     }
-  } else {
-    menuItems.add {
-      ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
-        showMenu.value = false
-        showSearch.value = true
-      })
-    }
   }
 
-  if (chatInfo is ChatInfo.Direct && chatInfo.contact.mergedPreferences.calls.enabled.forUser) {
-    if (activeCall == null) {
+  // Chat-type specific buttons
+  when (chatInfo) {
+    is ChatInfo.Local -> {
       barButtons.add {
-        IconButton({
-          showMenu.value = false
-          startCall(CallMediaType.Audio)
-        }, enabled = chatInfo.contact.ready && chatInfo.contact.active
+        IconButton(
+          {
+            showMenu.value = false
+            showSearch.value = true
+          }, enabled = chatInfo.noteFolder.ready
         ) {
           Icon(
-            painterResource(MR.images.ic_call_500),
-            stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current),
-            tint = if (chatInfo.contact.ready && chatInfo.contact.active) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
-          )
-        }
-      }
-    } else if (activeCall?.contact?.id == chatInfo.id && appPlatform.isDesktop) {
-      barButtons.add {
-        val call = remember { chatModel.activeCall }.value
-        val connectedAt = call?.connectedAt
-        if (connectedAt != null) {
-          val time = remember { mutableStateOf(durationText(0)) }
-          LaunchedEffect(Unit) {
-            while (true) {
-              time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
-              delay(250)
-            }
-          }
-          val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
-          Text(time.value, Modifier.widthIn(min = sp50))
-        }
-      }
-      barButtons.add {
-        IconButton({
-          showMenu.value = false
-          endCall()
-        }) {
-          Icon(
-            painterResource(MR.images.ic_call_end_filled),
-            null,
-            tint = MaterialTheme.colors.error
+            painterResource(MR.images.ic_search),
+            stringResource(MR.strings.search_verb).capitalize(Locale.current),
+            tint = if (chatInfo.noteFolder.ready) MaterialTheme.colors.primary else MaterialTheme.colors.secondary
           )
         }
       }
     }
-    if (chatInfo.contact.ready && chatInfo.contact.active && activeCall == null) {
+    is ChatInfo.Direct -> {
+      if (activeCall?.contact?.id == chatInfo.id && appPlatform.isDesktop) {
+        barButtons.add {
+          val call = remember { chatModel.activeCall }.value
+          val connectedAt = call?.connectedAt
+          if (connectedAt != null) {
+            val time = remember { mutableStateOf(durationText(0)) }
+            LaunchedEffect(Unit) {
+              while (true) {
+                time.value = durationText((Clock.System.now() - connectedAt).inWholeSeconds.toInt())
+                delay(250)
+              }
+            }
+            val sp50 = with(LocalDensity.current) { 50.sp.toDp() }
+            Text(time.value, Modifier.widthIn(min = sp50))
+          }
+        }
+        barButtons.add {
+          IconButton({
+            showMenu.value = false
+            endCall()
+          }) {
+            Icon(
+              painterResource(MR.images.ic_call_end_filled),
+              null,
+              tint = MaterialTheme.colors.error
+            )
+          }
+        }
+      }
+      // Call buttons moved to menu
+      if (chatInfo.contact.mergedPreferences.calls.enabled.forUser && chatInfo.contact.ready && chatInfo.contact.active && activeCall == null) {
+        menuItems.add {
+          ItemAction(stringResource(MR.strings.icon_descr_audio_call).capitalize(Locale.current), painterResource(MR.images.ic_call_500), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Audio)
+          })
+        }
+        menuItems.add {
+          ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+            showMenu.value = false
+            startCall(CallMediaType.Video)
+          })
+        }
+      }
       menuItems.add {
-        ItemAction(stringResource(MR.strings.icon_descr_video_call).capitalize(Locale.current), painterResource(MR.images.ic_videocam), onClick = {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
           showMenu.value = false
-          startCall(CallMediaType.Video)
+          showSearch.value = true
         })
       }
     }
-  } else if (chatInfo is ChatInfo.Group && chatInfo.groupInfo.canAddMembers) {
-    if (!chatInfo.incognito) {
-      barButtons.add {
-        IconButton({
-          showMenu.value = false
-          addMembers(chatInfo.groupInfo)
-        }) {
-          Icon(painterResource(MR.images.ic_person_add_500), stringResource(MR.strings.icon_descr_add_members), tint = MaterialTheme.colors.primary)
+    is ChatInfo.Group -> {
+      // Add members / group link moved to menu
+      if (chatInfo.groupInfo.canAddMembers) {
+        if (!chatInfo.incognito) {
+          menuItems.add {
+            ItemAction(stringResource(MR.strings.icon_descr_add_members), painterResource(MR.images.ic_person_add_500), onClick = {
+              showMenu.value = false
+              addMembers(chatInfo.groupInfo)
+            })
+          }
+        } else {
+          menuItems.add {
+            ItemAction(stringResource(MR.strings.group_link), painterResource(MR.images.ic_add_link), onClick = {
+              showMenu.value = false
+              openGroupLink(chatInfo.groupInfo)
+            })
+          }
         }
       }
-    } else {
-      barButtons.add {
-        IconButton({
+      menuItems.add {
+        ItemAction(stringResource(MR.strings.search_verb), painterResource(MR.images.ic_search), onClick = {
           showMenu.value = false
-          openGroupLink(chatInfo.groupInfo)
-        }) {
-          Icon(painterResource(MR.images.ic_add_link), stringResource(MR.strings.group_link), tint = MaterialTheme.colors.primary)
-        }
+          showSearch.value = true
+        })
       }
     }
+    else -> {}
   }
 
   val enableNtfs = chatInfo.chatSettings?.enableNtfs
@@ -1248,6 +1307,7 @@ fun BoxScope.ChatInfoToolbar(
     onTitleClick = if (chatInfo is ChatInfo.Local) null else info,
     showSearch = showSearch.value,
     onTop = !oneHandUI.value || !chatBottomBar.value,
+    searchPlaceholder = searchPlaceholder,
     onSearchValueChanged = onSearchValueChanged,
     buttons = { barButtons.forEach { it() } }
   )
@@ -1267,6 +1327,43 @@ fun BoxScope.ChatInfoToolbar(
         menuItems.asReversed().forEach { it() }
       } else {
         menuItems.forEach { it() }
+      }
+    }
+    val contentFilterWidth = remember { mutableStateOf(250.dp) }
+    val contentFilterHeight = remember { mutableStateOf(0.dp) }
+    DefaultDropdownMenu(
+      showContentFilterMenu,
+      modifier = Modifier.onSizeChanged { with(density) {
+        contentFilterWidth.value = it.width.toDp().coerceAtLeast(250.dp)
+        if (oneHandUI.value && chatBottomBar.value && (appPlatform.isDesktop || (platform.androidApiLevel ?: 0) >= 30)) contentFilterHeight.value = it.height.toDp()
+      } },
+      offset = DpOffset(-contentFilterWidth.value, if (oneHandUI.value && chatBottomBar.value) -contentFilterHeight.value else AppBarHeight)
+    ) {
+      val contentFilterMenuItems: List<@Composable () -> Unit> = buildList {
+        availableContent.value.forEach { filter ->
+          add {
+            ItemAction(
+              stringResource(filter.label),
+              painterResource(filter.icon),
+              onClick = {
+                showContentFilterMenu.value = false
+                contentFilter.value = filter
+                showSearch.value = true
+                scope.launch {
+                  val c = chatModel.getChat(chatInfo.id)
+                  if (c != null) {
+                    apiFindMessages(chatsCtx, c, filter.contentTag, "")
+                  }
+                }
+              }
+            )
+          }
+        }
+      }
+      if (oneHandUI.value && chatBottomBar.value) {
+        contentFilterMenuItems.asReversed().forEach { it() }
+      } else {
+        contentFilterMenuItems.forEach { it() }
       }
     }
   }
@@ -3425,7 +3522,10 @@ fun PreviewChatLayout() {
       developerTools = false,
       showViaProxy = false,
       showSearch = remember { mutableStateOf(false) },
-      showCommandsMenu = remember { mutableStateOf(false) }
+      showCommandsMenu = remember { mutableStateOf(false) },
+      contentFilter = remember { mutableStateOf(null) },
+      availableContent = remember { mutableStateOf(ContentFilter.initialList) },
+      searchPlaceholder = null
     )
   }
 }
@@ -3505,7 +3605,29 @@ fun PreviewGroupChatLayout() {
       developerTools = false,
       showViaProxy = false,
       showSearch = remember { mutableStateOf(false) },
-      showCommandsMenu = remember { mutableStateOf(false) }
+      showCommandsMenu = remember { mutableStateOf(false) },
+      contentFilter = remember { mutableStateOf(null) },
+      availableContent = remember { mutableStateOf(ContentFilter.initialList) },
+      searchPlaceholder = null
     )
+  }
+}
+
+enum class ContentFilter(
+  val contentTag: MsgContentTag,
+  val label: StringResource,
+  val searchPlaceholder: StringResource,
+  val icon: ImageResource
+) {
+  Images(MsgContentTag.Image, MR.strings.content_filter_images, MR.strings.placeholder_search_images, MR.images.ic_image),
+  Videos(MsgContentTag.Video, MR.strings.content_filter_videos, MR.strings.placeholder_search_videos, MR.images.ic_videocam),
+  Voice(MsgContentTag.Voice, MR.strings.content_filter_voice_messages, MR.strings.placeholder_search_voice_messages, MR.images.ic_mic),
+  Files(MsgContentTag.File, MR.strings.content_filter_files, MR.strings.placeholder_search_files, MR.images.ic_article),
+  Links(MsgContentTag.Link, MR.strings.content_filter_links, MR.strings.placeholder_search_links, MR.images.ic_link);
+
+  companion object {
+    val alwaysShow: Set<MsgContentTag> = setOf(MsgContentTag.Image, MsgContentTag.Link)
+
+    val initialList: List<ContentFilter> = listOf(ContentFilter.Images, ContentFilter.Files, ContentFilter.Links)
   }
 }
