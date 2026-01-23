@@ -768,6 +768,7 @@ Group:
 - itemTimed: [CITimed](#citimed)?
 - itemLive: bool?
 - userMention: bool
+- hasLink: bool
 - deletable: bool
 - editable: bool
 - forwardedByMember: int64?
