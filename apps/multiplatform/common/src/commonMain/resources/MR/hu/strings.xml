@@ -2510,4 +2510,16 @@
     <string name="delete_member_messages_confirmation">Üzenetek törlése</string>
     <string name="member_messages_will_be_deleted_cannot_be_undone">A tag üzenetei törölve lesznek – ez a művelet nem vonható vissza!</string>
     <string name="remove_member_delete_messages_confirmation">Eltávolítás és az üzeneteinek törlése</string>
+    <string name="content_filter_all_messages">Összes üzenet</string>
+    <string name="content_filter_files">Fájlok</string>
+    <string name="content_filter_menu_item">Szűrő</string>
+    <string name="content_filter_images">Képek</string>
+    <string name="content_filter_links">Hivatkozások</string>
+    <string name="placeholder_search_files">Fájlok keresése</string>
+    <string name="placeholder_search_images">Képek keresése</string>
+    <string name="placeholder_search_links">Hivatkozások keresése</string>
+    <string name="placeholder_search_videos">Videók keresése</string>
+    <string name="placeholder_search_voice_messages">Hangüzenetek keresése</string>
+    <string name="content_filter_videos">Videók</string>
+    <string name="content_filter_voice_messages">Hangüzenetek</string>
 </resources>
