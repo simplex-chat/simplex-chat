@@ -143,10 +143,10 @@ validateOwnerMember gInfo memberId memberKey = do
 
 ```haskell
 -- Conversation binding for signature scope
-data ConversationBinding
+data ChatBinding
   = CBDirect SecurityCode       -- Direct chat: security code
   | CBGroup                     -- Group chat
-      { groupRootKey :: C.PublicKeyEd25519,
+      { sharedGroupId :: ByteString,
         senderMemberId :: MemberId
       }
   deriving (Eq, Show)
@@ -161,10 +161,10 @@ data MsgSignature = MsgSignature
   deriving (Eq, Show)
 
 -- Signed message wrapper
-data SignedChatMessage e = SignedChatMessage
-  { scmMessage :: ChatMessage e,       -- Original message
-    scmBinding :: ConversationBinding, -- Conversation binding
-    scmSignatures :: [MsgSignature]    -- Signatures (may be empty)
+data SignedChatMessage = SignedChatMessage
+  { scmBinding :: ChatBinding,
+    scmSignatures :: [MsgSignature],
+    scmMessages :: [AChatMessage]
   }
 ```
 
@@ -188,9 +188,9 @@ signedMsg = %s"S" binding signatures jsonBody
 ; Conversation binding (scopes signature to conversation)
 binding = directBinding / groupBinding
 directBinding = %s"D" securityCode
-securityCode = 32*32 OCTET               ; 32 bytes
-groupBinding = %s"G" groupRootKey senderMemberId
-groupRootKey = 32*32 OCTET               ; Ed25519 public key, 32 bytes
+securityCode = shortString               ; length-prefixed
+groupBinding = %s"G" sharedGroupId senderMemberId
+sharedGroupId = shortString              ; length-prefixed
 senderMemberId = shortString             ; length-prefixed
 
 ; Signatures array
@@ -242,6 +242,7 @@ length = 1*1 OCTET
 -- SQLite migration M20260124_member_keys.hs
 
 -- Group-level keys (current user's keys for this group)
+ALTER TABLE groups ADD COLUMN shared_group_id BLOB;            -- saved in link fixed data as entity ID
 ALTER TABLE groups ADD COLUMN root_priv_key BLOB;              -- root private key (only if user is the owner and group creator)
 ALTER TABLE groups ADD COLUMN root_pub_key BLOB;               -- needed for all members of public groups to verify ownership chains
 ALTER TABLE groups ADD COLUMN member_priv_key BLOB;            -- current user's member private key for this group
@@ -409,7 +410,7 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 3. Add `newMemberKey :: MemberKey` to `XMember` message (required, not Maybe)
 4. Add `Maybe MemberKey` parameter to `XGrpLinkMem` message
 5. Implement `SignedChatMessage` type with Encoding instance
-6. Add `KeyRef`, `ConversationBinding`, `MsgSignature` types
+6. Add `KeyRef`, `ChatBinding`, `MsgSignature` types
 7. Implement wire format encoding/decoding with 'S' prefix detection
 
 ### Phase 2: Key Generation and Storage
