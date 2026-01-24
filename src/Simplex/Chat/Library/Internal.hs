@@ -58,7 +58,7 @@ import Simplex.Chat.Controller
 import Simplex.Chat.Files
 import Simplex.Chat.Markdown
 import Simplex.Chat.Messages
-import Simplex.Chat.Messages.Batch (MsgBatch (..), batchMessages)
+import Simplex.Chat.Messages.Batch (BatchMode (..), MsgBatch (..), batchMessages)
 import Simplex.Chat.Messages.CIContent
 import Simplex.Chat.Messages.CIContent.Events
 import Simplex.Chat.Operators
@@ -1150,7 +1150,8 @@ memberInfo g m@GroupMember {memberId, memberRole, memberProfile, activeConn} =
     { memberId,
       memberRole,
       v = ChatVersionRange . peerChatVRange <$> activeConn,
-      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile
+      profile = redactedMemberProfile allowSimplexLinks $ fromLocalProfile memberProfile,
+      memberKey = Nothing -- TODO: get from GroupMember when stored in database
     }
   where
     allowSimplexLinks = groupFeatureMemberAllowed SGFSimplexLinks m g
@@ -1861,7 +1862,7 @@ batchSendConnMessages user conn msgFlags msgs =
 
 batchSendConnMessagesB :: User -> Connection -> MsgFlags -> NonEmpty (Either ChatError SndMessage) -> CM ([Either ChatError SndMessage], Maybe PQEncryption)
 batchSendConnMessagesB _user conn msgFlags msgs_ = do
-  let batched_ = batchSndMessagesJSON msgs_
+  let batched_ = batchSndMessagesJSON BMJson msgs_
   case L.nonEmpty batched_ of
     Just batched' -> do
       let msgReqs = L.map (fmap msgBatchReq_) batched'
@@ -1882,8 +1883,8 @@ batchSendConnMessagesB _user conn msgFlags msgs_ = do
     findLastPQEnc :: NonEmpty (Either ChatError ([Int64], PQEncryption)) -> Maybe PQEncryption
     findLastPQEnc = foldr' (\x acc -> case x of Right (_, pqEnc) -> Just pqEnc; Left _ -> acc) Nothing
 
-batchSndMessagesJSON :: NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
-batchSndMessagesJSON = batchMessages maxEncodedMsgLength . L.toList
+batchSndMessagesJSON :: BatchMode -> NonEmpty (Either ChatError SndMessage) -> [Either ChatError MsgBatch]
+batchSndMessagesJSON mode = batchMessages mode maxEncodedMsgLength . L.toList
 
 encodeConnInfo :: MsgEncodingI e => ChatMsgEvent e -> CM ByteString
 encodeConnInfo chatMsgEvent = do
@@ -2051,7 +2052,7 @@ sendGroupMessages_ _user gInfo@GroupInfo {groupId} recipientMembers events = do
         mIds' = S.insert mId mIds
     prepareMsgReqs :: MsgFlags -> NonEmpty (Either ChatError SndMessage) -> [(GroupMember, Connection)] -> [(GroupMember, Connection)] -> ([GroupMemberId], [Either ChatError ChatMsgReq])
     prepareMsgReqs msgFlags msgs toSendSeparate toSendBatched = do
-      let batched_ = batchSndMessagesJSON msgs
+      let batched_ = batchSndMessagesJSON BMJson msgs
       case L.nonEmpty batched_ of
         Just batched' -> do
           let lenMsgs = length msgs

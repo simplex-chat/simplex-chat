@@ -41,6 +41,11 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 - Never do refactoring unless it substantially reduces cost of solving the current problem, including the cost of refactoring
 - Aim to minimize the code changes - do what is minimally required to solve users' problems
 
+**Document and code structure:**
+- **Never move existing code or sections around** - add new content at appropriate locations without reorganizing existing structure.
+- When adding new sections to documents, continue the existing numbering scheme.
+- Minimize diff size - prefer small, targeted changes over reorganization.
+
 ### Haskell Extensions
 - `StrictData` enabled by default
 - Use STM for safe concurrency

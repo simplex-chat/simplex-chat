@@ -54,8 +54,10 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
+import Simplex.Messaging.Encoding
 import Simplex.Messaging.Encoding.String
 import Simplex.Messaging.Parsers (defaultJSON, dropPrefix, enumJSON, sumTypeJSON)
 import Simplex.Messaging.Util (decodeJSON, encodeJSON, safeDecodeUtf8)
@@ -867,11 +869,23 @@ data IntroInvitation = IntroInvitation
   }
   deriving (Eq, Show)
 
+newtype MemberKey = MemberKey C.PublicKeyEd25519
+  deriving (Eq, Show)
+  deriving newtype (StrEncoding)
+
+instance FromJSON MemberKey where
+  parseJSON = strParseJSON "MemberKey"
+
+instance ToJSON MemberKey where
+  toJSON = strToJSON
+  toEncoding = strToJEncoding
+
 data MemberInfo = MemberInfo
   { memberId :: MemberId,
     memberRole :: GroupMemberRole,
     v :: Maybe ChatVersionRange,
-    profile :: Profile
+    profile :: Profile,
+    memberKey :: Maybe MemberKey
   }
   deriving (Eq, Show)
 
@@ -1098,7 +1112,7 @@ data NewGroupMember = NewGroupMember
 
 newtype MemberId = MemberId {unMemberId :: ByteString}
   deriving (Eq, Ord, Show)
-  deriving newtype (FromField)
+  deriving newtype (Encoding, FromField)
 
 instance ToField MemberId where toField (MemberId m) = toField $ Binary m
 

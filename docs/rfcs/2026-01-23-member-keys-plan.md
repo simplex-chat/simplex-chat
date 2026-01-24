@@ -86,7 +86,9 @@ XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json  -- unchanged
 - Public key stored in `group_members.member_pub_key` (for all members)
 - NOT stored in profiles table - member keys are per-group, not per-profile
 
-### 4. Signed Message Envelope (Protocol.hs)
+### 5. Signed Message Types (Protocol.hs)
+
+Types as implemented in Protocol.hs:
 
 ```haskell
 -- Key reference for signature verification
@@ -94,6 +96,35 @@ XGrpMemInfo :: MemberId -> Profile -> ChatMsgEvent 'Json  -- unchanged
 data KeyRef = KRMember MemberId
   deriving (Eq, Show)
 
+-- Conversation binding for signature scope
+data ChatBinding
+  = CBDirect {securityCode :: ByteString}
+  | CBGroup {groupRootKey :: C.PublicKeyEd25519, senderMemberId :: MemberId}
+  deriving (Eq, Show)
+
+-- Signature with key reference
+data MsgSignature = MsgSignature KeyRef C.ASignature
+  deriving (Show)
+
+-- Signatures with the signed bytes preserved
+data MsgSignatures = MsgSignatures
+  { chatBinding :: ChatBinding,
+    signatures :: NonEmpty MsgSignature
+  }
+
+-- Container for parsed messages with optional signatures
+data SignedChatMessages = SignedChatMessages
+  { signatures :: Maybe MsgSignatures,
+    messages :: [AChatMessage]
+  }
+  deriving (Show)
+```
+
+**Key insight:** `MsgSignatures.signed` field preserves the exact bytes that were signed, enabling signature verification even after the message has been parsed. This is critical for forwarded messages.
+
+### 6. Key Resolution and Validation
+
+```haskell
 -- Key resolution: lookup member's public key from GroupMember record
 resolveKeyRef :: GroupInfo -> KeyRef -> Either String C.APublicVerifyKey
 resolveKeyRef gInfo (KRMember mid) =
@@ -108,14 +139,11 @@ resolveKeyRef gInfo (KRMember mid) =
 -- Called when processing roster-modifying messages from owners
 validateOwnerMember :: GroupInfo -> MemberId -> MemberKey -> Either String ()
 validateOwnerMember gInfo memberId memberKey = do
-  -- Find owner in OwnerAuth chain
   case findOwnerAuth memberId (groupOwners gInfo) of
     Nothing -> Left "member is not an owner"
     Just OwnerAuth {ownerId, ownerKey} -> do
-      -- Verify IDs match
       when (ownerId /= memberId) $
         Left "owner ID mismatch"
-      -- Verify keys match (owner key in chain == member key in profile)
       case memberKey of
         MemberKey k | k == ownerKey -> Right ()
         _ -> Left "owner key doesn't match member key"
@@ -141,83 +169,176 @@ validateOwnerMember gInfo memberId memberKey = do
 - Members receive owner info when joining
 - No multi-owner support yet (deferred)
 
-```haskell
--- Conversation binding for signature scope
-data ChatBinding
-  = CBDirect SecurityCode       -- Direct chat: security code
-  | CBGroup                     -- Group chat
-      { sharedGroupId :: ByteString,
-        senderMemberId :: MemberId
-      }
-  deriving (Eq, Show)
+### 7. Message Batching Analysis
 
--- Signature tuple
--- Wire format: keyRef ++ sigBytes (64 bytes)
--- Algorithm determined by keyRef: member lookup → key's algorithm, secp256k1 ref → Schnorr
-data MsgSignature = MsgSignature
-  { keyRef :: KeyRef,
-    signature :: C.ASignature            -- Constructed from sigBytes + resolved algorithm
-  }
-  deriving (Eq, Show)
+Analysis of current batching behavior (determines new format requirements):
 
--- Signed message wrapper
-data SignedChatMessage = SignedChatMessage
-  { scmBinding :: ChatBinding,
-    scmSignatures :: [MsgSignature],
-    scmMessages :: [AChatMessage]
-  }
-```
+**Q1: Can there be multiple compressed parts in one wire message?**
 
-### 3. Wire Format (Protocol.hs)
+**NO** - only ONE compressed block is ever created.
+- `compressedBatchMsgBody_` (Protocol.hs:712) creates singleton list: `(L.:| []) . compress1`
+- Called only in Internal.hs:1901 (connection info) and Internal.hs:1941 (message body)
+- Decoder supports `NonEmpty Compressed` for forward compatibility, but encoding always produces 1 block
 
-The signed message format is **inside** the compressed envelope (after decompression). The compression layer (`'X' || compressed`) is unchanged.
+**Q2: Can messages from multiple members be batched together?**
 
-Signature-related data is placed **before** the JSON body, avoiding the need to encode JSON length separately - JSON naturally extends to end of message.
+**YES** - in both relay and non-relay groups:
+- Relay groups: Delivery.hs:168-184 - `getNextDeliveryTasks` does NOT filter by sender
+- Non-relay groups: `sendHistory` (Internal.hs:1171-1184) batches history items from multiple senders
+
+**Q3: Can forwarded and non-forwarded messages be batched together?**
+
+**YES** - in `sendHistory` (Internal.hs:1176-1184):
+- `XMsgNew` (welcome/description) appended to `XGrpMsgForward` events
+- Both sent together via `sendGroupMemberMessages`
+
+### 8. Wire Format (Protocol.hs)
+
+#### Current Format (JSON-based batching)
 
 ```abnf
-; After decompression, message body is one of:
-chatMsgBody = unsignedMsg / signedMsg
-
-; Current format (unchanged for unsigned messages)
-unsignedMsg = jsonBody
-jsonBody = *OCTET                        ; JSON bytes, extends to end
-
-; New signed format - signature data before JSON
-signedMsg = %s"S" binding signatures jsonBody
-
-; Conversation binding (scopes signature to conversation)
-binding = directBinding / groupBinding
-directBinding = %s"D" securityCode
-securityCode = shortString               ; length-prefixed
-groupBinding = %s"G" sharedGroupId senderMemberId
-sharedGroupId = shortString              ; length-prefixed
-senderMemberId = shortString             ; length-prefixed
-
-; Signatures array
-signatures = sigCount *signature
-sigCount = 1*1 OCTET                     ; 0-255 signatures
-
-; Signature with key reference
-signature = keyRef sigBytes
-sigBytes = 64*64 OCTET                   ; 64 bytes (Ed25519 or Schnorr)
-  ; Note: Algorithm determined by key ref - member key lookup or secp256k1 implies Schnorr
-
-; Key reference types
-keyRef = memberKeyRef / secp256k1KeyRef
-memberKeyRef = %s"M" memberId
-memberId = shortString
-; secp256k1KeyRef reserved for future profile identity key support (out of scope for this RFC)
-secp256k1KeyRef = %s"S" secp256k1PubKey
-secp256k1PubKey = 32*32 OCTET            ; x-only pubkey, 32 bytes
-
-shortString = length *OCTET              ; length-prefixed bytearray 0-255 bytes
-length = 1*1 OCTET
+; Current wire format
+wireMessage = compressedMsg / jsonMsg
+compressedMsg = %s"X" compressedBlock     ; single compressed block
+jsonMsg = singleJson / jsonArray
+singleJson = %s"{" *OCTET                 ; single JSON object
+jsonArray = %s"[" *OCTET                  ; JSON array of messages
 ```
 
-**Decoding logic:**
-- Messages starting with `'S'` are signed
-- Messages starting with `'{'` or `'['` are unsigned JSON
-- `'X'` prefix for compressed batches is handled at higher layer (before this parsing)
+JSON array batching uses `[msg1,msg2,...]` format - simple but cannot preserve exact bytes for signatures.
+
+#### New Format (Binary batching for signatures)
+
+For relay-based groups where signatures are required, use binary batching that preserves exact message bytes:
+
+```abnf
+; Extended wire format (parser accepts all formats)
+wireMessage = compressedMsg / binaryBatch / forwardEnvelope / jsonMsg
+
+; New binary batch format - preserves exact bytes for signature verification
+binaryBatch = %s"B" elementCount *batchElement
+elementCount = 1*1 OCTET                  ; 1-255 elements
+batchElement = elementLen elementBody
+elementLen = 2*2 OCTET                    ; 16-bit big-endian length
+elementBody = signedElement / forwardElement / unsignedElement
+
+; Signed element - signature prefix before JSON
+signedElement = %s"S" msgSignatures jsonBody
+jsonBody = *OCTET                         ; JSON bytes (length from elementLen)
+
+; Forward element - relay forwarding with preserved bytes (relay groups only)
+forwardElement = %s"F" forwardMeta originalBytes
+forwardMeta = senderMemberId senderMemberName brokerTs
+brokerTs = 8*8 OCTET                      ; UTC timestamp, big-endian microseconds
+originalBytes = *OCTET                    ; original message bytes (signed or unsigned)
+
+; Unsigned element - plain JSON (backward compatibility)
+unsignedElement = %s"{" *OCTET            ; JSON object
+
+; Single forward envelope (not batched)
+forwardEnvelope = %s"F" forwardMeta originalBytes
+
+; Signature data
+msgSignatures = chatBinding sigCount *msgSignature
+chatBinding = directBinding / groupBinding
+directBinding = %s"D" securityCode
+securityCode = shortString
+groupBinding = %s"G" groupRootKey senderMemberId
+groupRootKey = 32*32 OCTET                ; Ed25519 public key
+senderMemberId = shortString
+
+sigCount = 1*1 OCTET                      ; 1-255 signatures
+msgSignature = keyRef sigBytes
+keyRef = memberKeyRef
+memberKeyRef = %s"M" memberId
+memberId = shortString
+sigBytes = 64*64 OCTET                    ; Ed25519 signature
+
+shortString = length *OCTET
+length = 1*1 OCTET
+
+; Compressed format unchanged - compression wraps the batch
+compressedMsg = %s"X" compressedBlock
+; After decompression: binaryBatch / jsonMsg
+```
+
+**Overhead comparison:**
+- JSON array: `[` + `]` + `,` between = n+1 bytes for n elements
+- Binary batch: `B` + count + 2-byte length per element = 1 + 1 + 2n = 2 + 2n bytes
+- Difference: ~1 extra byte per element - acceptable for signature support
+
+**Format selection:**
+- Relay-based groups: Use binary batch (`B` prefix) - preserves bytes for signatures
+- Non-relay groups: Use JSON array (`[...]`) - backward compatible, no signatures needed
+- Old groups with old members: Use JSON array - full backward compatibility
+
+**Parser behavior (`parseChatMessages`):**
+- `'B'` prefix → binary batch (new format)
+- `'{'` prefix → single JSON object
+- `'['` prefix → JSON array
+- `'X'` prefix → compressed (decompress, then re-parse)
+- All formats accepted regardless of version for forward/backward compatibility
+
+**Batcher behavior (`Messages/Batch.hs`):**
+- Accept `BatchMode` parameter: `BMJsonArray` or `BMBinaryBatch`
+- `BMJsonArray`: Current JSON array encoding
+- `BMBinaryBatch`: Binary format with length prefixes, preserves exact bytes
+
+```haskell
+data BatchMode = BMJsonArray | BMBinaryBatch
+
+batchMessages :: BatchMode -> Int -> [Either ChatError SndMessage] -> [Either ChatError MsgBatch]
+batchDeliveryTasks1 :: BatchMode -> VersionRangeChat -> Int -> NonEmpty MessageDeliveryTask -> (ByteString, [Int64], [Int64])
+```
+
+**Key insight:** The binary batch format allows:
+1. Each element's exact bytes preserved (length-prefixed, not re-encoded)
+2. Mixed signed/unsigned elements in same batch
+3. Forwarded messages preserve original sender's signature
+4. Relay adds no signature - just wraps in forwarding envelope
+
+**Forwarding in binary batch (relay groups):**
+
+For relay-based groups, forwarding is NOT via `XGrpMsgForward` ChatMsgEvent (which would re-encode the inner message). Instead, forwarding is a **top-level binary format** that preserves exact bytes:
+
+```abnf
+; Forwarding envelope - top level, NOT a ChatMsgEvent
+forwardEnvelope = %s"F" forwardMeta originalBytes
+forwardMeta = senderMemberId senderMemberName brokerTs
+senderMemberId = shortString
+senderMemberName = shortString            ; may be empty
+brokerTs = 8*8 OCTET                      ; UTC timestamp, big-endian microseconds
+originalBytes = *OCTET                    ; original signed message bytes (verbatim)
+```
+
+**Flow:**
+
+1. **Sender** creates signed message:
+   ```
+   S<binding><sigs><{"event":"x.msg.new",...}>
+   ```
+
+2. **Relay** receives, parses to validate, stores original bytes in `msg_body`
+
+3. **Relay** forwards using binary envelope:
+   ```
+   F<memberId><memberName><brokerTs><original-bytes-verbatim>
+   ```
+   Or batched:
+   ```
+   B<count><len1><F...><len2><F...>...
+   ```
+
+4. **Recipient** parses forward envelope, extracts `originalBytes`, verifies sender's signature
+
+**Key difference from current approach:**
+- Current: `XGrpMsgForward` nests **parsed** `ChatMessage 'Json` → re-encoded on send → bytes change
+- New: Forward envelope contains **raw bytes** → never re-encoded → signature remains valid
+
+**Backward compatibility:**
+- Old groups (non-relay): Continue using `XGrpMsgForward` ChatMsgEvent (JSON array batching)
+- New relay groups: Use binary forward envelope (`F` prefix)
+- Parser accepts both formats
 
 **Key resolution:**
 - `'M'` (member key ref): Look up member's public key from `group_members.member_pub_key`
@@ -409,9 +530,10 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 2. Add `memberKey :: Maybe MemberKey` field to `MemberInfo` type
 3. Add `newMemberKey :: MemberKey` to `XMember` message (required, not Maybe)
 4. Add `Maybe MemberKey` parameter to `XGrpLinkMem` message
-5. Implement `SignedChatMessage` type with Encoding instance
-6. Add `KeyRef`, `ChatBinding`, `MsgSignature` types
-7. Implement wire format encoding/decoding with 'S' prefix detection
+5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `SignedChatMessages`
+6. Implement binary batch encoding/decoding with 'B' prefix
+7. Update `parseChatMessages` to accept both JSON array and binary batch formats
+8. Add `BatchMode` parameter to batching functions in Messages/Batch.hs
 
 ### Phase 2: Key Generation and Storage
 1. Add database migration for `member_pub_key` in group_members, `member_priv_key` in groups
