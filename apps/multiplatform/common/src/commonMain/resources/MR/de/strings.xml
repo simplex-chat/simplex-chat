@@ -2617,4 +2617,16 @@
     <string name="delete_member_messages_confirmation">Mitgliedsnachrichten löschen</string>
     <string name="member_messages_will_be_deleted_cannot_be_undone">Mitgliedsnachrichten werden gelöscht. Dies kann nicht rückgängig gemacht werden!</string>
     <string name="remove_member_delete_messages_confirmation">Mitglied entfernen und Nachrichten löschen</string>
+    <string name="content_filter_all_messages">Alle Nachrichten</string>
+    <string name="content_filter_files">Dateien</string>
+    <string name="content_filter_menu_item">Filter</string>
+    <string name="content_filter_images">Bilder</string>
+    <string name="content_filter_links">Links</string>
+    <string name="placeholder_search_files">Dateien suchen</string>
+    <string name="placeholder_search_images">Bilder suchen</string>
+    <string name="placeholder_search_links">Links suchen</string>
+    <string name="placeholder_search_videos">Videos suchen</string>
+    <string name="placeholder_search_voice_messages">Sprachnachrichten suchen</string>
+    <string name="content_filter_videos">Videos</string>
+    <string name="content_filter_voice_messages">Sprachnachrichten</string>
 </resources>
