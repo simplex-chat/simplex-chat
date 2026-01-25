@@ -216,7 +216,7 @@ For relay-based groups where signatures are required, use binary batching that p
 wireMessage = compressedMsg / binaryBatch / forwardEnvelope / jsonMsg
 
 ; New binary batch format - preserves exact bytes for signature verification
-binaryBatch = %s"B" elementCount *batchElement
+binaryBatch = %s"=" elementCount *batchElement
 elementCount = 1*1 OCTET                  ; 1-255 elements
 batchElement = elementLen elementBody
 elementLen = 2*2 OCTET                    ; 16-bit big-endian length
@@ -273,7 +273,7 @@ compressedMsg = %s"X" compressedBlock
 - Old groups with old members: Use JSON array - full backward compatibility
 
 **Parser behavior (`parseChatMessages`):**
-- `'B'` prefix → binary batch (new format)
+- `'='` prefix → binary batch (new format)
 - `'{'` prefix → single JSON object
 - `'['` prefix → JSON array
 - `'X'` prefix → compressed (decompress, then re-parse)
@@ -531,7 +531,7 @@ This needs refactoring to use new Agent API for single-roundtrip creation.
 3. Add `newMemberKey :: MemberKey` to `XMember` message (required, not Maybe)
 4. Add `Maybe MemberKey` parameter to `XGrpLinkMem` message
 5. Types already added to Protocol.hs: `KeyRef`, `ChatBinding`, `MsgSignature`, `MsgSignatures`, `SignedChatMessages`
-6. Implement binary batch encoding/decoding with 'B' prefix
+6. Implement binary batch encoding/decoding with '=' prefix
 7. Update `parseChatMessages` to accept both JSON array and binary batch formats
 8. Add `BatchMode` parameter to batching functions in Messages/Batch.hs
 

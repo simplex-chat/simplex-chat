@@ -691,28 +691,30 @@ encodeChatMessage maxSize msg = do
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]
-parseChatMessages s = case B.head s of
-  'X' -> decodeCompressed (B.drop 1 s)
-  _ -> parseUncompressed s
+parseChatMessages msg = case B.head msg of
+  'X' -> decodeCompressed (B.tail msg)
+  c -> parseUncompressed c msg
   where
-    parseUncompressed s' = case B.head s' of
+    parseUncompressed c s = case c of
       '{' -> [parseMsg s]
       '[' -> case J.eitherDecodeStrict' s of
         Right v -> map parseItem v
         Left e -> [Left e]
-      '=' -> decodeBinaryBatch (B.drop 1 s)
+      '=' -> decodeBinaryBatch (B.tail s)
       _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
-    parseMsg s' = ACMsg SJson <$> J.eitherDecodeStrict' s'
+    parseMsg s = ACMsg SJson <$> J.eitherDecodeStrict' s
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
     decodeCompressed :: ByteString -> [Either String AChatMessage]
-    decodeCompressed s' = case smpDecode s' of
+    decodeCompressed s = case smpDecode s of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed . decompress1) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (\e -> [Left e]) parseUncompressed' . decompress1) compressed
+    parseUncompressed' "" = [Left "empty string"]
+    parseUncompressed' s = parseUncompressed (B.head s) s
     -- Binary batch format: '=' <count:1> (<len:2> <body>)*
     -- TODO [member keys] signatures will also be parsed here.
     decodeBinaryBatch :: ByteString -> [Either String AChatMessage]
-    decodeBinaryBatch s' = case parseAll smpListP s' of
+    decodeBinaryBatch s = case parseAll smpListP s of
       Left e -> [Left e]
       Right msgs -> map (parseMsg . unLarge) msgs
 

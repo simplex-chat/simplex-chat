@@ -790,7 +790,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       CON _pqEnc -> unless (memberStatus m == GSMemRejected || memberStatus membership == GSMemRejected) $ do
         -- TODO [knocking] send pending messages after accepting?
         -- possible improvement: check for each pending message, requires keeping track of connection state
-        unless (connDisabled conn) $ sendPendingGroupMessages user m conn
+        unless (connDisabled conn) $ sendPendingGroupMessages user gInfo m conn
         withAgent $ \a -> toggleConnectionNtfs a (aConnId conn) $ chatHasNtfs chatSettings
         case memberCategory m of
           GCHostMember -> do
@@ -1021,7 +1021,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         sentMsgDeliveryEvent conn msgId
         checkSndInlineFTComplete conn msgId
         updateGroupItemsStatus gInfo m conn msgId GSSSent (Just $ isJust proxy)
-        when continued $ sendPendingGroupMessages user m conn
+        when continued $ sendPendingGroupMessages user gInfo m conn
       SWITCH qd phase cStats -> do
         toView $ CEvtGroupMemberSwitch user gInfo m (SwitchProgress qd phase cStats)
         (gInfo', m', scopeInfo) <- mkGroupChatScope gInfo m
@@ -1095,7 +1095,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             _ -> throwChatError $ CECommandError "unexpected cmdFunction"
       QCONT -> do
         continued <- continueSending connEntity conn
-        when continued $ sendPendingGroupMessages user m conn
+        when continued $ sendPendingGroupMessages user gInfo m conn
       MWARN msgId err -> do
         withStore' $ \db -> updateGroupItemsErrorStatus db msgId (groupMemberId' m) (GSSWarning $ agentSndError err)
         processConnMWARN connEntity conn err
