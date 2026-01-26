@@ -2313,47 +2313,48 @@ processChatCommand vr nm = \case
     chatItemId <- getChatItemIdByText user chatRef msg
     processChatCommand vr nm $ APIChatItemReaction chatRef chatItemId add reaction
   APINewGroup userId incognito gProfile -> withUserId userId $ \user -> do
-    gInfo <- newGroup user incognito gProfile False Nothing
+    g <- asks random
+    memberId <- liftIO $ MemberId <$> encodedRandomBytes g 12
+    gInfo <- newGroup user incognito gProfile False memberId Nothing
     pure $ CRGroupCreated user gInfo
   NewGroup incognito gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewGroup userId incognito gProfile
-  APINewPublicGroup userId incognito relayIds gProfile -> withUserId userId $ \user -> do
-    gVar <- asks random
-    groupLinkId <- GroupLinkId <$> drgRandomBytes 16
-    sharedGroupId <- drgRandomBytes 24
-    subMode <- chatReadVar subscriptionMode
-    let crClientData = encodeJSON $ CRDataGroup groupLinkId
-    -- prepare link with sharedGroupId as linkEntityId (no server request)
-    ((_, rootPrivKey), ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) (Just sharedGroupId) True (Just crClientData)
-    ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
-    sLnk <- case toShortLinkContact ccLink' of
-      Just sl -> pure sl
-      Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
-    -- generate owner key, OwnerAuth signed by root key
-    memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
-    (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
-    let gProfile' = (gProfile :: GroupProfile) {groupLink = Just sLnk}
-        userData = encodeShortLinkData $ GroupShortLinkData gProfile'
-        userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
-    -- create connection with prepared link (single network call)
-    -- createConnectionForLink :: AgentClient -> NetworkRequestMode -> UserId -> Bool -> CreatedConnLink 'CMContact -> PreparedLinkParams -> UserConnLinkData 'CMContact -> CR.InitialKeys -> SubscriptionMode -> AE ConnId
-    connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
-    -- create group with keys
-    let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
-        ngk = NewGroupKeys {ngkMemberId = memberId, ngkGroupKeys = groupKeys, ngkMemberPubKey = ownerKey ownerAuth}
-    gInfo <- newGroup user incognito gProfile' True (Just ngk)
-    (gLink, groupRelays) <- setupLink user gInfo connId ccLink' groupLinkId sLnk subMode `catchAllErrors` \e -> do
+  APINewPublicGroup userId incognito relayIds groupProfile -> withUserId userId $ \user -> do
+    (gProfile', memberId, groupKeys, setupLink) <- prepareGroupLink user
+    gInfo <- newGroup user incognito gProfile' True memberId (Just groupKeys)
+    (gLink, groupRelays) <- setupLink gInfo `catchAllErrors` \e -> do
       deleteInProgressGroup user gInfo
       throwError e
     pure $ CRPublicGroupCreated user gInfo gLink groupRelays
     where
-      setupLink :: User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> ShortLinkContact -> SubscriptionMode -> CM (GroupLink, [GroupRelay])
-      setupLink user gInfo connId ccLink' groupLinkId sLnk subMode = do
+      prepareGroupLink :: User -> CM (GroupProfile, MemberId, GroupKeys, GroupInfo -> CM (GroupLink, [GroupRelay]))
+      prepareGroupLink user = do
         gVar <- asks random
-        gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
-        relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
-        groupRelays <- addRelays user gInfo sLnk relays
-        pure (gLink, groupRelays)
+        groupLinkId <- GroupLinkId <$> drgRandomBytes 16
+        sharedGroupId <- drgRandomBytes 24
+        subMode <- chatReadVar subscriptionMode
+        let crClientData = encodeJSON $ CRDataGroup groupLinkId
+        -- prepare link with sharedGroupId as linkEntityId (no server request)
+        ((_, rootPrivKey), ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) (Just sharedGroupId) True (Just crClientData)
+        ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
+        sLnk <- case toShortLinkContact ccLink' of
+          Just sl -> pure sl
+          Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
+        -- generate owner key, OwnerAuth signed by root key
+        memberId <- MemberId <$> liftIO (encodedRandomBytes gVar 12)
+        (memberPrivKey, ownerAuth) <- liftIO $ SL.newOwnerAuth gVar (unMemberId memberId) rootPrivKey
+        let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
+            userData = encodeShortLinkData $ GroupShortLinkData groupProfile'
+            userLinkData = UserContactLinkData UserContactData {direct = False, owners = [ownerAuth], relays = [], userData}
+        -- create connection with prepared link (single network call)
+        connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True ccLink preparedParams userLinkData CR.IKPQOff subMode
+        let groupKeys = GroupKeys {sharedGroupId = B64UrlByteString sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
+            setupLink gInfo = do
+              gLink <- withFastStore $ \db -> createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode
+              relays <- withFastStore $ \db -> mapM (getChatRelayById db user) (L.toList relayIds)
+              groupRelays <- addRelays user gInfo sLnk relays
+              pure (gLink, groupRelays)
+        pure (groupProfile', memberId, groupKeys, setupLink)
   NewPublicGroup incognito relayIds gProfile -> withUser $ \User {userId} ->
     processChatCommand vr nm $ APINewPublicGroup userId incognito relayIds gProfile
   APIAddMember groupId contactId memRole -> withUser $ \user -> withGroupLock "addMember" groupId $ do
@@ -3624,13 +3625,12 @@ processChatCommand vr nm = \case
         groupId <- getGroupIdByName db user gName
         groupMemberId <- getGroupMemberIdByName db user groupId groupMemberName
         pure (groupId, groupMemberId)
-    newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> Maybe NewGroupKeys -> CM GroupInfo
-    newGroup user incognito gProfile@GroupProfile {displayName} useRelays newGroupKeys_ = do
+    newGroup :: User -> IncognitoEnabled -> GroupProfile -> Bool -> MemberId -> Maybe GroupKeys -> CM GroupInfo
+    newGroup user incognito gProfile@GroupProfile {displayName} useRelays memberId groupKeys_ = do
       checkValidName displayName
-      gVar <- asks random
       -- [incognito] generate incognito profile for group membership
       incognitoProfile <- if incognito then Just <$> liftIO generateRandomProfile else pure Nothing
-      gInfo <- withFastStore $ \db -> createNewGroup db vr gVar user gProfile incognitoProfile useRelays newGroupKeys_
+      gInfo <- withFastStore $ \db -> createNewGroup db vr user gProfile incognitoProfile useRelays memberId groupKeys_
       let cd = CDGroupSnd gInfo Nothing
       createInternalChatItem user cd CIChatBanner (Just epochStart)
       createInternalChatItem user cd (CISndGroupE2EEInfo E2EInfo {pqEnabled = Just PQEncOff}) Nothing

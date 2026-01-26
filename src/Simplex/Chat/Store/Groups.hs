@@ -30,7 +30,6 @@ module Simplex.Chat.Store.Groups
     getGroupLinkId,
     setGroupLinkMemberRole,
     setGroupLinkShortLink,
-    NewGroupKeys (..),
     createNewGroup,
     createGroupInvitation,
     deleteContactCardKeepConn,
@@ -328,25 +327,19 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
   pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
 -- | creates completely new group with a single member - the current user
-data NewGroupKeys = NewGroupKeys
-  { ngkMemberId :: MemberId,
-    ngkGroupKeys :: GroupKeys,
-    ngkMemberPubKey :: C.PublicKeyEd25519
-  }
-
-createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> Bool -> Maybe NewGroupKeys -> ExceptT StoreError IO GroupInfo
-createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRelays newGroupKeys_ = ExceptT $ do
+createNewGroup :: DB.Connection -> VersionRangeChat -> User -> GroupProfile -> Maybe Profile -> Bool -> MemberId -> Maybe GroupKeys -> ExceptT StoreError IO GroupInfo
+createNewGroup db vr user@User {userId} groupProfile incognitoProfile useRelays memberId groupKeys = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
-    let (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_) = case newGroupKeys_ of
+    let (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_) = case groupKeys of
           Nothing -> (Nothing, Nothing, Nothing, Nothing)
-          Just NewGroupKeys {ngkGroupKeys = GroupKeys {sharedGroupId, groupRootKey, memberPrivKey}} ->
+          Just GroupKeys {sharedGroupId, groupRootKey, memberPrivKey} ->
             let (rpk, rpub) = case groupRootKey of
                   GRKPrivate pk -> (Just pk, Nothing)
-                  GRKPublic pk -> (Nothing, Just pk)
+                  GRKPublic k -> (Nothing, Just k)
              in (Just sharedGroupId, rpk, rpub, Just memberPrivKey)
     groupId <- liftIO $ do
       DB.execute
@@ -367,14 +360,9 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRe
             :. (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_)
         )
       insertedRowId db
-    memberId <- case newGroupKeys_ of
-      Just NewGroupKeys {ngkMemberId = MemberId mId} -> pure mId
-      Nothing -> liftIO $ encodedRandomBytes gVar 12
-    membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser customUserProfileId currentTs vr
-    forM_ newGroupKeys_ $ \NewGroupKeys {ngkMemberPubKey} ->
-      liftIO $ DB.execute db "UPDATE group_members SET member_pub_key = ? WHERE group_member_id = ?" (ngkMemberPubKey, groupMemberId' membership)
+    let memberPubKey = C.publicKey . memberPrivKey <$> groupKeys
+    membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole memberId GROwner) GCUserMember GSMemCreator IBUser customUserProfileId memberPubKey currentTs vr
     let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
-        groupKeys = ngkGroupKeys <$> newGroupKeys_
     pure
       GroupInfo
         { groupId,
@@ -385,7 +373,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRe
           localAlias = "",
           businessChat = Nothing,
           fullGroupPreferences,
-          membership = membership {memberPubKey = ngkMemberPubKey <$> newGroupKeys_},
+          membership,
           chatSettings,
           createdAt = currentTs,
           updatedAt = currentTs,
@@ -449,8 +437,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
-          GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing currentTs hostVRange
-          membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId currentTs vr
+          GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing Nothing currentTs hostVRange
+          membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId Nothing currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
           pure
             ( GroupInfo
@@ -509,8 +497,8 @@ getUpdateNextIndexInGroup_ db groupId =
       |]
       (Only groupId)
 
-createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> Maybe GroupMemberId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ProfileId -> UTCTime -> VersionRangeChat -> ExceptT StoreError IO GroupMember
-createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMemberId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfileId createdAt vr = do
+createContactMemberInv_ :: IsContact a => DB.Connection -> User -> GroupId -> Maybe GroupMemberId -> a -> MemberIdRole -> GroupMemberCategory -> GroupMemberStatus -> InvitedBy -> Maybe ProfileId -> Maybe C.PublicKeyEd25519 -> UTCTime -> VersionRangeChat -> ExceptT StoreError IO GroupMember
+createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMemberId userOrContact MemberIdRole {memberId, memberRole} memberCategory memberStatus invitedBy incognitoProfileId memberPubKey createdAt vr = do
   incognitoProfile <- forM incognitoProfileId $ \profileId -> getProfileById db userId profileId
   (indexInGroup, localDisplayName, memberProfile) <- case (incognitoProfile, incognitoProfileId) of
     (Just profile@LocalProfile {displayName}, Just profileId) -> do
@@ -542,7 +530,7 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         createdAt,
         updatedAt = createdAt,
         supportChat = Nothing,
-        memberPubKey = Nothing
+        memberPubKey
       }
   where
     memberChatVRange@(VersionRange minV maxV) = vr
@@ -556,12 +544,12 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
           [sql|
             INSERT INTO group_members
               ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
-                user_id, local_display_name, contact_id, contact_profile_id, created_at, updated_at,
+                user_id, local_display_name, contact_id, contact_profile_id, member_pub_key, created_at, updated_at,
                 peer_chat_min_version, peer_chat_max_version)
-            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
           |]
           ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
-              :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, createdAt, createdAt)
+              :. (userId, localDisplayName' userOrContact, contactId' userOrContact, localProfileId $ profile' userOrContact, memberPubKey, createdAt, createdAt)
               :. (minV, maxV)
           )
       pure (indexInGroup, localDisplayName)
@@ -575,12 +563,12 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
             [sql|
               INSERT INTO group_members
                 ( group_id, index_in_group, member_id, member_role, member_category, member_status, member_relations_vector, invited_by, invited_by_group_member_id,
-                  user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, created_at, updated_at,
+                  user_id, local_display_name, contact_id, contact_profile_id, member_profile_id, member_pub_key, created_at, updated_at,
                   peer_chat_min_version, peer_chat_max_version)
-              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             |]
             ( (groupId, indexInGroup, memberId, memberRole, memberCategory, memberStatus, Binary B.empty, fromInvitedBy userContactId invitedBy, invitedByGroupMemberId)
-                :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, createdAt, createdAt)
+                :. (userId, incognitoLdn, contactId' userOrContact, localProfileId $ profile' userOrContact, customUserProfileId, memberPubKey, createdAt, createdAt)
                 :. (minV, maxV)
             )
         pure (indexInGroup, incognitoLdn)
@@ -602,7 +590,7 @@ createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile bu
       then liftIO $ MemberId <$> encodedRandomBytes gVar 12
       else pure $ MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id"
   let userMember = MemberIdRole userMemberId GRMember
-  membership <- createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing currentTs vr
+  membership <- createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing Nothing currentTs vr
   hostMember <- getGroupMember db vr user groupId hostMemberId
   when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
   g <- getGroupInfo db vr user groupId
@@ -802,7 +790,7 @@ createGroupViaLink'
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
-    void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId currentTs vr
+    void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId Nothing currentTs vr
     liftIO $ setViaGroupLinkUri db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
     where
@@ -1443,7 +1431,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
   liftIO $ setRelayRequestData_ groupId
   ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
-  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing currentTs vr
+  _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing Nothing currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
   pure (g, ownerMember)
@@ -1629,7 +1617,7 @@ createBusinessRequestGroup
             (groupProfileId, ldn, userId, BI True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
         groupId <- liftIO $ insertedRowId db
         memberId <- liftIO $ encodedRandomBytes gVar 12
-        membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing currentTs vr
+        membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing Nothing currentTs vr
         pure (groupId, membership)
       VersionRange minV maxV = cReqChatVRange
       insertClientMember_ currentTs groupId membership =

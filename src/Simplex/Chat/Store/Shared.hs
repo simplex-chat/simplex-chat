@@ -16,6 +16,7 @@
 
 module Simplex.Chat.Store.Shared where
 
+import Control.Applicative ((<|>))
 import Control.Exception (Exception)
 import qualified Control.Exception as E
 import Control.Monad
@@ -690,10 +691,9 @@ toPreparedGroup = \case
 
 toGroupKeys :: GroupKeysRow -> Maybe GroupKeys
 toGroupKeys = \case
-  (Just sharedGroupId, Just rootPrivKey, _, Just memberPrivKey) ->
-    Just GroupKeys {sharedGroupId, groupRootKey = GRKPrivate rootPrivKey, memberPrivKey}
-  (Just sharedGroupId, _, Just rootPubKey, Just memberPrivKey) ->
-    Just GroupKeys {sharedGroupId, groupRootKey = GRKPublic rootPubKey, memberPrivKey}
+  (Just sharedGroupId, rootPrivKey_, rootPubKey_, Just memberPrivKey) ->
+    (\grk -> GroupKeys {sharedGroupId, groupRootKey = grk, memberPrivKey})
+      <$> (GRKPrivate <$> rootPrivKey_ <|> GRKPublic <$> rootPubKey_)
   _ -> Nothing
 
 toGroupMember :: Int64 -> GroupMemberRow -> GroupMember
