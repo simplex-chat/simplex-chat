@@ -2332,23 +2332,19 @@ processChatCommand vr nm = \case
       newGroupLink user gInfo@GroupInfo {groupProfile} = do
         groupLinkId <- GroupLinkId <$> drgRandomBytes 16
         subMode <- chatReadVar subscriptionMode
-        -- TODO [relays] owner: prepare group link without initially creating on server
-        -- TODO   - add link and owner key to group profile, sign profile
-        -- TODO   - create group link on server with signed profile as data
-        -- / link creation
-        let userData = encodeShortLinkData $ GroupShortLinkData groupProfile
-            userLinkData = UserContactLinkData UserContactData {direct = False, owners = [], relays = [], userData}
-            crClientData = encodeJSON $ CRDataGroup groupLinkId
-        (connId, (ccLink, _serviceId)) <- withAgent $ \a -> createConnection a nm (aUserId user) True True SCMContact (Just userLinkData) (Just crClientData) IKPQOff subMode
+        let crClientData = encodeJSON $ CRDataGroup groupLinkId
+        -- prepare link (no server request)
+        (_, ccLink, preparedParams) <- withAgent $ \a -> prepareConnectionLink a (aUserId user) (Just crClientData)
         ccLink' <- createdGroupLink <$> shortenCreatedLink ccLink
         sLnk <- case toShortLinkContact ccLink' of
           Just sl -> pure sl
           Nothing -> throwChatError $ CEException "failed to create relayed group link: no short link"
+        -- add short link to group profile
         let groupProfile' = (groupProfile :: GroupProfile) {groupLink = Just sLnk}
-            userData' = encodeShortLinkData $ GroupShortLinkData groupProfile'
-            userLinkData' = UserContactLinkData UserContactData {direct = False, owners = [], relays = [], userData = userData'}
-        void $ withAgent (\a -> setConnShortLink a nm connId SCMContact userLinkData' (Just crClientData))
-        -- link creation /
+            userData = encodeShortLinkData $ GroupShortLinkData groupProfile'
+            userLinkData = UserContactLinkData UserContactData {direct = False, owners = [], relays = [], userData}
+        -- create connection with prepared link (single network call)
+        connId <- withAgent $ \a -> createConnectionForLink a nm (aUserId user) True True ccLink preparedParams userLinkData subMode
         gVar <- asks random
         (gInfo', gLink) <- withFastStore $ \db -> do
           gLink <- createGroupLink db gVar user gInfo connId ccLink' groupLinkId GRMember subMode

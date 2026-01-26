@@ -38,7 +38,11 @@ ALTER TABLE groups
   ADD COLUMN relay_request_peer_chat_min_version INTEGER,
   ADD COLUMN relay_request_peer_chat_max_version INTEGER,
   ADD COLUMN relay_request_failed SMALLINT DEFAULT 0,
-  ADD COLUMN relay_request_err_reason TEXT;
+  ADD COLUMN relay_request_err_reason TEXT,
+  ADD COLUMN shared_group_id BYTEA,
+  ADD COLUMN root_priv_key BYTEA,
+  ADD COLUMN root_pub_key BYTEA,
+  ADD COLUMN member_priv_key BYTEA;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BYTEA;
 
@@ -56,7 +60,9 @@ CREATE INDEX idx_group_relays_group_id ON group_relays(group_id);
 CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_member_id);
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
-ALTER TABLE group_members ADD COLUMN relay_link BYTEA;
+ALTER TABLE group_members
+  ADD COLUMN relay_link BYTEA,
+  ADD COLUMN member_pub_key BYTEA;
 |]
 
 down_m20260222_chat_relays :: Text
@@ -74,7 +80,11 @@ ALTER TABLE groups
   DROP COLUMN relay_request_peer_chat_min_version,
   DROP COLUMN relay_request_peer_chat_max_version,
   DROP COLUMN relay_request_failed,
-  DROP COLUMN relay_request_err_reason;
+  DROP COLUMN relay_request_err_reason,
+  DROP COLUMN shared_group_id,
+  DROP COLUMN root_priv_key,
+  DROP COLUMN root_pub_key,
+  DROP COLUMN member_priv_key;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 
@@ -88,5 +98,7 @@ DROP INDEX idx_chat_relays_user_id_address;
 DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
-ALTER TABLE group_members DROP COLUMN relay_link;
+ALTER TABLE group_members
+  DROP COLUMN relay_link,
+  DROP COLUMN member_pub_key;
 |]

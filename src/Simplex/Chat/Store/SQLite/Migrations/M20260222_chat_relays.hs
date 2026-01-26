@@ -52,6 +52,10 @@ ALTER TABLE groups ADD COLUMN relay_request_peer_chat_min_version INTEGER;
 ALTER TABLE groups ADD COLUMN relay_request_peer_chat_max_version INTEGER;
 ALTER TABLE groups ADD COLUMN relay_request_failed INTEGER DEFAULT 0;
 ALTER TABLE groups ADD COLUMN relay_request_err_reason TEXT;
+ALTER TABLE groups ADD COLUMN shared_group_id BLOB;
+ALTER TABLE groups ADD COLUMN root_priv_key BLOB;
+ALTER TABLE groups ADD COLUMN root_pub_key BLOB;
+ALTER TABLE groups ADD COLUMN member_priv_key BLOB;
 
 ALTER TABLE group_profiles ADD COLUMN group_link BLOB;
 
@@ -70,6 +74,7 @@ CREATE UNIQUE INDEX idx_group_relays_group_member_id ON group_relays(group_membe
 CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 
 ALTER TABLE group_members ADD COLUMN relay_link BLOB;
+ALTER TABLE group_members ADD COLUMN member_pub_key BLOB;
 |]
 
 down_m20260222_chat_relays :: Query
@@ -89,6 +94,10 @@ ALTER TABLE groups DROP COLUMN relay_request_peer_chat_min_version;
 ALTER TABLE groups DROP COLUMN relay_request_peer_chat_max_version;
 ALTER TABLE groups DROP COLUMN relay_request_failed;
 ALTER TABLE groups DROP COLUMN relay_request_err_reason;
+ALTER TABLE groups DROP COLUMN shared_group_id;
+ALTER TABLE groups DROP COLUMN root_priv_key;
+ALTER TABLE groups DROP COLUMN root_pub_key;
+ALTER TABLE groups DROP COLUMN member_priv_key;
 
 ALTER TABLE group_profiles DROP COLUMN group_link;
 
@@ -103,4 +112,5 @@ DROP INDEX idx_chat_relays_user_id_name;
 DROP TABLE chat_relays;
 
 ALTER TABLE group_members DROP COLUMN relay_link;
+ALTER TABLE group_members DROP COLUMN member_pub_key;
 |]
