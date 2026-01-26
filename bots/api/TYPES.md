@@ -90,6 +90,7 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
+- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -103,6 +104,7 @@ This file is generated automatically.
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
 - [GroupRelay](#grouprelay)
+- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
@@ -2158,6 +2160,17 @@ MemberSupport:
 - groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
+- groupKeys: [GroupKeys](#groupkeys)?
+
+
+---
+
+## GroupKeys
+
+**Record type**:
+- sharedGroupId: string
+- groupRootKey: [GroupRootKey](#grouprootkey)
+- memberPrivKey: string
 
 
 ---
@@ -2225,6 +2238,7 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
+- memberPubKey: string?
 
 
 ---
@@ -2351,6 +2365,21 @@ Known:
 - userChatRelayId: int64
 - relayStatus: [RelayStatus](#relaystatus)
 - relayLink: string?
+
+
+---
+
+## GroupRootKey
+
+**Discriminated union type**:
+
+Private:
+- type: "private"
+- rootPrivKey: string
+
+Public:
+- type: "public"
+- rootPubKey: string
 
 
 ---

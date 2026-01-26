@@ -449,8 +449,8 @@ data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
 type GroupId = Int64
 
 data GroupRootKey
-  = GRKPrivate C.PrivateKeyEd25519
-  | GRKPublic C.PublicKeyEd25519
+  = GRKPrivate {rootPrivKey :: C.PrivateKeyEd25519}
+  | GRKPublic {rootPubKey :: C.PublicKeyEd25519}
   deriving (Eq, Show)
 
 groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
