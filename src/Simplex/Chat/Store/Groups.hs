@@ -30,6 +30,7 @@ module Simplex.Chat.Store.Groups
     getGroupLinkId,
     setGroupLinkMemberRole,
     setGroupLinkShortLink,
+    NewGroupKeys (..),
     createNewGroup,
     createGroupInvitation,
     deleteContactCardKeepConn,
@@ -208,11 +209,11 @@ import Database.SQLite.Simple (Only (..), Query, (:.) (..))
 import Database.SQLite.Simple.QQ (sql)
 #endif
 
-type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime)
+type MaybeGroupMemberRow = (Maybe GroupMemberId, Maybe GroupId, Maybe Int64, Maybe MemberId, Maybe VersionChat, Maybe VersionChat, Maybe GroupMemberRole, Maybe GroupMemberCategory, Maybe GroupMemberStatus, Maybe BoolInt, Maybe MemberRestrictionStatus) :. (Maybe Int64, Maybe GroupMemberId, Maybe ContactName, Maybe ContactId, Maybe ProfileId) :. (Maybe ProfileId, Maybe ContactName, Maybe Text, Maybe Text, Maybe ImageData, Maybe ConnLinkContact, Maybe ChatPeerType, Maybe LocalAlias, Maybe Preferences) :. (Maybe UTCTime, Maybe UTCTime) :. (Maybe UTCTime, Maybe Int64, Maybe Int64, Maybe Int64, Maybe UTCTime, Maybe C.PublicKeyEd25519)
 
 toMaybeGroupMember :: Int64 -> MaybeGroupMemberRow -> Maybe GroupMember
-toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs)) =
-  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs))
+toMaybeGroupMember userContactId ((Just groupMemberId, Just groupId, Just indexInGroup, Just memberId, Just minVer, Just maxVer, Just memberRole, Just memberCategory, Just memberStatus, Just showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, Just localDisplayName, memberContactId, Just memberContactProfileId) :. (Just profileId, Just displayName, Just fullName, shortDescr, image, contactLink, peerType, Just localAlias, contactPreferences) :. (Just createdAt, Just updatedAt) :. (supportChatTs, Just supportChatUnread, Just supportChatUnanswered, Just supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey)) =
+  Just $ toGroupMember userContactId ((groupMemberId, groupId, indexInGroup, memberId, minVer, maxVer, memberRole, memberCategory, memberStatus, showMessages, memberBlocked') :. (invitedById, invitedByGroupMemberId, localDisplayName, memberContactId, memberContactProfileId) :. (profileId, displayName, fullName, shortDescr, image, contactLink, peerType, localAlias, contactPreferences) :. (createdAt, updatedAt) :. (supportChatTs, supportChatUnread, supportChatUnanswered, supportChatMentions, supportChatLastMsgFromMemberTs, memberPubKey))
 toMaybeGroupMember _ _ = Nothing
 
 createGroupLink :: DB.Connection -> TVar ChaChaDRG -> User -> GroupInfo -> ConnId -> CreatedLinkContact -> GroupLinkId -> GroupMemberRole -> SubscriptionMode -> ExceptT StoreError IO GroupLink
@@ -327,13 +328,26 @@ setGroupLinkShortLink db gLnk@GroupLink {userContactLinkId, connLinkContact = CC
   pure gLnk {connLinkContact = CCLink connFullLink (Just shortLink), shortLinkDataSet = True, shortLinkLargeDataSet = BoolDef True}
 
 -- | creates completely new group with a single member - the current user
-createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> Bool -> ExceptT StoreError IO GroupInfo
-createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRelays = ExceptT $ do
+data NewGroupKeys = NewGroupKeys
+  { ngkMemberId :: MemberId,
+    ngkGroupKeys :: GroupKeys,
+    ngkMemberPubKey :: C.PublicKeyEd25519
+  }
+
+createNewGroup :: DB.Connection -> VersionRangeChat -> TVar ChaChaDRG -> User -> GroupProfile -> Maybe Profile -> Bool -> Maybe NewGroupKeys -> ExceptT StoreError IO GroupInfo
+createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRelays newGroupKeys_ = ExceptT $ do
   let GroupProfile {displayName, fullName, shortDescr, description, image, groupPreferences, memberAdmission} = groupProfile
       fullGroupPreferences = mergeGroupPreferences groupPreferences
   currentTs <- getCurrentTime
   customUserProfileId <- mapM (createIncognitoProfile_ db userId currentTs) incognitoProfile
   withLocalDisplayName db userId displayName $ \ldn -> runExceptT $ do
+    let (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_) = case newGroupKeys_ of
+          Nothing -> (Nothing, Nothing, Nothing, Nothing)
+          Just NewGroupKeys {ngkGroupKeys = GroupKeys {sharedGroupId, groupRootKey, memberPrivKey}} ->
+            let (rpk, rpub) = case groupRootKey of
+                  GRKPrivate pk -> (Just pk, Nothing)
+                  GRKPublic pk -> (Nothing, Just pk)
+             in (Just sharedGroupId, rpk, rpub, Just memberPrivKey)
     groupId <- liftIO $ do
       DB.execute
         db
@@ -345,14 +359,22 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRe
         [sql|
           INSERT INTO groups
             (use_relays, creating_in_progress, local_display_name, user_id, group_profile_id, enable_ntfs,
-             created_at, updated_at, chat_ts, user_member_profile_sent_at)
-          VALUES (?,?,?,?,?,?,?,?,?,?)
+             created_at, updated_at, chat_ts, user_member_profile_sent_at,
+             shared_group_id, root_priv_key, root_pub_key, member_priv_key)
+          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         |]
-        (BI useRelays, BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
+        ( (BI useRelays, BI useRelays, ldn, userId, profileId, BI True, currentTs, currentTs, currentTs, currentTs)
+            :. (sharedGroupId_, rootPrivKey_, rootPubKey_, memberPrivKey_)
+        )
       insertedRowId db
-    memberId <- liftIO $ encodedRandomBytes gVar 12
+    memberId <- case newGroupKeys_ of
+      Just NewGroupKeys {ngkMemberId = MemberId mId} -> pure mId
+      Nothing -> liftIO $ encodedRandomBytes gVar 12
     membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser customUserProfileId currentTs vr
+    forM_ newGroupKeys_ $ \NewGroupKeys {ngkMemberPubKey} ->
+      liftIO $ DB.execute db "UPDATE group_members SET member_pub_key = ? WHERE group_member_id = ?" (ngkMemberPubKey, groupMemberId' membership)
     let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
+        groupKeys = ngkGroupKeys <$> newGroupKeys_
     pure
       GroupInfo
         { groupId,
@@ -363,7 +385,7 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRe
           localAlias = "",
           businessChat = Nothing,
           fullGroupPreferences,
-          membership,
+          membership = membership {memberPubKey = ngkMemberPubKey <$> newGroupKeys_},
           chatSettings,
           createdAt = currentTs,
           updatedAt = currentTs,
@@ -376,7 +398,8 @@ createNewGroup db vr gVar user@User {userId} groupProfile incognitoProfile useRe
           groupSummary = GroupSummary 1,
           customData = Nothing,
           membersRequireAttention = 0,
-          viaGroupLinkUri = Nothing
+          viaGroupLinkUri = Nothing,
+          groupKeys
         }
 
 -- | creates a new group record for the group the current user was invited to, or returns an existing one
@@ -452,7 +475,8 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
                   groupSummary = GroupSummary 2,
                   customData = Nothing,
                   membersRequireAttention = 0,
-                  viaGroupLinkUri = Nothing
+                  viaGroupLinkUri = Nothing,
+                  groupKeys = Nothing
                 },
               groupMemberId
             )
@@ -517,7 +541,8 @@ createContactMemberInv_ db User {userId, userContactId} groupId invitedByGroupMe
         memberChatVRange,
         createdAt,
         updatedAt = createdAt,
-        supportChat = Nothing
+        supportChat = Nothing,
+        memberPubKey = Nothing
       }
   where
     memberChatVRange@(VersionRange minV maxV) = vr
@@ -1207,7 +1232,8 @@ createNewContactMember db gVar User {userId, userContactId} GroupInfo {groupId, 
             memberChatVRange = peerChatVRange,
             createdAt,
             updatedAt = createdAt,
-            supportChat = Nothing
+            supportChat = Nothing,
+            memberPubKey = Nothing
           }
       where
         insertMember_ = do
@@ -1849,7 +1875,8 @@ createNewMember_
           memberChatVRange,
           createdAt,
           updatedAt = createdAt,
-          supportChat = Nothing
+          supportChat = Nothing,
+          memberPubKey = Nothing
         }
 
 checkGroupMemberHasItems :: DB.Connection -> User -> GroupMember -> IO (Maybe ChatItemId)
