@@ -437,7 +437,9 @@ createGroupInvitation db vr user@User {userId} contact@Contact {contactId, activ
               ((profileId, localDisplayName, connRequest, userId, BI True, currentTs, currentTs, currentTs, currentTs) :. businessChatInfoRow business)
             insertedRowId db
           let hostVRange = adjustedMemberVRange vr peerChatVRange
+          -- TODO [member keys] inviting host should generate its keys in public groups
           GroupMember {groupMemberId} <- createContactMemberInv_ db user groupId Nothing contact fromMember GCHostMember GSMemInvited IBUnknown Nothing Nothing currentTs hostVRange
+          -- TODO [member keys] relay should pass key received via XMember
           membership <- createContactMemberInv_ db user groupId (Just groupMemberId) user invitedMember GCUserMember GSMemInvited (IBContact contactId) incognitoProfileId Nothing currentTs vr
           let chatSettings = ChatSettings {enableNtfs = MFAll, sendRcpts = Nothing, favorite = False}
           pure
@@ -590,6 +592,7 @@ createPreparedGroup db gVar vr user@User {userId, userContactId} groupProfile bu
       then liftIO $ MemberId <$> encodedRandomBytes gVar 12
       else pure $ MemberId $ encodeUtf8 groupLDN <> "_user_unknown_id"
   let userMember = MemberIdRole userMemberId GRMember
+  -- TODO [member keys] user key must be included here. Should key be added when group is prepared?
   membership <- createContactMemberInv_ db user groupId (Just hostMemberId) user userMember GCUserMember GSMemUnknown IBUnknown Nothing Nothing currentTs vr
   hostMember <- getGroupMember db vr user groupId hostMemberId
   when business $ liftIO $ setGroupBusinessChatInfo groupId membership hostMember
@@ -790,6 +793,7 @@ createGroupViaLink'
     hostMemberId <- insertHost_ currentTs groupId
     liftIO $ DB.execute db "UPDATE connections SET conn_type = ?, group_member_id = ?, updated_at = ? WHERE connection_id = ?" (ConnMember, hostMemberId, currentTs, connId)
     -- using IBUnknown since host is created without contact
+    -- TODO [member keys] can this be used with public groups? if yes member keys need to be added
     void $ createContactMemberInv_ db user groupId (Just hostMemberId) user invitedMember GCUserMember membershipStatus IBUnknown customUserProfileId Nothing currentTs vr
     liftIO $ setViaGroupLinkUri db groupId connId
     (,) <$> getGroupInfo db vr user groupId <*> getGroupMemberById db vr user hostMemberId
@@ -1431,6 +1435,7 @@ createRelayRequestGroup db vr user@User {userId} GroupRelayInvitation {fromMembe
   liftIO $ setRelayRequestData_ groupId
   ownerMemberId <- insertOwner_ currentTs groupId
   let relayMember = MemberIdRole relayMemberId GRRelay
+  -- TODO [member keys] should relays use member keys?
   _membership <- createContactMemberInv_ db user groupId (Just ownerMemberId) user relayMember GCUserMember GSMemAccepted IBUnknown Nothing Nothing currentTs vr
   ownerMember <- getGroupMember db vr user groupId ownerMemberId
   g <- getGroupInfo db vr user groupId
@@ -1617,6 +1622,7 @@ createBusinessRequestGroup
             (groupProfileId, ldn, userId, BI True, currentTs, currentTs, currentTs, currentTs, BCCustomer)
         groupId <- liftIO $ insertedRowId db
         memberId <- liftIO $ encodedRandomBytes gVar 12
+        -- TODO [member keys] we could support member keys in business groups to allow binding agreements (though identity keys would be better for it.
         membership <- createContactMemberInv_ db user groupId Nothing user (MemberIdRole (MemberId memberId) GROwner) GCUserMember GSMemCreator IBUser Nothing Nothing currentTs vr
         pure (groupId, membership)
       VersionRange minV maxV = cReqChatVRange
@@ -1864,6 +1870,7 @@ createNewMember_
           createdAt,
           updatedAt = createdAt,
           supportChat = Nothing,
+          -- TODO [member keys] is it used with relay/public groups?
           memberPubKey = Nothing
         }
 
