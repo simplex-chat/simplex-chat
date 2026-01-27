@@ -227,8 +227,7 @@ instance StrEncoding AppMessageBinary where
     let msgId = if B.null msgId' then Nothing else Just (SharedMsgId msgId')
     pure AppMessageBinary {tag, msgId, body}
 
-data MsgScope
-  = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
+data MsgScope = MSMember {memberId :: MemberId} -- Admins can use any member id; members can use only their own id
   deriving (Eq, Show)
 
 $(JQ.deriveJSON (taggedObjectJSON $ dropPrefix "MS") ''MsgScope)
@@ -321,6 +320,7 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XFileCancel :: SharedMsgId -> ChatMsgEvent 'Json
   XInfo :: Profile -> ChatMsgEvent 'Json
   XContact :: {profile :: Profile, contactReqId :: Maybe XContactId, welcomeMsgId :: Maybe SharedMsgId, requestMsg :: Maybe (SharedMsgId, MsgContent)} -> ChatMsgEvent 'Json
+  XMember :: {profile :: Profile, newMemberId :: MemberId} -> ChatMsgEvent 'Json
   XDirectDel :: ChatMsgEvent 'Json
   XGrpInv :: GroupInvitation -> ChatMsgEvent 'Json
   XGrpAcpt :: MemberId -> ChatMsgEvent 'Json
@@ -328,6 +328,8 @@ data ChatMsgEvent (e :: MsgEncoding) where
   XGrpLinkReject :: GroupLinkRejection -> ChatMsgEvent 'Json
   XGrpLinkMem :: Profile -> ChatMsgEvent 'Json
   XGrpLinkAcpt :: GroupAcceptance -> GroupMemberRole -> MemberId -> ChatMsgEvent 'Json
+  XGrpRelayInv :: GroupRelayInvitation -> ChatMsgEvent 'Json
+  XGrpRelayAcpt :: ShortLinkContact -> ChatMsgEvent 'Json
   XGrpMemNew :: MemberInfo -> Maybe MsgScope -> ChatMsgEvent 'Json
   XGrpMemIntro :: MemberInfo -> Maybe MemberRestrictions -> ChatMsgEvent 'Json
   XGrpMemInv :: MemberId -> IntroInvitation -> ChatMsgEvent 'Json
@@ -811,6 +813,7 @@ data CMEventTag (e :: MsgEncoding) where
   XFileCancel_ :: CMEventTag 'Json
   XInfo_ :: CMEventTag 'Json
   XContact_ :: CMEventTag 'Json
+  XMember_ :: CMEventTag 'Json
   XDirectDel_ :: CMEventTag 'Json
   XGrpInv_ :: CMEventTag 'Json
   XGrpAcpt_ :: CMEventTag 'Json
@@ -818,6 +821,8 @@ data CMEventTag (e :: MsgEncoding) where
   XGrpLinkReject_ :: CMEventTag 'Json
   XGrpLinkMem_ :: CMEventTag 'Json
   XGrpLinkAcpt_ :: CMEventTag 'Json
+  XGrpRelayInv_ :: CMEventTag 'Json
+  XGrpRelayAcpt_ :: CMEventTag 'Json
   XGrpMemNew_ :: CMEventTag 'Json
   XGrpMemIntro_ :: CMEventTag 'Json
   XGrpMemInv_ :: CMEventTag 'Json
@@ -864,6 +869,7 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XFileCancel_ -> "x.file.cancel"
     XInfo_ -> "x.info"
     XContact_ -> "x.contact"
+    XMember_ -> "x.member"
     XDirectDel_ -> "x.direct.del"
     XGrpInv_ -> "x.grp.inv"
     XGrpAcpt_ -> "x.grp.acpt"
@@ -871,6 +877,8 @@ instance MsgEncodingI e => StrEncoding (CMEventTag e) where
     XGrpLinkReject_ -> "x.grp.link.reject"
     XGrpLinkMem_ -> "x.grp.link.mem"
     XGrpLinkAcpt_ -> "x.grp.link.acpt"
+    XGrpRelayInv_ -> "x.grp.relay.inv"
+    XGrpRelayAcpt_ -> "x.grp.relay.acpt"
     XGrpMemNew_ -> "x.grp.mem.new"
     XGrpMemIntro_ -> "x.grp.mem.intro"
     XGrpMemInv_ -> "x.grp.mem.inv"
@@ -918,6 +926,7 @@ instance StrEncoding ACMEventTag where
         "x.file.cancel" -> XFileCancel_
         "x.info" -> XInfo_
         "x.contact" -> XContact_
+        "x.member" -> XMember_
         "x.direct.del" -> XDirectDel_
         "x.grp.inv" -> XGrpInv_
         "x.grp.acpt" -> XGrpAcpt_
@@ -925,6 +934,8 @@ instance StrEncoding ACMEventTag where
         "x.grp.link.reject" -> XGrpLinkReject_
         "x.grp.link.mem" -> XGrpLinkMem_
         "x.grp.link.acpt" -> XGrpLinkAcpt_
+        "x.grp.relay.inv" -> XGrpRelayInv_
+        "x.grp.relay.acpt" -> XGrpRelayAcpt_
         "x.grp.mem.new" -> XGrpMemNew_
         "x.grp.mem.intro" -> XGrpMemIntro_
         "x.grp.mem.inv" -> XGrpMemInv_
@@ -968,6 +979,7 @@ toCMEventTag msg = case msg of
   XFileCancel _ -> XFileCancel_
   XInfo _ -> XInfo_
   XContact {} -> XContact_
+  XMember {} -> XMember_
   XDirectDel -> XDirectDel_
   XGrpInv _ -> XGrpInv_
   XGrpAcpt _ -> XGrpAcpt_
@@ -975,6 +987,8 @@ toCMEventTag msg = case msg of
   XGrpLinkReject _ -> XGrpLinkReject_
   XGrpLinkMem _ -> XGrpLinkMem_
   XGrpLinkAcpt {} -> XGrpLinkAcpt_
+  XGrpRelayInv _ -> XGrpRelayInv_
+  XGrpRelayAcpt _ -> XGrpRelayAcpt_
   XGrpMemNew {} -> XGrpMemNew_
   XGrpMemIntro _ _ -> XGrpMemIntro_
   XGrpMemInv _ _ -> XGrpMemInv_
@@ -1085,6 +1099,7 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
         reqContent <- opt "content"
         let requestMsg = (,) <$> reqMsgId <*> reqContent
         pure XContact {profile, contactReqId, welcomeMsgId, requestMsg}
+      XMember_ -> XMember <$> p "profile" <*> p "newMemberId"
       XDirectDel_ -> pure XDirectDel
       XGrpInv_ -> XGrpInv <$> p "groupInvitation"
       XGrpAcpt_ -> XGrpAcpt <$> p "memberId"
@@ -1092,6 +1107,8 @@ appJsonToCM AppMessageJson {v, msgId, event, params} = do
       XGrpLinkReject_ -> XGrpLinkReject <$> p "groupLinkRejection"
       XGrpLinkMem_ -> XGrpLinkMem <$> p "profile"
       XGrpLinkAcpt_ -> XGrpLinkAcpt <$> p "acceptance" <*> p "role" <*> p "memberId"
+      XGrpRelayInv_ -> XGrpRelayInv <$> p "groupRelayInvitation"
+      XGrpRelayAcpt_ -> XGrpRelayAcpt <$> p "relayLink"
       XGrpMemNew_ -> XGrpMemNew <$> p "memberInfo" <*> opt "scope"
       XGrpMemIntro_ -> XGrpMemIntro <$> p "memberInfo" <*> opt "memberRestrictions"
       XGrpMemInv_ -> XGrpMemInv <$> p "memberId" <*> p "memberIntro"
@@ -1144,6 +1161,7 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XFileCancel sharedMsgId -> o ["msgId" .= sharedMsgId]
       XInfo profile -> o ["profile" .= profile]
       XContact {profile, contactReqId, welcomeMsgId, requestMsg} -> o $ ("contactReqId" .=? contactReqId) $ ("welcomeMsgId" .=? welcomeMsgId) $ ("msgId" .=? (fst <$> requestMsg)) $ ("content" .=? (snd <$> requestMsg)) $ ["profile" .= profile]
+      XMember {profile, newMemberId} -> o ["profile" .= profile, "newMemberId" .= newMemberId]
       XDirectDel -> JM.empty
       XGrpInv groupInv -> o ["groupInvitation" .= groupInv]
       XGrpAcpt memId -> o ["memberId" .= memId]
@@ -1151,6 +1169,8 @@ chatToAppMessage chatMsg@ChatMessage {chatVRange, msgId, chatMsgEvent} = case en
       XGrpLinkReject groupLinkRjct -> o ["groupLinkRejection" .= groupLinkRjct]
       XGrpLinkMem profile -> o ["profile" .= profile]
       XGrpLinkAcpt acceptance role memberId -> o ["acceptance" .= acceptance, "role" .= role, "memberId" .= memberId]
+      XGrpRelayInv groupRelayInv -> o ["groupRelayInvitation" .= groupRelayInv]
+      XGrpRelayAcpt relayLink -> o ["relayLink" .= relayLink]
       XGrpMemNew memInfo scope -> o $ ("scope" .=? scope) ["memberInfo" .= memInfo]
       XGrpMemIntro memInfo memRestrictions -> o $ ("memberRestrictions" .=? memRestrictions) ["memberInfo" .= memInfo]
       XGrpMemInv memId memIntro -> o ["memberId" .= memId, "memberIntro" .= memIntro]

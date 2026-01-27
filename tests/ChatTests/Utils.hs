@@ -75,6 +75,9 @@ danProfile = mkProfile "dan" "Daniel" Nothing
 eveProfile :: Profile
 eveProfile = mkProfile "eve" "Eve" Nothing
 
+frankProfile :: Profile
+frankProfile = mkProfile "frank" "Frank" Nothing
+
 businessProfile :: Profile
 businessProfile = mkProfile "biz" "Biz Inc" Nothing
 
