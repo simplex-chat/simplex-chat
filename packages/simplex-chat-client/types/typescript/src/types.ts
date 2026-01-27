@@ -2476,7 +2476,7 @@ export namespace GroupLinkPlan {
 
   export interface Ok extends Interface {
     type: "ok"
-    direct: boolean
+    groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
   }
 
@@ -2632,6 +2632,12 @@ export namespace GroupRootKey {
 
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
+}
+
+export interface GroupShortLinkInfo {
+  direct: boolean
+  groupRelays: string[]
+  sharedGroupId?: string
 }
 
 export interface GroupSummary {

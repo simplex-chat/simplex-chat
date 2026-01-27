@@ -106,6 +106,7 @@ This file is generated automatically.
 - [GroupRelay](#grouprelay)
 - [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
+- [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
 - [HandshakeError](#handshakeerror)
@@ -2194,7 +2195,7 @@ MemberSupport:
 
 Ok:
 - type: "ok"
-- direct: bool
+- groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 OwnLink:
@@ -2388,6 +2389,16 @@ Public:
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
+
+
+---
+
+## GroupShortLinkInfo
+
+**Record type**:
+- direct: bool
+- groupRelays: [string]
+- sharedGroupId: string?
 
 
 ---

@@ -6856,6 +6856,10 @@ Query: UPDATE group_members SET member_profile_id = ?, updated_at = ? WHERE grou
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
 
+Query: UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?
+Plan:
+SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
+
 Query: UPDATE group_members SET member_relations_vector = set_member_vector_new_relation(member_relations_vector, ?, ?, ?), updated_at = ? WHERE group_member_id = ?
 Plan:
 SEARCH group_members USING INTEGER PRIMARY KEY (rowid=?)
@@ -6935,6 +6939,10 @@ SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 Query: UPDATE groups SET send_rcpts = NULL
 Plan:
 SCAN groups
+
+Query: UPDATE groups SET shared_group_id = ?, root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?
+Plan:
+SEARCH groups USING INTEGER PRIMARY KEY (rowid=?)
 
 Query: UPDATE groups SET ui_themes = ?, updated_at = ? WHERE user_id = ? AND group_id = ?
 Plan:

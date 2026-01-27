@@ -285,6 +285,7 @@ chatTypesDocsData =
     (sti @GroupProfile, STRecord, "", [], "", ""),
     (sti @GroupRelay, STRecord, "", [], "", ""),
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
+    (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
@@ -476,6 +477,7 @@ deriving instance Generic GroupPreferences
 deriving instance Generic GroupProfile
 deriving instance Generic GroupRelay
 deriving instance Generic GroupShortLinkData
+deriving instance Generic GroupShortLinkInfo
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
 deriving instance Generic HandshakeError
