@@ -811,7 +811,8 @@ CREATE TABLE test_chat_schema.group_members (
     member_welcome_shared_msg_id bytea,
     index_in_group bigint DEFAULT 0 NOT NULL,
     member_relations_vector bytea,
-    relay_link bytea
+    relay_link bytea,
+    member_pub_key bytea
 );
 
 
@@ -945,7 +946,11 @@ CREATE TABLE test_chat_schema.groups (
     relay_request_peer_chat_min_version integer,
     relay_request_peer_chat_max_version integer,
     relay_request_failed smallint DEFAULT 0,
-    relay_request_err_reason text
+    relay_request_err_reason text,
+    shared_group_id bytea,
+    root_priv_key bytea,
+    root_pub_key bytea,
+    member_priv_key bytea
 );
 
 

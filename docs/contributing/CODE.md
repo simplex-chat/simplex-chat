@@ -46,6 +46,11 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 - When adding new sections to documents, continue the existing numbering scheme.
 - Minimize diff size - prefer small, targeted changes over reorganization.
 
+**Code analysis and review:**
+- Trace data flows end-to-end: from origin, through storage/parameters, to consumption. Flag values that are discarded and reconstructed from partial data (e.g. extracted from a URI missing original fields) — this is usually a bug.
+- Read implementations of called functions, not just signatures — if duplication involves a called function, check whether decomposing it resolves the duplication.
+- Do not save time on analysis. Read every function in the data flow even when the interface seems clear — wrong assumptions about internals are the main source of missed bugs.
+
 ### Haskell Extensions
 - `StrictData` enabled by default
 - Use STM for safe concurrency

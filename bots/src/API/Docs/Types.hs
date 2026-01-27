@@ -256,7 +256,7 @@ chatTypesDocsData =
     (sti @FileError, STUnion, "FileErr", [], "", ""),
     (sti @FileErrorType, STUnion, "", [], "", ""),
     (sti @FileInvitation, STRecord, "", [], "", ""),
-    (sti @FileProtocol, (STEnum' $ consLower "FP"), "", [], "", ""),
+    (sti @FileProtocol, STEnum' (consLower "FP"), "", [], "", ""),
     (sti @FileStatus, STEnum, "FS", [], "", ""),
     (sti @FileTransferMeta, STRecord, "", [], "", ""),
     (sti @Format, STUnion, "", ["Unknown"], "", ""),
@@ -269,20 +269,23 @@ chatTypesDocsData =
     (sti @GroupFeature, STEnum, "GF", [], "", ""),
     (sti @GroupFeatureEnabled, STEnum, "FE", [], "", ""),
     (sti @GroupInfo, STRecord, "", [], "", ""),
+    (sti @GroupKeys, STRecord, "", [], "", ""),
+    (sti @GroupRootKey, STUnion, "GRK", [], "", ""),
     (sti @GroupLink, STRecord, "", [], "", ""),
     (sti @GroupLinkPlan, STUnion, "GLP", [], "", ""),
     (sti @GroupMember, STRecord, "", [], "", ""),
     (sti @GroupMemberAdmission, STRecord, "", [], "", ""),
-    (sti @GroupMemberCategory, (STEnum' $ dropPfxSfx "GC" "Member"), "", [], "", ""),
+    (sti @GroupMemberCategory, STEnum' (dropPfxSfx "GC" "Member"), "", [], "", ""),
     (sti @GroupMemberRef, STRecord, "", [], "", ""),
-    (sti @GroupMemberRole, (STEnum' $ dropPfxSfx "GR" ""), "", ["GRUnknown"], "", ""),
+    (sti @GroupMemberRole, STEnum' (dropPfxSfx "GR" ""), "", ["GRUnknown"], "", ""),
     (sti @GroupMemberSettings, STRecord, "", [], "", ""),
-    (sti @GroupMemberStatus, (STEnum' $ (\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
+    (sti @GroupMemberStatus, STEnum' ((\case "group_deleted" -> "deleted"; "intro_invited" -> "intro-inv"; s -> s) . consSep "GSMem" '_'), "", [], "", ""),
     (sti @GroupPreference, STRecord, "", [], "", ""),
     (sti @GroupPreferences, STRecord, "", [], "", ""),
     (sti @GroupProfile, STRecord, "", [], "", ""),
     (sti @GroupRelay, STRecord, "", [], "", ""),
     (sti @GroupShortLinkData, STRecord, "", [], "", ""),
+    (sti @GroupShortLinkInfo, STRecord, "", [], "", ""),
     (sti @GroupSummary, STRecord, "", [], "", ""),
     (sti @GroupSupportChat, STRecord, "", [], "", ""),
     (sti @HandshakeError, STEnum, "", [], "", ""),
@@ -322,7 +325,7 @@ chatTypesDocsData =
     (sti @RcvFileTransfer, STRecord, "", [], "", ""),
     (sti @RcvGroupEvent, STUnion, "RGE", [], "", ""),
     (sti @RelayStatus, STEnum, "RS", [], "", ""),
-    (sti @ReportReason, (STEnum' $ dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
+    (sti @ReportReason, STEnum' (dropPfxSfx "RR" ""), "", ["RRUnknown"], "", ""),
     (sti @RoleGroupPreference, STRecord, "", [], "", ""),
     (sti @SecurityCode, STRecord, "", [], "", ""),
     (sti @SimplePreference, STRecord, "", [], "", ""),
@@ -458,6 +461,8 @@ deriving instance Generic GroupChatScopeInfo
 deriving instance Generic GroupFeature
 deriving instance Generic GroupFeatureEnabled
 deriving instance Generic GroupInfo
+deriving instance Generic GroupKeys
+deriving instance Generic GroupRootKey
 deriving instance Generic GroupLink
 deriving instance Generic GroupLinkPlan
 deriving instance Generic GroupMember
@@ -472,6 +477,7 @@ deriving instance Generic GroupPreferences
 deriving instance Generic GroupProfile
 deriving instance Generic GroupRelay
 deriving instance Generic GroupShortLinkData
+deriving instance Generic GroupShortLinkInfo
 deriving instance Generic GroupSummary
 deriving instance Generic GroupSupportChat
 deriving instance Generic HandshakeError

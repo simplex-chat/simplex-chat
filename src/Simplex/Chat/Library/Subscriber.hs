@@ -3441,7 +3441,7 @@ runRelayRequestWorker a Worker {doWork} = do
           where
             getLinkDataCreateRelayLink :: RelayRequestData -> GroupInfo -> CM (GroupInfo, ShortLinkContact)
             getLinkDataCreateRelayLink RelayRequestData {reqGroupLink} gInfo = do
-              (_cReq, cData) <- getShortLinkConnReq NRMBackground user reqGroupLink
+              (_fd, cData) <- getShortLinkConnReq NRMBackground user reqGroupLink
               liftIO (decodeLinkUserData cData) >>= \case
                 Nothing -> throwChatError $ CEException "getLinkDataCreateRelayLink: no group link data"
                 Just (GroupShortLinkData gp) -> do

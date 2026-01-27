@@ -2442,6 +2442,13 @@ export interface GroupInfo {
   groupSummary: GroupSummary
   membersRequireAttention: number // int
   viaGroupLinkUri?: string
+  groupKeys?: GroupKeys
+}
+
+export interface GroupKeys {
+  sharedGroupId: string
+  groupRootKey: GroupRootKey
+  memberPrivKey: string
 }
 
 export interface GroupLink {
@@ -2469,7 +2476,7 @@ export namespace GroupLinkPlan {
 
   export interface Ok extends Interface {
     type: "ok"
-    direct: boolean
+    groupSLinkInfo_?: GroupShortLinkInfo
     groupSLinkData_?: GroupShortLinkData
   }
 
@@ -2514,6 +2521,7 @@ export interface GroupMember {
   createdAt: string // ISO-8601 timestamp
   updatedAt: string // ISO-8601 timestamp
   supportChat?: GroupSupportChat
+  memberPubKey?: string
 }
 
 export interface GroupMemberAdmission {
@@ -2602,8 +2610,34 @@ export interface GroupRelay {
   relayLink?: string
 }
 
+export type GroupRootKey = GroupRootKey.Private | GroupRootKey.Public
+
+export namespace GroupRootKey {
+  export type Tag = "private" | "public"
+
+  interface Interface {
+    type: Tag
+  }
+
+  export interface Private extends Interface {
+    type: "private"
+    rootPrivKey: string
+  }
+
+  export interface Public extends Interface {
+    type: "public"
+    rootPubKey: string
+  }
+}
+
 export interface GroupShortLinkData {
   groupProfile: GroupProfile
+}
+
+export interface GroupShortLinkInfo {
+  direct: boolean
+  groupRelays: string[]
+  sharedGroupId?: string
 }
 
 export interface GroupSummary {
