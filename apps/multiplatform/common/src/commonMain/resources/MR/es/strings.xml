@@ -2542,4 +2542,16 @@
     <string name="delete_member_messages_confirmation">Eliminar mensajes</string>
     <string name="member_messages_will_be_deleted_cannot_be_undone">Los mensajes del miembro serán eliminados. ¡No puede deshacerse!</string>
     <string name="remove_member_delete_messages_confirmation">Eliminar miembro y sus mensajes</string>
+    <string name="content_filter_all_messages">Todos los mensajes</string>
+    <string name="content_filter_files">Archivos</string>
+    <string name="content_filter_menu_item">Filtro</string>
+    <string name="content_filter_images">Imágenes</string>
+    <string name="content_filter_links">Enlaces</string>
+    <string name="placeholder_search_files">Buscar archivos</string>
+    <string name="placeholder_search_images">Buscar imágenes</string>
+    <string name="placeholder_search_links">Buscar enlaces</string>
+    <string name="placeholder_search_videos">Buscar vídeos</string>
+    <string name="placeholder_search_voice_messages">Buscar mensajes de voz</string>
+    <string name="content_filter_videos">Vídeos</string>
+    <string name="content_filter_voice_messages">Mensajes de voz</string>
 </resources>
