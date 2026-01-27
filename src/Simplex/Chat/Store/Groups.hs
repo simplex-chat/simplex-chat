@@ -101,6 +101,7 @@ module Simplex.Chat.Store.Groups
     getMemberInvitation,
     createMemberConnection,
     createMemberConnectionAsync,
+    updateGroupMemberKeys,
     updateGroupMemberStatus,
     updateGroupMemberStatusById,
     updateGroupMemberAccepted,
@@ -1684,6 +1685,18 @@ createMemberConnectionAsync db user@User {userId} groupMemberId (cmdId, agentCon
   currentTs <- getCurrentTime
   Connection {connId} <- createMemberConnection_ db userId groupMemberId agentConnId chatV peerChatVRange Nothing 0 currentTs subMode
   setCommandConnId db user cmdId connId
+
+updateGroupMemberKeys :: DB.Connection -> GroupId -> ByteString -> C.PublicKeyEd25519 -> C.PrivateKeyEd25519 -> GroupMemberId -> IO ()
+updateGroupMemberKeys db groupId sharedGroupId rootPubKey memberPrivKey membershipGMId = do
+  currentTs <- getCurrentTime
+  DB.execute
+    db
+    "UPDATE groups SET shared_group_id = ?, root_pub_key = ?, member_priv_key = ?, updated_at = ? WHERE group_id = ?"
+    (sharedGroupId, rootPubKey, memberPrivKey, currentTs, groupId)
+  DB.execute
+    db
+    "UPDATE group_members SET member_pub_key = ?, updated_at = ? WHERE group_member_id = ?"
+    (C.publicKey memberPrivKey, currentTs, membershipGMId)
 
 updateGroupMemberStatus :: DB.Connection -> UserId -> GroupMember -> GroupMemberStatus -> IO ()
 updateGroupMemberStatus db userId GroupMember {groupMemberId} = updateGroupMemberStatusById db userId groupMemberId
