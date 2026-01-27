@@ -54,6 +54,7 @@ import Simplex.FileTransfer.Description (FileDigest)
 import Simplex.FileTransfer.Types (RcvFileId, SndFileId)
 import Simplex.Messaging.Agent.Protocol (ACorrId, ACreatedConnLink, AEventTag (..), AEvtTag (..), ConnId, ConnShortLink, ConnectionLink, ConnectionMode (..), ConnectionRequestUri, CreatedConnLink, InvitationId, SAEntity (..), UserId)
 import Simplex.Messaging.Agent.Store.DB (Binary (..), blobFieldDecoder, fromTextField_)
+import qualified Simplex.Messaging.Crypto as C
 import Simplex.Messaging.Crypto.File (CryptoFileArgs (..))
 import Simplex.Messaging.Crypto.Ratchet (PQEncryption (..), PQSupport, pattern PQEncOff)
 import Simplex.Messaging.Encoding.String
@@ -447,6 +448,22 @@ data Group = Group {groupInfo :: GroupInfo, members :: [GroupMember]}
 
 type GroupId = Int64
 
+data GroupRootKey
+  = GRKPrivate {rootPrivKey :: C.PrivateKeyEd25519}
+  | GRKPublic {rootPubKey :: C.PublicKeyEd25519}
+  deriving (Eq, Show)
+
+groupRootPubKey :: GroupRootKey -> C.PublicKeyEd25519
+groupRootPubKey (GRKPrivate pk) = C.publicKey pk
+groupRootPubKey (GRKPublic pk) = pk
+
+data GroupKeys = GroupKeys
+  { sharedGroupId :: B64UrlByteString,
+    groupRootKey :: GroupRootKey,
+    memberPrivKey :: C.PrivateKeyEd25519
+  }
+  deriving (Eq, Show)
+
 data GroupInfo = GroupInfo
   { groupId :: GroupId,
     useRelays :: BoolDef,
@@ -469,7 +486,8 @@ data GroupInfo = GroupInfo
     customData :: Maybe CustomData,
     groupSummary :: GroupSummary,
     membersRequireAttention :: Int,
-    viaGroupLinkUri :: Maybe ConnReqContact
+    viaGroupLinkUri :: Maybe ConnReqContact,
+    groupKeys :: Maybe GroupKeys
   }
   deriving (Eq, Show)
 
@@ -963,7 +981,8 @@ data GroupMember = GroupMember
     memberChatVRange :: VersionRangeChat,
     createdAt :: UTCTime,
     updatedAt :: UTCTime,
-    supportChat :: Maybe GroupSupportChat
+    supportChat :: Maybe GroupSupportChat,
+    memberPubKey :: Maybe C.PublicKeyEd25519
   }
   deriving (Eq, Show)
 
@@ -2038,6 +2057,10 @@ $(JQ.deriveToJSON defaultJSON ''GroupSummary)
 instance FromJSON GroupSummary where
   parseJSON = $(JQ.mkParseJSON defaultJSON ''GroupSummary)
   omittedField = Just GroupSummary {currentMembers = 0}
+
+$(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GRK") ''GroupRootKey)
+
+$(JQ.deriveJSON defaultJSON ''GroupKeys)
 
 $(JQ.deriveJSON defaultJSON ''GroupInfo)
 

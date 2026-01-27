@@ -90,6 +90,7 @@ This file is generated automatically.
 - [GroupFeature](#groupfeature)
 - [GroupFeatureEnabled](#groupfeatureenabled)
 - [GroupInfo](#groupinfo)
+- [GroupKeys](#groupkeys)
 - [GroupLink](#grouplink)
 - [GroupLinkPlan](#grouplinkplan)
 - [GroupMember](#groupmember)
@@ -103,7 +104,9 @@ This file is generated automatically.
 - [GroupPreferences](#grouppreferences)
 - [GroupProfile](#groupprofile)
 - [GroupRelay](#grouprelay)
+- [GroupRootKey](#grouprootkey)
 - [GroupShortLinkData](#groupshortlinkdata)
+- [GroupShortLinkInfo](#groupshortlinkinfo)
 - [GroupSummary](#groupsummary)
 - [GroupSupportChat](#groupsupportchat)
 - [HandshakeError](#handshakeerror)
@@ -2158,6 +2161,17 @@ MemberSupport:
 - groupSummary: [GroupSummary](#groupsummary)
 - membersRequireAttention: int
 - viaGroupLinkUri: string?
+- groupKeys: [GroupKeys](#groupkeys)?
+
+
+---
+
+## GroupKeys
+
+**Record type**:
+- sharedGroupId: string
+- groupRootKey: [GroupRootKey](#grouprootkey)
+- memberPrivKey: string
 
 
 ---
@@ -2181,7 +2195,7 @@ MemberSupport:
 
 Ok:
 - type: "ok"
-- direct: bool
+- groupSLinkInfo_: [GroupShortLinkInfo](#groupshortlinkinfo)?
 - groupSLinkData_: [GroupShortLinkData](#groupshortlinkdata)?
 
 OwnLink:
@@ -2225,6 +2239,7 @@ Known:
 - createdAt: UTCTime
 - updatedAt: UTCTime
 - supportChat: [GroupSupportChat](#groupsupportchat)?
+- memberPubKey: string?
 
 
 ---
@@ -2355,10 +2370,35 @@ Known:
 
 ---
 
+## GroupRootKey
+
+**Discriminated union type**:
+
+Private:
+- type: "private"
+- rootPrivKey: string
+
+Public:
+- type: "public"
+- rootPubKey: string
+
+
+---
+
 ## GroupShortLinkData
 
 **Record type**:
 - groupProfile: [GroupProfile](#groupprofile)
+
+
+---
+
+## GroupShortLinkInfo
+
+**Record type**:
+- direct: bool
+- groupRelays: [string]
+- sharedGroupId: string?
 
 
 ---

@@ -1308,7 +1308,7 @@ groupLinkData gInfo@GroupInfo {groupProfile} GroupLink {groupLinkId} groupRelays
 restoreShortLink' :: ConnShortLink m -> CM (ConnShortLink m)
 restoreShortLink' l = (`restoreShortLink` l) <$> asks (shortLinkPresetServers . config)
 
-getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
+getShortLinkConnReq :: NetworkRequestMode -> User -> ConnShortLink m -> CM (FixedLinkData m, ConnLinkData m)
 getShortLinkConnReq nm user@User {userChatRelay} l = do
   l' <- restoreShortLink' l
   (fd, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
@@ -1318,7 +1318,7 @@ getShortLinkConnReq nm user@User {userChatRelay} l = do
       where
         supported = direct || not (null relays) || isTrue userChatRelay
     _ -> pure ()
-  pure (linkConnReq fd, cData)
+  pure (fd, cData)
 
 encodeShortLinkData :: J.ToJSON a => a -> UserLinkData
 encodeShortLinkData d =
