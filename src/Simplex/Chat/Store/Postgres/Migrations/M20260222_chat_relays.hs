@@ -1,13 +1,13 @@
 {-# LANGUAGE QuasiQuotes #-}
 
-module Simplex.Chat.Store.Postgres.Migrations.M20260109_chat_relays where
+module Simplex.Chat.Store.Postgres.Migrations.M20260222_chat_relays where
 
 import Data.Text (Text)
 import qualified Data.Text as T
 import Text.RawString.QQ (r)
 
-m20260109_chat_relays :: Text
-m20260109_chat_relays =
+m20260222_chat_relays :: Text
+m20260222_chat_relays =
   T.pack
     [r|
 CREATE TABLE chat_relays(
@@ -59,8 +59,8 @@ CREATE INDEX idx_group_relays_chat_relay_id ON group_relays(chat_relay_id);
 ALTER TABLE group_members ADD COLUMN relay_link BYTEA;
 |]
 
-down_m20260109_chat_relays :: Text
-down_m20260109_chat_relays =
+down_m20260222_chat_relays :: Text
+down_m20260222_chat_relays =
   T.pack
     [r|
 ALTER TABLE users DROP COLUMN is_user_chat_relay;

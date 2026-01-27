@@ -778,6 +778,7 @@ export interface CIMeta {
   itemTimed?: CITimed
   itemLive?: boolean
   userMention: boolean
+  hasLink: boolean
   deletable: boolean
   editable: boolean
   forwardedByMember?: number // int64

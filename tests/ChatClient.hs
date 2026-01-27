@@ -161,7 +161,7 @@ relayTestOpts = testOpts {coreOptions = testCoreOpts {chatRelay = True}}
 
 #if !defined(dbPostgres)
 getTestOpts :: Bool -> ScrubbedBytes -> ChatOpts
-getTestOpts maintenance dbKey = testOpts {coreOptions = testCoreOpts {dbOptions = (dbOptions testCoreOpts) {dbKey}, maintenance}}
+getTestOpts maintenance dbKey = testOpts {coreOptions = testCoreOpts {maintenance, dbOptions = (dbOptions testCoreOpts) {dbKey}}}
 #endif
 
 termSettings :: VirtualTerminalSettings
