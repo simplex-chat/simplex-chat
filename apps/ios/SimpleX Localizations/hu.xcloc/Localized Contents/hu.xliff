@@ -2909,9 +2909,9 @@ swipe action</note>
         <target>Ne hozzon létre címet</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
-      <trans-unit id="Don't enable" xml:space="preserve">
+      <trans-unit id="Don't enable" xml:space="preserve" approved="no">
         <source>Don't enable</source>
-        <target>Ne engedélyezze</target>
+        <target state="translated">Nem engedélyezem</target>
         <note>No comment provided by engineer.</note>
       </trans-unit>
       <trans-unit id="Don't miss important messages." xml:space="preserve">
