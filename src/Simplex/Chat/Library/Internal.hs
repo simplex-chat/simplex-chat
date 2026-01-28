@@ -563,7 +563,6 @@ markGroupCIsDeleted user gInfo chatScopeInfo items byGroupMember_ deletedTs = do
   (errs, deletions) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (markDeleted db) items)
   unless (null errs) $ toView $ CEvtChatErrors errs
   pure deletions
-  -- pure $ CRChatItemsDeleted user deletions byUser False
   where
     markDeleted db (CChatItem md ci) = do
       ci' <- markGroupChatItemDeleted db user gInfo ci byGroupMember_ deletedTs
@@ -2115,7 +2114,7 @@ saveSndChatItems user cd itemsData itemTimed live = do
   createdAt <- liftIO getCurrentTime
   vr <- chatVersionRange
   when (contactChatDeleted cd || any (\NewSndChatItemData {content} -> ciRequiresAttention content) (rights itemsData)) $
-    void $ withStore' (\db -> updateChatTsStats db vr user cd createdAt Nothing)
+    void (withStore' $ \db -> updateChatTsStats db vr user cd createdAt Nothing)
   lift $ withStoreBatch (\db -> map (bindRight $ createItem db createdAt) itemsData)
   where
     createItem :: DB.Connection -> UTCTime -> NewSndChatItemData c -> IO (Either ChatError (ChatItem c 'MDSnd))
@@ -2151,9 +2150,10 @@ saveRcvChatItem' user cd msg@RcvMessage {chatMsgEvent, forwardedByMember} shared
             userMention' = userReply || any (\CIMention {memberId} -> sameMemberId memberId membership) mentions'
          in pure (mentions', userMention')
       CDDirectRcv _ -> pure (M.empty, False)
-    cInfo' <- if (ciRequiresAttention content || contactChatDeleted cd)
-      then updateChatTsStats db vr user cd createdAt (memberChatStats userMention)
-      else pure $ toChatInfo cd
+    cInfo' <-
+      if ciRequiresAttention content || contactChatDeleted cd
+        then updateChatTsStats db vr user cd createdAt (memberChatStats userMention)
+        else pure $ toChatInfo cd
     (ciId, quotedItem, itemForwarded) <- createNewRcvChatItem db user cd msg sharedMsgId_ content itemTimed live userMention brokerTs createdAt
     forM_ ciFile $ \CIFile {fileId} -> updateFileTransferChatItemId db fileId ciId createdAt
     let ci = mkChatItem_ cd False ciId content (t, ft_) ciFile quotedItem sharedMsgId_ itemForwarded itemTimed live userMention brokerTs forwardedByMember createdAt
