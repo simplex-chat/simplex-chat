@@ -167,7 +167,11 @@ CREATE TABLE groups(
   relay_request_peer_chat_min_version INTEGER,
   relay_request_peer_chat_max_version INTEGER,
   relay_request_failed INTEGER DEFAULT 0,
-  relay_request_err_reason TEXT, -- received
+  relay_request_err_reason TEXT,
+  shared_group_id BLOB,
+  root_priv_key BLOB,
+  root_pub_key BLOB,
+  member_priv_key BLOB, -- received
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE
@@ -210,6 +214,7 @@ CREATE TABLE group_members(
   index_in_group INTEGER NOT NULL DEFAULT 0,
   member_relations_vector BLOB,
   relay_link BLOB,
+  member_pub_key BLOB,
   FOREIGN KEY(user_id, local_display_name)
   REFERENCES display_names(user_id, local_display_name)
   ON DELETE CASCADE

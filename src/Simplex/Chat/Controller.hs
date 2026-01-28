@@ -991,7 +991,7 @@ data ContactAddressPlan
   deriving (Show)
 
 data GroupLinkPlan
-  = GLPOk {direct :: DirectLink, groupSLinkData_ :: Maybe GroupShortLinkData}
+  = GLPOk {groupSLinkInfo_ :: Maybe GroupShortLinkInfo, groupSLinkData_ :: Maybe GroupShortLinkData}
   | GLPOwnLink {groupInfo :: GroupInfo}
   | GLPConnectingConfirmReconnect
   | GLPConnectingProhibit {groupInfo_ :: Maybe GroupInfo}
@@ -999,6 +999,13 @@ data GroupLinkPlan
   deriving (Show)
 
 type DirectLink = Bool
+
+data GroupShortLinkInfo = GroupShortLinkInfo
+  { direct :: Bool,
+    groupRelays :: [ShortLinkContact],
+    sharedGroupId :: Maybe B64UrlByteString
+  }
+  deriving (Show)
 
 connectionPlanProceed :: ConnectionPlan -> Bool
 connectionPlanProceed = \case
@@ -1013,7 +1020,7 @@ connectionPlanProceed = \case
     CAPContactViaAddress _ -> True
     _ -> False
   CPGroupLink glp -> case glp of
-    GLPOk _direct _ -> True
+    GLPOk {} -> True
     GLPOwnLink _ -> True
     GLPConnectingConfirmReconnect -> True
     _ -> False
@@ -1594,6 +1601,8 @@ $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CLQ") ''ChatListQuery)
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "ILP") ''InvitationLinkPlan)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "CAP") ''ContactAddressPlan)
+
+$(JQ.deriveJSON defaultJSON ''GroupShortLinkInfo)
 
 $(JQ.deriveJSON (sumTypeJSON $ dropPrefix "GLP") ''GroupLinkPlan)
 
