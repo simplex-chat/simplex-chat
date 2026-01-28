@@ -102,8 +102,8 @@ module Simplex.Chat.Store.Messages
     getDirectChatItemsByAgentMsgId,
     getGroupChatItem,
     getGroupCIWithReactions,
-    getGroupChatItemBySharedMsgId,
     getGroupCIBySharedMsgId,
+    getGroupCIBySharedMsgId',
     getGroupChatItemsByAgentMsgId,
     getGroupMemberChatItemLast,
     getLocalChatItem,
@@ -2913,24 +2913,8 @@ markReceivedGroupReportsDeleted db User {userId} GroupInfo {groupId, membership}
       |]
       (DBCIDeleted, deletedTs, groupMemberId' membership, currentTs, userId, groupId, MCReport_, DBCINotDeleted)
 
-getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupInfo -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupMemberId sharedMsgId = do
-  itemId <-
-    ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
-      DB.query
-        db
-        [sql|
-          SELECT chat_item_id
-          FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
-          ORDER BY chat_item_id DESC
-          LIMIT 1
-        |]
-        (userId, groupId, groupMemberId, sharedMsgId)
-  getGroupCIWithReactions db user g itemId
-
-getGroupCIBySharedMsgId :: DB.Connection -> User -> GroupInfo -> Maybe MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupCIBySharedMsgId db user g@GroupInfo {groupId} memberId_ sharedMsgId = do
+getGroupCIBySharedMsgId' :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupCIBySharedMsgId' db user g@GroupInfo {groupId} sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -2943,7 +2927,11 @@ getGroupCIBySharedMsgId db user g@GroupInfo {groupId} memberId_ sharedMsgId = do
           LIMIT 1
         |]
         (groupId, sharedMsgId)
-  cci <- getGroupCIWithReactions db user g itemId
+  getGroupCIWithReactions db user g itemId
+
+getGroupCIBySharedMsgId :: DB.Connection -> User -> GroupInfo -> Maybe MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupCIBySharedMsgId db user g memberId_ sharedMsgId = do
+  cci <- getGroupCIBySharedMsgId' db user g sharedMsgId
   case cci of
     CChatItem SMDRcv ChatItem {chatDir = CIGroupRcv itemMember_}
       | matchesMemberId itemMember_ -> pure cci
