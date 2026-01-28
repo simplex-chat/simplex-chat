@@ -1676,6 +1676,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       case aci of
         AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir} -> case chatDir of
           CIGroupRcv Nothing -> do
+            -- in processFDMessage some paths are programmed as errors,
+            -- for example failure on not approved relays (CEFileNotApproved).
+            -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
             processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
             pure $ Just $ infoToDeliveryContext g scopeInfo True
           CIGroupRcv (Just m')
