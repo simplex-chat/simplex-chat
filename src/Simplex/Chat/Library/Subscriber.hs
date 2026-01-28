@@ -1945,7 +1945,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
               updateGroupChatItem db user groupId ci content True live Nothing
             ci'' <- blockedMemberCI' gInfo' m'' ci'
             toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv cInfo ci'')
-            pure $ Just $ infoToDeliveryContext gInfo scopeInfo (isNothing m_)
+            pure $ case m_ of
+              Nothing -> Nothing
+              Just m ->
+                -- owner messages in channel without matching item are assumed to be channel messages
+                let sentAsGroup = useRelays' gInfo && memberRole' m == GROwner
+                 in Just $ infoToDeliveryContext gInfo scopeInfo sentAsGroup
       where
         content = CIRcvMsgContent mc
         ts@(_, ft_) = msgContentTexts mc
@@ -1977,7 +1982,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 updateGroupCIMentions db gInfo ci' ciMentions
               toView $ CEvtChatItemUpdated user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci')
               startUpdatedTimedItemThread user (ChatRef CTGroup groupId $ toChatScope <$> scopeInfo) ci ci'
-              pure $ Just $ infoToDeliveryContext gInfo scopeInfo sentAsGroup
+              pure $ if isNothing m_ then Nothing else Just $ infoToDeliveryContext gInfo scopeInfo sentAsGroup
             else do
               toView $ CEvtChatItemNotChanged user (AChatItem SCTGroup SMDRcv (GroupChat gInfo scopeInfo) ci)
               pure Nothing
