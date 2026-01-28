@@ -217,7 +217,7 @@ Query:
                   m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
                   p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
                   m.created_at, m.updated_at,
-                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts
+                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key
                 FROM chat_items i
                 LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
                 LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
@@ -878,16 +878,6 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
-            SELECT chat_item_id
-            FROM chat_items
-            WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND shared_msg_id = ?
-            ORDER BY chat_item_id DESC
-            LIMIT 1
-          
-Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
-
-Query: 
             SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
@@ -1019,20 +1009,6 @@ SCAN groups
 Query: 
             SELECT i.chat_item_id
             FROM chat_items i
-            JOIN group_members m ON m.group_id = i.group_id
-                                AND ((i.group_member_id IS NULL AND m.member_category = ?)
-                                    OR i.group_member_id = m.group_member_id)
-            WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND i.shared_msg_id = ?
-            ORDER BY i.chat_item_id DESC
-            LIMIT 1
-          
-Plan:
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
-SEARCH i USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
-
-Query: 
-            SELECT i.chat_item_id
-            FROM chat_items i
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
             WHERE s.group_snd_item_status_id IS NULL
               AND i.user_id = ? AND i.group_id = ?
@@ -1044,28 +1020,6 @@ Query:
 Plan:
 SEARCH i USING COVERING INDEX idx_chat_items_groups_history (user_id=? AND group_id=? AND include_in_history=? AND item_deleted=?)
 SEARCH s USING COVERING INDEX idx_group_snd_item_statuses_chat_item_id_group_member_id (chat_item_id=? AND group_member_id=?) LEFT-JOIN
-
-Query: 
-            SELECT i.chat_item_id,
-              -- GroupMember
-              m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-              m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-              p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-              m.created_at, m.updated_at,
-              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key
-            FROM group_members m
-            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-            LEFT JOIN contacts c ON m.contact_id = c.contact_id
-            LEFT JOIN chat_items i ON i.user_id = m.user_id
-                                      AND i.group_id = m.group_id
-                                      AND m.group_member_id = i.group_member_id
-                                      AND i.shared_msg_id = ?
-            WHERE m.user_id = ? AND m.group_id = ? AND m.member_id = ?
-          
-Plan:
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
-SEARCH p USING INTEGER PRIMARY KEY (rowid=?)
-SEARCH i USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?) LEFT-JOIN
 
 Query: 
             SELECT i.chat_item_id, i.contact_id, i.group_id, i.group_scope_tag, i.group_scope_group_member_id, i.note_folder_id
@@ -1448,12 +1402,12 @@ SEARCH ct USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
           SELECT chat_item_id
           FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
+          WHERE group_id = ? AND shared_msg_id = ?
           ORDER BY chat_item_id DESC
           LIMIT 1
         
 Plan:
-SEARCH chat_items USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
 
 Query: 
           SELECT chat_item_id
