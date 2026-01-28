@@ -877,6 +877,16 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_groups_item_ts (user_id=? AND group_id=?)
 
 Query: 
+            SELECT chat_item_id
+            FROM chat_items
+            WHERE user_id = ? AND group_id = ? AND group_member_id IS NULL AND shared_msg_id = ?
+            ORDER BY chat_item_id DESC
+            LIMIT 1
+          
+Plan:
+SEARCH chat_items USING COVERING INDEX idx_chat_items_group_shared_msg_id (user_id=? AND group_id=? AND group_member_id=? AND shared_msg_id=?)
+
+Query: 
             SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
             FROM chat_items
             WHERE user_id = ? AND LOWER(item_text) LIKE '%' || LOWER(?) || '%'
@@ -1008,6 +1018,20 @@ SCAN groups
 Query: 
             SELECT i.chat_item_id
             FROM chat_items i
+            JOIN group_members m ON m.group_id = i.group_id
+                                AND ((i.group_member_id IS NULL AND m.member_category = ?)
+                                    OR i.group_member_id = m.group_member_id)
+            WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND i.shared_msg_id = ?
+            ORDER BY i.chat_item_id DESC
+            LIMIT 1
+          
+Plan:
+SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
+SEARCH i USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
+
+Query: 
+            SELECT i.chat_item_id
+            FROM chat_items i
             LEFT JOIN group_snd_item_statuses s ON s.chat_item_id = i.chat_item_id AND s.group_member_id = ?
             WHERE s.group_snd_item_status_id IS NULL
               AND i.user_id = ? AND i.group_id = ?
@@ -1100,7 +1124,7 @@ SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_contact (contact_
 
 Query: 
           DELETE FROM chat_item_reactions
-          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND reaction_sent = ? AND reaction = ?
         
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
@@ -1548,20 +1572,6 @@ SEARCH group_members USING INDEX idx_group_members_user_id_local_display_name (u
 Query: 
           SELECT i.chat_item_id
           FROM chat_items i
-          JOIN group_members m ON m.group_id = i.group_id
-                              AND ((i.group_member_id IS NULL AND m.member_category = ?)
-                                  OR i.group_member_id = m.group_member_id)
-          WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND i.shared_msg_id = ?
-          ORDER BY i.chat_item_id DESC
-          LIMIT 1
-        
-Plan:
-SEARCH m USING INDEX sqlite_autoindex_group_members_1 (group_id=? AND member_id=?)
-SEARCH i USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
-
-Query: 
-          SELECT i.chat_item_id
-          FROM chat_items i
           JOIN group_members m ON m.group_member_id = i.group_member_id
           WHERE i.user_id = ? AND i.group_id = ? AND m.local_display_name = ? AND i.item_text like ?
           ORDER BY i.chat_item_id DESC
@@ -1604,12 +1614,14 @@ SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
 Query: 
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
+            g.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
             r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
           LEFT JOIN group_members m ON m.group_member_id = r.group_member_id
+          LEFT JOIN groups g ON g.group_id = f.group_id
           WHERE f.user_id = ? AND f.file_id = ?
         
 Plan:
@@ -1617,6 +1629,7 @@ SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cs USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
           SELECT r.probe, r.contact_id, g.group_id, r.group_member_id
@@ -3694,7 +3707,7 @@ SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_contact (contact_
 Query: 
         SELECT reaction
         FROM chat_item_reactions
-        WHERE group_id = ? AND group_member_id = ? AND item_member_id = ? AND shared_msg_id = ? AND reaction_sent = ?
+        WHERE group_id = ? AND group_member_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ? AND reaction_sent = ?
       
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)

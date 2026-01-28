@@ -881,7 +881,7 @@ viewItemDelete chat ci@ChatItem {chatDir, meta, content = deletedContent} toItem
     prohibited = [styled (colored Red) ("[unexpected message deletion, please report to developers]" :: String)]
 
 viewItemReaction :: forall c d. Bool -> ChatInfo c -> CIReaction c d -> Bool -> CurrentTime -> TimeZone -> [StyledString]
-viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content}, sentAt, reaction} added ts tz =
+viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md ChatItem {chatDir = itemDir, content, meta = CIMeta {showGroupAsSender}}, sentAt, reaction} added ts tz =
   case (chat, chatDir) of
     (DirectChat c, CIDirectRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
@@ -894,7 +894,8 @@ viewItemReaction showReactions chat CIReaction {chatDir, chatItem = CChatItem md
       _ -> []
       where
         from = ttyFromGroup g scopeInfo m
-        reactionMsg mc = quoteText mc . ttyQuotedMember $ sentByMember' g itemDir
+        reactionMsg mc = quoteText mc . ttyQuotedMember $
+          if showGroupAsSender then Nothing else sentByMember' g itemDir
     (LocalChat _, CILocalRcv) -> case ciMsgContent content of
       Just mc -> view from $ reactionMsg mc
       _ -> []
@@ -2695,10 +2696,9 @@ ttyToContactEdited' ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyTo 
 ttyQuotedContact :: Contact -> StyledString
 ttyQuotedContact Contact {localDisplayName = c} = ttyFrom $ viewName c <> ">"
 
--- TODO [msg from channel] print "from channel" or group name if member is Nothing?
 ttyQuotedMember :: Maybe GroupMember -> StyledString
 ttyQuotedMember (Just GroupMember {localDisplayName = c}) = "> " <> ttyFrom (viewName c)
-ttyQuotedMember Nothing = "> " <> ttyFrom "?"
+ttyQuotedMember Nothing = ">"
 
 ttyFromContact :: Contact -> StyledString
 ttyFromContact ct@Contact {localDisplayName = c} = ctIncognito ct <> ttyFrom (viewName c <> "> ")

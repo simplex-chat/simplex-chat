@@ -846,21 +846,19 @@ processChatCommand vr nm = \case
         chatScopeInfo <- mapM (getChatScopeInfo vr user) scope
         recipients <- getGroupRecipients vr user g chatScopeInfo groupKnockingVersion
         case ci of
-          -- TODO [msg from channel] support reactions to channel messages (Nothing itemMemberId)
           ChatItem {meta = CIMeta {itemSharedMsgId = Just itemSharedMId}} -> do
             unless (groupFeatureAllowed SGFReactions g) $
               throwCmdError $ "feature not allowed " <> T.unpack (chatFeatureNameText CFReactions)
             unless (ciReactionAllowed ci) $
               throwCmdError "reaction not allowed - chat item has no content"
             let itemMemberId_ = memberId' <$> chatItemMember g ci
-            itemMemberId <- maybe (throwCmdError "reaction not allowed - chat item has no member") pure itemMemberId_
-            rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId itemSharedMId True
+            rs <- withFastStore' $ \db -> getGroupReactions db g membership itemMemberId_ itemSharedMId True
             checkReactionAllowed rs
-            SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId (Just itemMemberId) (toMsgScope g <$> chatScopeInfo) reaction add)
+            SndMessage {msgId} <- sendGroupMessage user g scope recipients (XMsgReact itemSharedMId itemMemberId_ (toMsgScope g <$> chatScopeInfo) reaction add)
             createdAt <- liftIO getCurrentTime
             reactions <- withFastStore' $ \db -> do
-              setGroupReaction db g membership itemMemberId itemSharedMId True reaction add msgId createdAt
-              liftIO $ getGroupCIReactions db g (Just itemMemberId) itemSharedMId
+              setGroupReaction db g membership itemMemberId_ itemSharedMId True reaction add msgId createdAt
+              liftIO $ getGroupCIReactions db g itemMemberId_ itemSharedMId
             let ci' = CChatItem md ci {reactions}
                 r = ACIReaction SCTGroup SMDSnd (GroupChat g chatScopeInfo) $ CIReaction CIGroupSnd ci' createdAt reaction
             pure $ CRChatItemReaction user add r
@@ -2289,7 +2287,7 @@ processChatCommand vr nm = \case
       combineResults _ _ (Left e) = Left e
       createCI :: DB.Connection -> User -> Bool -> UTCTime -> (Contact, SndMessage) -> IO ()
       createCI db user hasLink createdAt (ct, sndMsg) =
-        void $ createNewSndChatItem db user (CDDirectSnd ct) sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink createdAt
+        void $ createNewSndChatItem db user (CDDirectSnd ct) False sndMsg (CISndMsgContent mc) Nothing Nothing Nothing False hasLink createdAt
   SendMessageQuote cName (AMsgDirection msgDir) quotedMsg msg -> withUser $ \user@User {userId} -> do
     contactId <- withFastStore $ \db -> getContactIdByName db user cName
     quotedItemId <- withFastStore $ \db -> getDirectChatItemIdByText db userId contactId msgDir quotedMsg
@@ -2552,7 +2550,7 @@ processChatCommand vr nm = \case
               recipients = filter memberCurrent members
           (msgs_, _gsr) <- sendGroupMessages user gInfo Nothing recipients events
           let itemsData = zipWith (fmap . sndItemData) memsToChange (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length memsToChange) $ logError "changeRoleCurrentMems: memsToChange and cis_ length mismatch"
           (errs, changed) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (updMember db) memsToChange)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
@@ -2599,7 +2597,7 @@ processChatCommand vr nm = \case
               recipients = filter memberCurrent remainingMems
           (msgs_, _gsr) <- sendGroupMessages_ user gInfo recipients events
           let itemsData = zipWith (fmap . sndItemData) blockMems (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo Nothing) False itemsData Nothing False
           when (length cis_ /= length blockMems) $ logError "blockMembers: blockMems and cis_ length mismatch"
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo Nothing)) $ rights cis_
           unless (null acis) $ toView $ CEvtNewChatItems user acis
@@ -2683,7 +2681,7 @@ processChatCommand vr nm = \case
                 Right (Just a) -> Just $ Right a
                 Left e -> Just $ Left e
               itemsData = mapMaybe skipUnwantedItem itemsData_
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData Nothing False
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) False itemsData Nothing False
           deleteMembersConnections' user memsToDelete True
           (errs, deleted) <- lift $ partitionEithers <$> withStoreBatch' (\db -> map (delMember db) memsToDelete)
           let acis = map (AChatItem SCTGroup SMDSnd (GroupChat gInfo chatScopeInfo)) $ rights cis_
@@ -3541,7 +3539,7 @@ processChatCommand vr nm = \case
       assertDeletable gInfo items
       assertUserGroupRole gInfo GRModerator
       let msgMemIds = itemsMsgMemIds gInfo items
-          events = L.nonEmpty $ map (\(msgId, memId) -> XMsgDel msgId (Just memId) $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
+          events = L.nonEmpty $ map (\(msgId, memId_) -> XMsgDel msgId memId_ $ toMsgScope gInfo <$> chatScopeInfo) msgMemIds
       mapM_ (sendGroupMessages_ user gInfo ms) events
       delGroupChatItems user gInfo chatScopeInfo items True
       where
@@ -3555,16 +3553,15 @@ processChatCommand vr nm = \case
                 CIGroupRcv (Just GroupMember {memberRole}) -> memberRole' membership >= memberRole && isJust itemSharedMsgId
                 CIGroupRcv Nothing -> memberRole' membership == GROwner && isJust itemSharedMsgId
                 CIGroupSnd -> isJust itemSharedMsgId
-        itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, MemberId)]
+        itemsMsgMemIds :: GroupInfo -> [CChatItem 'CTGroup] -> [(SharedMsgId, Maybe MemberId)]
         itemsMsgMemIds GroupInfo {membership = GroupMember {memberId = membershipMemId}} = mapMaybe itemMsgMemIds
           where
-            itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, MemberId)
+            itemMsgMemIds :: CChatItem 'CTGroup -> Maybe (SharedMsgId, Maybe MemberId)
             itemMsgMemIds (CChatItem _ ChatItem {chatDir, meta = CIMeta {itemSharedMsgId}}) =
-              -- TODO [msg from channel] support batch deletion of channel messages (no memberId)
-              join <$> forM itemSharedMsgId $ \msgId -> case chatDir of
-                CIGroupRcv (Just GroupMember {memberId}) -> Just (msgId, memberId)
-                CIGroupRcv Nothing -> Nothing
-                CIGroupSnd -> Just (msgId, membershipMemId)
+              flip fmap itemSharedMsgId $ \msgId -> case chatDir of
+                CIGroupRcv (Just GroupMember {memberId}) -> (msgId, Just memberId)
+                CIGroupRcv Nothing -> (msgId, Nothing)
+                CIGroupSnd -> (msgId, Just membershipMemId)
 
     delGroupChatItems :: User -> GroupInfo -> Maybe GroupChatScopeInfo -> [CChatItem 'CTGroup] -> Bool -> CM [ChatItemDeletion]
     delGroupChatItems user gInfo@GroupInfo {membership} chatScopeInfo items moderation = do
@@ -3982,7 +3979,7 @@ processChatCommand vr nm = \case
           msgs_ <- sendDirectContactMessages user ct $ L.map XMsgNew msgContainers
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) msgs_
           when (length itemsData /= length cmrs) $ logError "sendContactContentMessages: cmrs and itemsData length mismatch"
-          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) itemsData timed_ live
+          r@(_, cis) <- partitionEithers <$> saveSndChatItems user (CDDirectSnd ct) False itemsData timed_ live
           processSendErrs r
           forM_ (timed_ >>= timedDeleteAt') $ \deleteAt ->
             forM_ cis $ \ci ->
@@ -4059,7 +4056,7 @@ processChatCommand vr nm = \case
           (chatMsgEvents, quotedItems_) <- L.unzip <$> prepareMsgs (L.zip cmrs fInvs_) timed_
           (msgs_, gsr) <- sendGroupMessages user gInfo Nothing recipients chatMsgEvents
           let itemsData = prepareSndItemsData (L.toList cmrs) (L.toList ciFiles_) (L.toList quotedItems_) (L.toList msgs_)
-          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) itemsData timed_ live
+          cis_ <- saveSndChatItems user (CDGroupSnd gInfo chatScopeInfo) asGroup itemsData timed_ live
           when (length cis_ /= length cmrs) $ logError "sendGroupContentMessages: cmrs and cis_ length mismatch"
           createMemberSndStatuses cis_ msgs_ gsr
           let r@(_, cis) = partitionEithers cis_

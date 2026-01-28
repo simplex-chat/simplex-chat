@@ -237,15 +237,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  -- TODO [msg from channel] add tests for messages sent as group
-  -- TODO   - files
-  -- TODO   - file cancellation
-  -- TODO   - updates
-  -- TODO   - deletions
-  -- TODO   - quotes
-  -- TODO   - reactions
-  -- TODO   - other?
-  describe "channels" $ do
+  fdescribe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -257,6 +249,12 @@ chatGroupTests = do
       describe "multiple relays" $ do
         it "2 relays: should deliver messages to members" testChannels2RelaysDeliver
         it "should share same incognito profile with all relays" testChannels2RelaysIncognito
+    describe "channel message operations" $ do
+      it "should update channel message" testChannelMessageUpdate
+      it "should delete channel message" testChannelMessageDelete
+      it "should send and receive channel message file" testChannelMessageFile
+      it "should cancel channel message file" testChannelMessageFileCancel
+      it "should quote channel message" testChannelMessageQuote
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8385,21 +8383,19 @@ testChannels1RelayDeliver ps =
             bob <# "#team> hi"
             [cath, dan, eve] *<# "#team> hi [>>]"
 
-            -- TODO [msg from channel] uncomment when reactions to messages w/t member work;
-            -- TODO   don't print "?" in quote
-            -- cath ##> "+1 #team hi"
-            -- cath <## "added 👍"
-            -- bob <# "#team cath> > ? hi"
-            -- bob <## "    + 👍"
-            -- alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            -- alice <# "#team cath> > ? hi"
-            -- alice <## "    + 👍"
-            -- dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            -- dan <# "#team cath> > ? hi"
-            -- dan <## "    + 👍"
-            -- eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            -- eve <# "#team cath> > ? hi"
-            -- eve <## "    + 👍"
+            cath ##> "+1 #team hi"
+            cath <## "added 👍"
+            bob <# "#team cath> > hi"
+            bob <## "    + 👍"
+            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            alice <# "#team cath> > hi"
+            alice <## "    + 👍"
+            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <# "#team cath> > hi"
+            dan <## "    + 👍"
+            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <# "#team cath> > hi"
+            eve <## "    + 👍"
 
 createChannel1Relay :: String -> TestCC -> TestCC -> TestCC -> TestCC -> TestCC -> IO ()
 createChannel1Relay gName owner relay cath dan eve = do
@@ -8552,21 +8548,19 @@ testChannels1RelayDeliverLoop deliveryBucketSize ps =
             bob <# "#team> hi"
             [cath, dan, eve] *<# "#team> hi [>>]"
 
-            -- TODO [msg from channel] uncomment when reactions to messages w/t member work;
-            -- TODO   don't print "?" in quote
-            -- cath ##> "+1 #team hi"
-            -- cath <## "added 👍"
-            -- bob <# "#team cath> > ? hi"
-            -- bob <## "    + 👍"
-            -- alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            -- alice <# "#team cath> > ? hi"
-            -- alice <## "    + 👍"
-            -- dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            -- dan <# "#team cath> > ? hi"
-            -- dan <## "    + 👍"
-            -- eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
-            -- eve <# "#team cath> > ? hi"
-            -- eve <## "    + 👍"
+            cath ##> "+1 #team hi"
+            cath <## "added 👍"
+            bob <# "#team cath> > hi"
+            bob <## "    + 👍"
+            alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            alice <# "#team cath> > hi"
+            alice <## "    + 👍"
+            dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            dan <# "#team cath> > hi"
+            dan <## "    + 👍"
+            eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+            eve <# "#team cath> > hi"
+            eve <## "    + 👍"
   where
     cfg = testCfg {deliveryBucketSize}
 
@@ -8646,32 +8640,25 @@ testChannels2RelaysDeliver ps =
               [bob, cath] *<# "#team> hi"
               [dan, eve, frank] *<# "#team> hi [>>]"
 
-              -- TODO [msg from channel] uncomment when reactions to messages w/t member work;
-              -- TODO   don't print "?" in quote
-              -- dan ##> "+1 #team hi"
-              -- dan <## "added 👍"
-              -- bob <# "#team dan> > ? hi"
-              -- bob <## "    + 👍"
-              -- cath <# "#team dan> > ? hi"
-              -- cath <## "    + 👍"
-              -- alice .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              -- alice <# "#team dan> > ? hi"
-              -- alice <## "    + 👍"
-              -- eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              -- eve <# "#team dan> > ? hi"
-              -- eve <## "    + 👍"
-              -- frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              -- frank <# "#team dan> > ? hi"
-              -- frank <## "    + 👍"
+              dan ##> "+1 #team hi"
+              dan <## "added 👍"
+              bob <# "#team dan> > hi"
+              bob <## "    + 👍"
+              cath <# "#team dan> > hi"
+              cath <## "    + 👍"
+              alice .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              alice <# "#team dan> > hi"
+              alice <## "    + 👍"
+              eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              eve <# "#team dan> > hi"
+              eve <## "    + 👍"
+              frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
+              frank <# "#team dan> > hi"
+              frank <## "    + 👍"
 
               -- remove below if default role is changed to observer
               dan #> "#team hey"
               [bob, cath] *<# "#team dan> hey"
-              -- TODO [msg from channel] remove vvv
-              alice .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              eve .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              frank .<## " forwarded a message from an unknown member, creating unknown member record dan"
-              --- ^^^
               [alice, eve, frank] *<# "#team dan> hey [>>]"
 
 testChannels2RelaysIncognito :: HasCallStack => TestParams -> IO ()
@@ -8692,33 +8679,185 @@ testChannels2RelaysIncognito ps =
               dan ?<# "#team> hi [>>]"
               [eve, frank] *<# "#team> hi [>>]"
 
-              -- TODO [msg from channel] uncomment when reactions to messages w/t member work;
-              -- TODO   don't print "?" in quote
-              -- dan ##> "+1 #team hi"
-              -- dan <## "added 👍"
-              -- bob <# ("#team " <> danIncognito <> "> > ? hi")
-              -- bob <## "    + 👍"
-              -- cath <# ("#team " <> danIncognito <> "> > ? hi")
-              -- cath <## "    + 👍"
-              -- alice .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              -- alice <# ("#team " <> danIncognito <> "> > ? hi")
-              -- alice <## "    + 👍"
-              -- eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              -- eve <# ("#team " <> danIncognito <> "> > ? hi")
-              -- eve <## "    + 👍"
-              -- frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              -- frank <# ("#team " <> danIncognito <> "> > ? hi")
-              -- frank <## "    + 👍"
+              dan ##> "+1 #team hi"
+              dan <## "added 👍"
+              bob <# ("#team " <> danIncognito <> "> > hi")
+              bob <## "    + 👍"
+              cath <# ("#team " <> danIncognito <> "> > hi")
+              cath <## "    + 👍"
+              alice .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              alice <# ("#team " <> danIncognito <> "> > hi")
+              alice <## "    + 👍"
+              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              eve <# ("#team " <> danIncognito <> "> > hi")
+              eve <## "    + 👍"
+              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
+              frank <# ("#team " <> danIncognito <> "> > hi")
+              frank <## "    + 👍"
 
               -- remove below if default role is changed to observer
               dan ?#> "#team hey"
               [bob, cath] *<# ("#team " <> danIncognito <> "> hey")
-              -- TODO [msg from channel] remove vvv
-              alice .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              eve .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              frank .<## (" forwarded a message from an unknown member, creating unknown member record " <> danIncognito)
-              --- ^^^
               [alice, eve, frank] *<# ("#team " <> danIncognito <> "> hey [>>]")
+
+testChannelMessageUpdate :: HasCallStack => TestParams -> IO ()
+testChannelMessageUpdate ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends channel message
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- owner updates channel message
+            msgId <- lastItemId alice
+            alice ##> ("/_update item #1 " <> msgId <> " text hello updated")
+            alice <# "#team [edited] hello updated"
+            bob <# "#team> [edited] hello updated"
+            [cath, dan, eve] *<# "#team> [edited] hello updated" -- TODO show as forwarded
+
+testChannelMessageDelete :: HasCallStack => TestParams -> IO ()
+testChannelMessageDelete ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends channel message
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- owner deletes channel message (broadcast)
+            msgId <- lastItemId alice
+            alice #$> ("/_delete item #1 " <> msgId <> " broadcast", id, "message marked deleted")
+            bob <# "#team> [marked deleted] hello"
+            [cath, dan, eve] *<# "#team> [marked deleted] hello" -- TODO show as forwarded
+
+testChannelMessageFile :: HasCallStack => TestParams -> IO ()
+testChannelMessageFile ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends file as channel message
+            alice #> "/f #team ./tests/fixtures/test.jpg"
+            alice <## "use /fc 1 to cancel sending"
+            alice <## "completed uploading file 1 (test.jpg) for #team"
+            bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            concurrentlyN_
+              [ do
+                  cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do
+                  dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do
+                  eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+              ]
+
+            -- all members receive the file concurrently
+            src <- B.readFile "./tests/fixtures/test.jpg"
+            concurrentlyN_
+              [ receiveFile bob "bob" src,
+                receiveFile cath "cath" src,
+                receiveFile dan "dan" src,
+                receiveFile eve "eve" src
+              ]
+  where
+    receiveFile cc name src = do
+      let path = "./tests/tmp/test_" <> name <> ".jpg"
+      cc ##> ("/fr 1 " <> path)
+      cc
+        <### [ ConsoleString ("saving file 1 from #team to " <> path),
+               "started receiving file 1 (test.jpg) from #team"
+             ]
+      cc <## "completed receiving file 1 (test.jpg) from #team"
+      B.readFile path >>= (`shouldBe` src)
+
+testChannelMessageFileCancel :: HasCallStack => TestParams -> IO ()
+testChannelMessageFileCancel ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> withXFTPServer $ do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends file as channel message
+            alice #> "/f #team ./tests/fixtures/test.jpg"
+            alice <## "use /fc 1 to cancel sending"
+            alice <## "completed uploading file 1 (test.jpg) for #team"
+            bob <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes)"
+            bob <## "use /fr 1 [<dir>/ | <path>] to receive it"
+            concurrentlyN_
+              [ do
+                  cath <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  cath <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do
+                  dan <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  dan <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]",
+                do
+                  eve <# "#team> sends file test.jpg (136.5 KiB / 139737 bytes) [>>]"
+                  eve <## "use /fr 1 [<dir>/ | <path>] to receive it [>>]"
+              ]
+
+            -- owner cancels file
+            alice ##> "/fc 1"
+            alice <## "cancelled sending file 1 (test.jpg) to bob"
+            bob <## "team cancelled sending file 1 (test.jpg)"
+            concurrentlyN_
+              [ cath <## "team cancelled sending file 1 (test.jpg)",
+                dan <## "team cancelled sending file 1 (test.jpg)",
+                eve <## "team cancelled sending file 1 (test.jpg)"
+              ]
+
+testChannelMessageQuote :: HasCallStack => TestParams -> IO ()
+testChannelMessageQuote ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends channel message
+            alice #> "#team hello from channel"
+            bob <# "#team> hello from channel"
+            [cath, dan, eve] *<# "#team> hello from channel [>>]"
+
+            -- member quotes channel message
+            cath `send` "> #team (hello from) replying to channel"
+            cath <# "#team > hello from channel"
+            cath <## "      replying to channel"
+            bob <# "#team cath> > hello from channel"
+            bob <## "      replying to channel"
+            concurrentlyN_
+              [ do
+                  alice <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  alice <# "#team cath> > hello from channel [>>]"
+                  alice <## "      replying to channel [>>]",
+                do
+                  dan <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  dan <# "#team cath> > hello from channel [>>]"
+                  dan <## "      replying to channel [>>]",
+                do
+                  eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
+                  eve <# "#team cath> > hello from channel [>>]"
+                  eve <## "      replying to channel [>>]"
+              ]
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
 testGroupLinkContentFilter =
