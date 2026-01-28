@@ -443,7 +443,7 @@
     <string name="disable_notifications_button">Értesítések letiltása</string>
     <string name="devices">Eszközök</string>
     <string name="multicast_discoverable_via_local_network">Látható a helyi hálózaton</string>
-    <string name="dont_enable_receipts">Ne engedélyezze</string>
+    <string name="dont_enable_receipts">Nem engedélyezem</string>
     <string name="disappearing_prohibited_in_this_chat">Az eltűnő üzenetek küldése le van tiltva ebben a csevegésben.</string>
     <string name="chat_preferences_default">alapértelmezett (%s)</string>
     <string name="integrity_msg_duplicate">duplikált üzenet</string>
