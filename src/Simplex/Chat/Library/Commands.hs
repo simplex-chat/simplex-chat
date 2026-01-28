@@ -3720,7 +3720,7 @@ processChatCommand vr nm = \case
     getShortLinkConnReq :: User -> ConnShortLink m -> CM (ConnectionRequestUri m, ConnLinkData m)
     getShortLinkConnReq user l = do
       l' <- restoreShortLink' l
-      (cReq, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
+      (FixedLinkData {linkConnReq = cReq}, cData) <- withAgent $ \a -> getConnShortLink a nm (aUserId user) l'
       case cData of
         ContactLinkData _ UserContactData {direct} | not direct -> throwChatError CEUnsupportedConnReq
         _ -> pure ()
@@ -4155,7 +4155,7 @@ agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   forever (atomically (readTBQueue q) >>= process)
-    `E.catchAny` \e -> do
+    `catchOwn` \e -> do
       eToView' $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) (AgentConnId "") Nothing
       E.throwIO e
   where
@@ -4166,7 +4166,7 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchAllErrors'` (eToView')
+        run action = action `catchAllOwnErrors'` eToView'
 
 type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
 

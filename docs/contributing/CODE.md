@@ -2,7 +2,7 @@
 
 This file provides guidance on coding style and approaches and on building the code.
 
-## Code Style and Formatting
+## Code Style, Formatting and Approaches
 
 The project uses **fourmolu** for Haskell code formatting. Configuration is in `fourmolu.yaml`.
 
@@ -40,6 +40,16 @@ Some files that use CPP language extension cannot be formatted as a whole, so in
 - Avoid unnecessary changes and code movements
 - Never do refactoring unless it substantially reduces cost of solving the current problem, including the cost of refactoring
 - Aim to minimize the code changes - do what is minimally required to solve users' problems
+
+**Document and code structure:**
+- **Never move existing code or sections around** - add new content at appropriate locations without reorganizing existing structure.
+- When adding new sections to documents, continue the existing numbering scheme.
+- Minimize diff size - prefer small, targeted changes over reorganization.
+
+**Code analysis and review:**
+- Trace data flows end-to-end: from origin, through storage/parameters, to consumption. Flag values that are discarded and reconstructed from partial data (e.g. extracted from a URI missing original fields) — this is usually a bug.
+- Read implementations of called functions, not just signatures — if duplication involves a called function, check whether decomposing it resolves the duplication.
+- Do not save time on analysis. Read every function in the data flow even when the interface seems clear — wrong assumptions about internals are the main source of missed bugs.
 
 ### Haskell Extensions
 - `StrictData` enabled by default

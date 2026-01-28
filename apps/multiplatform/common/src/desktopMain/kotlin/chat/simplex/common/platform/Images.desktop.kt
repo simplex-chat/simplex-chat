@@ -27,7 +27,7 @@ actual fun base64ToBitmap(base64ImageString: String): ImageBitmap {
     .removePrefix("data:image/jpg;base64,")
   return try {
     ImageIO.read(ByteArrayInputStream(Base64.getMimeDecoder().decode(imageString))).toComposeImageBitmap()
-  } catch (e: IOException) {
+  } catch (e: Throwable) {
     Log.e(TAG, "base64ToBitmap error: $e")
     errorBitmap()
   }
