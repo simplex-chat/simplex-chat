@@ -157,7 +157,7 @@ markDeliveryTaskFailed_ :: DB.Connection -> Int64 -> IO ()
 markDeliveryTaskFailed_ db taskId =
   DB.execute db "UPDATE delivery_tasks SET failed = 1 where delivery_task_id = ?" (Only taskId)
 
--- TODO [channels fwd] possible optimization is to read and add tasks to batch iteratively to avoid reading too many tasks
+-- TODO [relays] possible optimization is to read and add tasks to batch iteratively to avoid reading too many tasks
 -- passed MessageDeliveryTask defines the jobScope to search for
 getNextDeliveryTasks :: DB.Connection -> GroupInfo -> MessageDeliveryTask -> IO (Either StoreError [Either StoreError MessageDeliveryTask])
 getNextDeliveryTasks db gInfo task =
@@ -318,7 +318,7 @@ updateDeliveryJobStatus_ db jobId status errReason_ = do
     "UPDATE delivery_jobs SET job_status = ?, job_err_reason = ?, updated_at = ? WHERE delivery_job_id = ?"
     (status, errReason_, currentTs, jobId)
 
--- TODO [channels fwd] possible improvement is to prioritize owners and "active" members
+-- TODO [relays] possible improvement is to prioritize owners and "active" members
 getGroupMembersByCursor :: DB.Connection -> VersionRangeChat -> User -> GroupInfo -> Maybe GroupMemberId -> Maybe GroupMemberId -> Int -> IO [GroupMember]
 getGroupMembersByCursor db vr user@User {userContactId} GroupInfo {groupId} cursorGMId_ singleSenderGMId_ count = do
   gmIds :: [Int64] <-

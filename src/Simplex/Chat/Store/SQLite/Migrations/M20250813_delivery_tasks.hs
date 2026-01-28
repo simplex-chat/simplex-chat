@@ -5,7 +5,7 @@ module Simplex.Chat.Store.SQLite.Migrations.M20250813_delivery_tasks where
 import Database.SQLite.Simple (Query)
 import Database.SQLite.Simple.QQ (sql)
 
--- TODO [channels fwd] add later in new migration for MemberProfileUpdate delivery jobs:
+-- TODO [relays] add later in new migration for MemberProfileUpdate delivery jobs:
 -- TODO   - ALTER TABLE group_members ADD COLUMN last_profile_delivery_ts TEXT;
 -- TODO   - ALTER TABLE group_members ADD COLUMN join_ts TEXT;
 
