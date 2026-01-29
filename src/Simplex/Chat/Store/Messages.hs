@@ -102,8 +102,8 @@ module Simplex.Chat.Store.Messages
     getDirectChatItemsByAgentMsgId,
     getGroupChatItem,
     getGroupCIWithReactions,
-    getGroupChatItemBySharedMsgId,
-    getGroupMemberCIBySharedMsgId,
+    getGroupCIBySharedMsgId,
+    getGroupCIBySharedMsgId',
     getGroupChatItemsByAgentMsgId,
     getGroupMemberChatItemLast,
     getLocalChatItem,
@@ -525,9 +525,9 @@ setSupportChatMemberAttention db vr user g m memberAttention = do
       m_ <- runExceptT $ getGroupMemberById db vr user (groupMemberId' m)
       pure $ either (const m) id m_ -- Left shouldn't happen, but types require it
 
-createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
-createNewSndChatItem db user chatDirection SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live hasLink createdAt =
-  createNewChatItem_ db user chatDirection False createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing createdAt
+createNewSndChatItem :: DB.Connection -> User -> ChatDirection c 'MDSnd -> ShowGroupAsSender -> SndMessage -> CIContent 'MDSnd -> Maybe (CIQuote c) -> Maybe CIForwardedFrom -> Maybe CITimed -> Bool -> Bool -> UTCTime -> IO ChatItemId
+createNewSndChatItem db user chatDirection showGroupAsSender SndMessage {msgId, sharedMsgId} ciContent quotedItem itemForwarded timed live hasLink createdAt =
+  createNewChatItem_ db user chatDirection showGroupAsSender createdByMsgId (Just sharedMsgId) ciContent quoteRow itemForwarded timed live False hasLink createdAt Nothing createdAt
   where
     createdByMsgId = if msgId == 0 then Nothing else Just msgId
     quoteRow :: NewQuoteRow
@@ -594,7 +594,8 @@ createNewChatItem_ db User {userId} chatDirection showGroupAsSender msgId_ share
     idsRow = case chatDirection of
       CDDirectRcv Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
       CDDirectSnd Contact {contactId} -> (Just contactId, Nothing, Nothing, Nothing)
-      CDGroupRcv GroupInfo {groupId} _ GroupMember {groupMemberId} -> (Nothing, Just groupId, Just groupMemberId, Nothing)
+      CDGroupRcv GroupInfo {groupId} _ (Just GroupMember {groupMemberId}) -> (Nothing, Just groupId, Just groupMemberId, Nothing)
+      CDGroupRcv GroupInfo {groupId} _ Nothing -> (Nothing, Just groupId, Nothing, Nothing)
       CDGroupSnd GroupInfo {groupId} _ -> (Nothing, Just groupId, Nothing, Nothing)
       CDLocalRcv NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
       CDLocalSnd NoteFolder {noteFolderId} -> (Nothing, Nothing, Nothing, Just noteFolderId)
@@ -632,68 +633,67 @@ insertChatItemMessage_ db ciId msgId ts = DB.execute db "INSERT INTO chat_item_m
 getChatItemQuote_ :: ChatTypeQuotable c => DB.Connection -> User -> ChatDirection c 'MDRcv -> QuotedMsg -> IO (CIQuote c)
 getChatItemQuote_ db User {userId, userContactId} chatDirection QuotedMsg {msgRef = MsgRef {msgId, sentAt, sent, memberId}, content} =
   case chatDirection of
-    CDDirectRcv Contact {contactId} -> getDirectChatItemQuote_ contactId (not sent)
-    CDGroupRcv GroupInfo {groupId, membership = GroupMember {memberId = userMemberId}} _s sender@GroupMember {groupMemberId = senderGMId, memberId = senderMemberId} ->
-      case memberId of
-        Just mId
-          | mId == userMemberId -> (`ciQuote` CIQGroupSnd) <$> getUserGroupChatItemId_ groupId
-          | mId == senderMemberId -> (`ciQuote` CIQGroupRcv (Just sender)) <$> getGroupChatItemId_ groupId senderGMId
-          | otherwise -> getGroupChatItemQuote_ groupId mId
-        _ -> pure . ciQuote Nothing $ CIQGroupRcv Nothing
+    CDDirectRcv Contact {contactId} -> getDirectChatItemQuote_ contactId
+    CDGroupRcv GroupInfo {groupId, membership = GroupMember {memberId = userMemberId}} _s _ -> getGroupChatItemQuote_ groupId userMemberId
   where
     ciQuote :: Maybe ChatItemId -> CIQDirection c -> CIQuote c
     ciQuote itemId dir = CIQuote dir itemId msgId sentAt content . parseMaybeMarkdownList $ msgContentText content
-    getDirectChatItemQuote_ :: Int64 -> Bool -> IO (CIQuote 'CTDirect)
-    getDirectChatItemQuote_ contactId userSent = do
-      fmap ciQuoteDirect . maybeFirstRow fromOnly $
+    getDirectChatItemQuote_ :: Int64 -> IO (CIQuote 'CTDirect)
+    getDirectChatItemQuote_ contactId = do
+      fmap ciQuoteDirect . maybeFirstRow id $
         DB.query
           db
-          "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ? AND item_sent = ?"
-          (userId, contactId, msgId, BI userSent)
+          "SELECT chat_item_id, item_sent FROM chat_items WHERE user_id = ? AND contact_id = ? AND shared_msg_id = ?"
+          (userId, contactId, msgId)
       where
-        ciQuoteDirect :: Maybe ChatItemId -> CIQuote 'CTDirect
-        ciQuoteDirect = (`ciQuote` if userSent then CIQDirectSnd else CIQDirectRcv)
-    getUserGroupChatItemId_ :: Int64 -> IO (Maybe ChatItemId)
-    getUserGroupChatItemId_ groupId =
-      maybeFirstRow fromOnly $
-        DB.query
-          db
-          "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id IS NULL"
-          (userId, groupId, msgId, MDSnd)
-    getGroupChatItemId_ :: Int64 -> GroupMemberId -> IO (Maybe ChatItemId)
-    getGroupChatItemId_ groupId groupMemberId =
-      maybeFirstRow fromOnly $
-        DB.query
-          db
-          "SELECT chat_item_id FROM chat_items WHERE user_id = ? AND group_id = ? AND shared_msg_id = ? AND item_sent = ? AND group_member_id = ?"
-          (userId, groupId, msgId, MDRcv, groupMemberId)
+        ciQuoteDirect :: Maybe (ChatItemId, MsgDirection) -> CIQuote 'CTDirect
+        ciQuoteDirect = \case
+          Just (itemId, itemSent)
+            -- `sent` is direction as seen by quoting member, sanity check with our known direction
+            | sent == (itemSent == MDRcv) ->
+                ciQuote (Just itemId) $ if itemSent == MDSnd then CIQDirectSnd else CIQDirectRcv
+          -- if item is not found or direction mismatch, use `sent` from MsgRef as fallback for direction
+          _ -> ciQuote Nothing $ if sent then CIQDirectRcv else CIQDirectSnd
     getGroupChatItemQuote_ :: Int64 -> MemberId -> IO (CIQuote 'CTGroup)
-    getGroupChatItemQuote_ groupId mId = do
+    getGroupChatItemQuote_ groupId userMemberId = do
       ciQuoteGroup
-        <$> DB.query
-          db
-          [sql|
-            SELECT i.chat_item_id,
-              -- GroupMember
-              m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
-              m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
-              p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
-              m.created_at, m.updated_at,
-              m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key
-            FROM group_members m
-            JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
-            LEFT JOIN contacts c ON m.contact_id = c.contact_id
-            LEFT JOIN chat_items i ON i.user_id = m.user_id
-                                      AND i.group_id = m.group_id
-                                      AND m.group_member_id = i.group_member_id
-                                      AND i.shared_msg_id = ?
-            WHERE m.user_id = ? AND m.group_id = ? AND m.member_id = ?
-          |]
-          (msgId, userId, groupId, mId)
+        <$> maybeFirstRow id
+          ( DB.query
+              db
+              [sql|
+                SELECT i.chat_item_id, i.item_sent,
+                  -- GroupMember
+                  m.group_member_id, m.group_id, m.index_in_group, m.member_id, m.peer_chat_min_version, m.peer_chat_max_version, m.member_role, m.member_category,
+                  m.member_status, m.show_messages, m.member_restriction, m.invited_by, m.invited_by_group_member_id, m.local_display_name, m.contact_id, m.contact_profile_id, p.contact_profile_id,
+                  p.display_name, p.full_name, p.short_descr, p.image, p.contact_link, p.chat_peer_type, p.local_alias, p.preferences,
+                  m.created_at, m.updated_at,
+                  m.support_chat_ts, m.support_chat_items_unread, m.support_chat_items_member_attention, m.support_chat_items_mentions, m.support_chat_last_msg_from_member_ts, m.member_pub_key
+                FROM chat_items i
+                LEFT JOIN group_members m ON m.group_member_id = i.group_member_id
+                LEFT JOIN contact_profiles p ON p.contact_profile_id = COALESCE(m.member_profile_id, m.contact_profile_id)
+                WHERE i.group_id = ? AND i.shared_msg_id = ?
+              |]
+              (groupId, msgId)
+          )
       where
-        ciQuoteGroup :: [Only (Maybe ChatItemId) :. GroupMemberRow] -> CIQuote 'CTGroup
-        ciQuoteGroup [] = ciQuote Nothing $ CIQGroupRcv Nothing
-        ciQuoteGroup ((Only itemId :. memberRow) : _) = ciQuote itemId . CIQGroupRcv . Just $ toGroupMember userContactId memberRow
+        ciQuoteGroup :: Maybe ((ChatItemId, MsgDirection) :. MaybeGroupMemberRow) -> CIQuote 'CTGroup
+        ciQuoteGroup = \case
+          Just ((itemId, itemSent) :. memberRow)
+            | itemSent == MDSnd, memberId == Just userMemberId ->
+                ciQuote (Just itemId) CIQGroupSnd
+            | itemSent == MDRcv, let member_ = toMaybeGroupMember userContactId memberRow, matchesMemberId member_ ->
+                ciQuote (Just itemId) $ CIQGroupRcv member_
+          -- if item is not found or memberId mismatch, return quote without item reference
+          _
+            | memberId == Just userMemberId -> ciQuote Nothing CIQGroupSnd
+            | otherwise -> ciQuote Nothing $ CIQGroupRcv Nothing
+        matchesMemberId :: Maybe GroupMember -> Bool
+        matchesMemberId member_ = case (memberId, member_) of
+          -- memberId from MsgRef matches member on found item
+          (Just mId, Just GroupMember {memberId = mId'}) -> mId == mId'
+          -- both are Nothing - message from channel/group itself
+          (Nothing, Nothing) -> True
+          _ -> False
 
 getChatPreviews :: DB.Connection -> VersionRangeChat -> User -> Bool -> PaginationByTime -> ChatListQuery -> IO [Either StoreError AChat]
 getChatPreviews db vr user withPCC pagination query = do
@@ -2308,15 +2308,15 @@ toGroupChatItem
       quotedMember_ = toMaybeGroupMember userContactId quotedMemberRow_
       deletedByGroupMember_ = toMaybeGroupMember userContactId deletedByGroupMemberRow_
       invalid = ACIContent msgDir $ CIInvalidJSON itemContentText
-      chatItem itemContent = case (itemContent, itemStatus, member_, fileStatus_) of
-        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Just (AFS SMDSnd fileStatus)) ->
+      chatItem itemContent = case (itemContent, itemStatus, fileStatus_) of
+        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Just (AFS SMDSnd fileStatus)) ->
           Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent (maybeCIFile fileStatus)
-        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, _, Nothing) ->
+        (ACIContent SMDSnd ciContent, ACIStatus SMDSnd ciStatus, Nothing) ->
           Right $ cItem SMDSnd CIGroupSnd ciStatus ciContent Nothing
-        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Just (AFS SMDRcv fileStatus)) ->
-          Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent (maybeCIFile fileStatus)
-        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just member, Nothing) ->
-          Right $ cItem SMDRcv (CIGroupRcv member) ciStatus ciContent Nothing
+        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Just (AFS SMDRcv fileStatus)) ->
+          Right $ cItem SMDRcv (CIGroupRcv member_) ciStatus ciContent (maybeCIFile fileStatus)
+        (ACIContent SMDRcv ciContent, ACIStatus SMDRcv ciStatus, Nothing) ->
+          Right $ cItem SMDRcv (CIGroupRcv member_) ciStatus ciContent Nothing
         _ -> badItem
       maybeCIFile :: CIFileStatus d -> Maybe (CIFile d)
       maybeCIFile fileStatus =
@@ -2668,7 +2668,7 @@ groupCIWithReactions db g cci@(CChatItem md ci@ChatItem {meta = CIMeta {itemId, 
   mentions <- getGroupCIMentions db itemId
   case itemSharedMsgId of
     Just sharedMsgId -> do
-      let GroupMember {memberId} = chatItemMember g ci
+      let memberId = memberId' <$> chatItemMember g ci
       reactions <- getGroupCIReactions db g memberId sharedMsgId
       pure $ CChatItem md ci {reactions, mentions}
     Nothing -> pure $ if null mentions then cci else CChatItem md ci {mentions}
@@ -2913,8 +2913,8 @@ markReceivedGroupReportsDeleted db User {userId} GroupInfo {groupId, membership}
       |]
       (DBCIDeleted, deletedTs, groupMemberId' membership, currentTs, userId, groupId, MCReport_, DBCINotDeleted)
 
-getGroupChatItemBySharedMsgId :: DB.Connection -> User -> GroupInfo -> GroupMemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupMemberId sharedMsgId = do
+getGroupCIBySharedMsgId' :: DB.Connection -> User -> GroupInfo -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupCIBySharedMsgId' db user g@GroupInfo {groupId} sharedMsgId = do
   itemId <-
     ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
       DB.query
@@ -2922,31 +2922,27 @@ getGroupChatItemBySharedMsgId db user@User {userId} g@GroupInfo {groupId} groupM
         [sql|
           SELECT chat_item_id
           FROM chat_items
-          WHERE user_id = ? AND group_id = ? AND group_member_id = ? AND shared_msg_id = ?
+          WHERE group_id = ? AND shared_msg_id = ?
           ORDER BY chat_item_id DESC
           LIMIT 1
         |]
-        (userId, groupId, groupMemberId, sharedMsgId)
+        (groupId, sharedMsgId)
   getGroupCIWithReactions db user g itemId
 
-getGroupMemberCIBySharedMsgId :: DB.Connection -> User -> GroupInfo -> MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
-getGroupMemberCIBySharedMsgId db user@User {userId} g@GroupInfo {groupId} memberId sharedMsgId = do
-  itemId <-
-    ExceptT . firstRow fromOnly (SEChatItemSharedMsgIdNotFound sharedMsgId) $
-      DB.query
-        db
-        [sql|
-          SELECT i.chat_item_id
-          FROM chat_items i
-          JOIN group_members m ON m.group_id = i.group_id
-                              AND ((i.group_member_id IS NULL AND m.member_category = ?)
-                                  OR i.group_member_id = m.group_member_id)
-          WHERE i.user_id = ? AND i.group_id = ? AND m.member_id = ? AND i.shared_msg_id = ?
-          ORDER BY i.chat_item_id DESC
-          LIMIT 1
-        |]
-        (GCUserMember, userId, groupId, memberId, sharedMsgId)
-  getGroupCIWithReactions db user g itemId
+getGroupCIBySharedMsgId :: DB.Connection -> User -> GroupInfo -> Maybe MemberId -> SharedMsgId -> ExceptT StoreError IO (CChatItem 'CTGroup)
+getGroupCIBySharedMsgId db user g memberId_ sharedMsgId = do
+  cci <- getGroupCIBySharedMsgId' db user g sharedMsgId
+  case cci of
+    CChatItem SMDRcv ChatItem {chatDir = CIGroupRcv itemMember_}
+      | matchesMemberId itemMember_ -> pure cci
+      | otherwise -> throwError $ SEChatItemSharedMsgIdNotFound sharedMsgId
+    CChatItem SMDSnd _ -> pure cci
+  where
+    matchesMemberId :: Maybe GroupMember -> Bool
+    matchesMemberId itemMember_ = case (memberId_, itemMember_) of
+      (Just mId, Just GroupMember {memberId = mId'}) -> mId == mId'
+      (Nothing, Nothing) -> True -- channel message
+      _ -> False
 
 getGroupChatItemsByAgentMsgId :: DB.Connection -> User -> GroupId -> Int64 -> AgentMsgId -> IO [CChatItem 'CTGroup]
 getGroupChatItemsByAgentMsgId db user groupId connId msgId = do
@@ -3254,18 +3250,18 @@ getDirectCIReactions db Contact {contactId} itemSharedMsgId =
       |]
       (contactId, itemSharedMsgId)
 
-getGroupCIReactions :: DB.Connection -> GroupInfo -> MemberId -> SharedMsgId -> IO [CIReactionCount]
-getGroupCIReactions db GroupInfo {groupId} itemMemberId itemSharedMsgId =
+getGroupCIReactions :: DB.Connection -> GroupInfo -> Maybe MemberId -> SharedMsgId -> IO [CIReactionCount]
+getGroupCIReactions db GroupInfo {groupId} itemMemberId_ itemSharedMsgId =
   map toCIReaction
     <$> DB.query
       db
       [sql|
         SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
         FROM chat_item_reactions
-        WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
+        WHERE group_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ?
         GROUP BY reaction
       |]
-      (groupId, itemMemberId, itemSharedMsgId)
+      (groupId, itemMemberId_, itemSharedMsgId)
 
 getGroupCIMentions :: DB.Connection -> ChatItemId -> IO (Map MemberName CIMention)
 getGroupCIMentions db ciId =
@@ -3296,7 +3292,7 @@ getACIReactions db aci@(AChatItem _ md chat ci@ChatItem {meta = CIMeta {itemShar
       reactions <- getDirectCIReactions db ct itemSharedMId
       pure $ AChatItem SCTDirect md chat ci {reactions}
     GroupChat g _s -> do
-      let GroupMember {memberId} = chatItemMember g ci
+      let memberId = memberId' <$> chatItemMember g ci
       reactions <- getGroupCIReactions db g memberId itemSharedMId
       pure $ AChatItem SCTGroup md chat ci {reactions}
     _ -> pure aci
@@ -3310,10 +3306,10 @@ deleteDirectCIReactions_ db contactId ChatItem {meta = CIMeta {itemSharedMsgId}}
 deleteGroupCIReactions_ :: DB.Connection -> GroupInfo -> ChatItem 'CTGroup d -> IO ()
 deleteGroupCIReactions_ db g@GroupInfo {groupId} ci@ChatItem {meta = CIMeta {itemSharedMsgId}} =
   forM_ itemSharedMsgId $ \itemSharedMId -> do
-    let GroupMember {memberId} = chatItemMember g ci
+    let memberId = memberId' <$> chatItemMember g ci
     DB.execute
       db
-      "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?"
+      "DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ?"
       (groupId, itemSharedMId, memberId)
 
 toCIReaction :: (MsgReaction, BoolInt, Int) -> CIReactionCount
@@ -3351,20 +3347,20 @@ setDirectReaction db ct itemSharedMId sent reaction add msgId reactionTs
         |]
         (contactId' ct, itemSharedMId, BI sent, reaction)
 
-getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
-getGroupReactions db GroupInfo {groupId} m itemMemberId itemSharedMId sent =
+getGroupReactions :: DB.Connection -> GroupInfo -> GroupMember -> Maybe MemberId -> SharedMsgId -> Bool -> IO [MsgReaction]
+getGroupReactions db GroupInfo {groupId} m itemMemberId_ itemSharedMId sent =
   map fromOnly
     <$> DB.query
       db
       [sql|
         SELECT reaction
         FROM chat_item_reactions
-        WHERE group_id = ? AND group_member_id = ? AND item_member_id = ? AND shared_msg_id = ? AND reaction_sent = ?
+        WHERE group_id = ? AND group_member_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ? AND reaction_sent = ?
       |]
-      (groupId, groupMemberId' m, itemMemberId, itemSharedMId, BI sent)
+      (groupId, groupMemberId' m, itemMemberId_, itemSharedMId, BI sent)
 
-setGroupReaction :: DB.Connection -> GroupInfo -> GroupMember -> MemberId -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
-setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reaction add msgId reactionTs
+setGroupReaction :: DB.Connection -> GroupInfo -> GroupMember -> Maybe MemberId -> SharedMsgId -> Bool -> MsgReaction -> Bool -> MessageId -> UTCTime -> IO ()
+setGroupReaction db GroupInfo {groupId} m itemMemberId_ itemSharedMId sent reaction add msgId reactionTs
   | add =
       DB.execute
         db
@@ -3373,15 +3369,15 @@ setGroupReaction db GroupInfo {groupId} m itemMemberId itemSharedMId sent reacti
             (group_id, group_member_id, item_member_id, shared_msg_id, reaction_sent, reaction, created_by_msg_id, reaction_ts)
             VALUES (?,?,?,?,?,?,?,?)
         |]
-        (groupId, groupMemberId' m, itemMemberId, itemSharedMId, BI sent, reaction, msgId, reactionTs)
+        (groupId, groupMemberId' m, itemMemberId_, itemSharedMId, BI sent, reaction, msgId, reactionTs)
   | otherwise =
       DB.execute
         db
         [sql|
           DELETE FROM chat_item_reactions
-          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND reaction_sent = ? AND reaction = ?
         |]
-        (groupId, groupMemberId' m, itemSharedMId, itemMemberId, BI sent, reaction)
+        (groupId, groupMemberId' m, itemSharedMId, itemMemberId_, BI sent, reaction)
 
 getReactionMembers :: DB.Connection -> VersionRangeChat -> User -> GroupId -> SharedMsgId -> MsgReaction -> IO [MemberReaction]
 getReactionMembers db vr user groupId itemSharedMId reaction = do

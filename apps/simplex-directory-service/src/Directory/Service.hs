@@ -579,7 +579,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
               [] -> textMsg
               "" : _ -> textMsg
               img : _ -> MCImage "" $ ImageData img
-        sendCaptcha mc = sendComposedMessages_ cc (SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)) [(quotedId, MCText noticeText), (Nothing, mc)]
+        sendCaptcha mc = sendComposedMessages_ cc (SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False) [(quotedId, MCText noticeText), (Nothing, mc)]
         gmId = groupMemberId' m
 
     approvePendingMember :: DirectoryMemberAcceptance -> GroupInfo -> GroupMember -> IO ()
@@ -603,7 +603,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
             Just PendingCaptcha {captchaText, sentAt, attempts}
               | ts `diffUTCTime` sentAt > captchaTTL -> sendMemberCaptcha g m (Just ciId) captchaExpired $ attempts - 1
               | matchCaptchaStr captchaText msgText -> do
-                  sendComposedMessages_ cc (SRGroup groupId $ Just $ GCSMemberSupport (Just $ groupMemberId' m)) [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
+                  sendComposedMessages_ cc (SRGroup groupId (Just $ GCSMemberSupport (Just $ groupMemberId' m)) False) [(Just ciId, MCText $ "Correct, you joined the group " <> n)]
                   approvePendingMember a g m
               | attempts >= maxCaptchaAttempts -> rejectPendingMember tooManyAttempts
               | otherwise -> sendMemberCaptcha g m (Just ciId) (wrongCaptcha attempts) attempts
@@ -613,7 +613,7 @@ directoryServiceEvent st opts@DirectoryOpts {adminUsers, superUsers, serviceName
         a = groupMemberAcceptance g
         rejectPendingMember rjctNotice = do
           let gmId = groupMemberId' m
-          sendComposedMessages cc (SRGroup groupId $ Just $ GCSMemberSupport (Just gmId)) [MCText rjctNotice]
+          sendComposedMessages cc (SRGroup groupId (Just $ GCSMemberSupport (Just gmId)) False) [MCText rjctNotice]
           sendChatCmd cc (APIRemoveMembers groupId [gmId] False) >>= \case
             Right (CRUserDeletedMembers _ _ (_ : _) _) -> do
               atomically $ TM.delete gmId $ pendingCaptchas env
