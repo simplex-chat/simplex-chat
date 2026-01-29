@@ -1675,12 +1675,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (fileId,) <$> getChatItemByFileId db vr user fileId
       case aci of
         AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir} -> case chatDir of
-          CIGroupRcv Nothing -> do
-            -- in processFDMessage some paths are programmed as errors,
-            -- for example failure on not approved relays (CEFileNotApproved).
-            -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-            processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
-            pure $ Just $ infoToDeliveryContext g scopeInfo True
+          CIGroupRcv Nothing
+            | maybe True (\m -> memberRole' m == GROwner) m_ -> do
+                -- in processFDMessage some paths are programmed as errors,
+                -- for example failure on not approved relays (CEFileNotApproved).
+                -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
+                processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
+                pure $ Just $ infoToDeliveryContext g scopeInfo True
+            | otherwise -> messageError "x.msg.file.descr: only owner can send channel message file description" $> Nothing
           CIGroupRcv (Just m')
             | maybe False (\m -> sameMemberId (memberId' m) m') m_ -> do
                 processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
@@ -1966,7 +1968,9 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
           case cci of
             CChatItem SMDRcv ci@ChatItem {chatDir, meta = CIMeta {itemLive}, content = CIRcvMsgContent oldMC} ->
               case chatDir of
-                CIGroupRcv Nothing -> doUpdate ci scopeInfo True oldMC itemLive
+                CIGroupRcv Nothing
+                  | maybe True (\m -> memberRole' m == GROwner) m_ -> doUpdate ci scopeInfo True oldMC itemLive
+                  | otherwise -> messageError "x.msg.update: only owner can update channel message" $> Nothing
                 CIGroupRcv (Just m')
                   | maybe False (\m -> sameMemberId (memberId' m) m') m_ -> doUpdate ci scopeInfo False oldMC itemLive
                   | otherwise -> messageError "x.msg.update: member mismatch" $> Nothing
@@ -2210,12 +2214,14 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
         (fileId,) <$> getChatItemByFileId db vr user fileId
       case aci of
         AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir} -> case chatDir of
-          CIGroupRcv Nothing -> do
-            ft <- withStore $ \db -> getRcvFileTransfer db user fileId
-            unless (rcvFileCompleteOrCancelled ft) $ do
-              cancelRcvFileTransfer user ft
-              toView $ CEvtRcvFileSndCancelled user aci ft
-            pure $ Just $ infoToDeliveryContext g scopeInfo True
+          CIGroupRcv Nothing
+            | maybe True (\m -> memberRole' m == GROwner) m_ -> do
+                ft <- withStore $ \db -> getRcvFileTransfer db user fileId
+                unless (rcvFileCompleteOrCancelled ft) $ do
+                  cancelRcvFileTransfer user ft
+                  toView $ CEvtRcvFileSndCancelled user aci ft
+                pure $ Just $ infoToDeliveryContext g scopeInfo True
+            | otherwise -> messageError "x.file.cancel: only owner can cancel channel message file" $> Nothing
           CIGroupRcv (Just m')
             | maybe False (\m -> sameMemberId (memberId' m) m') m_ -> do
                 ft <- withStore $ \db -> getRcvFileTransfer db user fileId
@@ -3141,17 +3147,22 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author_ sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> void $ memberCanSend' author_ msgScope $ (const Nothing) <$> groupMessageUpdate gInfo author_ sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live
             XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author_ sharedMsgId memId scope_ rcvMsg msgTs
-            XMsgReact sharedMsgId memId_ scope_ reaction add -> forM_ author_ $ \author -> void $ groupMsgReaction gInfo author sharedMsgId memId_ scope_ reaction add rcvMsg msgTs
+            XMsgReact sharedMsgId memId_ scope_ reaction add -> withAuthor XMsgReact_ $ \author -> groupMsgReaction gInfo author sharedMsgId memId_ scope_ reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author_ sharedMsgId
-            XInfo p -> forM_ author_ $ \author -> void $ xInfoMember gInfo author p msgTs
-            XGrpMemNew memInfo msgScope -> forM_ author_ $ \author -> void $ xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
-            XGrpMemRole memId memRole -> forM_ author_ $ \author -> void $ xGrpMemRole gInfo author memId memRole rcvMsg msgTs
-            XGrpMemDel memId withMessages -> forM_ author_ $ \author -> void $ xGrpMemDel gInfo author memId withMessages chatMsg rcvMsg msgTs True
-            XGrpLeave -> forM_ author_ $ \author -> void $ xGrpLeave gInfo author rcvMsg msgTs
-            XGrpDel -> forM_ author_ $ \author -> void $ xGrpDel gInfo author rcvMsg msgTs
-            XGrpInfo p' -> forM_ author_ $ \author -> void $ xGrpInfo gInfo author p' rcvMsg msgTs
-            XGrpPrefs ps' -> forM_ author_ $ \author -> void $ xGrpPrefs gInfo author ps'
+            XInfo p -> withAuthor XInfo_ $ \author -> xInfoMember gInfo author p msgTs
+            XGrpMemNew memInfo msgScope -> withAuthor XGrpMemNew_ $ \author -> xGrpMemNew gInfo author memInfo msgScope rcvMsg msgTs
+            XGrpMemRole memId memRole -> withAuthor XGrpMemRole_ $ \author -> xGrpMemRole gInfo author memId memRole rcvMsg msgTs
+            XGrpMemDel memId withMessages -> withAuthor XGrpMemDel_ $ \author -> xGrpMemDel gInfo author memId withMessages chatMsg rcvMsg msgTs True
+            XGrpLeave -> withAuthor XGrpLeave_ $ \author -> xGrpLeave gInfo author rcvMsg msgTs
+            XGrpDel -> withAuthor XGrpDel_ $ \author -> xGrpDel gInfo author rcvMsg msgTs
+            XGrpInfo p' -> withAuthor XGrpInfo_ $ \author -> xGrpInfo gInfo author p' rcvMsg msgTs
+            XGrpPrefs ps' -> withAuthor XGrpPrefs_ $ \author -> xGrpPrefs gInfo author ps'
             _ -> messageError $ "x.grp.msg.forward: unsupported forwarded event " <> T.pack (show $ toCMEventTag event)
+          where
+            withAuthor :: CMEventTag e -> (GroupMember -> CM a) -> CM ()
+            withAuthor tag action = case author_ of
+              Just author -> void $ action author
+              Nothing -> messageError $ "x.grp.msg.forward: event " <> tshow tag <> " requires author"
 
     directMsgReceived :: Contact -> Connection -> MsgMeta -> NonEmpty MsgReceipt -> CM ()
     directMsgReceived ct conn@Connection {connId} msgMeta msgRcpts = do
