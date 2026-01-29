@@ -3926,7 +3926,6 @@ processChatCommand vr nm = \case
       ( CRContactUri crData {crScheme = SSSimplex},
         CRContactUri crData {crScheme = simplexChat}
       )
-
     -- This function is needed, as UI uses simplex:/ schema in message view, so that the links can be handled without browser,
     -- and short links are stored with server hostname schema, so they wouldn't match without it.
     serverShortLink :: ConnShortLink m -> ConnShortLink m
@@ -4377,7 +4376,7 @@ agentSubscriber :: CM' ()
 agentSubscriber = do
   q <- asks $ subQ . smpAgent
   forever (atomically (readTBQueue q) >>= process)
-    `E.catchAny` \e -> do
+    `catchOwn` \e -> do
       eToView' $ ChatErrorAgent (CRITICAL True $ "Message reception stopped: " <> show e) (AgentConnId "") Nothing
       E.throwIO e
   where
@@ -4388,7 +4387,7 @@ agentSubscriber = do
       SAERcvFile -> processAgentMsgRcvFile corrId entId msg
       SAESndFile -> processAgentMsgSndFile corrId entId msg
       where
-        run action = action `catchAllErrors'` (eToView')
+        run action = action `catchAllOwnErrors'` eToView'
 
 type AgentSubResult = Map ConnId (Either AgentErrorType (Maybe ClientServiceId))
 

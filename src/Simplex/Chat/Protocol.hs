@@ -645,6 +645,9 @@ maxEncodedMsgLength = 15602
 maxCompressedMsgLength :: Int
 maxCompressedMsgLength = 13380
 
+maxDecompressedMsgLength :: Int
+maxDecompressedMsgLength = 65536
+
 -- maxEncodedMsgLength - delta between MSG and INFO + 100 (returned for forward overhead)
 -- delta between MSG and INFO = e2eEncUserMsgLength (no PQ) - e2eEncConnInfoLength (no PQ) = 1008
 maxEncodedInfoLength :: Int
@@ -667,20 +670,24 @@ encodeChatMessage maxSize msg = do
 
 parseChatMessages :: ByteString -> [Either String AChatMessage]
 parseChatMessages "" = [Left "empty string"]
-parseChatMessages s = case B.head s of
-  '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
-  '[' -> case J.eitherDecodeStrict' s of
-    Right v -> map parseItem v
-    Left e -> [Left e]
-  'X' -> decodeCompressed (B.drop 1 s)
-  _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
+parseChatMessages msg = case B.head msg of
+  'X' -> decodeCompressed (B.tail msg)
+  c -> parseUncompressed c msg
   where
+    parseUncompressed c s = case c of
+      '{' -> [ACMsg SJson <$> J.eitherDecodeStrict' s]
+      '[' -> case J.eitherDecodeStrict' s of
+        Right v -> map parseItem v
+        Left e -> [Left e]
+      _ -> [ACMsg SBinary <$> (appBinaryToCM =<< strDecode s)]
     parseItem :: J.Value -> Either String AChatMessage
     parseItem v = ACMsg SJson <$> JT.parseEither parseJSON v
     decodeCompressed :: ByteString -> [Either String AChatMessage]
     decodeCompressed s' = case smpDecode s' of
       Left e -> [Left e]
-      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseChatMessages . decompress1) compressed
+      Right (compressed :: L.NonEmpty Compressed) -> concatMap (either (pure . Left) parseUncompressed' . decompress1 maxDecompressedMsgLength) compressed
+    parseUncompressed' "" = [Left "empty string"]
+    parseUncompressed' s = parseUncompressed (B.head s) s
 
 compressedBatchMsgBody_ :: MsgBody -> ByteString
 compressedBatchMsgBody_ = markCompressedBatch . smpEncode . (L.:| []) . compress1
