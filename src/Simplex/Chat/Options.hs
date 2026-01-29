@@ -65,6 +65,7 @@ data CoreChatOpts = CoreChatOpts
     logFile :: Maybe FilePath,
     tbqSize :: Natural,
     deviceName :: Maybe Text,
+    chatRelay :: Bool,
     highlyAvailable :: Bool,
     yesToUpMigrations :: Bool,
     migrationBackupPath :: Maybe FilePath,
@@ -233,6 +234,11 @@ coreChatOptsP appDir defaultDbName = do
             <> metavar "DEVICE"
             <> help "Device name to use in connections with remote hosts and controller"
         )
+  chatRelay <-
+    switch
+      ( long "relay"
+          <> help "Run as a chat relay client"
+      )
   highlyAvailable <-
     switch
       ( long "ha"
@@ -275,6 +281,7 @@ coreChatOptsP appDir defaultDbName = do
         logFile,
         tbqSize,
         deviceName,
+        chatRelay,
         highlyAvailable,
         yesToUpMigrations,
         migrationBackupPath,

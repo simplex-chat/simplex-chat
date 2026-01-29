@@ -161,11 +161,11 @@ getNextDeliveryTasks :: DB.Connection -> GroupInfo -> MessageDeliveryTask -> IO 
 getNextDeliveryTasks db gInfo task =
   getWorkItems "message delivery task" getTaskIds (getMsgDeliveryTask_ db) (markDeliveryTaskFailed_ db)
   where
-    GroupInfo {groupId, useRelays} = gInfo
+    GroupInfo {groupId} = gInfo
     MessageDeliveryTask {jobScope, senderGMId} = task
     getTaskIds :: IO [Int64]
     getTaskIds
-      | isTrue useRelays =
+      | useRelays' gInfo =
           map fromOnly
             <$> DB.query
               db
