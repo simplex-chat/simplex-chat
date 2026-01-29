@@ -252,6 +252,7 @@ chatGroupTests = do
     -- TODO [relays] add tests for channels message operations
     -- TODO   - update message previously deleted locally by relay/member
     -- TODO     (expectation: should create new as from group)
+    -- TODO   - test that other owners can update/delete channel message
     describe "channel message operations" $ do
       it "should update channel message" testChannelMessageUpdate
       it "should delete channel message" testChannelMessageDelete
