@@ -178,6 +178,16 @@ isSimplexLink = \case
   SimplexLink {} -> True
   _ -> False
 
+isLink :: Format -> Bool
+isLink = \case
+  Uri -> True
+  HyperLink {} -> True
+  SimplexLink {} -> True
+  _ -> False
+
+hasLinks :: MarkdownList -> Bool
+hasLinks = any $ \(FormattedText f _) -> maybe False isLink f
+
 markdownP :: Parser Markdown
 markdownP = mconcat <$> A.many' fragmentP
   where

@@ -26,6 +26,8 @@ chatLocalChatsTests = do
   describe "batch create messages" $ do
     it "create multiple messages api" testCreateMulti
     it "create multiple messages with files" testCreateMultiFiles
+  describe "link content filter" $ do
+    it "filter notes by link content" testLinkContentFilter
 
 testNotes :: TestParams -> IO ()
 testNotes ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
@@ -231,3 +233,18 @@ testCreateMultiFiles ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
   alice ##> "/_get chat *1 count=3"
   r <- chatF <$> getTermLine alice
   r `shouldBe` [((1, "message without file"), Nothing), ((1, "sending file 1"), Just "test.jpg"), ((1, "sending file 2"), Just "test.pdf")]
+
+testLinkContentFilter :: TestParams -> IO ()
+testLinkContentFilter ps = withNewTestChat ps "alice" aliceProfile $ \alice -> do
+  createCCNoteFolder alice
+
+  let linkPreview = "{\"msgContent\": {\"type\": \"link\", \"text\": \"https://simplex.chat\", \"preview\": {\"uri\": \"https://simplex.chat\", \"title\": \"SimpleX Chat\", \"description\": \"SimpleX Chat\", \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
+  alice ##> ("/_create *1 json [" <> linkPreview <> "]")
+  alice <# "* https://simplex.chat"
+
+  alice >* "check out https://example.com"
+  alice >* "hello, no links here"
+
+  alice ##> "/_get content types *1"
+  alice <## "Chat content types: link, text"
+  alice #$> ("/_get chat *1 content=link count=100", chat, [(1, "https://simplex.chat"), (1, "check out https://example.com")])

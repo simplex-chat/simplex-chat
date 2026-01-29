@@ -134,6 +134,8 @@ chatGroupTests = do
   describe "group delivery receipts" $ do
     it "should send delivery receipts in group" testSendGroupDeliveryReceipts
     it "should send delivery receipts in group depending on configuration" testConfigureGroupDeliveryReceipts
+  describe "link content filter" $ do
+    it "filter group chat by link content" testGroupLinkContentFilter
   describe "direct connections in group are not established based on chat protocol version" $ do
     it "direct contacts are not created" testNoGroupDirectConns
     it "members have different local display names in different groups" testNoDirectDifferentLDNs
@@ -8515,3 +8517,40 @@ testChannelsSenderDeduplicateOwn ps = do
                    ]
   where
     cfg = testCfg {deliveryWorkerDelay = 250000}
+
+testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()
+testGroupLinkContentFilter =
+  testChat3 aliceProfile bobProfile cathProfile $
+    \alice bob cath -> do
+      createGroup3 "team" alice bob cath
+
+      let linkPreview = "{\"msgContent\": {\"type\": \"link\", \"text\": \"https://simplex.chat\", \"preview\": {\"uri\": \"https://simplex.chat\", \"title\": \"SimpleX Chat\", \"description\": \"SimpleX Chat\", \"image\": \"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAIAQMAAAD+wSzIAAAABlBMVEX///+/v7+jQ3Y5AAAADklEQVQI12P4AIX8EAgALgAD/aNpbtEAAAAASUVORK5CYII=\"}}}"
+      alice ##> ("/_send #1 json [" <> linkPreview <> "]")
+      alice <# "#team https://simplex.chat"
+      concurrently_
+        (bob <# "#team alice> https://simplex.chat")
+        (cath <# "#team alice> https://simplex.chat")
+
+      threadDelay 1000000
+
+      bob #> "#team check out https://example.com"
+      concurrently_
+        (alice <# "#team bob> check out https://example.com")
+        (cath <# "#team bob> check out https://example.com")
+
+      cath #> "#team hello, no links here"
+      concurrently_
+        (alice <# "#team cath> hello, no links here")
+        (bob <# "#team cath> hello, no links here")
+
+      alice ##> "/_get content types #1"
+      alice <## "Chat content types: link, text"
+      alice #$> ("/_get chat #1 content=link count=100", chat, [(1, "https://simplex.chat"), (0, "check out https://example.com")])
+
+      bob ##> "/_get content types #1"
+      bob <## "Chat content types: link, text"
+      bob #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (1, "check out https://example.com")])
+
+      cath ##> "/_get content types #1"
+      cath <## "Chat content types: link, text"
+      cath #$> ("/_get chat #1 content=link count=100", chat, [(0, "https://simplex.chat"), (0, "check out https://example.com")])

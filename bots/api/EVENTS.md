@@ -62,6 +62,11 @@ This file is generated automatically.
 - [SentGroupInvitation](#sentgroupinvitation)
 - [GroupLinkConnecting](#grouplinkconnecting)
 
+[Network connection events](#network-connection-events)
+- [HostConnected](#hostconnected)
+- [HostDisconnected](#hostdisconnected)
+- [SubscriptionStatus](#subscriptionstatus)
+
 [Error events](#error-events)
 - [MessageError](#messageerror)
 - [ChatError](#chaterror)
@@ -681,6 +686,48 @@ Sent when bot joins group via another user link.
 - user: [User](./TYPES.md#user)
 - groupInfo: [GroupInfo](./TYPES.md#groupinfo)
 - hostMember: [GroupMember](./TYPES.md#groupmember)
+
+---
+
+
+## Network connection events
+
+
+
+
+### HostConnected
+
+Messaging or file server connected
+
+**Record type**:
+- type: "hostConnected"
+- protocol: string
+- transportHost: string
+
+---
+
+
+### HostDisconnected
+
+Messaging or file server disconnected
+
+**Record type**:
+- type: "hostDisconnected"
+- protocol: string
+- transportHost: string
+
+---
+
+
+### SubscriptionStatus
+
+Messaging subscription status changed
+
+**Record type**:
+- type: "subscriptionStatus"
+- server: string
+- subscriptionStatus: [SubscriptionStatus](./TYPES.md#subscriptionstatus)
+- connections: [string]
 
 ---
 
