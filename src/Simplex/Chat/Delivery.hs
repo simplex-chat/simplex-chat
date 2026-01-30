@@ -10,7 +10,7 @@ import Data.ByteString.Char8 (ByteString)
 import Data.Int (Int64)
 import Data.Maybe (fromMaybe)
 import Data.Time.Clock (UTCTime)
-import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId)
+import Simplex.Chat.Messages (GroupChatScopeInfo (..), MessageId, ShowGroupAsSender)
 import Simplex.Chat.Options.DB (FromField (..), ToField (..))
 import Simplex.Chat.Protocol
 import Simplex.Chat.Types
@@ -107,10 +107,15 @@ memberEventDeliveryScope m@GroupMember {memberRole, memberStatus}
   | memberRole >= GRModerator = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = True}}
   | otherwise = Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
 
+data FwdSender
+  = FwdMember MemberId ContactName
+  | FwdChannel
+  deriving (Show)
+
 data NewMessageDeliveryTask = NewMessageDeliveryTask
   { messageId :: MessageId,
     jobScope :: DeliveryJobScope,
-    messageFromChannel :: MessageFromChannel
+    showGroupAsSender :: ShowGroupAsSender
   }
   deriving (Show)
 
@@ -118,11 +123,9 @@ data MessageDeliveryTask = MessageDeliveryTask
   { taskId :: Int64,
     jobScope :: DeliveryJobScope,
     senderGMId :: GroupMemberId,
-    senderMemberId :: MemberId,
-    senderMemberName :: ContactName,
+    fwdSender :: FwdSender,
     brokerTs :: UTCTime,
-    chatMessage :: ChatMessage 'Json,
-    messageFromChannel :: MessageFromChannel
+    chatMessage :: ChatMessage 'Json
   }
   deriving (Show)
 
