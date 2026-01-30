@@ -116,8 +116,7 @@ checkChatType x = case testEquality (chatTypeI @c) (chatTypeI @c') of
   Just Refl -> Right x
   Nothing -> Left "bad chat type"
 
-data GroupChatScope
-  = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
+data GroupChatScope = GCSMemberSupport {groupMemberId_ :: Maybe GroupMemberId} -- Nothing means own conversation with support
   deriving (Eq, Show, Ord)
 
 data GroupChatScopeTag
@@ -172,8 +171,7 @@ data ChatInfo (c :: ChatType) where
 
 deriving instance Show (ChatInfo c)
 
-data GroupChatScopeInfo
-  = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
+data GroupChatScopeInfo = GCSIMemberSupport {groupMember_ :: Maybe GroupMember}
   deriving (Show)
 
 toChatScope :: GroupChatScopeInfo -> GroupChatScope
@@ -364,8 +362,10 @@ timedDeleteAt' :: CITimed -> Maybe UTCTime
 timedDeleteAt' CITimed {deleteAt} = deleteAt
 
 chatItemMember :: GroupInfo -> ChatItem 'CTGroup d -> Maybe GroupMember
-chatItemMember GroupInfo {membership} ChatItem {chatDir} = case chatDir of
-  CIGroupSnd -> Just membership
+chatItemMember GroupInfo {membership} ChatItem {chatDir, meta = CIMeta {showGroupAsSender}} = case chatDir of
+  CIGroupSnd
+    | showGroupAsSender -> Nothing
+    | otherwise -> Just membership
   CIGroupRcv m -> Just m
   CIChannelRcv -> Nothing
 

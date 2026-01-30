@@ -15,7 +15,7 @@ chatTests :: SpecWith TestParams
 chatTests = do
   describe "direct tests" chatDirectTests
   describe "forward tests" chatForwardTests
-  fdescribe "group tests" chatGroupTests
+  describe "group tests" chatGroupTests
   describe "chat relay tests" chatRelayTests
   describe "local chats tests" chatLocalChatsTests
   describe "file tests" chatFileTests

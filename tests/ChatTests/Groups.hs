@@ -237,7 +237,7 @@ chatGroupTests = do
   -- TODO   - cancellation on failure to create relay group (for owner)
   -- TODO   - async retry connecting to relay (for members)
   -- TODO   - test relay privileges
-  fdescribe "channels" $ do
+  describe "channels" $ do
     describe "relay delivery" $ do
       describe "single relay" $ do
         it "should deliver messages to members" testChannels1RelayDeliver
@@ -255,6 +255,9 @@ chatGroupTests = do
       it "should send and receive channel message file" testChannelMessageFile
       it "should cancel channel message file" testChannelMessageFileCancel
       it "should quote channel message" testChannelMessageQuote
+    describe "channel message identity" $ do
+      it "should not leak owner identity in channel reaction" testChannelOwnerReaction
+      it "should not leak owner identity in channel quote" testChannelOwnerQuote
 
 testGroupCheckMessages :: HasCallStack => TestParams -> IO ()
 testGroupCheckMessages =
@@ -8857,6 +8860,63 @@ testChannelMessageQuote ps =
                   eve <## "#team: bob forwarded a message from an unknown member, creating unknown member record cath"
                   eve <# "#team cath> > hello from channel [>>]"
                   eve <## "      replying to channel [>>]"
+              ]
+
+testChannelOwnerReaction :: HasCallStack => TestParams -> IO ()
+testChannelOwnerReaction ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends channel message
+            alice #> "#team hello"
+            bob <# "#team> hello"
+            [cath, dan, eve] *<# "#team> hello [>>]"
+
+            -- owner reacts to own channel message
+            alice ##> "+1 #team hello"
+            alice <## "added 👍"
+            bob <# "#team alice> > hello"
+            bob <## "    + 👍"
+            concurrentlyN_
+              [ do cath <# "#team> > hello"
+                   cath <## "    + 👍",
+                do dan <# "#team> > hello"
+                   dan <## "    + 👍",
+                do eve <# "#team> > hello"
+                   eve <## "    + 👍"
+              ]
+
+testChannelOwnerQuote :: HasCallStack => TestParams -> IO ()
+testChannelOwnerQuote ps =
+  withNewTestChat ps "alice" aliceProfile $ \alice ->
+    withNewTestChatOpts ps relayTestOpts "bob" bobProfile $ \bob ->
+      withNewTestChat ps "cath" cathProfile $ \cath ->
+        withNewTestChat ps "dan" danProfile $ \dan ->
+          withNewTestChat ps "eve" eveProfile $ \eve -> do
+            createChannel1Relay "team" alice bob cath dan eve
+
+            -- owner sends channel message
+            alice #> "#team hello from channel"
+            bob <# "#team> hello from channel"
+            [cath, dan, eve] *<# "#team> hello from channel [>>]"
+
+            -- owner quotes own channel message (sender sees own name locally, not a protocol leak)
+            alice `send` "> #team (hello from) my reply"
+            alice <# "#team > alice hello from channel"
+            alice <## "      my reply"
+            bob <# "#team> > hello from channel"
+            bob <## "      my reply"
+            concurrentlyN_
+              [ do cath <# "#team> > hello from channel [>>]"
+                   cath <## "      my reply [>>]",
+                do dan <# "#team> > hello from channel [>>]"
+                   dan <## "      my reply [>>]",
+                do eve <# "#team> > hello from channel [>>]"
+                   eve <## "      my reply [>>]"
               ]
 
 testGroupLinkContentFilter :: HasCallStack => TestParams -> IO ()

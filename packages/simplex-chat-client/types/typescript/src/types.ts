@@ -554,11 +554,19 @@ export type CIDirection =
   | CIDirection.DirectRcv
   | CIDirection.GroupSnd
   | CIDirection.GroupRcv
+  | CIDirection.ChannelRcv
   | CIDirection.LocalSnd
   | CIDirection.LocalRcv
 
 export namespace CIDirection {
-  export type Tag = "directSnd" | "directRcv" | "groupSnd" | "groupRcv" | "localSnd" | "localRcv"
+  export type Tag = 
+    | "directSnd"
+    | "directRcv"
+    | "groupSnd"
+    | "groupRcv"
+    | "channelRcv"
+    | "localSnd"
+    | "localRcv"
 
   interface Interface {
     type: Tag
@@ -579,6 +587,10 @@ export namespace CIDirection {
   export interface GroupRcv extends Interface {
     type: "groupRcv"
     groupMember: GroupMember
+  }
+
+  export interface ChannelRcv extends Interface {
+    type: "channelRcv"
   }
 
   export interface LocalSnd extends Interface {

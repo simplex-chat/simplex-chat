@@ -238,7 +238,7 @@ data MsgRef = MsgRef
   { msgId :: Maybe SharedMsgId,
     sentAt :: UTCTime,
     sent :: Bool,
-    memberId :: Maybe MemberId -- must be present in all group message references, both referencing sent and received
+    memberId :: Maybe MemberId -- present in group message references, Nothing for channel messages
   }
   deriving (Eq, Show)
 
