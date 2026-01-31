@@ -338,7 +338,7 @@ data ChatCommand
   | APIChatItemReaction {chatRef :: ChatRef, chatItemId :: ChatItemId, add :: Bool, reaction :: MsgReaction}
   | APIGetReactionMembers {userId :: UserId, groupId :: GroupId, chatItemId :: ChatItemId, reaction :: MsgReaction}
   | APIPlanForwardChatItems {fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId}
-  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int}
+  | APIForwardChatItems {toChatRef :: ChatRef, fromChatRef :: ChatRef, chatItemIds :: NonEmpty ChatItemId, ttl :: Maybe Int, sendAsGroup :: ShowGroupAsSender}
   | APIUserRead UserId
   | UserRead
   | APIChatRead {chatRef :: ChatRef}
@@ -934,13 +934,8 @@ logEventToFile = \case
 
 data SendRef
   = SRDirect ContactId
-  | SRGroup GroupId (Maybe GroupChatScope)
+  | SRGroup GroupId (Maybe GroupChatScope) ShowGroupAsSender
   deriving (Eq, Show)
-
-sendToChatRef :: SendRef -> ChatRef
-sendToChatRef = \case
-  SRDirect cId -> ChatRef CTDirect cId Nothing
-  SRGroup gId scope -> ChatRef CTGroup gId scope
 
 data ChatPagination
   = CPLast Int

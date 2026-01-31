@@ -494,6 +494,12 @@ data GroupInfo = GroupInfo
 useRelays' :: GroupInfo -> Bool
 useRelays' GroupInfo {useRelays} = isTrue useRelays
 
+sendAsGroup' :: GroupInfo -> Bool
+sendAsGroup' gInfo@GroupInfo {membership} = useRelays' gInfo && memberRole' membership == GROwner
+
+groupId' :: GroupInfo -> GroupId
+groupId' GroupInfo {groupId} = groupId
+
 data BusinessChatType
   = BCBusiness -- used on the customer side
   | BCCustomer -- used on the business side

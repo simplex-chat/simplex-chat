@@ -606,6 +606,9 @@ GroupRcv:
 - type: "groupRcv"
 - groupMember: [GroupMember](#groupmember)
 
+ChannelRcv:
+- type: "channelRcv"
+
 LocalSnd:
 - type: "localSnd"
 

@@ -2,6 +2,12 @@
 
 This file provides guidance on coding style and approaches and on building the code.
 
+## Code Security
+
+When designing code and planning implementations:
+- Apply adversarial thinking, and consider what may happen if one of the communicating parties is malicious.
+- Formulate an explicit threat model for each change - who can do which undesirable things and under which circumstances.
+
 ## Code Style, Formatting and Approaches
 
 The project uses **fourmolu** for Haskell code formatting. Configuration is in `fourmolu.yaml`.

@@ -1105,7 +1105,7 @@ SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_contact (contact_
 
 Query: 
           DELETE FROM chat_item_reactions
-          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id = ? AND reaction_sent = ? AND reaction = ?
+          WHERE group_id = ? AND group_member_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND reaction_sent = ? AND reaction = ?
         
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
@@ -1434,6 +1434,16 @@ Plan:
 SEARCH chat_items USING INDEX idx_chat_items_group_id (group_id=?)
 
 Query: 
+          SELECT chat_item_id
+          FROM chat_items
+          WHERE user_id = ? AND group_id = ? AND shared_msg_id = ?
+          ORDER BY chat_item_id DESC
+          LIMIT 1
+        
+Plan:
+SEARCH chat_items USING INDEX idx_chat_items_group_id_shared_msg_id (group_id=? AND shared_msg_id=?)
+
+Query: 
           SELECT chat_item_id, contact_id, group_id, group_scope_tag, group_scope_group_member_id, note_folder_id
           FROM chat_items
           WHERE chat_item_id = ?
@@ -1611,11 +1621,12 @@ Query:
           SELECT r.file_status, r.file_queue_info, r.group_member_id, f.file_name,
             f.file_size, f.chunk_size, f.cancelled, cs.local_display_name, m.local_display_name,
             f.file_path, f.file_crypto_key, f.file_crypto_nonce, r.file_inline, r.rcv_file_inline,
-            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays
+            r.agent_rcv_file_id, r.agent_rcv_file_deleted, r.user_approved_relays, g.local_display_name
           FROM rcv_files r
           JOIN files f USING (file_id)
           LEFT JOIN contacts cs ON cs.contact_id = f.contact_id
           LEFT JOIN group_members m ON m.group_member_id = r.group_member_id
+          LEFT JOIN groups g ON g.group_id = f.group_id
           WHERE f.user_id = ? AND f.file_id = ?
         
 Plan:
@@ -1623,6 +1634,7 @@ SEARCH f USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH r USING INTEGER PRIMARY KEY (rowid=?)
 SEARCH cs USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 SEARCH m USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
+SEARCH g USING INTEGER PRIMARY KEY (rowid=?) LEFT-JOIN
 
 Query: 
           SELECT r.probe, r.contact_id, g.group_id, r.group_member_id
@@ -3700,7 +3712,7 @@ SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_contact (contact_
 Query: 
         SELECT reaction
         FROM chat_item_reactions
-        WHERE group_id = ? AND group_member_id = ? AND item_member_id = ? AND shared_msg_id = ? AND reaction_sent = ?
+        WHERE group_id = ? AND group_member_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ? AND reaction_sent = ?
       
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
@@ -3718,7 +3730,7 @@ USE TEMP B-TREE FOR GROUP BY
 Query: 
         SELECT reaction, MAX(reaction_sent), COUNT(chat_item_reaction_id)
         FROM chat_item_reactions
-        WHERE group_id = ? AND item_member_id = ? AND shared_msg_id = ?
+        WHERE group_id = ? AND item_member_id IS NOT DISTINCT FROM ? AND shared_msg_id = ?
         GROUP BY reaction
       
 Plan:
@@ -5885,7 +5897,7 @@ Query: DELETE FROM chat_item_reactions WHERE group_id = ?
 Plan:
 SEARCH chat_item_reactions USING COVERING INDEX idx_chat_item_reactions_group_id (group_id=?)
 
-Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id = ?
+Query: DELETE FROM chat_item_reactions WHERE group_id = ? AND shared_msg_id = ? AND item_member_id IS NOT DISTINCT FROM ?
 Plan:
 SEARCH chat_item_reactions USING INDEX idx_chat_item_reactions_group (group_id=? AND shared_msg_id=?)
 
