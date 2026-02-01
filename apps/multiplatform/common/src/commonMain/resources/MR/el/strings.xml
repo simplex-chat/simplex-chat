@@ -2509,4 +2509,16 @@
     <string name="you_will_stop_receiving_messages_from_this_group_chat_history_will_be_preserved">Δεν θα λαμβάνεις πλέον μηνύματα από αυτήν την ομάδα. Το ιστορικό συνομιλιών θα διατηρηθεί.</string>
     <string name="you_wont_lose_your_contacts_if_delete_address">Δεν θα χάσεις τις επαφές σου αν διαγράψεις αργότερα τη διεύθυνσή σου.</string>
     <string name="appearance_zoom">Μεγέθυνση</string>
+    <string name="content_filter_all_messages">Όλα τα μηνύματα</string>
+    <string name="content_filter_files">Αρχεία</string>
+    <string name="content_filter_menu_item">ΦΙλτράρισμα</string>
+    <string name="content_filter_images">Εικόνες</string>
+    <string name="content_filter_links">Σύνδεσμοι</string>
+    <string name="placeholder_search_files">Αναζήτηση αρχείων</string>
+    <string name="placeholder_search_images">Αναζήτηση εικόνων</string>
+    <string name="placeholder_search_links">Αναζήτηση συνδέσμων</string>
+    <string name="placeholder_search_videos">Αναζήτηση βίντεο</string>
+    <string name="placeholder_search_voice_messages">Αναζήτηση φωνητικών μηνυμάτων</string>
+    <string name="content_filter_videos">Βίντεο</string>
+    <string name="content_filter_voice_messages">Φωνητικά μηνύματα</string>
 </resources>
