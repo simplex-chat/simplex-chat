@@ -312,5 +312,6 @@
     "messengers-comparison-section-list-point-4": "Реализация поддержки нескольких устройств подрывает безопасность после взлома алгоритма Double Ratchet.",
     "messengers-comparison-section-list-point-5": "2-факторный обмен ключами опциональный, через верификацию кода безопасности.",
     "messengers-comparison-section-list-point-6": "Пост-квантовое согласование ключей происходит не всегда, защищая только часть согласований.",
-    "navbar-token": "Токен"
+    "navbar-token": "Токен",
+    "navbar-old-site": "Старый сайт"
 }
