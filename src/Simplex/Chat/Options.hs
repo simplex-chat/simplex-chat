@@ -43,6 +43,7 @@ data ChatOpts = ChatOpts
     chatCmdDelay :: Int,
     chatCmdLog :: ChatCmdLog,
     chatServerPort :: Maybe String,
+    chatServerHost :: Maybe String,
     optFilesFolder :: Maybe FilePath,
     optTempDirectory :: Maybe FilePath,
     showReactions :: Bool,
@@ -319,6 +320,13 @@ chatOptsP appDir defaultDbName = do
           <> help "Run chat server on specified port"
           <> value Nothing
       )
+  chatServerHost <-
+    optional $
+      strOption
+        ( long "chat-server-host"
+            <> metavar "HOST"
+            <> help "Host to bind chat server to (default: 127.0.0.1, use 0.0.0.0 for all interfaces)"
+        )
   optFilesFolder <-
     optional $
       strOption
@@ -389,6 +397,7 @@ chatOptsP appDir defaultDbName = do
         chatCmdDelay,
         chatCmdLog,
         chatServerPort,
+        chatServerHost,
         optFilesFolder,
         optTempDirectory,
         showReactions,
