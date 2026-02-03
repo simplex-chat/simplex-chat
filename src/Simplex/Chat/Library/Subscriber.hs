@@ -965,7 +965,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 | isChannelOwner -> channelMessageDelete gInfo' sharedMsgId msg brokerTs
                 | otherwise -> groupMessageDelete gInfo' m'' sharedMsgId memberId_ scope_ msg brokerTs
               XMsgReact sharedMsgId Nothing scope_ reaction add -> groupOrChannelReaction gInfo' m'' Nothing sharedMsgId scope_ reaction add msg brokerTs
-              XMsgReact sharedMsgId (Just memberId) scope_ reaction add -> groupOrChannelReaction gInfo' m'' (Just memberId) sharedMsgId scope_ reaction add msg brokerTs
+              XMsgReact sharedMsgId (Just memberId) scope_ reaction add -> groupMsgReaction gInfo' m'' sharedMsgId memberId scope_ reaction add msg brokerTs
               -- TODO discontinue XFile
               XFile fInv -> Nothing <$ processGroupFileInvitation' gInfo' m'' fInv msg brokerTs
               XFileCancel sharedMsgId
@@ -1683,22 +1683,30 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       processFDMessage fileId aci fileDescr
 
     groupMessageFileDescription :: GroupInfo -> GroupMember -> SharedMsgId -> FileDescr -> CM (Maybe DeliveryJobScope)
-    groupMessageFileDescription g@GroupInfo {groupId} GroupMember {memberId} sharedMsgId fileDescr = do
+    groupMessageFileDescription g GroupMember {memberId} sharedMsgId fileDescr =
+      groupOrChannelFileDescription g (Just memberId) sharedMsgId fileDescr
+
+    groupOrChannelFileDescription :: GroupInfo -> Maybe MemberId -> SharedMsgId -> FileDescr -> CM (Maybe DeliveryJobScope)
+    groupOrChannelFileDescription g@GroupInfo {groupId} memberId_ sharedMsgId fileDescr = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         aci <- getChatItemByFileId db vr user fileId
         pure (fileId, aci)
       case aci of
-        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir = CIGroupRcv m} ->
-          if sameMemberId memberId m
-            then do
-              -- in processFDMessage some paths are programmed as errors,
-              -- for example failure on not approved relays (CEFileNotApproved).
-              -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
-              processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
-              pure $ Just $ infoToDeliveryScope g scopeInfo
-            else messageError "x.msg.file.descr: file of another member" $> Nothing
+        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir} -> case (memberId_, chatDir) of
+          (Just memberId, CIGroupRcv m)
+            | sameMemberId memberId m -> process fileId aci scopeInfo
+            | otherwise -> messageError "x.msg.file.descr: file of another member" $> Nothing
+          (Nothing, CIChannelRcv) -> process fileId aci scopeInfo
+          _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
         _ -> messageError "x.msg.file.descr: invalid file description part" $> Nothing
+      where
+        -- in processFDMessage some paths are programmed as errors,
+        -- for example failure on not approved relays (CEFileNotApproved).
+        -- we catch error, so that even if processFDMessage fails, message can still be forwarded.
+        process fileId aci' scopeInfo = do
+          processFDMessage fileId aci' fileDescr `catchAllErrors` \_ -> pure ()
+          pure $ Just $ infoToDeliveryScope g scopeInfo
 
     processFDMessage :: FileTransferId -> AChatItem -> FileDescr -> CM ()
     processFDMessage fileId aci fileDescr = do
@@ -1816,6 +1824,47 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
                 pure $ Just $ CEvtChatItemReaction user add r
               else pure Nothing
           mapM_ toView cEvt_
+
+    groupMsgReaction :: GroupInfo -> GroupMember -> SharedMsgId -> MemberId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    groupMsgReaction g m sharedMsgId itemMemberId scope_ reaction add msg brokerTs =
+      groupOrChannelReaction g m (Just itemMemberId) sharedMsgId scope_ reaction add msg brokerTs
+
+    groupOrChannelReaction :: GroupInfo -> GroupMember -> Maybe MemberId -> SharedMsgId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
+    groupOrChannelReaction g m@GroupMember {memberRole} itemMemberId_ sharedMsgId scope_ reaction add RcvMessage {msgId} brokerTs
+      | groupFeatureAllowed SGFReactions g = do
+          rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId_ sharedMsgId False
+          if reactionAllowed add reaction rs
+            then
+              updateChatItemReaction `catchCINotFound` \_ -> case scope_ of
+                Just (MSMember scopeMemberId)
+                  | memberRole >= GRModerator || scopeMemberId == memberId' m ->
+                      withStore $ \db -> do
+                        liftIO $ setGroupReaction db g m itemMemberId_ sharedMsgId False reaction add msgId brokerTs
+                        Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
+                  | otherwise -> pure Nothing
+                Nothing -> do
+                  withStore' $ \db -> setGroupReaction db g m itemMemberId_ sharedMsgId False reaction add msgId brokerTs
+                  pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
+            else pure Nothing
+      | otherwise = pure Nothing
+      where
+        updateChatItemReaction = do
+          (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
+            cci <- case itemMemberId_ of
+              Just itemMemberId -> getGroupMemberCIBySharedMsgId db user g itemMemberId sharedMsgId
+              Nothing -> getGroupCIBySharedMsgId' db user g sharedMsgId
+            scopeInfo <- getGroupChatScopeInfoForItem db vr user g (cChatItemId cci)
+            pure (cci, scopeInfo)
+          if ciReactionAllowed ci
+            then do
+              reactions <- withStore' $ \db -> do
+                setGroupReaction db g m itemMemberId_ sharedMsgId False reaction add msgId brokerTs
+                getGroupCIReactions db g itemMemberId_ sharedMsgId
+              let ci' = CChatItem md ci {reactions}
+                  r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
+              toView $ CEvtChatItemReaction user add r
+              pure $ Just $ infoToDeliveryScope g scopeInfo
+            else pure Nothing
 
     reactionAllowed :: Bool -> MsgReaction -> [MsgReaction] -> Bool
     reactionAllowed add reaction rs = (reaction `elem` rs) /= add && not (add && length rs >= maxMsgReactions)
@@ -1961,69 +2010,12 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
 
     -- Channel file description: processes file description for channel item, returns delivery scope
     channelMessageFileDescription :: GroupInfo -> SharedMsgId -> FileDescr -> CM (Maybe DeliveryJobScope)
-    channelMessageFileDescription gInfo@GroupInfo {groupId} sharedMsgId fileDescr = do
-      (fileId, aci) <- withStore $ \db -> do
-        fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-        aci <- getChatItemByFileId db vr user fileId
-        pure (fileId, aci)
-      case aci of
-        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir = CIChannelRcv} -> do
-          processFDMessage fileId aci fileDescr `catchAllErrors` \_ -> pure ()
-          pure $ Just $ infoToDeliveryScope gInfo scopeInfo
-        _ -> messageError "x.msg.file.descr: invalid channel file description" $> Nothing
+    channelMessageFileDescription gInfo sharedMsgId fileDescr =
+      groupOrChannelFileDescription gInfo Nothing sharedMsgId fileDescr
 
-    -- Channel file cancel: cancels file transfer for channel item, returns delivery scope
     xFileCancelChannel :: GroupInfo -> SharedMsgId -> CM (Maybe DeliveryJobScope)
-    xFileCancelChannel gInfo@GroupInfo {groupId} sharedMsgId = do
-      (fileId, aci) <- withStore $ \db -> do
-        fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
-        (fileId,) <$> getChatItemByFileId db vr user fileId
-      case aci of
-        AChatItem SCTGroup SMDRcv _ ChatItem {chatDir = CIChannelRcv} -> do
-          ft <- withStore $ \db -> getRcvFileTransfer db user fileId
-          unless (rcvFileCompleteOrCancelled ft) $ do
-            cancelRcvFileTransfer user ft
-            toView $ CEvtRcvFileSndCancelled user aci ft
-          pure $ Just $ infoToDeliveryScope gInfo Nothing
-        _ -> messageError "x.file.cancel: invalid channel file cancel" $> Nothing
-
-    -- Member reaction to a channel item on the relay: stores reaction, returns delivery scope
-    groupOrChannelReaction :: GroupInfo -> GroupMember -> Maybe MemberId -> SharedMsgId -> Maybe MsgScope -> MsgReaction -> Bool -> RcvMessage -> UTCTime -> CM (Maybe DeliveryJobScope)
-    groupOrChannelReaction g m@GroupMember {memberRole} itemMemberId_ sharedMsgId scope_ reaction add RcvMessage {msgId} brokerTs
-      | groupFeatureAllowed SGFReactions g = do
-          rs <- withStore' $ \db -> getGroupReactions db g m itemMemberId_ sharedMsgId False
-          if reactionAllowed add reaction rs
-            then
-              updateChatItemReaction `catchCINotFound` \_ -> case scope_ of
-                Just (MSMember scopeMemberId)
-                  | memberRole >= GRModerator || scopeMemberId == memberId' m ->
-                      withStore $ \db -> do
-                        liftIO $ setGroupReaction db g m itemMemberId_ sharedMsgId False reaction add msgId brokerTs
-                        Just . DJSMemberSupport <$> getScopeMemberIdViaMemberId db user g m scopeMemberId
-                  | otherwise -> pure Nothing
-                Nothing -> do
-                  withStore' $ \db -> setGroupReaction db g m itemMemberId_ sharedMsgId False reaction add msgId brokerTs
-                  pure $ Just DJSGroup {jobSpec = DJDeliveryJob {includePending = False}}
-            else pure Nothing
-      | otherwise = pure Nothing
-      where
-        updateChatItemReaction = do
-          (CChatItem md ci, scopeInfo) <- withStore $ \db -> do
-            cci <- case itemMemberId_ of
-              Just itemMemberId -> getGroupMemberCIBySharedMsgId db user g itemMemberId sharedMsgId
-              Nothing -> getGroupCIBySharedMsgId' db user g sharedMsgId
-            scopeInfo <- getGroupChatScopeInfoForItem db vr user g (cChatItemId cci)
-            pure (cci, scopeInfo)
-          if ciReactionAllowed ci
-            then do
-              reactions <- withStore' $ \db -> do
-                setGroupReaction db g m itemMemberId_ sharedMsgId False reaction add msgId brokerTs
-                getGroupCIReactions db g itemMemberId_ sharedMsgId
-              let ci' = CChatItem md ci {reactions}
-                  r = ACIReaction SCTGroup SMDRcv (GroupChat g scopeInfo) $ CIReaction (CIGroupRcv m) ci' brokerTs reaction
-              toView $ CEvtChatItemReaction user add r
-              pure $ Just $ infoToDeliveryScope g scopeInfo
-            else pure Nothing
+    xFileCancelChannel gInfo sharedMsgId =
+      xFileCancelGroupOrChannel gInfo Nothing sharedMsgId
 
     groupMessageUpdate :: GroupInfo -> GroupMember -> SharedMsgId -> MsgContent -> Map MemberName MsgMention -> Maybe MsgScope -> RcvMessage -> UTCTime -> Maybe Int -> Maybe Bool -> CM (Maybe DeliveryJobScope)
     groupMessageUpdate gInfo@GroupInfo {groupId} m@GroupMember {groupMemberId, memberId} sharedMsgId mc mentions msgScope_ msg@RcvMessage {msgId} brokerTs ttl_ live_
@@ -2270,22 +2262,30 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
       receiveFileChunk ft Nothing meta chunk
 
     xFileCancelGroup :: GroupInfo -> GroupMember -> SharedMsgId -> CM (Maybe DeliveryJobScope)
-    xFileCancelGroup g@GroupInfo {groupId} GroupMember {memberId} sharedMsgId = do
+    xFileCancelGroup g GroupMember {memberId} sharedMsgId =
+      xFileCancelGroupOrChannel g (Just memberId) sharedMsgId
+
+    xFileCancelGroupOrChannel :: GroupInfo -> Maybe MemberId -> SharedMsgId -> CM (Maybe DeliveryJobScope)
+    xFileCancelGroupOrChannel g@GroupInfo {groupId} memberId_ sharedMsgId = do
       (fileId, aci) <- withStore $ \db -> do
         fileId <- getGroupFileIdBySharedMsgId db userId groupId sharedMsgId
         (fileId,) <$> getChatItemByFileId db vr user fileId
       case aci of
-        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir = CIGroupRcv m} -> do
-          if sameMemberId memberId m
-            then do
-              ft <- withStore $ \db -> getRcvFileTransfer db user fileId
-              unless (rcvFileCompleteOrCancelled ft) $ do
-                cancelRcvFileTransfer user ft
-                toView $ CEvtRcvFileSndCancelled user aci ft
-              pure $ Just $ infoToDeliveryScope g scopeInfo
-            else -- shouldn't happen now that query includes group member id
-              messageError "x.file.cancel: group member attempted to cancel file of another member" $> Nothing
+        AChatItem SCTGroup SMDRcv (GroupChat _g scopeInfo) ChatItem {chatDir} -> case (memberId_, chatDir) of
+          (Just memberId, CIGroupRcv m)
+            | sameMemberId memberId m -> cancel fileId aci scopeInfo
+            -- shouldn't happen now that query includes group member id
+            | otherwise -> messageError "x.file.cancel: group member attempted to cancel file of another member" $> Nothing
+          (Nothing, CIChannelRcv) -> cancel fileId aci Nothing
+          _ -> messageError "x.file.cancel: group member attempted invalid file cancel" $> Nothing
         _ -> messageError "x.file.cancel: group member attempted invalid file cancel" $> Nothing
+      where
+        cancel fileId aci' scopeInfo = do
+          ft <- withStore $ \db -> getRcvFileTransfer db user fileId
+          unless (rcvFileCompleteOrCancelled ft) $ do
+            cancelRcvFileTransfer user ft
+            toView $ CEvtRcvFileSndCancelled user aci' ft
+          pure $ Just $ infoToDeliveryScope g scopeInfo
 
     xFileAcptInvGroup :: GroupInfo -> GroupMember -> SharedMsgId -> Maybe ConnReqInvitation -> String -> CM ()
     xFileAcptInvGroup GroupInfo {groupId} m@GroupMember {activeConn} sharedMsgId fileConnReq_ fName = do
@@ -3201,7 +3201,7 @@ processAgentMessageConn vr user@User {userId} corrId agentConnId agentMessage = 
             XMsgFileDescr sharedMsgId fileDescr -> void $ groupMessageFileDescription gInfo author sharedMsgId fileDescr
             XMsgUpdate sharedMsgId mContent mentions ttl live msgScope -> void $ memberCanSend author msgScope $ (const Nothing) <$> groupMessageUpdate gInfo author sharedMsgId mContent mentions msgScope rcvMsg msgTs ttl live
             XMsgDel sharedMsgId memId scope_ -> void $ groupMessageDelete gInfo author sharedMsgId memId scope_ rcvMsg msgTs
-            XMsgReact sharedMsgId (Just memId) scope_ reaction add -> void $ groupOrChannelReaction gInfo author (Just memId) sharedMsgId scope_ reaction add rcvMsg msgTs
+            XMsgReact sharedMsgId (Just memId) scope_ reaction add -> void $ groupMsgReaction gInfo author sharedMsgId memId scope_ reaction add rcvMsg msgTs
             XMsgReact sharedMsgId Nothing _scope_ reaction add -> fwdChannelReaction gInfo (Just author) sharedMsgId reaction add rcvMsg msgTs
             XFileCancel sharedMsgId -> void $ xFileCancelGroup gInfo author sharedMsgId
             XInfo p -> void $ xInfoMember gInfo author p msgTs
